@@ -11,6 +11,7 @@ import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle
 import { useState } from "react";
 import { PreTradeCheckModal } from "@/components/PreTradeCheckModal";
 import { useEffect } from "react";
+import { VaultTimeline } from "@/components/VaultTimeline";
  
 // Rank configuration
 const RANKS = [
@@ -443,6 +444,12 @@ function LockScreenOverlay({
                </div>
              </Card>
            </div>
+         </section>
+
+         {/* Vault Timeline */}
+         <section className="animate-slide-up" style={{ animationDelay: "175ms" }}>
+           <p className="section-title">Intelligence Feed</p>
+           <VaultTimeline />
          </section>
          
          {/* Primary Action */}

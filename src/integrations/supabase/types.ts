@@ -303,6 +303,15 @@ export type Database = {
           trades_today: number
         }[]
       }
+      get_vault_timeline: {
+        Args: { _limit?: number; _user_id: string }
+        Returns: {
+          created_at: string
+          event_context: Json
+          event_id: string
+          event_type: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
