@@ -43,7 +43,7 @@ export default function TraderCockpit() {
           {/* LEFT: Minimal action column */}
           <div className="lg:col-span-2 space-y-4">
             {/* Daily Ritual Card */}
-            <Card className="vault-card p-5">
+            <Card className="vault-card p-5" data-ritual-gate>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                   Daily Ritual
