@@ -95,9 +95,12 @@ export type Database = {
           emotional_state: number
           followed_rules: boolean
           id: string
+          instrument_type: string | null
           notes: string | null
+          outcome: string | null
           risk_reward: number
           risk_used: number
+          symbol: string | null
           trade_date: string
           user_id: string
           vault_verified: boolean
@@ -108,9 +111,12 @@ export type Database = {
           emotional_state: number
           followed_rules: boolean
           id?: string
+          instrument_type?: string | null
           notes?: string | null
+          outcome?: string | null
           risk_reward: number
           risk_used: number
+          symbol?: string | null
           trade_date?: string
           user_id: string
           vault_verified?: boolean
@@ -121,9 +127,12 @@ export type Database = {
           emotional_state?: number
           followed_rules?: boolean
           id?: string
+          instrument_type?: string | null
           notes?: string | null
+          outcome?: string | null
           risk_reward?: number
           risk_used?: number
+          symbol?: string | null
           trade_date?: string
           user_id?: string
           vault_verified?: boolean
