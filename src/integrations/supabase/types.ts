@@ -287,6 +287,15 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_vault_feedback: {
+        Args: { _user_id: string }
+        Returns: {
+          feedback_message: string
+          feedback_type: string
+          priority: number
+          recommended_action: string
+        }[]
+      }
       get_vault_state: {
         Args: { _user_id: string }
         Returns: {
