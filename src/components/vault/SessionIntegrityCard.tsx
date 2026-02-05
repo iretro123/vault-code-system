@@ -1,72 +1,53 @@
+import React from "react";
 import { useVaultSessionIntegrity } from "@/hooks/useVaultSessionIntegrity";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, AlertTriangle, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function SessionIntegrityCard() {
-  const { trades, verified, integrity, loading, error } = useVaultSessionIntegrity();
+  const { loading, error, trades, verified, integrity } = useVaultSessionIntegrity();
 
-  if (error) {
-    return (
-      <Card className="p-4 border-destructive/30 bg-destructive/5">
-        <div className="flex items-center gap-2 text-destructive text-sm">
-          <AlertTriangle className="h-4 w-4" />
-          <span>Error loading integrity</span>
-        </div>
-      </Card>
-    );
-  }
+  const integrityLabel =
+    loading ? "Updating…" : error ? "—" : `${integrity.toFixed(1).replace(".0", "")}%`;
 
   const getIntegrityColor = () => {
+    if (error) return "text-muted-foreground";
     if (integrity >= 100) return "text-status-active";
     if (integrity >= 80) return "text-status-warning";
     return "text-destructive";
   };
 
-  const getIntegrityIcon = () => {
-    if (integrity >= 100) return <CheckCircle2 className="h-4 w-4 text-status-active" />;
-    if (integrity >= 80) return <Shield className="h-4 w-4 text-status-warning" />;
-    return <AlertTriangle className="h-4 w-4 text-destructive" />;
-  };
-
   return (
     <Card className="p-4">
-      <div className="flex items-center gap-2 mb-3">
-        {getIntegrityIcon()}
-        <span className="text-xs text-muted-foreground uppercase tracking-wide">Session Integrity</span>
-      </div>
-
-      <div className="flex items-baseline gap-1 mb-2">
-        <span className={cn("text-3xl font-bold font-mono", loading ? "text-muted-foreground" : getIntegrityColor())}>
-          {loading ? "—" : `${integrity}%`}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs text-muted-foreground uppercase tracking-wide">
+          Session Integrity
+        </span>
+        <span className={cn("text-lg font-mono font-bold", getIntegrityColor())}>
+          {integrityLabel}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
-        <div>
-          <span className="text-muted-foreground">Trades Today</span>
-          <p className="font-mono font-semibold text-foreground">{loading ? "—" : trades}</p>
-        </div>
-        <div>
-          <span className="text-muted-foreground">Verified</span>
-          <p className="font-mono font-semibold text-foreground">{loading ? "—" : verified}</p>
-        </div>
-      </div>
+      {error ? (
+        <p className="text-sm text-destructive">Integrity error: {error}</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground">Trades Today</p>
+            <p className="text-xl font-mono font-semibold text-foreground">
+              {loading ? "…" : trades}
+            </p>
+          </div>
 
-      {/* Progress bar */}
-      <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-3">
-        <div
-          className={cn(
-            "h-full rounded-full transition-all duration-500",
-            integrity >= 100 && "bg-status-active",
-            integrity >= 80 && integrity < 100 && "bg-status-warning",
-            integrity < 80 && "bg-destructive"
-          )}
-          style={{ width: `${loading ? 0 : integrity}%` }}
-        />
-      </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Verified</p>
+            <p className={cn("text-xl font-mono font-semibold", getIntegrityColor())}>
+              {loading ? "…" : `${verified}/${trades ?? 0}`}
+            </p>
+          </div>
+        </div>
+      )}
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border/50">
         Verified trades are the only ones that count toward rank and level.
       </p>
     </Card>
