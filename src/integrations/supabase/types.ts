@@ -376,6 +376,18 @@ export type Database = {
           recommended_action: string
         }[]
       }
+      get_vault_identity: {
+        Args: { _user_id: string }
+        Returns: {
+          next_rank: string
+          progress_percent: number
+          rank_color: string
+          vault_level: number
+          vault_rank: string
+          vault_score: number
+          vault_title: string
+        }[]
+      }
       get_vault_mistake_analysis: {
         Args: { _user_id: string }
         Returns: {
