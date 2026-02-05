@@ -12,9 +12,9 @@ export default function Settings() {
     <AppLayout>
       <PageHeader title="Settings" subtitle="Manage your account" />
 
-      <div className="px-4 md:px-6 space-y-4 pb-6">
+      <div className="px-4 md:px-6 space-y-4 pb-24">
         {/* Profile */}
-        <Card className="p-4">
+        <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -30,7 +30,7 @@ export default function Settings() {
         </Card>
 
         {/* Trading Rules */}
-        <Card className="p-4">
+        <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <Shield className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -43,7 +43,7 @@ export default function Settings() {
         </Card>
 
         {/* Notifications placeholder */}
-        <Card className="p-4">
+        <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <Bell className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -58,7 +58,7 @@ export default function Settings() {
         {/* Sign Out */}
         <Button
           variant="outline"
-          className="w-full gap-2"
+          className="vault-cta w-full gap-2"
           onClick={() => signOut()}
         >
           <LogOut className="h-4 w-4" />

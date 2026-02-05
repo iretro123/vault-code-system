@@ -17,7 +17,7 @@ export function SessionIntegrityCard() {
   };
 
   return (
-    <Card className="p-4">
+    <Card className="vault-card p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-muted-foreground uppercase tracking-wide">
           Session Integrity
@@ -47,7 +47,7 @@ export function SessionIntegrityCard() {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border/50">
+      <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-primary/10">
         Verified trades are the only ones that count toward rank and level.
       </p>
     </Card>

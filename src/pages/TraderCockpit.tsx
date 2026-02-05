@@ -36,12 +36,12 @@ export default function TraderCockpit() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-6xl mx-auto p-4 md:p-6">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT: Minimal action column */}
           <div className="lg:col-span-2 space-y-4">
             {/* Daily Ritual Card */}
-            <Card className="p-5">
+            <Card className="vault-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                   Daily Ritual
@@ -65,7 +65,7 @@ export default function TraderCockpit() {
             </Card>
 
             {/* Execution Card */}
-            <Card className="p-5">
+            <Card className="vault-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                   Execution
@@ -82,8 +82,9 @@ export default function TraderCockpit() {
 
               <Button
                 disabled={ctaDisabled}
-                className="w-full h-14 text-lg font-semibold"
+                className="vault-cta w-full h-14 text-lg font-semibold rounded-xl"
                 size="lg"
+                variant="outline"
                 onClick={() => setIntentOpen(true)}
               >
                 {ctaLabel}
@@ -91,7 +92,7 @@ export default function TraderCockpit() {
 
               {/* If blocked, show reason */}
               {!loading && blocked && (
-                <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 mb-4">
+                <div className="mt-4 p-3 rounded-xl border border-destructive/30 bg-destructive/5">
                   <p className="text-xs font-medium text-destructive uppercase tracking-wide mb-1">
                     Blocked
                   </p>
@@ -102,14 +103,14 @@ export default function TraderCockpit() {
               )}
 
               {!loading && cooldown && (
-                <div className="p-3 rounded-lg border border-status-warning/30 bg-status-warning/5 mb-4">
+                <div className="mt-4 p-3 rounded-xl border border-status-warning/30 bg-status-warning/5">
                   <p className="text-sm text-status-warning">
                     Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
                   </p>
                 </div>
               )}
 
-              <p className="text-xs text-muted-foreground text-center">
+              <p className="text-xs text-muted-foreground text-center mt-4">
                 One click. Vault decides. Verified trades only.
               </p>
             </Card>
@@ -131,8 +132,8 @@ export default function TraderCockpit() {
 
       {/* Minimal modal */}
       {intentOpen && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <Card className="w-full max-w-md p-6 relative animate-scale-in">
+        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-4">
+          <Card className="vault-card w-full max-w-md p-6 relative animate-scale-in">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-foreground">Intent to Trade</h2>
               <button

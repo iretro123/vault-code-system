@@ -57,14 +57,14 @@
    const rankStyle = RANK_STYLES[identity.vaultRank] || RANK_STYLES.LOCKED;
    const progressStyle = PROGRESS_STYLES[identity.vaultRank] || PROGRESS_STYLES.LOCKED;
  
-   return (
-     <div
-       className={cn(
-         "relative overflow-hidden rounded-xl border p-6 bg-gradient-to-br animate-slide-up",
-         rankStyle,
-         className
-       )}
-     >
+    return (
+      <div
+        className={cn(
+          "vault-card relative overflow-hidden p-6 bg-gradient-to-br animate-slide-up",
+          rankStyle,
+          className
+        )}
+      >
        {/* Background glow effect */}
        <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br from-current to-transparent opacity-10 blur-2xl" />
        

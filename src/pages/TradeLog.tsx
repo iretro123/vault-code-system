@@ -115,95 +115,95 @@
    const isNearLossLimit = vaultStatus.dailyLossRemaining < vaultStatus.maxRiskPerTrade * 2;
    const plannedRisk = parseFloat(trade.riskUsed) || 0;
    
-   return (
-     <AppLayout>
-       <PageHeader 
-         title="Trade Log" 
-         subtitle={today}
-       />
-       
-       <div className="px-4 md:px-6 space-y-6 pb-6">
-         {/* Pre-Trade Execution Gate Modal */}
-         <Dialog open={showGate} onOpenChange={setShowGate}>
-           <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none">
-             <PreTradeExecutionGate
-               plannedRisk={plannedRisk}
-               onCleared={handleGateCleared}
-               onCancel={handleGateCancelled}
-             />
-           </DialogContent>
-         </Dialog>
- 
-         {/* Trading Status Warning */}
-         {!vaultStatus.canTrade && (
-           <Card className="p-4 border-status-inactive/50 bg-status-inactive/5">
-             <div className="flex items-start gap-3">
-               <Lock className="w-5 h-5 text-status-inactive flex-shrink-0 mt-0.5" />
-               <div>
-               <p className="font-medium text-status-inactive">Trading Blocked</p>
-                 <p className="text-sm text-muted-foreground">{vaultStatus.reason}</p>
-               </div>
-             </div>
-           </Card>
-         )}
-         
-         {/* Limit Warnings */}
-         {vaultStatus.canTrade && (isNearTradeLimit || isNearLossLimit) && (
-           <Card className="p-4 border-status-warning/50 bg-status-warning/5">
-             <div className="flex items-start gap-3">
-               <AlertTriangle className="w-5 h-5 text-status-warning flex-shrink-0 mt-0.5" />
-               <div>
-                 <p className="font-medium text-status-warning">Approaching Limits</p>
-                 <p className="text-sm text-muted-foreground">
-                   {isNearTradeLimit && `${vaultStatus.tradesRemaining} trade${vaultStatus.tradesRemaining === 1 ? '' : 's'} remaining. `}
-                   {isNearLossLimit && `${vaultStatus.dailyLossRemaining.toFixed(1)}% daily loss remaining.`}
-                 </p>
-               </div>
-             </div>
-           </Card>
-         )}
-         
-         <Card className="p-5">
-           <h3 className="font-medium mb-4">Quick Entry</h3>
-           
-           <div className="space-y-5">
-             {/* Risk Used */}
-             <div>
-               <Label htmlFor="risk" className="text-sm text-muted-foreground">
-                 Risk Used (%)
-               </Label>
-               <Input
-                 id="risk"
-                 type="number"
-                 min="0"
-                 max="100"
-                 step="0.1"
-                 placeholder="1.0"
-                 value={trade.riskUsed}
-                 onChange={(e) => setTrade(prev => ({ ...prev, riskUsed: e.target.value }))}
-                 className="mt-1.5 h-14 text-xl font-mono"
-                 disabled={!vaultStatus.canTrade}
-               />
+    return (
+      <AppLayout>
+        <PageHeader 
+          title="Trade Log" 
+          subtitle={today}
+        />
+        
+        <div className="px-4 md:px-6 space-y-6 pb-24">
+          {/* Pre-Trade Execution Gate Modal */}
+          <Dialog open={showGate} onOpenChange={setShowGate}>
+            <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none">
+              <PreTradeExecutionGate
+                plannedRisk={plannedRisk}
+                onCleared={handleGateCleared}
+                onCancel={handleGateCancelled}
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* Trading Status Warning */}
+          {!vaultStatus.canTrade && (
+            <Card className="vault-card p-4 border-destructive/30">
+              <div className="flex items-start gap-3">
+                <Lock className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div>
+                <p className="font-medium text-destructive">Trading Blocked</p>
+                  <p className="text-sm text-muted-foreground">{vaultStatus.reason}</p>
+                </div>
+              </div>
+            </Card>
+          )}
+          
+          {/* Limit Warnings */}
+          {vaultStatus.canTrade && (isNearTradeLimit || isNearLossLimit) && (
+            <Card className="vault-card p-4 border-status-warning/30">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-status-warning flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-status-warning">Approaching Limits</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isNearTradeLimit && `${vaultStatus.tradesRemaining} trade${vaultStatus.tradesRemaining === 1 ? '' : 's'} remaining. `}
+                    {isNearLossLimit && `${vaultStatus.dailyLossRemaining.toFixed(1)}% daily loss remaining.`}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+          
+          <Card className="vault-card p-5">
+            <h3 className="font-medium mb-4">Quick Entry</h3>
+            
+            <div className="space-y-5">
+              {/* Risk Used */}
+              <div>
+                <Label htmlFor="risk" className="text-sm text-muted-foreground">
+                  Risk Used (%)
+                </Label>
+                <Input
+                  id="risk"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="1.0"
+                  value={trade.riskUsed}
+                  onChange={(e) => setTrade(prev => ({ ...prev, riskUsed: e.target.value }))}
+                  className="vault-input mt-1.5 h-14 text-xl font-mono"
+                  disabled={!vaultStatus.canTrade}
+                />
              </div>
              
-             {/* Risk to Reward */}
-             <div>
-               <Label htmlFor="rr" className="text-sm text-muted-foreground">
-                 Risk-to-Reward
-               </Label>
-               <Input
-                 id="rr"
-                 type="number"
-                 min="0"
-                 max="20"
-                 step="0.1"
-                 placeholder="2.0"
-                 value={trade.rr}
-                 onChange={(e) => setTrade(prev => ({ ...prev, rr: e.target.value }))}
-                 className="mt-1.5 h-14 text-xl font-mono"
-                 disabled={!vaultStatus.canTrade}
-               />
-             </div>
+              {/* Risk to Reward */}
+              <div>
+                <Label htmlFor="rr" className="text-sm text-muted-foreground">
+                  Risk-to-Reward
+                </Label>
+                <Input
+                  id="rr"
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="0.1"
+                  placeholder="2.0"
+                  value={trade.rr}
+                  onChange={(e) => setTrade(prev => ({ ...prev, rr: e.target.value }))}
+                  className="vault-input mt-1.5 h-14 text-xl font-mono"
+                  disabled={!vaultStatus.canTrade}
+                />
+              </div>
              
              {/* Followed Rules */}
              <div>
@@ -252,23 +252,23 @@
            </div>
          </Card>
          
-         {/* Submit Button */}
-         <Button 
-           size="lg" 
-           className="w-full h-14 text-base font-medium gap-2"
-           onClick={handleInitiateSubmit}
-           disabled={submitting || !vaultStatus.canTrade}
-           variant={vaultStatus.canTrade ? "default" : "secondary"}
-         >
-           {submitting ? (
-             <Loader2 className="w-5 h-5 animate-spin" />
-           ) : !vaultStatus.canTrade ? (
-             <Lock className="w-5 h-5" />
-           ) : (
-             <Shield className="w-5 h-5" />
-           )}
-           {submitting ? "Logging..." : !vaultStatus.canTrade ? "Trading Blocked" : "Pre-Trade Check"}
-         </Button>
+          {/* Submit Button */}
+          <Button 
+            size="lg" 
+            className="vault-cta w-full h-14 text-base font-medium gap-2"
+            variant="outline"
+            onClick={handleInitiateSubmit}
+            disabled={submitting || !vaultStatus.canTrade}
+          >
+            {submitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : !vaultStatus.canTrade ? (
+              <Lock className="w-5 h-5" />
+            ) : (
+              <Shield className="w-5 h-5" />
+            )}
+            {submitting ? "Logging..." : !vaultStatus.canTrade ? "Trading Blocked" : "Pre-Trade Check"}
+          </Button>
          
          {/* Recent Trades Placeholder */}
          <div className="pt-4">
@@ -282,35 +282,35 @@
                <p className="text-sm">No trades logged yet</p>
              </div>
            ) : (
-             <div className="space-y-2">
-               {entries.slice(0, 10).map((entry) => (
-                 <Card key={entry.id} className="p-4">
-                   <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                       {entry.followed_rules ? (
-                         <CheckCircle className="w-5 h-5 text-status-active" />
-                       ) : (
-                         <XCircle className="w-5 h-5 text-status-inactive" />
-                       )}
-                       <div>
-                         <p className="font-mono text-sm">
-                           {entry.risk_used}% risk · {entry.risk_reward}R
-                         </p>
-                         <p className="text-xs text-muted-foreground">
-                           {new Date(entry.trade_date).toLocaleDateString()}
-                         </p>
-                       </div>
-                     </div>
-                     <button
-                       onClick={() => deleteEntry(entry.id)}
-                       className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                     >
-                       <Trash2 className="w-4 h-4" />
-                     </button>
-                   </div>
-                 </Card>
-               ))}
-             </div>
+              <div className="space-y-2">
+                {entries.slice(0, 10).map((entry) => (
+                  <Card key={entry.id} className="vault-card p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {entry.followed_rules ? (
+                          <CheckCircle className="w-5 h-5 text-status-active" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-destructive" />
+                        )}
+                        <div>
+                          <p className="font-mono text-sm">
+                            {entry.risk_used}% risk · {entry.risk_reward}R
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(entry.trade_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => deleteEntry(entry.id)}
+                        className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
            )}
          </div>
        </div>

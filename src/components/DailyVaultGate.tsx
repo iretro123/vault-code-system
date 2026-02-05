@@ -101,58 +101,58 @@
  
    // If already completed but vault still locked (discipline locked), show different message
    if (!dailyStatus.loading && dailyStatus.checklistCompleted && !dailyStatus.vaultOpen) {
-     return (
-       <Card className="p-6 border-2 border-status-warning/30 bg-status-warning/5">
-         <div className="flex items-center gap-3 mb-4">
-           <div className="p-3 rounded-full bg-status-warning/20">
-             <AlertTriangle className="w-6 h-6 text-status-warning" />
-           </div>
-           <div>
-             <h3 className="font-bold text-status-warning">Vault Partially Locked</h3>
-             <p className="text-sm text-muted-foreground">
-               Daily ritual complete, but discipline is locked
-             </p>
-           </div>
+      return (
+        <Card className="vault-card p-6 border-status-warning/30">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-full bg-status-warning/20">
+              <AlertTriangle className="w-6 h-6 text-status-warning" />
+            </div>
+            <div>
+              <h3 className="font-bold text-status-warning">Vault Partially Locked</h3>
+              <p className="text-sm text-muted-foreground">
+                Daily ritual complete, but discipline is locked
+              </p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Complete your recovery tasks to fully unlock the vault.
+          </p>
+        </Card>
+      );
+    }
+
+    if (dailyStatus.loading) {
+      return (
+        <Card className="vault-card p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-56" />
+            </div>
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        </Card>
+      );
+    }
+
+    const progress = ((5 - dailyStatus.actionsRemaining) / 5) * 100;
+
+    return (
+      <Card className="vault-card p-6 border-destructive/30">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 rounded-full bg-destructive/20">
+            <Lock className="w-6 h-6 text-destructive" />
          </div>
-         <p className="text-sm text-muted-foreground">
-           Complete your recovery tasks to fully unlock the vault.
-         </p>
-       </Card>
-     );
-   }
- 
-   if (dailyStatus.loading) {
-     return (
-       <Card className="p-6 border-2 border-primary/20">
-         <div className="flex items-center gap-3 mb-6">
-           <Skeleton className="h-12 w-12 rounded-full" />
-           <div className="space-y-2">
-             <Skeleton className="h-5 w-40" />
-             <Skeleton className="h-4 w-56" />
-           </div>
-         </div>
-         <div className="space-y-4">
-           <Skeleton className="h-16 w-full" />
-           <Skeleton className="h-16 w-full" />
-           <Skeleton className="h-16 w-full" />
-         </div>
-       </Card>
-     );
-   }
- 
-   const progress = ((5 - dailyStatus.actionsRemaining) / 5) * 100;
- 
-   return (
-     <Card className="p-6 border-2 border-status-inactive/30 bg-gradient-to-b from-status-inactive/10 to-transparent">
-       {/* Header */}
-       <div className="flex items-center gap-3 mb-6">
-         <div className="p-3 rounded-full bg-status-inactive/20">
-           <Lock className="w-6 h-6 text-status-inactive" />
-         </div>
-         <div className="flex-1">
-           <h3 className="font-bold text-status-inactive text-lg">Vault Closed</h3>
-           <p className="text-sm text-muted-foreground">
-             Complete your daily ritual to open the vault
+          <div className="flex-1">
+            <h3 className="font-bold text-destructive text-lg">Vault Closed</h3>
+            <p className="text-sm text-muted-foreground">
+              Complete your daily ritual to open the vault
            </p>
          </div>
        </div>
@@ -194,54 +194,55 @@
            icon={Heart}
          />
  
-         {/* Boolean Confirmations */}
-         <div className="space-y-3 pt-2 border-t border-border">
-           <label className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
-             <Checkbox
-               checked={formData.planReviewed}
-               onCheckedChange={(checked) => 
-                 setFormData((p) => ({ ...p, planReviewed: checked === true }))
-               }
-               className="mt-0.5"
-             />
-             <div className="flex-1">
-               <div className="flex items-center gap-2">
-                 <FileText className="w-4 h-4 text-muted-foreground" />
-                 <span className="text-sm font-medium">Trading Plan Reviewed</span>
-               </div>
-               <p className="text-xs text-muted-foreground mt-1">
-                 I have reviewed my trading plan and know my setups for today
-               </p>
-             </div>
-           </label>
- 
-           <label className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors">
-             <Checkbox
-               checked={formData.riskConfirmed}
-               onCheckedChange={(checked) => 
-                 setFormData((p) => ({ ...p, riskConfirmed: checked === true }))
-               }
-               className="mt-0.5"
-             />
-             <div className="flex-1">
-               <div className="flex items-center gap-2">
-                 <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                 <span className="text-sm font-medium">Max Risk Understood</span>
-               </div>
-               <p className="text-xs text-muted-foreground mt-1">
-                 I understand my maximum risk per trade and daily loss limits
-               </p>
-             </div>
-           </label>
-         </div>
-       </div>
- 
-       {/* Submit Button */}
-       <Button
-         onClick={handleSubmit}
-         disabled={submitting || !formData.planReviewed || !formData.riskConfirmed}
-         className="w-full mt-6 h-12 text-base font-medium gap-2"
-       >
+          {/* Boolean Confirmations */}
+          <div className="space-y-3 pt-2 border-t border-primary/10">
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-black/30 border border-primary/10 cursor-pointer hover:bg-black/40 transition-colors">
+              <Checkbox
+                checked={formData.planReviewed}
+                onCheckedChange={(checked) => 
+                  setFormData((p) => ({ ...p, planReviewed: checked === true }))
+                }
+                className="mt-0.5"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Trading Plan Reviewed</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  I have reviewed my trading plan and know my setups for today
+                </p>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-black/30 border border-primary/10 cursor-pointer hover:bg-black/40 transition-colors">
+              <Checkbox
+                checked={formData.riskConfirmed}
+                onCheckedChange={(checked) => 
+                  setFormData((p) => ({ ...p, riskConfirmed: checked === true }))
+                }
+                className="mt-0.5"
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Max Risk Understood</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  I understand my maximum risk per trade and daily loss limits
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <Button
+          onClick={handleSubmit}
+          disabled={submitting || !formData.planReviewed || !formData.riskConfirmed}
+          className="vault-cta w-full mt-6 h-12 text-base font-medium gap-2"
+          variant="outline"
+        >
          {submitting ? (
            <>
              <Loader2 className="w-5 h-5 animate-spin" />
@@ -255,17 +256,17 @@
          )}
        </Button>
  
-       {/* Warning for low scores */}
-       {(formData.mentalState <= 2 || formData.sleepQuality <= 2 || formData.emotionalControl <= 2) && (
-         <div className="mt-4 p-3 rounded-lg bg-status-warning/10 border border-status-warning/20">
-           <div className="flex items-start gap-2">
-             <AlertTriangle className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
-             <p className="text-xs text-status-warning">
-               Your self-assessment indicates suboptimal conditions. Consider reducing risk or sitting out today.
-             </p>
-           </div>
-         </div>
-       )}
-     </Card>
-   );
- }
+        {/* Warning for low scores */}
+        {(formData.mentalState <= 2 || formData.sleepQuality <= 2 || formData.emotionalControl <= 2) && (
+          <div className="mt-4 p-3 rounded-xl bg-status-warning/10 border border-status-warning/20">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-status-warning shrink-0 mt-0.5" />
+              <p className="text-xs text-status-warning">
+                Your self-assessment indicates suboptimal conditions. Consider reducing risk or sitting out today.
+              </p>
+            </div>
+          </div>
+        )}
+      </Card>
+    );
+  }
