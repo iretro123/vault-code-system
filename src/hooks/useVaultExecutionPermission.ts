@@ -27,14 +27,15 @@ type State = {
 export function useVaultExecutionPermission() {
   const { user } = useAuth();
   const userId = user?.id;
-  const [state, setState] = useState<State>({ loading: true, error: null, data: null });
+  const [state, setState] = useState<State>({ loading: false, error: null, data: null });
 
   // Prevent concurrent fetches during realtime bursts
   const inFlight = useRef(false);
 
   const fetchPermission = useCallback(async () => {
+    // Return early when not authenticated - no RPC call, no error
     if (!userId) {
-      setState({ loading: false, error: "Not authenticated", data: null });
+      setState({ loading: false, error: null, data: null });
       return;
     }
 
@@ -78,10 +79,13 @@ export function useVaultExecutionPermission() {
     }
   }, [userId]);
 
-  // Initial fetch
+  // Initial fetch - only when authenticated
   useEffect(() => {
-    fetchPermission();
-  }, [fetchPermission]);
+    if (userId) {
+      setState((s) => ({ ...s, loading: true }));
+      fetchPermission();
+    }
+  }, [userId, fetchPermission]);
 
   // Realtime subscription - only depends on userId (primitive)
   useEffect(() => {

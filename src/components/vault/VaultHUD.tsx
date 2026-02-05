@@ -22,6 +22,18 @@ export function VaultHUD() {
     return "bg-muted";
   }, [status.light]);
 
+  // When not authenticated, show neutral state (no error)
+  if (!data && !loading && !error) {
+    return (
+      <div className="vault-card p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-3 rounded-full bg-muted" />
+          <span className="font-semibold text-muted-foreground">Not signed in</span>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="vault-card p-4 border-rose-500/30">
