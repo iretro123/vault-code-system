@@ -562,6 +562,15 @@ export type Database = {
         Args: { _event_context?: Json; _event_type: string; _user_id: string }
         Returns: string
       }
+      start_vault_focus_session: {
+        Args: {
+          cooldown_after_loss_minutes?: number
+          duration_minutes: number
+          goals?: string
+          max_trades?: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
