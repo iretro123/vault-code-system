@@ -34,16 +34,18 @@ export function FocusSessionCard() {
   };
 
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardHeader className="pb-2">
+    <Card className="rounded-2xl border-border/30 bg-card/80 backdrop-blur-md">
+      <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">Focus Session</CardTitle>
+          <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Focus Session
+          </CardTitle>
           <span
             className={`text-xs font-semibold ${
               loading
                 ? "text-muted-foreground"
                 : data.active
-                ? "text-green-500"
+                ? "text-status-active"
                 : "text-muted-foreground"
             }`}
           >
@@ -52,7 +54,7 @@ export function FocusSessionCard() {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 px-4 pb-4">
         {error && <p className="text-xs text-destructive">{error}</p>}
 
         {data.active ? (
