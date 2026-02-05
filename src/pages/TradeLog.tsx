@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -116,6 +116,11 @@ const TradeLog = () => {
   
   return (
     <AppLayout>
+      <div className="px-4 md:px-6 pt-4">
+        <Link to="/cockpit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          ← Back to Cockpit
+        </Link>
+      </div>
       <PageHeader 
         title="Trade Log" 
         subtitle={today}
