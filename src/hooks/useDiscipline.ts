@@ -1,6 +1,6 @@
  // Re-export useTradePermission as the primary discipline hook
  // This maintains backward compatibility while using the database as single source of truth
- import { useTradePermission, TradePermission } from "./useTradePermission";
+ import { useTradePermission } from "./useTradePermission";
  import { useState, useEffect, useCallback } from "react";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "./useAuth";
@@ -40,10 +40,17 @@
    });
    const [refreshKey, setRefreshKey] = useState(0);
  
+   // Use a stable refetch that calls permission.refetch
    const refetch = useCallback(() => {
-     permission.refetch();
      setRefreshKey((k) => k + 1);
-   }, [permission]);
+   }, []);
+ 
+   // Sync refetch with permission refetch
+   useEffect(() => {
+     if (refreshKey > 0) {
+       permission.refetch();
+     }
+   }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
  
    // Fetch additional stats from calculate_discipline_metrics for UI display
    useEffect(() => {
