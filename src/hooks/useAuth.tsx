@@ -1,80 +1,85 @@
- import { useState, useEffect, createContext, useContext, ReactNode } from "react";
- import { supabase } from "@/integrations/supabase/client";
- import { User, Session } from "@supabase/supabase-js";
- 
- type AppRole = "free" | "vault_os_owner" | "vault_access" | "vault_intelligence" | "operator";
- 
- interface Profile {
-   id: string;
-   user_id: string;
-   email: string | null;
-   display_name: string | null;
-   discipline_status: "active" | "inactive";
-   discipline_score: number;
- }
- 
- interface UserRole {
-   role: AppRole;
-   subscription_status: string;
- }
- 
- interface AuthContextType {
-   user: User | null;
-   session: Session | null;
-   profile: Profile | null;
-   userRole: UserRole | null;
-   loading: boolean;
-   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-   signOut: () => Promise<void>;
-   hasRole: (role: AppRole) => boolean;
-   hasMinRole: (minRole: AppRole) => boolean;
- }
- 
- const AuthContext = createContext<AuthContextType | undefined>(undefined);
- 
- const roleHierarchy: AppRole[] = ["free", "vault_os_owner", "vault_access", "vault_intelligence", "operator"];
- 
- export function AuthProvider({ children }: { children: ReactNode }) {
-   const [user, setUser] = useState<User | null>(null);
-   const [session, setSession] = useState<Session | null>(null);
-   const [profile, setProfile] = useState<Profile | null>(null);
-   const [userRole, setUserRole] = useState<UserRole | null>(null);
-   const [loading, setLoading] = useState(true);
- 
-   useEffect(() => {
-     // Set up auth state listener FIRST
-     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-       async (event, newSession) => {
-         setSession(newSession);
-         setUser(newSession?.user ?? null);
-         
-         if (newSession?.user) {
-           // Defer data fetching to avoid blocking auth state
-           setTimeout(() => {
-             fetchUserData(newSession.user.id);
-           }, 0);
-         } else {
-           setProfile(null);
-           setUserRole(null);
-         }
-       }
-     );
- 
-     // THEN get initial session
-     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-       setSession(initialSession);
-       setUser(initialSession?.user ?? null);
-       
-       if (initialSession?.user) {
-         fetchUserData(initialSession.user.id);
-       } else {
-         setLoading(false);
-       }
-     });
- 
-     return () => subscription.unsubscribe();
-   }, []);
+import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from "@supabase/supabase-js";
+import { ensureProfile } from "@/lib/ensureProfile";
+
+type AppRole = "free" | "vault_os_owner" | "vault_access" | "vault_intelligence" | "operator";
+
+interface Profile {
+  id: string;
+  user_id: string;
+  email: string | null;
+  display_name: string | null;
+  discipline_status: "active" | "inactive";
+  discipline_score: number;
+}
+
+interface UserRole {
+  role: AppRole;
+  subscription_status: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  userRole: UserRole | null;
+  loading: boolean;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<void>;
+  hasRole: (role: AppRole) => boolean;
+  hasMinRole: (minRole: AppRole) => boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const roleHierarchy: AppRole[] = ["free", "vault_os_owner", "vault_access", "vault_intelligence", "operator"];
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        if (newSession?.user) {
+          // Defer data fetching to avoid blocking auth state
+          setTimeout(async () => {
+            // Ensure profile exists on first login
+            await ensureProfile(newSession.user.id, newSession.user.email);
+            fetchUserData(newSession.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+          setUserRole(null);
+        }
+      }
+    );
+
+    // THEN get initial session
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+      
+      if (initialSession?.user) {
+        // Ensure profile exists
+        await ensureProfile(initialSession.user.id, initialSession.user.email);
+        fetchUserData(initialSession.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
  
    async function fetchUserData(userId: string) {
      try {
