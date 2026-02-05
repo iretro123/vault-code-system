@@ -6,11 +6,11 @@ import { VaultIdentityCard } from "@/components/VaultIdentityCard";
 import { VaultLevelCard } from "@/components/VaultLevelCard";
 import { SessionIntegrityCard } from "@/components/vault/SessionIntegrityCard";
 import { FocusSessionCard } from "@/components/vault/FocusSessionCard";
+import { TradeLoggerCard } from "@/components/vault/TradeLoggerCard";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export default function TraderCockpit() {
   const { data, loading } = useVaultExecutionPermission();
@@ -113,6 +113,9 @@ export default function TraderCockpit() {
                 One click. Vault decides. Verified trades only.
               </p>
             </Card>
+
+            {/* Trade Logger */}
+            <TradeLoggerCard />
           </div>
 
           {/* RIGHT: Sticky side panel */}
