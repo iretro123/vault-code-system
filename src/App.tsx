@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
  import Auth from "./pages/Auth";
  import VaultIntelligence from "./pages/VaultIntelligence";
  import RiskCalculator from "./pages/RiskCalculator";
+ import TraderCockpit from "./pages/TraderCockpit";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
              <Route path="/auth" element={<Auth />} />
              <Route path="/intelligence" element={<VaultIntelligence />} />
              <Route path="/risk" element={<RiskCalculator />} />
+             <Route path="/cockpit" element={<TraderCockpit />} />
              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
              <Route path="*" element={<NotFound />} />
            </Routes>
