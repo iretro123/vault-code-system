@@ -1,20 +1,21 @@
- import { Link } from "react-router-dom";
- import { AppLayout } from "@/components/layout/AppLayout";
- import { PageHeader } from "@/components/layout/PageHeader";
- import { StatusBadge } from "@/components/ui/StatusBadge";
- import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/button";
 import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle, Flame, TrendingUp, XCircle, Crosshair } from "lucide-react";
- import { useAuth } from "@/hooks/useAuth";
- import { useVaultStatus, VaultStatus } from "@/hooks/useVaultStatus";
- import { Card } from "@/components/ui/card";
- import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useVaultStatus, VaultStatus } from "@/hooks/useVaultStatus";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { PreTradeCheckModal } from "@/components/PreTradeCheckModal";
 import { useEffect } from "react";
 import { VaultTimeline } from "@/components/VaultTimeline";
 import { VaultScoreCard } from "@/components/VaultScoreCard";
 import { VaultFeedbackCard } from "@/components/VaultFeedbackCard";
- 
+import { VaultHUD } from "@/components/vault/VaultHUD";
+
 // Rank configuration
 const RANKS = [
   { name: "Undisciplined", min: 0, max: 39, color: "text-status-inactive", bgColor: "bg-status-inactive" },
@@ -370,11 +371,16 @@ function LockScreenOverlay({
          subtitle={profile?.display_name ? `Welcome, ${profile.display_name}` : "Trading Discipline System"}
        />
        
-       <div className="px-4 md:px-6 space-y-6">
-        {/* Primary Authority Metric - Vault Score */}
-        <section className="animate-slide-up">
-          <VaultScoreCard />
-        </section>
+        <div className="px-4 md:px-6 space-y-6">
+          {/* Vault HUD - Master Authority Status */}
+          <section className="animate-slide-up">
+            <VaultHUD />
+          </section>
+
+          {/* Primary Authority Metric - Vault Score */}
+          <section className="animate-slide-up" style={{ animationDelay: "25ms" }}>
+            <VaultScoreCard />
+          </section>
 
         {/* Vault Feedback Engine */}
         <section className="animate-slide-up" style={{ animationDelay: "25ms" }}>
