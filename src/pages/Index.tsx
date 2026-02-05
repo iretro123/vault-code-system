@@ -3,11 +3,13 @@
  import { PageHeader } from "@/components/layout/PageHeader";
  import { StatusBadge } from "@/components/ui/StatusBadge";
  import { Button } from "@/components/ui/button";
-import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle, Flame, TrendingUp, XCircle } from "lucide-react";
+import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle, Flame, TrendingUp, XCircle, Crosshair } from "lucide-react";
  import { useAuth } from "@/hooks/useAuth";
  import { useDiscipline } from "@/hooks/useDiscipline";
  import { Card } from "@/components/ui/card";
  import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { PreTradeCheckModal } from "@/components/PreTradeCheckModal";
  
 // Animated number component for smooth transitions
 function AnimatedValue({ 
@@ -154,6 +156,7 @@ function LimitCard({
  const Dashboard = () => {
    const { user, profile, loading: authLoading } = useAuth();
    const discipline = useDiscipline();
+  const [preTradeOpen, setPreTradeOpen] = useState(false);
    
    if (authLoading || discipline.loading) {
      return (
@@ -273,18 +276,31 @@ function LimitCard({
          
          {/* Primary Action */}
          <section className="pt-2 animate-slide-up" style={{ animationDelay: "200ms" }}>
-           <Link to="/rules">
-             <Button 
-               size="lg" 
-               className="w-full h-14 text-base font-medium gap-2"
-             >
-               <Shield className="w-5 h-5" />
-               Set My Trading Rules
-               <ChevronRight className="w-4 h-4 ml-auto" />
-             </Button>
-           </Link>
+          <div className="grid grid-cols-2 gap-3">
+            <Button 
+              size="lg" 
+              className="h-14 text-base font-medium gap-2"
+              onClick={() => setPreTradeOpen(true)}
+            >
+              <Crosshair className="w-5 h-5" />
+              Pre-Trade Check
+            </Button>
+            <Link to="/rules" className="contents">
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="h-14 text-base font-medium gap-2"
+              >
+                <Shield className="w-5 h-5" />
+                My Rules
+                <ChevronRight className="w-4 h-4 ml-auto" />
+              </Button>
+            </Link>
+          </div>
          </section>
        </div>
+      
+      <PreTradeCheckModal open={preTradeOpen} onOpenChange={setPreTradeOpen} />
      </AppLayout>
    );
  };

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      pre_trade_checks: {
+        Row: {
+          can_trade: boolean
+          created_at: string
+          daily_loss_remaining: number
+          discipline_score: number
+          id: string
+          is_cleared: boolean
+          max_risk_allowed: number
+          planned_risk: number
+          trades_remaining: number
+          user_id: string
+          violation_reason: string | null
+        }
+        Insert: {
+          can_trade: boolean
+          created_at?: string
+          daily_loss_remaining: number
+          discipline_score: number
+          id?: string
+          is_cleared: boolean
+          max_risk_allowed: number
+          planned_risk: number
+          trades_remaining: number
+          user_id: string
+          violation_reason?: string | null
+        }
+        Update: {
+          can_trade?: boolean
+          created_at?: string
+          daily_loss_remaining?: number
+          discipline_score?: number
+          id?: string
+          is_cleared?: boolean
+          max_risk_allowed?: number
+          planned_risk?: number
+          trades_remaining?: number
+          user_id?: string
+          violation_reason?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
