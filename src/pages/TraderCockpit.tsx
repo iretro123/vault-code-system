@@ -82,7 +82,7 @@ export default function TraderCockpit() {
 
               <Button
                 disabled={ctaDisabled}
-                className="w-full mb-4"
+                className="w-full h-14 text-lg font-semibold"
                 size="lg"
                 onClick={() => setIntentOpen(true)}
               >
