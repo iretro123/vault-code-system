@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
  import Academy from "./pages/Academy";
  import Upgrade from "./pages/Upgrade";
  import Auth from "./pages/Auth";
+import VaultIntelligence from "./pages/VaultIntelligence";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
              <Route path="/academy" element={<Academy />} />
              <Route path="/upgrade" element={<Upgrade />} />
              <Route path="/auth" element={<Auth />} />
+            <Route path="/intelligence" element={<VaultIntelligence />} />
              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
              <Route path="*" element={<NotFound />} />
            </Routes>
