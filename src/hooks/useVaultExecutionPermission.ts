@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -26,19 +26,28 @@ type State = {
 
 export function useVaultExecutionPermission() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [state, setState] = useState<State>({ loading: true, error: null, data: null });
 
+  // Prevent concurrent fetches during realtime bursts
+  const inFlight = useRef(false);
+
   const fetchPermission = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setState({ loading: false, error: "Not authenticated", data: null });
       return;
     }
 
+    if (inFlight.current) return;
+    inFlight.current = true;
+
     setState((s) => ({ ...s, loading: true, error: null }));
 
     const { data, error } = await supabase.rpc("get_vault_execution_permission", {
-      _user_id: user.id,
+      _user_id: userId,
     });
+
+    inFlight.current = false;
 
     if (error) {
       console.error("Error fetching vault execution permission:", error);
@@ -67,31 +76,32 @@ export function useVaultExecutionPermission() {
     } else {
       setState({ loading: false, error: "No permission data returned", data: null });
     }
-  }, [user]);
+  }, [userId]);
 
+  // Initial fetch
   useEffect(() => {
     fetchPermission();
   }, [fetchPermission]);
 
-  // Realtime: refresh on vault_events / trade_entries changes
+  // Realtime subscription - only depends on userId (primitive)
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const channel = supabase
-      .channel(`vault-exec-${user.id}`)
+      .channel(`vault-exec-${userId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "vault_events", filter: `user_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "vault_events", filter: `user_id=eq.${userId}` },
         () => fetchPermission()
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "trade_entries", filter: `user_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "trade_entries", filter: `user_id=eq.${userId}` },
         () => fetchPermission()
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "vault_daily_checklist", filter: `user_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "vault_daily_checklist", filter: `user_id=eq.${userId}` },
         () => fetchPermission()
       )
       .subscribe();
@@ -99,7 +109,7 @@ export function useVaultExecutionPermission() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, fetchPermission]);
+  }, [userId, fetchPermission]);
 
   const status = useMemo(() => {
     const d = state.data;
@@ -107,7 +117,6 @@ export function useVaultExecutionPermission() {
 
     if (!d.execution_allowed) return { light: "RED" as const, label: d.block_reason ?? "Blocked" };
 
-    // Allowed but in restricted modes
     if (d.protection_level === "RESTRICTED" || d.consistency_level === "UNSTABLE") {
       return { light: "YELLOW" as const, label: "Restricted" };
     }
