@@ -210,6 +210,18 @@ export type Database = {
           violations_today: number
         }[]
       }
+      check_trade_permission: {
+        Args: { _user_id: string }
+        Returns: {
+          can_trade: boolean
+          daily_loss_remaining: number
+          discipline_score: number
+          discipline_status: string
+          max_risk_per_trade: number
+          reason: string
+          trades_remaining: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
