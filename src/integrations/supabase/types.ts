@@ -58,6 +58,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           discipline_score: number
           discipline_status: string
@@ -66,8 +67,10 @@ export type Database = {
           id: string
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           discipline_score?: number
           discipline_status?: string
@@ -76,8 +79,10 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           discipline_score?: number
           discipline_status?: string
@@ -86,6 +91,7 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
