@@ -263,6 +263,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_focus_sessions: {
+        Row: {
+          cooldown_after_loss_minutes: number
+          created_at: string
+          duration_minutes: number
+          ends_at: string
+          goals: string | null
+          id: string
+          max_trades: number
+          started_at: string
+          status: string
+          trades_taken: number
+          user_id: string
+        }
+        Insert: {
+          cooldown_after_loss_minutes?: number
+          created_at?: string
+          duration_minutes: number
+          ends_at: string
+          goals?: string | null
+          id?: string
+          max_trades?: number
+          started_at?: string
+          status?: string
+          trades_taken?: number
+          user_id: string
+        }
+        Update: {
+          cooldown_after_loss_minutes?: number
+          created_at?: string
+          duration_minutes?: number
+          ends_at?: string
+          goals?: string | null
+          id?: string
+          max_trades?: number
+          started_at?: string
+          status?: string
+          trades_taken?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
