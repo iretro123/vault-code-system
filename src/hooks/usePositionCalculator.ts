@@ -1,6 +1,7 @@
  import { useState, useCallback } from "react";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "./useAuth";
+import { useVaultProtectionStatus } from "./useVaultProtectionStatus";
  
  export interface PositionResult {
    allowed: boolean;
@@ -9,6 +10,8 @@
    requestedRisk: number;
    positionSize: number;
    maxLossAmount: number;
+  protectionRestricted: boolean;
+  effectiveRiskLimit: number;
  }
  
  export interface PositionCalculatorState {
@@ -16,6 +19,7 @@
    loading: boolean;
    error: string | null;
    calculate: (accountSize: number, riskPercent: number, stopLossPercent: number) => Promise<void>;
+  protectionStatus: ReturnType<typeof useVaultProtectionStatus>;
  }
  
  const DEFAULT_RESULT: PositionResult = {
@@ -25,10 +29,13 @@
    requestedRisk: 0,
    positionSize: 0,
    maxLossAmount: 0,
+  protectionRestricted: false,
+  effectiveRiskLimit: 0,
  };
  
  export function usePositionCalculator(): PositionCalculatorState {
    const { user } = useAuth();
+  const protectionStatus = useVaultProtectionStatus();
    const [result, setResult] = useState<PositionResult | null>(null);
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
@@ -40,6 +47,21 @@
          return;
        }
  
+      // Check for lockdown first
+      if (protectionStatus.protectionLevel === "LOCKDOWN") {
+        setResult({
+          allowed: false,
+          reason: "Trading blocked: Protection Mode LOCKDOWN active",
+          adaptiveRiskLimit: 0,
+          requestedRisk: riskPercent,
+          positionSize: 0,
+          maxLossAmount: 0,
+          protectionRestricted: true,
+          effectiveRiskLimit: 0,
+        });
+        return;
+      }
+
        setLoading(true);
        setError(null);
  
@@ -60,14 +82,38 @@
  
          if (data && data.length > 0) {
            const row = data[0];
-           setResult({
-             allowed: row.allowed,
-             reason: row.reason,
-             adaptiveRiskLimit: Number(row.adaptive_risk_limit),
-             requestedRisk: Number(row.requested_risk),
-             positionSize: Number(row.position_size),
-             maxLossAmount: Number(row.max_loss_amount),
-           });
+          const baseLimit = Number(row.adaptive_risk_limit);
+          const effectiveLimit = baseLimit * protectionStatus.riskRestrictionFactor;
+          const protectionRestricted = protectionStatus.riskRestrictionFactor < 1;
+          
+          // Check if risk exceeds protection-adjusted limit
+          const riskExceedsProtection = riskPercent > effectiveLimit && protectionRestricted;
+          
+          if (riskExceedsProtection) {
+            setResult({
+              allowed: false,
+              reason: `Risk exceeds protection limit (${riskPercent.toFixed(2)}% > ${effectiveLimit.toFixed(2)}% at ${protectionStatus.protectionLevel} level)`,
+              adaptiveRiskLimit: baseLimit,
+              requestedRisk: Number(row.requested_risk),
+              positionSize: 0,
+              maxLossAmount: 0,
+              protectionRestricted: true,
+              effectiveRiskLimit: effectiveLimit,
+            });
+          } else {
+            setResult({
+              allowed: row.allowed,
+              reason: protectionRestricted 
+                ? `${row.reason} (Protection: ${protectionStatus.protectionLevel})`
+                : row.reason,
+              adaptiveRiskLimit: baseLimit,
+              requestedRisk: Number(row.requested_risk),
+              positionSize: Number(row.position_size),
+              maxLossAmount: Number(row.max_loss_amount),
+              protectionRestricted,
+              effectiveRiskLimit: effectiveLimit,
+            });
+          }
          } else {
            setError("No calculation result returned");
            setResult(null);
@@ -80,8 +126,8 @@
          setLoading(false);
        }
      },
-     [user]
+    [user, protectionStatus.protectionLevel, protectionStatus.riskRestrictionFactor]
    );
  
-   return { result, loading, error, calculate };
+  return { result, loading, error, calculate, protectionStatus };
  }
