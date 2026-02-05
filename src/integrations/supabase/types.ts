@@ -14,16 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          discipline_score: number
+          discipline_status: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discipline_score?: number
+          discipline_status?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discipline_score?: number
+          discipline_status?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trade_entries: {
+        Row: {
+          created_at: string
+          emotional_state: number
+          followed_rules: boolean
+          id: string
+          notes: string | null
+          risk_reward: number
+          risk_used: number
+          trade_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emotional_state: number
+          followed_rules: boolean
+          id?: string
+          notes?: string | null
+          risk_reward: number
+          risk_used: number
+          trade_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emotional_state?: number
+          followed_rules?: boolean
+          id?: string
+          notes?: string | null
+          risk_reward?: number
+          risk_used?: number
+          trade_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trading_rules: {
+        Row: {
+          allowed_sessions: string[]
+          created_at: string
+          forbidden_behaviors: string[]
+          id: string
+          max_daily_loss: number
+          max_risk_per_trade: number
+          max_trades_per_day: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_sessions?: string[]
+          created_at?: string
+          forbidden_behaviors?: string[]
+          id?: string
+          max_daily_loss?: number
+          max_risk_per_trade?: number
+          max_trades_per_day?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_sessions?: string[]
+          created_at?: string
+          forbidden_behaviors?: string[]
+          id?: string
+          max_daily_loss?: number
+          max_risk_per_trade?: number
+          max_trades_per_day?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          subscription_expires_at: string | null
+          subscription_started_at: string | null
+          subscription_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          subscription_expires_at?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "free"
+        | "vault_os_owner"
+        | "vault_access"
+        | "vault_intelligence"
+        | "operator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +302,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "free",
+        "vault_os_owner",
+        "vault_access",
+        "vault_intelligence",
+        "operator",
+      ],
+    },
   },
 } as const
