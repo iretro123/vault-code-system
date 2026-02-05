@@ -73,27 +73,20 @@ export function VaultHUD() {
     );
   }
 
-  // Vault closed — neutral guidance with action
+  // Vault closed — neutral guidance with action (NOT an error)
   if (!loading && data && !data.vault_open) {
     return (
       <div className="vault-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-3 w-3 rounded-full bg-muted" />
-            <span className="font-semibold text-foreground">Vault Closed</span>
-          </div>
-          <span className="text-xs text-muted-foreground">Daily Ritual required</span>
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-3 rounded-full bg-muted" />
+          <span className="font-semibold text-foreground">Vault closed — complete Daily Ritual to unlock</span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Complete your Daily Ritual to open the Vault and enable trading.
-        </p>
         <Button
-          variant="outline"
           size="sm"
           className="w-full"
           onClick={scrollToRitual}
         >
-          Go to Daily Ritual
+          Start Ritual
         </Button>
       </div>
     );

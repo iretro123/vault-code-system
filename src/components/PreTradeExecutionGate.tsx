@@ -183,6 +183,35 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
     );
   }
 
+  // Vault closed (ritual not completed) — neutral guidance, not error
+  if (!vaultStatus.canTrade && vaultStatus.reason?.toLowerCase().includes("vault is closed")) {
+    const scrollToRitual = () => {
+      const ritualCard = document.querySelector('[data-ritual-gate]');
+      if (ritualCard) {
+        ritualCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ritualCard.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => ritualCard.classList.remove('ring-2', 'ring-primary'), 2000);
+      }
+      onCancel();
+    };
+
+    return (
+      <Card className="p-6 border-white/10 bg-white/5">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+            <Shield className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Vault closed — complete Daily Ritual to unlock</h3>
+          </div>
+          <Button onClick={scrollToRitual} className="mt-4">
+            Start Ritual
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
   // Standard locked state from vault status — neutral, not error
   if (vaultState === "LOCKED") {
      return (
