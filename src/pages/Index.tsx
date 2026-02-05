@@ -5,7 +5,7 @@
  import { Button } from "@/components/ui/button";
 import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle, Flame, TrendingUp, XCircle, Crosshair } from "lucide-react";
  import { useAuth } from "@/hooks/useAuth";
- import { useDiscipline } from "@/hooks/useDiscipline";
+ import { useVaultStatus, VaultStatus } from "@/hooks/useVaultStatus";
  import { Card } from "@/components/ui/card";
  import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -20,8 +20,9 @@ const RANKS = [
   { name: "Elite", min: 80, max: 100, color: "text-status-active", bgColor: "bg-status-active" },
 ] as const;
 
-function getRank(score: number) {
-  return RANKS.find(r => score >= r.min && score <= r.max) || RANKS[0];
+ // Get rank config from database rank name
+ function getRankConfig(rankName: string) {
+   return RANKS.find(r => r.name === rankName) || RANKS[0];
 }
 
 function getNextRank(score: number) {
@@ -31,7 +32,7 @@ function getNextRank(score: number) {
 }
 
 function getProgressToNextRank(score: number) {
-  const currentRank = getRank(score);
+   const currentRank = RANKS.find(r => score >= r.min && score <= r.max) || RANKS[0];
   const nextRank = getNextRank(score);
   if (!nextRank) return 100; // Elite - full progress
   
@@ -56,8 +57,8 @@ function AnimatedValue({
 }
 
 // Extracted component for the central score display
-function DisciplineScoreDisplay({ score, status }: { score: number; status: "active" | "locked" }) {
-  const rank = getRank(score);
+ function DisciplineScoreDisplay({ score, status, rankName }: { score: number; status: "active" | "locked"; rankName: string }) {
+   const rank = getRankConfig(rankName);
   const nextRank = getNextRank(score);
   const progressToNext = getProgressToNextRank(score);
   const pointsToNext = nextRank ? nextRank.min - score : 0;
@@ -224,14 +225,10 @@ function LimitCard({
 // Lock Screen Overlay Component
 function LockScreenOverlay({ 
   reason, 
-  hasExceededMaxTrades, 
-  hasExceededDailyLoss, 
-  hasRuleViolation 
+   vault
 }: { 
   reason: string;
-  hasExceededMaxTrades: boolean;
-  hasExceededDailyLoss: boolean;
-  hasRuleViolation: boolean;
+   vault: VaultStatus;
 }) {
   const [timeUntilReset, setTimeUntilReset] = useState("");
 
@@ -259,10 +256,11 @@ function LockScreenOverlay({
 
   // Determine specific violation type
   const getViolationType = () => {
-    if (hasExceededMaxTrades) return "Max trades exceeded";
-    if (hasExceededDailyLoss) return "Daily loss limit exceeded";
-    if (hasRuleViolation) return "Rule violation detected";
-    return "Discipline score too low";
+     if (vault.tradesRemaining <= 0) return "Max trades exceeded";
+     if (vault.dailyLossRemaining <= 0) return "Daily loss limit exceeded";
+     if (reason.includes("violation")) return "Rule violation detected";
+     if (vault.disciplineScore < 30) return "Discipline score too low";
+     return "Trading locked";
   };
 
   return (
@@ -326,11 +324,11 @@ function LockScreenOverlay({
 
  const Dashboard = () => {
    const { user, profile, loading: authLoading } = useAuth();
-   const discipline = useDiscipline();
+   const vault = useVaultStatus();
   const [preTradeOpen, setPreTradeOpen] = useState(false);
-  const isLocked = discipline.disciplineStatus === "locked";
+  const isLocked = vault.disciplineStatus === "locked";
    
-   if (authLoading || discipline.loading) {
+   if (authLoading || vault.loading) {
      return (
        <AppLayout>
          <div className="flex items-center justify-center min-h-[60vh]">
@@ -373,16 +371,17 @@ function LockScreenOverlay({
         {/* Central Discipline Score */}
         <section className="animate-slide-up">
           <DisciplineScoreDisplay 
-            score={discipline.disciplineScore} 
-            status={discipline.disciplineStatus} 
+            score={vault.disciplineScore} 
+            status={vault.disciplineStatus}
+            rankName={vault.disciplineRank}
           />
          </section>
          
         {/* Can I Trade Indicator */}
         <section className="animate-slide-up" style={{ animationDelay: "50ms" }}>
           <CanTradeIndicator 
-            canTrade={discipline.canTrade} 
-            reason={discipline.canTradeReason} 
+            canTrade={vault.canTrade} 
+            reason={vault.reason} 
           />
         </section>
 
@@ -393,17 +392,17 @@ function LockScreenOverlay({
             <LimitCard
               icon={TrendingUp}
               label="Trades"
-              used={discipline.todayTradesUsed}
-              allowed={discipline.todayTradesAllowed}
-              exceeded={discipline.hasExceededMaxTrades}
+              used={vault.tradesToday}
+              allowed={vault.maxTradesPerDay}
+              exceeded={vault.tradesRemaining <= 0}
             />
             <LimitCard
               icon={AlertTriangle}
               label="Risk Used"
-              used={discipline.todayLossUsed.toFixed(1)}
-              allowed={discipline.todayLossAllowed}
+              used={vault.dailyLossUsed.toFixed(1)}
+              allowed={vault.maxDailyLoss}
               unit="%"
-              exceeded={discipline.hasExceededDailyLoss}
+              exceeded={vault.dailyLossRemaining <= 0}
             />
            </div>
          </section>
@@ -415,18 +414,18 @@ function LockScreenOverlay({
                <div className="flex items-center gap-2 mb-2">
                  <Flame className={cn(
                    "w-4 h-4",
-                   discipline.disciplineStreak > 0 ? "text-status-warning" : "text-muted-foreground"
+                   vault.streakDays > 0 ? "text-status-warning" : "text-muted-foreground"
                  )} />
                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Streak</span>
                </div>
                <div className="flex items-baseline gap-1">
-                  <AnimatedValue value={discipline.disciplineStreak} className="text-2xl font-bold font-mono" />
+                  <AnimatedValue value={vault.streakDays} className="text-2xl font-bold font-mono" />
                  <span className="text-muted-foreground text-sm">days</span>
                </div>
              </Card>
              <Card className={cn(
                "p-4",
-               discipline.todayViolations > 0 && "border-status-inactive/50"
+               !vault.canTrade && vault.reason.includes("violation") && "border-status-inactive/50"
              )}>
                <div className="flex items-center gap-2 mb-2">
                  <XCircle className="w-4 h-4 text-muted-foreground" />
@@ -434,10 +433,10 @@ function LockScreenOverlay({
                </div>
                <div className="flex items-baseline gap-1">
                   <AnimatedValue 
-                    value={discipline.todayViolations}
+                    value={!vault.canTrade && vault.reason.includes("violation") ? 1 : 0}
                     className={cn(
                       "text-2xl font-bold font-mono",
-                      discipline.todayViolations > 0 ? "text-status-inactive" : "text-foreground"
+                     !vault.canTrade && vault.reason.includes("violation") ? "text-status-inactive" : "text-foreground"
                     )}
                   />
                  <span className="text-muted-foreground text-sm">today</span>
@@ -478,10 +477,8 @@ function LockScreenOverlay({
       {/* Lock Screen Overlay */}
       {isLocked && (
         <LockScreenOverlay
-          reason={discipline.canTradeReason}
-          hasExceededMaxTrades={discipline.hasExceededMaxTrades}
-          hasExceededDailyLoss={discipline.hasExceededDailyLoss}
-          hasRuleViolation={discipline.hasRuleViolation}
+          reason={vault.reason}
+          vault={vault}
         />
       )}
      </AppLayout>
