@@ -1,5 +1,6 @@
  import { useState, useEffect } from "react";
  import { useVaultStatus } from "@/hooks/useVaultStatus";
+import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
  import { Card } from "@/components/ui/card";
  import { Button } from "@/components/ui/button";
  import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +14,9 @@
    Target,
    Brain,
    Percent,
-   Crosshair
+  Crosshair,
+  Timer,
+  ShieldAlert
  } from "lucide-react";
  import { cn } from "@/lib/utils";
  
@@ -37,6 +40,7 @@
    plannedRisk 
  }: PreTradeExecutionGateProps) {
    const vaultStatus = useVaultStatus();
+  const protection = useVaultProtectionStatus();
    const [emotionalState, setEmotionalState] = useState<number>(3);
    const [checklist, setChecklist] = useState<ChecklistItem[]>([
      {
@@ -62,22 +66,27 @@
      },
    ]);
  
-   // Check if risk is within adaptive limit
-   const riskWithinLimit = plannedRisk <= vaultStatus.maxRiskPerTrade;
-   
-   // Determine vault state
-   const getVaultState = () => {
-     if (!vaultStatus.canTrade) return "LOCKED";
-     if (vaultStatus.dailyLossRemaining < 1 || vaultStatus.tradesRemaining <= 1) return "CAUTION";
-     return "READY";
-   };
-   
-   const vaultState = getVaultState();
-   
-   // Check if all items are validated
-   const allChecked = checklist.every((item) => item.checked);
-   const emotionalStateValid = emotionalState >= 1 && emotionalState <= 5;
-   const canProceed = allChecked && emotionalStateValid && riskWithinLimit && vaultState !== "LOCKED";
+  // Apply protection mode risk restriction
+  const effectiveMaxRisk = vaultStatus.maxRiskPerTrade * protection.riskRestrictionFactor;
+  const riskWithinLimit = plannedRisk <= effectiveMaxRisk;
+  const isLockdown = protection.protectionLevel === "LOCKDOWN";
+  const hasCooldown = protection.tradeCooldownMinutes > 0;
+  
+  // Determine vault state
+  const getVaultState = () => {
+    if (!vaultStatus.canTrade) return "LOCKED";
+    if (isLockdown) return "LOCKED";
+    if (vaultStatus.dailyLossRemaining < 1 || vaultStatus.tradesRemaining <= 1) return "CAUTION";
+    if (protection.protectionLevel === "RESTRICTED" || protection.protectionLevel === "CAUTION") return "CAUTION";
+    return "READY";
+  };
+  
+  const vaultState = getVaultState();
+  
+  // Check if all items are validated
+  const allChecked = checklist.every((item) => item.checked);
+  const emotionalStateValid = emotionalState >= 1 && emotionalState <= 5;
+  const canProceed = allChecked && emotionalStateValid && riskWithinLimit && vaultState !== "LOCKED" && !hasCooldown;
  
    const toggleChecklistItem = (id: string) => {
      setChecklist((prev) =>
@@ -94,7 +103,7 @@
    };
  
    // Loading state
-   if (vaultStatus.loading) {
+  if (vaultStatus.loading || protection.loading) {
      return (
        <Card className="p-6 border-border/50">
          <div className="flex items-center justify-center gap-3">
@@ -105,8 +114,40 @@
      );
    }
  
-   // Locked state - block completely
-   if (vaultState === "LOCKED") {
+  // Lockdown state from protection mode - block completely with specific message
+  if (isLockdown) {
+    return (
+      <Card className="p-6 border-destructive/30 bg-destructive/5">
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+            <ShieldAlert className="w-6 h-6 text-destructive" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-destructive">Protection Mode: LOCKDOWN</h3>
+            <p className="text-sm text-muted-foreground mt-1">{protection.protectionReason}</p>
+          </div>
+          <div className="pt-2 space-y-2 text-sm text-muted-foreground">
+            <p>Risk Restriction: {Math.round(protection.riskRestrictionFactor * 100)}%</p>
+            {protection.tradeCooldownMinutes > 0 && (
+              <p className="flex items-center justify-center gap-2">
+                <Timer className="w-4 h-4" />
+                Cooldown: {Math.floor(protection.tradeCooldownMinutes / 60)}h {protection.tradeCooldownMinutes % 60}m
+              </p>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Stop trading immediately. Take time to reset your mental state.
+          </p>
+          <Button variant="outline" onClick={onCancel} className="mt-4">
+            Go Back
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // Standard locked state from vault status
+  if (vaultState === "LOCKED") {
      return (
        <Card className="p-6 border-destructive/30 bg-destructive/5">
          <div className="text-center space-y-4">
@@ -156,6 +197,44 @@
          </div>
        </div>
  
+    {/* Protection Mode Warning */}
+    {protection.protectionActive && protection.protectionLevel !== "LOCKDOWN" && (
+      <div className={cn(
+        "mb-4 p-3 rounded-lg border",
+        protection.protectionLevel === "RESTRICTED" 
+          ? "border-orange-500/30 bg-orange-500/5" 
+          : "border-amber-500/30 bg-amber-500/5"
+      )}>
+        <div className="flex items-center gap-2">
+          <ShieldAlert className={cn(
+            "w-4 h-4",
+            protection.protectionLevel === "RESTRICTED" ? "text-orange-500" : "text-amber-500"
+          )} />
+          <span className={cn(
+            "text-sm font-medium",
+            protection.protectionLevel === "RESTRICTED" ? "text-orange-500" : "text-amber-500"
+          )}>
+            Protection Mode: {protection.protectionLevel}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Risk limited to {Math.round(protection.riskRestrictionFactor * 100)}% of normal ({effectiveMaxRisk.toFixed(2)}%)
+        </p>
+      </div>
+    )}
+
+    {/* Cooldown Warning */}
+    {hasCooldown && (
+      <div className="mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
+        <div className="flex items-center gap-2 text-destructive">
+          <Timer className="w-4 h-4" />
+          <span className="text-sm font-medium">
+            Trade cooldown active: {protection.tradeCooldownMinutes} minutes remaining
+          </span>
+        </div>
+      </div>
+    )}
+
        {/* Vault Status Summary */}
        <div className="grid grid-cols-3 gap-3 mb-6 p-3 rounded-lg bg-muted/30">
          <div className="text-center">
@@ -167,8 +246,13 @@
            <p className="text-lg font-semibold">{vaultStatus.dailyLossRemaining.toFixed(1)}%</p>
          </div>
          <div className="text-center">
-           <p className="text-xs text-muted-foreground">Max Risk</p>
-           <p className="text-lg font-semibold">{vaultStatus.maxRiskPerTrade}%</p>
+        <p className="text-xs text-muted-foreground">Effective Max Risk</p>
+        <p className={cn(
+          "text-lg font-semibold",
+          protection.riskRestrictionFactor < 1 && "text-amber-500"
+        )}>
+          {effectiveMaxRisk.toFixed(2)}%
+        </p>
          </div>
        </div>
  
@@ -178,7 +262,7 @@
            <div className="flex items-center gap-2 text-destructive">
              <AlertTriangle className="w-4 h-4" />
              <span className="text-sm font-medium">
-               Planned risk ({plannedRisk}%) exceeds limit ({vaultStatus.maxRiskPerTrade}%)
+            Planned risk ({plannedRisk}%) exceeds effective limit ({effectiveMaxRisk.toFixed(2)}%)
              </span>
            </div>
          </div>
@@ -255,7 +339,7 @@
            disabled={!canProceed}
            className="flex-1"
          >
-           {canProceed ? "Execute Trade" : "Complete Checklist"}
+        {hasCooldown ? "Cooldown Active" : canProceed ? "Execute Trade" : "Complete Checklist"}
          </Button>
        </div>
      </Card>

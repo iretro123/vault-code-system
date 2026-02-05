@@ -2,6 +2,7 @@
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "./useAuth";
  import { useToast } from "./use-toast";
+import { useVaultProtectionStatus } from "./useVaultProtectionStatus";
  
  export interface TradeEntry {
    id: string;
@@ -26,6 +27,7 @@
  export function useTradeLog() {
    const { user } = useAuth();
    const { toast } = useToast();
+  const protectionStatus = useVaultProtectionStatus();
    const [entries, setEntries] = useState<TradeEntry[]>([]);
    const [loading, setLoading] = useState(true);
  
@@ -59,6 +61,26 @@
    async function addEntry(entry: NewTradeEntry) {
      if (!user) return { error: new Error("Not authenticated") };
  
+    // Block trade entry if in LOCKDOWN
+    if (protectionStatus.protectionLevel === "LOCKDOWN") {
+      toast({
+        title: "Trade blocked",
+        description: "Protection Mode LOCKDOWN is active. Trading is suspended.",
+        variant: "destructive",
+      });
+      return { error: new Error("Protection Mode LOCKDOWN active") };
+    }
+
+    // Block if cooldown is active
+    if (protectionStatus.tradeCooldownMinutes > 0) {
+      toast({
+        title: "Trade blocked",
+        description: `Trade cooldown active. Wait ${protectionStatus.tradeCooldownMinutes} minutes.`,
+        variant: "destructive",
+      });
+      return { error: new Error("Trade cooldown active") };
+    }
+
      try {
        const { data, error } = await supabase
          .from("trade_entries")
@@ -128,5 +150,13 @@
      }).length,
    };
  
-   return { entries, loading, addEntry, deleteEntry, refetch: fetchEntries, weekStats };
+  return { 
+    entries, 
+    loading, 
+    addEntry, 
+    deleteEntry, 
+    refetch: fetchEntries, 
+    weekStats,
+    protectionStatus,
+  };
  }

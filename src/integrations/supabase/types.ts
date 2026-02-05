@@ -398,6 +398,20 @@ export type Database = {
           severity: string
         }[]
       }
+      get_vault_protection_status: {
+        Args: { _user_id: string }
+        Returns: {
+          discipline_deterioration_risk: boolean
+          emotional_risk: boolean
+          overtrading_risk: boolean
+          protection_active: boolean
+          protection_level: string
+          protection_reason: string
+          revenge_trading_risk: boolean
+          risk_restriction_factor: number
+          trade_cooldown_minutes: number
+        }[]
+      }
       get_vault_recovery_plan: {
         Args: { _user_id: string }
         Returns: {
