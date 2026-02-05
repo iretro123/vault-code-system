@@ -13,6 +13,7 @@ import { PreTradeCheckModal } from "@/components/PreTradeCheckModal";
 import { useEffect } from "react";
 import { VaultTimeline } from "@/components/VaultTimeline";
 import { VaultScoreCard } from "@/components/VaultScoreCard";
+import { VaultFeedbackCard } from "@/components/VaultFeedbackCard";
  
 // Rank configuration
 const RANKS = [
@@ -373,6 +374,11 @@ function LockScreenOverlay({
         {/* Primary Authority Metric - Vault Score */}
         <section className="animate-slide-up">
           <VaultScoreCard />
+        </section>
+
+        {/* Vault Feedback Engine */}
+        <section className="animate-slide-up" style={{ animationDelay: "25ms" }}>
+          <VaultFeedbackCard />
         </section>
 
         {/* Central Discipline Score */}
