@@ -34,7 +34,7 @@ export function VaultHUD() {
   }
 
   return (
-    <div className="rounded-lg border border-border/50 bg-card p-4 space-y-4">
+    <div className="vault-card p-4 space-y-4">
       {/* Header with status light */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -50,7 +50,7 @@ export function VaultHUD() {
 
       {/* Metrics grid */}
       <div className="grid grid-cols-4 gap-3">
-        <div className="text-center p-2 rounded-md bg-muted/30">
+        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Shield className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Vault</span>
@@ -63,7 +63,7 @@ export function VaultHUD() {
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-md bg-muted/30">
+        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Timer className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Cooldown</span>
@@ -76,7 +76,7 @@ export function VaultHUD() {
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-md bg-muted/30">
+        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Lock className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Protection</span>
@@ -92,7 +92,7 @@ export function VaultHUD() {
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-md bg-muted/30">
+        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Activity className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Consistency</span>
@@ -112,7 +112,7 @@ export function VaultHUD() {
 
       {/* Block reason */}
       {!loading && data && !data.execution_allowed && (
-        <div className="p-3 rounded-md border border-destructive/30 bg-destructive/5">
+        <div className="p-3 rounded-xl border border-destructive/30 bg-destructive/5">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-destructive" />
             <span className="text-sm font-medium text-destructive">Blocked</span>

@@ -24,7 +24,7 @@ export function PreTradeExecutionGateV2({ onAllowed }: PreTradeExecutionGateV2Pr
   }, [status.light]);
 
   return (
-    <Card className="p-6 border-border/50">
+    <Card className="vault-card p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -47,8 +47,11 @@ export function PreTradeExecutionGateV2({ onAllowed }: PreTradeExecutionGateV2Pr
         <Button
           onClick={() => onAllowed(data?.effective_risk_limit ?? null)}
           disabled={!canProceed || loading}
-          className="w-full"
-          variant={canProceed ? "default" : "secondary"}
+          className={cn(
+            "w-full",
+            canProceed && "vault-cta"
+          )}
+          variant={canProceed ? "outline" : "secondary"}
         >
           {loading ? "Checking…" : canProceed ? "Proceed (Vault Verified)" : "Blocked"}
         </Button>
@@ -56,7 +59,7 @@ export function PreTradeExecutionGateV2({ onAllowed }: PreTradeExecutionGateV2Pr
 
       {/* Block reason */}
       {!loading && data && !data.execution_allowed && (
-        <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/5 space-y-2">
+        <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 space-y-2">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-destructive" />
             <span className="text-sm font-medium text-destructive">Why Blocked</span>
@@ -70,7 +73,7 @@ export function PreTradeExecutionGateV2({ onAllowed }: PreTradeExecutionGateV2Pr
 
       {/* Cooldown warning */}
       {!loading && data?.cooldown_active && (
-        <div className="mt-4 p-3 rounded-lg border border-status-warning/30 bg-status-warning/5 flex items-center gap-2">
+        <div className="mt-4 p-3 rounded-xl border border-status-warning/30 bg-status-warning/5 flex items-center gap-2">
           <Timer className="h-4 w-4 text-status-warning" />
           <span className="text-sm text-status-warning">
             Cooldown active — wait {data.cooldown_remaining_minutes ?? "…"} min.

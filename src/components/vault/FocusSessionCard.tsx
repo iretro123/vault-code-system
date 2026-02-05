@@ -34,7 +34,7 @@ export function FocusSessionCard() {
   };
 
   return (
-    <Card className="rounded-2xl border-border/30 bg-card/80 backdrop-blur-md">
+    <Card className="vault-card">
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

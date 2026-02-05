@@ -53,12 +53,12 @@
      );
    }
  
-   return (
-     <Card className={cn(
-       "p-5 border-2 transition-all duration-500",
-       rankColors.border,
-       level.rank === "Elite" && "shadow-lg " + rankColors.glow
-     )}>
+    return (
+      <Card className={cn(
+        "vault-card p-5 border-2 transition-all duration-500",
+        rankColors.border,
+        level.rank === "Elite" && "shadow-lg " + rankColors.glow
+      )}>
        {/* Header */}
        <div className="flex items-center gap-4 mb-4">
          {/* Level Badge */}

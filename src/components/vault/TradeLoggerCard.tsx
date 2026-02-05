@@ -107,7 +107,7 @@ export function TradeLoggerCard() {
   if (success) {
     const msg = outcomeMessages[success];
     return (
-      <Card className="rounded-2xl border-border/30 bg-card/80 backdrop-blur-md">
+      <Card className="vault-card">
         <CardHeader className="pb-2 pt-4 px-4">
           <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Trade Logged
@@ -115,7 +115,7 @@ export function TradeLoggerCard() {
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
           <div
-            className={`p-3 rounded-lg ${
+            className={`p-3 rounded-xl ${
               success === "WIN"
                 ? "bg-status-active/10 border border-status-active/20"
                 : success === "LOSS"
@@ -150,7 +150,7 @@ export function TradeLoggerCard() {
   }
 
   return (
-    <Card className="rounded-2xl border-border/30 bg-card/80 backdrop-blur-md">
+    <Card className="vault-card">
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Log Trade
@@ -271,7 +271,7 @@ export function TradeLoggerCard() {
 
           {/* Error Display */}
           {error && (
-            <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/20">
+            <div className="p-2 rounded-xl bg-destructive/10 border border-destructive/20">
               <p className="text-xs text-destructive">{error}</p>
             </div>
           )}
@@ -281,7 +281,8 @@ export function TradeLoggerCard() {
             type="submit"
             size="sm"
             disabled={submitting || !symbol.trim() || !riskAmount}
-            className="w-full"
+            className="vault-cta w-full"
+            variant="outline"
           >
             {submitting ? "Logging…" : "Log Trade"}
           </Button>
