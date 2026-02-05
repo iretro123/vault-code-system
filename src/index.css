@@ -52,24 +52,24 @@
     /* VAULT OS Starlink Dark Theme — Default */
     /* Deep space background: #05070B to #0B1220 */
     --background: 220 30% 4%;
-    --foreground: 215 20% 90%;
+    --foreground: 210 20% 95%;
     
     /* Cards: glass + space */
     --card: 220 30% 6%;
-    --card-foreground: 215 20% 90%;
+    --card-foreground: 210 20% 95%;
     
     --popover: 220 35% 8%;
-    --popover-foreground: 215 20% 90%;
+    --popover-foreground: 210 20% 95%;
     
     /* Primary: Lightsaber blue #3B82F6 / #60A5FA */
     --primary: 217 91% 60%;
     --primary-foreground: 220 30% 4%;
     
     --secondary: 220 25% 12%;
-    --secondary-foreground: 215 15% 80%;
+    --secondary-foreground: 210 15% 85%;
     
     --muted: 220 25% 10%;
-    --muted-foreground: 215 15% 55%;
+    --muted-foreground: 215 15% 65%;
     
     --accent: 217 91% 65%;
     --accent-foreground: 220 30% 4%;
@@ -79,7 +79,7 @@
     
     /* Borders: subtle blue halo */
     --border: 217 40% 18%;
-    --input: 220 30% 10%;
+    --input: 220 30% 12%;
     --ring: 217 91% 60%;
     
     /* Status colors */
@@ -89,11 +89,11 @@
     
     /* Sidebar */
     --sidebar-background: 220 30% 5%;
-    --sidebar-foreground: 215 15% 75%;
+    --sidebar-foreground: 210 15% 80%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 220 30% 4%;
     --sidebar-accent: 220 25% 10%;
-    --sidebar-accent-foreground: 215 20% 90%;
+    --sidebar-accent-foreground: 210 20% 95%;
     --sidebar-border: 217 30% 15%;
     --sidebar-ring: 217 91% 60%;
   }
@@ -132,7 +132,7 @@
   
   /* Starlink input style */
   .vault-input {
-    @apply bg-black/40 border border-primary/20 focus:ring-2 focus:ring-primary/30 text-slate-100 placeholder:text-slate-500;
+    @apply bg-background border border-primary/20 focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground;
   }
   
   /* Legacy utilities (kept for compatibility) */
