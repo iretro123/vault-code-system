@@ -13,8 +13,7 @@
    Target,
    Loader2
  } from "lucide-react";
- import { useDiscipline } from "@/hooks/useDiscipline";
- import { useTradingRules } from "@/hooks/useTradingRules";
+ import { useTradePermission } from "@/hooks/useTradePermission";
  import { usePreTradeCheck } from "@/hooks/usePreTradeCheck";
  
  interface PreTradeCheckModalProps {
@@ -55,8 +54,7 @@
  }
  
  export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalProps) {
-   const discipline = useDiscipline();
-   const { rules } = useTradingRules();
+   const permission = useTradePermission();
    const { saveCheck, saving } = usePreTradeCheck();
    
    const [plannedRisk, setPlannedRisk] = useState("");
@@ -72,21 +70,22 @@
      }
    }, [open]);
  
-   const maxRiskAllowed = rules?.max_risk_per_trade ?? 1;
-   const tradesRemaining = discipline.todayTradesAllowed - discipline.todayTradesUsed;
-   const dailyLossRemaining = discipline.todayLossAllowed - discipline.todayLossUsed;
+   // All values come from database authority
+   const maxRiskAllowed = permission.maxRiskPerTrade;
+   const tradesRemaining = permission.tradesRemaining;
+   const dailyLossRemaining = permission.dailyLossRemaining;
    const plannedRiskNum = parseFloat(plannedRisk) || 0;
  
    // Real-time validation
    const hasRiskViolation = plannedRiskNum > maxRiskAllowed;
    const hasTradesViolation = tradesRemaining <= 0;
    const hasDailyLossViolation = plannedRiskNum > dailyLossRemaining;
-   const hasAnyViolation = !discipline.canTrade || hasRiskViolation || hasTradesViolation || hasDailyLossViolation;
+   const hasAnyViolation = !permission.canTrade || hasRiskViolation || hasTradesViolation || hasDailyLossViolation;
  
    async function handleRunCheck() {
      const result = await saveCheck({
-       disciplineScore: discipline.disciplineScore,
-       canTrade: discipline.canTrade,
+       disciplineScore: permission.disciplineScore,
+       canTrade: permission.canTrade,
        plannedRisk: plannedRiskNum,
        maxRiskAllowed,
        tradesRemaining,
@@ -95,6 +94,18 @@
  
      setCheckResult(result.isCleared ? "cleared" : "violation");
      setViolationReason(result.violationReason);
+   }
+ 
+   if (permission.loading) {
+     return (
+       <Dialog open={open} onOpenChange={onOpenChange}>
+         <DialogContent className="sm:max-w-md p-6">
+           <div className="flex items-center justify-center py-8">
+             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+           </div>
+         </DialogContent>
+       </Dialog>
+     );
    }
  
    return (
@@ -120,13 +131,13 @@
              <div className="grid gap-2">
                <StatusIndicator
                  label="Discipline Score"
-                 value={discipline.disciplineScore}
-                 status={discipline.disciplineScore >= 70 ? "ok" : discipline.disciplineScore >= 40 ? "warning" : "error"}
+                 value={permission.disciplineScore}
+                 status={permission.disciplineScore >= 70 ? "ok" : permission.disciplineScore >= 40 ? "warning" : "error"}
                />
                <StatusIndicator
                  label="Trading Status"
-                 value={discipline.canTrade ? "ACTIVE" : "LOCKED"}
-                 status={discipline.canTrade ? "ok" : "error"}
+                 value={permission.canTrade ? "ACTIVE" : "LOCKED"}
+                 status={permission.canTrade ? "ok" : "error"}
                />
              </div>
            </div>

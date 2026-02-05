@@ -9,7 +9,7 @@
  import { Plus, CheckCircle, XCircle, Loader2, Trash2, AlertTriangle, Lock } from "lucide-react";
  import { useAuth } from "@/hooks/useAuth";
  import { useTradeLog } from "@/hooks/useTradeLog";
- import { useDiscipline } from "@/hooks/useDiscipline";
+ import { useTradePermission } from "@/hooks/useTradePermission";
  import { useToast } from "@/hooks/use-toast";
  import { cn } from "@/lib/utils";
  
@@ -25,7 +25,7 @@
    const { toast } = useToast();
    const { user, loading: authLoading } = useAuth();
    const { entries, loading: entriesLoading, addEntry, deleteEntry } = useTradeLog();
-   const discipline = useDiscipline();
+   const permission = useTradePermission();
    const navigate = useNavigate();
    const [submitting, setSubmitting] = useState(false);
    
@@ -38,10 +38,10 @@
    
    const handleSubmit = async () => {
      // Block if trading is not allowed
-     if (!discipline.canTrade) {
+     if (!permission.canTrade) {
        toast({
          title: "Trading blocked",
-         description: discipline.canTradeReason,
+         description: permission.reason,
          variant: "destructive",
        });
        return;
@@ -72,7 +72,7 @@
          emotionalState: 3,
        });
        // Refetch discipline metrics after logging trade
-       discipline.refetch();
+       permission.refetch();
      }
      setSubmitting(false);
    };
@@ -83,7 +83,7 @@
      day: "numeric",
    });
    
-   if (authLoading || discipline.loading) {
+   if (authLoading || permission.loading) {
      return (
        <AppLayout>
          <div className="flex items-center justify-center min-h-[60vh]">
@@ -98,8 +98,8 @@
      return null;
    }
    
-   const isNearTradeLimit = discipline.todayTradesUsed >= discipline.todayTradesAllowed - 1;
-   const isNearLossLimit = discipline.todayLossUsed >= discipline.todayLossAllowed * 0.7;
+   const isNearTradeLimit = permission.tradesRemaining <= 1 && permission.tradesRemaining > 0;
+   const isNearLossLimit = permission.dailyLossRemaining < permission.maxRiskPerTrade * 2;
    
    return (
      <AppLayout>
@@ -110,28 +110,28 @@
        
        <div className="px-4 md:px-6 space-y-6 pb-6">
          {/* Trading Status Warning */}
-         {!discipline.canTrade && (
+         {!permission.canTrade && (
            <Card className="p-4 border-status-inactive/50 bg-status-inactive/5">
              <div className="flex items-start gap-3">
                <Lock className="w-5 h-5 text-status-inactive flex-shrink-0 mt-0.5" />
                <div>
                  <p className="font-medium text-status-inactive">Trading Blocked</p>
-                 <p className="text-sm text-muted-foreground">{discipline.canTradeReason}</p>
+                 <p className="text-sm text-muted-foreground">{permission.reason}</p>
                </div>
              </div>
            </Card>
          )}
          
          {/* Limit Warnings */}
-         {discipline.canTrade && (isNearTradeLimit || isNearLossLimit) && (
+         {permission.canTrade && (isNearTradeLimit || isNearLossLimit) && (
            <Card className="p-4 border-status-warning/50 bg-status-warning/5">
              <div className="flex items-start gap-3">
                <AlertTriangle className="w-5 h-5 text-status-warning flex-shrink-0 mt-0.5" />
                <div>
                  <p className="font-medium text-status-warning">Approaching Limits</p>
                  <p className="text-sm text-muted-foreground">
-                   {isNearTradeLimit && `${discipline.todayTradesUsed}/${discipline.todayTradesAllowed} trades used. `}
-                   {isNearLossLimit && `${discipline.todayLossUsed.toFixed(1)}%/${discipline.todayLossAllowed}% risk used.`}
+                   {isNearTradeLimit && `${permission.tradesRemaining} trade${permission.tradesRemaining === 1 ? '' : 's'} remaining. `}
+                   {isNearLossLimit && `${permission.dailyLossRemaining.toFixed(1)}% daily loss remaining.`}
                  </p>
                </div>
              </div>
@@ -157,7 +157,7 @@
                  value={trade.riskUsed}
                  onChange={(e) => setTrade(prev => ({ ...prev, riskUsed: e.target.value }))}
                  className="mt-1.5 h-14 text-xl font-mono"
-                 disabled={!discipline.canTrade}
+                 disabled={!permission.canTrade}
                />
              </div>
              
@@ -176,7 +176,7 @@
                  value={trade.rr}
                  onChange={(e) => setTrade(prev => ({ ...prev, rr: e.target.value }))}
                  className="mt-1.5 h-14 text-xl font-mono"
-                 disabled={!discipline.canTrade}
+                 disabled={!permission.canTrade}
                />
              </div>
              
@@ -189,7 +189,7 @@
                  <button
                    type="button"
                    onClick={() => setTrade(prev => ({ ...prev, followedRules: true }))}
-                   disabled={!discipline.canTrade}
+                   disabled={!permission.canTrade}
                    className={cn(
                      "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all disabled:opacity-50",
                      trade.followedRules === true 
@@ -203,7 +203,7 @@
                  <button
                    type="button"
                    onClick={() => setTrade(prev => ({ ...prev, followedRules: false }))}
-                   disabled={!discipline.canTrade}
+                   disabled={!permission.canTrade}
                    className={cn(
                      "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all disabled:opacity-50",
                      trade.followedRules === false 
@@ -228,7 +228,7 @@
                      key={level.value}
                      type="button"
                      onClick={() => setTrade(prev => ({ ...prev, emotionalState: level.value }))}
-                     disabled={!discipline.canTrade}
+                     disabled={!permission.canTrade}
                      className={cn(
                        "flex-1 aspect-square rounded-lg flex items-center justify-center text-lg font-semibold transition-all disabled:opacity-50",
                        trade.emotionalState === level.value 
@@ -252,17 +252,17 @@
            size="lg" 
            className="w-full h-14 text-base font-medium gap-2"
            onClick={handleSubmit}
-           disabled={submitting || !discipline.canTrade}
-           variant={discipline.canTrade ? "default" : "secondary"}
+           disabled={submitting || !permission.canTrade}
+           variant={permission.canTrade ? "default" : "secondary"}
          >
            {submitting ? (
              <Loader2 className="w-5 h-5 animate-spin" />
-           ) : !discipline.canTrade ? (
+           ) : !permission.canTrade ? (
              <Lock className="w-5 h-5" />
            ) : (
              <Plus className="w-5 h-5" />
            )}
-           {submitting ? "Logging..." : !discipline.canTrade ? "Trading Blocked" : "Log Trade"}
+           {submitting ? "Logging..." : !permission.canTrade ? "Trading Blocked" : "Log Trade"}
          </Button>
          
          {/* Recent Trades Placeholder */}
