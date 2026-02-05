@@ -95,10 +95,11 @@ export default function TraderCockpit() {
 
               {/* If blocked, show reason */}
               {!loading && blocked && (
-                <div className="mt-4 p-3 rounded-xl border border-rose-500/20 bg-rose-500/10">
-                  <p className="text-xs font-medium text-rose-400 uppercase tracking-wide mb-1">
-                    Blocked
+                <div className="mt-4 p-3 rounded-xl border border-white/10 bg-white/5">
+                  <p className="text-xs font-medium text-foreground uppercase tracking-wide mb-1">
+                    Trading Locked
                   </p>
+                  <p className="text-xs text-muted-foreground mb-2">Vault is protecting discipline.</p>
                   <p className="text-sm text-muted-foreground">
                     {data?.block_reason ?? "Not allowed right now."}
                   </p>
