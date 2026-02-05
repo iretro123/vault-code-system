@@ -9,6 +9,21 @@ import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle
  import { Card } from "@/components/ui/card";
  import { cn } from "@/lib/utils";
  
+// Animated number component for smooth transitions
+function AnimatedValue({ 
+  value, 
+  className 
+}: { 
+  value: number | string; 
+  className?: string;
+}) {
+  return (
+    <span className={cn("transition-all duration-500 ease-out", className)}>
+      {value}
+    </span>
+  );
+}
+
 // Extracted component for the central score display
 function DisciplineScoreDisplay({ score, status }: { score: number; status: "active" | "locked" }) {
   const getScoreColor = () => {
@@ -24,19 +39,32 @@ function DisciplineScoreDisplay({ score, status }: { score: number; status: "act
   };
 
   return (
-    <Card className="p-6 text-center border-2 border-primary/20 bg-gradient-to-b from-primary/5 to-transparent">
+    <Card className="p-6 text-center border-2 border-primary/20 bg-gradient-to-b from-primary/5 to-transparent relative overflow-hidden">
+      {/* Live indicator */}
+      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-active opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-status-active"></span>
+        </span>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Live</span>
+      </div>
+      
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-2">
         Discipline Score
       </p>
       <div className="relative inline-flex items-center justify-center mb-4">
-        <span className={cn("text-7xl font-bold font-mono tracking-tight", getScoreColor())}>
-          {score}
-        </span>
+        <AnimatedValue 
+          value={score} 
+          className={cn("text-7xl font-bold font-mono tracking-tight", getScoreColor())} 
+        />
         <span className="text-2xl text-muted-foreground font-light ml-1 self-end mb-3">/100</span>
       </div>
-      <div className="h-3 bg-muted rounded-full overflow-hidden mb-3">
+      <div className="h-3 bg-muted rounded-full overflow-hidden mb-3 relative">
         <div
-          className={cn("h-full rounded-full transition-all duration-700 ease-out", getProgressColor())}
+          className={cn(
+            "h-full rounded-full transition-all duration-700 ease-out",
+            getProgressColor()
+          )}
           style={{ width: `${score}%` }}
         />
       </div>
@@ -51,7 +79,7 @@ function DisciplineScoreDisplay({ score, status }: { score: number; status: "act
 function CanTradeIndicator({ canTrade, reason }: { canTrade: boolean; reason: string }) {
   return (
     <Card className={cn(
-      "p-5 border-2 transition-colors",
+      "p-5 border-2 transition-all duration-500",
       canTrade 
         ? "border-status-active/30 bg-status-active/5" 
         : "border-status-inactive/30 bg-status-inactive/5"
@@ -70,15 +98,16 @@ function CanTradeIndicator({ canTrade, reason }: { canTrade: boolean; reason: st
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Can I Trade?
           </p>
-          <p className={cn(
-            "text-3xl font-bold",
-            canTrade ? "text-status-active" : "text-status-inactive"
-          )}>
-            {canTrade ? "YES" : "NO"}
-          </p>
+          <AnimatedValue 
+            value={canTrade ? "YES" : "NO"}
+            className={cn(
+              "text-3xl font-bold block",
+              canTrade ? "text-status-active" : "text-status-inactive"
+            )}
+          />
         </div>
       </div>
-      <p className="text-sm text-muted-foreground mt-3 pl-[68px]">{reason}</p>
+      <p className="text-sm text-muted-foreground mt-3 pl-[68px] transition-opacity duration-300">{reason}</p>
     </Card>
   );
 }
@@ -100,22 +129,23 @@ function LimitCard({
   exceeded: boolean;
 }) {
   return (
-    <Card className={cn("p-4", exceeded && "border-status-inactive/50")}>
+    <Card className={cn("p-4 transition-all duration-300", exceeded && "border-status-inactive/50")}>
       <div className="flex items-center gap-2 mb-2">
         <Icon className="w-4 h-4 text-muted-foreground" />
         <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
       </div>
       <div className="flex items-baseline gap-1">
-        <span className={cn(
-          "text-2xl font-bold font-mono",
-          exceeded ? "text-status-inactive" : "text-foreground"
-        )}>
-          {used}{unit}
-        </span>
+        <AnimatedValue 
+          value={`${used}${unit}`}
+          className={cn(
+            "text-2xl font-bold font-mono",
+            exceeded ? "text-status-inactive" : "text-foreground"
+          )}
+        />
         <span className="text-muted-foreground text-sm">/ {allowed}{unit}</span>
       </div>
       {exceeded && (
-        <p className="text-xs text-status-inactive mt-1">Limit reached</p>
+        <p className="text-xs text-status-inactive mt-1 animate-pulse">Limit reached</p>
       )}
     </Card>
   );
@@ -215,7 +245,7 @@ function LimitCard({
                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Streak</span>
                </div>
                <div className="flex items-baseline gap-1">
-                 <span className="text-2xl font-bold font-mono">{discipline.disciplineStreak}</span>
+                  <AnimatedValue value={discipline.disciplineStreak} className="text-2xl font-bold font-mono" />
                  <span className="text-muted-foreground text-sm">days</span>
                </div>
              </Card>
@@ -228,12 +258,13 @@ function LimitCard({
                  <span className="text-xs text-muted-foreground uppercase tracking-wide">Violations</span>
                </div>
                <div className="flex items-baseline gap-1">
-                 <span className={cn(
-                   "text-2xl font-bold font-mono",
-                   discipline.todayViolations > 0 ? "text-status-inactive" : "text-foreground"
-                 )}>
-                   {discipline.todayViolations}
-                 </span>
+                  <AnimatedValue 
+                    value={discipline.todayViolations}
+                    className={cn(
+                      "text-2xl font-bold font-mono",
+                      discipline.todayViolations > 0 ? "text-status-inactive" : "text-foreground"
+                    )}
+                  />
                  <span className="text-muted-foreground text-sm">today</span>
                </div>
              </Card>
