@@ -71,7 +71,7 @@ interface DbMetrics {
  
    const refetch = () => setRefreshKey(k => k + 1);
  
-  // Fetch data from database
+  // Fetch data from database with error handling
    useEffect(() => {
      if (!user) {
        setLoading(false);
@@ -79,6 +79,7 @@ interface DbMetrics {
      }
  
      async function fetchData() {
+      setLoading(true);
        try {
         const [rulesResult, metricsResult, statsResult] = await Promise.all([
           // Fetch trading rules
@@ -106,6 +107,7 @@ interface DbMetrics {
         }
        } catch (error) {
          console.error("Error fetching discipline data:", error);
+        // Still set loading to false on error to prevent infinite loading
        } finally {
          setLoading(false);
        }
@@ -138,7 +140,7 @@ interface DbMetrics {
      fetchData();
    }, [user, refreshKey]);
  
-  // Real-time subscription for trade entries
+  // Real-time subscription for trade entries with proper error handling
   useEffect(() => {
     if (!user) return;
 
@@ -157,7 +159,15 @@ interface DbMetrics {
           refetch();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          console.log("Realtime: Subscribed to trade_entries");
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("Realtime channel error:", err);
+        } else if (status === "TIMED_OUT") {
+          console.warn("Realtime subscription timed out");
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
