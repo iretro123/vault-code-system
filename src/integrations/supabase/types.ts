@@ -308,6 +308,16 @@ export type Database = {
           recommended_action: string
         }[]
       }
+      get_vault_mistake_analysis: {
+        Args: { _user_id: string }
+        Returns: {
+          description: string
+          impact_score: number
+          mistake_type: string
+          recommended_fix: string
+          severity: string
+        }[]
+      }
       get_vault_recovery_plan: {
         Args: { _user_id: string }
         Returns: {
