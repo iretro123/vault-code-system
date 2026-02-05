@@ -226,6 +226,24 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_vault_status: {
+        Args: { _user_id: string }
+        Returns: {
+          can_trade: boolean
+          daily_loss_remaining: number
+          daily_loss_used: number
+          discipline_rank: string
+          discipline_score: number
+          discipline_status: string
+          max_daily_loss: number
+          max_risk_per_trade: number
+          max_trades_per_day: number
+          reason: string
+          streak_days: number
+          trades_remaining: number
+          trades_today: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
