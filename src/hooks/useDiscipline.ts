@@ -46,6 +46,9 @@
    
    // Loading
    loading: boolean;
+   
+   // Refetch function
+   refetch: () => void;
  }
  
  const DEFAULT_METRICS: DisciplineMetrics = {
@@ -65,6 +68,7 @@
    hasRuleViolation: false,
    todayViolations: 0,
    loading: true,
+   refetch: () => {},
  };
  
  export function useDiscipline(): DisciplineMetrics {
@@ -72,6 +76,9 @@
    const [rules, setRules] = useState<TradingRules | null>(null);
    const [entries, setEntries] = useState<TradeEntry[]>([]);
    const [loading, setLoading] = useState(true);
+   const [refreshKey, setRefreshKey] = useState(0);
+ 
+   const refetch = () => setRefreshKey(k => k + 1);
  
    useEffect(() => {
      if (!user) {
@@ -109,11 +116,11 @@
      }
  
      fetchData();
-   }, [user]);
+   }, [user, refreshKey]);
  
    const metrics = useMemo((): DisciplineMetrics => {
      if (loading || !user) {
-       return DEFAULT_METRICS;
+       return { ...DEFAULT_METRICS, refetch };
      }
  
      if (!rules) {
@@ -121,6 +128,7 @@
          ...DEFAULT_METRICS,
          loading: false,
          canTradeReason: "Set your trading rules first",
+         refetch,
        };
      }
  
@@ -232,8 +240,9 @@
        hasRuleViolation,
        todayViolations,
        loading: false,
+       refetch,
      };
-   }, [user, rules, entries, loading]);
+   }, [user, rules, entries, loading, refetch]);
  
    return metrics;
  }
