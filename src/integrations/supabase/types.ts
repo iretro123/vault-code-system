@@ -210,6 +210,22 @@ export type Database = {
           violations_today: number
         }[]
       }
+      calculate_position_size: {
+        Args: {
+          _account_size: number
+          _risk_percent: number
+          _stop_loss_percent: number
+          _user_id: string
+        }
+        Returns: {
+          allowed: boolean
+          max_loss_amount: number
+          max_risk_allowed: number
+          position_size: number
+          reason: string
+          risk_percent: number
+        }[]
+      }
       check_trade_permission: {
         Args: { _user_id: string }
         Returns: {

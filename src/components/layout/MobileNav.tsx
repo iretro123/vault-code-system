@@ -1,12 +1,12 @@
  import { NavLink, useLocation } from "react-router-dom";
- import { LayoutDashboard, Shield, BookOpen, GraduationCap, Zap } from "lucide-react";
+ import { LayoutDashboard, Shield, BookOpen, Calculator, Zap } from "lucide-react";
  import { cn } from "@/lib/utils";
  
  const navItems = [
    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
    { icon: Shield, label: "Rules", path: "/rules" },
    { icon: BookOpen, label: "Log", path: "/log" },
-   { icon: GraduationCap, label: "Academy", path: "/academy" },
+   { icon: Calculator, label: "Risk", path: "/risk" },
    { icon: Zap, label: "Upgrade", path: "/upgrade" },
  ];
  
