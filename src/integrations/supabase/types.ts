@@ -194,6 +194,45 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_daily_checklist: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          emotional_control: number
+          id: string
+          mental_state: number
+          plan_reviewed: boolean
+          risk_confirmed: boolean
+          sleep_quality: number
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          emotional_control: number
+          id?: string
+          mental_state: number
+          plan_reviewed?: boolean
+          risk_confirmed?: boolean
+          sleep_quality: number
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          emotional_control?: number
+          id?: string
+          mental_state?: number
+          plan_reviewed?: boolean
+          risk_confirmed?: boolean
+          sleep_quality?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       vault_events: {
         Row: {
           created_at: string
@@ -287,12 +326,41 @@ export type Database = {
           trades_remaining: number
         }[]
       }
+      complete_daily_checklist: {
+        Args: {
+          _emotional_control: number
+          _mental_state: number
+          _plan_reviewed: boolean
+          _risk_confirmed: boolean
+          _sleep_quality: number
+          _user_id: string
+        }
+        Returns: {
+          checklist_id: string
+          message: string
+          success: boolean
+        }[]
+      }
       get_adaptive_risk_limit: {
         Args: { _user_id: string }
         Returns: {
           adaptive_risk_limit: number
           adjustment_factor: number
           risk_level: string
+        }[]
+      }
+      get_daily_vault_status: {
+        Args: { _user_id: string }
+        Returns: {
+          checklist_id: string
+          daily_checklist_completed: boolean
+          discipline_score: number
+          max_trades_allowed: number
+          required_actions_remaining: number
+          trades_taken_today: number
+          vault_level: number
+          vault_open: boolean
+          vault_score: number
         }[]
       }
       get_user_role: {
