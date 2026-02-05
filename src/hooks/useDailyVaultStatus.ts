@@ -16,18 +16,18 @@
    refetch: () => void;
  }
  
- const DEFAULT_STATUS: Omit<DailyVaultStatus, "refetch"> = {
-   vaultOpen: false,
-   checklistCompleted: false,
-   tradesToday: 0,
-   maxTrades: 3,
-   disciplineScore: 0,
-   vaultScore: 0,
-   vaultLevel: 1,
-   actionsRemaining: 5,
-   checklistId: null,
-   loading: true,
- };
+const DEFAULT_STATUS: Omit<DailyVaultStatus, "refetch"> = {
+  vaultOpen: false,
+  checklistCompleted: false,
+  tradesToday: 0,
+  maxTrades: 3,
+  disciplineScore: 0,
+  vaultScore: 0,
+  vaultLevel: 1,
+  actionsRemaining: 5,
+  checklistId: null,
+  loading: false,
+};
  
  export function useDailyVaultStatus(): DailyVaultStatus {
    const { user } = useAuth();
@@ -37,13 +37,15 @@
    const refetch = useCallback(() => setRefreshKey((k) => k + 1), []);
  
    useEffect(() => {
-     if (!user) {
-       setStatus({ ...DEFAULT_STATUS, loading: false });
-       return;
-     }
- 
-     async function fetchDailyStatus() {
-       setStatus((prev) => ({ ...prev, loading: true }));
+    if (!user) {
+      setStatus(DEFAULT_STATUS);
+      return;
+    }
+
+    // Set loading true only when we have a user
+    setStatus((prev) => ({ ...prev, loading: true }));
+
+    async function fetchDailyStatus() {
  
        try {
          const { data, error } = await supabase.rpc("get_daily_vault_status", {

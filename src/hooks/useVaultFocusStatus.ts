@@ -21,10 +21,19 @@ export function useVaultFocusStatus() {
   const userId = user?.id;
 
   const [data, setData] = useState<FocusStatus>({ active: false });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const inFlight = useRef(false);
+
+  // Return early when not authenticated
+  useEffect(() => {
+    if (!userId) {
+      setData({ active: false });
+      setLoading(false);
+      setError(null);
+    }
+  }, [userId]);
 
   const fetchStatus = useCallback(async () => {
     if (!userId || inFlight.current) return;
@@ -48,6 +57,7 @@ export function useVaultFocusStatus() {
 
   useEffect(() => {
     if (!userId) return;
+    setLoading(true);
     fetchStatus();
 
     const ch = supabase
