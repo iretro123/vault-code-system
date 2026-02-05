@@ -4,15 +4,16 @@
  import { Input } from "@/components/ui/input";
  import { Card } from "@/components/ui/card";
  import { cn } from "@/lib/utils";
- import { 
-   Shield, 
-   CheckCircle2, 
-   XCircle, 
-   AlertTriangle, 
-   TrendingUp, 
-   Target,
-   Loader2
- } from "lucide-react";
+import { 
+  Shield, 
+  CheckCircle2, 
+  XCircle, 
+  AlertTriangle, 
+  TrendingUp, 
+  Target,
+  Loader2,
+  Lock
+} from "lucide-react";
  import { useTradePermission } from "@/hooks/useTradePermission";
  import { usePreTradeCheck } from "@/hooks/usePreTradeCheck";
  
@@ -21,37 +22,45 @@
    onOpenChange: (open: boolean) => void;
  }
  
- // Status indicator component
- function StatusIndicator({ 
-   label, 
-   value, 
-   status 
- }: { 
-   label: string; 
-   value: string | number; 
-   status: "ok" | "warning" | "error";
- }) {
-   const statusColors = {
-     ok: "text-status-active border-status-active/30 bg-status-active/5",
-     warning: "text-status-warning border-status-warning/30 bg-status-warning/5",
-     error: "text-status-inactive border-status-inactive/30 bg-status-inactive/5",
-   };
-   
-   const StatusIcon = status === "ok" ? CheckCircle2 : status === "warning" ? AlertTriangle : XCircle;
- 
-   return (
-     <div className={cn(
-       "flex items-center justify-between p-3 rounded-lg border transition-all",
-       statusColors[status]
-     )}>
-       <span className="text-sm text-muted-foreground">{label}</span>
-       <div className="flex items-center gap-2">
-         <span className="font-mono font-semibold">{value}</span>
-         <StatusIcon className="w-4 h-4" />
-       </div>
-     </div>
-   );
- }
+// Status indicator component
+function StatusIndicator({ 
+  label, 
+  value, 
+  status,
+  subtitle
+}: { 
+  label: string; 
+  value: string | number; 
+  status: "ok" | "warning" | "error" | "neutral";
+  subtitle?: string;
+}) {
+  const statusColors = {
+    ok: "text-status-active border-status-active/30 bg-status-active/5",
+    warning: "text-status-warning border-status-warning/30 bg-status-warning/5",
+    error: "text-status-inactive border-status-inactive/30 bg-status-inactive/5",
+    neutral: "text-muted-foreground border-white/10 bg-white/5",
+  };
+  
+  const StatusIcon = status === "ok" ? CheckCircle2 : status === "warning" ? AlertTriangle : status === "neutral" ? Lock : XCircle;
+
+  return (
+    <div className={cn(
+      "flex flex-col p-3 rounded-lg border transition-all",
+      statusColors[status]
+    )}>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono font-semibold">{value}</span>
+          <StatusIcon className="w-4 h-4" />
+        </div>
+      </div>
+      {subtitle && (
+        <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+      )}
+    </div>
+  );
+}
  
  export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalProps) {
    const permission = useTradePermission();
@@ -134,11 +143,12 @@
                  value={permission.disciplineScore}
                  status={permission.disciplineScore >= 70 ? "ok" : permission.disciplineScore >= 40 ? "warning" : "error"}
                />
-               <StatusIndicator
-                 label="Trading Status"
-                 value={permission.canTrade ? "ACTIVE" : "LOCKED"}
-                 status={permission.canTrade ? "ok" : "error"}
-               />
+              <StatusIndicator
+                  label="Trading Status"
+                  value={permission.canTrade ? "ACTIVE" : "LOCKED"}
+                  status={permission.canTrade ? "ok" : "neutral"}
+                  subtitle={!permission.canTrade ? "Vault is protecting discipline." : undefined}
+                />
              </div>
            </div>
  

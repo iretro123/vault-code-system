@@ -183,21 +183,21 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
     );
   }
 
-  // Standard locked state from vault status
+  // Standard locked state from vault status — neutral, not error
   if (vaultState === "LOCKED") {
      return (
-       <Card className="p-6 border-destructive/30 bg-destructive/5">
+       <Card className="p-6 border-white/10 bg-white/5">
          <div className="text-center space-y-4">
-           <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
-             <Lock className="w-6 h-6 text-destructive" />
+           <div className="mx-auto w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+             <Lock className="w-6 h-6 text-muted-foreground" />
            </div>
            <div>
-             <h3 className="text-lg font-semibold text-destructive">Trading Locked</h3>
-             <p className="text-sm text-muted-foreground mt-1">{vaultStatus.reason}</p>
+             <h3 className="text-lg font-semibold text-foreground">Trading Locked</h3>
+             <p className="text-sm text-muted-foreground mt-1">Vault is protecting discipline.</p>
            </div>
            <div className="pt-2 space-y-2 text-sm text-muted-foreground">
+             <p>{vaultStatus.reason}</p>
              <p>Discipline Score: {vaultStatus.disciplineScore}</p>
-             <p>Status: {vaultStatus.disciplineStatus}</p>
            </div>
            <Button variant="outline" onClick={onCancel} className="mt-4">
              Go Back
