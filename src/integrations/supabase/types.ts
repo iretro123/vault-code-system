@@ -463,6 +463,14 @@ export type Database = {
           tasks: Json
         }[]
       }
+      get_vault_session_integrity: {
+        Args: { _user_id: string }
+        Returns: {
+          integrity_percent: number
+          trades_today: number
+          verified_trades_today: number
+        }[]
+      }
       get_vault_state: {
         Args: { _user_id: string }
         Returns: {
