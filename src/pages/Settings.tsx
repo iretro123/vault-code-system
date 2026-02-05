@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -122,6 +123,11 @@ export default function Settings() {
 
   return (
     <AppLayout>
+      <div className="px-4 md:px-6 pt-4">
+        <Link to="/cockpit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+          ← Back to Cockpit
+        </Link>
+      </div>
       <PageHeader title="Settings" subtitle="Manage your account" />
 
       <div className="px-4 md:px-6 space-y-4 pb-24">
