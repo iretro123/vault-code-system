@@ -456,6 +456,7 @@ export type Database = {
           recommended_action: string
         }[]
       }
+      get_vault_focus_status: { Args: { _user_id: string }; Returns: Json }
       get_vault_identity: {
         Args: { _user_id: string }
         Returns: {
