@@ -310,6 +310,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_vault_event: {
+        Args: { _event_context?: Json; _event_type: string; _user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
