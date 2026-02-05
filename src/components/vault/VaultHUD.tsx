@@ -1,7 +1,10 @@
 import React, { useMemo } from "react";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { Shield, AlertTriangle, Lock, Activity, Timer } from "lucide-react";
+import { Shield, AlertTriangle, Lock, Activity, Timer, LogIn } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 function remainingLabel(minutes: number | null | undefined) {
   if (minutes == null || minutes <= 0) return "None";
@@ -13,38 +16,102 @@ function remainingLabel(minutes: number | null | undefined) {
 }
 
 export function VaultHUD() {
+  const { user } = useAuth();
   const { data, loading, error, status } = useVaultExecutionPermission();
+  const navigate = useNavigate();
 
   const lightClass = useMemo(() => {
+    if (!user) return "bg-muted";
     if (status.light === "GREEN") return "bg-emerald-500";
     if (status.light === "YELLOW") return "bg-amber-500";
     if (status.light === "RED") return "bg-rose-500";
     return "bg-muted";
-  }, [status.light]);
+  }, [user, status.light]);
 
-  // When not authenticated, show neutral state (no error)
-  if (!data && !loading && !error) {
+  const scrollToRitual = () => {
+    const ritualCard = document.querySelector('[data-ritual-gate]');
+    if (ritualCard) {
+      ritualCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Flash effect
+      ritualCard.classList.add('ring-2', 'ring-primary');
+      setTimeout(() => ritualCard.classList.remove('ring-2', 'ring-primary'), 2000);
+    }
+  };
+
+  // Not authenticated — neutral prompt, not an error
+  if (!user) {
     return (
       <div className="vault-card p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-3 w-3 rounded-full bg-muted" />
-          <span className="font-semibold text-muted-foreground">Not signed in</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-3 w-3 rounded-full bg-muted" />
+            <span className="font-semibold text-muted-foreground">Sign in to start</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-primary hover:text-primary/80"
+            onClick={() => navigate("/auth")}
+          >
+            <LogIn className="h-4 w-4 mr-1" />
+            Sign In
+          </Button>
         </div>
       </div>
     );
   }
 
+  // True system error (network/RPC failure)
   if (error) {
     return (
       <div className="vault-card p-4 border-rose-500/30">
         <div className="flex items-center gap-2 text-rose-400">
           <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">Vault HUD error: {error}</span>
+          <span className="text-sm font-medium">Connection error: {error}</span>
         </div>
       </div>
     );
   }
 
+  // Vault closed — neutral guidance with action
+  if (!loading && data && !data.vault_open) {
+    return (
+      <div className="vault-card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-3 w-3 rounded-full bg-muted" />
+            <span className="font-semibold text-foreground">Vault Closed</span>
+          </div>
+          <span className="text-xs text-muted-foreground">Daily Ritual required</span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Complete your Daily Ritual to open the Vault and enable trading.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={scrollToRitual}
+        >
+          Go to Daily Ritual
+        </Button>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="vault-card p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
+          <span className="font-semibold text-muted-foreground">Checking Vault…</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Vault open — show full HUD
   return (
     <div className="vault-card p-4 space-y-4">
       {/* Header with status light */}
@@ -52,7 +119,7 @@ export function VaultHUD() {
         <div className="flex items-center gap-3">
           <div className={cn("h-3 w-3 rounded-full", lightClass, status.light === "GREEN" && "animate-pulse")} />
           <span className="font-semibold text-foreground">
-            {loading ? "Checking…" : status.label}
+            {status.label}
           </span>
         </div>
         <div className="text-sm text-muted-foreground">
@@ -67,12 +134,7 @@ export function VaultHUD() {
             <Shield className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Vault</span>
           </div>
-          <span className={cn(
-            "text-sm font-medium",
-            data?.vault_open ? "text-emerald-400" : "text-rose-400"
-          )}>
-            {data?.vault_open ? "OPEN" : "CLOSED"}
-          </span>
+          <span className="text-sm font-medium text-emerald-400">OPEN</span>
         </div>
 
         <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
@@ -122,14 +184,14 @@ export function VaultHUD() {
         </div>
       </div>
 
-      {/* Block reason */}
-      {!loading && data && !data.execution_allowed && (
-        <div className="p-3 rounded-xl border border-rose-500/20 bg-rose-500/10">
-          <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-rose-400" />
-            <span className="text-sm font-medium text-rose-400">Blocked</span>
+      {/* Block reason — shown as guidance, not error */}
+      {data && !data.execution_allowed && (
+        <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/10">
+          <div className="flex items-center gap-2 mb-1">
+            <Lock className="h-4 w-4 text-amber-400" />
+            <span className="text-sm font-medium text-amber-400">Action Required</span>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">{data.block_reason}</p>
+          <p className="text-sm text-muted-foreground">{data.block_reason}</p>
         </div>
       )}
     </div>
