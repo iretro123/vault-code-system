@@ -384,6 +384,21 @@ export type Database = {
           violation_trend: number
         }[]
       }
+      get_vault_execution_permission: {
+        Args: { _user_id: string }
+        Returns: {
+          block_reason: string
+          consistency_level: string
+          cooldown_active: boolean
+          cooldown_remaining_minutes: number
+          discipline_status: string
+          effective_risk_limit: number
+          execution_allowed: boolean
+          intervention_required: boolean
+          protection_level: string
+          vault_open: boolean
+        }[]
+      }
       get_vault_feedback: {
         Args: { _user_id: string }
         Returns: {
