@@ -250,6 +250,19 @@ export type Database = {
           requested_risk: number
         }[]
       }
+      calculate_vault_score: {
+        Args: { _user_id: string }
+        Returns: {
+          adherence_component: number
+          discipline_component: number
+          emotion_component: number
+          risk_component: number
+          score: number
+          tier: string
+          trend: string
+          violation_component: number
+        }[]
+      }
       check_trade_permission: {
         Args: { _user_id: string }
         Returns: {
