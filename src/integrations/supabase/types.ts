@@ -296,6 +296,19 @@ export type Database = {
           recommended_action: string
         }[]
       }
+      get_vault_recovery_plan: {
+        Args: { _user_id: string }
+        Returns: {
+          estimated_unlock_time: string
+          is_locked: boolean
+          lock_reason: string
+          next_required_action: string
+          recovery_progress_percent: number
+          recovery_tasks_completed: number
+          recovery_tasks_required: number
+          tasks: Json
+        }[]
+      }
       get_vault_state: {
         Args: { _user_id: string }
         Returns: {
