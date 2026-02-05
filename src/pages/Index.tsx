@@ -11,6 +11,34 @@ import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle
 import { useState } from "react";
 import { PreTradeCheckModal } from "@/components/PreTradeCheckModal";
  
+// Rank configuration
+const RANKS = [
+  { name: "Undisciplined", min: 0, max: 39, color: "text-status-inactive", bgColor: "bg-status-inactive" },
+  { name: "Developing", min: 40, max: 59, color: "text-status-warning", bgColor: "bg-status-warning" },
+  { name: "Consistent", min: 60, max: 79, color: "text-primary", bgColor: "bg-primary" },
+  { name: "Elite", min: 80, max: 100, color: "text-status-active", bgColor: "bg-status-active" },
+] as const;
+
+function getRank(score: number) {
+  return RANKS.find(r => score >= r.min && score <= r.max) || RANKS[0];
+}
+
+function getNextRank(score: number) {
+  const currentRankIndex = RANKS.findIndex(r => score >= r.min && score <= r.max);
+  if (currentRankIndex === RANKS.length - 1) return null; // Already Elite
+  return RANKS[currentRankIndex + 1];
+}
+
+function getProgressToNextRank(score: number) {
+  const currentRank = getRank(score);
+  const nextRank = getNextRank(score);
+  if (!nextRank) return 100; // Elite - full progress
+  
+  const rangeSize = currentRank.max - currentRank.min + 1;
+  const positionInRange = score - currentRank.min;
+  return Math.round((positionInRange / rangeSize) * 100);
+}
+
 // Animated number component for smooth transitions
 function AnimatedValue({ 
   value, 
@@ -28,20 +56,17 @@ function AnimatedValue({
 
 // Extracted component for the central score display
 function DisciplineScoreDisplay({ score, status }: { score: number; status: "active" | "locked" }) {
-  const getScoreColor = () => {
-    if (score >= 70) return "text-status-active";
-    if (score >= 40) return "text-status-warning";
-    return "text-status-inactive";
-  };
+  const rank = getRank(score);
+  const nextRank = getNextRank(score);
+  const progressToNext = getProgressToNextRank(score);
+  const pointsToNext = nextRank ? nextRank.min - score : 0;
 
-  const getProgressColor = () => {
-    if (score >= 70) return "bg-status-active";
-    if (score >= 40) return "bg-status-warning";
-    return "bg-status-inactive";
+  const getScoreColor = () => {
+    return rank.color;
   };
 
   return (
-    <Card className="p-6 text-center border-2 border-primary/20 bg-gradient-to-b from-primary/5 to-transparent relative overflow-hidden">
+    <Card className="p-6 text-center border-2 border-primary/20 bg-gradient-to-b from-primary/5 to-transparent relative overflow-hidden group">
       {/* Live indicator */}
       <div className="absolute top-3 right-3 flex items-center gap-1.5">
         <span className="relative flex h-2 w-2">
@@ -51,9 +76,18 @@ function DisciplineScoreDisplay({ score, status }: { score: number; status: "act
         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Live</span>
       </div>
       
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-2">
-        Discipline Score
-      </p>
+      {/* Rank Badge - Primary Identity */}
+      <div className="mb-4">
+        <span className={cn(
+          "inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-widest transition-all",
+          rank.bgColor + "/20",
+          rank.color
+        )}>
+          {rank.name}
+        </span>
+      </div>
+
+      {/* Score Display */}
       <div className="relative inline-flex items-center justify-center mb-4">
         <AnimatedValue 
           value={score} 
@@ -61,18 +95,51 @@ function DisciplineScoreDisplay({ score, status }: { score: number; status: "act
         />
         <span className="text-2xl text-muted-foreground font-light ml-1 self-end mb-3">/100</span>
       </div>
-      <div className="h-3 bg-muted rounded-full overflow-hidden mb-3 relative">
+
+      {/* Overall Progress Bar */}
+      <div className="h-2 bg-muted rounded-full overflow-hidden mb-4 relative">
         <div
-          className={cn(
-            "h-full rounded-full transition-all duration-700 ease-out",
-            getProgressColor()
-          )}
+          className={cn("h-full rounded-full transition-all duration-700 ease-out", rank.bgColor)}
           style={{ width: `${score}%` }}
         />
       </div>
-      <StatusBadge status={status === "active" ? "active" : "inactive"} className="text-sm">
-        {status.toUpperCase()}
-      </StatusBadge>
+
+      {/* Rank Progress Section */}
+      <div className="border-t border-border/50 pt-4 mt-2">
+        {nextRank ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className={cn("font-medium uppercase tracking-wide", rank.color)}>
+                {rank.name}
+              </span>
+              <span className="text-muted-foreground">
+                {pointsToNext} pts to {nextRank.name}
+              </span>
+              <span className={cn("font-medium uppercase tracking-wide", nextRank.color)}>
+                {nextRank.name}
+              </span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden relative">
+              <div
+                className={cn("h-full rounded-full transition-all duration-500", rank.bgColor)}
+                style={{ width: `${progressToNext}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-status-active" />
+            <span className="text-sm font-medium text-status-active">Maximum rank achieved</span>
+          </div>
+        )}
+      </div>
+
+      {/* Status Badge */}
+      <div className="mt-4">
+        <StatusBadge status={status === "active" ? "active" : "inactive"} className="text-xs">
+          TRADING {status.toUpperCase()}
+        </StatusBadge>
+      </div>
     </Card>
   );
 }
