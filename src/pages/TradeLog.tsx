@@ -1,4 +1,4 @@
- import { useState } from "react";
+ import { useState, useCallback } from "react";
  import { useNavigate } from "react-router-dom";
  import { AppLayout } from "@/components/layout/AppLayout";
  import { PageHeader } from "@/components/layout/PageHeader";
@@ -6,47 +6,38 @@
  import { Input } from "@/components/ui/input";
  import { Label } from "@/components/ui/label";
  import { Card } from "@/components/ui/card";
- import { Plus, CheckCircle, XCircle, Loader2, Trash2, AlertTriangle, Lock } from "lucide-react";
+ import { Plus, CheckCircle, XCircle, Loader2, Trash2, AlertTriangle, Lock, Shield } from "lucide-react";
  import { useAuth } from "@/hooks/useAuth";
  import { useTradeLog } from "@/hooks/useTradeLog";
- import { useTradePermission } from "@/hooks/useTradePermission";
+ import { useVaultStatus } from "@/hooks/useVaultStatus";
+ import { PreTradeExecutionGate } from "@/components/PreTradeExecutionGate";
+ import {
+   Dialog,
+   DialogContent,
+ } from "@/components/ui/dialog";
  import { useToast } from "@/hooks/use-toast";
  import { cn } from "@/lib/utils";
  
- const emotionLevels = [
-   { value: 1, label: "1", color: "bg-status-inactive" },
-   { value: 2, label: "2", color: "bg-status-warning" },
-   { value: 3, label: "3", color: "bg-muted-foreground" },
-   { value: 4, label: "4", color: "bg-primary/70" },
-   { value: 5, label: "5", color: "bg-status-active" },
- ];
  
  const TradeLog = () => {
    const { toast } = useToast();
    const { user, loading: authLoading } = useAuth();
    const { entries, loading: entriesLoading, addEntry, deleteEntry } = useTradeLog();
-   const permission = useTradePermission();
+   const vaultStatus = useVaultStatus();
    const navigate = useNavigate();
+   
    const [submitting, setSubmitting] = useState(false);
+   const [showGate, setShowGate] = useState(false);
    
    const [trade, setTrade] = useState({
      riskUsed: "",
      rr: "",
      followedRules: null as boolean | null,
-     emotionalState: 3,
    });
    
-   const handleSubmit = async () => {
-     // Block if trading is not allowed
-     if (!permission.canTrade) {
-       toast({
-         title: "Trading blocked",
-         description: permission.reason,
-         variant: "destructive",
-       });
-       return;
-     }
-     
+   // Step 1: Validate form and open the execution gate
+   const handleInitiateSubmit = () => {
+     // Basic form validation
      if (!trade.riskUsed || !trade.rr || trade.followedRules === null) {
        toast({
          title: "Missing fields",
@@ -56,26 +47,48 @@
        return;
      }
      
+     // Open the PreTradeExecutionGate
+     setShowGate(true);
+   };
+ 
+   // Step 2: Execute trade after gate clearance
+   const handleGateCleared = useCallback(async (emotionalState: number) => {
+     setShowGate(false);
      setSubmitting(true);
+     
      const { error } = await addEntry({
        risk_used: parseFloat(trade.riskUsed),
        risk_reward: parseFloat(trade.rr),
-       followed_rules: trade.followedRules,
-       emotional_state: trade.emotionalState,
+       followed_rules: trade.followedRules!,
+       emotional_state: emotionalState,
      });
      
      if (!error) {
+       toast({
+         title: "Trade logged",
+         description: "Your trade has been recorded successfully.",
+       });
        setTrade({
          riskUsed: "",
          rr: "",
          followedRules: null,
-         emotionalState: 3,
        });
-       // Refetch discipline metrics after logging trade
-       permission.refetch();
+       // Vault status refreshes automatically via realtime subscription
+     } else {
+       toast({
+         title: "Trade blocked",
+         description: error.message || "Failed to log trade",
+         variant: "destructive",
+       });
      }
+     
      setSubmitting(false);
-   };
+   }, [addEntry, trade, toast]);
+ 
+   // Step 3: Handle gate cancellation
+   const handleGateCancelled = useCallback(() => {
+     setShowGate(false);
+   }, []);
    
    const today = new Date().toLocaleDateString("en-US", {
      weekday: "long",
@@ -83,7 +96,7 @@
      day: "numeric",
    });
    
-   if (authLoading || permission.loading) {
+   if (authLoading || vaultStatus.loading) {
      return (
        <AppLayout>
          <div className="flex items-center justify-center min-h-[60vh]">
@@ -98,8 +111,9 @@
      return null;
    }
    
-   const isNearTradeLimit = permission.tradesRemaining <= 1 && permission.tradesRemaining > 0;
-   const isNearLossLimit = permission.dailyLossRemaining < permission.maxRiskPerTrade * 2;
+   const isNearTradeLimit = vaultStatus.tradesRemaining <= 1 && vaultStatus.tradesRemaining > 0;
+   const isNearLossLimit = vaultStatus.dailyLossRemaining < vaultStatus.maxRiskPerTrade * 2;
+   const plannedRisk = parseFloat(trade.riskUsed) || 0;
    
    return (
      <AppLayout>
@@ -109,29 +123,40 @@
        />
        
        <div className="px-4 md:px-6 space-y-6 pb-6">
+         {/* Pre-Trade Execution Gate Modal */}
+         <Dialog open={showGate} onOpenChange={setShowGate}>
+           <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none">
+             <PreTradeExecutionGate
+               plannedRisk={plannedRisk}
+               onCleared={handleGateCleared}
+               onCancel={handleGateCancelled}
+             />
+           </DialogContent>
+         </Dialog>
+ 
          {/* Trading Status Warning */}
-         {!permission.canTrade && (
+         {!vaultStatus.canTrade && (
            <Card className="p-4 border-status-inactive/50 bg-status-inactive/5">
              <div className="flex items-start gap-3">
                <Lock className="w-5 h-5 text-status-inactive flex-shrink-0 mt-0.5" />
                <div>
-                 <p className="font-medium text-status-inactive">Trading Blocked</p>
-                 <p className="text-sm text-muted-foreground">{permission.reason}</p>
+               <p className="font-medium text-status-inactive">Trading Blocked</p>
+                 <p className="text-sm text-muted-foreground">{vaultStatus.reason}</p>
                </div>
              </div>
            </Card>
          )}
          
          {/* Limit Warnings */}
-         {permission.canTrade && (isNearTradeLimit || isNearLossLimit) && (
+         {vaultStatus.canTrade && (isNearTradeLimit || isNearLossLimit) && (
            <Card className="p-4 border-status-warning/50 bg-status-warning/5">
              <div className="flex items-start gap-3">
                <AlertTriangle className="w-5 h-5 text-status-warning flex-shrink-0 mt-0.5" />
                <div>
                  <p className="font-medium text-status-warning">Approaching Limits</p>
                  <p className="text-sm text-muted-foreground">
-                   {isNearTradeLimit && `${permission.tradesRemaining} trade${permission.tradesRemaining === 1 ? '' : 's'} remaining. `}
-                   {isNearLossLimit && `${permission.dailyLossRemaining.toFixed(1)}% daily loss remaining.`}
+                   {isNearTradeLimit && `${vaultStatus.tradesRemaining} trade${vaultStatus.tradesRemaining === 1 ? '' : 's'} remaining. `}
+                   {isNearLossLimit && `${vaultStatus.dailyLossRemaining.toFixed(1)}% daily loss remaining.`}
                  </p>
                </div>
              </div>
@@ -157,7 +182,7 @@
                  value={trade.riskUsed}
                  onChange={(e) => setTrade(prev => ({ ...prev, riskUsed: e.target.value }))}
                  className="mt-1.5 h-14 text-xl font-mono"
-                 disabled={!permission.canTrade}
+                 disabled={!vaultStatus.canTrade}
                />
              </div>
              
@@ -176,7 +201,7 @@
                  value={trade.rr}
                  onChange={(e) => setTrade(prev => ({ ...prev, rr: e.target.value }))}
                  className="mt-1.5 h-14 text-xl font-mono"
-                 disabled={!permission.canTrade}
+                 disabled={!vaultStatus.canTrade}
                />
              </div>
              
@@ -186,10 +211,10 @@
                  Followed Rules?
                </Label>
                <div className="grid grid-cols-2 gap-3">
-                 <button
-                   type="button"
-                   onClick={() => setTrade(prev => ({ ...prev, followedRules: true }))}
-                   disabled={!permission.canTrade}
+                   <button
+                     type="button"
+                     onClick={() => setTrade(prev => ({ ...prev, followedRules: true }))}
+                     disabled={!vaultStatus.canTrade}
                    className={cn(
                      "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all disabled:opacity-50",
                      trade.followedRules === true 
@@ -200,10 +225,10 @@
                    <CheckCircle className="w-5 h-5" />
                    <span className="font-medium">Yes</span>
                  </button>
-                 <button
-                   type="button"
-                   onClick={() => setTrade(prev => ({ ...prev, followedRules: false }))}
-                   disabled={!permission.canTrade}
+                   <button
+                     type="button"
+                     onClick={() => setTrade(prev => ({ ...prev, followedRules: false }))}
+                     disabled={!vaultStatus.canTrade}
                    className={cn(
                      "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all disabled:opacity-50",
                      trade.followedRules === false 
@@ -217,32 +242,12 @@
                </div>
              </div>
              
-             {/* Emotional State */}
-             <div>
-               <Label className="text-sm text-muted-foreground mb-3 block">
-                 Emotional State (1-5)
-               </Label>
-               <div className="flex gap-2">
-                 {emotionLevels.map((level) => (
-                   <button
-                     key={level.value}
-                     type="button"
-                     onClick={() => setTrade(prev => ({ ...prev, emotionalState: level.value }))}
-                     disabled={!permission.canTrade}
-                     className={cn(
-                       "flex-1 aspect-square rounded-lg flex items-center justify-center text-lg font-semibold transition-all disabled:opacity-50",
-                       trade.emotionalState === level.value 
-                         ? `${level.color} text-background scale-105` 
-                         : "bg-muted text-muted-foreground hover:bg-muted/80"
-                     )}
-                   >
-                     {level.label}
-                   </button>
-                 ))}
+             {/* Emotional State - Now captured in the PreTradeExecutionGate */}
+             <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+               <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                 <Shield className="w-4 h-4" />
+                 <span>Emotional state will be confirmed in pre-trade gate</span>
                </div>
-               <p className="text-xs text-muted-foreground mt-2 text-center">
-                 1 = Distressed · 5 = Calm & Focused
-               </p>
              </div>
            </div>
          </Card>
@@ -251,18 +256,18 @@
          <Button 
            size="lg" 
            className="w-full h-14 text-base font-medium gap-2"
-           onClick={handleSubmit}
-           disabled={submitting || !permission.canTrade}
-           variant={permission.canTrade ? "default" : "secondary"}
+           onClick={handleInitiateSubmit}
+           disabled={submitting || !vaultStatus.canTrade}
+           variant={vaultStatus.canTrade ? "default" : "secondary"}
          >
            {submitting ? (
              <Loader2 className="w-5 h-5 animate-spin" />
-           ) : !permission.canTrade ? (
+           ) : !vaultStatus.canTrade ? (
              <Lock className="w-5 h-5" />
            ) : (
-             <Plus className="w-5 h-5" />
+             <Shield className="w-5 h-5" />
            )}
-           {submitting ? "Logging..." : !permission.canTrade ? "Trading Blocked" : "Log Trade"}
+           {submitting ? "Logging..." : !vaultStatus.canTrade ? "Trading Blocked" : "Pre-Trade Check"}
          </Button>
          
          {/* Recent Trades Placeholder */}
