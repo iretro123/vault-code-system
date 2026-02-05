@@ -5,10 +5,10 @@
  export interface PositionResult {
    allowed: boolean;
    reason: string;
-   maxRiskAllowed: number;
-   riskPercent: number;
-   maxLossAmount: number;
+   adaptiveRiskLimit: number;
+   requestedRisk: number;
    positionSize: number;
+   maxLossAmount: number;
  }
  
  export interface PositionCalculatorState {
@@ -21,10 +21,10 @@
  const DEFAULT_RESULT: PositionResult = {
    allowed: false,
    reason: "",
-   maxRiskAllowed: 0,
-   riskPercent: 0,
-   maxLossAmount: 0,
+   adaptiveRiskLimit: 0,
+   requestedRisk: 0,
    positionSize: 0,
+   maxLossAmount: 0,
  };
  
  export function usePositionCalculator(): PositionCalculatorState {
@@ -63,10 +63,10 @@
            setResult({
              allowed: row.allowed,
              reason: row.reason,
-             maxRiskAllowed: Number(row.max_risk_allowed),
-             riskPercent: Number(row.risk_percent),
-             maxLossAmount: Number(row.max_loss_amount),
+             adaptiveRiskLimit: Number(row.adaptive_risk_limit),
+             requestedRisk: Number(row.requested_risk),
              positionSize: Number(row.position_size),
+             maxLossAmount: Number(row.max_loss_amount),
            });
          } else {
            setError("No calculation result returned");
