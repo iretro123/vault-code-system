@@ -1,6 +1,7 @@
  import { useState, useEffect } from "react";
  import { useVaultStatus } from "@/hooks/useVaultStatus";
 import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
+ import { useVaultConsistencyStatus } from "@/hooks/useVaultConsistencyStatus";
  import { Card } from "@/components/ui/card";
  import { Button } from "@/components/ui/button";
  import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +17,8 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
    Percent,
   Crosshair,
   Timer,
-  ShieldAlert
+   ShieldAlert,
+   Activity
  } from "lucide-react";
  import { cn } from "@/lib/utils";
  
@@ -41,6 +43,7 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
  }: PreTradeExecutionGateProps) {
    const vaultStatus = useVaultStatus();
   const protection = useVaultProtectionStatus();
+   const consistency = useVaultConsistencyStatus();
    const [emotionalState, setEmotionalState] = useState<number>(3);
    const [checklist, setChecklist] = useState<ChecklistItem[]>([
      {
@@ -66,18 +69,22 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
      },
    ]);
  
-  // Apply protection mode risk restriction
-  const effectiveMaxRisk = vaultStatus.maxRiskPerTrade * protection.riskRestrictionFactor;
+   // Apply both protection and consistency mode risk restrictions
+   const combinedModifier = protection.riskRestrictionFactor * consistency.recommendedRiskModifier;
+   const effectiveMaxRisk = vaultStatus.maxRiskPerTrade * combinedModifier;
   const riskWithinLimit = plannedRisk <= effectiveMaxRisk;
   const isLockdown = protection.protectionLevel === "LOCKDOWN";
   const hasCooldown = protection.tradeCooldownMinutes > 0;
+   const isInterventionRequired = consistency.interventionRequired;
   
   // Determine vault state
   const getVaultState = () => {
     if (!vaultStatus.canTrade) return "LOCKED";
     if (isLockdown) return "LOCKED";
+     if (isInterventionRequired) return "LOCKED";
     if (vaultStatus.dailyLossRemaining < 1 || vaultStatus.tradesRemaining <= 1) return "CAUTION";
     if (protection.protectionLevel === "RESTRICTED" || protection.protectionLevel === "CAUTION") return "CAUTION";
+     if (consistency.consistencyLevel === "UNSTABLE" || consistency.consistencyLevel === "CRITICAL") return "CAUTION";
     return "READY";
   };
   
@@ -86,7 +93,7 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
   // Check if all items are validated
   const allChecked = checklist.every((item) => item.checked);
   const emotionalStateValid = emotionalState >= 1 && emotionalState <= 5;
-  const canProceed = allChecked && emotionalStateValid && riskWithinLimit && vaultState !== "LOCKED" && !hasCooldown;
+   const canProceed = allChecked && emotionalStateValid && riskWithinLimit && vaultState !== "LOCKED" && !hasCooldown && !isInterventionRequired;
  
    const toggleChecklistItem = (id: string) => {
      setChecklist((prev) =>
@@ -103,12 +110,42 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
    };
  
    // Loading state
-  if (vaultStatus.loading || protection.loading) {
+   if (vaultStatus.loading || protection.loading || consistency.loading) {
      return (
        <Card className="p-6 border-border/50">
          <div className="flex items-center justify-center gap-3">
            <Shield className="w-5 h-5 animate-pulse text-muted-foreground" />
            <span className="text-muted-foreground">Checking vault status...</span>
+         </div>
+       </Card>
+     );
+   }
+ 
+   // Consistency intervention state - block completely
+   if (isInterventionRequired) {
+     return (
+       <Card className="p-6 border-destructive/30 bg-destructive/5">
+         <div className="text-center space-y-4">
+           <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+             <Activity className="w-6 h-6 text-destructive" />
+           </div>
+           <div>
+             <h3 className="text-lg font-semibold text-destructive">Consistency Intervention Required</h3>
+             <p className="text-sm text-muted-foreground mt-1">
+               Your consistency has deteriorated to critical levels ({consistency.consistencyScore}/100)
+             </p>
+           </div>
+           <div className="pt-2 space-y-2 text-sm text-muted-foreground">
+             <p>Trend: {consistency.trendDirection}</p>
+             <p>Discipline Velocity: {consistency.disciplineVelocity.toFixed(2)}/day</p>
+             <p>Emotional Stability: {consistency.emotionalStability.toFixed(0)}%</p>
+           </div>
+           <p className="text-xs text-muted-foreground">
+             Focus on rebuilding consistent habits before resuming trading.
+           </p>
+           <Button variant="outline" onClick={onCancel} className="mt-4">
+             Go Back
+           </Button>
          </div>
        </Card>
      );
@@ -223,6 +260,36 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
       </div>
     )}
 
+     {/* Consistency Warning */}
+     {consistency.recommendedRiskModifier < 1 && !consistency.interventionRequired && (
+       <div className={cn(
+         "mb-4 p-3 rounded-lg border",
+         consistency.consistencyLevel === "CRITICAL" || consistency.consistencyLevel === "UNSTABLE"
+           ? "border-orange-500/30 bg-orange-500/5" 
+           : "border-amber-500/30 bg-amber-500/5"
+       )}>
+         <div className="flex items-center gap-2">
+           <Activity className={cn(
+             "w-4 h-4",
+             consistency.consistencyLevel === "CRITICAL" || consistency.consistencyLevel === "UNSTABLE" 
+               ? "text-orange-500" 
+               : "text-amber-500"
+           )} />
+           <span className={cn(
+             "text-sm font-medium",
+             consistency.consistencyLevel === "CRITICAL" || consistency.consistencyLevel === "UNSTABLE" 
+               ? "text-orange-500" 
+               : "text-amber-500"
+           )}>
+             Consistency: {consistency.consistencyLevel} ({consistency.consistencyScore}/100)
+           </span>
+         </div>
+         <p className="text-xs text-muted-foreground mt-1">
+           Risk limited to {Math.round(consistency.recommendedRiskModifier * 100)}% due to consistency trend
+         </p>
+       </div>
+     )}
+ 
     {/* Cooldown Warning */}
     {hasCooldown && (
       <div className="mb-4 p-3 rounded-lg border border-destructive/30 bg-destructive/5">
@@ -249,7 +316,7 @@ import { useVaultProtectionStatus } from "@/hooks/useVaultProtectionStatus";
         <p className="text-xs text-muted-foreground">Effective Max Risk</p>
         <p className={cn(
           "text-lg font-semibold",
-          protection.riskRestrictionFactor < 1 && "text-amber-500"
+           combinedModifier < 1 && "text-amber-500"
         )}>
           {effectiveMaxRisk.toFixed(2)}%
         </p>

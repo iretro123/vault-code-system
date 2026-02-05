@@ -7,7 +7,7 @@
  import { Card } from "@/components/ui/card";
  import { usePositionCalculator } from "@/hooks/usePositionCalculator";
  import { useVaultStatus } from "@/hooks/useVaultStatus";
- import { Calculator, AlertTriangle, CheckCircle2, Shield } from "lucide-react";
+ import { Calculator, AlertTriangle, CheckCircle2, Shield, Activity, Gauge } from "lucide-react";
  import { cn } from "@/lib/utils";
  
  export default function RiskCalculator() {
@@ -15,7 +15,7 @@
    const [riskPercent, setRiskPercent] = useState<string>("1");
    const [stopLossPercent, setStopLossPercent] = useState<string>("2");
    
-   const { result, loading, error, calculate } = usePositionCalculator();
+   const { result, loading, error, calculate, protectionStatus, consistencyStatus } = usePositionCalculator();
    const vaultStatus = useVaultStatus();
  
    // Auto-calculate on input change with debounce
@@ -24,13 +24,13 @@
      const risk = parseFloat(riskPercent);
      const stopLoss = parseFloat(stopLossPercent);
      
-     if (account > 0 && risk > 0 && stopLoss > 0 && !vaultStatus.loading) {
+     if (account > 0 && risk > 0 && stopLoss > 0 && !vaultStatus.loading && !protectionStatus.loading && !consistencyStatus.loading) {
        const timer = setTimeout(() => {
          calculate(account, risk, stopLoss);
        }, 300);
        return () => clearTimeout(timer);
      }
-   }, [accountSize, riskPercent, stopLossPercent, calculate, vaultStatus.loading]);
+   }, [accountSize, riskPercent, stopLossPercent, calculate, vaultStatus.loading, protectionStatus.loading, consistencyStatus.loading]);
  
    const formatCurrency = (value: number) => {
      return new Intl.NumberFormat("en-US", {
@@ -40,6 +40,9 @@
      }).format(value);
    };
  
+   const combinedModifier = protectionStatus.riskRestrictionFactor * consistencyStatus.recommendedRiskModifier;
+   const effectiveMaxRisk = vaultStatus.maxRiskPerTrade * combinedModifier;
+ 
    return (
      <AppLayout>
        <div className="container max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6">
@@ -48,23 +51,44 @@
            subtitle="Calculate position size within Vault rules"
          />
  
-         {/* Vault Status Banner */}
-         <Card className="p-4 mb-6 border-border/50">
-           <div className="flex items-center justify-between">
-             <div className="flex items-center gap-3">
-               <Shield className="w-5 h-5 text-primary" />
-               <div>
-                 <p className="text-sm font-medium">Max Risk Per Trade</p>
-                 <p className="text-xs text-muted-foreground">
-                   Daily loss remaining: {vaultStatus.dailyLossRemaining.toFixed(1)}%
-                 </p>
-               </div>
+       {/* Vault Status Banner with Modifiers */}
+       <Card className="p-4 mb-6 border-border/50 space-y-3">
+         <div className="flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <Shield className="w-5 h-5 text-primary" />
+             <div>
+               <p className="text-sm font-medium">Effective Max Risk</p>
+               <p className="text-xs text-muted-foreground">
+                 Base: {vaultStatus.maxRiskPerTrade}% | Daily loss: {vaultStatus.dailyLossRemaining.toFixed(1)}%
+               </p>
              </div>
-             <span className="text-2xl font-semibold text-primary">
-               {vaultStatus.maxRiskPerTrade}%
-             </span>
            </div>
-         </Card>
+           <span className={cn(
+             "text-2xl font-semibold",
+             combinedModifier < 1 ? "text-amber-500" : "text-primary"
+           )}>
+             {effectiveMaxRisk.toFixed(2)}%
+           </span>
+             </div>
+ 
+         {/* Active Modifiers */}
+         {(protectionStatus.riskRestrictionFactor < 1 || consistencyStatus.recommendedRiskModifier < 1) && (
+           <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
+             {protectionStatus.riskRestrictionFactor < 1 && (
+               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 text-amber-500 text-xs">
+                 <Gauge className="w-3 h-3" />
+                 <span>Protection: {Math.round(protectionStatus.riskRestrictionFactor * 100)}%</span>
+               </div>
+             )}
+             {consistencyStatus.recommendedRiskModifier < 1 && (
+               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/10 text-orange-500 text-xs">
+                 <Activity className="w-3 h-3" />
+                 <span>Consistency: {Math.round(consistencyStatus.recommendedRiskModifier * 100)}%</span>
+               </div>
+             )}
+           </div>
+         )}
+       </Card>
  
          {/* Input Section */}
          <div className="space-y-4 mb-8">
@@ -199,6 +223,28 @@
                    {result.requestedRisk}%
                  </span>
                </div>
+             {result.effectiveRiskLimit !== result.adaptiveRiskLimit && (
+               <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50">
+                 <span className="text-sm text-muted-foreground">Effective Risk Limit</span>
+                 <span className="text-sm font-mono text-amber-500">
+                   {result.effectiveRiskLimit.toFixed(2)}%
+                 </span>
+               </div>
+             )}
+             {(result.protectionRestricted || result.consistencyRestricted) && (
+               <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
+                 {result.protectionRestricted && (
+                   <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-500">
+                     Protection Active
+                   </span>
+                 )}
+                 {result.consistencyRestricted && (
+                   <span className="text-xs px-2 py-0.5 rounded bg-orange-500/10 text-orange-500">
+                     Consistency Modifier: {Math.round(result.consistencyModifier * 100)}%
+                   </span>
+                 )}
+               </div>
+             )}
              </Card>
            </div>
          )}
