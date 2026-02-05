@@ -346,6 +346,9 @@ export type Database = {
         Returns: {
           adaptive_risk_limit: number
           adjustment_factor: number
+          consistency_modifier: number
+          final_risk_limit: number
+          protection_modifier: number
           risk_level: string
         }[]
       }
@@ -366,6 +369,20 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_vault_consistency_status: {
+        Args: { _user_id: string }
+        Returns: {
+          consistency_level: string
+          consistency_score: number
+          discipline_velocity: number
+          emotional_stability: number
+          intervention_required: boolean
+          recommended_risk_modifier: number
+          risk_velocity: number
+          trend_direction: string
+          violation_trend: number
+        }[]
       }
       get_vault_feedback: {
         Args: { _user_id: string }
