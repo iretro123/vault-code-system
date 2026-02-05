@@ -42,19 +42,19 @@ export function SessionIntegrityCard() {
         </span>
       </div>
 
-      <div className="text-xs text-muted-foreground">
-        {loading ? (
-          "Loading..."
-        ) : (
-          <>
-            <span className="font-medium text-foreground">{verified}</span> of{" "}
-            <span className="font-medium text-foreground">{trades}</span> trades vault-verified today
-          </>
-        )}
+      <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+        <div>
+          <span className="text-muted-foreground">Trades Today</span>
+          <p className="font-mono font-semibold text-foreground">{loading ? "—" : trades}</p>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Verified</span>
+          <p className="font-mono font-semibold text-foreground">{loading ? "—" : verified}</p>
+        </div>
       </div>
 
       {/* Progress bar */}
-      <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-3">
         <div
           className={cn(
             "h-full rounded-full transition-all duration-500",
@@ -65,6 +65,10 @@ export function SessionIntegrityCard() {
           style={{ width: `${loading ? 0 : integrity}%` }}
         />
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Verified trades are the only ones that count toward rank and level.
+      </p>
     </Card>
   );
 }
