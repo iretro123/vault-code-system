@@ -100,6 +100,8 @@ export type Database = {
           risk_used: number
           trade_date: string
           user_id: string
+          vault_verified: boolean
+          vault_verified_at: string | null
         }
         Insert: {
           created_at?: string
@@ -111,6 +113,8 @@ export type Database = {
           risk_used: number
           trade_date?: string
           user_id: string
+          vault_verified?: boolean
+          vault_verified_at?: string | null
         }
         Update: {
           created_at?: string
@@ -122,6 +126,8 @@ export type Database = {
           risk_used?: number
           trade_date?: string
           user_id?: string
+          vault_verified?: boolean
+          vault_verified_at?: string | null
         }
         Relationships: []
       }
