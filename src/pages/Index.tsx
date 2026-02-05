@@ -2,14 +2,125 @@
  import { AppLayout } from "@/components/layout/AppLayout";
  import { PageHeader } from "@/components/layout/PageHeader";
  import { StatusBadge } from "@/components/ui/StatusBadge";
- import { MetricCard } from "@/components/ui/MetricCard";
  import { Button } from "@/components/ui/button";
- import { Shield, ChevronRight, CheckCircle2, XCircle, LogIn, Loader2, Lock, AlertTriangle, Flame, TrendingUp } from "lucide-react";
+import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle, Flame, TrendingUp, XCircle } from "lucide-react";
  import { useAuth } from "@/hooks/useAuth";
  import { useDiscipline } from "@/hooks/useDiscipline";
  import { Card } from "@/components/ui/card";
  import { cn } from "@/lib/utils";
  
+// Extracted component for the central score display
+function DisciplineScoreDisplay({ score, status }: { score: number; status: "active" | "locked" }) {
+  const getScoreColor = () => {
+    if (score >= 70) return "text-status-active";
+    if (score >= 40) return "text-status-warning";
+    return "text-status-inactive";
+  };
+
+  const getProgressColor = () => {
+    if (score >= 70) return "bg-status-active";
+    if (score >= 40) return "bg-status-warning";
+    return "bg-status-inactive";
+  };
+
+  return (
+    <Card className="p-6 text-center border-2 border-primary/20 bg-gradient-to-b from-primary/5 to-transparent">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-2">
+        Discipline Score
+      </p>
+      <div className="relative inline-flex items-center justify-center mb-4">
+        <span className={cn("text-7xl font-bold font-mono tracking-tight", getScoreColor())}>
+          {score}
+        </span>
+        <span className="text-2xl text-muted-foreground font-light ml-1 self-end mb-3">/100</span>
+      </div>
+      <div className="h-3 bg-muted rounded-full overflow-hidden mb-3">
+        <div
+          className={cn("h-full rounded-full transition-all duration-700 ease-out", getProgressColor())}
+          style={{ width: `${score}%` }}
+        />
+      </div>
+      <StatusBadge status={status === "active" ? "active" : "inactive"} className="text-sm">
+        {status.toUpperCase()}
+      </StatusBadge>
+    </Card>
+  );
+}
+
+// Extracted component for the Can I Trade indicator
+function CanTradeIndicator({ canTrade, reason }: { canTrade: boolean; reason: string }) {
+  return (
+    <Card className={cn(
+      "p-5 border-2 transition-colors",
+      canTrade 
+        ? "border-status-active/30 bg-status-active/5" 
+        : "border-status-inactive/30 bg-status-inactive/5"
+    )}>
+      <div className="flex items-center gap-4">
+        {canTrade ? (
+          <div className="p-3 rounded-full bg-status-active/20 shrink-0">
+            <CheckCircle2 className="w-7 h-7 text-status-active" />
+          </div>
+        ) : (
+          <div className="p-3 rounded-full bg-status-inactive/20 shrink-0">
+            <Lock className="w-7 h-7 text-status-inactive" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Can I Trade?
+          </p>
+          <p className={cn(
+            "text-3xl font-bold",
+            canTrade ? "text-status-active" : "text-status-inactive"
+          )}>
+            {canTrade ? "YES" : "NO"}
+          </p>
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground mt-3 pl-[68px]">{reason}</p>
+    </Card>
+  );
+}
+
+// Extracted component for metric cards
+function LimitCard({ 
+  icon: Icon, 
+  label, 
+  used, 
+  allowed, 
+  unit = "", 
+  exceeded 
+}: { 
+  icon: React.ElementType;
+  label: string;
+  used: number | string;
+  allowed: number | string;
+  unit?: string;
+  exceeded: boolean;
+}) {
+  return (
+    <Card className={cn("p-4", exceeded && "border-status-inactive/50")}>
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className="w-4 h-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className={cn(
+          "text-2xl font-bold font-mono",
+          exceeded ? "text-status-inactive" : "text-foreground"
+        )}>
+          {used}{unit}
+        </span>
+        <span className="text-muted-foreground text-sm">/ {allowed}{unit}</span>
+      </div>
+      {exceeded && (
+        <p className="text-xs text-status-inactive mt-1">Limit reached</p>
+      )}
+    </Card>
+  );
+}
+
  const Dashboard = () => {
    const { user, profile, loading: authLoading } = useAuth();
    const discipline = useDiscipline();
@@ -54,122 +165,47 @@
        />
        
        <div className="px-4 md:px-6 space-y-6">
-         {/* Main Status Card */}
-         <Card className={cn(
-           "p-5 border-2 animate-slide-up",
-           discipline.canTrade ? "border-status-active/30 bg-status-active/5" : "border-status-inactive/30 bg-status-inactive/5"
-         )}>
-           <div className="flex items-center justify-between mb-4">
-             <div className="flex items-center gap-3">
-               {discipline.canTrade ? (
-                 <div className="p-2.5 rounded-full bg-status-active/20">
-                   <CheckCircle2 className="w-6 h-6 text-status-active" />
-                 </div>
-               ) : (
-                 <div className="p-2.5 rounded-full bg-status-inactive/20">
-                   <Lock className="w-6 h-6 text-status-inactive" />
-                 </div>
-               )}
-               <div>
-                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Can I Trade?</p>
-                 <p className={cn(
-                   "text-2xl font-bold",
-                   discipline.canTrade ? "text-status-active" : "text-status-inactive"
-                 )}>
-                   {discipline.canTrade ? "YES" : "NO"}
-                 </p>
-               </div>
-             </div>
-             <StatusBadge status={discipline.disciplineStatus === "active" ? "active" : "inactive"}>
-               {discipline.disciplineStatus}
-             </StatusBadge>
-           </div>
-           <p className="text-sm text-muted-foreground">{discipline.canTradeReason}</p>
-         </Card>
-         
-         {/* Discipline Score */}
-         <section className="animate-slide-up" style={{ animationDelay: "50ms" }}>
-           <p className="section-title">Discipline Score</p>
-           <Card className="p-5">
-             <div className="flex items-center justify-between mb-3">
-               <span className="text-4xl font-bold text-primary font-mono">{discipline.disciplineScore}</span>
-               <span className="text-muted-foreground text-sm">/ 100</span>
-             </div>
-             {/* Progress bar */}
-             <div className="h-2 bg-muted rounded-full overflow-hidden">
-               <div 
-                 className={cn(
-                   "h-full rounded-full transition-all duration-500",
-                   discipline.disciplineScore >= 70 ? "bg-status-active" :
-                   discipline.disciplineScore >= 40 ? "bg-status-warning" :
-                   "bg-status-inactive"
-                 )}
-                 style={{ width: `${discipline.disciplineScore}%` }}
-               />
-             </div>
-             <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-               <span>Compliance: {discipline.complianceRate}%</span>
-               <span>Avg Emotion: {discipline.avgEmotionalState.toFixed(1)}/5</span>
-             </div>
-           </Card>
+        {/* Central Discipline Score */}
+        <section className="animate-slide-up">
+          <DisciplineScoreDisplay 
+            score={discipline.disciplineScore} 
+            status={discipline.disciplineStatus} 
+          />
          </section>
          
+        {/* Can I Trade Indicator */}
+        <section className="animate-slide-up" style={{ animationDelay: "50ms" }}>
+          <CanTradeIndicator 
+            canTrade={discipline.canTrade} 
+            reason={discipline.canTradeReason} 
+          />
+        </section>
+
          {/* Today's Limits */}
          <section className="animate-slide-up" style={{ animationDelay: "100ms" }}>
            <p className="section-title">Today's Limits</p>
            <div className="grid grid-cols-2 gap-4">
-             {/* Trades Used */}
-             <Card className={cn(
-               "p-4",
-               discipline.hasExceededMaxTrades && "border-status-inactive/50"
-             )}>
-               <div className="flex items-center gap-2 mb-2">
-                 <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                 <span className="text-xs text-muted-foreground uppercase tracking-wide">Trades</span>
-               </div>
-               <div className="flex items-baseline gap-1">
-                 <span className={cn(
-                   "text-2xl font-bold font-mono",
-                   discipline.hasExceededMaxTrades ? "text-status-inactive" : "text-foreground"
-                 )}>
-                   {discipline.todayTradesUsed}
-                 </span>
-                 <span className="text-muted-foreground text-sm">/ {discipline.todayTradesAllowed}</span>
-               </div>
-               {discipline.hasExceededMaxTrades && (
-                 <p className="text-xs text-status-inactive mt-1">Limit reached</p>
-               )}
-             </Card>
-             
-             {/* Daily Loss */}
-             <Card className={cn(
-               "p-4",
-               discipline.hasExceededDailyLoss && "border-status-inactive/50"
-             )}>
-               <div className="flex items-center gap-2 mb-2">
-                 <AlertTriangle className="w-4 h-4 text-muted-foreground" />
-                 <span className="text-xs text-muted-foreground uppercase tracking-wide">Risk Used</span>
-               </div>
-               <div className="flex items-baseline gap-1">
-                 <span className={cn(
-                   "text-2xl font-bold font-mono",
-                   discipline.hasExceededDailyLoss ? "text-status-inactive" : "text-foreground"
-                 )}>
-                   {discipline.todayLossUsed.toFixed(1)}%
-                 </span>
-                 <span className="text-muted-foreground text-sm">/ {discipline.todayLossAllowed}%</span>
-               </div>
-               {discipline.hasExceededDailyLoss && (
-                 <p className="text-xs text-status-inactive mt-1">Limit reached</p>
-               )}
-             </Card>
+            <LimitCard
+              icon={TrendingUp}
+              label="Trades"
+              used={discipline.todayTradesUsed}
+              allowed={discipline.todayTradesAllowed}
+              exceeded={discipline.hasExceededMaxTrades}
+            />
+            <LimitCard
+              icon={AlertTriangle}
+              label="Risk Used"
+              used={discipline.todayLossUsed.toFixed(1)}
+              allowed={discipline.todayLossAllowed}
+              unit="%"
+              exceeded={discipline.hasExceededDailyLoss}
+            />
            </div>
          </section>
          
          {/* Streak & Violations */}
          <section className="animate-slide-up" style={{ animationDelay: "150ms" }}>
            <div className="grid grid-cols-2 gap-4">
-             {/* Discipline Streak */}
              <Card className="p-4">
                <div className="flex items-center gap-2 mb-2">
                  <Flame className={cn(
@@ -183,8 +219,6 @@
                  <span className="text-muted-foreground text-sm">days</span>
                </div>
              </Card>
-             
-             {/* Today's Violations */}
              <Card className={cn(
                "p-4",
                discipline.todayViolations > 0 && "border-status-inactive/50"
