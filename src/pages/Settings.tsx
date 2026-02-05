@@ -17,12 +17,12 @@ export default function Settings() {
         <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Profile
             </span>
           </div>
           <div className="space-y-2">
-            <p className="text-sm text-foreground">
+            <p className="text-sm text-foreground font-medium">
               {profile?.display_name || "Trader"}
             </p>
             <p className="text-xs text-muted-foreground">{user?.email}</p>
@@ -33,11 +33,11 @@ export default function Settings() {
         <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <Shield className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Trading Rules
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Manage your risk limits and discipline rules in the Cockpit.
           </p>
         </Card>
@@ -46,11 +46,11 @@ export default function Settings() {
         <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <Bell className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Notifications
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Coming soon — alerts for limit warnings and session reviews.
           </p>
         </Card>
