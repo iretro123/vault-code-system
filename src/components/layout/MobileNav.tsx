@@ -1,14 +1,12 @@
- import { NavLink, useLocation } from "react-router-dom";
- import { LayoutDashboard, Shield, BookOpen, Calculator, Zap } from "lucide-react";
- import { cn } from "@/lib/utils";
- 
- const navItems = [
-   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-   { icon: Shield, label: "Rules", path: "/rules" },
-   { icon: BookOpen, label: "Log", path: "/log" },
-   { icon: Calculator, label: "Risk", path: "/risk" },
-   { icon: Zap, label: "Upgrade", path: "/upgrade" },
- ];
+import { NavLink, useLocation } from "react-router-dom";
+import { Crosshair, BookOpen, Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const navItems = [
+  { icon: Crosshair, label: "Cockpit", path: "/cockpit" },
+  { icon: BookOpen, label: "Trades", path: "/log" },
+  { icon: Settings, label: "Settings", path: "/settings" },
+];
  
  export function MobileNav() {
    const location = useLocation();
