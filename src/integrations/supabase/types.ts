@@ -157,6 +157,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_discipline_metrics: {
+        Args: { _user_id: string }
+        Returns: {
+          can_trade: boolean
+          discipline_score: number
+          discipline_status: string
+          streak_days: number
+          trades_today: number
+          violations_today: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

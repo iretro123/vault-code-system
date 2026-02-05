@@ -71,6 +71,8 @@
          followedRules: null,
          emotionalState: 3,
        });
+       // Refetch discipline metrics after logging trade
+       discipline.refetch();
      }
      setSubmitting(false);
    };
