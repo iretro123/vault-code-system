@@ -47,7 +47,7 @@ export default function TraderCockpit() {
                   Daily Ritual
                 </h2>
                 {vaultOpen && (
-                  <span className="text-xs font-medium text-status-active bg-status-active/10 px-2 py-1 rounded-full">
+                  <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">
                     Completed ✅
                   </span>
                 )}
@@ -84,7 +84,6 @@ export default function TraderCockpit() {
                 disabled={ctaDisabled}
                 className="vault-cta w-full h-14 text-lg font-semibold rounded-xl"
                 size="lg"
-                variant="outline"
                 onClick={() => setIntentOpen(true)}
               >
                 {ctaLabel}
@@ -92,8 +91,8 @@ export default function TraderCockpit() {
 
               {/* If blocked, show reason */}
               {!loading && blocked && (
-                <div className="mt-4 p-3 rounded-xl border border-destructive/30 bg-destructive/5">
-                  <p className="text-xs font-medium text-destructive uppercase tracking-wide mb-1">
+                <div className="mt-4 p-3 rounded-xl border border-rose-500/20 bg-rose-500/10">
+                  <p className="text-xs font-medium text-rose-400 uppercase tracking-wide mb-1">
                     Blocked
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -103,8 +102,8 @@ export default function TraderCockpit() {
               )}
 
               {!loading && cooldown && (
-                <div className="mt-4 p-3 rounded-xl border border-status-warning/30 bg-status-warning/5">
-                  <p className="text-sm text-status-warning">
+                <div className="mt-4 p-3 rounded-xl border border-amber-500/20 bg-amber-500/10">
+                  <p className="text-sm text-amber-400">
                     Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
                   </p>
                 </div>
@@ -132,7 +131,7 @@ export default function TraderCockpit() {
 
       {/* Minimal modal */}
       {intentOpen && (
-        <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
           <Card className="vault-card w-full max-w-md p-6 relative animate-scale-in">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-foreground">Intent to Trade</h2>

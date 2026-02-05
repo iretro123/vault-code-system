@@ -88,9 +88,7 @@ export function TradeLoggerCard() {
     setSubmitting(false);
 
     if (insertError) {
-      // Extract clean error message
       const msg = insertError.message || "Trade blocked";
-      // Look for "Trade blocked by Vault:" pattern
       const vaultMatch = msg.match(/Trade blocked by Vault:\s*(.+)/);
       setError(vaultMatch ? vaultMatch[1] : msg);
       return;
@@ -98,8 +96,6 @@ export function TradeLoggerCard() {
 
     setSuccess(outcome);
     resetForm();
-
-    // Auto-dismiss success after 5 seconds
     setTimeout(() => setSuccess(null), 5000);
   };
 
@@ -117,18 +113,18 @@ export function TradeLoggerCard() {
           <div
             className={`p-3 rounded-xl ${
               success === "WIN"
-                ? "bg-status-active/10 border border-status-active/20"
+                ? "bg-emerald-500/10 border border-emerald-500/20"
                 : success === "LOSS"
-                ? "bg-destructive/10 border border-destructive/20"
-                : "bg-muted/50 border border-border/30"
+                ? "bg-rose-500/10 border border-rose-500/20"
+                : "bg-white/5 border border-white/10"
             }`}
           >
             <p
               className={`text-sm font-medium ${
                 success === "WIN"
-                  ? "text-status-active"
+                  ? "text-emerald-400"
                   : success === "LOSS"
-                  ? "text-destructive"
+                  ? "text-rose-400"
                   : "text-muted-foreground"
               }`}
             >
@@ -139,7 +135,7 @@ export function TradeLoggerCard() {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full text-xs"
+            className="w-full text-xs text-muted-foreground hover:text-foreground"
             onClick={() => setSuccess(null)}
           >
             Log Another
@@ -166,7 +162,7 @@ export function TradeLoggerCard() {
                 value={instrumentType}
                 onValueChange={(v) => setInstrumentType(v as InstrumentType)}
               >
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-9 text-sm bg-white/5 border-white/10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -181,7 +177,7 @@ export function TradeLoggerCard() {
                 value={symbol}
                 onChange={(e) => setSymbol(e.target.value)}
                 placeholder="ES, SPY…"
-                className="h-8 text-xs"
+                className="vault-input h-9 text-sm"
                 required
               />
             </div>
@@ -198,7 +194,7 @@ export function TradeLoggerCard() {
                 value={riskAmount}
                 onChange={(e) => setRiskAmount(e.target.value)}
                 placeholder="100"
-                className="h-8 text-xs"
+                className="vault-input h-9 text-sm"
                 required
               />
             </div>
@@ -208,7 +204,7 @@ export function TradeLoggerCard() {
                 value={outcome}
                 onValueChange={(v) => setOutcome(v as Outcome)}
               >
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-9 text-sm bg-white/5 border-white/10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,7 +245,7 @@ export function TradeLoggerCard() {
             />
             <Label
               htmlFor="followed-rules"
-              className="text-xs text-muted-foreground cursor-pointer"
+              className="text-sm text-muted-foreground cursor-pointer"
             >
               Followed all rules
             </Label>
@@ -264,15 +260,15 @@ export function TradeLoggerCard() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Quick reflection…"
-              className="h-14 text-xs resize-none"
+              className="vault-input h-14 text-sm resize-none"
               maxLength={500}
             />
           </div>
 
           {/* Error Display */}
           {error && (
-            <div className="p-2 rounded-xl bg-destructive/10 border border-destructive/20">
-              <p className="text-xs text-destructive">{error}</p>
+            <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
+              <p className="text-xs text-rose-400">{error}</p>
             </div>
           )}
 
@@ -281,8 +277,7 @@ export function TradeLoggerCard() {
             type="submit"
             size="sm"
             disabled={submitting || !symbol.trim() || !riskAmount}
-            className="vault-cta w-full"
-            variant="outline"
+            className="vault-cta w-full h-10"
           >
             {submitting ? "Logging…" : "Log Trade"}
           </Button>

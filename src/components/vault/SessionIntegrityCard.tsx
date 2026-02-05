@@ -11,15 +11,15 @@ export function SessionIntegrityCard() {
 
   const getIntegrityColor = () => {
     if (error) return "text-muted-foreground";
-    if (integrity >= 100) return "text-status-active";
-    if (integrity >= 80) return "text-status-warning";
-    return "text-destructive";
+    if (integrity >= 100) return "text-emerald-400";
+    if (integrity >= 80) return "text-amber-400";
+    return "text-rose-400";
   };
 
   return (
     <Card className="vault-card p-4">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-muted-foreground uppercase tracking-wide">
+        <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
           Session Integrity
         </span>
         <span className={cn("text-lg font-mono font-bold", getIntegrityColor())}>
@@ -28,7 +28,7 @@ export function SessionIntegrityCard() {
       </div>
 
       {error ? (
-        <p className="text-sm text-destructive">Integrity error: {error}</p>
+        <p className="text-sm text-rose-400">Integrity error: {error}</p>
       ) : (
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -47,7 +47,7 @@ export function SessionIntegrityCard() {
         </div>
       )}
 
-      <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-primary/10">
+      <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-white/10">
         Verified trades are the only ones that count toward rank and level.
       </p>
     </Card>
