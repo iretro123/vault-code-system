@@ -12,6 +12,7 @@ import { useState } from "react";
 import { PreTradeCheckModal } from "@/components/PreTradeCheckModal";
 import { useEffect } from "react";
 import { VaultTimeline } from "@/components/VaultTimeline";
+import { VaultScoreCard } from "@/components/VaultScoreCard";
  
 // Rank configuration
 const RANKS = [
@@ -369,8 +370,13 @@ function LockScreenOverlay({
        />
        
        <div className="px-4 md:px-6 space-y-6">
-        {/* Central Discipline Score */}
+        {/* Primary Authority Metric - Vault Score */}
         <section className="animate-slide-up">
+          <VaultScoreCard />
+        </section>
+
+        {/* Central Discipline Score */}
+        <section className="animate-slide-up" style={{ animationDelay: "50ms" }}>
           <DisciplineScoreDisplay 
             score={vault.disciplineScore} 
             status={vault.disciplineStatus}
@@ -379,7 +385,7 @@ function LockScreenOverlay({
          </section>
          
         {/* Can I Trade Indicator */}
-        <section className="animate-slide-up" style={{ animationDelay: "50ms" }}>
+        <section className="animate-slide-up" style={{ animationDelay: "100ms" }}>
           <CanTradeIndicator 
             canTrade={vault.canTrade} 
             reason={vault.reason} 
@@ -387,7 +393,7 @@ function LockScreenOverlay({
         </section>
 
          {/* Today's Limits */}
-         <section className="animate-slide-up" style={{ animationDelay: "100ms" }}>
+         <section className="animate-slide-up" style={{ animationDelay: "150ms" }}>
            <p className="section-title">Today's Limits</p>
            <div className="grid grid-cols-2 gap-4">
             <LimitCard
@@ -409,7 +415,7 @@ function LockScreenOverlay({
          </section>
          
          {/* Streak & Violations */}
-         <section className="animate-slide-up" style={{ animationDelay: "150ms" }}>
+         <section className="animate-slide-up" style={{ animationDelay: "200ms" }}>
            <div className="grid grid-cols-2 gap-4">
              <Card className="p-4">
                <div className="flex items-center gap-2 mb-2">
@@ -447,13 +453,13 @@ function LockScreenOverlay({
          </section>
 
          {/* Vault Timeline */}
-         <section className="animate-slide-up" style={{ animationDelay: "175ms" }}>
+         <section className="animate-slide-up" style={{ animationDelay: "250ms" }}>
            <p className="section-title">Intelligence Feed</p>
            <VaultTimeline />
          </section>
          
          {/* Primary Action */}
-         <section className="pt-2 animate-slide-up" style={{ animationDelay: "200ms" }}>
+         <section className="pt-2 animate-slide-up" style={{ animationDelay: "300ms" }}>
           <div className="grid grid-cols-2 gap-3">
             <Button 
               size="lg" 
