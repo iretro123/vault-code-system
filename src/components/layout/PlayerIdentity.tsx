@@ -1,6 +1,7 @@
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,12 +9,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
 import { User, Settings, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+
+interface ProfileExtras {
+  username: string | null;
+  avatar_url: string | null;
+}
 
 export function PlayerIdentity() {
   const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [extras, setExtras] = useState<ProfileExtras>({ username: null, avatar_url: null });
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setExtras({
+              username: (data as any).username || null,
+              avatar_url: (data as any).avatar_url || null,
+            });
+          }
+        });
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -33,7 +59,8 @@ export function PlayerIdentity() {
 
   const displayName = profile?.display_name || "Trader";
   const email = user.email || "";
-  const username = email.split("@")[0];
+  const username = extras.username || email.split("@")[0];
+  const avatarUrl = extras.avatar_url;
   const initials = displayName
     .split(" ")
     .map((n) => n[0])
@@ -51,6 +78,7 @@ export function PlayerIdentity() {
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <Avatar className="h-8 w-8 border border-white/10">
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
             <AvatarFallback className="bg-primary/20 text-primary text-xs font-medium">
               {initials}
             </AvatarFallback>
