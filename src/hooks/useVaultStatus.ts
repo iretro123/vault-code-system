@@ -73,7 +73,7 @@
            setStatus({
              ...DEFAULT_STATUS,
              loading: false,
-             reason: "Failed to fetch vault status",
+             reason: "Vault discipline lock active",
            });
            return;
          }
