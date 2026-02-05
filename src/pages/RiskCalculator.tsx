@@ -187,16 +187,16 @@
              {/* Risk Limits */}
              <Card className="p-4 border-border/50">
                <div className="flex justify-between items-center">
-                 <span className="text-sm text-muted-foreground">Max Allowed Risk</span>
-                 <span className="text-sm font-mono">{result.maxRiskAllowed}%</span>
+                 <span className="text-sm text-muted-foreground">Adaptive Risk Limit</span>
+                 <span className="text-sm font-mono">{result.adaptiveRiskLimit}%</span>
                </div>
                <div className="flex justify-between items-center mt-2">
-                 <span className="text-sm text-muted-foreground">Your Risk</span>
+                 <span className="text-sm text-muted-foreground">Requested Risk</span>
                  <span className={cn(
                    "text-sm font-mono",
-                   result.riskPercent > result.maxRiskAllowed ? "text-destructive" : "text-foreground"
+                   result.requestedRisk > result.adaptiveRiskLimit ? "text-destructive" : "text-foreground"
                  )}>
-                   {result.riskPercent}%
+                   {result.requestedRisk}%
                  </span>
                </div>
              </Card>

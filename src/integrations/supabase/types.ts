@@ -242,12 +242,12 @@ export type Database = {
           _user_id: string
         }
         Returns: {
+          adaptive_risk_limit: number
           allowed: boolean
           max_loss_amount: number
-          max_risk_allowed: number
           position_size: number
           reason: string
-          risk_percent: number
+          requested_risk: number
         }[]
       }
       check_trade_permission: {
