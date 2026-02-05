@@ -2,8 +2,9 @@
  import { PageHeader } from "@/components/layout/PageHeader";
  import { Card } from "@/components/ui/card";
  import { Button } from "@/components/ui/button";
- import { Lock, BookOpen, Video, FileText, ChevronRight } from "lucide-react";
+ import { Lock, BookOpen, Video, FileText, ChevronRight, Loader2 } from "lucide-react";
  import { Link } from "react-router-dom";
+ import { useAuth } from "@/hooks/useAuth";
  
  const modules = [
    { id: 1, title: "Discipline Foundations", type: "course", lessons: 8 },
@@ -13,8 +14,20 @@
  ];
  
  const Academy = () => {
-   // Placeholder for role check - will be replaced with actual auth
-   const hasAccess = false;
+   const { hasMinRole, loading } = useAuth();
+   
+   // Vault Access or higher can access Academy
+   const hasAccess = hasMinRole("vault_access");
+   
+   if (loading) {
+     return (
+       <AppLayout>
+         <div className="flex items-center justify-center min-h-[60vh]">
+           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+         </div>
+       </AppLayout>
+     );
+   }
    
    return (
      <AppLayout>
@@ -53,7 +66,7 @@
              {modules.map((module) => (
                <Card 
                  key={module.id} 
-                 className="p-4 opacity-60 cursor-not-allowed"
+                 className={`p-4 ${!hasAccess ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-primary/30 transition-colors"}`}
                >
                  <div className="flex items-center gap-4">
                    <div className="p-2.5 rounded-lg bg-muted">
@@ -71,7 +84,7 @@
                        {module.lessons} lessons
                      </p>
                    </div>
-                   <Lock className="w-4 h-4 text-muted-foreground" />
+                   {!hasAccess && <Lock className="w-4 h-4 text-muted-foreground" />}
                  </div>
                </Card>
              ))}

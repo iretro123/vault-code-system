@@ -1,4 +1,5 @@
- import { useState } from "react";
+ import { useState, useEffect } from "react";
+ import { useNavigate } from "react-router-dom";
  import { AppLayout } from "@/components/layout/AppLayout";
  import { PageHeader } from "@/components/layout/PageHeader";
  import { Button } from "@/components/ui/button";
@@ -6,8 +7,9 @@
  import { Label } from "@/components/ui/label";
  import { Checkbox } from "@/components/ui/checkbox";
  import { Card } from "@/components/ui/card";
- import { Save, Lock } from "lucide-react";
- import { useToast } from "@/hooks/use-toast";
+ import { Save, Lock, Loader2 } from "lucide-react";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useTradingRules } from "@/hooks/useTradingRules";
  
  const tradingSessions = [
    { id: "london", label: "London Session" },
@@ -24,17 +26,33 @@
  ];
  
  const Rules = () => {
-   const { toast } = useToast();
-   const [rules, setRules] = useState({
+   const { user, hasMinRole, loading: authLoading } = useAuth();
+   const { rules: savedRules, loading: rulesLoading, updateRules } = useTradingRules();
+   const navigate = useNavigate();
+   const [saving, setSaving] = useState(false);
+   
+   const [localRules, setLocalRules] = useState({
      maxRiskPerTrade: "1",
      maxTradesPerDay: "3",
      maxDailyLoss: "3",
-     allowedSessions: ["london", "newyork"],
-     forbiddenBehaviors: ["revenge", "oversize"],
+     allowedSessions: ["london", "newyork"] as string[],
+     forbiddenBehaviors: [] as string[],
    });
    
+   useEffect(() => {
+     if (savedRules) {
+       setLocalRules({
+         maxRiskPerTrade: String(savedRules.max_risk_per_trade),
+         maxTradesPerDay: String(savedRules.max_trades_per_day),
+         maxDailyLoss: String(savedRules.max_daily_loss),
+         allowedSessions: savedRules.allowed_sessions,
+         forbiddenBehaviors: savedRules.forbidden_behaviors,
+       });
+     }
+   }, [savedRules]);
+   
    const handleSessionChange = (sessionId: string, checked: boolean) => {
-     setRules(prev => ({
+     setLocalRules(prev => ({
        ...prev,
        allowedSessions: checked 
          ? [...prev.allowedSessions, sessionId]
@@ -43,7 +61,7 @@
    };
    
    const handleBehaviorChange = (behaviorId: string, checked: boolean) => {
-     setRules(prev => ({
+     setLocalRules(prev => ({
        ...prev,
        forbiddenBehaviors: checked 
          ? [...prev.forbiddenBehaviors, behaviorId]
@@ -51,15 +69,34 @@
      }));
    };
    
-   const handleSave = () => {
-     toast({
-       title: "Rules saved",
-       description: "Your trading rules have been updated.",
+   const handleSave = async () => {
+     setSaving(true);
+     await updateRules({
+       max_risk_per_trade: parseFloat(localRules.maxRiskPerTrade),
+       max_trades_per_day: parseInt(localRules.maxTradesPerDay),
+       max_daily_loss: parseFloat(localRules.maxDailyLoss),
+       allowed_sessions: localRules.allowedSessions,
+       forbidden_behaviors: localRules.forbiddenBehaviors,
      });
+     setSaving(false);
    };
    
-   // Placeholder for role check - will be replaced with actual auth
-   const hasAccess = true;
+   if (authLoading || rulesLoading) {
+     return (
+       <AppLayout>
+         <div className="flex items-center justify-center min-h-[60vh]">
+           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+         </div>
+       </AppLayout>
+     );
+   }
+   
+   if (!user) {
+     navigate("/auth");
+     return null;
+   }
+   
+   const hasAccess = hasMinRole("vault_os_owner");
    
    if (!hasAccess) {
      return (
@@ -70,6 +107,9 @@
            <p className="text-muted-foreground max-w-sm">
              Rule Vault is only available to Vault OS Owners. Upgrade to unlock.
            </p>
+           <Button className="mt-6" onClick={() => navigate("/upgrade")}>
+             Upgrade Now
+           </Button>
          </div>
        </AppLayout>
      );
@@ -83,10 +123,8 @@
        />
        
        <div className="px-4 md:px-6 space-y-6 pb-6">
-         {/* Risk Parameters */}
          <Card className="p-5">
            <h3 className="font-medium mb-4">Risk Parameters</h3>
-           
            <div className="space-y-4">
              <div>
                <Label htmlFor="maxRisk" className="text-sm text-muted-foreground">
@@ -98,12 +136,11 @@
                  min="0.1"
                  max="10"
                  step="0.1"
-                 value={rules.maxRiskPerTrade}
-                 onChange={(e) => setRules(prev => ({ ...prev, maxRiskPerTrade: e.target.value }))}
+                 value={localRules.maxRiskPerTrade}
+                 onChange={(e) => setLocalRules(prev => ({ ...prev, maxRiskPerTrade: e.target.value }))}
                  className="mt-1.5 h-12 text-lg font-mono"
                />
              </div>
-             
              <div>
                <Label htmlFor="maxTrades" className="text-sm text-muted-foreground">
                  Max Trades Per Day
@@ -113,12 +150,11 @@
                  type="number"
                  min="1"
                  max="20"
-                 value={rules.maxTradesPerDay}
-                 onChange={(e) => setRules(prev => ({ ...prev, maxTradesPerDay: e.target.value }))}
+                 value={localRules.maxTradesPerDay}
+                 onChange={(e) => setLocalRules(prev => ({ ...prev, maxTradesPerDay: e.target.value }))}
                  className="mt-1.5 h-12 text-lg font-mono"
                />
              </div>
-             
              <div>
                <Label htmlFor="maxLoss" className="text-sm text-muted-foreground">
                  Max Daily Loss (%)
@@ -129,15 +165,14 @@
                  min="0.5"
                  max="20"
                  step="0.5"
-                 value={rules.maxDailyLoss}
-                 onChange={(e) => setRules(prev => ({ ...prev, maxDailyLoss: e.target.value }))}
+                 value={localRules.maxDailyLoss}
+                 onChange={(e) => setLocalRules(prev => ({ ...prev, maxDailyLoss: e.target.value }))}
                  className="mt-1.5 h-12 text-lg font-mono"
                />
              </div>
            </div>
          </Card>
          
-         {/* Trading Sessions */}
          <Card className="p-5">
            <h3 className="font-medium mb-4">Allowed Trading Sessions</h3>
            <div className="space-y-3">
@@ -147,7 +182,7 @@
                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
                >
                  <Checkbox
-                   checked={rules.allowedSessions.includes(session.id)}
+                   checked={localRules.allowedSessions.includes(session.id)}
                    onCheckedChange={(checked) => handleSessionChange(session.id, checked as boolean)}
                  />
                  <span className="font-medium">{session.label}</span>
@@ -156,7 +191,6 @@
            </div>
          </Card>
          
-         {/* Forbidden Behaviors */}
          <Card className="p-5">
            <h3 className="font-medium mb-4">Forbidden Behaviors</h3>
            <p className="text-sm text-muted-foreground mb-4">
@@ -169,7 +203,7 @@
                  className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
                >
                  <Checkbox
-                   checked={rules.forbiddenBehaviors.includes(behavior.id)}
+                   checked={localRules.forbiddenBehaviors.includes(behavior.id)}
                    onCheckedChange={(checked) => handleBehaviorChange(behavior.id, checked as boolean)}
                  />
                  <span>{behavior.label}</span>
@@ -178,14 +212,14 @@
            </div>
          </Card>
          
-         {/* Save Button */}
          <Button 
            size="lg" 
            className="w-full h-14 text-base font-medium gap-2"
            onClick={handleSave}
+           disabled={saving}
          >
-           <Save className="w-5 h-5" />
-           Save Rules
+           {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+           {saving ? "Saving..." : "Save Rules"}
          </Button>
        </div>
      </AppLayout>

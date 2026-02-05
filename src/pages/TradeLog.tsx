@@ -1,11 +1,14 @@
  import { useState } from "react";
+ import { useNavigate } from "react-router-dom";
  import { AppLayout } from "@/components/layout/AppLayout";
  import { PageHeader } from "@/components/layout/PageHeader";
  import { Button } from "@/components/ui/button";
  import { Input } from "@/components/ui/input";
  import { Label } from "@/components/ui/label";
  import { Card } from "@/components/ui/card";
- import { Plus, CheckCircle, XCircle } from "lucide-react";
+ import { Plus, CheckCircle, XCircle, Loader2, Trash2 } from "lucide-react";
+ import { useAuth } from "@/hooks/useAuth";
+ import { useTradeLog } from "@/hooks/useTradeLog";
  import { useToast } from "@/hooks/use-toast";
  import { cn } from "@/lib/utils";
  
@@ -19,6 +22,11 @@
  
  const TradeLog = () => {
    const { toast } = useToast();
+   const { user, loading: authLoading } = useAuth();
+   const { entries, loading: entriesLoading, addEntry, deleteEntry } = useTradeLog();
+   const navigate = useNavigate();
+   const [submitting, setSubmitting] = useState(false);
+   
    const [trade, setTrade] = useState({
      riskUsed: "",
      rr: "",
@@ -26,7 +34,7 @@
      emotionalState: 3,
    });
    
-   const handleSubmit = () => {
+   const handleSubmit = async () => {
      if (!trade.riskUsed || !trade.rr || trade.followedRules === null) {
        toast({
          title: "Missing fields",
@@ -36,18 +44,23 @@
        return;
      }
      
-     toast({
-       title: "Trade logged",
-       description: "Your trade has been recorded.",
+     setSubmitting(true);
+     const { error } = await addEntry({
+       risk_used: parseFloat(trade.riskUsed),
+       risk_reward: parseFloat(trade.rr),
+       followed_rules: trade.followedRules,
+       emotional_state: trade.emotionalState,
      });
      
-     // Reset form
-     setTrade({
-       riskUsed: "",
-       rr: "",
-       followedRules: null,
-       emotionalState: 3,
-     });
+     if (!error) {
+       setTrade({
+         riskUsed: "",
+         rr: "",
+         followedRules: null,
+         emotionalState: 3,
+       });
+     }
+     setSubmitting(false);
    };
    
    const today = new Date().toLocaleDateString("en-US", {
@@ -55,6 +68,21 @@
      month: "short",
      day: "numeric",
    });
+   
+   if (authLoading) {
+     return (
+       <AppLayout>
+         <div className="flex items-center justify-center min-h-[60vh]">
+           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+         </div>
+       </AppLayout>
+     );
+   }
+   
+   if (!user) {
+     navigate("/auth");
+     return null;
+   }
    
    return (
      <AppLayout>
@@ -173,17 +201,54 @@
            size="lg" 
            className="w-full h-14 text-base font-medium gap-2"
            onClick={handleSubmit}
+           disabled={submitting}
          >
-           <Plus className="w-5 h-5" />
-           Log Trade
+           {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+           {submitting ? "Logging..." : "Log Trade"}
          </Button>
          
          {/* Recent Trades Placeholder */}
          <div className="pt-4">
            <p className="section-title">Recent Entries</p>
-           <div className="text-center py-8 text-muted-foreground">
-             <p className="text-sm">No trades logged yet</p>
-           </div>
+           {entriesLoading ? (
+             <div className="flex justify-center py-8">
+               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+             </div>
+           ) : entries.length === 0 ? (
+             <div className="text-center py-8 text-muted-foreground">
+               <p className="text-sm">No trades logged yet</p>
+             </div>
+           ) : (
+             <div className="space-y-2">
+               {entries.slice(0, 10).map((entry) => (
+                 <Card key={entry.id} className="p-4">
+                   <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                       {entry.followed_rules ? (
+                         <CheckCircle className="w-5 h-5 text-status-active" />
+                       ) : (
+                         <XCircle className="w-5 h-5 text-status-inactive" />
+                       )}
+                       <div>
+                         <p className="font-mono text-sm">
+                           {entry.risk_used}% risk · {entry.risk_reward}R
+                         </p>
+                         <p className="text-xs text-muted-foreground">
+                           {new Date(entry.trade_date).toLocaleDateString()}
+                         </p>
+                       </div>
+                     </div>
+                     <button
+                       onClick={() => deleteEntry(entry.id)}
+                       className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                     >
+                       <Trash2 className="w-4 h-4" />
+                     </button>
+                   </div>
+                 </Card>
+               ))}
+             </div>
+           )}
          </div>
        </div>
      </AppLayout>

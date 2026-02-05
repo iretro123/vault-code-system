@@ -1,4 +1,5 @@
  import { useState } from "react";
+ import { useNavigate } from "react-router-dom";
  import { Button } from "@/components/ui/button";
  import { Input } from "@/components/ui/input";
  import { Label } from "@/components/ui/label";
@@ -6,9 +7,12 @@
  import { Shield, ArrowLeft } from "lucide-react";
  import { Link } from "react-router-dom";
  import { useToast } from "@/hooks/use-toast";
+ import { useAuth } from "@/hooks/useAuth";
  
  const Auth = () => {
    const { toast } = useToast();
+   const { signIn, signUp } = useAuth();
+   const navigate = useNavigate();
    const [mode, setMode] = useState<"login" | "signup">("login");
    const [email, setEmail] = useState("");
    const [password, setPassword] = useState("");
@@ -18,13 +22,28 @@
      e.preventDefault();
      setLoading(true);
      
-     // Placeholder - will be replaced with actual auth
-     await new Promise(resolve => setTimeout(resolve, 1000));
+     const { error } = mode === "login" 
+       ? await signIn(email, password)
+       : await signUp(email, password);
      
-     toast({
-       title: mode === "login" ? "Welcome back" : "Account created",
-       description: "Authentication will be enabled soon.",
-     });
+     if (error) {
+       toast({
+         title: "Error",
+         description: error.message,
+         variant: "destructive",
+       });
+     } else if (mode === "signup") {
+       toast({
+         title: "Check your email",
+         description: "We sent you a confirmation link.",
+       });
+     } else {
+       toast({
+         title: "Welcome back",
+         description: "You have been signed in.",
+       });
+       navigate("/");
+     }
      
      setLoading(false);
    };
