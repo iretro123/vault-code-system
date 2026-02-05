@@ -5,6 +5,7 @@ import { PreTradeExecutionGateV2 } from "@/components/vault/PreTradeExecutionGat
 import { VaultIdentityCard } from "@/components/VaultIdentityCard";
 import { VaultLevelCard } from "@/components/VaultLevelCard";
 import { SessionIntegrityCard } from "@/components/vault/SessionIntegrityCard";
+import { FocusSessionCard } from "@/components/vault/FocusSessionCard";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,7 @@ export default function TraderCockpit() {
           {/* RIGHT: Sticky side panel */}
           <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <VaultHUD />
+            <FocusSessionCard />
             <SessionIntegrityCard />
             <VaultIdentityCard />
             <VaultLevelCard />
