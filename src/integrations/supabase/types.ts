@@ -250,6 +250,18 @@ export type Database = {
           requested_risk: number
         }[]
       }
+      calculate_vault_level: {
+        Args: { _user_id: string }
+        Returns: {
+          level_rank: string
+          level_title: string
+          next_level_title: string
+          progress_percent: number
+          vault_level: number
+          vault_xp: number
+          xp_to_next_level: number
+        }[]
+      }
       calculate_vault_score: {
         Args: { _user_id: string }
         Returns: {
