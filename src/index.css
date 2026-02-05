@@ -2,30 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* VAULT OS — Starlink Dark Theme
-   All colors MUST be HSL.
+/* VAULT OS — Robinhood Dark / Black Aero Theme
+   Clean, readable, beginner-friendly
+   All colors MUST be HSL for Tailwind compatibility
 */
- 
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @layer base {
   :root {
     /* Light mode fallback (minimal usage) */
     --background: 220 20% 98%;
-    --foreground: 220 20% 10%;
+    --foreground: 220 15% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 220 15% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 220 15% 15%;
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 15% 92%;
-    --secondary-foreground: 220 20% 15%;
+    --secondary-foreground: 220 15% 15%;
     --muted: 220 15% 94%;
     --muted-foreground: 220 10% 45%;
     --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 60% 50%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 15% 88%;
     --input: 220 15% 88%;
@@ -33,9 +34,9 @@
     --radius: 1rem;
     
     /* Status colors */
-    --status-active: 160 50% 42%;
-    --status-inactive: 0 55% 50%;
-    --status-warning: 35 90% 55%;
+    --status-success: 160 84% 39%;
+    --status-warning: 38 92% 50%;
+    --status-danger: 0 72% 51%;
     
     /* Sidebar */
     --sidebar-background: 0 0% 96%;
@@ -49,52 +50,55 @@
   }
 
   .dark {
-    /* VAULT OS Starlink Dark Theme — Default */
-    /* Deep space background: #05070B to #0B1220 */
-    --background: 220 30% 4%;
-    --foreground: 210 20% 95%;
+    /* VAULT OS Robinhood Dark Theme
+       Background: #0B0F14 → hsl(216, 30%, 6%)
+       Surface: #111827 → hsl(220, 39%, 11%)
+       Elevated: #0F172A → hsl(222, 47%, 11%)
+    */
+    --background: 216 30% 6%;
+    --foreground: 220 14% 90%;
     
-    /* Cards: glass + space */
-    --card: 220 30% 6%;
-    --card-foreground: 210 20% 95%;
+    --card: 220 39% 11%;
+    --card-foreground: 220 14% 90%;
     
-    --popover: 220 35% 8%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 220 14% 90%;
     
-    /* Primary: Lightsaber blue #3B82F6 / #60A5FA */
+    /* Primary: Blue-500 #3B82F6 */
     --primary: 217 91% 60%;
-    --primary-foreground: 220 30% 4%;
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 220 25% 12%;
-    --secondary-foreground: 210 15% 85%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 220 14% 90%;
     
-    --muted: 220 25% 10%;
-    --muted-foreground: 215 15% 65%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 220 14% 60%;
     
-    --accent: 217 91% 65%;
-    --accent-foreground: 220 30% 4%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 55% 50%;
-    --destructive-foreground: 0 0% 98%;
+    /* Danger: Rose-500 */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
     
-    /* Borders: subtle blue halo */
-    --border: 217 40% 18%;
-    --input: 220 30% 12%;
+    /* Borders: white/8% → very subtle */
+    --border: 220 14% 20%;
+    --input: 220 39% 11%;
     --ring: 217 91% 60%;
     
-    /* Status colors */
-    --status-active: 160 55% 48%;
-    --status-inactive: 0 55% 50%;
-    --status-warning: 35 90% 55%;
+    /* Status colors - emerald, amber, rose */
+    --status-success: 160 84% 39%;
+    --status-warning: 38 92% 50%;
+    --status-danger: 0 72% 51%;
     
     /* Sidebar */
-    --sidebar-background: 220 30% 5%;
-    --sidebar-foreground: 210 15% 80%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 220 14% 75%;
     --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 220 30% 4%;
-    --sidebar-accent: 220 25% 10%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 217 30% 15%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 220 14% 90%;
+    --sidebar-border: 220 14% 20%;
     --sidebar-ring: 217 91% 60%;
   }
 }
@@ -107,55 +111,57 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
- 
+
   html {
     @apply dark;
   }
 }
- 
+
 @layer utilities {
-  /* Starlink-style glass card */
+  /* Clean card style - Robinhood dark */
   .vault-card {
-    @apply rounded-2xl border border-primary/15 bg-slate-950/60 backdrop-blur-md;
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.10), 0 0 30px rgba(59, 130, 246, 0.08);
+    @apply rounded-2xl border border-white/10 bg-card backdrop-blur-sm;
   }
   
-  /* Primary CTA with blue glow */
+  /* Primary CTA - solid blue */
   .vault-cta {
-    @apply relative bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50 transition-all;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-colors;
   }
   
-  .vault-cta:hover {
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* Secondary button style */
+  .vault-secondary {
+    @apply bg-white/5 hover:bg-white/10 text-foreground border border-white/10 rounded-xl transition-colors;
   }
   
-  /* Starlink input style */
+  /* Clean input style */
   .vault-input {
-    @apply bg-background border border-primary/20 focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground;
+    @apply bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary/30 rounded-xl;
   }
   
-  /* Legacy utilities (kept for compatibility) */
-  .glass-card {
-    @apply vault-card;
-  }
-  
+  /* Status badge base */
   .status-badge {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide uppercase;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide;
   }
   
-  .status-active {
-    @apply bg-[hsl(var(--status-active))]/15 text-[hsl(var(--status-active))];
+  /* Status variants */
+  .status-success {
+    @apply bg-emerald-500/15 text-emerald-400;
   }
   
-  .status-inactive {
-    @apply bg-[hsl(var(--status-inactive))]/15 text-[hsl(var(--status-inactive))];
+  .status-warning {
+    @apply bg-amber-500/15 text-amber-400;
   }
   
+  .status-danger {
+    @apply bg-rose-500/15 text-rose-400;
+  }
+  
+  /* Metric card */
   .metric-card {
     @apply vault-card p-5;
   }
   
+  /* Section title */
   .section-title {
     @apply text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4;
   }

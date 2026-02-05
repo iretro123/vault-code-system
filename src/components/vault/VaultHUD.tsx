@@ -16,16 +16,16 @@ export function VaultHUD() {
   const { data, loading, error, status } = useVaultExecutionPermission();
 
   const lightClass = useMemo(() => {
-    if (status.light === "GREEN") return "bg-status-active";
-    if (status.light === "YELLOW") return "bg-status-warning";
-    if (status.light === "RED") return "bg-destructive";
+    if (status.light === "GREEN") return "bg-emerald-500";
+    if (status.light === "YELLOW") return "bg-amber-500";
+    if (status.light === "RED") return "bg-rose-500";
     return "bg-muted";
   }, [status.light]);
 
   if (error) {
     return (
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-        <div className="flex items-center gap-2 text-destructive">
+      <div className="vault-card p-4 border-rose-500/30">
+        <div className="flex items-center gap-2 text-rose-400">
           <AlertTriangle className="h-4 w-4" />
           <span className="text-sm font-medium">Vault HUD error: {error}</span>
         </div>
@@ -50,60 +50,60 @@ export function VaultHUD() {
 
       {/* Metrics grid */}
       <div className="grid grid-cols-4 gap-3">
-        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Shield className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Vault</span>
           </div>
           <span className={cn(
             "text-sm font-medium",
-            data?.vault_open ? "text-status-active" : "text-destructive"
+            data?.vault_open ? "text-emerald-400" : "text-rose-400"
           )}>
             {data?.vault_open ? "OPEN" : "CLOSED"}
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Timer className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Cooldown</span>
           </div>
           <span className={cn(
             "text-sm font-medium",
-            data?.cooldown_active ? "text-status-warning" : "text-muted-foreground"
+            data?.cooldown_active ? "text-amber-400" : "text-muted-foreground"
           )}>
             {data?.cooldown_active ? remainingLabel(data?.cooldown_remaining_minutes) : "None"}
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Lock className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Protection</span>
           </div>
           <span className={cn(
             "text-sm font-medium",
-            data?.protection_level === "LOCKDOWN" && "text-destructive",
-            data?.protection_level === "RESTRICTED" && "text-orange-500",
-            data?.protection_level === "CAUTION" && "text-status-warning",
+            data?.protection_level === "LOCKDOWN" && "text-rose-400",
+            data?.protection_level === "RESTRICTED" && "text-orange-400",
+            data?.protection_level === "CAUTION" && "text-amber-400",
             data?.protection_level === "NONE" && "text-muted-foreground"
           )}>
             {data?.protection_level ?? "—"}
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-black/30 border border-primary/10">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Activity className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Consistency</span>
           </div>
           <span className={cn(
             "text-sm font-medium",
-            data?.consistency_level === "CRITICAL" && "text-destructive",
-            data?.consistency_level === "UNSTABLE" && "text-orange-500",
-            data?.consistency_level === "WARNING" && "text-status-warning",
+            data?.consistency_level === "CRITICAL" && "text-rose-400",
+            data?.consistency_level === "UNSTABLE" && "text-orange-400",
+            data?.consistency_level === "WARNING" && "text-amber-400",
             data?.consistency_level === "STABLE" && "text-muted-foreground",
-            data?.consistency_level === "EXCELLENT" && "text-status-active"
+            data?.consistency_level === "EXCELLENT" && "text-emerald-400"
           )}>
             {data?.consistency_level ?? "—"}
           </span>
@@ -112,12 +112,12 @@ export function VaultHUD() {
 
       {/* Block reason */}
       {!loading && data && !data.execution_allowed && (
-        <div className="p-3 rounded-xl border border-destructive/30 bg-destructive/5">
+        <div className="p-3 rounded-xl border border-rose-500/20 bg-rose-500/10">
           <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-destructive" />
-            <span className="text-sm font-medium text-destructive">Blocked</span>
+            <Lock className="h-4 w-4 text-rose-400" />
+            <span className="text-sm font-medium text-rose-400">Blocked</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{data.block_reason}</p>
+          <p className="text-sm text-muted-foreground mt-1">{data.block_reason}</p>
         </div>
       )}
     </div>

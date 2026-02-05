@@ -22,10 +22,10 @@ export default function Settings() {
             </span>
           </div>
           <div className="space-y-2">
-            <p className="text-sm text-foreground font-medium">
+            <p className="text-base text-foreground font-medium">
               {profile?.display_name || "Trader"}
             </p>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </Card>
 
@@ -57,8 +57,7 @@ export default function Settings() {
 
         {/* Sign Out */}
         <Button
-          variant="outline"
-          className="vault-cta w-full gap-2"
+          className="vault-cta w-full gap-2 h-12"
           onClick={() => signOut()}
         >
           <LogOut className="h-4 w-4" />

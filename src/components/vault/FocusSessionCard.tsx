@@ -45,7 +45,7 @@ export function FocusSessionCard() {
               loading
                 ? "text-muted-foreground"
                 : data.active
-                ? "text-status-active"
+                ? "text-emerald-400"
                 : "text-muted-foreground"
             }`}
           >
@@ -55,11 +55,11 @@ export function FocusSessionCard() {
       </CardHeader>
 
       <CardContent className="space-y-3 px-4 pb-4">
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && <p className="text-xs text-rose-400">{error}</p>}
 
         {data.active ? (
           <div className="space-y-2">
-            <p className="text-lg font-semibold tabular-nums">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
               Time left:{" "}
               <span className="text-primary">
                 {remaining != null ? fmtTime(remaining) : "…"}
@@ -77,7 +77,7 @@ export function FocusSessionCard() {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Choose your focused trading block.
             </p>
 
@@ -88,7 +88,7 @@ export function FocusSessionCard() {
                 max={480}
                 value={mins}
                 onChange={(e) => setMins(Number(e.target.value))}
-                className="w-20"
+                className="vault-input w-20 h-9"
               />
               <span className="text-sm text-muted-foreground">minutes</span>
 
@@ -96,7 +96,7 @@ export function FocusSessionCard() {
                 size="sm"
                 onClick={start}
                 disabled={starting}
-                className="ml-auto"
+                className="vault-cta ml-auto px-4"
               >
                 {starting ? "Starting…" : "Start"}
               </Button>
