@@ -10,6 +10,7 @@ import { Shield, ChevronRight, CheckCircle2, LogIn, Loader2, Lock, AlertTriangle
  import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { PreTradeCheckModal } from "@/components/PreTradeCheckModal";
+import { useEffect } from "react";
  
 // Rank configuration
 const RANKS = [
@@ -220,10 +221,114 @@ function LimitCard({
   );
 }
 
+// Lock Screen Overlay Component
+function LockScreenOverlay({ 
+  reason, 
+  hasExceededMaxTrades, 
+  hasExceededDailyLoss, 
+  hasRuleViolation 
+}: { 
+  reason: string;
+  hasExceededMaxTrades: boolean;
+  hasExceededDailyLoss: boolean;
+  hasRuleViolation: boolean;
+}) {
+  const [timeUntilReset, setTimeUntilReset] = useState("");
+
+  useEffect(() => {
+    function updateCountdown() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const diff = tomorrow.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      setTimeUntilReset(
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+      );
+    }
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Determine specific violation type
+  const getViolationType = () => {
+    if (hasExceededMaxTrades) return "Max trades exceeded";
+    if (hasExceededDailyLoss) return "Daily loss limit exceeded";
+    if (hasRuleViolation) return "Rule violation detected";
+    return "Discipline score too low";
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
+      <Card className="max-w-md w-full p-8 text-center border-2 border-status-inactive/30 bg-gradient-to-b from-status-inactive/10 to-transparent animate-scale-in">
+        {/* Lock Icon */}
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-status-inactive/20 mb-6">
+          <Lock className="w-10 h-10 text-status-inactive" />
+        </div>
+
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-status-inactive mb-2">
+          Trading Locked
+        </h1>
+        <p className="text-muted-foreground mb-6">
+          Discipline rules violated.
+        </p>
+
+        {/* Violation Reason */}
+        <Card className="p-4 mb-6 border-status-inactive/30 bg-status-inactive/5">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-status-inactive" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Violation Type
+            </span>
+          </div>
+          <p className="font-semibold text-status-inactive">
+            {getViolationType()}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {reason}
+          </p>
+        </Card>
+
+        {/* Countdown Timer */}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Trading resumes in
+          </p>
+          <div className="font-mono text-4xl font-bold text-foreground tracking-wider">
+            {timeUntilReset}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Resets at midnight local time
+          </p>
+        </div>
+
+        {/* Action */}
+        <div className="mt-8">
+          <Link to="/rules">
+            <Button variant="outline" className="gap-2">
+              <Shield className="w-4 h-4" />
+              Review My Rules
+            </Button>
+          </Link>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
  const Dashboard = () => {
    const { user, profile, loading: authLoading } = useAuth();
    const discipline = useDiscipline();
   const [preTradeOpen, setPreTradeOpen] = useState(false);
+  const isLocked = discipline.disciplineStatus === "locked";
    
    if (authLoading || discipline.loading) {
      return (
@@ -348,6 +453,7 @@ function LimitCard({
               size="lg" 
               className="h-14 text-base font-medium gap-2"
               onClick={() => setPreTradeOpen(true)}
+              disabled={isLocked}
             >
               <Crosshair className="w-5 h-5" />
               Pre-Trade Check
@@ -368,6 +474,16 @@ function LimitCard({
        </div>
       
       <PreTradeCheckModal open={preTradeOpen} onOpenChange={setPreTradeOpen} />
+      
+      {/* Lock Screen Overlay */}
+      {isLocked && (
+        <LockScreenOverlay
+          reason={discipline.canTradeReason}
+          hasExceededMaxTrades={discipline.hasExceededMaxTrades}
+          hasExceededDailyLoss={discipline.hasExceededDailyLoss}
+          hasRuleViolation={discipline.hasRuleViolation}
+        />
+      )}
      </AppLayout>
    );
  };
