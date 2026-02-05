@@ -238,6 +238,14 @@ export type Database = {
           trades_remaining: number
         }[]
       }
+      get_adaptive_risk_limit: {
+        Args: { _user_id: string }
+        Returns: {
+          adaptive_risk_limit: number
+          adjustment_factor: number
+          risk_level: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
