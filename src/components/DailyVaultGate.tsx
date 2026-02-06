@@ -18,6 +18,8 @@ interface ChecklistFormData {
   riskConfirmed: boolean;
 }
 
+const STEP_LABELS = ["Poor", "Low", "Average", "Good", "Elite"] as const;
+
 function RatingSlider({ 
   value, 
   onChange, 
@@ -29,14 +31,6 @@ function RatingSlider({
   label: string;
   icon: React.ElementType;
 }) {
-  const getLabel = (v: number) => {
-    if (v === 1) return "Poor";
-    if (v === 2) return "Below Avg";
-    if (v === 3) return "Average";
-    if (v === 4) return "Good";
-    return "Excellent";
-  };
-
   const getColor = (v: number) => {
     if (v <= 2) return "text-rose-400";
     if (v === 3) return "text-amber-400";
@@ -44,24 +38,54 @@ function RatingSlider({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
+      {/* Header row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">{label}</span>
         </div>
-        <span className={cn("text-sm font-bold", getColor(value))}>
-          {value}/5 — {getLabel(value)}
-        </span>
+        <div className={cn(
+          "flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold transition-colors duration-150",
+          value <= 2 && "bg-rose-500/15",
+          value === 3 && "bg-amber-500/15",
+          value >= 4 && "bg-emerald-500/15",
+          getColor(value)
+        )}>
+          <span className="font-mono">{value}</span>
+          <span className="opacity-70">•</span>
+          <span>{STEP_LABELS[value - 1]}</span>
+        </div>
       </div>
+      
+      {/* Slider */}
       <Slider
         value={[value]}
         onValueChange={(v) => onChange(v[0])}
         min={1}
         max={5}
         step={1}
+        showTicks
+        tickCount={5}
         className="w-full"
       />
+      
+      {/* Step labels row */}
+      <div className="flex justify-between px-[6px] -mt-0.5">
+        {STEP_LABELS.map((stepLabel, i) => (
+          <span 
+            key={stepLabel}
+            className={cn(
+              "text-[10px] transition-colors duration-150",
+              value === i + 1 
+                ? "text-foreground font-medium" 
+                : "text-muted-foreground/50"
+            )}
+          >
+            {i + 1}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
