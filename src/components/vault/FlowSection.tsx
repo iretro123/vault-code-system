@@ -1,24 +1,48 @@
 import React, { useRef, useEffect } from "react";
-import { ChevronDown, Lock } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type SectionStatus = "active" | "completed" | "locked";
 
 interface FlowSectionProps {
   title: string;
   isOpen: boolean;
   onToggle: () => void;
+  status?: SectionStatus;
   locked?: boolean;
   lockedSubtitle?: string;
-  defaultExpanded?: boolean;
   children: React.ReactNode;
   onContinue?: () => void;
   showContinue?: boolean;
   sectionRef?: React.RefObject<HTMLDivElement>;
 }
 
+function StatusDot({ status }: { status: SectionStatus }) {
+  if (status === "completed") {
+    return (
+      <span className="flex items-center justify-center w-[10px] h-[10px] rounded-full bg-emerald-500/80">
+        <Check className="w-2 h-2 text-white" strokeWidth={3} />
+      </span>
+    );
+  }
+
+  if (status === "active") {
+    return (
+      <span className="w-[10px] h-[10px] rounded-full bg-primary status-dot-active" />
+    );
+  }
+
+  // Locked / future state - hollow dot
+  return (
+    <span className="w-[10px] h-[10px] rounded-full border-2 border-muted-foreground/50" />
+  );
+}
+
 export function FlowSection({
   title,
   isOpen,
   onToggle,
+  status,
   locked = false,
   lockedSubtitle = "Complete Daily Ritual first",
   children,
@@ -28,6 +52,9 @@ export function FlowSection({
 }: FlowSectionProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = React.useState<number | undefined>(undefined);
+
+  // Derive status if not explicitly provided
+  const derivedStatus: SectionStatus = status ?? (locked ? "locked" : isOpen ? "active" : "locked");
 
   useEffect(() => {
     if (contentRef.current) {
@@ -58,13 +85,13 @@ export function FlowSection({
             : "hover:bg-muted/30 cursor-pointer"
         )}
       >
-        <div className="flex items-center gap-2">
-          {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+        <div className="flex items-center gap-2.5">
+          <StatusDot status={derivedStatus} />
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
             {title}
           </h2>
           {locked && (
-            <span className="text-xs text-muted-foreground ml-2">
+            <span className="text-xs text-muted-foreground ml-1">
               — {lockedSubtitle}
             </span>
           )}
