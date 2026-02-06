@@ -9,76 +9,125 @@ type SessionIntegrity = {
 };
 
 type State = {
-  loading: boolean;
+  loading: boolean;     // True only on initial load with no data
+  refreshing: boolean;  // True during background refetch
   error: string | null;
   data: SessionIntegrity | null;
 };
+
+const DEBOUNCE_MS = 300;
 
 export function useVaultSessionIntegrity() {
   const { user } = useAuth();
   const userId = user?.id;
 
-  const [state, setState] = useState<State>({ loading: true, error: null, data: null });
+  const [state, setState] = useState<State>({ 
+    loading: true, 
+    refreshing: false, 
+    error: null, 
+    data: null 
+  });
 
   // Prevent overlapping fetches + avoid setState after unmount
   const inFlight = useRef(false);
-  const alive = useRef(true);
+  const mounted = useRef(true);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const hasData = useRef(false);
 
-  const fetchIntegrity = useCallback(async () => {
-    if (!userId) return;
+  const fetchIntegrity = useCallback(async (isBackground = false) => {
+    if (!userId) {
+      setState({ loading: false, refreshing: false, error: null, data: null });
+      return;
+    }
     if (inFlight.current) return;
 
     inFlight.current = true;
-    setState((s) => ({ ...s, loading: true, error: null }));
+
+    // Only show loading on initial fetch with no cached data
+    if (!isBackground && !hasData.current) {
+      setState((s) => ({ ...s, loading: true, error: null }));
+    } else {
+      setState((s) => ({ ...s, refreshing: true }));
+    }
 
     const { data, error } = await supabase.rpc("get_vault_session_integrity", { _user_id: userId });
 
-    if (!alive.current) return;
+    if (!mounted.current) {
+      inFlight.current = false;
+      return;
+    }
 
     if (error) {
-      setState({ loading: false, error: error.message, data: null });
+      // Keep existing data on error if we have it
+      setState((s) => ({ 
+        ...s, 
+        loading: false, 
+        refreshing: false, 
+        error: hasData.current ? null : error.message 
+      }));
     } else {
       const row = (Array.isArray(data) ? data[0] : data) as SessionIntegrity | undefined;
+      const result = row ?? { trades_today: 0, verified_trades_today: 0, integrity_percent: 100 };
+      hasData.current = true;
       setState({
         loading: false,
+        refreshing: false,
         error: null,
-        data: row ?? { trades_today: 0, verified_trades_today: 0, integrity_percent: 100 },
+        data: result,
       });
     }
 
     inFlight.current = false;
   }, [userId]);
 
-  // FAST refresh triggers:
-  // 1) initial load
-  // 2) realtime trade_entries changes
-  // 3) refetch when tab becomes visible again (no stale state after user switches apps)
+  // Debounced refetch for visibility changes
+  const debouncedRefetch = useCallback(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      fetchIntegrity(true);
+    }, DEBOUNCE_MS);
+  }, [fetchIntegrity]);
+
+  // Cleanup
   useEffect(() => {
-    alive.current = true;
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
+
+  // Initial fetch + realtime + visibility
+  useEffect(() => {
     if (!userId) return;
 
-    fetchIntegrity();
+    fetchIntegrity(false);
 
     const channel = supabase
       .channel(`vault-integrity-${userId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "trade_entries", filter: `user_id=eq.${userId}` },
-        () => fetchIntegrity()
+        () => fetchIntegrity(true)
       )
       .subscribe();
 
     const onVisible = () => {
-      if (document.visibilityState === "visible") fetchIntegrity();
+      if (document.visibilityState === "visible") {
+        debouncedRefetch();
+      }
     };
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
-      alive.current = false;
       document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchIntegrity]);
+  }, [userId, fetchIntegrity, debouncedRefetch]);
 
   const derived = useMemo(() => {
     const d = state.data;
@@ -86,5 +135,5 @@ export function useVaultSessionIntegrity() {
     return { trades: d.trades_today, verified: d.verified_trades_today, integrity: d.integrity_percent };
   }, [state.data]);
 
-  return { ...state, ...derived, refetch: fetchIntegrity };
+  return { ...state, ...derived, refetch: () => fetchIntegrity(true) };
 }

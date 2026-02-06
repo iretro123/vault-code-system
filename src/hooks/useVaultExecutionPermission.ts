@@ -19,30 +19,46 @@ export type VaultExecutionPermission = {
 };
 
 type State = {
-  loading: boolean;
+  loading: boolean;     // True only on initial load with no data
+  refreshing: boolean;  // True during background refetch
   error: string | null;
   data: VaultExecutionPermission | null;
 };
 
+const DEBOUNCE_MS = 300;
+
 export function useVaultExecutionPermission() {
   const { user } = useAuth();
   const userId = user?.id;
-  const [state, setState] = useState<State>({ loading: false, error: null, data: null });
+  const [state, setState] = useState<State>({ 
+    loading: true, 
+    refreshing: false, 
+    error: null, 
+    data: null 
+  });
 
   // Prevent concurrent fetches during realtime bursts
   const inFlight = useRef(false);
+  const mounted = useRef(true);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const hasData = useRef(false);
 
-  const fetchPermission = useCallback(async () => {
+  const fetchPermission = useCallback(async (isBackground = false) => {
     // Return early when not authenticated - no RPC call, no error
     if (!userId) {
-      setState({ loading: false, error: null, data: null });
+      setState({ loading: false, refreshing: false, error: null, data: null });
       return;
     }
 
     if (inFlight.current) return;
     inFlight.current = true;
 
-    setState((s) => ({ ...s, loading: true, error: null }));
+    // Only show loading on initial fetch with no cached data
+    if (!isBackground && !hasData.current) {
+      setState((s) => ({ ...s, loading: true, error: null }));
+    } else {
+      setState((s) => ({ ...s, refreshing: true }));
+    }
 
     const { data, error } = await supabase.rpc("get_vault_execution_permission", {
       _user_id: userId,
@@ -50,16 +66,26 @@ export function useVaultExecutionPermission() {
 
     inFlight.current = false;
 
+    if (!mounted.current) return;
+
     if (error) {
       console.error("Error fetching vault execution permission:", error);
-      setState({ loading: false, error: error.message, data: null });
+      // Keep existing data on error if we have it
+      setState((s) => ({ 
+        ...s, 
+        loading: false, 
+        refreshing: false, 
+        error: hasData.current ? null : error.message 
+      }));
       return;
     }
 
     if (data && data.length > 0) {
       const row = data[0];
+      hasData.current = true;
       setState({
         loading: false,
+        refreshing: false,
         error: null,
         data: {
           execution_allowed: row.execution_allowed,
@@ -75,19 +101,44 @@ export function useVaultExecutionPermission() {
         },
       });
     } else {
-      setState({ loading: false, error: "No permission data returned", data: null });
+      setState((s) => ({ 
+        ...s, 
+        loading: false, 
+        refreshing: false, 
+        error: hasData.current ? null : "No permission data returned" 
+      }));
     }
   }, [userId]);
+
+  // Debounced refetch for visibility changes
+  const debouncedRefetch = useCallback(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    debounceTimer.current = setTimeout(() => {
+      fetchPermission(true);
+    }, DEBOUNCE_MS);
+  }, [fetchPermission]);
+
+  // Cleanup
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
 
   // Initial fetch - only when authenticated
   useEffect(() => {
     if (userId) {
-      setState((s) => ({ ...s, loading: true }));
-      fetchPermission();
+      fetchPermission(false);
     }
   }, [userId, fetchPermission]);
 
-  // Realtime subscription - only depends on userId (primitive)
+  // Realtime subscription + visibility change
   useEffect(() => {
     if (!userId) return;
 
@@ -96,24 +147,32 @@ export function useVaultExecutionPermission() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "vault_events", filter: `user_id=eq.${userId}` },
-        () => fetchPermission()
+        () => fetchPermission(true)
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "trade_entries", filter: `user_id=eq.${userId}` },
-        () => fetchPermission()
+        () => fetchPermission(true)
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "vault_daily_checklist", filter: `user_id=eq.${userId}` },
-        () => fetchPermission()
+        () => fetchPermission(true)
       )
       .subscribe();
 
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        debouncedRefetch();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
+      document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchPermission]);
+  }, [userId, fetchPermission, debouncedRefetch]);
 
   const status = useMemo(() => {
     const d = state.data;
@@ -135,6 +194,6 @@ export function useVaultExecutionPermission() {
   return {
     ...state,
     status,
-    refetch: fetchPermission,
+    refetch: () => fetchPermission(true),
   };
 }

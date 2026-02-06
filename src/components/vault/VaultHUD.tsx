@@ -92,10 +92,10 @@ export function VaultHUD() {
     );
   }
 
-  // Loading state
-  if (loading) {
+  // Loading state - only show on initial load, keep layout stable
+  if (loading && !data) {
     return (
-      <div className="vault-card p-4">
+      <div className="vault-card p-4 min-h-[140px]">
         <div className="flex items-center gap-3">
           <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
           <span className="font-semibold text-muted-foreground">Checking Vault…</span>
@@ -106,9 +106,9 @@ export function VaultHUD() {
 
   // Vault open — show full HUD
   return (
-    <div className="vault-card p-4 space-y-4">
+    <div className="vault-card p-4 space-y-4 min-h-[140px]">
       {/* Header with status light */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between min-h-[24px]">
         <div className="flex items-center gap-3">
           <div className={cn("h-3 w-3 rounded-full", lightClass, status.light === "GREEN" && "animate-pulse")} />
           <span className="font-semibold text-foreground">
@@ -116,13 +116,13 @@ export function VaultHUD() {
           </span>
         </div>
         <div className="text-sm text-muted-foreground">
-          Risk Limit: <span className="font-mono text-foreground">{data?.effective_risk_limit?.toFixed(2) ?? "—"}%</span>
+          Risk Limit: <span className="font-mono tabular-nums text-foreground">{data?.effective_risk_limit?.toFixed(2) ?? "—"}%</span>
         </div>
       </div>
 
       {/* Metrics grid */}
       <div className="grid grid-cols-4 gap-3">
-        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Shield className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Vault</span>
@@ -130,20 +130,20 @@ export function VaultHUD() {
           <span className="text-sm font-medium text-emerald-400">OPEN</span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Timer className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Cooldown</span>
           </div>
           <span className={cn(
-            "text-sm font-medium",
+            "text-sm font-medium tabular-nums",
             data?.cooldown_active ? "text-amber-400" : "text-muted-foreground"
           )}>
             {data?.cooldown_active ? remainingLabel(data?.cooldown_remaining_minutes) : "None"}
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Lock className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Protection</span>
@@ -159,7 +159,7 @@ export function VaultHUD() {
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5">
+        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Activity className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Consistency</span>
