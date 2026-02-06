@@ -25,7 +25,7 @@ export default function TraderCockpit() {
 
   const ctaLabel = useMemo(() => {
     if (loading) return "Checking Vault…";
-    if (blocked) return "Blocked";
+    if (blocked) return "Not Cleared";
     if (cooldown) return "Cooldown Active";
     return "Intent to Trade";
   }, [loading, blocked, cooldown]);
@@ -98,11 +98,10 @@ export default function TraderCockpit() {
                 {!loading && blocked && (
                   <div className="mt-4 p-3 rounded-xl border border-white/10 bg-white/5">
                     <p className="text-xs font-medium text-foreground uppercase tracking-wide mb-1">
-                      Trading Locked
+                      Not Cleared
                     </p>
-                    <p className="text-xs text-muted-foreground mb-2">Vault is protecting discipline.</p>
                     <p className="text-sm text-muted-foreground">
-                      {data?.block_reason ?? "Not allowed right now."}
+                      Complete the Daily Ritual to unlock execution.
                     </p>
                   </div>
                 )}
