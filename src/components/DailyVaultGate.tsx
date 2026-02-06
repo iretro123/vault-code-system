@@ -70,19 +70,19 @@ function RatingSlider({
         className="w-full"
       />
       
-      {/* Step labels row */}
-      <div className="flex justify-between px-[6px] -mt-0.5">
+      {/* Step text labels row */}
+      <div className="flex justify-between px-0 mt-1">
         {STEP_LABELS.map((stepLabel, i) => (
           <span 
             key={stepLabel}
             className={cn(
-              "text-[10px] transition-colors duration-150",
+              "text-[9px] uppercase tracking-wide transition-all duration-200 text-center w-10",
               value === i + 1 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground/50"
+                ? "text-foreground/80 font-medium" 
+                : "text-muted-foreground/40"
             )}
           >
-            {i + 1}
+            {stepLabel}
           </span>
         ))}
       </div>
