@@ -1,43 +1,53 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { VaultHUD } from "@/components/vault/VaultHUD";
 import { DailyVaultGate } from "@/components/DailyVaultGate";
 import { PreTradeExecutionGateV2 } from "@/components/vault/PreTradeExecutionGateV2";
-import { VaultIdentityCard } from "@/components/VaultIdentityCard";
-import { VaultLevelCard } from "@/components/VaultLevelCard";
-import { SessionIntegrityCard } from "@/components/vault/SessionIntegrityCard";
 import { FocusSessionCard } from "@/components/vault/FocusSessionCard";
 import { TradeLoggerCard } from "@/components/vault/TradeLoggerCard";
 import { WelcomeCard } from "@/components/vault/WelcomeCard";
-import { VaultFlowIndicator, getActiveFlowStep } from "@/components/vault/VaultFlowIndicator";
+import { FlowSection } from "@/components/vault/FlowSection";
+import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
-import { useVaultFocusStatus } from "@/hooks/useVaultFocusStatus";
-import { useVaultSessionIntegrity } from "@/hooks/useVaultSessionIntegrity";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { AuthGate } from "@/components/AuthGate";
-import { cn } from "@/lib/utils";
 
 export default function TraderCockpit() {
   const { data, loading } = useVaultExecutionPermission();
-  const { data: focusData } = useVaultFocusStatus();
-  const { trades, verified } = useVaultSessionIntegrity();
   const [intentOpen, setIntentOpen] = useState(false);
 
   const vaultOpen = !!data?.vault_open;
   const blocked = !!data && !data.execution_allowed;
   const cooldown = !!data?.cooldown_active;
-  const focusActive = focusData.active;
 
-  // Flow indicator props
-  const flowProps = {
-    vaultOpen,
-    focusActive,
-    tradesTaken: trades,
-    tradesVerified: verified,
-  };
-  const activeStep = getActiveFlowStep(flowProps);
+  // Section open states
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    ritual: true,
+    limits: false,
+    focus: false,
+    execution: false,
+  });
+
+  // Section refs for scrolling
+  const ritualRef = useRef<HTMLDivElement>(null);
+  const limitsRef = useRef<HTMLDivElement>(null);
+  const focusRef = useRef<HTMLDivElement>(null);
+  const executionRef = useRef<HTMLDivElement>(null);
+
+  const toggleSection = useCallback((key: string) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const scrollToAndExpand = useCallback(
+    (key: string, ref: React.RefObject<HTMLDivElement>) => {
+      setOpenSections((prev) => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    },
+    []
+  );
 
   const ctaLabel = useMemo(() => {
     if (loading) return "Checking Vault…";
@@ -56,108 +66,114 @@ export default function TraderCockpit() {
   return (
     <AuthGate>
       <AppLayout>
-        <div className="max-w-6xl mx-auto p-4 md:p-6 pb-24">
+        <div className="max-w-xl mx-auto p-4 md:p-6 pb-24 space-y-4">
           <WelcomeCard />
-          <div className="flex gap-6">
-            {/* Flow Indicator - left aligned */}
-            <div className="hidden md:block pt-1">
-              <VaultFlowIndicator {...flowProps} />
-            </div>
 
-            {/* Main content grid */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* LEFT: Minimal action column */}
-              <div className="lg:col-span-2 space-y-4">
-                {/* Daily Ritual Card */}
-                <Card className="vault-card p-5" data-ritual-gate>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-                      Daily Ritual
-                    </h2>
-                    {vaultOpen && (
-                      <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded-full">
-                        Completed ✅
-                      </span>
-                    )}
-                  </div>
+          {/* Section 1: Daily Ritual */}
+          <FlowSection
+            title="Daily Ritual"
+            isOpen={openSections.ritual}
+            onToggle={() => toggleSection("ritual")}
+            sectionRef={ritualRef}
+            onContinue={() => scrollToAndExpand("limits", limitsRef)}
+            showContinue={vaultOpen}
+          >
+            {!vaultOpen ? (
+              <DailyVaultGate />
+            ) : (
+              <div className="p-3 rounded-xl bg-accent/10 border border-accent/20">
+                <p className="text-sm text-accent font-medium">
+                  ✅ Vault is open
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Trade fast — but only your best setups.
+                </p>
+              </div>
+            )}
+          </FlowSection>
 
-                  {!vaultOpen ? (
-                    <div className="space-y-4">
-                      <DailyVaultGate />
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Vault is open. Trade fast — but only your best setups.
-                    </p>
-                  )}
-                </Card>
+          {/* Section 2: Today's Limits */}
+          <FlowSection
+            title="Today's Limits"
+            isOpen={openSections.limits}
+            onToggle={() => toggleSection("limits")}
+            locked={!vaultOpen}
+            sectionRef={limitsRef}
+            onContinue={() => scrollToAndExpand("focus", focusRef)}
+            showContinue={vaultOpen}
+          >
+            <TodaysLimitsSection />
+          </FlowSection>
 
-                {/* Execution Card */}
-                <Card className="vault-card p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-                      Execution
-                    </h2>
-                    {data?.effective_risk_limit != null && vaultOpen && (
-                      <span className="text-xs text-muted-foreground">
+          {/* Section 3: Focus Session */}
+          <FlowSection
+            title="Focus Session"
+            isOpen={openSections.focus}
+            onToggle={() => toggleSection("focus")}
+            locked={!vaultOpen}
+            sectionRef={focusRef}
+            onContinue={() => scrollToAndExpand("execution", executionRef)}
+            showContinue={vaultOpen}
+          >
+            <FocusSessionCard variant="embedded" />
+          </FlowSection>
+
+          {/* Section 4: Execution + Trade Logger */}
+          <FlowSection
+            title="Execution"
+            isOpen={openSections.execution}
+            onToggle={() => toggleSection("execution")}
+            locked={!vaultOpen}
+            sectionRef={executionRef}
+            showContinue={false}
+          >
+            <div className="space-y-4">
+              {/* Execution CTA */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-muted-foreground">
+                    {data?.effective_risk_limit != null && (
+                      <>
                         Risk:{" "}
                         <span className="font-mono text-foreground">
                           {data.effective_risk_limit.toFixed(2)}%
                         </span>
-                      </span>
+                      </>
                     )}
+                  </p>
+                </div>
+
+                <Button
+                  disabled={ctaDisabled}
+                  className="vault-cta w-full h-12 text-base font-semibold rounded-xl"
+                  size="lg"
+                  onClick={() => setIntentOpen(true)}
+                >
+                  {ctaLabel}
+                </Button>
+
+                {/* Cooldown notice */}
+                {!loading && cooldown && (
+                  <div className="mt-3 p-3 rounded-xl border border-warning/20 bg-warning/10">
+                    <p className="text-sm text-warning">
+                      Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
+                    </p>
                   </div>
-
-                  {!vaultOpen ? (
-                    <div className="p-3 rounded-xl border border-border bg-muted/30">
-                      <p className="text-sm text-muted-foreground">
-                        Complete Daily Ritual to unlock execution.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <Button
-                        disabled={ctaDisabled}
-                        className="vault-cta w-full h-14 text-lg font-semibold rounded-xl"
-                        size="lg"
-                        onClick={() => setIntentOpen(true)}
-                      >
-                        {ctaLabel}
-                      </Button>
-
-                      {/* Cooldown notice */}
-                      {!loading && cooldown && (
-                        <div className="mt-4 p-3 rounded-xl border border-warning/20 bg-warning/10">
-                          <p className="text-sm text-warning">
-                            Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
-                          </p>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-muted-foreground text-center mt-4">
-                        One click. Vault decides. Verified trades only.
-                      </p>
-                    </>
-                  )}
-                </Card>
-
-                {/* Trade Logger */}
-                <TradeLoggerCard />
+                )}
               </div>
 
-              {/* RIGHT: Sticky side panel */}
-              <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-                <VaultHUD />
-                <FocusSessionCard />
-                <SessionIntegrityCard />
-                <VaultIdentityCard />
-                <VaultLevelCard />
+              {/* Trade Logger */}
+              <div className="pt-2 border-t border-border">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+                  Log Trade
+                </p>
+                <TradeLoggerCard variant="embedded" />
               </div>
             </div>
-          </div>
+          </FlowSection>
         </div>
 
-        {/* Minimal modal */}
+        {/* Intent Modal */}
         {intentOpen && (
           <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
             <Card className="vault-card w-full max-w-md p-6 relative animate-scale-in">

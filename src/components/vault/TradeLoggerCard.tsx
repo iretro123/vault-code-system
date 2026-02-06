@@ -34,7 +34,11 @@ const outcomeMessages: Record<Outcome, { title: string; message: string }> = {
   },
 };
 
-export function TradeLoggerCard() {
+interface TradeLoggerCardProps {
+  variant?: "card" | "embedded";
+}
+
+export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,9 +111,191 @@ export function TradeLoggerCard() {
     setTimeout(() => setSuccess(null), 5000);
   };
 
-  // Success state
+  // Success state content
+  const successContent = success ? (
+    <>
+      <p className="text-sm font-medium text-foreground">
+        Logged. Vault updated.
+      </p>
+      
+      <div
+        className={`p-3 rounded-xl ${
+          success === "WIN"
+            ? "bg-accent/10 border border-accent/20"
+            : success === "LOSS"
+            ? "bg-destructive/10 border border-destructive/20"
+            : "bg-muted/30 border border-border"
+        }`}
+      >
+        <p
+          className={`text-sm font-medium ${
+            success === "WIN"
+              ? "text-accent"
+              : success === "LOSS"
+              ? "text-destructive"
+              : "text-muted-foreground"
+          }`}
+        >
+          {outcomeMessages[success].title}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">{outcomeMessages[success].message}</p>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full text-xs text-muted-foreground hover:text-foreground"
+        onClick={() => setSuccess(null)}
+      >
+        Log Another
+      </Button>
+    </>
+  ) : null;
+
+  // Form content
+  const formContent = (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {/* Row 1: Instrument + Symbol */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Type</Label>
+          <Select
+            value={instrumentType}
+            onValueChange={(v) => setInstrumentType(v as InstrumentType)}
+          >
+            <SelectTrigger className="h-9 text-sm bg-muted/30 border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="futures">Futures</SelectItem>
+              <SelectItem value="options">Options</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Symbol</Label>
+          <Input
+            ref={symbolInputRef}
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            placeholder="ES, SPY…"
+            className="vault-input h-9 text-sm"
+            required
+          />
+        </div>
+      </div>
+
+      {/* Row 2: Risk + Outcome */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Risk ($)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={riskAmount}
+            onChange={(e) => setRiskAmount(e.target.value)}
+            placeholder="100"
+            className="vault-input h-9 text-sm"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Outcome</Label>
+          <Select
+            value={outcome}
+            onValueChange={(v) => setOutcome(v as Outcome)}
+          >
+            <SelectTrigger className="h-9 text-sm bg-muted/30 border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="WIN">Win</SelectItem>
+              <SelectItem value="LOSS">Loss</SelectItem>
+              <SelectItem value="BREAKEVEN">Breakeven</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Emotional State Slider */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground">
+            Emotional State
+          </Label>
+          <span className="text-xs font-mono text-foreground">
+            {emotionalState[0]}/5
+          </span>
+        </div>
+        <Slider
+          value={emotionalState}
+          onValueChange={setEmotionalState}
+          min={1}
+          max={5}
+          step={1}
+          className="w-full"
+        />
+      </div>
+
+      {/* Followed Rules Checkbox */}
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="followed-rules"
+          checked={followedRules}
+          onCheckedChange={(c) => setFollowedRules(!!c)}
+        />
+        <Label
+          htmlFor="followed-rules"
+          className="text-sm text-muted-foreground cursor-pointer"
+        >
+          Followed all rules
+        </Label>
+      </div>
+
+      {/* Optional Note */}
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          Note (optional)
+        </Label>
+        <Textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Quick reflection…"
+          className="vault-input h-14 text-sm resize-none"
+          maxLength={500}
+        />
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="p-2 rounded-xl bg-destructive/10 border border-destructive/20">
+          <p className="text-xs text-destructive">{error}</p>
+        </div>
+      )}
+
+      {/* Submit Button */}
+      <Button
+        type="submit"
+        size="sm"
+        disabled={submitting || !symbol.trim() || !riskAmount}
+        className="vault-cta w-full h-10"
+      >
+        {submitting ? "Logging…" : "Log Trade"}
+      </Button>
+    </form>
+  );
+
+  // Embedded variant renders without the Card wrapper
+  if (variant === "embedded") {
+    return (
+      <div className="space-y-3">
+        {success ? successContent : formContent}
+      </div>
+    );
+  }
+
+  // Card variant (default)
   if (success) {
-    const msg = outcomeMessages[success];
     return (
       <Card className="vault-card">
         <CardHeader className="pb-2 pt-4 px-4">
@@ -118,41 +304,7 @@ export function TradeLoggerCard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
-          {/* Confirmation text */}
-          <p className="text-sm font-medium text-foreground">
-            Logged. Vault updated.
-          </p>
-          
-          <div
-            className={`p-3 rounded-xl ${
-              success === "WIN"
-                ? "bg-emerald-500/10 border border-emerald-500/20"
-                : success === "LOSS"
-                ? "bg-rose-500/10 border border-rose-500/20"
-                : "bg-white/5 border border-white/10"
-            }`}
-          >
-            <p
-              className={`text-sm font-medium ${
-                success === "WIN"
-                  ? "text-emerald-400"
-                  : success === "LOSS"
-                  ? "text-rose-400"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {msg.title}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">{msg.message}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setSuccess(null)}
-          >
-            Log Another
-          </Button>
+          {successContent}
         </CardContent>
       </Card>
     );
@@ -166,136 +318,7 @@ export function TradeLoggerCard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Row 1: Instrument + Symbol */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Type</Label>
-              <Select
-                value={instrumentType}
-                onValueChange={(v) => setInstrumentType(v as InstrumentType)}
-              >
-                <SelectTrigger className="h-9 text-sm bg-white/5 border-white/10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="futures">Futures</SelectItem>
-                  <SelectItem value="options">Options</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Symbol</Label>
-              <Input
-                ref={symbolInputRef}
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value)}
-                placeholder="ES, SPY…"
-                className="vault-input h-9 text-sm"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Row 2: Risk + Outcome */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Risk ($)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={riskAmount}
-                onChange={(e) => setRiskAmount(e.target.value)}
-                placeholder="100"
-                className="vault-input h-9 text-sm"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Outcome</Label>
-              <Select
-                value={outcome}
-                onValueChange={(v) => setOutcome(v as Outcome)}
-              >
-                <SelectTrigger className="h-9 text-sm bg-white/5 border-white/10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="WIN">Win</SelectItem>
-                  <SelectItem value="LOSS">Loss</SelectItem>
-                  <SelectItem value="BREAKEVEN">Breakeven</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Emotional State Slider */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">
-                Emotional State
-              </Label>
-              <span className="text-xs font-mono text-foreground">
-                {emotionalState[0]}/5
-              </span>
-            </div>
-            <Slider
-              value={emotionalState}
-              onValueChange={setEmotionalState}
-              min={1}
-              max={5}
-              step={1}
-              className="w-full"
-            />
-          </div>
-
-          {/* Followed Rules Checkbox */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="followed-rules"
-              checked={followedRules}
-              onCheckedChange={(c) => setFollowedRules(!!c)}
-            />
-            <Label
-              htmlFor="followed-rules"
-              className="text-sm text-muted-foreground cursor-pointer"
-            >
-              Followed all rules
-            </Label>
-          </div>
-
-          {/* Optional Note */}
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">
-              Note (optional)
-            </Label>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Quick reflection…"
-              className="vault-input h-14 text-sm resize-none"
-              maxLength={500}
-            />
-          </div>
-
-          {/* Error Display */}
-          {error && (
-            <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
-              <p className="text-xs text-rose-400">{error}</p>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            size="sm"
-            disabled={submitting || !symbol.trim() || !riskAmount}
-            className="vault-cta w-full h-10"
-          >
-            {submitting ? "Logging…" : "Log Trade"}
-          </Button>
-        </form>
+        {formContent}
       </CardContent>
     </Card>
   );
