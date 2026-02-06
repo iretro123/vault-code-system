@@ -9,19 +9,35 @@ import { SessionIntegrityCard } from "@/components/vault/SessionIntegrityCard";
 import { FocusSessionCard } from "@/components/vault/FocusSessionCard";
 import { TradeLoggerCard } from "@/components/vault/TradeLoggerCard";
 import { WelcomeCard } from "@/components/vault/WelcomeCard";
+import { VaultFlowIndicator, getActiveFlowStep } from "@/components/vault/VaultFlowIndicator";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
+import { useVaultFocusStatus } from "@/hooks/useVaultFocusStatus";
+import { useVaultSessionIntegrity } from "@/hooks/useVaultSessionIntegrity";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { AuthGate } from "@/components/AuthGate";
+import { cn } from "@/lib/utils";
 
 export default function TraderCockpit() {
   const { data, loading } = useVaultExecutionPermission();
+  const { data: focusData } = useVaultFocusStatus();
+  const { trades, verified } = useVaultSessionIntegrity();
   const [intentOpen, setIntentOpen] = useState(false);
 
   const vaultOpen = !!data?.vault_open;
   const blocked = !!data && !data.execution_allowed;
   const cooldown = !!data?.cooldown_active;
+  const focusActive = focusData.active;
+
+  // Flow indicator props
+  const flowProps = {
+    vaultOpen,
+    focusActive,
+    tradesTaken: trades,
+    tradesVerified: verified,
+  };
+  const activeStep = getActiveFlowStep(flowProps);
 
   const ctaLabel = useMemo(() => {
     if (loading) return "Checking Vault…";
@@ -42,94 +58,127 @@ export default function TraderCockpit() {
       <AppLayout>
         <div className="max-w-6xl mx-auto p-4 md:p-6 pb-24">
           <WelcomeCard />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* LEFT: Minimal action column */}
-            <div className="lg:col-span-2 space-y-4">
-              {/* Daily Ritual Card */}
-              <Card className="vault-card p-5" data-ritual-gate>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-                    Daily Ritual
-                  </h2>
-                  {vaultOpen && (
-                    <span className="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">
-                      Completed ✅
-                    </span>
-                  )}
-                </div>
-
-                {!vaultOpen ? (
-                  <div className="space-y-4">
-                    <DailyVaultGate />
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Vault is open. Trade fast — but only your best setups.
-                  </p>
-                )}
-              </Card>
-
-              {/* Execution Card */}
-              <Card className="vault-card p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-                    Execution
-                  </h2>
-                  {data?.effective_risk_limit != null && (
-                    <span className="text-xs text-muted-foreground">
-                      Risk:{" "}
-                      <span className="font-mono text-foreground">
-                        {data.effective_risk_limit.toFixed(2)}%
-                      </span>
-                    </span>
-                  )}
-                </div>
-
-                <Button
-                  disabled={ctaDisabled}
-                  className="vault-cta w-full h-14 text-lg font-semibold rounded-xl"
-                  size="lg"
-                  onClick={() => setIntentOpen(true)}
-                >
-                  {ctaLabel}
-                </Button>
-
-                {/* If blocked, show reason */}
-                {!loading && blocked && (
-                  <div className="mt-4 p-3 rounded-xl border border-white/10 bg-white/5">
-                    <p className="text-xs font-medium text-foreground uppercase tracking-wide mb-1">
-                      Not Cleared
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Complete the Daily Ritual to unlock execution.
-                    </p>
-                  </div>
-                )}
-
-                {!loading && cooldown && (
-                  <div className="mt-4 p-3 rounded-xl border border-amber-500/20 bg-amber-500/10">
-                    <p className="text-sm text-amber-400">
-                      Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
-                    </p>
-                  </div>
-                )}
-
-                <p className="text-xs text-muted-foreground text-center mt-4">
-                  One click. Vault decides. Verified trades only.
-                </p>
-              </Card>
-
-              {/* Trade Logger */}
-              <TradeLoggerCard />
+          <div className="flex gap-6">
+            {/* Flow Indicator - left aligned */}
+            <div className="hidden md:block pt-1">
+              <VaultFlowIndicator {...flowProps} />
             </div>
 
-            {/* RIGHT: Sticky side panel */}
-            <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-              <VaultHUD />
-              <FocusSessionCard />
-              <SessionIntegrityCard />
-              <VaultIdentityCard />
-              <VaultLevelCard />
+            {/* Main content grid */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* LEFT: Minimal action column */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* Daily Ritual Card */}
+                <Card
+                  className={cn(
+                    "vault-card p-5 transition-opacity duration-200",
+                    activeStep === "prepare" && "ring-1 ring-primary/30"
+                  )}
+                  data-ritual-gate
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      Daily Ritual
+                    </h2>
+                    {vaultOpen && (
+                      <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded-full">
+                        Completed ✅
+                      </span>
+                    )}
+                  </div>
+
+                  {!vaultOpen ? (
+                    <div className="space-y-4">
+                      <DailyVaultGate />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Vault is open. Trade fast — but only your best setups.
+                    </p>
+                  )}
+                </Card>
+
+                {/* Execution Card */}
+                <Card
+                  className={cn(
+                    "vault-card p-5 transition-opacity duration-200",
+                    activeStep === "execute" && "ring-1 ring-primary/30"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      Execution
+                    </h2>
+                    {data?.effective_risk_limit != null && (
+                      <span className="text-xs text-muted-foreground">
+                        Risk:{" "}
+                        <span className="font-mono text-foreground">
+                          {data.effective_risk_limit.toFixed(2)}%
+                        </span>
+                      </span>
+                    )}
+                  </div>
+
+                  <Button
+                    disabled={ctaDisabled}
+                    className="vault-cta w-full h-14 text-lg font-semibold rounded-xl"
+                    size="lg"
+                    onClick={() => setIntentOpen(true)}
+                  >
+                    {ctaLabel}
+                  </Button>
+
+                  {/* If blocked, show reason */}
+                  {!loading && blocked && (
+                    <div className="mt-4 p-3 rounded-xl border border-border bg-muted/30">
+                      <p className="text-xs font-medium text-foreground uppercase tracking-wide mb-1">
+                        Not Cleared
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Complete the Daily Ritual to unlock execution.
+                      </p>
+                    </div>
+                  )}
+
+                  {!loading && cooldown && (
+                    <div className="mt-4 p-3 rounded-xl border border-warning/20 bg-warning/10">
+                      <p className="text-sm text-warning">
+                        Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground text-center mt-4">
+                    One click. Vault decides. Verified trades only.
+                  </p>
+                </Card>
+
+                {/* Trade Logger */}
+                <div
+                  className={cn(
+                    "transition-opacity duration-200",
+                    activeStep === "record" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30"
+                  )}
+                >
+                  <TradeLoggerCard />
+                </div>
+              </div>
+
+              {/* RIGHT: Sticky side panel */}
+              <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+                <VaultHUD />
+                <div
+                  className={cn(
+                    "transition-opacity duration-200",
+                    activeStep === "commit" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30"
+                  )}
+                >
+                  <FocusSessionCard />
+                </div>
+                <SessionIntegrityCard />
+                <VaultIdentityCard />
+                <VaultLevelCard />
+              </div>
             </div>
           </div>
         </div>
