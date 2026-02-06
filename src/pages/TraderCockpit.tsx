@@ -68,6 +68,13 @@ export default function TraderCockpit() {
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* LEFT: Minimal action column */}
               <div className="lg:col-span-2 space-y-4">
+                {/* Start Here cue */}
+                {!vaultOpen && (
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Start here
+                  </p>
+                )}
+
                 {/* Daily Ritual Card */}
                 <Card
                   className={cn(
@@ -101,15 +108,16 @@ export default function TraderCockpit() {
                 {/* Execution Card */}
                 <Card
                   className={cn(
-                    "vault-card p-5 transition-opacity duration-200",
-                    activeStep === "execute" && "ring-1 ring-primary/30"
+                    "vault-card p-5 transition-all duration-200",
+                    activeStep === "execute" && "ring-1 ring-primary/30",
+                    !vaultOpen && "opacity-60"
                   )}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                       Execution
                     </h2>
-                    {data?.effective_risk_limit != null && (
+                    {data?.effective_risk_limit != null && vaultOpen && (
                       <span className="text-xs text-muted-foreground">
                         Risk:{" "}
                         <span className="font-mono text-foreground">
@@ -119,48 +127,48 @@ export default function TraderCockpit() {
                     )}
                   </div>
 
-                  <Button
-                    disabled={ctaDisabled}
-                    className="vault-cta w-full h-14 text-lg font-semibold rounded-xl"
-                    size="lg"
-                    onClick={() => setIntentOpen(true)}
-                  >
-                    {ctaLabel}
-                  </Button>
-
-                  {/* If blocked, show reason */}
-                  {!loading && blocked && (
-                    <div className="mt-4 p-3 rounded-xl border border-border bg-muted/30">
-                      <p className="text-xs font-medium text-foreground uppercase tracking-wide mb-1">
-                        Not Cleared
-                      </p>
+                  {!vaultOpen ? (
+                    <div className="p-3 rounded-xl border border-border bg-muted/30">
                       <p className="text-sm text-muted-foreground">
-                        Complete the Daily Ritual to unlock execution.
+                        Complete Daily Ritual to unlock execution.
                       </p>
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      <Button
+                        disabled={ctaDisabled}
+                        className="vault-cta w-full h-14 text-lg font-semibold rounded-xl"
+                        size="lg"
+                        onClick={() => setIntentOpen(true)}
+                      >
+                        {ctaLabel}
+                      </Button>
 
-                  {!loading && cooldown && (
-                    <div className="mt-4 p-3 rounded-xl border border-warning/20 bg-warning/10">
-                      <p className="text-sm text-warning">
-                        Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
+                      {/* Cooldown notice */}
+                      {!loading && cooldown && (
+                        <div className="mt-4 p-3 rounded-xl border border-warning/20 bg-warning/10">
+                          <p className="text-sm text-warning">
+                            Cooldown active — wait {data?.cooldown_remaining_minutes ?? "…"} min.
+                          </p>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-muted-foreground text-center mt-4">
+                        One click. Vault decides. Verified trades only.
                       </p>
-                    </div>
+                    </>
                   )}
-
-                  <p className="text-xs text-muted-foreground text-center mt-4">
-                    One click. Vault decides. Verified trades only.
-                  </p>
                 </Card>
 
                 {/* Trade Logger */}
                 <div
                   className={cn(
-                    "transition-opacity duration-200",
-                    activeStep === "record" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30"
+                    "transition-all duration-200",
+                    activeStep === "record" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30",
+                    !vaultOpen && "opacity-60"
                   )}
                 >
-                  <TradeLoggerCard />
+                  <TradeLoggerCard locked={!vaultOpen} hasTradesExecuted={trades > 0} />
                 </div>
               </div>
 
@@ -169,11 +177,12 @@ export default function TraderCockpit() {
                 <VaultHUD />
                 <div
                   className={cn(
-                    "transition-opacity duration-200",
-                    activeStep === "commit" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30"
+                    "transition-all duration-200",
+                    activeStep === "commit" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30",
+                    !vaultOpen && "opacity-60"
                   )}
                 >
-                  <FocusSessionCard />
+                  <FocusSessionCard locked={!vaultOpen} />
                 </div>
                 <SessionIntegrityCard />
                 <VaultIdentityCard />
