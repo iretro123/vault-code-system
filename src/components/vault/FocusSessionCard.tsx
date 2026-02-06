@@ -11,7 +11,11 @@ function fmtTime(s: number) {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
-export function FocusSessionCard() {
+interface FocusSessionCardProps {
+  locked?: boolean;
+}
+
+export function FocusSessionCard({ locked = false }: FocusSessionCardProps) {
   const { data, loading, error, refetch } = useVaultFocusStatus();
   const [mins, setMins] = useState(90);
   const [starting, setStarting] = useState(false);
@@ -44,12 +48,14 @@ export function FocusSessionCard() {
             className={`text-xs font-semibold ${
               loading
                 ? "text-muted-foreground"
+                : locked
+                ? "text-muted-foreground"
                 : data.active
                 ? "text-emerald-400"
                 : "text-muted-foreground"
             }`}
           >
-            {loading ? "…" : data.active ? "ACTIVE" : "OFF"}
+            {loading ? "…" : locked ? "LOCKED" : data.active ? "ACTIVE" : "OFF"}
           </span>
         </div>
       </CardHeader>
@@ -57,7 +63,11 @@ export function FocusSessionCard() {
       <CardContent className="space-y-3 px-4 pb-4">
         {error && <p className="text-xs text-rose-400">{error}</p>}
 
-        {data.active ? (
+        {locked ? (
+          <p className="text-sm text-muted-foreground">
+            Complete Daily Ritual first.
+          </p>
+        ) : data.active ? (
           <div className="space-y-2">
             <p className="text-lg font-semibold tabular-nums text-foreground">
               Time left:{" "}
