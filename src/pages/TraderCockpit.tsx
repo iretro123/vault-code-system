@@ -68,21 +68,8 @@ export default function TraderCockpit() {
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* LEFT: Minimal action column */}
               <div className="lg:col-span-2 space-y-4">
-                {/* Start Here cue */}
-                {!vaultOpen && (
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Start here
-                  </p>
-                )}
-
                 {/* Daily Ritual Card */}
-                <Card
-                  className={cn(
-                    "vault-card p-5 transition-opacity duration-200",
-                    activeStep === "prepare" && "ring-1 ring-primary/30"
-                  )}
-                  data-ritual-gate
-                >
+                <Card className="vault-card p-5" data-ritual-gate>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                       Daily Ritual
@@ -106,13 +93,7 @@ export default function TraderCockpit() {
                 </Card>
 
                 {/* Execution Card */}
-                <Card
-                  className={cn(
-                    "vault-card p-5 transition-all duration-200",
-                    activeStep === "execute" && "ring-1 ring-primary/30",
-                    !vaultOpen && "opacity-60"
-                  )}
-                >
+                <Card className="vault-card p-5">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                       Execution
@@ -161,29 +142,13 @@ export default function TraderCockpit() {
                 </Card>
 
                 {/* Trade Logger */}
-                <div
-                  className={cn(
-                    "transition-all duration-200",
-                    activeStep === "record" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30",
-                    !vaultOpen && "opacity-60"
-                  )}
-                >
-                  <TradeLoggerCard locked={!vaultOpen} hasTradesExecuted={trades > 0} />
-                </div>
+                <TradeLoggerCard />
               </div>
 
               {/* RIGHT: Sticky side panel */}
               <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
                 <VaultHUD />
-                <div
-                  className={cn(
-                    "transition-all duration-200",
-                    activeStep === "commit" && "[&>.vault-card]:ring-1 [&>.vault-card]:ring-primary/30",
-                    !vaultOpen && "opacity-60"
-                  )}
-                >
-                  <FocusSessionCard locked={!vaultOpen} />
-                </div>
+                <FocusSessionCard />
                 <SessionIntegrityCard />
                 <VaultIdentityCard />
                 <VaultLevelCard />
