@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type VaultRank = "LOCKED" | "NOVICE" | "DEVELOPING" | "STRONG" | "ELITE";
+export type VaultRank = "LOCKED" | "NOVICE" | "DEVELOPING" | "CONSISTENT" | "PROVEN";
 
 export interface VaultIdentity {
   vaultScore: number;

@@ -8,16 +8,16 @@ const RANK_ICONS = {
   LOCKED: Lock,
   NOVICE: Shield,
   DEVELOPING: TrendingUp,
-  STRONG: Zap,
-  ELITE: Crown,
+  CONSISTENT: Zap,
+  PROVEN: Crown,
 } as const;
 
 const RANK_COLORS = {
   LOCKED: "text-rose-400",
   NOVICE: "text-amber-400",
   DEVELOPING: "text-muted-foreground",
-  STRONG: "text-primary",
-  ELITE: "text-emerald-400",
+  CONSISTENT: "text-primary",
+  PROVEN: "text-emerald-400",
 } as const;
 
 interface VaultIdentityCardProps {
@@ -95,7 +95,7 @@ export function VaultIdentityCard({ className }: VaultIdentityCardProps) {
       {/* Star indicators for rank */}
       <div className="flex items-center gap-1 mt-4">
         {[1, 2, 3, 4, 5].map((star) => {
-          const rankIndex = ["LOCKED", "NOVICE", "DEVELOPING", "STRONG", "ELITE"].indexOf(
+          const rankIndex = ["LOCKED", "NOVICE", "DEVELOPING", "CONSISTENT", "PROVEN"].indexOf(
             identity.vaultRank
           );
           const filled = star <= rankIndex + 1;
