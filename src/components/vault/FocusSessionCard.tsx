@@ -11,7 +11,11 @@ function fmtTime(s: number) {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
-export function FocusSessionCard() {
+interface FocusSessionCardProps {
+  variant?: "card" | "embedded";
+}
+
+export function FocusSessionCard({ variant = "card" }: FocusSessionCardProps) {
   const { data, loading, error, refetch } = useVaultFocusStatus();
   const [mins, setMins] = useState(90);
   const [starting, setStarting] = useState(false);
@@ -32,6 +36,80 @@ export function FocusSessionCard() {
     setStarting(false);
     refetch();
   };
+
+  // Embedded variant renders without the Card wrapper
+  if (variant === "embedded") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span
+            className={`text-xs font-semibold ${
+              loading
+                ? "text-muted-foreground"
+                : data.active
+                ? "text-emerald-400"
+                : "text-muted-foreground"
+            }`}
+          >
+            {loading ? "…" : data.active ? "ACTIVE" : "OFF"}
+          </span>
+        </div>
+
+        {error && <p className="text-xs text-rose-400">{error}</p>}
+
+        {data.active ? (
+          <div className="space-y-2">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              Time left:{" "}
+              <span className="text-primary">
+                {remaining != null ? fmtTime(remaining) : "…"}
+              </span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Trades remaining:{" "}
+              <span className="font-medium text-foreground">
+                {data.trades_remaining}
+              </span>
+            </p>
+            <p className="text-xs text-muted-foreground pt-2">
+              Vault tightens discipline during this block. When it ends, trading stops.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Choose your focused trading block.
+            </p>
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={5}
+                max={480}
+                value={mins}
+                onChange={(e) => setMins(Number(e.target.value))}
+                className="vault-input w-20 h-9"
+              />
+              <span className="text-sm text-muted-foreground">minutes</span>
+
+              <Button
+                size="sm"
+                onClick={start}
+                disabled={starting}
+                className="vault-cta ml-auto px-4"
+              >
+                {starting ? "Starting…" : "Start"}
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Not a schedule. A contract: trade clean for the time you choose.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <Card className="vault-card">
