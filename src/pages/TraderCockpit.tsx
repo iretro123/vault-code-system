@@ -63,6 +63,27 @@ export default function TraderCockpit() {
     return false;
   }, [loading, blocked, cooldown]);
 
+  // Determine which section is currently "active" (only one at a time)
+  // Active = the currently expanded step that the user should focus on
+  const getActiveSection = (): string | null => {
+    if (!vaultOpen) return "ritual"; // Ritual incomplete = ritual is active
+    if (openSections.ritual) return "ritual";
+    if (openSections.limits) return "limits";
+    if (openSections.focus) return "focus";
+    if (openSections.execution) return "execution";
+    return null;
+  };
+
+  const activeSection = getActiveSection();
+
+  // Determine section status
+  const getSectionStatus = (key: string): "active" | "completed" | "locked" => {
+    if (!vaultOpen && key !== "ritual") return "locked";
+    if (key === "ritual" && vaultOpen) return "completed";
+    if (key === activeSection) return "active";
+    return "locked";
+  };
+
   return (
     <AuthGate>
       <AppLayout>
@@ -74,6 +95,7 @@ export default function TraderCockpit() {
             title="Daily Ritual"
             isOpen={openSections.ritual}
             onToggle={() => toggleSection("ritual")}
+            status={getSectionStatus("ritual")}
             sectionRef={ritualRef}
             onContinue={() => scrollToAndExpand("limits", limitsRef)}
             showContinue={vaultOpen}
@@ -97,6 +119,7 @@ export default function TraderCockpit() {
             title="Today's Limits"
             isOpen={openSections.limits}
             onToggle={() => toggleSection("limits")}
+            status={getSectionStatus("limits")}
             locked={!vaultOpen}
             sectionRef={limitsRef}
             onContinue={() => scrollToAndExpand("focus", focusRef)}
@@ -110,6 +133,7 @@ export default function TraderCockpit() {
             title="Focus Session"
             isOpen={openSections.focus}
             onToggle={() => toggleSection("focus")}
+            status={getSectionStatus("focus")}
             locked={!vaultOpen}
             sectionRef={focusRef}
             onContinue={() => scrollToAndExpand("execution", executionRef)}
@@ -123,6 +147,7 @@ export default function TraderCockpit() {
             title="Execution"
             isOpen={openSections.execution}
             onToggle={() => toggleSection("execution")}
+            status={getSectionStatus("execution")}
             locked={!vaultOpen}
             sectionRef={executionRef}
             showContinue={false}

@@ -181,10 +181,35 @@
     }
   }
   
+  /* Section status dot breathing animation */
+  .status-dot-active {
+    animation: vault-breathe 3s ease-in-out infinite;
+  }
+  
+  @keyframes vault-breathe {
+    0%, 100% {
+      opacity: 0.85;
+      box-shadow: 0 0 4px 1px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 10px 3px hsl(var(--primary) / 0.5);
+    }
+  }
+  
   /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
-    .flow-dot-active {
+    .flow-dot-active,
+    .status-dot-active {
       animation: none;
+    }
+    
+    .flow-dot-active {
+      box-shadow: 0 0 6px 2px hsl(var(--primary) / 0.4);
+    }
+    
+    .status-dot-active {
+      opacity: 1;
       box-shadow: 0 0 6px 2px hsl(var(--primary) / 0.4);
     }
   }
