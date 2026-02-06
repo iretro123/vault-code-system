@@ -285,7 +285,7 @@ export function DailyVaultGate() {
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-400">
-              Your self-assessment indicates suboptimal conditions. Consider reducing risk or sitting out today.
+              Vault will adjust risk to protect your edge today.
             </p>
           </div>
         </div>
