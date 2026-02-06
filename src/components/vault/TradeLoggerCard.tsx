@@ -34,12 +34,7 @@ const outcomeMessages: Record<Outcome, { title: string; message: string }> = {
   },
 };
 
-interface TradeLoggerCardProps {
-  locked?: boolean;
-  hasTradesExecuted?: boolean;
-}
-
-export function TradeLoggerCard({ locked = false, hasTradesExecuted = false }: TradeLoggerCardProps) {
+export function TradeLoggerCard() {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,24 +153,6 @@ export function TradeLoggerCard({ locked = false, hasTradesExecuted = false }: T
           >
             Log Another
           </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // If locked, show locked state
-  if (locked) {
-    return (
-      <Card className="vault-card">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Log Trade
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4">
-          <p className="text-sm text-muted-foreground">
-            Log trades after execution.
-          </p>
         </CardContent>
       </Card>
     );
