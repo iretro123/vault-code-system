@@ -165,4 +165,27 @@
   .section-title {
     @apply text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4;
   }
+  
+  /* Flow indicator breathing glow */
+  .flow-dot-active {
+    animation: flow-breathe 3s ease-in-out infinite;
+    box-shadow: 0 0 6px 2px hsl(var(--primary) / 0.4);
+  }
+  
+  @keyframes flow-breathe {
+    0%, 100% {
+      box-shadow: 0 0 4px 1px hsl(var(--primary) / 0.25);
+    }
+    50% {
+      box-shadow: 0 0 8px 3px hsl(var(--primary) / 0.45);
+    }
+  }
+  
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .flow-dot-active {
+      animation: none;
+      box-shadow: 0 0 6px 2px hsl(var(--primary) / 0.4);
+    }
+  }
 }

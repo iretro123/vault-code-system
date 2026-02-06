@@ -72,11 +72,11 @@ export function VaultFlowIndicator(props: VaultFlowIndicatorProps) {
           <div key={step.id} className="flex items-start gap-2.5">
             {/* Indicator dot/check */}
             <div className="flex flex-col items-center">
-            <div
+              <div
                 className={cn(
                   "w-2 h-2 rounded-full flex items-center justify-center",
                   state === "completed" && "bg-accent",
-                  state === "active" && "bg-foreground",
+                  state === "active" && "bg-primary flow-dot-active",
                   state === "locked" && "bg-muted-foreground/30"
                 )}
               >
