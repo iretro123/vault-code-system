@@ -3,7 +3,7 @@ import { Crosshair, BookOpen, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { icon: Crosshair, label: "Cockpit", path: "/cockpit" },
+  { icon: Crosshair, label: "Dashboard", path: "/cockpit" },
   { icon: BookOpen, label: "Trades", path: "/log" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];

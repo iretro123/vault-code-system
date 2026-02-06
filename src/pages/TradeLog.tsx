@@ -118,7 +118,7 @@ const TradeLog = () => {
     <AppLayout>
       <div className="px-4 md:px-6 pt-4">
         <Link to="/cockpit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          ← Back to Cockpit
+          ← Back to Dashboard
         </Link>
       </div>
       <PageHeader 
