@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +39,14 @@ export function TradeLoggerCard() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<Outcome | null>(null);
+  const symbolInputRef = useRef<HTMLInputElement>(null);
+
+  // Autofocus first input when form is shown
+  useEffect(() => {
+    if (!success) {
+      symbolInputRef.current?.focus();
+    }
+  }, [success]);
 
   // Form state
   const [instrumentType, setInstrumentType] = useState<InstrumentType>("futures");
@@ -110,6 +118,11 @@ export function TradeLoggerCard() {
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-3">
+          {/* Confirmation text */}
+          <p className="text-sm font-medium text-foreground">
+            Logged. Vault updated.
+          </p>
+          
           <div
             className={`p-3 rounded-xl ${
               success === "WIN"
@@ -174,6 +187,7 @@ export function TradeLoggerCard() {
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Symbol</Label>
               <Input
+                ref={symbolInputRef}
                 value={symbol}
                 onChange={(e) => setSymbol(e.target.value)}
                 placeholder="ES, SPY…"
