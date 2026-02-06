@@ -125,7 +125,7 @@ export default function Settings() {
     <AppLayout>
       <div className="px-4 md:px-6 pt-4">
         <Link to="/cockpit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          ← Back to Cockpit
+          ← Back to Dashboard
         </Link>
       </div>
       <PageHeader title="Settings" subtitle="Manage your account" />
@@ -224,7 +224,7 @@ export default function Settings() {
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Manage your risk limits and discipline rules in the Cockpit.
+            Manage your risk limits and discipline rules in the Dashboard.
           </p>
         </Card>
 
