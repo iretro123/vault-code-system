@@ -1,6 +1,15 @@
 import React from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 
+function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"]): string {
+  if (vault.risk_remaining_today <= 0) return "Daily loss limit reached";
+  if (vault.trades_remaining_today <= 0) return "Trade limit reached";
+  // No way to detect "max contracts exceeded" as a past block from current state alone,
+  // but if contracts are at 0 that's effectively a block
+  if (vault.max_contracts_allowed <= 0) return "Max contracts exceeded";
+  return "No restrictions today";
+}
+
 export function TodaysLimitsSection() {
   const { state: vaultState, loading } = useVaultState();
 
@@ -12,6 +21,9 @@ export function TodaysLimitsSection() {
       </div>
     );
   }
+
+  const lastRestriction = deriveLastRestriction(vaultState);
+  const hasRestriction = lastRestriction !== "No restrictions today";
 
   return (
     <div className="space-y-3">
@@ -36,6 +48,14 @@ export function TodaysLimitsSection() {
             {vaultState.max_contracts_allowed}
           </p>
         </div>
+      </div>
+
+      {/* Last Restriction */}
+      <div className="p-3 rounded-lg bg-muted/10 border border-border">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Last Restriction</p>
+        <p className={`text-xs font-medium ${hasRestriction ? "text-amber-400" : "text-muted-foreground"}`}>
+          {lastRestriction}
+        </p>
       </div>
 
       <p className="text-xs text-muted-foreground text-center pt-1">

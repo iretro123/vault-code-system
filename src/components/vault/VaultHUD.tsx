@@ -10,26 +10,29 @@ import { SetBalancePrompt } from "./SetBalancePrompt";
 interface VaultHUDProps {
   onBuyingNow?: () => void;
   onCloseTrade?: () => void;
+  sessionPaused?: boolean;
 }
 
-export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
+export function VaultHUD({ onBuyingNow, onCloseTrade, sessionPaused }: VaultHUDProps) {
   const { user } = useAuth();
   const { state: vaultState, loading: vaultLoading, refetch } = useVaultState();
   const navigate = useNavigate();
 
   const buyingDisabled =
+    sessionPaused ||
     vaultState.vault_status === "RED" ||
     vaultState.open_trade ||
     vaultState.trades_remaining_today <= 0 ||
     vaultState.risk_remaining_today <= 0;
 
   const buyingBlockedReason = useMemo(() => {
+    if (sessionPaused) return "Blocked: Session is paused.";
     if (vaultState.vault_status === "RED") return "Blocked: Vault is RED.";
     if (vaultState.open_trade) return "Blocked: Open trade not closed.";
     if (vaultState.trades_remaining_today <= 0) return "Blocked: No trades remaining.";
     if (vaultState.risk_remaining_today <= 0) return "Blocked: Daily risk limit reached.";
     return "";
-  }, [vaultState.vault_status, vaultState.open_trade, vaultState.trades_remaining_today, vaultState.risk_remaining_today]);
+  }, [sessionPaused, vaultState.vault_status, vaultState.open_trade, vaultState.trades_remaining_today, vaultState.risk_remaining_today]);
 
   // lightClass no longer needed — vault status shown only in VaultAuthorityHeader
 
