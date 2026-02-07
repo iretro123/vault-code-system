@@ -77,7 +77,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
   }
 
   return (
-    <div className="vault-card p-4 space-y-4 min-h-[140px]">
+    <div className="vault-card p-4 space-y-4 min-h-[140px]" data-tour="vault-status">
       {/* Header — bound to vault_status */}
       <div className="flex items-center justify-between min-h-[24px]">
         <div>
@@ -148,6 +148,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
       {/* Execution Buttons — always render, disabled by vault rules */}
       <div className="space-y-2">
         <Button
+          data-tour="buying-now"
           disabled={buyingDisabled}
           onClick={onBuyingNow}
           className="vault-cta w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl"
@@ -162,6 +163,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
         )}
 
         <Button
+          data-tour="sell-close"
           disabled={!vaultState.open_trade}
           variant="outline"
           className="w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10 disabled:border-border disabled:text-muted-foreground"
