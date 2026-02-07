@@ -34,7 +34,7 @@ function deriveMessage(
   sessionPaused?: boolean
 ): string {
   if (sessionPaused) {
-    return "Session paused. Trading disabled.";
+    return "SESSION PAUSED · TRADING LOCKED";
   }
 
   const {
@@ -47,38 +47,38 @@ function deriveMessage(
   } = vault;
 
   if (vault_status === "RED") {
-    return "Daily loss limit reached. Trading is locked.";
+    return "DAILY LOSS LIMIT REACHED · TRADING LOCKED";
   }
 
   if (daily_loss_limit > 0 && risk_remaining_today <= daily_loss_limit * 0.15 && risk_remaining_today > 0) {
-    return `Only $${risk_remaining_today.toFixed(0)} risk remaining. Approaching daily limit.`;
+    return `$${risk_remaining_today.toFixed(0)} RISK REMAINING · APPROACHING LIMIT`;
   }
 
   if (loss_streak >= 2 && vault_status === "YELLOW") {
-    return `${loss_streak} consecutive losses. 1 more triggers restriction.`;
+    return `${loss_streak} CONSECUTIVE LOSSES · 1 MORE TRIGGERS RESTRICTION`;
   }
 
   if (trades_remaining_today === 1) {
-    return "Last trade of the day remaining.";
+    return "LAST TRADE OF THE DAY REMAINING";
   }
 
   if (trades_remaining_today <= 0) {
-    return "Max trades reached for today.";
+    return "MAX TRADES REACHED FOR TODAY";
   }
 
   if (open_trade) {
-    return "Trade is live. Vault monitoring position.";
+    return "TRADE LIVE · VAULT MONITORING POSITION";
   }
 
   if (eod && eod.trades_blocked > 0) {
-    return `Vault blocked ${eod.trades_blocked} unsafe trade${eod.trades_blocked !== 1 ? "s" : ""} today.`;
+    return `VAULT BLOCKED ${eod.trades_blocked} UNSAFE TRADE${eod.trades_blocked !== 1 ? "S" : ""} TODAY`;
   }
 
   if (loss_streak === 0 && eod && eod.trades_taken >= 2) {
-    return `${eod.trades_taken} trades executed with zero losses today.`;
+    return `${eod.trades_taken} TRADES · ZERO LOSSES TODAY`;
   }
 
-  return "Vault active. Account protected.";
+  return "VAULT ACTIVE · ACCOUNT PROTECTED";
 }
 
 interface VaultCommandBarProps {
@@ -104,8 +104,8 @@ export function VaultCommandBar({ sessionPaused }: VaultCommandBarProps) {
         <div className="max-w-6xl mx-auto px-4 py-1.5 flex items-center justify-center">
           <p
             className={cn(
-              "text-[10px] font-medium tracking-wider uppercase text-center truncate",
-              sessionPaused ? "text-amber-400/70" : "text-emerald-400/70"
+              "text-[13px] font-semibold tracking-tight uppercase text-center truncate",
+              sessionPaused ? "text-amber-400" : "text-emerald-400"
             )}
           >
             {message}
