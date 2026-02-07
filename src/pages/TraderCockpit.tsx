@@ -4,7 +4,7 @@ import { DailyVaultGate } from "@/components/DailyVaultGate";
 import { PreTradeExecutionGateV2 } from "@/components/vault/PreTradeExecutionGateV2";
 import { FocusSessionCard } from "@/components/vault/FocusSessionCard";
 import { TradeLoggerCard } from "@/components/vault/TradeLoggerCard";
-import { WelcomeCard } from "@/components/vault/WelcomeCard";
+import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
 import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
@@ -80,7 +80,7 @@ export default function TraderCockpit() {
     <AuthGate>
       <AppLayout>
         <div className="max-w-xl mx-auto p-4 md:p-6 pb-24 space-y-4">
-          <WelcomeCard />
+          <VaultAuthorityHeader />
 
           {/* Section 1: Daily Ritual (informational only) */}
           <FlowSection
