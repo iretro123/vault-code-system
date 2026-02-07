@@ -9,7 +9,14 @@ import { X, ShieldCheck, ShieldOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Direction = "CALL" | "PUT";
+type ProfitGoal = 1 | 2 | 3;
 type ModalState = "form" | "submitting" | "approved" | "rejected";
+
+const PROFIT_GOALS: { value: ProfitGoal; label: string; sub: string }[] = [
+  { value: 1, label: "Quick", sub: "Make the same amount as risk" },
+  { value: 2, label: "Standard (Recommended)", sub: "Make double your risk" },
+  { value: 3, label: "Big Move", sub: "Make triple your risk" },
+];
 
 interface TradeIntentModalProps {
   open: boolean;
@@ -26,6 +33,7 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
     const suggested = Math.min(vault.risk_remaining_today, vault.daily_loss_limit * 0.5);
     return suggested > 0 ? suggested.toFixed(0) : "";
   });
+  const [profitGoal, setProfitGoal] = useState<ProfitGoal | null>(null);
   const [modalState, setModalState] = useState<ModalState>("form");
   const [resultMessage, setResultMessage] = useState("");
 
@@ -38,7 +46,8 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
   const clientErrors: string[] = [];
   if (direction === null) clientErrors.push("Select a direction.");
   if (!contracts || isNaN(contractsNum) || contractsNum < 1) clientErrors.push("Enter valid contracts (≥ 1).");
-  if (!estimatedRisk || isNaN(riskNum) || riskNum <= 0) clientErrors.push("Enter valid estimated risk (> $0).");
+  if (!estimatedRisk || isNaN(riskNum) || riskNum <= 0) clientErrors.push("Enter valid max loss (> $0).");
+  if (profitGoal === null) clientErrors.push("Select a profit goal.");
 
   if (clientErrors.length === 0) {
     if (contractsNum > vault.max_contracts_allowed)
@@ -47,7 +56,10 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
       clientErrors.push(`Risk exceeds remaining $${vault.risk_remaining_today.toFixed(0)}.`);
   }
 
-  const canSubmit = direction !== null && clientErrors.length === 0;
+  const canSubmit = direction !== null && profitGoal !== null && clientErrors.length === 0;
+
+  const profitTarget = riskNum > 0 && profitGoal ? riskNum * profitGoal : 0;
+  const perContract = contractsNum > 0 && profitTarget > 0 ? profitTarget / contractsNum : 0;
 
   const handleSubmit = async () => {
     if (!canSubmit || !user || !direction) return;
@@ -84,6 +96,7 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
     setDirection(null);
     setContracts("");
     setEstimatedRisk("");
+    setProfitGoal(null);
     setModalState("form");
     setResultMessage("");
     onClose();
@@ -154,11 +167,11 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
               />
             </div>
 
-            {/* Estimated Risk */}
+            {/* Max Loss */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Estimated Risk ($)
+                  Max Loss for This Trade ($)
                 </label>
                 <span className="text-[10px] text-muted-foreground">
                   Remaining ${vault.risk_remaining_today.toFixed(0)}
@@ -174,6 +187,43 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
                 className="font-mono text-lg h-12"
               />
             </div>
+
+            {/* Profit Goal */}
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
+                Profit Goal
+              </p>
+              <div className="space-y-2">
+                {PROFIT_GOALS.map((pg) => (
+                  <button
+                    key={pg.value}
+                    type="button"
+                    onClick={() => setProfitGoal(pg.value)}
+                    className={cn(
+                      "w-full text-left px-4 py-3 rounded-lg border transition-all duration-150",
+                      profitGoal === pg.value
+                        ? "bg-primary/10 border-primary/40 text-primary"
+                        : "bg-muted/10 border-border text-muted-foreground hover:bg-muted/20"
+                    )}
+                  >
+                    <span className="text-sm font-semibold">{pg.label}</span>
+                    <span className="block text-[11px] opacity-70 mt-0.5">{pg.sub} · {pg.value}×</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Profit Target Display */}
+            {riskNum > 0 && profitGoal && (
+              <div className="text-center p-4 rounded-lg bg-muted/10 border border-border space-y-1">
+                <p className="text-xs text-muted-foreground">If this works, you aim to make:</p>
+                <p className="text-2xl font-bold font-mono text-primary">+${profitTarget.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">Based on your max loss.</p>
+                {contractsNum > 0 && (
+                  <p className="text-[10px] text-muted-foreground/60">≈ ${perContract.toFixed(2)} per contract</p>
+                )}
+              </div>
+            )}
 
             {/* Client validation errors */}
             {direction !== null && (contracts || estimatedRisk) && clientErrors.length > 0 && (
