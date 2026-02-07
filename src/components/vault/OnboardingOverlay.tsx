@@ -1,105 +1,186 @@
-import React, { useState, useEffect } from "react";
-import { ShieldCheck, ArrowRight, X } from "lucide-react";
+import React, { useState, useEffect, useCallback, useLayoutEffect } from "react";
+import { X } from "lucide-react";
 
 const STORAGE_KEY = "vault-onboarding-completed";
 
-const steps = [
+const STEPS = [
   {
-    number: 1,
-    title: "Check your Vault Status",
-    description: "Your status is GREEN, YELLOW, or RED. It controls what you can do.",
+    target: "[data-tour='vault-status']",
+    text: "This shows whether you are allowed to trade right now.",
   },
   {
-    number: 2,
-    title: "Click BUYING NOW",
-    description: "Request trade approval. The Vault enforces your limits automatically.",
+    target: "[data-tour='buying-now']",
+    text: "Click here before placing any trade to request approval.",
   },
   {
-    number: 3,
-    title: "Close with SELL / CLOSE POSITION",
-    description: "Log your result. The Vault updates your status immediately.",
+    target: "[data-tour='sell-close']",
+    text: "Use this to close trades and log results.",
   },
 ];
+
+function getRect(selector: string): DOMRect | null {
+  const el = document.querySelector(selector);
+  return el ? el.getBoundingClientRect() : null;
+}
 
 export function OnboardingOverlay() {
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
+  const [rect, setRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     try {
       if (localStorage.getItem(STORAGE_KEY) !== "true") {
-        setVisible(true);
+        // Small delay to let DOM render
+        const t = setTimeout(() => setVisible(true), 600);
+        return () => clearTimeout(t);
       }
     } catch {}
   }, []);
 
-  const dismiss = () => {
+  const measure = useCallback(() => {
+    if (!visible) return;
+    const r = getRect(STEPS[step].target);
+    setRect(r);
+  }, [visible, step]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
+
+  useEffect(() => {
+    if (!visible) return;
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [visible, measure]);
+
+  const dismiss = useCallback(() => {
     setVisible(false);
     try {
       localStorage.setItem(STORAGE_KEY, "true");
     } catch {}
-  };
+  }, []);
+
+  const next = useCallback(() => {
+    if (step >= STEPS.length - 1) {
+      dismiss();
+    } else {
+      setStep((s) => s + 1);
+    }
+  }, [step, dismiss]);
 
   if (!visible) return null;
 
-  const current = steps[step];
-  const isLast = step === steps.length - 1;
+  const pad = 8;
+  const cutout = rect
+    ? {
+        top: rect.top - pad,
+        left: rect.left - pad,
+        width: rect.width + pad * 2,
+        height: rect.height + pad * 2,
+      }
+    : null;
+
+  // Position tooltip below the cutout, centered horizontally
+  const tooltipStyle: React.CSSProperties = cutout
+    ? {
+        position: "fixed",
+        top: cutout.top + cutout.height + 12,
+        left: Math.max(16, Math.min(cutout.left + cutout.width / 2 - 150, window.innerWidth - 316)),
+        width: 300,
+      }
+    : {
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 300,
+      };
+
+  const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border/50 rounded-xl max-w-sm w-full p-6 space-y-5 relative">
-        <button
-          onClick={dismiss}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Skip onboarding"
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <div className="fixed inset-0 z-[100]" onClick={dismiss}>
+      {/* Dark overlay with cutout */}
+      <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: "none" }}>
+        <defs>
+          <mask id="spotlight-mask">
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {cutout && (
+              <rect
+                x={cutout.left}
+                y={cutout.top}
+                width={cutout.width}
+                height={cutout.height}
+                rx="12"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="rgba(0,0,0,0.7)"
+          mask="url(#spotlight-mask)"
+          style={{ pointerEvents: "auto" }}
+        />
+      </svg>
 
-        <div className="flex items-center gap-2 text-primary">
-          <ShieldCheck className="h-5 w-5" />
-          <span className="text-xs font-semibold uppercase tracking-wider">Vault OS — Quick Start</span>
+      {/* Highlight ring */}
+      {cutout && (
+        <div
+          className="absolute rounded-xl border-2 border-primary/60 pointer-events-none"
+          style={{
+            top: cutout.top,
+            left: cutout.left,
+            width: cutout.width,
+            height: cutout.height,
+            boxShadow: "0 0 0 4px hsl(var(--primary) / 0.15)",
+          }}
+        />
+      )}
+
+      {/* Tooltip */}
+      <div
+        style={tooltipStyle}
+        className="bg-card border border-border/50 rounded-xl p-4 space-y-3 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm text-foreground leading-snug">{STEPS[step].text}</p>
+          <button
+            onClick={dismiss}
+            className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-0.5"
+            aria-label="Skip"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary text-sm font-bold shrink-0">
-              {current.number}
-            </span>
-            <h2 className="text-base font-semibold text-foreground">{current.title}</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1.5">
+            {STEPS.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === step ? "w-5 bg-primary" : "w-1.5 bg-muted-foreground/30"
+                }`}
+              />
+            ))}
           </div>
-          <p className="text-sm text-muted-foreground ml-11">{current.description}</p>
-        </div>
-
-        {/* Step dots */}
-        <div className="flex items-center justify-center gap-2">
-          {steps.map((_, i) => (
-            <div
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i === step ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/30"
-              }`}
-            />
-          ))}
-        </div>
-
-        <div className="flex justify-end">
-          {isLast ? (
-            <button
-              onClick={dismiss}
-              className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              Got it
-            </button>
-          ) : (
-            <button
-              onClick={() => setStep((s) => s + 1)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              Next
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          )}
+          <button
+            onClick={next}
+            className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
+            {isLast ? "Got it" : "Next"}
+          </button>
         </div>
       </div>
     </div>
