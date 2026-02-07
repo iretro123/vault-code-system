@@ -94,30 +94,35 @@ export function VaultCommandBar({ sessionPaused }: VaultCommandBarProps) {
 
   const message = deriveMessage(vault, eod, sessionPaused);
 
+  const greenGlow = "0 0 2px #4ade80, 0 0 6px rgba(74,222,128,0.4), 0 0 14px rgba(74,222,128,0.15)";
+  const amberGlow = "0 0 2px #fbbf24, 0 0 6px rgba(251,191,36,0.4), 0 0 14px rgba(251,191,36,0.15)";
+
   return (
-    <div
-      className={cn(
-        "w-full border-b",
-        sessionPaused
-          ? "bg-amber-500/5 border-amber-500/15"
-          : "bg-emerald-500/5 border-emerald-500/15"
-      )}
-      style={{
-        backgroundImage: sessionPaused
-          ? "linear-gradient(90deg, transparent 0%, hsl(45 93% 47% / 0.07) 50%, transparent 100%)"
-          : "linear-gradient(90deg, transparent 0%, hsl(152 69% 40% / 0.07) 50%, transparent 100%)",
-      }}
-    >
-      <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-center">
-        <p
-          className={cn(
-            "text-xs font-medium tracking-wide text-center truncate",
-            sessionPaused ? "text-amber-400/80" : "text-emerald-400/80"
-          )}
-        >
-          {message}
-        </p>
+    <div className="w-full relative">
+      {/* Status text */}
+      <div className="w-full bg-background">
+        <div className="max-w-6xl mx-auto px-4 py-1.5 flex items-center justify-center">
+          <p
+            className={cn(
+              "text-[10px] font-medium tracking-wider uppercase text-center truncate",
+              sessionPaused ? "text-amber-400/70" : "text-emerald-400/70"
+            )}
+          >
+            {message}
+          </p>
+        </div>
       </div>
+      {/* Light saber strip */}
+      <div
+        className="w-full"
+        style={{
+          height: "3px",
+          background: sessionPaused
+            ? "linear-gradient(90deg, transparent 5%, #fbbf24 30%, #fbbf24 70%, transparent 95%)"
+            : "linear-gradient(90deg, transparent 5%, #4ade80 30%, #4ade80 70%, transparent 95%)",
+          boxShadow: sessionPaused ? amberGlow : greenGlow,
+        }}
+      />
     </div>
   );
 }
