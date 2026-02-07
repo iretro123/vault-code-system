@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -45,28 +43,23 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
   const [success, setSuccess] = useState<Outcome | null>(null);
   const symbolInputRef = useRef<HTMLInputElement>(null);
 
-  // Autofocus first input when form is shown
   useEffect(() => {
     if (!success) {
       symbolInputRef.current?.focus();
     }
   }, [success]);
 
-  // Form state
-  const [instrumentType, setInstrumentType] = useState<InstrumentType>("futures");
+  // Form state — no emotional state, no followed_rules
+  const [instrumentType, setInstrumentType] = useState<InstrumentType>("options");
   const [symbol, setSymbol] = useState("");
   const [riskAmount, setRiskAmount] = useState("");
   const [outcome, setOutcome] = useState<Outcome>("WIN");
-  const [emotionalState, setEmotionalState] = useState([3]);
-  const [followedRules, setFollowedRules] = useState(true);
   const [notes, setNotes] = useState("");
 
   const resetForm = () => {
     setSymbol("");
     setRiskAmount("");
     setOutcome("WIN");
-    setEmotionalState([3]);
-    setFollowedRules(true);
     setNotes("");
     setError(null);
   };
@@ -82,7 +75,6 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
     setError(null);
     setSuccess(null);
 
-    // Map outcome to risk_reward for compatibility
     const riskReward = outcome === "WIN" ? 1 : outcome === "LOSS" ? -1 : 0;
 
     const { error: insertError } = await supabase.from("trade_entries").insert({
@@ -92,8 +84,8 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
       outcome: outcome,
       risk_used: parseFloat(riskAmount) || 0,
       risk_reward: riskReward,
-      emotional_state: emotionalState[0],
-      followed_rules: followedRules,
+      emotional_state: 3, // Default neutral
+      followed_rules: true, // Default true
       notes: notes.trim() || null,
     });
 
@@ -111,7 +103,6 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
     setTimeout(() => setSuccess(null), 5000);
   };
 
-  // Success state content
   const successContent = success ? (
     <>
       <p className="text-sm font-medium text-foreground">
@@ -151,7 +142,6 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
     </>
   ) : null;
 
-  // Form content
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-3">
       {/* Row 1: Instrument + Symbol */}
@@ -166,8 +156,8 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="futures">Futures</SelectItem>
               <SelectItem value="options">Options</SelectItem>
+              <SelectItem value="futures">Futures</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -177,7 +167,7 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
             ref={symbolInputRef}
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
-            placeholder="ES, SPY…"
+            placeholder="SPY, ES…"
             className="vault-input h-9 text-sm"
             required
           />
@@ -217,41 +207,6 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
         </div>
       </div>
 
-      {/* Emotional State Slider */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs text-muted-foreground">
-            Emotional State
-          </Label>
-          <span className="text-xs font-mono text-foreground">
-            {emotionalState[0]}/5
-          </span>
-        </div>
-        <Slider
-          value={emotionalState}
-          onValueChange={setEmotionalState}
-          min={1}
-          max={5}
-          step={1}
-          className="w-full"
-        />
-      </div>
-
-      {/* Followed Rules Checkbox */}
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="followed-rules"
-          checked={followedRules}
-          onCheckedChange={(c) => setFollowedRules(!!c)}
-        />
-        <Label
-          htmlFor="followed-rules"
-          className="text-sm text-muted-foreground cursor-pointer"
-        >
-          Followed all rules
-        </Label>
-      </div>
-
       {/* Optional Note */}
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">
@@ -285,7 +240,6 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
     </form>
   );
 
-  // Embedded variant renders without the Card wrapper
   if (variant === "embedded") {
     return (
       <div className="space-y-3">
@@ -294,7 +248,6 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
     );
   }
 
-  // Card variant (default)
   if (success) {
     return (
       <Card className="vault-card">

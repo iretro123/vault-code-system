@@ -15,7 +15,6 @@ import {
   Lock
 } from "lucide-react";
 import { useVaultState } from "@/contexts/VaultStateContext";
-import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
 import { usePreTradeCheck } from "@/hooks/usePreTradeCheck";
 
 interface PreTradeCheckModalProps {
@@ -23,7 +22,6 @@ interface PreTradeCheckModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Status indicator component
 function StatusIndicator({ 
   label, 
   value, 
@@ -65,14 +63,12 @@ function StatusIndicator({
 
 export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalProps) {
   const { state: vaultState, loading: vaultLoading } = useVaultState();
-  const { data: execData, loading: execLoading } = useVaultExecutionPermission();
   const { saveCheck, saving } = usePreTradeCheck();
   
   const [plannedRisk, setPlannedRisk] = useState("");
   const [checkResult, setCheckResult] = useState<"pending" | "cleared" | "violation">("pending");
   const [violationReason, setViolationReason] = useState<string | null>(null);
 
-  // Reset state when modal opens
   useEffect(() => {
     if (open) {
       setPlannedRisk("");
@@ -82,12 +78,11 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
   }, [open]);
 
   const canTrade = vaultState.vault_status !== "RED" && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
-  const maxRiskAllowed = execData?.effective_risk_limit ?? 1;
+  const maxRiskAllowed = vaultState.risk_remaining_today;
   const tradesRemaining = vaultState.trades_remaining_today;
   const dailyLossRemaining = vaultState.risk_remaining_today;
   const plannedRiskNum = parseFloat(plannedRisk) || 0;
 
-  // Real-time validation
   const hasRiskViolation = plannedRiskNum > maxRiskAllowed;
   const hasTradesViolation = tradesRemaining <= 0;
   const hasDailyLossViolation = plannedRiskNum > dailyLossRemaining;
@@ -95,7 +90,7 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
 
   async function handleRunCheck() {
     const result = await saveCheck({
-      disciplineScore: 0, // Not used for gating anymore
+      disciplineScore: 0,
       canTrade,
       plannedRisk: plannedRiskNum,
       maxRiskAllowed,
@@ -107,7 +102,7 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
     setViolationReason(result.violationReason);
   }
 
-  if (vaultLoading || execLoading) {
+  if (vaultLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md p-6">
@@ -122,7 +117,6 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
-        {/* Header */}
         <DialogHeader className="p-6 pb-4 bg-gradient-to-b from-primary/10 to-transparent border-b border-border/50">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/20">
@@ -136,7 +130,6 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
         </DialogHeader>
 
         <div className="p-6 space-y-5">
-          {/* System Status Grid */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">System Status</p>
             <div className="grid gap-2">
@@ -154,38 +147,30 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
             </div>
           </div>
 
-          {/* Limits Grid */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Today's Limits</p>
             <div className="grid grid-cols-2 gap-2">
               <Card className="p-3 text-center">
                 <Target className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                <p className="text-lg font-mono font-bold">{maxRiskAllowed.toFixed(2)}%</p>
-                <p className="text-[10px] text-muted-foreground uppercase">Max Risk/Trade</p>
+                <p className="text-lg font-mono font-bold">${vaultState.risk_remaining_today.toFixed(0)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Risk Left</p>
               </Card>
               <Card className="p-3 text-center">
                 <TrendingUp className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
                 <p className="text-lg font-mono font-bold">{tradesRemaining}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">Trades Left</p>
               </Card>
-              <Card className="col-span-2 p-3 text-center">
-                <AlertTriangle className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                <p className="text-lg font-mono font-bold">{dailyLossRemaining.toFixed(1)}%</p>
-                <p className="text-[10px] text-muted-foreground uppercase">Daily Loss Remaining</p>
-              </Card>
             </div>
           </div>
 
-          {/* Risk Input */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Planned Trade</p>
             <div className="relative">
               <Input
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="0"
-                max="100"
-                placeholder="0.0"
+                placeholder="0.00"
                 value={plannedRisk}
                 onChange={(e) => setPlannedRisk(e.target.value)}
                 className={cn(
@@ -193,23 +178,16 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
                   hasRiskViolation && plannedRisk && "border-status-inactive focus-visible:ring-status-inactive"
                 )}
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">%</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">$</span>
             </div>
             {plannedRisk && hasRiskViolation && (
               <p className="text-xs text-status-inactive flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                Exceeds max risk per trade ({maxRiskAllowed.toFixed(2)}%)
-              </p>
-            )}
-            {plannedRisk && hasDailyLossViolation && !hasRiskViolation && (
-              <p className="text-xs text-status-inactive flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                Exceeds remaining daily loss ({dailyLossRemaining.toFixed(1)}%)
+                Exceeds remaining risk (${maxRiskAllowed.toFixed(0)})
               </p>
             )}
           </div>
 
-          {/* Result Display */}
           {checkResult !== "pending" && (
             <Card className={cn(
               "p-4 border-2 transition-all animate-slide-up",
@@ -229,8 +207,8 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
                     checkResult === "cleared" ? "text-status-active" : "text-status-inactive"
                   )}>
                     {checkResult === "cleared" 
-                      ? "You are cleared to trade within your discipline rules." 
-                      : "This trade violates your discipline rules."}
+                      ? "You are cleared to trade." 
+                      : "This trade violates your limits."}
                   </p>
                   {violationReason && (
                     <p className="text-xs text-muted-foreground mt-1">{violationReason}</p>
@@ -240,7 +218,6 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
             </Card>
           )}
 
-          {/* Action Button */}
           <Button
             className="w-full h-12 font-medium"
             onClick={handleRunCheck}

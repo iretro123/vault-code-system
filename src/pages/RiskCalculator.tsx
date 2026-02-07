@@ -3,12 +3,10 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { usePositionCalculator } from "@/hooks/usePositionCalculator";
 import { useVaultState } from "@/contexts/VaultStateContext";
-import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
-import { Calculator, AlertTriangle, CheckCircle2, Shield, Activity, Gauge } from "lucide-react";
+import { Calculator, AlertTriangle, CheckCircle2, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function RiskCalculator() {
@@ -18,11 +16,7 @@ export default function RiskCalculator() {
   
   const { result, loading, error, calculate, protectionStatus, consistencyStatus } = usePositionCalculator();
   const { state: vaultState, loading: vaultLoading } = useVaultState();
-  const { data: execData, loading: execLoading } = useVaultExecutionPermission();
 
-  const effectiveMaxRisk = execData?.effective_risk_limit ?? 1;
-
-  // Auto-calculate on input change with debounce
   useEffect(() => {
     const account = parseFloat(accountSize);
     const risk = parseFloat(riskPercent);
@@ -52,43 +46,22 @@ export default function RiskCalculator() {
           subtitle="Calculate position size within Vault rules"
         />
 
-        {/* Vault Status Banner */}
+        {/* Vault Status Banner — reads only from Vault State */}
         <Card className="p-4 mb-6 border-border/50 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-primary" />
               <div>
-                <p className="text-sm font-medium">Effective Max Risk</p>
+                <p className="text-sm font-medium">Risk Remaining</p>
                 <p className="text-xs text-muted-foreground">
-                  Risk remaining: {vaultState.risk_remaining_today.toFixed(1)}%
+                  Trades left: {vaultState.trades_remaining_today}/{vaultState.max_trades_per_day}
                 </p>
               </div>
             </div>
-            <span className={cn(
-              "text-2xl font-semibold",
-              "text-primary"
-            )}>
-              {effectiveMaxRisk.toFixed(2)}%
+            <span className="text-2xl font-semibold text-primary">
+              ${vaultState.risk_remaining_today.toFixed(0)}
             </span>
           </div>
-
-          {/* Active Modifiers */}
-          {(protectionStatus.riskRestrictionFactor < 1 || consistencyStatus.recommendedRiskModifier < 1) && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-border/50">
-              {protectionStatus.riskRestrictionFactor < 1 && (
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 text-amber-500 text-xs">
-                  <Gauge className="w-3 h-3" />
-                  <span>Protection: {Math.round(protectionStatus.riskRestrictionFactor * 100)}%</span>
-                </div>
-              )}
-              {consistencyStatus.recommendedRiskModifier < 1 && (
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/10 text-orange-500 text-xs">
-                  <Activity className="w-3 h-3" />
-                  <span>Consistency: {Math.round(consistencyStatus.recommendedRiskModifier * 100)}%</span>
-                </div>
-              )}
-            </div>
-          )}
         </Card>
 
         {/* Input Section */}
@@ -140,7 +113,7 @@ export default function RiskCalculator() {
           </div>
         </div>
 
-        {/* Results Section */}
+        {/* Results */}
         {loading && (
           <div className="text-center py-8">
             <Calculator className="w-8 h-8 animate-pulse mx-auto text-muted-foreground" />
@@ -159,7 +132,6 @@ export default function RiskCalculator() {
 
         {result && !loading && (
           <div className="space-y-4">
-            {/* Status Card */}
             <Card
               className={cn(
                 "p-4 border",
@@ -186,7 +158,6 @@ export default function RiskCalculator() {
               </div>
             </Card>
 
-            {/* Calculation Results */}
             {result.allowed && (
               <div className="grid grid-cols-2 gap-4">
                 <Card className="p-4 border-border/50">
@@ -209,7 +180,6 @@ export default function RiskCalculator() {
               </div>
             )}
 
-            {/* Risk Limits */}
             <Card className="p-4 border-border/50">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Adaptive Risk Limit</span>
@@ -224,28 +194,6 @@ export default function RiskCalculator() {
                   {result.requestedRisk}%
                 </span>
               </div>
-              {result.effectiveRiskLimit !== result.adaptiveRiskLimit && (
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-border/50">
-                  <span className="text-sm text-muted-foreground">Effective Risk Limit</span>
-                  <span className="text-sm font-mono text-amber-500">
-                    {result.effectiveRiskLimit.toFixed(2)}%
-                  </span>
-                </div>
-              )}
-              {(result.protectionRestricted || result.consistencyRestricted) && (
-                <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
-                  {result.protectionRestricted && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-500">
-                      Protection Active
-                    </span>
-                  )}
-                  {result.consistencyRestricted && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-orange-500/10 text-orange-500">
-                      Consistency Modifier: {Math.round(result.consistencyModifier * 100)}%
-                    </span>
-                  )}
-                </div>
-              )}
             </Card>
           </div>
         )}
