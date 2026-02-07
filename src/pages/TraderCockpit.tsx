@@ -24,7 +24,7 @@ export default function TraderCockpit() {
     vaultState.risk_remaining_today > 0;
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    limits: true,
+    limits: false,
     review: false,
   });
 
