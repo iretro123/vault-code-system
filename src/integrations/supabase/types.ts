@@ -527,6 +527,17 @@ export type Database = {
           vault_score: number
         }[]
       }
+      get_eod_review: {
+        Args: { _user_id: string }
+        Returns: {
+          final_vault_status: string
+          risk_saved: number
+          risk_used: number
+          total_result: number
+          trades_blocked: number
+          trades_taken: number
+        }[]
+      }
       get_or_create_vault_state: {
         Args: { _user_id: string }
         Returns: {
