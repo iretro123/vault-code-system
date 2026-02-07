@@ -17,6 +17,20 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
   const { state: vaultState, loading: vaultLoading, refetch } = useVaultState();
   const navigate = useNavigate();
 
+  const buyingDisabled =
+    vaultState.vault_status === "RED" ||
+    vaultState.open_trade ||
+    vaultState.trades_remaining_today <= 0 ||
+    vaultState.risk_remaining_today <= 0;
+
+  const buyingBlockedReason = useMemo(() => {
+    if (vaultState.vault_status === "RED") return "Blocked: Vault is RED.";
+    if (vaultState.open_trade) return "Blocked: Open trade not closed.";
+    if (vaultState.trades_remaining_today <= 0) return "Blocked: No trades remaining.";
+    if (vaultState.risk_remaining_today <= 0) return "Blocked: Daily risk limit reached.";
+    return "";
+  }, [vaultState.vault_status, vaultState.open_trade, vaultState.trades_remaining_today, vaultState.risk_remaining_today]);
+
   const lightClass = useMemo(() => {
     if (!user) return "bg-muted";
     if (vaultState.vault_status === "GREEN") return "bg-emerald-500";
@@ -134,18 +148,18 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
       {/* Execution Buttons — always render, disabled by vault rules */}
       <div className="space-y-2">
         <Button
-          disabled={
-            vaultState.vault_status === "RED" ||
-            vaultState.open_trade ||
-            vaultState.trades_remaining_today <= 0 ||
-            vaultState.risk_remaining_today <= 0
-          }
+          disabled={buyingDisabled}
           onClick={onBuyingNow}
           className="vault-cta w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl"
           size="lg"
         >
           Buying Now
         </Button>
+        {buyingDisabled && (
+          <p className="text-[11px] text-muted-foreground text-center -mt-1">
+            {buyingBlockedReason}
+          </p>
+        )}
 
         <Button
           disabled={!vaultState.open_trade}
@@ -156,6 +170,17 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
         >
           Sell / Close Position
         </Button>
+      </div>
+
+      {/* Next Action — derived from vault state */}
+      <div className="p-3 rounded-lg bg-muted/10 border border-border">
+        <p className="text-xs text-muted-foreground text-center">
+          {vaultState.vault_status === "RED"
+            ? "Trading locked for today. Return tomorrow."
+            : vaultState.open_trade
+            ? "Next step: Close your open trade to continue."
+            : "Next step: Click BUYING NOW to request trade approval."}
+        </p>
       </div>
     </div>
   );

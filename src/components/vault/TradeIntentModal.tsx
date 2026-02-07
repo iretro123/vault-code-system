@@ -21,8 +21,11 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
   const { state: vault, refetch } = useVaultState();
 
   const [direction, setDirection] = useState<Direction | null>(null);
-  const [contracts, setContracts] = useState("");
-  const [estimatedRisk, setEstimatedRisk] = useState("");
+  const [contracts, setContracts] = useState(() => String(vault.max_contracts_allowed || ""));
+  const [estimatedRisk, setEstimatedRisk] = useState(() => {
+    const suggested = Math.min(vault.risk_remaining_today, vault.daily_loss_limit * 0.5);
+    return suggested > 0 ? suggested.toFixed(0) : "";
+  });
   const [modalState, setModalState] = useState<ModalState>("form");
   const [resultMessage, setResultMessage] = useState("");
 
@@ -180,6 +183,11 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
                 ))}
               </div>
             )}
+
+            {/* Helper text */}
+            <p className="text-[11px] text-muted-foreground text-center">
+              Vault limits are enforced automatically.
+            </p>
 
             {/* Submit */}
             <Button
