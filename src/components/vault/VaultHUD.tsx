@@ -113,6 +113,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
           <span className="text-sm font-mono font-medium tabular-nums text-foreground">
             ${vaultState.risk_remaining_today.toFixed(0)}
           </span>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Loss allowed today</p>
         </div>
 
         <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
@@ -123,6 +124,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
           <span className="text-sm font-mono font-medium tabular-nums text-foreground">
             {vaultState.trades_remaining_today}/{vaultState.max_trades_per_day}
           </span>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Trades remaining</p>
         </div>
 
         <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
@@ -133,6 +135,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
           <span className="text-sm font-medium tabular-nums text-foreground">
             {vaultState.max_contracts_allowed}
           </span>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Max size per trade</p>
         </div>
       </div>
 
