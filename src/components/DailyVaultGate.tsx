@@ -1,13 +1,10 @@
 import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
-import { useDailyVaultStatus, useCompleteDailyChecklist } from "@/hooks/useDailyVaultStatus";
 import { Brain, Moon, Heart, FileText, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
 import { toast } from "sonner";
 
 interface ChecklistFormData {
@@ -39,7 +36,6 @@ function RatingSlider({
 
   return (
     <div className="space-y-2">
-      {/* Header row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4 text-muted-foreground" />
@@ -58,7 +54,6 @@ function RatingSlider({
         </div>
       </div>
       
-      {/* Slider */}
       <Slider
         value={[value]}
         onValueChange={(v) => onChange(v[0])}
@@ -70,7 +65,6 @@ function RatingSlider({
         className="w-full"
       />
       
-      {/* Step text labels row */}
       <div className="flex justify-between px-0 mt-1">
         {STEP_LABELS.map((stepLabel, i) => (
           <span 
@@ -90,10 +84,14 @@ function RatingSlider({
   );
 }
 
+/**
+ * DISABLED — This component renders UI but does NOT:
+ * - gate trading
+ * - unlock the vault
+ * - change vault status
+ * - call any RPCs
+ */
 export function DailyVaultGate() {
-  const dailyStatus = useDailyVaultStatus();
-  const { completeChecklist, loading: submitting } = useCompleteDailyChecklist();
-  
   const [formData, setFormData] = useState<ChecklistFormData>({
     mentalState: 3,
     sleepQuality: 3,
@@ -102,64 +100,14 @@ export function DailyVaultGate() {
     riskConfirmed: false,
   });
 
-  const handleSubmit = async () => {
-    if (!formData.planReviewed || !formData.riskConfirmed) {
-      toast.error("Please complete all checklist items");
-      return;
-    }
-
-    const result = await completeChecklist(formData);
-    
-    if (result.success) {
-      toast.success(result.message);
-      dailyStatus.refetch();
-    } else {
-      toast.error(result.message);
-    }
+  const handleSubmit = () => {
+    toast.info("Daily ritual logged (informational only — does not affect trading).");
   };
 
-  // Already completed — show informational summary
-  if (!dailyStatus.loading && dailyStatus.checklistCompleted) {
-    return (
-      <div className="p-3 rounded-xl bg-accent/10 border border-accent/20">
-        <p className="text-sm text-accent font-medium">
-          ✅ Daily ritual completed
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Your readiness has been logged for today.
-        </p>
-      </div>
-    );
-  }
-
-
-  if (dailyStatus.loading) {
-    return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-16 bg-muted/30 rounded w-full" />
-        <div className="h-16 bg-muted/30 rounded w-full" />
-        <div className="h-16 bg-muted/30 rounded w-full" />
-      </div>
-    );
-  }
-
-  const progress = ((5 - dailyStatus.actionsRemaining) / 5) * 100;
+  const progress = 0;
 
   return (
     <div className="space-y-5">
-      {/* Progress */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Ritual Progress
-          </span>
-          <span className="text-sm font-bold text-foreground">
-            {5 - dailyStatus.actionsRemaining}/5 Complete
-          </span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </div>
-
       {/* Progress */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
@@ -167,7 +115,7 @@ export function DailyVaultGate() {
             Ritual Progress
           </span>
           <span className="text-sm font-bold text-foreground">
-            {5 - dailyStatus.actionsRemaining}/5 Complete
+            0/5 Complete
           </span>
         </div>
         <Progress value={progress} className="h-2" />
@@ -175,7 +123,6 @@ export function DailyVaultGate() {
 
       {/* Checklist Form */}
       <div className="space-y-5">
-        {/* Rating Sliders */}
         <RatingSlider
           value={formData.mentalState}
           onChange={(v) => setFormData((p) => ({ ...p, mentalState: v }))}
@@ -197,7 +144,6 @@ export function DailyVaultGate() {
           icon={Heart}
         />
 
-        {/* Boolean Confirmations */}
         <div className="space-y-3 pt-2 border-t border-white/10">
           <label className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors">
             <Checkbox
@@ -239,26 +185,16 @@ export function DailyVaultGate() {
         </div>
       </div>
 
-      {/* Submit Button */}
+      {/* Submit Button — informational only */}
       <Button
         onClick={handleSubmit}
-        disabled={submitting || !formData.planReviewed || !formData.riskConfirmed}
+        disabled={!formData.planReviewed || !formData.riskConfirmed}
         className="vault-cta w-full h-12 text-base font-semibold gap-2"
       >
-        {submitting ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Brain className="w-5 h-5" />
-            Log Daily Ritual
-          </>
-        )}
+        <Brain className="w-5 h-5" />
+        Log Daily Ritual
       </Button>
 
-      {/* Warning for low scores */}
       {(formData.mentalState <= 2 || formData.sleepQuality <= 2 || formData.emotionalControl <= 2) && (
         <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
           <div className="flex items-start gap-2">
