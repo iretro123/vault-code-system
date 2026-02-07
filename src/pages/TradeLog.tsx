@@ -32,7 +32,7 @@ const TradeLog = () => {
     rr: "",
   });
 
-  const canTrade = vaultState.vault_status !== "RED" && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
+  const canTrade = vaultState.vault_status !== "RED" && !vaultState.open_trade && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
   
   const handleSubmit = useCallback(async () => {
     if (!trade.riskUsed || !trade.rr) {

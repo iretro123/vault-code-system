@@ -59,7 +59,7 @@ export function PreTradeExecutionGate({
   ]);
 
   // Only Vault State controls access
-  const canTrade = vaultState.vault_status !== "RED" && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
+  const canTrade = vaultState.vault_status !== "RED" && !vaultState.open_trade && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
   const allChecked = checklist.every((item) => item.checked);
   const canProceed = allChecked && canTrade;
 
