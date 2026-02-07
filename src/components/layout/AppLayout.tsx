@@ -5,13 +5,14 @@ import { VaultCommandBar } from "./VaultCommandBar";
 
 interface AppLayoutProps {
   children: ReactNode;
+  sessionPaused?: boolean;
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
+export function AppLayout({ children, sessionPaused }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopBar />
-      <VaultCommandBar />
+      <VaultCommandBar sessionPaused={sessionPaused} />
       <main className="flex-1 pb-20 md:pb-6">
         {children}
       </main>

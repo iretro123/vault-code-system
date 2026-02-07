@@ -29,8 +29,13 @@ function useEodData(userId: string | undefined): EodData | null {
 
 function deriveMessage(
   vault: ReturnType<typeof useVaultState>["state"],
-  eod: EodData | null
+  eod: EodData | null,
+  sessionPaused?: boolean
 ): string {
+  if (sessionPaused) {
+    return "Session paused. Trading disabled.";
+  }
+
   const {
     vault_status,
     risk_remaining_today,
@@ -40,7 +45,6 @@ function deriveMessage(
     open_trade,
   } = vault;
 
-  // Priority 1: Critical warnings
   if (vault_status === "RED") {
     return "Daily loss limit reached. Trading is locked.";
   }
@@ -61,12 +65,10 @@ function deriveMessage(
     return "Max trades reached for today.";
   }
 
-  // Priority 2: Current state
   if (open_trade) {
     return "Trade is live. Vault monitoring position.";
   }
 
-  // Priority 3: Data-derived insights
   if (eod && eod.trades_blocked > 0) {
     return `Vault blocked ${eod.trades_blocked} unsafe trade${eod.trades_blocked !== 1 ? "s" : ""} today.`;
   }
@@ -75,18 +77,21 @@ function deriveMessage(
     return `${eod.trades_taken} trades executed with zero losses today.`;
   }
 
-  // Priority 4: Neutral
   return "Vault active. Account protected.";
 }
 
-export function VaultCommandBar() {
+interface VaultCommandBarProps {
+  sessionPaused?: boolean;
+}
+
+export function VaultCommandBar({ sessionPaused }: VaultCommandBarProps) {
   const { user } = useAuth();
   const { state: vault, loading } = useVaultState();
   const eod = useEodData(user?.id);
 
   if (!user || loading) return null;
 
-  const message = deriveMessage(vault, eod);
+  const message = deriveMessage(vault, eod, sessionPaused);
 
   return (
     <div className="w-full bg-background border-b border-border/50">

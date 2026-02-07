@@ -9,11 +9,13 @@ import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { EndOfDayReview } from "@/components/vault/EndOfDayReview";
 import { CockpitSidePanel } from "@/components/vault/CockpitSidePanel";
 import { OnboardingOverlay } from "@/components/vault/OnboardingOverlay";
+import { TradingSessionToggle } from "@/components/vault/TradingSessionToggle";
 import { AuthGate } from "@/components/AuthGate";
 
 export default function TraderCockpit() {
   const [intentOpen, setIntentOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
+  const [sessionPaused, setSessionPaused] = useState(false);
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     limits: false,
@@ -29,16 +31,22 @@ export default function TraderCockpit() {
 
   return (
     <AuthGate>
-      <AppLayout>
+      <AppLayout sessionPaused={sessionPaused}>
         <OnboardingOverlay />
         <div className="max-w-5xl mx-auto p-4 md:p-6 pb-24 flex gap-6">
           {/* Main execution area — centered */}
           <div className="flex-1 max-w-xl mx-auto space-y-4">
             <VaultAuthorityHeader />
 
+            <TradingSessionToggle
+              paused={sessionPaused}
+              onToggle={() => setSessionPaused((p) => !p)}
+            />
+
             <VaultHUD
               onBuyingNow={() => setIntentOpen(true)}
               onCloseTrade={() => setCloseOpen(true)}
+              sessionPaused={sessionPaused}
             />
 
             <FlowSection
@@ -61,6 +69,9 @@ export default function TraderCockpit() {
               showContinue={false}
             >
               <EndOfDayReview />
+              <p className="text-xs text-muted-foreground text-center pt-3">
+                Vault resets tomorrow with fresh limits.
+              </p>
             </FlowSection>
           </div>
 
