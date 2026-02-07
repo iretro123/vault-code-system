@@ -1,6 +1,7 @@
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { useEffect, useState, useRef, useCallback } from "react";
 
 interface EodData {
@@ -94,9 +95,26 @@ export function VaultCommandBar({ sessionPaused }: VaultCommandBarProps) {
   const message = deriveMessage(vault, eod, sessionPaused);
 
   return (
-    <div className="w-full bg-background border-b border-border/50">
+    <div
+      className={cn(
+        "w-full border-b",
+        sessionPaused
+          ? "bg-amber-500/5 border-amber-500/15"
+          : "bg-emerald-500/5 border-emerald-500/15"
+      )}
+      style={{
+        backgroundImage: sessionPaused
+          ? "linear-gradient(90deg, transparent 0%, hsl(45 93% 47% / 0.07) 50%, transparent 100%)"
+          : "linear-gradient(90deg, transparent 0%, hsl(152 69% 40% / 0.07) 50%, transparent 100%)",
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-center">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground text-center truncate">
+        <p
+          className={cn(
+            "text-xs font-medium tracking-wide text-center truncate",
+            sessionPaused ? "text-amber-400/80" : "text-emerald-400/80"
+          )}
+        >
           {message}
         </p>
       </div>
