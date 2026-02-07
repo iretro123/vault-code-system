@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DailyVaultGate } from "@/components/DailyVaultGate";
 import { TradeIntentModal } from "@/components/vault/TradeIntentModal";
+import { CloseTradeModal } from "@/components/vault/CloseTradeModal";
 import { FocusSessionCard } from "@/components/vault/FocusSessionCard";
 import { TradeLoggerCard } from "@/components/vault/TradeLoggerCard";
 import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
@@ -16,6 +17,7 @@ export default function TraderCockpit() {
   const { data, loading } = useVaultExecutionPermission();
   const { state: vaultState, loading: vaultLoading } = useVaultState();
   const [intentOpen, setIntentOpen] = useState(false);
+  const [closeOpen, setCloseOpen] = useState(false);
 
   const blocked = !!data && !data.execution_allowed;
   const cooldown = !!data?.cooldown_active;
@@ -98,6 +100,18 @@ export default function TraderCockpit() {
               onClick={() => setIntentOpen(true)}
             >
               Buying Now
+            </Button>
+          )}
+
+          {/* Close Trade CTA — shown when a trade is open */}
+          {!vaultLoading && vaultState.open_trade && (
+            <Button
+              variant="outline"
+              className="w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+              size="lg"
+              onClick={() => setCloseOpen(true)}
+            >
+              Close Trade
             </Button>
           )}
 
@@ -196,6 +210,7 @@ export default function TraderCockpit() {
         </div>
 
         <TradeIntentModal open={intentOpen} onClose={() => setIntentOpen(false)} />
+        <CloseTradeModal open={closeOpen} onClose={() => setCloseOpen(false)} />
       </AppLayout>
     </AuthGate>
   );

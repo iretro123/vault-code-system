@@ -479,6 +479,14 @@ export type Database = {
           trades_remaining: number
         }[]
       }
+      close_trade_intent: {
+        Args: { _trade_result: number; _user_id: string }
+        Returns: {
+          message: string
+          new_vault_status: string
+          success: boolean
+        }[]
+      }
       complete_daily_checklist: {
         Args: {
           _emotional_control: number
