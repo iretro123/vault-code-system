@@ -7,6 +7,7 @@ import { VaultHUD } from "@/components/vault/VaultHUD";
 import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { EndOfDayReview } from "@/components/vault/EndOfDayReview";
+import { ScalingRulesPanel } from "@/components/vault/ScalingRulesPanel";
 import { AuthGate } from "@/components/AuthGate";
 
 export default function TraderCockpit() {
@@ -61,6 +62,9 @@ export default function TraderCockpit() {
           >
             <EndOfDayReview />
           </FlowSection>
+
+          {/* Scaling Rules */}
+          <ScalingRulesPanel />
         </div>
 
         <TradeIntentModal open={intentOpen} onClose={() => setIntentOpen(false)} />
