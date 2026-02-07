@@ -2,11 +2,16 @@ import React, { useMemo } from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { Shield, Lock, Timer, Activity, LogIn } from "lucide-react";
+import { Shield, Lock, Timer, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-export function VaultHUD() {
+interface VaultHUDProps {
+  onBuyingNow?: () => void;
+  onCloseTrade?: () => void;
+}
+
+export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
   const { user } = useAuth();
   const { state: vaultState, loading: vaultLoading } = useVaultState();
   const navigate = useNavigate();
@@ -101,6 +106,33 @@ export function VaultHUD() {
             {vaultState.max_contracts_allowed}
           </span>
         </div>
+      </div>
+
+      {/* Execution Buttons — always render, disabled by vault rules */}
+      <div className="space-y-2">
+        <Button
+          disabled={
+            vaultState.vault_status === "RED" ||
+            vaultState.open_trade ||
+            vaultState.trades_remaining_today <= 0 ||
+            vaultState.risk_remaining_today <= 0
+          }
+          onClick={onBuyingNow}
+          className="vault-cta w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl"
+          size="lg"
+        >
+          Buying Now
+        </Button>
+
+        <Button
+          disabled={!vaultState.open_trade}
+          variant="outline"
+          className="w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10 disabled:border-border disabled:text-muted-foreground"
+          size="lg"
+          onClick={onCloseTrade}
+        >
+          Sell / Close Position
+        </Button>
       </div>
     </div>
   );
