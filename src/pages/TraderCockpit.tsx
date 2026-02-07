@@ -7,7 +7,7 @@ import { VaultHUD } from "@/components/vault/VaultHUD";
 import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { EndOfDayReview } from "@/components/vault/EndOfDayReview";
-import { ScalingRulesPanel } from "@/components/vault/ScalingRulesPanel";
+import { CockpitSidePanel } from "@/components/vault/CockpitSidePanel";
 import { AuthGate } from "@/components/AuthGate";
 
 export default function TraderCockpit() {
@@ -29,42 +29,41 @@ export default function TraderCockpit() {
   return (
     <AuthGate>
       <AppLayout>
-        <div className="max-w-xl mx-auto p-4 md:p-6 pb-24 space-y-4">
-          {/* Vault Status + Metrics + Risk Mode */}
-          <VaultAuthorityHeader />
+        <div className="max-w-5xl mx-auto p-4 md:p-6 pb-24 flex gap-6">
+          {/* Main execution area — centered */}
+          <div className="flex-1 max-w-xl mx-auto space-y-4">
+            <VaultAuthorityHeader />
 
-          {/* VaultHUD — always renders, buttons disabled by rules */}
-          <VaultHUD
-            onBuyingNow={() => setIntentOpen(true)}
-            onCloseTrade={() => setCloseOpen(true)}
-          />
+            <VaultHUD
+              onBuyingNow={() => setIntentOpen(true)}
+              onCloseTrade={() => setCloseOpen(true)}
+            />
 
-          {/* Today's Limits */}
-          <FlowSection
-            title="Today's Limits"
-            isOpen={openSections.limits}
-            onToggle={() => toggleSection("limits")}
-            status="active"
-            sectionRef={limitsRef}
-            showContinue={false}
-          >
-            <TodaysLimitsSection />
-          </FlowSection>
+            <FlowSection
+              title="Today's Limits"
+              isOpen={openSections.limits}
+              onToggle={() => toggleSection("limits")}
+              status="active"
+              sectionRef={limitsRef}
+              showContinue={false}
+            >
+              <TodaysLimitsSection />
+            </FlowSection>
 
-          {/* End of Day Review */}
-          <FlowSection
-            title="End of Day Review"
-            isOpen={openSections.review}
-            onToggle={() => toggleSection("review")}
-            status="completed"
-            sectionRef={reviewRef}
-            showContinue={false}
-          >
-            <EndOfDayReview />
-          </FlowSection>
+            <FlowSection
+              title="End of Day Review"
+              isOpen={openSections.review}
+              onToggle={() => toggleSection("review")}
+              status="completed"
+              sectionRef={reviewRef}
+              showContinue={false}
+            >
+              <EndOfDayReview />
+            </FlowSection>
+          </div>
 
-          {/* Scaling Rules */}
-          <ScalingRulesPanel />
+          {/* Right-side docked panel (desktop only) */}
+          <CockpitSidePanel />
         </div>
 
         <TradeIntentModal open={intentOpen} onClose={() => setIntentOpen(false)} />
