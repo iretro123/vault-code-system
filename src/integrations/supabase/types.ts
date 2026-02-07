@@ -667,6 +667,32 @@ export type Database = {
         }
         Returns: string
       }
+      update_vault_risk_mode: {
+        Args: { _risk_mode: string; _user_id: string }
+        Returns: {
+          account_balance: number
+          created_at: string
+          daily_loss_limit: number
+          date: string
+          id: string
+          loss_streak: number
+          max_contracts_allowed: number
+          max_trades_per_day: number
+          open_trade: boolean
+          risk_mode: string
+          risk_remaining_today: number
+          trades_remaining_today: number
+          updated_at: string
+          user_id: string
+          vault_status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vault_state"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       app_role:

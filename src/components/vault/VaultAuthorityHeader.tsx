@@ -2,6 +2,7 @@ import React from "react";
 import { useVaultState, VaultStatusEnum } from "@/contexts/VaultStateContext";
 import { cn } from "@/lib/utils";
 import { Shield, ShieldAlert, ShieldOff } from "lucide-react";
+import { RiskModeSelector } from "./RiskModeSelector";
 
 const STATUS_CONFIG: Record<VaultStatusEnum, {
   label: string;
@@ -114,6 +115,11 @@ export function VaultAuthorityHeader() {
             {state.max_contracts_allowed}
           </p>
         </div>
+      </div>
+
+      {/* Risk Mode Selector */}
+      <div className="mt-4 pt-4 border-t border-border">
+        <RiskModeSelector />
       </div>
     </div>
   );
