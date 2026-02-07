@@ -8,6 +8,7 @@ import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
 import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
+import { useVaultState } from "@/contexts/VaultStateContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -15,10 +16,19 @@ import { AuthGate } from "@/components/AuthGate";
 
 export default function TraderCockpit() {
   const { data, loading } = useVaultExecutionPermission();
+  const { state: vaultState, loading: vaultLoading } = useVaultState();
   const [intentOpen, setIntentOpen] = useState(false);
 
   const blocked = !!data && !data.execution_allowed;
   const cooldown = !!data?.cooldown_active;
+
+  // "BUYING NOW" button visibility from Vault State
+  const showBuyingNow =
+    !vaultLoading &&
+    vaultState.vault_status !== "RED" &&
+    !vaultState.open_trade &&
+    vaultState.trades_remaining_today > 0 &&
+    vaultState.risk_remaining_today > 0;
 
   // Section open states — all sections are expandable, ritual is just informational
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -81,6 +91,17 @@ export default function TraderCockpit() {
       <AppLayout>
         <div className="max-w-xl mx-auto p-4 md:p-6 pb-24 space-y-4">
           <VaultAuthorityHeader />
+
+          {/* Primary Action */}
+          {showBuyingNow && (
+            <Button
+              className="vault-cta w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl"
+              size="lg"
+              onClick={() => setIntentOpen(true)}
+            >
+              Buying Now
+            </Button>
+          )}
 
           {/* Section 1: Daily Ritual (informational only) */}
           <FlowSection
