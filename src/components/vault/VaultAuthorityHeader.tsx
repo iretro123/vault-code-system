@@ -84,41 +84,8 @@ export function VaultAuthorityHeader() {
         {config.answer}
       </p>
 
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="p-3 rounded-lg bg-muted/10 border border-border">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            Risk Left
-          </p>
-          <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
-            ${state.risk_remaining_today.toFixed(0)}
-          </p>
-        </div>
-
-        <div className="p-3 rounded-lg bg-muted/10 border border-border">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            Trades Left
-          </p>
-          <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
-            {state.trades_remaining_today}
-            <span className="text-xs text-muted-foreground font-normal">
-              /{state.max_trades_per_day}
-            </span>
-          </p>
-        </div>
-
-        <div className="p-3 rounded-lg bg-muted/10 border border-border">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            Max Contracts
-          </p>
-          <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
-            {state.max_contracts_allowed}
-          </p>
-        </div>
-      </div>
-
       {/* Risk Mode Selector */}
-      <div className="mt-4 pt-4 border-t border-border">
+      <div className="mt-3 pt-3 border-t border-border">
         <RiskModeSelector />
       </div>
     </div>

@@ -1,8 +1,8 @@
 import React, { useMemo } from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
-import { Shield, Lock, Timer, LogIn } from "lucide-react";
+import { cn } from "@/lib/utils"; // kept for conditional button styling
+import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { SetBalancePrompt } from "./SetBalancePrompt";
@@ -31,13 +31,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
     return "";
   }, [vaultState.vault_status, vaultState.open_trade, vaultState.trades_remaining_today, vaultState.risk_remaining_today]);
 
-  const lightClass = useMemo(() => {
-    if (!user) return "bg-muted";
-    if (vaultState.vault_status === "GREEN") return "bg-emerald-500";
-    if (vaultState.vault_status === "YELLOW") return "bg-amber-500";
-    if (vaultState.vault_status === "RED") return "bg-rose-500";
-    return "bg-muted";
-  }, [user, vaultState.vault_status]);
+  // lightClass no longer needed — vault status shown only in VaultAuthorityHeader
 
   if (!user) {
     return (
@@ -78,64 +72,37 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
 
   return (
     <div className="vault-card p-4 space-y-4 min-h-[140px]" data-tour="vault-status">
-      {/* Header — bound to vault_status */}
+      {/* Account Balance */}
       <div className="flex items-center justify-between min-h-[24px]">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className={cn("h-3 w-3 rounded-full", lightClass, vaultState.vault_status === "GREEN" && "animate-pulse")} />
-            <span className="font-semibold text-foreground">
-              Vault {vaultState.vault_status}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 ml-6">
-            {vaultState.risk_remaining_today <= 0
-              ? "Daily risk limit reached."
-              : vaultState.loss_streak >= 2
-              ? "Loss streak detected — reduced limits active."
-              : "You are cleared to trade."}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Account Balance</p>
-          <p className="text-sm font-mono font-semibold tabular-nums text-foreground">
-            ${vaultState.account_balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-          </p>
-        </div>
+        <span className="text-xs text-muted-foreground">Account Balance</span>
+        <span className="text-sm font-mono font-semibold tabular-nums text-foreground">
+          ${vaultState.account_balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+        </span>
       </div>
 
-      {/* Metrics grid — bound to Vault State only */}
+      {/* Consolidated Metrics */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <Shield className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Risk Left</span>
-          </div>
-          <span className="text-sm font-mono font-medium tabular-nums text-foreground">
+        <div className="p-3 rounded-lg bg-muted/10 border border-border min-h-[56px]">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Today's Risk</p>
+          <p className="text-sm font-mono font-semibold tabular-nums text-foreground">
             ${vaultState.risk_remaining_today.toFixed(0)}
-          </span>
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Loss allowed today</p>
+            <span className="text-xs text-muted-foreground font-normal"> of ${vaultState.daily_loss_limit.toFixed(0)}</span>
+          </p>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <Timer className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Trades</span>
-          </div>
-          <span className="text-sm font-mono font-medium tabular-nums text-foreground">
-            {vaultState.trades_remaining_today}/{vaultState.max_trades_per_day}
-          </span>
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Trades remaining</p>
+        <div className="p-3 rounded-lg bg-muted/10 border border-border min-h-[56px]">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Trades Remaining</p>
+          <p className="text-sm font-mono font-semibold tabular-nums text-foreground">
+            {vaultState.trades_remaining_today}
+            <span className="text-xs text-muted-foreground font-normal"> / {vaultState.max_trades_per_day}</span>
+          </p>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <Lock className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Contracts</span>
-          </div>
-          <span className="text-sm font-medium tabular-nums text-foreground">
+        <div className="p-3 rounded-lg bg-muted/10 border border-border min-h-[56px]">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Max Contracts</p>
+          <p className="text-sm font-mono font-semibold tabular-nums text-foreground">
             {vaultState.max_contracts_allowed}
-          </span>
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Max size per trade</p>
+          </p>
         </div>
       </div>
 
