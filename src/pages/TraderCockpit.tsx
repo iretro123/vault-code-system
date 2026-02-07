@@ -3,25 +3,15 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { TradeIntentModal } from "@/components/vault/TradeIntentModal";
 import { CloseTradeModal } from "@/components/vault/CloseTradeModal";
 import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
+import { VaultHUD } from "@/components/vault/VaultHUD";
 import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { EndOfDayReview } from "@/components/vault/EndOfDayReview";
-import { useVaultState } from "@/contexts/VaultStateContext";
-import { Button } from "@/components/ui/button";
 import { AuthGate } from "@/components/AuthGate";
 
 export default function TraderCockpit() {
-  const { state: vaultState, loading: vaultLoading } = useVaultState();
   const [intentOpen, setIntentOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
-
-  // "BUYING NOW" — controlled ONLY by Vault State
-  const showBuyingNow =
-    !vaultLoading &&
-    vaultState.vault_status !== "RED" &&
-    !vaultState.open_trade &&
-    vaultState.trades_remaining_today > 0 &&
-    vaultState.risk_remaining_today > 0;
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     limits: false,
@@ -42,28 +32,11 @@ export default function TraderCockpit() {
           {/* Vault Status + Metrics + Risk Mode */}
           <VaultAuthorityHeader />
 
-          {/* Primary Action — BUYING NOW */}
-          {showBuyingNow && (
-            <Button
-              className="vault-cta w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl"
-              size="lg"
-              onClick={() => setIntentOpen(true)}
-            >
-              Buying Now
-            </Button>
-          )}
-
-          {/* Close Trade CTA */}
-          {!vaultLoading && vaultState.open_trade && (
-            <Button
-              variant="outline"
-              className="w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
-              size="lg"
-              onClick={() => setCloseOpen(true)}
-            >
-              Sell / Close Position
-            </Button>
-          )}
+          {/* VaultHUD — always renders, buttons disabled by rules */}
+          <VaultHUD
+            onBuyingNow={() => setIntentOpen(true)}
+            onCloseTrade={() => setCloseOpen(true)}
+          />
 
           {/* Today's Limits */}
           <FlowSection
