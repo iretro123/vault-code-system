@@ -8,6 +8,7 @@ import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { EndOfDayReview } from "@/components/vault/EndOfDayReview";
 import { CockpitSidePanel } from "@/components/vault/CockpitSidePanel";
+import { OnboardingOverlay } from "@/components/vault/OnboardingOverlay";
 import { AuthGate } from "@/components/AuthGate";
 
 export default function TraderCockpit() {
@@ -29,6 +30,7 @@ export default function TraderCockpit() {
   return (
     <AuthGate>
       <AppLayout>
+        <OnboardingOverlay />
         <div className="max-w-5xl mx-auto p-4 md:p-6 pb-24 flex gap-6">
           {/* Main execution area — centered */}
           <div className="flex-1 max-w-xl mx-auto space-y-4">
