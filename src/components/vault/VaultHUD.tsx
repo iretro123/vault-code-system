@@ -66,11 +66,20 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
     <div className="vault-card p-4 space-y-4 min-h-[140px]">
       {/* Header — bound to vault_status */}
       <div className="flex items-center justify-between min-h-[24px]">
-        <div className="flex items-center gap-3">
-          <div className={cn("h-3 w-3 rounded-full", lightClass, vaultState.vault_status === "GREEN" && "animate-pulse")} />
-          <span className="font-semibold text-foreground">
-            Vault {vaultState.vault_status}
-          </span>
+        <div>
+          <div className="flex items-center gap-3">
+            <div className={cn("h-3 w-3 rounded-full", lightClass, vaultState.vault_status === "GREEN" && "animate-pulse")} />
+            <span className="font-semibold text-foreground">
+              Vault {vaultState.vault_status}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 ml-6">
+            {vaultState.risk_remaining_today <= 0
+              ? "Daily risk limit reached."
+              : vaultState.loss_streak >= 2
+              ? "Loss streak detected — reduced limits active."
+              : "You are cleared to trade."}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Account Balance</p>
