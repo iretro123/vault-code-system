@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useVaultState } from "@/contexts/VaultStateContext";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -17,28 +18,19 @@ function remainingLabel(minutes: number | null | undefined) {
 
 export function VaultHUD() {
   const { user } = useAuth();
-  const { data, loading, error, status } = useVaultExecutionPermission();
+  const { state: vaultState, loading: vaultLoading } = useVaultState();
+  const { data: execData, loading: execLoading, status } = useVaultExecutionPermission();
   const navigate = useNavigate();
 
   const lightClass = useMemo(() => {
     if (!user) return "bg-muted";
-    if (status.light === "GREEN") return "bg-emerald-500";
-    if (status.light === "YELLOW") return "bg-amber-500";
-    if (status.light === "RED") return "bg-rose-500";
+    if (vaultState.vault_status === "GREEN") return "bg-emerald-500";
+    if (vaultState.vault_status === "YELLOW") return "bg-amber-500";
+    if (vaultState.vault_status === "RED") return "bg-rose-500";
     return "bg-muted";
-  }, [user, status.light]);
+  }, [user, vaultState.vault_status]);
 
-  const scrollToRitual = () => {
-    const ritualCard = document.querySelector('[data-ritual-gate]');
-    if (ritualCard) {
-      ritualCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Flash effect
-      ritualCard.classList.add('ring-2', 'ring-primary');
-      setTimeout(() => ritualCard.classList.remove('ring-2', 'ring-primary'), 2000);
-    }
-  };
-
-  // Not authenticated — neutral prompt, not an error
+  // Not authenticated
   if (!user) {
     return (
       <div className="vault-card p-4">
@@ -61,39 +53,8 @@ export function VaultHUD() {
     );
   }
 
-  // True system error (network/RPC failure)
-  if (error) {
-    return (
-      <div className="vault-card p-4 border-rose-500/30">
-        <div className="flex items-center gap-2 text-rose-400">
-          <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">Connection error: {error}</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Vault closed — neutral guidance with action (NOT an error)
-  if (!loading && data && !data.vault_open) {
-    return (
-      <div className="vault-card p-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="h-3 w-3 rounded-full bg-muted" />
-          <span className="font-semibold text-foreground">Vault closed — complete Daily Ritual to unlock</span>
-        </div>
-        <Button
-          size="sm"
-          className="w-full"
-          onClick={scrollToRitual}
-        >
-          Start Ritual
-        </Button>
-      </div>
-    );
-  }
-
-  // Loading state - only show on initial load, keep layout stable
-  if (loading && !data) {
+  // Loading state - only show on initial load
+  if (vaultLoading && !execData) {
     return (
       <div className="vault-card p-4 min-h-[140px]">
         <div className="flex items-center gap-3">
@@ -104,87 +65,76 @@ export function VaultHUD() {
     );
   }
 
-  // Vault open — show full HUD
+  // Vault open — show full HUD, driven entirely by Vault State
   return (
     <div className="vault-card p-4 space-y-4 min-h-[140px]">
-      {/* Header with status light */}
+      {/* Header with status light — bound to vault_status */}
       <div className="flex items-center justify-between min-h-[24px]">
         <div className="flex items-center gap-3">
-          <div className={cn("h-3 w-3 rounded-full", lightClass, status.light === "GREEN" && "animate-pulse")} />
+          <div className={cn("h-3 w-3 rounded-full", lightClass, vaultState.vault_status === "GREEN" && "animate-pulse")} />
           <span className="font-semibold text-foreground">
-            {status.label}
+            Vault {vaultState.vault_status}
           </span>
         </div>
         <div className="text-sm text-muted-foreground">
-          Risk Limit: <span className="font-mono tabular-nums text-foreground">{data?.effective_risk_limit?.toFixed(2) ?? "—"}%</span>
+          Risk Limit: <span className="font-mono tabular-nums text-foreground">{execData?.effective_risk_limit?.toFixed(2) ?? "—"}%</span>
         </div>
       </div>
 
-      {/* Metrics grid */}
+      {/* Metrics grid — bound to Vault State fields */}
       <div className="grid grid-cols-4 gap-3">
         <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Shield className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Vault</span>
+            <span className="text-xs text-muted-foreground">Risk Left</span>
           </div>
-          <span className="text-sm font-medium text-emerald-400">OPEN</span>
+          <span className="text-sm font-mono font-medium tabular-nums text-foreground">
+            ${vaultState.risk_remaining_today.toFixed(0)}
+          </span>
         </div>
 
         <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Timer className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Cooldown</span>
+            <span className="text-xs text-muted-foreground">Trades</span>
           </div>
-          <span className={cn(
-            "text-sm font-medium tabular-nums",
-            data?.cooldown_active ? "text-amber-400" : "text-muted-foreground"
-          )}>
-            {data?.cooldown_active ? remainingLabel(data?.cooldown_remaining_minutes) : "None"}
+          <span className="text-sm font-mono font-medium tabular-nums text-foreground">
+            {vaultState.trades_remaining_today}/{vaultState.max_trades_per_day}
           </span>
         </div>
 
         <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Lock className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Protection</span>
+            <span className="text-xs text-muted-foreground">Contracts</span>
           </div>
-          <span className={cn(
-            "text-sm font-medium",
-            data?.protection_level === "LOCKDOWN" && "text-rose-400",
-            data?.protection_level === "RESTRICTED" && "text-orange-400",
-            data?.protection_level === "CAUTION" && "text-amber-400",
-            data?.protection_level === "NONE" && "text-muted-foreground"
-          )}>
-            {data?.protection_level ?? "—"}
+          <span className="text-sm font-medium tabular-nums text-foreground">
+            {vaultState.max_contracts_allowed}
           </span>
         </div>
 
         <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Activity className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Consistency</span>
+            <span className="text-xs text-muted-foreground">Cooldown</span>
           </div>
           <span className={cn(
-            "text-sm font-medium",
-            data?.consistency_level === "CRITICAL" && "text-rose-400",
-            data?.consistency_level === "UNSTABLE" && "text-orange-400",
-            data?.consistency_level === "WARNING" && "text-amber-400",
-            data?.consistency_level === "STABLE" && "text-muted-foreground",
-            data?.consistency_level === "EXCELLENT" && "text-emerald-400"
+            "text-sm font-medium tabular-nums",
+            execData?.cooldown_active ? "text-amber-400" : "text-muted-foreground"
           )}>
-            {data?.consistency_level ?? "—"}
+            {execData?.cooldown_active ? remainingLabel(execData?.cooldown_remaining_minutes) : "None"}
           </span>
         </div>
       </div>
 
-      {/* Block reason — shown as guidance, not error */}
-      {data && !data.execution_allowed && (
+      {/* Block reason — from execution permission */}
+      {execData && !execData.execution_allowed && (
         <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/10">
           <div className="flex items-center gap-2 mb-1">
             <Lock className="h-4 w-4 text-amber-400" />
             <span className="text-sm font-medium text-amber-400">Action Required</span>
           </div>
-          <p className="text-sm text-muted-foreground">{data.block_reason}</p>
+          <p className="text-sm text-muted-foreground">{execData.block_reason}</p>
         </div>
       )}
     </div>
