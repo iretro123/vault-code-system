@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { useDailyVaultStatus, useCompleteDailyChecklist } from "@/hooks/useDailyVaultStatus";
-import { Lock, Unlock, Brain, Moon, Heart, FileText, AlertTriangle, Loader2 } from "lucide-react";
+import { Brain, Moon, Heart, FileText, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import { toast } from "sonner";
 
 interface ChecklistFormData {
@@ -118,67 +118,46 @@ export function DailyVaultGate() {
     }
   };
 
-  // If vault is open, don't show the gate
-  if (!dailyStatus.loading && dailyStatus.vaultOpen) {
-    return null;
-  }
-
-  // If already completed but vault still locked (discipline locked), show different message
-  if (!dailyStatus.loading && dailyStatus.checklistCompleted && !dailyStatus.vaultOpen) {
+  // Already completed — show informational summary
+  if (!dailyStatus.loading && dailyStatus.checklistCompleted) {
     return (
-      <Card className="vault-card p-6 border-amber-500/20">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 rounded-full bg-amber-500/10">
-            <AlertTriangle className="w-6 h-6 text-amber-400" />
-          </div>
-          <div>
-            <h3 className="font-bold text-amber-400">Vault Partially Locked</h3>
-            <p className="text-sm text-muted-foreground">
-              Daily ritual complete, but discipline is locked
-            </p>
-          </div>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Complete your recovery tasks to fully unlock the vault.
+      <div className="p-3 rounded-xl bg-accent/10 border border-accent/20">
+        <p className="text-sm text-accent font-medium">
+          ✅ Daily ritual completed
         </p>
-      </Card>
+        <p className="text-xs text-muted-foreground mt-1">
+          Your readiness has been logged for today.
+        </p>
+      </div>
     );
   }
 
+
   if (dailyStatus.loading) {
     return (
-      <Card className="vault-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Skeleton className="h-12 w-12 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-56" />
-          </div>
-        </div>
-        <div className="space-y-4">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      </Card>
+      <div className="space-y-4 animate-pulse">
+        <div className="h-16 bg-muted/30 rounded w-full" />
+        <div className="h-16 bg-muted/30 rounded w-full" />
+        <div className="h-16 bg-muted/30 rounded w-full" />
+      </div>
     );
   }
 
   const progress = ((5 - dailyStatus.actionsRemaining) / 5) * 100;
 
   return (
-    <Card className="vault-card p-6 border-rose-500/20">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 rounded-full bg-rose-500/10">
-          <Lock className="w-6 h-6 text-rose-400" />
+    <div className="space-y-5">
+      {/* Progress */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Ritual Progress
+          </span>
+          <span className="text-sm font-bold text-foreground">
+            {5 - dailyStatus.actionsRemaining}/5 Complete
+          </span>
         </div>
-        <div className="flex-1">
-          <h3 className="font-bold text-rose-400 text-lg">Vault Closed</h3>
-          <p className="text-sm text-muted-foreground">
-            Complete your daily ritual to open the vault
-          </p>
-        </div>
+        <Progress value={progress} className="h-2" />
       </div>
 
       {/* Progress */}
@@ -264,32 +243,32 @@ export function DailyVaultGate() {
       <Button
         onClick={handleSubmit}
         disabled={submitting || !formData.planReviewed || !formData.riskConfirmed}
-        className="vault-cta w-full mt-6 h-12 text-base font-semibold gap-2"
+        className="vault-cta w-full h-12 text-base font-semibold gap-2"
       >
         {submitting ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            Opening Vault...
+            Saving...
           </>
         ) : (
           <>
-            <Unlock className="w-5 h-5" />
-            Complete Ritual & Open Vault
+            <Brain className="w-5 h-5" />
+            Log Daily Ritual
           </>
         )}
       </Button>
 
       {/* Warning for low scores */}
       {(formData.mentalState <= 2 || formData.sleepQuality <= 2 || formData.emotionalControl <= 2) && (
-        <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-400">
-              Vault will adjust risk to protect your edge today.
+              Low readiness detected — consider trading conservatively today.
             </p>
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
