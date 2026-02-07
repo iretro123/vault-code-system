@@ -6,16 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type Outcome = "WIN" | "LOSS" | "BREAKEVEN";
-type InstrumentType = "options" | "futures";
 
 const outcomeMessages: Record<Outcome, { title: string; message: string }> = {
   WIN: {
@@ -49,8 +41,6 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
     }
   }, [success]);
 
-  // Form state — no emotional state, no followed_rules
-  const [instrumentType, setInstrumentType] = useState<InstrumentType>("options");
   const [symbol, setSymbol] = useState("");
   const [riskAmount, setRiskAmount] = useState("");
   const [outcome, setOutcome] = useState<Outcome>("WIN");
@@ -80,12 +70,12 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
     const { error: insertError } = await supabase.from("trade_entries").insert({
       user_id: user.id,
       symbol: symbol.trim().toUpperCase(),
-      instrument_type: instrumentType,
+      instrument_type: "options",
       outcome: outcome,
       risk_used: parseFloat(riskAmount) || 0,
       risk_reward: riskReward,
-      emotional_state: 3, // Default neutral
-      followed_rules: true, // Default true
+      emotional_state: 3,
+      followed_rules: true,
       notes: notes.trim() || null,
     });
 
@@ -144,37 +134,20 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
 
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {/* Row 1: Instrument + Symbol */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Type</Label>
-          <Select
-            value={instrumentType}
-            onValueChange={(v) => setInstrumentType(v as InstrumentType)}
-          >
-            <SelectTrigger className="h-9 text-sm bg-muted/30 border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="options">Options</SelectItem>
-              <SelectItem value="futures">Futures</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Symbol</Label>
-          <Input
-            ref={symbolInputRef}
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            placeholder="SPY, ES…"
-            className="vault-input h-9 text-sm"
-            required
-          />
-        </div>
+      {/* Symbol */}
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Symbol</Label>
+        <Input
+          ref={symbolInputRef}
+          value={symbol}
+          onChange={(e) => setSymbol(e.target.value)}
+          placeholder="SPY, QQQ, AAPL…"
+          className="vault-input h-9 text-sm"
+          required
+        />
       </div>
 
-      {/* Row 2: Risk + Outcome */}
+      {/* Risk + Outcome */}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Risk ($)</Label>
@@ -191,19 +164,26 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Outcome</Label>
-          <Select
-            value={outcome}
-            onValueChange={(v) => setOutcome(v as Outcome)}
-          >
-            <SelectTrigger className="h-9 text-sm bg-muted/30 border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="WIN">Win</SelectItem>
-              <SelectItem value="LOSS">Loss</SelectItem>
-              <SelectItem value="BREAKEVEN">Breakeven</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-3 gap-1">
+            {(["WIN", "LOSS", "BREAKEVEN"] as const).map((o) => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => setOutcome(o)}
+                className={`h-9 rounded-md text-xs font-semibold transition-all border ${
+                  outcome === o
+                    ? o === "WIN"
+                      ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500"
+                      : o === "LOSS"
+                      ? "bg-rose-500/10 border-rose-500/40 text-rose-500"
+                      : "bg-muted/30 border-border text-foreground"
+                    : "bg-muted/10 border-border text-muted-foreground hover:bg-muted/20"
+                }`}
+              >
+                {o === "BREAKEVEN" ? "BE" : o}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -221,14 +201,12 @@ export function TradeLoggerCard({ variant = "card" }: TradeLoggerCardProps) {
         />
       </div>
 
-      {/* Error Display */}
       {error && (
         <div className="p-2 rounded-xl bg-destructive/10 border border-destructive/20">
           <p className="text-xs text-destructive">{error}</p>
         </div>
       )}
 
-      {/* Submit Button */}
       <Button
         type="submit"
         size="sm"

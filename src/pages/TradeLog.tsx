@@ -10,7 +10,6 @@ import { Plus, CheckCircle, XCircle, Loader2, Trash2, AlertTriangle, Lock, Shiel
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
 import { useVaultState } from "@/contexts/VaultStateContext";
-import { PreTradeExecutionGate } from "@/components/PreTradeExecutionGate";
 import {
   Dialog,
   DialogContent,
@@ -27,19 +26,16 @@ const TradeLog = () => {
   const navigate = useNavigate();
   
   const [submitting, setSubmitting] = useState(false);
-  const [showGate, setShowGate] = useState(false);
   
   const [trade, setTrade] = useState({
     riskUsed: "",
     rr: "",
-    followedRules: null as boolean | null,
   });
 
   const canTrade = vaultState.vault_status !== "RED" && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
   
-  // Step 1: Validate form and open the execution gate
-  const handleInitiateSubmit = () => {
-    if (!trade.riskUsed || !trade.rr || trade.followedRules === null) {
+  const handleSubmit = useCallback(async () => {
+    if (!trade.riskUsed || !trade.rr) {
       toast({
         title: "Missing fields",
         description: "Please fill in all required fields.",
@@ -47,19 +43,14 @@ const TradeLog = () => {
       });
       return;
     }
-    setShowGate(true);
-  };
-
-  // Step 2: Execute trade after gate clearance
-  const handleGateCleared = useCallback(async (emotionalState: number) => {
-    setShowGate(false);
+    
     setSubmitting(true);
     
     const { error } = await addEntry({
       risk_used: parseFloat(trade.riskUsed),
       risk_reward: parseFloat(trade.rr),
-      followed_rules: trade.followedRules!,
-      emotional_state: emotionalState,
+      followed_rules: true,
+      emotional_state: 3,
     });
     
     if (!error) {
@@ -67,11 +58,7 @@ const TradeLog = () => {
         title: "Trade logged",
         description: "Your trade has been recorded successfully.",
       });
-      setTrade({
-        riskUsed: "",
-        rr: "",
-        followedRules: null,
-      });
+      setTrade({ riskUsed: "", rr: "" });
     } else {
       toast({
         title: "Trade blocked",
@@ -82,11 +69,6 @@ const TradeLog = () => {
     
     setSubmitting(false);
   }, [addEntry, trade, toast]);
-
-  // Step 3: Handle gate cancellation
-  const handleGateCancelled = useCallback(() => {
-    setShowGate(false);
-  }, []);
   
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -111,7 +93,6 @@ const TradeLog = () => {
   
   const isNearTradeLimit = vaultState.trades_remaining_today <= 1 && vaultState.trades_remaining_today > 0;
   const isNearLossLimit = vaultState.risk_remaining_today < 2;
-  const plannedRisk = parseFloat(trade.riskUsed) || 0;
   
   return (
     <AppLayout>
@@ -126,28 +107,17 @@ const TradeLog = () => {
       />
       
       <div className="px-4 md:px-6 space-y-6 pb-24">
-        {/* Pre-Trade Execution Gate Modal */}
-        <Dialog open={showGate} onOpenChange={setShowGate}>
-          <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none">
-            <PreTradeExecutionGate
-              plannedRisk={plannedRisk}
-              onCleared={handleGateCleared}
-              onCancel={handleGateCancelled}
-            />
-          </DialogContent>
-        </Dialog>
-
         {/* Trading Status Warning */}
         {!canTrade && (
           <Card className="vault-card p-4 border-rose-500/20">
             <div className="flex items-start gap-3">
               <Lock className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-rose-400">Trading Blocked</p>
+                <p className="font-medium text-rose-400">Not Cleared</p>
                 <p className="text-sm text-muted-foreground">
-                  {vaultState.vault_status === "RED" ? "Vault discipline lock active" : 
-                   vaultState.trades_remaining_today <= 0 ? "Max trades reached for today" :
-                   "Daily loss limit reached"}
+                  {vaultState.vault_status === "RED" ? "Vault is protecting discipline." : 
+                   vaultState.trades_remaining_today <= 0 ? "Max trades reached for today." :
+                   "Daily loss limit reached."}
                 </p>
               </div>
             </div>
@@ -163,7 +133,7 @@ const TradeLog = () => {
                 <p className="font-medium text-amber-400">Approaching Limits</p>
                 <p className="text-sm text-muted-foreground">
                   {isNearTradeLimit && `${vaultState.trades_remaining_today} trade${vaultState.trades_remaining_today === 1 ? '' : 's'} remaining. `}
-                  {isNearLossLimit && `${vaultState.risk_remaining_today.toFixed(1)}% daily loss remaining.`}
+                  {isNearLossLimit && `$${vaultState.risk_remaining_today.toFixed(0)} risk remaining.`}
                 </p>
               </div>
             </div>
@@ -177,15 +147,14 @@ const TradeLog = () => {
             {/* Risk Used */}
             <div>
               <Label htmlFor="risk" className="text-sm text-muted-foreground">
-                Risk Used (%)
+                Risk Used ($)
               </Label>
               <Input
                 id="risk"
                 type="number"
                 min="0"
-                max="100"
-                step="0.1"
-                placeholder="1.0"
+                step="0.01"
+                placeholder="100"
                 value={trade.riskUsed}
                 onChange={(e) => setTrade(prev => ({ ...prev, riskUsed: e.target.value }))}
                 className="vault-input mt-1.5 h-14 text-xl font-mono"
@@ -211,51 +180,6 @@ const TradeLog = () => {
                 disabled={!canTrade}
               />
             </div>
-            
-            {/* Followed Rules */}
-            <div>
-              <Label className="text-sm text-muted-foreground mb-3 block">
-                Followed Rules?
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setTrade(prev => ({ ...prev, followedRules: true }))}
-                  disabled={!canTrade}
-                  className={cn(
-                    "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all disabled:opacity-50",
-                    trade.followedRules === true 
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-400" 
-                      : "border-white/10 hover:border-white/20 text-foreground"
-                  )}
-                >
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Yes</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTrade(prev => ({ ...prev, followedRules: false }))}
-                  disabled={!canTrade}
-                  className={cn(
-                    "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all disabled:opacity-50",
-                    trade.followedRules === false 
-                      ? "border-rose-500 bg-rose-500/10 text-rose-400" 
-                      : "border-white/10 hover:border-white/20 text-foreground"
-                  )}
-                >
-                  <XCircle className="w-5 h-5" />
-                  <span className="font-medium">No</span>
-                </button>
-              </div>
-            </div>
-            
-            {/* Emotional State - Now captured in the PreTradeExecutionGate */}
-            <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Shield className="w-4 h-4" />
-                <span>Emotional state will be confirmed in pre-trade gate</span>
-              </div>
-            </div>
           </div>
         </Card>
         
@@ -263,7 +187,7 @@ const TradeLog = () => {
         <Button 
           size="lg" 
           className="vault-cta w-full h-14 text-base font-semibold gap-2"
-          onClick={handleInitiateSubmit}
+          onClick={handleSubmit}
           disabled={submitting || !canTrade}
         >
           {submitting ? (
@@ -273,7 +197,7 @@ const TradeLog = () => {
           ) : (
             <Shield className="w-5 h-5" />
           )}
-          {submitting ? "Logging..." : !canTrade ? "Trading Blocked" : "Pre-Trade Check"}
+          {submitting ? "Logging..." : !canTrade ? "Not Cleared" : "Log Trade"}
         </Button>
         
         {/* Recent Trades */}
@@ -293,14 +217,9 @@ const TradeLog = () => {
                 <Card key={entry.id} className="vault-card p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {entry.followed_rules ? (
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-rose-400" />
-                      )}
                       <div>
                         <p className="font-mono text-sm text-foreground">
-                          {entry.risk_used}% risk · {entry.risk_reward}R
+                          ${entry.risk_used} risk · {entry.risk_reward}R
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(entry.trade_date).toLocaleDateString()}
