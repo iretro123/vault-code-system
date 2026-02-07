@@ -39,7 +39,7 @@ export function TradeIntentModal({ open, onClose }: TradeIntentModalProps) {
 
   if (clientErrors.length === 0) {
     if (contractsNum > vault.max_contracts_allowed)
-      clientErrors.push(`Max ${vault.max_contracts_allowed} contracts allowed.`);
+      clientErrors.push(`Vault limit: ${vault.max_contracts_allowed} contract${vault.max_contracts_allowed !== 1 ? "s" : ""}. Reduce size to proceed.`);
     if (riskNum > vault.risk_remaining_today)
       clientErrors.push(`Risk exceeds remaining $${vault.risk_remaining_today.toFixed(0)}.`);
   }
