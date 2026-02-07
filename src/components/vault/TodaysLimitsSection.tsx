@@ -1,12 +1,12 @@
 import React from "react";
+import { useVaultState } from "@/contexts/VaultStateContext";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
-import { useDailyVaultStatus } from "@/hooks/useDailyVaultStatus";
 
 export function TodaysLimitsSection() {
+  const { state: vaultState, loading: vaultLoading } = useVaultState();
   const { data: execData, loading: execLoading } = useVaultExecutionPermission();
-  const vaultStatus = useDailyVaultStatus();
 
-  const loading = execLoading || vaultStatus.loading;
+  const loading = vaultLoading || execLoading;
 
   if (loading) {
     return (
@@ -19,9 +19,8 @@ export function TodaysLimitsSection() {
   }
 
   const riskLimit = execData?.effective_risk_limit ?? 0;
-  const maxTrades = vaultStatus.maxTrades ?? 0;
-  const tradesTaken = vaultStatus.tradesToday ?? 0;
-  const tradesRemaining = Math.max(0, maxTrades - tradesTaken);
+  const tradesRemaining = vaultState.trades_remaining_today;
+  const maxTrades = vaultState.max_trades_per_day;
   const protectionLevel = execData?.protection_level ?? "Standard";
   const consistencyLevel = execData?.consistency_level ?? "—";
 
