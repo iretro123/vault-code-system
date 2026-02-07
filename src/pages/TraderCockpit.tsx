@@ -17,11 +17,10 @@ export default function TraderCockpit() {
   const { data, loading } = useVaultExecutionPermission();
   const [intentOpen, setIntentOpen] = useState(false);
 
-  const vaultOpen = !!data?.vault_open;
   const blocked = !!data && !data.execution_allowed;
   const cooldown = !!data?.cooldown_active;
 
-  // Section open states
+  // Section open states — all sections are expandable, ritual is just informational
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     ritual: true,
     limits: false,
@@ -57,16 +56,11 @@ export default function TraderCockpit() {
   }, [loading, blocked, cooldown]);
 
   const ctaDisabled = useMemo(() => {
-    if (loading) return true;
-    if (blocked) return true;
-    if (cooldown) return true;
-    return false;
+    return loading || blocked || cooldown;
   }, [loading, blocked, cooldown]);
 
-  // Determine which section is currently "active" (only one at a time)
-  // Active = the currently expanded step that the user should focus on
+  // Active section = currently expanded section
   const getActiveSection = (): string | null => {
-    if (!vaultOpen) return "ritual"; // Ritual incomplete = ritual is active
     if (openSections.ritual) return "ritual";
     if (openSections.limits) return "limits";
     if (openSections.focus) return "focus";
@@ -76,12 +70,10 @@ export default function TraderCockpit() {
 
   const activeSection = getActiveSection();
 
-  // Determine section status
+  // Section status — no locking based on ritual
   const getSectionStatus = (key: string): "active" | "completed" | "locked" => {
-    if (!vaultOpen && key !== "ritual") return "locked";
-    if (key === "ritual" && vaultOpen) return "completed";
     if (key === activeSection) return "active";
-    return "locked";
+    return "completed";
   };
 
   return (
@@ -90,7 +82,7 @@ export default function TraderCockpit() {
         <div className="max-w-xl mx-auto p-4 md:p-6 pb-24 space-y-4">
           <WelcomeCard />
 
-          {/* Section 1: Daily Ritual */}
+          {/* Section 1: Daily Ritual (informational only) */}
           <FlowSection
             title="Daily Ritual"
             isOpen={openSections.ritual}
@@ -98,20 +90,9 @@ export default function TraderCockpit() {
             status={getSectionStatus("ritual")}
             sectionRef={ritualRef}
             onContinue={() => scrollToAndExpand("limits", limitsRef)}
-            showContinue={vaultOpen}
+            showContinue={true}
           >
-            {!vaultOpen ? (
-              <DailyVaultGate />
-            ) : (
-              <div className="p-3 rounded-xl bg-accent/10 border border-accent/20">
-                <p className="text-sm text-accent font-medium">
-                  ✅ Vault is open
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Trade fast — but only your best setups.
-                </p>
-              </div>
-            )}
+            <DailyVaultGate />
           </FlowSection>
 
           {/* Section 2: Today's Limits */}
@@ -120,10 +101,9 @@ export default function TraderCockpit() {
             isOpen={openSections.limits}
             onToggle={() => toggleSection("limits")}
             status={getSectionStatus("limits")}
-            locked={!vaultOpen}
             sectionRef={limitsRef}
             onContinue={() => scrollToAndExpand("focus", focusRef)}
-            showContinue={vaultOpen}
+            showContinue={true}
           >
             <TodaysLimitsSection />
           </FlowSection>
@@ -134,10 +114,9 @@ export default function TraderCockpit() {
             isOpen={openSections.focus}
             onToggle={() => toggleSection("focus")}
             status={getSectionStatus("focus")}
-            locked={!vaultOpen}
             sectionRef={focusRef}
             onContinue={() => scrollToAndExpand("execution", executionRef)}
-            showContinue={vaultOpen}
+            showContinue={true}
           >
             <FocusSessionCard variant="embedded" />
           </FlowSection>
@@ -148,7 +127,6 @@ export default function TraderCockpit() {
             isOpen={openSections.execution}
             onToggle={() => toggleSection("execution")}
             status={getSectionStatus("execution")}
-            locked={!vaultOpen}
             sectionRef={executionRef}
             showContinue={false}
           >
