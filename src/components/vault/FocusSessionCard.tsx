@@ -22,7 +22,7 @@ export function FocusSessionCard({ variant = "card" }: FocusSessionCardProps) {
 
   const remaining = useMemo(() => {
     if (!data.active) return null;
-    return data.remaining_seconds;
+    return (data as any).remaining_seconds ?? 0;
   }, [data]);
 
   const start = async () => {
