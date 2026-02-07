@@ -113,6 +113,15 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
         </div>
       </div>
 
+      {/* Active trade status */}
+      {vaultState.open_trade && (
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <p className="text-xs font-medium text-amber-500">
+            Active trade in progress. Close current trade to continue.
+          </p>
+        </div>
+      )}
+
       {/* Execution Buttons — always render, disabled by vault rules */}
       <div className="space-y-2">
         <Button
