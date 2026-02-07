@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Plus, CheckCircle, XCircle, Loader2, Trash2, AlertTriangle, Lock, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
-import { useVaultStatus } from "@/hooks/useVaultStatus";
+import { useVaultState } from "@/contexts/VaultStateContext";
 import { PreTradeExecutionGate } from "@/components/PreTradeExecutionGate";
 import {
   Dialog,
@@ -23,7 +23,7 @@ const TradeLog = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const { entries, loading: entriesLoading, addEntry, deleteEntry } = useTradeLog();
-  const vaultStatus = useVaultStatus();
+  const { state: vaultState, loading: vaultLoading } = useVaultState();
   const navigate = useNavigate();
   
   const [submitting, setSubmitting] = useState(false);
@@ -34,10 +34,11 @@ const TradeLog = () => {
     rr: "",
     followedRules: null as boolean | null,
   });
+
+  const canTrade = vaultState.vault_status !== "RED" && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
   
   // Step 1: Validate form and open the execution gate
   const handleInitiateSubmit = () => {
-    // Basic form validation
     if (!trade.riskUsed || !trade.rr || trade.followedRules === null) {
       toast({
         title: "Missing fields",
@@ -46,8 +47,6 @@ const TradeLog = () => {
       });
       return;
     }
-    
-    // Open the PreTradeExecutionGate
     setShowGate(true);
   };
 
@@ -95,7 +94,7 @@ const TradeLog = () => {
     day: "numeric",
   });
   
-  if (authLoading || vaultStatus.loading) {
+  if (authLoading || vaultLoading) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -110,8 +109,8 @@ const TradeLog = () => {
     return null;
   }
   
-  const isNearTradeLimit = vaultStatus.tradesRemaining <= 1 && vaultStatus.tradesRemaining > 0;
-  const isNearLossLimit = vaultStatus.dailyLossRemaining < vaultStatus.maxRiskPerTrade * 2;
+  const isNearTradeLimit = vaultState.trades_remaining_today <= 1 && vaultState.trades_remaining_today > 0;
+  const isNearLossLimit = vaultState.risk_remaining_today < 2;
   const plannedRisk = parseFloat(trade.riskUsed) || 0;
   
   return (
@@ -139,28 +138,32 @@ const TradeLog = () => {
         </Dialog>
 
         {/* Trading Status Warning */}
-        {!vaultStatus.canTrade && (
+        {!canTrade && (
           <Card className="vault-card p-4 border-rose-500/20">
             <div className="flex items-start gap-3">
               <Lock className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-rose-400">Trading Blocked</p>
-                <p className="text-sm text-muted-foreground">{vaultStatus.reason}</p>
+                <p className="text-sm text-muted-foreground">
+                  {vaultState.vault_status === "RED" ? "Vault discipline lock active" : 
+                   vaultState.trades_remaining_today <= 0 ? "Max trades reached for today" :
+                   "Daily loss limit reached"}
+                </p>
               </div>
             </div>
           </Card>
         )}
         
         {/* Limit Warnings */}
-        {vaultStatus.canTrade && (isNearTradeLimit || isNearLossLimit) && (
+        {canTrade && (isNearTradeLimit || isNearLossLimit) && (
           <Card className="vault-card p-4 border-amber-500/20">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-amber-400">Approaching Limits</p>
                 <p className="text-sm text-muted-foreground">
-                  {isNearTradeLimit && `${vaultStatus.tradesRemaining} trade${vaultStatus.tradesRemaining === 1 ? '' : 's'} remaining. `}
-                  {isNearLossLimit && `${vaultStatus.dailyLossRemaining.toFixed(1)}% daily loss remaining.`}
+                  {isNearTradeLimit && `${vaultState.trades_remaining_today} trade${vaultState.trades_remaining_today === 1 ? '' : 's'} remaining. `}
+                  {isNearLossLimit && `${vaultState.risk_remaining_today.toFixed(1)}% daily loss remaining.`}
                 </p>
               </div>
             </div>
@@ -186,7 +189,7 @@ const TradeLog = () => {
                 value={trade.riskUsed}
                 onChange={(e) => setTrade(prev => ({ ...prev, riskUsed: e.target.value }))}
                 className="vault-input mt-1.5 h-14 text-xl font-mono"
-                disabled={!vaultStatus.canTrade}
+                disabled={!canTrade}
               />
             </div>
             
@@ -205,7 +208,7 @@ const TradeLog = () => {
                 value={trade.rr}
                 onChange={(e) => setTrade(prev => ({ ...prev, rr: e.target.value }))}
                 className="vault-input mt-1.5 h-14 text-xl font-mono"
-                disabled={!vaultStatus.canTrade}
+                disabled={!canTrade}
               />
             </div>
             
@@ -218,7 +221,7 @@ const TradeLog = () => {
                 <button
                   type="button"
                   onClick={() => setTrade(prev => ({ ...prev, followedRules: true }))}
-                  disabled={!vaultStatus.canTrade}
+                  disabled={!canTrade}
                   className={cn(
                     "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all disabled:opacity-50",
                     trade.followedRules === true 
@@ -232,7 +235,7 @@ const TradeLog = () => {
                 <button
                   type="button"
                   onClick={() => setTrade(prev => ({ ...prev, followedRules: false }))}
-                  disabled={!vaultStatus.canTrade}
+                  disabled={!canTrade}
                   className={cn(
                     "flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all disabled:opacity-50",
                     trade.followedRules === false 
@@ -261,19 +264,19 @@ const TradeLog = () => {
           size="lg" 
           className="vault-cta w-full h-14 text-base font-semibold gap-2"
           onClick={handleInitiateSubmit}
-          disabled={submitting || !vaultStatus.canTrade}
+          disabled={submitting || !canTrade}
         >
           {submitting ? (
             <Loader2 className="w-5 h-5 animate-spin" />
-          ) : !vaultStatus.canTrade ? (
+          ) : !canTrade ? (
             <Lock className="w-5 h-5" />
           ) : (
             <Shield className="w-5 h-5" />
           )}
-          {submitting ? "Logging..." : !vaultStatus.canTrade ? "Trading Blocked" : "Pre-Trade Check"}
+          {submitting ? "Logging..." : !canTrade ? "Trading Blocked" : "Pre-Trade Check"}
         </Button>
         
-        {/* Recent Trades Placeholder */}
+        {/* Recent Trades */}
         <div className="pt-4">
           <p className="section-title">Recent Entries</p>
           {entriesLoading ? (
