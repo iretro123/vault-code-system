@@ -159,9 +159,13 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
         >
           Buying Now
         </Button>
-        {buyingDisabled && (
+        {buyingDisabled ? (
           <p className="text-[11px] text-muted-foreground text-center -mt-1">
             {buyingBlockedReason}
+          </p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground/60 text-center -mt-1">
+            You'll confirm direction, size, and risk before anything happens.
           </p>
         )}
 
