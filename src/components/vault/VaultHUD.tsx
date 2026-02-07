@@ -143,9 +143,15 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
           className="w-full h-14 text-base font-bold uppercase tracking-wider rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10 disabled:border-border disabled:text-muted-foreground"
           size="lg"
           onClick={onCloseTrade}
+          title={!vaultState.open_trade ? "No open trade to close" : undefined}
         >
           Sell / Close Position
         </Button>
+        {!vaultState.open_trade && (
+          <p className="text-[11px] text-muted-foreground text-center -mt-1">
+            No open trade to close.
+          </p>
+        )}
       </div>
 
       {/* Next Action — derived from vault state */}
