@@ -8,6 +8,7 @@ import { TradeLoggerCard } from "@/components/vault/TradeLoggerCard";
 import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
 import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
+import { EndOfDayReview } from "@/components/vault/EndOfDayReview";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ export default function TraderCockpit() {
     limits: false,
     focus: false,
     execution: false,
+    review: false,
   });
 
   // Section refs for scrolling
@@ -43,6 +45,7 @@ export default function TraderCockpit() {
   const limitsRef = useRef<HTMLDivElement>(null);
   const focusRef = useRef<HTMLDivElement>(null);
   const executionRef = useRef<HTMLDivElement>(null);
+  const reviewRef = useRef<HTMLDivElement>(null);
 
   const toggleSection = useCallback((key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -161,7 +164,8 @@ export default function TraderCockpit() {
             onToggle={() => toggleSection("execution")}
             status={getSectionStatus("execution")}
             sectionRef={executionRef}
-            showContinue={false}
+            showContinue={true}
+            onContinue={() => scrollToAndExpand("review", reviewRef)}
           >
             <div className="space-y-4">
               {/* Execution CTA */}
@@ -206,6 +210,18 @@ export default function TraderCockpit() {
                 <TradeLoggerCard variant="embedded" />
               </div>
             </div>
+          </FlowSection>
+
+          {/* Section 5: End of Day Review */}
+          <FlowSection
+            title="End of Day Review"
+            isOpen={openSections.review}
+            onToggle={() => toggleSection("review")}
+            status={getSectionStatus("review")}
+            sectionRef={reviewRef}
+            showContinue={false}
+          >
+            <EndOfDayReview />
           </FlowSection>
         </div>
 
