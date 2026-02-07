@@ -31,7 +31,7 @@ export function WelcomeCard() {
             Welcome to Vault OS
           </h3>
           <p className="text-xs text-muted-foreground">
-            Complete your Daily Ritual to unlock trading. The Vault enforces your rules so you don't have to.
+            The Vault enforces your rules so you don't have to. Check your Vault Status to see if you're cleared.
           </p>
         </div>
         <Button

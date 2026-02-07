@@ -165,18 +165,8 @@ export function PreTradeExecutionGate({
     );
   }
 
-  // Vault closed
+  // Vault RED — not cleared
   if (vaultState.vault_status === "RED" && !canTrade) {
-    const scrollToRitual = () => {
-      const ritualCard = document.querySelector('[data-ritual-gate]');
-      if (ritualCard) {
-        ritualCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        ritualCard.classList.add('ring-2', 'ring-primary');
-        setTimeout(() => ritualCard.classList.remove('ring-2', 'ring-primary'), 2000);
-      }
-      onCancel();
-    };
-
     return (
       <Card className="p-6 border-white/10 bg-white/5">
         <div className="text-center space-y-4">
@@ -184,10 +174,11 @@ export function PreTradeExecutionGate({
             <Shield className="w-6 h-6 text-muted-foreground" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Vault closed — complete Daily Ritual to unlock</h3>
+            <h3 className="text-lg font-semibold text-foreground">Not Cleared</h3>
+            <p className="text-sm text-muted-foreground mt-1">Vault is protecting discipline.</p>
           </div>
-          <Button onClick={scrollToRitual} className="mt-4">
-            Start Ritual
+          <Button variant="outline" onClick={onCancel} className="mt-4">
+            Go Back
           </Button>
         </div>
       </Card>
