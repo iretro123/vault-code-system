@@ -61,7 +61,7 @@ export function RiskModeSelector() {
                 isActive && value === "CONSERVATIVE" &&
                   "border-emerald-500/50 text-emerald-400 shadow-[0_0_8px_-2px_rgba(16,185,129,0.2)]",
                 isActive && value === "STANDARD" &&
-                  "border-primary/50 text-primary shadow-[0_0_8px_-2px_rgba(59,130,246,0.2)]",
+                  "border-amber-500/50 text-amber-400 shadow-[0_0_8px_-2px_rgba(245,158,11,0.2)]",
                 isActive && value === "AGGRESSIVE" &&
                   "border-rose-500/50 text-rose-400 shadow-[0_0_8px_-2px_rgba(244,63,94,0.2)]",
                 !isActive &&
