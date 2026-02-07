@@ -1,12 +1,13 @@
 import React from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VaultStatusEnum } from "@/contexts/VaultStateContext";
 
 type FlowStep = "prepare" | "commit" | "execute" | "record";
 type StepState = "locked" | "active" | "completed";
 
 interface VaultFlowIndicatorProps {
-  vaultOpen: boolean;
+  vaultStatus: VaultStatusEnum;
   focusActive: boolean;
   tradesTaken: number;
   tradesVerified: number;
@@ -25,13 +26,15 @@ const STEPS: StepConfig[] = [
 ];
 
 function getStepStates(props: VaultFlowIndicatorProps): Record<FlowStep, StepState> {
-  const { vaultOpen, focusActive, tradesTaken, tradesVerified } = props;
+  const { vaultStatus, focusActive, tradesTaken, tradesVerified } = props;
 
-  // Prepare: Active if ritual not done, Completed if done
-  const prepareState: StepState = vaultOpen ? "completed" : "active";
+  const isActive = vaultStatus !== "RED";
 
-  // Commit: Active if ritual done AND focus not active, Completed if focus active
-  const commitState: StepState = !vaultOpen
+  // Prepare: Completed if vault is active (GREEN/YELLOW), Active if RED
+  const prepareState: StepState = isActive ? "completed" : "active";
+
+  // Commit: Active if vault active AND focus not active, Completed if focus active
+  const commitState: StepState = !isActive
     ? "locked"
     : focusActive
     ? "completed"

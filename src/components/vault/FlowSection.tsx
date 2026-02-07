@@ -44,7 +44,7 @@ export function FlowSection({
   onToggle,
   status,
   locked = false,
-  lockedSubtitle = "Complete Daily Ritual first",
+  lockedSubtitle = "Not available",
   children,
   onContinue,
   showContinue = true,
