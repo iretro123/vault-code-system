@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DailyVaultGate } from "@/components/DailyVaultGate";
-import { PreTradeExecutionGateV2 } from "@/components/vault/PreTradeExecutionGateV2";
+import { TradeIntentModal } from "@/components/vault/TradeIntentModal";
 import { FocusSessionCard } from "@/components/vault/FocusSessionCard";
 import { TradeLoggerCard } from "@/components/vault/TradeLoggerCard";
 import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
@@ -9,9 +9,7 @@ import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
 import { useVaultState } from "@/contexts/VaultStateContext";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { AuthGate } from "@/components/AuthGate";
 
 export default function TraderCockpit() {
@@ -197,35 +195,7 @@ export default function TraderCockpit() {
           </FlowSection>
         </div>
 
-        {/* Intent Modal */}
-        {intentOpen && (
-          <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center p-4">
-            <Card className="vault-card w-full max-w-md p-6 relative animate-scale-in">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-foreground">Intent to Trade</h2>
-                <button
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setIntentOpen(false)}
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mb-6">
-                <PreTradeExecutionGateV2
-                  onAllowed={(riskLimit) => {
-                    setIntentOpen(false);
-                    console.log("Vault allowed. Effective risk:", riskLimit);
-                  }}
-                />
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                Vault authority is final. If blocked, fix the reason and try again.
-              </p>
-            </Card>
-          </div>
-        )}
+        <TradeIntentModal open={intentOpen} onClose={() => setIntentOpen(false)} />
       </AppLayout>
     </AuthGate>
   );

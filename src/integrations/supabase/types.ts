@@ -146,6 +146,42 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_intents: {
+        Row: {
+          block_reason: string | null
+          closed_at: string | null
+          contracts: number
+          created_at: string
+          direction: string
+          estimated_risk: number
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          block_reason?: string | null
+          closed_at?: string | null
+          contracts: number
+          created_at?: string
+          direction: string
+          estimated_risk: number
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          block_reason?: string | null
+          closed_at?: string | null
+          contracts?: number
+          created_at?: string
+          direction?: string
+          estimated_risk?: number
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trading_rules: {
         Row: {
           allowed_sessions: string[]
@@ -666,6 +702,19 @@ export type Database = {
           max_trades?: number
         }
         Returns: string
+      }
+      submit_trade_intent: {
+        Args: {
+          _contracts: number
+          _direction: string
+          _estimated_risk: number
+          _user_id: string
+        }
+        Returns: {
+          intent_id: string
+          message: string
+          success: boolean
+        }[]
       }
       update_vault_risk_mode: {
         Args: { _risk_mode: string; _user_id: string }
