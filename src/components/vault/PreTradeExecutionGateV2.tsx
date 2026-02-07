@@ -14,6 +14,7 @@ export function PreTradeExecutionGateV2({ onAllowed }: PreTradeExecutionGateV2Pr
 
   const canProceed =
     vaultState.vault_status !== "RED" &&
+    !vaultState.open_trade &&
     vaultState.trades_remaining_today > 0 &&
     vaultState.risk_remaining_today > 0;
 
