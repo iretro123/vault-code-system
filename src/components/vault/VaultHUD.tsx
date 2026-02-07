@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Shield, Lock, Timer, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { SetBalancePrompt } from "./SetBalancePrompt";
 
 interface VaultHUDProps {
   onBuyingNow?: () => void;
@@ -13,7 +14,7 @@ interface VaultHUDProps {
 
 export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
   const { user } = useAuth();
-  const { state: vaultState, loading: vaultLoading } = useVaultState();
+  const { state: vaultState, loading: vaultLoading, refetch } = useVaultState();
   const navigate = useNavigate();
 
   const lightClass = useMemo(() => {
@@ -55,6 +56,10 @@ export function VaultHUD({ onBuyingNow, onCloseTrade }: VaultHUDProps) {
         </div>
       </div>
     );
+  }
+  // Show balance setup prompt if no balance set
+  if (vaultState.account_balance <= 0) {
+    return <SetBalancePrompt onComplete={refetch} />;
   }
 
   return (

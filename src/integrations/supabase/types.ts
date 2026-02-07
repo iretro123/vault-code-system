@@ -58,6 +58,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_balance: number
           avatar_url: string | null
           created_at: string
           discipline_score: number
@@ -70,6 +71,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          account_balance?: number
           avatar_url?: string | null
           created_at?: string
           discipline_score?: number
@@ -82,6 +84,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          account_balance?: number
           avatar_url?: string | null
           created_at?: string
           discipline_score?: number
@@ -712,6 +715,32 @@ export type Database = {
       log_vault_event: {
         Args: { _event_context?: Json; _event_type: string; _user_id: string }
         Returns: string
+      }
+      set_account_balance: {
+        Args: { _balance: number; _user_id: string }
+        Returns: {
+          account_balance: number
+          created_at: string
+          daily_loss_limit: number
+          date: string
+          id: string
+          loss_streak: number
+          max_contracts_allowed: number
+          max_trades_per_day: number
+          open_trade: boolean
+          risk_mode: string
+          risk_remaining_today: number
+          trades_remaining_today: number
+          updated_at: string
+          user_id: string
+          vault_status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vault_state"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       start_vault_focus_session: {
         Args: {
