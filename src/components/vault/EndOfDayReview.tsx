@@ -85,6 +85,7 @@ export function EndOfDayReview() {
 
   const Icon = STATUS_ICON[data.final_vault_status] ?? Shield;
   const hasBlocked = data.trades_blocked > 0;
+  const showPrevention = hasBlocked || data.final_vault_status === "RED";
 
   return (
     <div className="space-y-4">
@@ -126,10 +127,15 @@ export function EndOfDayReview() {
         </div>
       </div>
 
-      {/* Summary Message */}
+      {/* Summary Messages */}
+      {showPrevention && (
+        <p className="text-xs text-muted-foreground text-center pt-1 font-medium">
+          Vault OS prevented further losses today.
+        </p>
+      )}
       {hasBlocked && (
-        <p className="text-xs text-muted-foreground text-center pt-1">
-          Vault OS blocked {data.trades_blocked} trade{data.trades_blocked !== 1 ? "s" : ""} and
+        <p className="text-xs text-muted-foreground text-center">
+          Blocked {data.trades_blocked} trade{data.trades_blocked !== 1 ? "s" : ""} and
           prevented an estimated <span className="font-mono font-semibold text-foreground">${data.risk_saved.toFixed(0)}</span> loss.
         </p>
       )}
