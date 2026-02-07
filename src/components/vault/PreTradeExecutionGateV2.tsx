@@ -1,8 +1,8 @@
-import React, { useMemo } from "react";
-import { useVaultExecutionPermission } from "@/hooks/useVaultExecutionPermission";
+import React from "react";
+import { useVaultState } from "@/contexts/VaultStateContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Shield, AlertTriangle, Timer, Lock, CheckCircle } from "lucide-react";
+import { Shield, Lock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PreTradeExecutionGateV2Props {
@@ -10,30 +10,19 @@ interface PreTradeExecutionGateV2Props {
 }
 
 export function PreTradeExecutionGateV2({ onAllowed }: PreTradeExecutionGateV2Props) {
-  const { data, loading, error, status } = useVaultExecutionPermission();
+  const { state: vaultState, loading } = useVaultState();
 
-  const canProceed = useMemo(() => {
-    return !!data?.execution_allowed && !data?.cooldown_active;
-  }, [data]);
+  const canProceed =
+    vaultState.vault_status !== "RED" &&
+    vaultState.trades_remaining_today > 0 &&
+    vaultState.risk_remaining_today > 0;
 
-  const statusIcon = useMemo(() => {
-    if (status.light === "GREEN") return <CheckCircle className="h-5 w-5 text-emerald-400" />;
-    if (status.light === "YELLOW") return <Shield className="h-5 w-5 text-amber-400" />;
-    if (status.light === "RED") return <Lock className="h-5 w-5 text-muted-foreground" />;
-    return <Shield className="h-5 w-5 text-muted-foreground" />;
-  }, [status.light]);
+  const statusLight = canProceed ? "GREEN" : "RED";
+  const statusLabel = loading ? "Checking…" : canProceed ? "Cleared" : "Not Cleared";
 
-  // True system error (network/RPC failure only)
-  if (error) {
-    return (
-      <Card className="vault-card p-6">
-        <div className="flex items-center gap-2 text-rose-400">
-          <AlertTriangle className="h-5 w-5" />
-          <span className="text-sm font-medium">Connection error: {error}</span>
-        </div>
-      </Card>
-    );
-  }
+  const statusIcon = canProceed
+    ? <CheckCircle className="h-5 w-5 text-emerald-400" />
+    : <Lock className="h-5 w-5 text-muted-foreground" />;
 
   return (
     <Card className="vault-card p-6">
@@ -45,50 +34,35 @@ export function PreTradeExecutionGateV2({ onAllowed }: PreTradeExecutionGateV2Pr
         </div>
         <div className={cn(
           "px-3 py-1 rounded-full text-xs font-medium",
-          status.light === "GREEN" && "bg-emerald-500/10 text-emerald-400",
-          status.light === "YELLOW" && "bg-amber-500/10 text-amber-400",
-          status.light === "RED" && "bg-white/5 text-muted-foreground",
-          status.light === "UNKNOWN" && "bg-white/5 text-muted-foreground"
+          statusLight === "GREEN" && "bg-emerald-500/10 text-emerald-400",
+          statusLight === "RED" && "bg-white/5 text-muted-foreground",
         )}>
-          {loading ? "Checking…" : status.label}
+          {statusLabel}
         </div>
       </div>
 
       {/* Proceed Button */}
       <div className="mb-4">
         <Button
-          onClick={() => onAllowed(data?.effective_risk_limit ?? null)}
+          onClick={() => onAllowed(vaultState.risk_remaining_today)}
           disabled={!canProceed || loading}
           className={cn(
             "w-full h-12 font-semibold",
             canProceed ? "vault-cta" : "bg-white/5 text-muted-foreground"
           )}
         >
-          {loading ? "Checking…" : canProceed ? "Proceed (Vault Verified)" : "Not Ready"}
+          {loading ? "Checking…" : canProceed ? "Proceed" : "Not Ready"}
         </Button>
       </div>
 
-      {/* Guidance for blocked state — neutral, not error */}
-      {!loading && data && !data.execution_allowed && (
+      {/* Guidance for blocked state */}
+      {!loading && !canProceed && (
         <div className="p-4 rounded-xl border border-white/10 bg-white/5 space-y-2">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Next Step</span>
+            <span className="text-sm font-medium text-foreground">Not Cleared</span>
           </div>
-          <p className="text-sm text-muted-foreground">{data.block_reason}</p>
-          <p className="text-xs text-muted-foreground">
-            Complete the required action above, then try again.
-          </p>
-        </div>
-      )}
-
-      {/* Cooldown notice — informational */}
-      {!loading && data?.cooldown_active && (
-        <div className="mt-4 p-3 rounded-xl border border-amber-500/20 bg-amber-500/10 flex items-center gap-2">
-          <Timer className="h-4 w-4 text-amber-400" />
-          <span className="text-sm text-amber-400">
-            Cooldown active — wait {data.cooldown_remaining_minutes ?? "…"} min.
-          </span>
+          <p className="text-sm text-muted-foreground">Vault is protecting discipline.</p>
         </div>
       )}
     </Card>
