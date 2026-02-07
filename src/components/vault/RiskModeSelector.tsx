@@ -57,10 +57,15 @@ export function RiskModeSelector() {
               disabled={updating}
               onClick={() => handleSelect(value)}
               className={cn(
-                "relative px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 border",
-                isActive
-                  ? "bg-primary/10 border-primary/40 text-primary"
-                  : "bg-muted/10 border-border text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                "relative px-3 py-2 rounded-lg text-xs font-semibold border bg-card",
+                isActive && value === "CONSERVATIVE" &&
+                  "border-emerald-500/50 text-emerald-400 shadow-[0_0_8px_-2px_rgba(16,185,129,0.2)]",
+                isActive && value === "STANDARD" &&
+                  "border-primary/50 text-primary shadow-[0_0_8px_-2px_rgba(59,130,246,0.2)]",
+                isActive && value === "AGGRESSIVE" &&
+                  "border-rose-500/50 text-rose-400 shadow-[0_0_8px_-2px_rgba(244,63,94,0.2)]",
+                !isActive &&
+                  "border-border text-muted-foreground hover:shadow-sm"
               )}
             >
               {updating && isActive ? (
