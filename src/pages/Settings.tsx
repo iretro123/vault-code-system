@@ -7,117 +7,151 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { useVaultState } from "@/contexts/VaultStateContext";
+import { useTradingRules } from "@/hooks/useTradingRules";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { LogOut, User, Shield, Bell, Loader2 } from "lucide-react";
+import { LogOut, User, Shield, AlertTriangle, Loader2 } from "lucide-react";
+import { RiskModeSelector } from "@/components/vault/RiskModeSelector";
 
 export default function Settings() {
   const { user, profile, signOut } = useAuth();
+  const { state: vaultState, refetch: refetchVault } = useVaultState();
+  const { rules, loading: rulesLoading } = useTradingRules();
+
+  // Profile fields
   const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [usernameError, setUsernameError] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [accountBalance, setAccountBalance] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Danger zone
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
     }
-    // Fetch username and avatar_url since they might not be in the profile type yet
-    if (user) {
-      supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("user_id", user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) {
-            setUsername((data as any).username || "");
-            setAvatarUrl((data as any).avatar_url || "");
-          }
-        });
+    if (vaultState.account_balance > 0) {
+      setAccountBalance(vaultState.account_balance.toString());
     }
-  }, [profile, user]);
-
-  const validateUsername = (value: string) => {
-    if (!value) {
-      setUsernameError("");
-      return true;
-    }
-    if (!/^[a-z0-9_]+$/.test(value)) {
-      setUsernameError("Only lowercase letters, numbers, and underscores allowed");
-      return false;
-    }
-    if (value.length < 3) {
-      setUsernameError("Username must be at least 3 characters");
-      return false;
-    }
-    if (value.length > 30) {
-      setUsernameError("Username must be 30 characters or less");
-      return false;
-    }
-    setUsernameError("");
-    return true;
-  };
-
-  const handleUsernameChange = (value: string) => {
-    const lowercased = value.toLowerCase();
-    setUsername(lowercased);
-    validateUsername(lowercased);
-  };
+    // Default timezone to browser timezone
+    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, [profile, vaultState.account_balance]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    
-    if (username && !validateUsername(username)) {
-      return;
-    }
+    setSavingProfile(true);
 
-    setSaving(true);
     try {
-      const { error } = await supabase
+      // Update display name
+      const { error: profileError } = await supabase
         .from("profiles")
-        .update({
-          display_name: displayName.trim() || null,
-          username: username.trim() || null,
-          avatar_url: avatarUrl.trim() || null,
-        })
+        .update({ display_name: displayName.trim() || null })
         .eq("user_id", user.id);
 
-      if (error) {
-        if (error.code === "23505") {
-          setUsernameError("This username is already taken");
-          toast({
-            title: "Username taken",
-            description: "Please choose a different username.",
-            variant: "destructive",
-          });
-        } else if (error.code === "23514") {
-          setUsernameError("Only lowercase letters, numbers, and underscores allowed");
-          toast({
-            title: "Invalid username",
-            description: "Username can only contain lowercase letters, numbers, and underscores.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-        return;
+      if (profileError) throw profileError;
+
+      // Update account balance if changed
+      const newBalance = parseFloat(accountBalance);
+      if (!isNaN(newBalance) && newBalance > 0 && newBalance !== vaultState.account_balance) {
+        const { error: balanceError } = await supabase.rpc("set_account_balance", {
+          _user_id: user.id,
+          _balance: newBalance,
+        });
+        if (balanceError) throw balanceError;
+        refetchVault();
       }
 
       toast({
-        title: "Profile updated",
-        description: "Your changes have been saved.",
+        title: "Settings saved",
+        description: "Your changes have been applied.",
       });
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error("Error saving settings:", error);
       toast({
         title: "Error",
-        description: "Failed to save profile. Please try again.",
+        description: "Failed to save settings. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      setSavingProfile(false);
+    }
+  };
+
+  const handleResetVault = async () => {
+    if (!user || resetConfirm !== "RESET VAULT") return;
+    setResetting(true);
+
+    try {
+      // Delete trade entries
+      const { error: tradesError } = await supabase
+        .from("trade_entries")
+        .delete()
+        .eq("user_id", user.id);
+      if (tradesError) throw tradesError;
+
+      // Delete trade intents
+      const { error: intentsError } = await supabase
+        .from("trade_intents")
+        .delete()
+        .eq("user_id", user.id);
+      if (intentsError) throw intentsError;
+
+      // Delete vault events
+      const { error: eventsError } = await supabase
+        .from("vault_events")
+        .delete()
+        .eq("user_id", user.id);
+      if (eventsError) throw eventsError;
+
+      // Delete vault daily checklists
+      const { error: checklistError } = await supabase
+        .from("vault_daily_checklist")
+        .delete()
+        .eq("user_id", user.id);
+      if (checklistError) throw checklistError;
+
+      // Delete vault focus sessions
+      const { error: focusError } = await supabase
+        .from("vault_focus_sessions")
+        .delete()
+        .eq("user_id", user.id);
+      if (focusError) throw focusError;
+
+      // Reset vault state (re-initialize via RPC with current balance)
+      const currentBalance = vaultState.account_balance;
+      const { error: stateError } = await supabase
+        .from("vault_state")
+        .delete()
+        .eq("user_id", user.id);
+      if (stateError) throw stateError;
+
+      // Re-create vault state with preserved balance
+      if (currentBalance > 0) {
+        await supabase.rpc("set_account_balance", {
+          _user_id: user.id,
+          _balance: currentBalance,
+        });
+      }
+
+      refetchVault();
+      setResetConfirm("");
+
+      toast({
+        title: "Vault OS Reset",
+        description: "Trade logs and vault state have been cleared. Your profile and balance are preserved.",
+      });
+    } catch (error) {
+      console.error("Error resetting vault:", error);
+      toast({
+        title: "Reset failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -128,10 +162,10 @@ export default function Settings() {
           ← Back to Dashboard
         </Link>
       </div>
-      <PageHeader title="Settings" subtitle="Manage your account" />
+      <PageHeader title="Settings" subtitle="Manage your account and vault" />
 
-      <div className="px-4 md:px-6 space-y-4 pb-24">
-        {/* Profile */}
+      <div className="px-4 md:px-6 space-y-4 pb-24 max-w-xl mx-auto">
+        {/* ─── Profile ─── */}
         <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <User className="h-4 w-4 text-muted-foreground" />
@@ -139,7 +173,7 @@ export default function Settings() {
               Profile
             </span>
           </div>
-          
+
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="displayName" className="text-sm text-muted-foreground">
@@ -150,60 +184,56 @@ export default function Settings() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Your display name"
-                className="bg-background border-white/10"
+                className="bg-background border-border"
                 maxLength={50}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm text-muted-foreground">
-                Username
+              <Label htmlFor="timezone" className="text-sm text-muted-foreground">
+                Timezone
               </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                  @
-                </span>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => handleUsernameChange(e.target.value)}
-                  placeholder="username"
-                  className="bg-background border-white/10 pl-7"
-                  maxLength={30}
-                />
-              </div>
-              {usernameError && (
-                <p className="text-xs text-destructive">{usernameError}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Lowercase letters, numbers, and underscores only
+              <Input
+                id="timezone"
+                value={timezone}
+                readOnly
+                className="bg-background border-border text-muted-foreground cursor-default"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Detected from your browser. Cannot be changed manually.
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="avatarUrl" className="text-sm text-muted-foreground">
-                Avatar URL
+              <Label htmlFor="accountBalance" className="text-sm text-muted-foreground">
+                Account Balance
               </Label>
-              <Input
-                id="avatarUrl"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://example.com/avatar.png"
-                className="bg-background border-white/10"
-                type="url"
-              />
-            </div>
-
-            <div className="pt-2">
-              <p className="text-sm text-muted-foreground mb-1">{user?.email}</p>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  $
+                </span>
+                <Input
+                  id="accountBalance"
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={accountBalance}
+                  onChange={(e) => setAccountBalance(e.target.value)}
+                  placeholder="50000"
+                  className="bg-background border-border pl-7 font-mono"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Updates daily loss limits and max contracts.
+              </p>
             </div>
 
             <Button
               onClick={handleSaveProfile}
-              disabled={saving || !!usernameError}
+              disabled={savingProfile}
               className="w-full"
             >
-              {saving ? (
+              {savingProfile ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
@@ -215,35 +245,116 @@ export default function Settings() {
           </div>
         </Card>
 
-        {/* Trading Rules */}
+        {/* ─── Vault Controls ─── */}
         <Card className="vault-card p-4">
           <div className="flex items-center gap-3 mb-4">
             <Shield className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Trading Rules
+              Vault Controls
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Manage your risk limits and discipline rules in the Dashboard.
-          </p>
+
+          <div className="space-y-4">
+            {/* Risk Mode */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">
+                Change takes effect on next vault recalculation.
+              </p>
+              <RiskModeSelector />
+            </div>
+
+            {/* Read-only Vault Rules */}
+            <div className="pt-3 border-t border-border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3">
+                Vault Rules (read-only)
+              </p>
+
+              {rulesLoading ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-4 bg-muted/20 rounded w-2/3" />
+                  <div className="h-4 bg-muted/20 rounded w-1/2" />
+                </div>
+              ) : rules ? (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-2.5 rounded-lg bg-muted/10 border border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Max Risk/Trade</p>
+                    <p className="text-sm font-mono font-semibold text-foreground">{rules.max_risk_per_trade}%</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-muted/10 border border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Max Daily Loss</p>
+                    <p className="text-sm font-mono font-semibold text-foreground">{rules.max_daily_loss}%</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-muted/10 border border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Max Trades/Day</p>
+                    <p className="text-sm font-mono font-semibold text-foreground">{rules.max_trades_per_day}</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-muted/10 border border-border">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Sessions</p>
+                    <p className="text-sm font-mono font-semibold text-foreground capitalize">
+                      {rules.allowed_sessions.join(", ")}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No rules configured yet.</p>
+              )}
+            </div>
+          </div>
         </Card>
 
-        {/* Notifications placeholder */}
-        <Card className="vault-card p-4">
+        {/* ─── Danger Zone ─── */}
+        <Card className="vault-card p-4 border-rose-500/20">
           <div className="flex items-center gap-3 mb-4">
-            <Bell className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Notifications
+            <AlertTriangle className="h-4 w-4 text-rose-500" />
+            <span className="text-xs font-medium text-rose-500 uppercase tracking-wide">
+              Danger Zone
             </span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Coming soon — alerts for limit warnings and session reviews.
-          </p>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">Reset Vault OS</p>
+              <p className="text-xs text-muted-foreground">
+                Clears all trade logs, intents, and vault state. Your profile and account balance are preserved. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="resetConfirm" className="text-xs text-muted-foreground">
+                Type <span className="font-mono font-semibold text-rose-400">RESET VAULT</span> to confirm
+              </Label>
+              <Input
+                id="resetConfirm"
+                value={resetConfirm}
+                onChange={(e) => setResetConfirm(e.target.value)}
+                placeholder="RESET VAULT"
+                className="bg-background border-border font-mono"
+                autoComplete="off"
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={handleResetVault}
+              disabled={resetConfirm !== "RESET VAULT" || resetting}
+              className="w-full border-rose-500/40 text-rose-500 hover:bg-rose-500/10 disabled:border-border disabled:text-muted-foreground"
+            >
+              {resetting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                "Reset Vault OS"
+              )}
+            </Button>
+          </div>
         </Card>
 
         {/* Sign Out */}
         <Button
-          className="vault-cta w-full gap-2 h-12"
+          variant="outline"
+          className="w-full gap-2 h-12 border-border text-muted-foreground hover:text-foreground"
           onClick={() => signOut()}
         >
           <LogOut className="h-4 w-4" />
