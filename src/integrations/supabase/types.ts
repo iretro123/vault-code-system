@@ -320,6 +320,60 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_state: {
+        Row: {
+          account_balance: number
+          created_at: string
+          daily_loss_limit: number
+          date: string
+          id: string
+          loss_streak: number
+          max_contracts_allowed: number
+          max_trades_per_day: number
+          open_trade: boolean
+          risk_mode: string
+          risk_remaining_today: number
+          trades_remaining_today: number
+          updated_at: string
+          user_id: string
+          vault_status: string
+        }
+        Insert: {
+          account_balance?: number
+          created_at?: string
+          daily_loss_limit?: number
+          date?: string
+          id?: string
+          loss_streak?: number
+          max_contracts_allowed?: number
+          max_trades_per_day?: number
+          open_trade?: boolean
+          risk_mode?: string
+          risk_remaining_today?: number
+          trades_remaining_today?: number
+          updated_at?: string
+          user_id: string
+          vault_status?: string
+        }
+        Update: {
+          account_balance?: number
+          created_at?: string
+          daily_loss_limit?: number
+          date?: string
+          id?: string
+          loss_streak?: number
+          max_contracts_allowed?: number
+          max_trades_per_day?: number
+          open_trade?: boolean
+          risk_mode?: string
+          risk_remaining_today?: number
+          trades_remaining_today?: number
+          updated_at?: string
+          user_id?: string
+          vault_status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -428,6 +482,32 @@ export type Database = {
           vault_open: boolean
           vault_score: number
         }[]
+      }
+      get_or_create_vault_state: {
+        Args: { _user_id: string }
+        Returns: {
+          account_balance: number
+          created_at: string
+          daily_loss_limit: number
+          date: string
+          id: string
+          loss_streak: number
+          max_contracts_allowed: number
+          max_trades_per_day: number
+          open_trade: boolean
+          risk_mode: string
+          risk_remaining_today: number
+          trades_remaining_today: number
+          updated_at: string
+          user_id: string
+          vault_status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vault_state"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_user_role: {
         Args: { _user_id: string }
