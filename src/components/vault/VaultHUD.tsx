@@ -55,18 +55,24 @@ export function VaultHUD() {
   return (
     <div className="vault-card p-4 space-y-4 min-h-[140px]">
       {/* Header — bound to vault_status */}
-      <div className="flex items-center min-h-[24px]">
+      <div className="flex items-center justify-between min-h-[24px]">
         <div className="flex items-center gap-3">
           <div className={cn("h-3 w-3 rounded-full", lightClass, vaultState.vault_status === "GREEN" && "animate-pulse")} />
           <span className="font-semibold text-foreground">
             Vault {vaultState.vault_status}
           </span>
         </div>
+        <div className="text-right">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Account Balance</p>
+          <p className="text-sm font-mono font-semibold tabular-nums text-foreground">
+            ${vaultState.account_balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </p>
+        </div>
       </div>
 
       {/* Metrics grid — bound to Vault State only */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
+        <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Shield className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Risk Left</span>
@@ -76,7 +82,7 @@ export function VaultHUD() {
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
+        <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Timer className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Trades</span>
@@ -86,7 +92,7 @@ export function VaultHUD() {
           </span>
         </div>
 
-        <div className="text-center p-2 rounded-xl bg-white/5 border border-white/5 min-h-[56px]">
+        <div className="text-center p-2 rounded-xl bg-muted/10 border border-border min-h-[56px]">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Lock className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Contracts</span>
