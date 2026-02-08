@@ -32,9 +32,11 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
     setError("");
 
     try {
-      // Resolve whether Conservative is viable for this balance
+      // 1. Resolve viable risk mode from canonical engine
       const resolved = resolveViableRiskMode(balanceNum, "CONSERVATIVE");
+      const limits = resolved.limits;
 
+      // 2. Create profile + base vault_state via RPC (no prior session data assumed)
       const { error: rpcError } = await supabase.rpc("complete_onboarding", {
         _user_id: user.id,
         _balance: balanceNum,
@@ -48,14 +50,35 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
         return;
       }
 
-      // If Conservative isn't viable, override to Standard
+      // 3. Persist all computed limits + resolved risk mode to vault_state
+      //    This is the ONLY write that sets enforcement values — no duplication.
+      const { error: limitError } = await supabase
+        .from("vault_state")
+        .update({
+          risk_mode: resolved.applied_mode,
+          account_balance: balanceNum,
+          daily_loss_limit: limits.daily_loss_limit,
+          risk_remaining_today: limits.daily_loss_limit,
+          max_trades_per_day: limits.max_trades_per_day,
+          trades_remaining_today: limits.max_trades_per_day,
+          max_contracts_allowed: limits.max_contracts,
+          vault_status: "GREEN",
+          session_paused: true,
+          open_trade: false,
+          loss_streak: 0,
+        })
+        .eq("user_id", user.id);
+
+      if (limitError) {
+        console.error("Failed to persist vault limits:", limitError);
+        setError("Failed to set vault limits. Try again.");
+        setSubmitting(false);
+        return;
+      }
+
+      // 4. Show override message if Conservative wasn't viable
       if (resolved.was_overridden) {
-        await supabase.rpc("update_vault_risk_mode", {
-          _user_id: user.id,
-          _risk_mode: resolved.applied_mode,
-        });
         setModeOverrideMessage(resolved.system_message);
-        // Brief pause so user sees the message before dashboard loads
         await new Promise((r) => setTimeout(r, 2500));
       }
 
