@@ -67,6 +67,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          initialized_at: string | null
           market_type: string
           onboarding_completed: boolean
           updated_at: string
@@ -83,6 +84,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          initialized_at?: string | null
           market_type?: string
           onboarding_completed?: boolean
           updated_at?: string
@@ -99,6 +101,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          initialized_at?: string | null
           market_type?: string
           onboarding_completed?: boolean
           updated_at?: string
