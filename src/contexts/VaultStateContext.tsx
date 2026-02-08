@@ -16,6 +16,8 @@ export interface VaultState {
   trades_remaining_today: number;
   open_trade: boolean;
   loss_streak: number;
+  current_session_behavior: string;
+  last_block_reason: string | null;
 }
 
 export interface VaultStateContextValue {
@@ -36,6 +38,8 @@ const DEFAULT_STATE: VaultState = {
   trades_remaining_today: 3,
   open_trade: false,
   loss_streak: 0,
+  current_session_behavior: "intraday",
+  last_block_reason: null,
 };
 
 const VaultStateContext = createContext<VaultStateContextValue>({
@@ -93,6 +97,8 @@ export function VaultStateProvider({ children }: { children: React.ReactNode }) 
           trades_remaining_today: row.trades_remaining_today,
           open_trade: row.open_trade,
           loss_streak: row.loss_streak,
+          current_session_behavior: (row as any).current_session_behavior ?? "intraday",
+          last_block_reason: (row as any).last_block_reason ?? null,
         });
       }
     } catch (err) {

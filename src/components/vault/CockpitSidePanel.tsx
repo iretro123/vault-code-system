@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, PanelRightOpen } from "lucide-react";
 import { SessionRemindersPanel } from "./SessionRemindersPanel";
 import { ScalingRulesPanel } from "./ScalingRulesPanel";
+import { useMicroFeedback } from "@/hooks/useMicroFeedback";
 
 const STORAGE_KEY = "vault-side-panel-dismissed";
 
@@ -32,6 +33,8 @@ export function CockpitSidePanel() {
     );
   }
 
+  const microFeedback = useMicroFeedback();
+
   return (
     <aside className="hidden lg:flex flex-col gap-3 w-72 shrink-0 sticky top-20 self-start">
       <div className="flex items-center justify-between px-1">
@@ -46,6 +49,14 @@ export function CockpitSidePanel() {
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Micro feedback — one line, data-driven */}
+      {microFeedback && (
+        <div className="px-3 py-2 rounded-lg bg-muted/10 border border-border">
+          <p className="text-xs text-muted-foreground">{microFeedback}</p>
+        </div>
+      )}
+
       <SessionRemindersPanel />
       <ScalingRulesPanel />
     </aside>

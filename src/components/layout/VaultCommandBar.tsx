@@ -34,7 +34,7 @@ function deriveMessage(
   sessionPaused?: boolean
 ): string {
   if (sessionPaused) {
-    return "SESSION PAUSED · TRADING LOCKED";
+    return "SESSION PAUSED · NO TRADES ALLOWED";
   }
 
   const {
