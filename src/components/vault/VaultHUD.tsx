@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils"; // kept for conditional button styling
+import { cn } from "@/lib/utils";
 import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -14,8 +14,14 @@ interface VaultHUDProps {
 }
 
 export function VaultHUD({ onBuyingNow, onCloseTrade, sessionPaused }: VaultHUDProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { state: vaultState, loading: vaultLoading, refetch } = useVaultState();
+
+  const inSafeMode = useMemo(() => {
+    if (!profile?.initialized_at) return false;
+    const safeModeUntil = new Date(profile.initialized_at).getTime() + 24 * 60 * 60 * 1000;
+    return Date.now() < safeModeUntil;
+  }, [profile?.initialized_at]);
   const navigate = useNavigate();
 
   const buyingDisabled =
@@ -86,7 +92,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade, sessionPaused }: VaultHUDP
       {/* Consolidated Metrics */}
       <div className="grid grid-cols-3 gap-3">
         <div className="p-3 rounded-lg bg-muted/10 border border-border min-h-[56px]">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Today's Risk</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{inSafeMode ? "Today's Risk (Conservative Start)" : "Today's Risk"}</p>
           <p className="text-sm font-mono font-semibold tabular-nums text-foreground">
             ${vaultState.risk_remaining_today.toFixed(0)}
             <span className="text-xs text-muted-foreground font-normal"> of ${vaultState.daily_loss_limit.toFixed(0)}</span>
@@ -94,7 +100,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade, sessionPaused }: VaultHUDP
         </div>
 
         <div className="p-3 rounded-lg bg-muted/10 border border-border min-h-[56px]">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Trades Remaining</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{inSafeMode ? "Starting Trade Allowance" : "Trades Remaining"}</p>
           <p className="text-sm font-mono font-semibold tabular-nums text-foreground">
             {vaultState.trades_remaining_today}
             <span className="text-xs text-muted-foreground font-normal"> / {vaultState.max_trades_per_day}</span>
