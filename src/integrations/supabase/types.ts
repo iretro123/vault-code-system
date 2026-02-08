@@ -61,11 +61,14 @@ export type Database = {
           account_balance: number
           avatar_url: string | null
           created_at: string
+          default_trading_style: string
           discipline_score: number
           discipline_status: string
           display_name: string | null
           email: string | null
           id: string
+          market_type: string
+          onboarding_completed: boolean
           updated_at: string
           user_id: string
           username: string | null
@@ -74,11 +77,14 @@ export type Database = {
           account_balance?: number
           avatar_url?: string | null
           created_at?: string
+          default_trading_style?: string
           discipline_score?: number
           discipline_status?: string
           display_name?: string | null
           email?: string | null
           id?: string
+          market_type?: string
+          onboarding_completed?: boolean
           updated_at?: string
           user_id: string
           username?: string | null
@@ -87,11 +93,14 @@ export type Database = {
           account_balance?: number
           avatar_url?: string | null
           created_at?: string
+          default_trading_style?: string
           discipline_score?: number
           discipline_status?: string
           display_name?: string | null
           email?: string | null
           id?: string
+          market_type?: string
+          onboarding_completed?: boolean
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -363,9 +372,11 @@ export type Database = {
         Row: {
           account_balance: number
           created_at: string
+          current_session_behavior: string
           daily_loss_limit: number
           date: string
           id: string
+          last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
           max_trades_per_day: number
@@ -380,9 +391,11 @@ export type Database = {
         Insert: {
           account_balance?: number
           created_at?: string
+          current_session_behavior?: string
           daily_loss_limit?: number
           date?: string
           id?: string
+          last_block_reason?: string | null
           loss_streak?: number
           max_contracts_allowed?: number
           max_trades_per_day?: number
@@ -397,9 +410,11 @@ export type Database = {
         Update: {
           account_balance?: number
           created_at?: string
+          current_session_behavior?: string
           daily_loss_limit?: number
           date?: string
           id?: string
+          last_block_reason?: string | null
           loss_streak?: number
           max_contracts_allowed?: number
           max_trades_per_day?: number
@@ -505,6 +520,16 @@ export type Database = {
           success: boolean
         }[]
       }
+      complete_onboarding: {
+        Args: {
+          _balance: number
+          _default_style: string
+          _market_type: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      detect_session_behavior: { Args: { _user_id: string }; Returns: string }
       get_adaptive_risk_limit: {
         Args: { _user_id: string }
         Returns: {
@@ -541,14 +566,17 @@ export type Database = {
           trades_taken: number
         }[]
       }
+      get_micro_feedback: { Args: { _user_id: string }; Returns: string }
       get_or_create_vault_state: {
         Args: { _user_id: string }
         Returns: {
           account_balance: number
           created_at: string
+          current_session_behavior: string
           daily_loss_limit: number
           date: string
           id: string
+          last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
           max_trades_per_day: number
@@ -721,9 +749,11 @@ export type Database = {
         Returns: {
           account_balance: number
           created_at: string
+          current_session_behavior: string
           daily_loss_limit: number
           date: string
           id: string
+          last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
           max_trades_per_day: number
@@ -769,9 +799,11 @@ export type Database = {
         Returns: {
           account_balance: number
           created_at: string
+          current_session_behavior: string
           daily_loss_limit: number
           date: string
           id: string
+          last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
           max_trades_per_day: number

@@ -12,6 +12,8 @@ interface Profile {
   display_name: string | null;
   discipline_status: "active" | "inactive";
   discipline_score: number;
+  onboarding_completed: boolean;
+  default_trading_style: string;
 }
 
 interface UserRole {

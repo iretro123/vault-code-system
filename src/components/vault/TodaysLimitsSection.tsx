@@ -2,10 +2,10 @@ import React from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 
 function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"]): string {
+  // Use persisted block reason if available
+  if (vault.last_block_reason) return vault.last_block_reason;
   if (vault.risk_remaining_today <= 0) return "Daily loss limit reached";
   if (vault.trades_remaining_today <= 0) return "Trade limit reached";
-  // No way to detect "max contracts exceeded" as a past block from current state alone,
-  // but if contracts are at 0 that's effectively a block
   if (vault.max_contracts_allowed <= 0) return "Max contracts exceeded";
   return "No restrictions today";
 }

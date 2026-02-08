@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { LogOut, User, Shield, AlertTriangle, Loader2 } from "lucide-react";
 import { RiskModeSelector } from "@/components/vault/RiskModeSelector";
+import { cn } from "@/lib/utils";
 
 export default function Settings() {
   const { user, profile, signOut } = useAuth();
@@ -261,6 +262,39 @@ export default function Settings() {
                 Change takes effect on next vault recalculation.
               </p>
               <RiskModeSelector />
+            </div>
+
+            {/* Default Trading Style */}
+            <div className="pt-3 border-t border-border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-3">
+                Default Trading Style
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(["intraday", "multi_day"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={async () => {
+                      if (!user) return;
+                      await supabase
+                        .from("profiles")
+                        .update({ default_trading_style: s })
+                        .eq("user_id", user.id);
+                      toast({ title: "Trading style updated", description: `Set to ${s === "intraday" ? "Intraday" : "Multi-day"}.` });
+                    }}
+                    className={cn(
+                      "px-3 py-2.5 rounded-lg text-sm font-medium border transition-all",
+                      profile?.default_trading_style === s
+                        ? "bg-primary/10 border-primary/40 text-primary"
+                        : "bg-muted/10 border-border text-muted-foreground hover:bg-muted/20"
+                    )}
+                  >
+                    {s === "intraday" ? "Intraday" : "Multi-day"}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                Sets initial enforcement bias. Vault adapts automatically.
+              </p>
             </div>
 
             {/* Read-only Vault Rules */}
