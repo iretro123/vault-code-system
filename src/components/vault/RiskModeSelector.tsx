@@ -3,7 +3,7 @@ import { useVaultState, RiskModeEnum } from "@/contexts/VaultStateContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Tooltip,
@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { resolveViableRiskMode } from "@/lib/vaultConstants";
 
 const MODES: { value: RiskModeEnum; label: string }[] = [
   { value: "CONSERVATIVE", label: "Conservative" },
@@ -22,6 +23,7 @@ export function RiskModeSelector() {
   const { user, profile } = useAuth();
   const { state, refetch } = useVaultState();
   const [updating, setUpdating] = useState(false);
+  const [overrideMessage, setOverrideMessage] = useState<string | null>(null);
 
   const inSafeMode = useMemo(() => {
     if (!profile?.initialized_at) return false;
@@ -29,16 +31,35 @@ export function RiskModeSelector() {
     return Date.now() < safeModeUntil;
   }, [profile?.initialized_at]);
 
+  // Check if Conservative is viable for current balance
+  const conservativeViable = useMemo(() => {
+    const resolved = resolveViableRiskMode(state.account_balance, "CONSERVATIVE");
+    return !resolved.was_overridden;
+  }, [state.account_balance]);
+
   const handleSelect = async (mode: RiskModeEnum) => {
     if (mode === state.risk_mode || !user || updating) return;
     if (inSafeMode && mode === "AGGRESSIVE") return;
+
+    // Resolve viability — Conservative may be auto-overridden to Standard
+    const resolved = resolveViableRiskMode(state.account_balance, mode);
+    const effectiveMode = resolved.applied_mode;
+
+    if (resolved.was_overridden) {
+      setOverrideMessage(resolved.system_message);
+    } else {
+      setOverrideMessage(null);
+    }
+
+    // Don't call RPC if effective mode is already active
+    if (effectiveMode === state.risk_mode) return;
 
     setUpdating(true);
 
     try {
       const { error } = await supabase.rpc("update_vault_risk_mode", {
         _user_id: user.id,
-        _risk_mode: mode,
+        _risk_mode: effectiveMode,
       });
 
       if (error) {
@@ -57,8 +78,9 @@ export function RiskModeSelector() {
 
   const renderButton = (value: RiskModeEnum, label: string) => {
     const isActive = state.risk_mode === value;
-    const isDisabled = updating || (inSafeMode && value === "AGGRESSIVE");
-    const needsTooltip = inSafeMode && value === "STANDARD" && !isActive;
+    const isConservativeBlocked = value === "CONSERVATIVE" && !conservativeViable;
+    const isDisabled = updating || (inSafeMode && value === "AGGRESSIVE") || isConservativeBlocked;
+    const needsTooltip = (inSafeMode && value === "STANDARD" && !isActive) || isConservativeBlocked;
 
     const btn = (
       <button
@@ -89,11 +111,14 @@ export function RiskModeSelector() {
     );
 
     if (needsTooltip) {
+      const tooltipText = isConservativeBlocked
+        ? "Not viable for your account size."
+        : "Recommended after day 1.";
       return (
         <Tooltip key={value}>
           <TooltipTrigger asChild>{btn}</TooltipTrigger>
           <TooltipContent side="bottom" className="text-xs">
-            Recommended after day 1.
+            {tooltipText}
           </TooltipContent>
         </Tooltip>
       );
@@ -113,7 +138,16 @@ export function RiskModeSelector() {
           {MODES.map(({ value, label }) => renderButton(value, label))}
         </div>
 
-        {state.risk_mode === "AGGRESSIVE" && (
+        {overrideMessage && (
+          <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/20">
+            <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+            <p className="text-[11px] text-muted-foreground leading-tight">
+              {overrideMessage}
+            </p>
+          </div>
+        )}
+
+        {state.risk_mode === "AGGRESSIVE" && !overrideMessage && (
           <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-500/90 leading-tight">
