@@ -18,6 +18,7 @@ export interface VaultState {
   loss_streak: number;
   current_session_behavior: string;
   last_block_reason: string | null;
+  session_paused: boolean;
 }
 
 export interface VaultStateContextValue {
@@ -40,6 +41,7 @@ const DEFAULT_STATE: VaultState = {
   loss_streak: 0,
   current_session_behavior: "intraday",
   last_block_reason: null,
+  session_paused: false,
 };
 
 const VaultStateContext = createContext<VaultStateContextValue>({
@@ -99,6 +101,7 @@ export function VaultStateProvider({ children }: { children: React.ReactNode }) 
           loss_streak: row.loss_streak,
           current_session_behavior: (row as any).current_session_behavior ?? "intraday",
           last_block_reason: (row as any).last_block_reason ?? null,
+          session_paused: (row as any).session_paused ?? false,
         });
       }
     } catch (err) {

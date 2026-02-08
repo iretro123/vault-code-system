@@ -386,6 +386,7 @@ export type Database = {
           open_trade: boolean
           risk_mode: string
           risk_remaining_today: number
+          session_paused: boolean
           trades_remaining_today: number
           updated_at: string
           user_id: string
@@ -405,6 +406,7 @@ export type Database = {
           open_trade?: boolean
           risk_mode?: string
           risk_remaining_today?: number
+          session_paused?: boolean
           trades_remaining_today?: number
           updated_at?: string
           user_id: string
@@ -424,6 +426,7 @@ export type Database = {
           open_trade?: boolean
           risk_mode?: string
           risk_remaining_today?: number
+          session_paused?: boolean
           trades_remaining_today?: number
           updated_at?: string
           user_id?: string
@@ -586,6 +589,7 @@ export type Database = {
           open_trade: boolean
           risk_mode: string
           risk_remaining_today: number
+          session_paused: boolean
           trades_remaining_today: number
           updated_at: string
           user_id: string
@@ -763,6 +767,7 @@ export type Database = {
           open_trade: boolean
           risk_mode: string
           risk_remaining_today: number
+          session_paused: boolean
           trades_remaining_today: number
           updated_at: string
           user_id: string
@@ -813,6 +818,7 @@ export type Database = {
           open_trade: boolean
           risk_mode: string
           risk_remaining_today: number
+          session_paused: boolean
           trades_remaining_today: number
           updated_at: string
           user_id: string
