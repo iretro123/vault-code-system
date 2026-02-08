@@ -71,6 +71,14 @@ function CockpitContent() {
       <div className="max-w-5xl mx-auto p-4 md:p-6 pb-24 flex gap-6">
         {/* Main execution area — centered */}
         <div className="flex-1 max-w-xl mx-auto space-y-4">
+          {hasInitialized && (
+            <div className="px-4 py-3 rounded-lg border border-primary/20 bg-primary/5">
+              <p className="text-xs text-primary font-medium">
+                Vault Initialized. Your protection rules are now set. Today starts in Conservative mode.
+              </p>
+            </div>
+          )}
+
           <VaultAuthorityHeader />
 
           <TradingSessionToggle
