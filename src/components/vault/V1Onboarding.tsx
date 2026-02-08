@@ -84,7 +84,7 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
                 autoFocus
               />
               <p className="text-[11px] text-muted-foreground mt-2">
-                Used to calculate daily risk limits. Options only for V1.
+                Enter your current live trading account balance. Vault OS uses this number to calculate risk limits and protect your capital.
               </p>
             </div>
 
