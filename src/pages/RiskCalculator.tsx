@@ -14,7 +14,7 @@ export default function RiskCalculator() {
   const [riskPercent, setRiskPercent] = useState<string>("1");
   const [stopLossPercent, setStopLossPercent] = useState<string>("2");
   
-  const { result, loading, error, calculate, protectionStatus, consistencyStatus } = usePositionCalculator();
+  const { result, loading, error, calculate } = usePositionCalculator();
   const { state: vaultState, loading: vaultLoading } = useVaultState();
 
   useEffect(() => {
@@ -22,13 +22,13 @@ export default function RiskCalculator() {
     const risk = parseFloat(riskPercent);
     const stopLoss = parseFloat(stopLossPercent);
     
-    if (account > 0 && risk > 0 && stopLoss > 0 && !vaultLoading && !protectionStatus.loading && !consistencyStatus.loading) {
+    if (account > 0 && risk > 0 && stopLoss > 0 && !vaultLoading) {
       const timer = setTimeout(() => {
         calculate(account, risk, stopLoss);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [accountSize, riskPercent, stopLossPercent, calculate, vaultLoading, protectionStatus.loading, consistencyStatus.loading]);
+  }, [accountSize, riskPercent, stopLossPercent, calculate, vaultLoading]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
