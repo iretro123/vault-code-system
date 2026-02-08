@@ -13,13 +13,13 @@ import { TradingSessionToggle } from "@/components/vault/TradingSessionToggle";
 import { AuthGate } from "@/components/AuthGate";
 import { useAuth } from "@/hooks/useAuth";
 import { useVaultState } from "@/contexts/VaultStateContext";
+import { supabase } from "@/integrations/supabase/client";
 
 function CockpitContent() {
-  const { profile } = useAuth();
-  const { refetch, loading: vaultLoading } = useVaultState();
+  const { user, profile } = useAuth();
+  const { state: vaultState, refetch, loading: vaultLoading } = useVaultState();
   const [intentOpen, setIntentOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
-  const [sessionPaused, setSessionPaused] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [isBooting, setIsBooting] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -41,17 +41,21 @@ function CockpitContent() {
 
   const handleOnboardingComplete = useCallback(async () => {
     setIsBooting(true);
-    // Refetch vault state so all calculated limits are loaded
+    // Persist session_paused = true for new users
+    if (user) {
+      await supabase
+        .from("vault_state")
+        .update({ session_paused: true })
+        .eq("user_id", user.id);
+    }
     await new Promise<void>((resolve) => {
       refetch();
-      // Allow vault state to propagate
       setTimeout(resolve, 500);
     });
     setHasInitialized(true);
-    setSessionPaused(true); // Start with session paused
     setOnboardingDone(true);
     setIsBooting(false);
-  }, [refetch]);
+  }, [refetch, user]);
 
   if (needsOnboarding) {
     return (
@@ -67,7 +71,7 @@ function CockpitContent() {
   }
 
   return (
-    <AppLayout sessionPaused={sessionPaused}>
+    <AppLayout sessionPaused={vaultState.session_paused}>
       <div className="max-w-5xl mx-auto p-4 md:p-6 pb-24 flex gap-6">
         {/* Main execution area — centered */}
         <div className="flex-1 max-w-xl mx-auto space-y-4">
@@ -82,14 +86,22 @@ function CockpitContent() {
           <VaultAuthorityHeader />
 
           <TradingSessionToggle
-            paused={sessionPaused}
-            onToggle={() => setSessionPaused((p) => !p)}
+            paused={vaultState.session_paused}
+            onToggle={async () => {
+              if (!user) return;
+              const newPaused = !vaultState.session_paused;
+              await supabase
+                .from("vault_state")
+                .update({ session_paused: newPaused })
+                .eq("user_id", user.id);
+              refetch();
+            }}
           />
 
           <VaultHUD
             onBuyingNow={() => setIntentOpen(true)}
             onCloseTrade={() => setCloseOpen(true)}
-            sessionPaused={sessionPaused}
+            sessionPaused={vaultState.session_paused}
           />
 
           <FlowSection
