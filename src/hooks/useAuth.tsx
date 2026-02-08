@@ -14,6 +14,7 @@ interface Profile {
   discipline_score: number;
   onboarding_completed: boolean;
   default_trading_style: string;
+  initialized_at: string | null;
 }
 
 interface UserRole {
