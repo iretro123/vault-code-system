@@ -16,11 +16,13 @@ import { useVaultState } from "@/contexts/VaultStateContext";
 
 function CockpitContent() {
   const { profile } = useAuth();
-  const { refetch } = useVaultState();
+  const { refetch, loading: vaultLoading } = useVaultState();
   const [intentOpen, setIntentOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [sessionPaused, setSessionPaused] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
+  const [isBooting, setIsBooting] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     limits: false,
@@ -37,17 +39,31 @@ function CockpitContent() {
   // Show onboarding if profile exists but onboarding not completed
   const needsOnboarding = profile && !profile.onboarding_completed && !onboardingDone;
 
+  const handleOnboardingComplete = useCallback(async () => {
+    setIsBooting(true);
+    // Refetch vault state so all calculated limits are loaded
+    await new Promise<void>((resolve) => {
+      refetch();
+      // Allow vault state to propagate
+      setTimeout(resolve, 500);
+    });
+    setHasInitialized(true);
+    setSessionPaused(true); // Start with session paused
+    setOnboardingDone(true);
+    setIsBooting(false);
+  }, [refetch]);
+
   if (needsOnboarding) {
     return (
       <AppLayout>
-        <V1Onboarding
-          onComplete={() => {
-            setOnboardingDone(true);
-            refetch();
-          }}
-        />
+        <V1Onboarding onComplete={handleOnboardingComplete} />
       </AppLayout>
     );
+  }
+
+  // Block dashboard render while booting
+  if (isBooting || (onboardingDone && !hasInitialized)) {
+    return null;
   }
 
   return (
