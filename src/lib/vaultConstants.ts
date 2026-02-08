@@ -87,3 +87,51 @@ export function computeVaultLimits(
     max_contracts,
   };
 }
+
+// ─── Viability Resolution ────────────────────────────────────────────
+
+export interface ResolvedRiskMode {
+  /** The mode that will actually be applied */
+  applied_mode: string;
+  /** Whether the requested mode was overridden */
+  was_overridden: boolean;
+  /** System message to display if overridden (null if not) */
+  system_message: string | null;
+  /** The computed limits for the applied mode */
+  limits: VaultLimits;
+}
+
+/**
+ * Resolves the effective risk mode for a given account balance.
+ *
+ * If CONSERVATIVE produces risk_per_trade < MIN_VIABLE_CONTRACT,
+ * STANDARD is applied automatically. The user may not override this.
+ */
+export function resolveViableRiskMode(
+  account_balance: number,
+  requested_mode: string,
+): ResolvedRiskMode {
+  if (requested_mode === "CONSERVATIVE") {
+    const rawDaily = account_balance * (RISK_MODE_DAILY_PERCENT.CONSERVATIVE ?? 0.01);
+    const rawPerTrade = rawDaily / MAX_LOSSES_PER_DAY;
+
+    if (rawPerTrade < MIN_VIABLE_CONTRACT) {
+      const limits = computeVaultLimits(account_balance, "STANDARD");
+      return {
+        applied_mode: "STANDARD",
+        was_overridden: true,
+        system_message:
+          "Conservative mode is not viable for your account size. Vault OS applied Standard mode to allow safe participation.",
+        limits,
+      };
+    }
+  }
+
+  const limits = computeVaultLimits(account_balance, requested_mode);
+  return {
+    applied_mode: requested_mode,
+    was_overridden: false,
+    system_message: null,
+    limits,
+  };
+}

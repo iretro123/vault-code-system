@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Loader2 } from "lucide-react";
+import { Shield, Info, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveViableRiskMode } from "@/lib/vaultConstants";
 
 type TradingStyle = "intraday" | "multi_day";
 
@@ -20,6 +21,7 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
   const [style, setStyle] = useState<TradingStyle | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [modeOverrideMessage, setModeOverrideMessage] = useState<string | null>(null);
 
   const balanceNum = parseFloat(balance);
   const balanceValid = !isNaN(balanceNum) && balanceNum > 0;
@@ -30,6 +32,9 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
     setError("");
 
     try {
+      // Resolve whether Conservative is viable for this balance
+      const resolved = resolveViableRiskMode(balanceNum, "CONSERVATIVE");
+
       const { error: rpcError } = await supabase.rpc("complete_onboarding", {
         _user_id: user.id,
         _balance: balanceNum,
@@ -41,6 +46,17 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
         setError(rpcError.message);
         setSubmitting(false);
         return;
+      }
+
+      // If Conservative isn't viable, override to Standard
+      if (resolved.was_overridden) {
+        await supabase.rpc("update_vault_risk_mode", {
+          _user_id: user.id,
+          _risk_mode: resolved.applied_mode,
+        });
+        setModeOverrideMessage(resolved.system_message);
+        // Brief pause so user sees the message before dashboard loads
+        await new Promise((r) => setTimeout(r, 2500));
       }
 
       await onComplete();
@@ -142,6 +158,15 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
                 This sets initial enforcement bias. Vault adapts automatically over time.
               </p>
             </div>
+
+            {modeOverrideMessage && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  {modeOverrideMessage}
+                </p>
+              </div>
+            )}
 
             {error && (
               <p className="text-xs text-destructive">{error}</p>
