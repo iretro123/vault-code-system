@@ -77,25 +77,16 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
     }
   }, [open]);
 
+  // Display-only reads from server state (no permission calculations)
   const canTrade = vaultState.vault_status !== "RED" && vaultState.trades_remaining_today > 0 && vaultState.risk_remaining_today > 0;
-  const maxRiskAllowed = vaultState.risk_remaining_today;
-  const tradesRemaining = vaultState.trades_remaining_today;
-  const dailyLossRemaining = vaultState.risk_remaining_today;
   const plannedRiskNum = parseFloat(plannedRisk) || 0;
 
-  const hasRiskViolation = plannedRiskNum > maxRiskAllowed;
-  const hasTradesViolation = tradesRemaining <= 0;
-  const hasDailyLossViolation = plannedRiskNum > dailyLossRemaining;
-  const hasAnyViolation = !canTrade || hasRiskViolation || hasTradesViolation || hasDailyLossViolation;
+  // UI hints only — server is the authority via check_trade_permission RPC
+  const hasRiskHint = plannedRiskNum > vaultState.risk_remaining_today;
 
   async function handleRunCheck() {
     const result = await saveCheck({
-      disciplineScore: 0,
-      canTrade,
       plannedRisk: plannedRiskNum,
-      maxRiskAllowed,
-      tradesRemaining,
-      dailyLossRemaining,
     });
 
     setCheckResult(result.isCleared ? "cleared" : "violation");
@@ -157,7 +148,7 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
               </Card>
               <Card className="p-3 text-center">
                 <TrendingUp className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                <p className="text-lg font-mono font-bold">{tradesRemaining}</p>
+                <p className="text-lg font-mono font-bold">{vaultState.trades_remaining_today}</p>
                 <p className="text-[10px] text-muted-foreground uppercase">Trades Left</p>
               </Card>
             </div>
@@ -175,15 +166,15 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
                 onChange={(e) => setPlannedRisk(e.target.value)}
                 className={cn(
                   "text-lg font-mono pr-8 h-12 transition-colors",
-                  hasRiskViolation && plannedRisk && "border-status-inactive focus-visible:ring-status-inactive"
+                  hasRiskHint && plannedRisk && "border-status-inactive focus-visible:ring-status-inactive"
                 )}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-mono">$</span>
             </div>
-            {plannedRisk && hasRiskViolation && (
+            {plannedRisk && hasRiskHint && (
               <p className="text-xs text-status-inactive flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                Exceeds remaining risk (${maxRiskAllowed.toFixed(0)})
+                Exceeds remaining risk (${vaultState.risk_remaining_today.toFixed(0)})
               </p>
             )}
           </div>
@@ -222,7 +213,7 @@ export function PreTradeCheckModal({ open, onOpenChange }: PreTradeCheckModalPro
             className="w-full h-12 font-medium"
             onClick={handleRunCheck}
             disabled={saving || !plannedRisk || plannedRiskNum <= 0}
-            variant={hasAnyViolation && plannedRisk ? "destructive" : "default"}
+            variant={(!canTrade || hasRiskHint) && plannedRisk ? "destructive" : "default"}
           >
             {saving ? (
               <>
