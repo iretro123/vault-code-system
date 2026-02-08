@@ -535,6 +535,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      daily_vault_reset: { Args: never; Returns: undefined }
       detect_session_behavior: { Args: { _user_id: string }; Returns: string }
       get_adaptive_risk_limit: {
         Args: { _user_id: string }
