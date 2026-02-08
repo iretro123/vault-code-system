@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 type TradingStyle = "intraday" | "multi_day";
 
 interface V1OnboardingProps {
-  onComplete: () => void;
+  onComplete: () => Promise<void>;
 }
 
 export function V1Onboarding({ onComplete }: V1OnboardingProps) {
@@ -43,7 +43,7 @@ export function V1Onboarding({ onComplete }: V1OnboardingProps) {
         return;
       }
 
-      onComplete();
+      await onComplete();
     } catch {
       setError("Unexpected error. Try again.");
       setSubmitting(false);
