@@ -19,6 +19,7 @@ import { useMicroFeedback } from "@/hooks/useMicroFeedback";
 function CockpitContent() {
   const { user, profile } = useAuth();
   const { state: vaultState, refetch, loading: vaultLoading } = useVaultState();
+  const microFeedback = useMicroFeedback();
   const [intentOpen, setIntentOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
