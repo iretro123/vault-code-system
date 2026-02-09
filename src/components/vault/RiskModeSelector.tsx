@@ -80,7 +80,7 @@ export function RiskModeSelector() {
     const isActive = state.risk_mode === value;
     const isConservativeBlocked = value === "CONSERVATIVE" && !conservativeViable;
     const isDisabled = updating || (inSafeMode && value === "AGGRESSIVE") || isConservativeBlocked;
-    const needsTooltip = (inSafeMode && value === "STANDARD" && !isActive) || isConservativeBlocked;
+    const needsTooltip = (inSafeMode && value === "STANDARD" && !isActive) || isConservativeBlocked || state.session_paused;
 
     const btn = (
       <button
@@ -111,9 +111,14 @@ export function RiskModeSelector() {
     );
 
     if (needsTooltip) {
-      const tooltipText = isConservativeBlocked
-        ? "Not viable for your account size."
-        : "Recommended after day 1.";
+      let tooltipText = "";
+      if (state.session_paused) {
+        tooltipText = "Session is paused. Changes apply when session resumes.";
+      } else if (isConservativeBlocked) {
+        tooltipText = "Not viable for your account size.";
+      } else {
+        tooltipText = "Recommended after day 1.";
+      }
       return (
         <Tooltip key={value}>
           <TooltipTrigger asChild>{btn}</TooltipTrigger>

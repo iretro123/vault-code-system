@@ -41,7 +41,7 @@ function deriveMessage(
         return "SESSION AUTO-PAUSED DUE TO INACTIVITY";
       }
     }
-    return "SESSION PAUSED · NO TRADES ALLOWED";
+    return "SESSION PAUSED · TRADING TEMPORARILY BLOCKED";
   }
 
   const {

@@ -17,7 +17,7 @@ export function TradingSessionToggle({ paused, onToggle }: TradingSessionToggleP
         </p>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           {active
-            ? "Vault OS is currently allowing trades. Turn this OFF when you are done or want to step away."
+            ? "Your session is live. Limits are enforced."
             : "Trades are currently blocked. Turn this ON when you are ready to trade."}
         </p>
       </div>
