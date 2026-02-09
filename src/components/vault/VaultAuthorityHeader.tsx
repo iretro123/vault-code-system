@@ -14,7 +14,7 @@ const STATUS_CONFIG: Record<VaultStatusEnum, {
 }> = {
   GREEN: {
     label: "GREEN",
-    answer: "You are cleared to trade.",
+    answer: "Your account is in good standing.",
     icon: Shield,
     dotClass: "bg-emerald-500",
     borderClass: "border-emerald-500/20",

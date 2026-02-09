@@ -1,9 +1,24 @@
 import React from "react";
-import { ShieldCheck, AlertTriangle, ShieldOff } from "lucide-react";
+import { ShieldCheck, AlertTriangle, ShieldOff, Pause } from "lucide-react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 
 export function SessionRemindersPanel() {
   const { state } = useVaultState();
+
+  // Session state takes priority over vault status
+  if (state.session_paused) {
+    return (
+      <div className="vault-card p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Pause className="h-4 w-4 text-amber-400" />
+          <h3 className="text-sm font-semibold text-foreground">Session Paused</h3>
+        </div>
+        <p className="text-xs text-muted-foreground ml-6">
+          Trading is temporarily blocked. Turn session ON to resume.
+        </p>
+      </div>
+    );
+  }
 
   const config = {
     GREEN: {

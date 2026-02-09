@@ -32,7 +32,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade, sessionPaused }: VaultHUDP
     vaultState.risk_remaining_today <= 0;
 
   const buyingBlockedReason = useMemo(() => {
-    if (sessionPaused) return "Blocked: Session is paused.";
+    if (sessionPaused) return "Trading is paused. Turn ON your session above to place trades.";
     if (vaultState.vault_status === "RED") return "Blocked: Vault is RED.";
     if (vaultState.open_trade) return "Blocked: Open trade not closed.";
     if (vaultState.trades_remaining_today <= 0) return "Blocked: No trades remaining.";
@@ -137,7 +137,9 @@ export function VaultHUD({ onBuyingNow, onCloseTrade, sessionPaused }: VaultHUDP
         </Button>
         {buyingDisabled ? (
           <p className="text-[11px] text-muted-foreground text-center -mt-1">
-            {buyingBlockedReason}
+            {sessionPaused
+              ? "Trading is paused. Turn ON your session above to place trades."
+              : buyingBlockedReason}
           </p>
         ) : (
           <p className="text-[11px] text-muted-foreground/60 text-center -mt-1">
