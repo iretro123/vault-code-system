@@ -26,8 +26,10 @@ const STATUS_ICON: Record<string, React.ElementType> = {
 export function EndOfDayReview() {
   const { user } = useAuth();
   const [data, setData] = useState<EodData | null>(null);
+  const [weeklyStability, setWeeklyStability] = useState<WeeklyStability | null>(null);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
+  const stabilityFetched = useRef(false);
 
   const fetch = useCallback(async () => {
     if (!user) return;
