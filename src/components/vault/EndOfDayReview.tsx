@@ -161,6 +161,12 @@ export function EndOfDayReview() {
           prevented an estimated <span className="font-mono font-semibold text-foreground">${data.risk_saved.toFixed(0)}</span> loss.
         </p>
       )}
+
+      {weeklyStability && (
+        <p className="text-[11px] text-muted-foreground text-center tabular-nums">
+          Stability Score (7d): <span className="font-semibold text-foreground">{weeklyStability.stability_score}</span>/100
+        </p>
+      )}
     </div>
   );
 }

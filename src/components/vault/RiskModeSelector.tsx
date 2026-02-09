@@ -132,6 +132,27 @@ export function RiskModeSelector() {
     return <React.Fragment key={value}>{btn}</React.Fragment>;
   };
 
+  // ── Mode Fit line from latest report ──
+  const [modeFit, setModeFit] = useState<string | null>(null);
+  const modeFitFetched = useRef(false);
+
+  useEffect(() => {
+    if (!user || modeFitFetched.current) return;
+    modeFitFetched.current = true;
+    (async () => {
+      const { data: report } = await supabase
+        .from("weekly_report")
+        .select("mode_fit")
+        .eq("user_id", user.id)
+        .order("period_start", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (report?.mode_fit) {
+        setModeFit(report.mode_fit);
+      }
+    })();
+  }, [user]);
+
   return (
     <TooltipProvider>
       <div className="space-y-2.5">
@@ -142,6 +163,13 @@ export function RiskModeSelector() {
         <div className="grid grid-cols-3 gap-2">
           {MODES.map(({ value, label }) => renderButton(value, label))}
         </div>
+
+        {/* Mode Fit hint */}
+        <p className="text-[11px] text-muted-foreground leading-tight">
+          {modeFit
+            ? `Mode Fit: ${modeFit}`
+            : "Mode Fit will appear after 3 trading days."}
+        </p>
 
         {overrideMessage && (
           <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/20">
