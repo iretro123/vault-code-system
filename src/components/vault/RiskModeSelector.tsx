@@ -80,7 +80,7 @@ export function RiskModeSelector() {
     const isActive = state.risk_mode === value;
     const isConservativeBlocked = value === "CONSERVATIVE" && !conservativeViable;
     const isDisabled = updating || (inSafeMode && value === "AGGRESSIVE") || isConservativeBlocked;
-    const needsTooltip = (inSafeMode && value !== "CONSERVATIVE") || isConservativeBlocked || state.session_paused;
+    const needsTooltip = (inSafeMode && value === "AGGRESSIVE") || isConservativeBlocked || state.session_paused;
 
     const btn = (
       <button
