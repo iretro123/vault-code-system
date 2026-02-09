@@ -64,11 +64,12 @@ export default function VaultLog() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs">Date</TableHead>
-                    <TableHead className="text-xs">#</TableHead>
                     <TableHead className="text-xs">Direction</TableHead>
                     <TableHead className="text-xs text-right">Contracts</TableHead>
                     <TableHead className="text-xs text-right">Risk</TableHead>
+                    <TableHead className="text-xs text-right">PnL</TableHead>
                     <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Block Reason</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
