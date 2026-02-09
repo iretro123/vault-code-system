@@ -59,8 +59,24 @@ export function EndOfDayReview() {
   useEffect(() => {
     mounted.current = true;
     fetch();
+    // Fetch weekly stability once
+    if (!stabilityFetched.current && user) {
+      stabilityFetched.current = true;
+      supabase
+        .from("weekly_report")
+        .select("stability_score")
+        .eq("user_id", user.id)
+        .order("period_start", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: report }) => {
+          if (mounted.current && report) {
+            setWeeklyStability({ stability_score: report.stability_score });
+          }
+        });
+    }
     return () => { mounted.current = false; };
-  }, [fetch]);
+  }, [fetch, user]);
 
   // Subscribe to vault_state changes for live updates
   useEffect(() => {
