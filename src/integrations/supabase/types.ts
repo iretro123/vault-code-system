@@ -98,6 +98,75 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_report: {
+        Row: {
+          avg_risk_per_trade: number
+          avg_trades_per_day: number
+          block_rate: number
+          created_at: string
+          days_traded: number
+          green_days: number
+          id: string
+          insight_text: string | null
+          mode_fit: string | null
+          most_common_block_reason: string | null
+          period_end: string
+          period_start: string
+          red_days: number
+          risk_saved: number
+          risk_used: number
+          stability_score: number
+          trades_blocked: number
+          trades_taken: number
+          user_id: string
+          yellow_days: number
+        }
+        Insert: {
+          avg_risk_per_trade?: number
+          avg_trades_per_day?: number
+          block_rate?: number
+          created_at?: string
+          days_traded?: number
+          green_days?: number
+          id?: string
+          insight_text?: string | null
+          mode_fit?: string | null
+          most_common_block_reason?: string | null
+          period_end: string
+          period_start: string
+          red_days?: number
+          risk_saved?: number
+          risk_used?: number
+          stability_score?: number
+          trades_blocked?: number
+          trades_taken?: number
+          user_id: string
+          yellow_days?: number
+        }
+        Update: {
+          avg_risk_per_trade?: number
+          avg_trades_per_day?: number
+          block_rate?: number
+          created_at?: string
+          days_traded?: number
+          green_days?: number
+          id?: string
+          insight_text?: string | null
+          mode_fit?: string | null
+          most_common_block_reason?: string | null
+          period_end?: string
+          period_start?: string
+          red_days?: number
+          risk_saved?: number
+          risk_used?: number
+          stability_score?: number
+          trades_blocked?: number
+          trades_taken?: number
+          user_id?: string
+          yellow_days?: number
+        }
+        Relationships: []
+      }
       pre_trade_checks: {
         Row: {
           can_trade: boolean
@@ -521,6 +590,75 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vault_status?: string
+        }
+        Relationships: []
+      }
+      weekly_report: {
+        Row: {
+          avg_risk_per_trade: number
+          avg_trades_per_day: number
+          block_rate: number
+          created_at: string
+          days_traded: number
+          green_days: number
+          id: string
+          insight_text: string | null
+          mode_fit: string | null
+          most_common_block_reason: string | null
+          period_end: string
+          period_start: string
+          red_days: number
+          risk_saved: number
+          risk_used: number
+          stability_score: number
+          trades_blocked: number
+          trades_taken: number
+          user_id: string
+          yellow_days: number
+        }
+        Insert: {
+          avg_risk_per_trade?: number
+          avg_trades_per_day?: number
+          block_rate?: number
+          created_at?: string
+          days_traded?: number
+          green_days?: number
+          id?: string
+          insight_text?: string | null
+          mode_fit?: string | null
+          most_common_block_reason?: string | null
+          period_end: string
+          period_start: string
+          red_days?: number
+          risk_saved?: number
+          risk_used?: number
+          stability_score?: number
+          trades_blocked?: number
+          trades_taken?: number
+          user_id: string
+          yellow_days?: number
+        }
+        Update: {
+          avg_risk_per_trade?: number
+          avg_trades_per_day?: number
+          block_rate?: number
+          created_at?: string
+          days_traded?: number
+          green_days?: number
+          id?: string
+          insight_text?: string | null
+          mode_fit?: string | null
+          most_common_block_reason?: string | null
+          period_end?: string
+          period_start?: string
+          red_days?: number
+          risk_saved?: number
+          risk_used?: number
+          stability_score?: number
+          trades_blocked?: number
+          trades_taken?: number
+          user_id?: string
+          yellow_days?: number
         }
         Relationships: []
       }
