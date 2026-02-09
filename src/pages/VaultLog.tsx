@@ -21,6 +21,7 @@ interface TradeIntent {
   direction: string;
   contracts: number;
   estimated_risk: number;
+  actual_pnl: number | null;
   status: string;
   closed_at: string | null;
   block_reason: string | null;
@@ -38,7 +39,7 @@ export default function VaultLog() {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(20);
       if (error) throw error;
       return (data ?? []) as TradeIntent[];
     },
@@ -49,9 +50,9 @@ export default function VaultLog() {
     <AuthGate>
       <AppLayout>
         <div className="max-w-3xl mx-auto p-4 md:p-6 pb-24 space-y-4">
-          <h1 className="text-lg font-semibold text-foreground">Vault Log</h1>
+          <h1 className="text-lg font-semibold text-foreground">History</h1>
           <p className="text-xs text-muted-foreground">
-            Read-only history of all trade intents processed by the Vault.
+            Last 20 trades · audit + trust.
           </p>
 
           {isLoading ? (
@@ -64,21 +65,19 @@ export default function VaultLog() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs">Date</TableHead>
-                    <TableHead className="text-xs">#</TableHead>
                     <TableHead className="text-xs">Direction</TableHead>
                     <TableHead className="text-xs text-right">Contracts</TableHead>
                     <TableHead className="text-xs text-right">Risk</TableHead>
+                    <TableHead className="text-xs text-right">PnL</TableHead>
                     <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Block Reason</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {trades.map((t, i) => (
                     <TableRow key={t.id}>
-                      <TableCell className="text-xs font-mono tabular-nums">
+                      <TableCell className="text-xs font-mono tabular-nums whitespace-nowrap">
                         {format(new Date(t.created_at), "MM/dd HH:mm")}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {trades.length - i}
                       </TableCell>
                       <TableCell>
                         <span
@@ -96,6 +95,15 @@ export default function VaultLog() {
                       <TableCell className="text-xs font-mono tabular-nums text-right">
                         ${t.estimated_risk.toFixed(0)}
                       </TableCell>
+                      <TableCell className="text-xs font-mono tabular-nums text-right">
+                        {t.actual_pnl != null ? (
+                          <span className={t.actual_pnl >= 0 ? "text-emerald-500" : "text-rose-500"}>
+                            {t.actual_pnl >= 0 ? "+" : ""}${t.actual_pnl.toFixed(0)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={cn(
@@ -109,6 +117,9 @@ export default function VaultLog() {
                         >
                           {t.status}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
+                        {t.block_reason || "—"}
                       </TableCell>
                     </TableRow>
                   ))}
