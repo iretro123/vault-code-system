@@ -19,6 +19,7 @@ export interface VaultState {
   current_session_behavior: string;
   last_block_reason: string | null;
   session_paused: boolean;
+  last_activity_at: string | null;
 }
 
 export interface VaultStateContextValue {
@@ -27,6 +28,8 @@ export interface VaultStateContextValue {
   refreshing: boolean;
   refetch: () => void;
 }
+
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 
 const DEFAULT_STATE: VaultState = {
   vault_status: "RED",
@@ -42,6 +45,7 @@ const DEFAULT_STATE: VaultState = {
   current_session_behavior: "intraday",
   last_block_reason: null,
   session_paused: false,
+  last_activity_at: null,
 };
 
 const VaultStateContext = createContext<VaultStateContextValue>({
@@ -88,6 +92,29 @@ export function VaultStateProvider({ children }: { children: React.ReactNode }) 
       if (data && data.length > 0) {
         const row = data[0];
         hasData.current = true;
+
+        // Inactivity auto-pause: if session is active but last activity > 60 min ago, pause
+        const lastActivity = (row as any).last_activity_at;
+        let sessionPaused = (row as any).session_paused ?? false;
+        let autoPaused = false;
+
+        if (!sessionPaused && lastActivity) {
+          const elapsed = Date.now() - new Date(lastActivity).getTime();
+          if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+            sessionPaused = true;
+            autoPaused = true;
+          }
+        }
+
+        // Persist auto-pause to DB if triggered
+        if (autoPaused && userId) {
+          supabase
+            .from("vault_state")
+            .update({ session_paused: true })
+            .eq("user_id", userId)
+            .then(() => {}); // fire-and-forget
+        }
+
         setState({
           vault_status: row.vault_status as VaultStatusEnum,
           risk_mode: row.risk_mode as RiskModeEnum,
@@ -101,7 +128,8 @@ export function VaultStateProvider({ children }: { children: React.ReactNode }) 
           loss_streak: row.loss_streak,
           current_session_behavior: (row as any).current_session_behavior ?? "intraday",
           last_block_reason: (row as any).last_block_reason ?? null,
-          session_paused: (row as any).session_paused ?? false,
+          session_paused: sessionPaused,
+          last_activity_at: lastActivity ?? null,
         });
       }
     } catch (err) {

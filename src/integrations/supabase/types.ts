@@ -379,6 +379,7 @@ export type Database = {
           daily_loss_limit: number
           date: string
           id: string
+          last_activity_at: string | null
           last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
@@ -399,6 +400,7 @@ export type Database = {
           daily_loss_limit?: number
           date?: string
           id?: string
+          last_activity_at?: string | null
           last_block_reason?: string | null
           loss_streak?: number
           max_contracts_allowed?: number
@@ -419,6 +421,7 @@ export type Database = {
           daily_loss_limit?: number
           date?: string
           id?: string
+          last_activity_at?: string | null
           last_block_reason?: string | null
           loss_streak?: number
           max_contracts_allowed?: number
@@ -583,6 +586,7 @@ export type Database = {
           daily_loss_limit: number
           date: string
           id: string
+          last_activity_at: string | null
           last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
@@ -761,6 +765,7 @@ export type Database = {
           daily_loss_limit: number
           date: string
           id: string
+          last_activity_at: string | null
           last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
@@ -812,6 +817,7 @@ export type Database = {
           daily_loss_limit: number
           date: string
           id: string
+          last_activity_at: string | null
           last_block_reason: string | null
           loss_streak: number
           max_contracts_allowed: number
