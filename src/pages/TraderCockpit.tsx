@@ -83,8 +83,6 @@ function CockpitContent() {
             </div>
           )}
 
-          <VaultAuthorityHeader />
-
           <TradingSessionToggle
             paused={vaultState.session_paused}
             onToggle={async () => {
