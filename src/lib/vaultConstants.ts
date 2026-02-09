@@ -31,17 +31,44 @@ export const RISK_MODE_DAILY_PERCENT: Record<string, number> = {
   AGGRESSIVE: 0.03,   // 3%
 };
 
+// ─── Account Tier Thresholds (internal, never shown to users) ────────
+
+export type AccountTier = "MICRO" | "SMALL" | "STANDARD";
+
+/** Threshold below which an account is classified as MICRO */
+export const TIER_MICRO_CEILING = 2000;
+
+/** Threshold above which an account is classified as STANDARD */
+export const TIER_STANDARD_FLOOR = 10000;
+
+/**
+ * Minimum risk floor per trade. When any mode's raw risk per trade
+ * falls below this, the system enforces survival mode:
+ * max_contracts = 1, trades_per_day = 1, daily_risk = this value.
+ */
+export const MIN_RISK_FLOOR = 20;
+
+// ─── Tier Resolution ─────────────────────────────────────────────────
+
+export function getAccountTier(account_balance: number): AccountTier {
+  if (account_balance < TIER_MICRO_CEILING) return "MICRO";
+  if (account_balance > TIER_STANDARD_FLOOR) return "STANDARD";
+  return "SMALL";
+}
+
 // ─── Derived Limit Types ─────────────────────────────────────────────
 
 export interface VaultLimits {
   /** Clamped risk per trade after options-reality constraints */
   risk_per_trade: number;
-  /** risk_per_trade × MAX_LOSSES_PER_DAY */
+  /** risk_per_trade × MAX_LOSSES_PER_DAY (or MIN_RISK_FLOOR in survival) */
   daily_loss_limit: number;
-  /** Always MAX_LOSSES_PER_DAY */
+  /** MAX_LOSSES_PER_DAY normally, 1 in survival mode */
   max_trades_per_day: number;
   /** floor(risk_per_trade / TARGET_CONTRACT) — minimum 1 */
   max_contracts: number;
+  /** True when survival mode is active (raw risk < MIN_RISK_FLOOR) */
+  survival_mode: boolean;
 }
 
 // ─── The ONE canonical risk engine ───────────────────────────────────
@@ -51,6 +78,10 @@ export interface VaultLimits {
  *
  * This is the ONLY place where Vault OS math exists.
  * No other file, hook, component, or RPC should duplicate this logic.
+ *
+ * Survival mode: when the computed raw risk per trade is below MIN_RISK_FLOOR,
+ * the system clamps to 1 contract, 1 trade per day, and MIN_RISK_FLOOR daily risk.
+ * This ensures even micro accounts can participate safely.
  */
 export function computeVaultLimits(
   account_balance: number,
@@ -64,9 +95,18 @@ export function computeVaultLimits(
   // Step 2 — Raw risk per trade
   const raw_risk_per_trade = raw_daily_risk / MAX_LOSSES_PER_DAY;
 
-  // Step 3 — Apply options-reality constraints
-  //   Start from whichever is larger: the raw value or the target contract price
-  //   Then clamp into the viable range [MIN, MAX]
+  // Step 3 — Survival mode: if raw risk per trade < MIN_RISK_FLOOR
+  if (raw_risk_per_trade < MIN_RISK_FLOOR) {
+    return {
+      risk_per_trade: MIN_RISK_FLOOR,
+      daily_loss_limit: MIN_RISK_FLOOR,
+      max_trades_per_day: 1,
+      max_contracts: 1,
+      survival_mode: true,
+    };
+  }
+
+  // Step 4 — Apply options-reality constraints
   const risk_per_trade = Math.min(
     Math.max(
       Math.max(raw_risk_per_trade, TARGET_CONTRACT),
@@ -75,7 +115,7 @@ export function computeVaultLimits(
     MAX_CONTRACT,
   );
 
-  // Step 4 — Derive enforcement values
+  // Step 5 — Derive enforcement values
   const daily_loss_limit = risk_per_trade * MAX_LOSSES_PER_DAY;
   const max_trades_per_day = MAX_LOSSES_PER_DAY;
   const max_contracts = Math.max(1, Math.floor(risk_per_trade / TARGET_CONTRACT));
@@ -85,6 +125,7 @@ export function computeVaultLimits(
     daily_loss_limit,
     max_trades_per_day,
     max_contracts,
+    survival_mode: false,
   };
 }
 
