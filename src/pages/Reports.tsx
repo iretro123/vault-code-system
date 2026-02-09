@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useReports } from "@/hooks/useReports";
-import { RefreshCw, Loader2, FileText } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ReportCardProps {
