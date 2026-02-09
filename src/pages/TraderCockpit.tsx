@@ -83,8 +83,6 @@ function CockpitContent() {
             </div>
           )}
 
-          <VaultAuthorityHeader />
-
           <TradingSessionToggle
             paused={vaultState.session_paused}
             onToggle={async () => {
@@ -102,6 +100,8 @@ function CockpitContent() {
               refetch();
             }}
           />
+
+          <VaultAuthorityHeader />
 
           <VaultHUD
             onBuyingNow={() => setIntentOpen(true)}
