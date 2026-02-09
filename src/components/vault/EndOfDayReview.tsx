@@ -13,6 +13,10 @@ interface EodData {
   total_result: number;
 }
 
+interface WeeklyStability {
+  stability_score: number;
+}
+
 const STATUS_ICON: Record<string, React.ElementType> = {
   GREEN: Shield,
   YELLOW: ShieldAlert,
