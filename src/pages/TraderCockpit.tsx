@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TradeIntentModal } from "@/components/vault/TradeIntentModal";
 import { CloseTradeModal } from "@/components/vault/CloseTradeModal";
+import { CloseTradeModal } from "@/components/vault/CloseTradeModal";
 import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
 import { VaultHUD } from "@/components/vault/VaultHUD";
 import { FlowSection } from "@/components/vault/FlowSection";
