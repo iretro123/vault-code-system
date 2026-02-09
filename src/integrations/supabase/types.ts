@@ -163,6 +163,7 @@ export type Database = {
       }
       trade_intents: {
         Row: {
+          actual_pnl: number | null
           block_reason: string | null
           closed_at: string | null
           contracts: number
@@ -174,6 +175,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actual_pnl?: number | null
           block_reason?: string | null
           closed_at?: string | null
           contracts: number
@@ -185,6 +187,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actual_pnl?: number | null
           block_reason?: string | null
           closed_at?: string | null
           contracts?: number
