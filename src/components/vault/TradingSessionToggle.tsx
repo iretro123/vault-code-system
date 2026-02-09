@@ -13,10 +13,12 @@ export function TradingSessionToggle({ paused, onToggle }: TradingSessionToggleP
     <div className="vault-card p-3 flex items-center justify-between">
       <div>
         <p className="text-sm font-semibold text-foreground">
-          Trading Session: {active ? "Active" : "Paused"}
+          Trading Session: {active ? "ACTIVE" : "PAUSED"}
         </p>
-        <p className="text-[11px] text-muted-foreground">
-          {active ? "Pause your session to avoid overtrading." : "Trading is disabled while paused."}
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          {active
+            ? "Vault OS is currently allowing trades. Turn this OFF when you are done or want to step away."
+            : "Trades are currently blocked. Turn this ON when you are ready to trade."}
         </p>
       </div>
       <Switch

@@ -101,6 +101,8 @@ function CockpitContent() {
             }}
           />
 
+          <VaultAuthorityHeader />
+
           <VaultHUD
             onBuyingNow={() => setIntentOpen(true)}
             onCloseTrade={() => setCloseOpen(true)}
