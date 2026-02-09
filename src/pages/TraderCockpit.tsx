@@ -111,6 +111,14 @@ function CockpitContent() {
             sessionPaused={vaultState.session_paused}
           />
 
+          {/* Vault Insight — mobile only (desktop shows in side panel) */}
+          {microFeedback && (
+            <div className="lg:hidden px-3 py-2 rounded-lg bg-muted/10 border border-border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Vault Insight</p>
+              <p className="text-xs text-foreground">{microFeedback}</p>
+            </div>
+          )}
+
           <FlowSection
             title="Today's Limits"
             isOpen={openSections.limits}
