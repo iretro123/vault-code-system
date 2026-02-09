@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TradeIntentModal } from "@/components/vault/TradeIntentModal";
 import { CloseTradeModal } from "@/components/vault/CloseTradeModal";
-import { CloseTradeModal } from "@/components/vault/CloseTradeModal";
 import { VaultAuthorityHeader } from "@/components/vault/VaultAuthorityHeader";
 import { VaultHUD } from "@/components/vault/VaultHUD";
 import { FlowSection } from "@/components/vault/FlowSection";
@@ -15,6 +14,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { useAuth } from "@/hooks/useAuth";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useMicroFeedback } from "@/hooks/useMicroFeedback";
 
 function CockpitContent() {
   const { user, profile } = useAuth();
