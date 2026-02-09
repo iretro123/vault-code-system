@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { icon: Crosshair, label: "Dashboard", path: "/cockpit" },
   { icon: BookOpen, label: "Trades", path: "/log" },
-  { icon: ScrollText, label: "Vault Log", path: "/vault-log" },
+  { icon: ScrollText, label: "History", path: "/vault-log" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
