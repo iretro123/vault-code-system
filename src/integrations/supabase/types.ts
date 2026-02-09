@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      behavior_stats: {
+        Row: {
+          avg_trades_per_day: number
+          block_rate: number
+          id: string
+          most_common_block: string | null
+          red_day_rate: number
+          total_blocks: number
+          total_days_tracked: number
+          total_red_days: number
+          total_trades: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_trades_per_day?: number
+          block_rate?: number
+          id?: string
+          most_common_block?: string | null
+          red_day_rate?: number
+          total_blocks?: number
+          total_days_tracked?: number
+          total_red_days?: number
+          total_trades?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_trades_per_day?: number
+          block_rate?: number
+          id?: string
+          most_common_block?: string | null
+          red_day_rate?: number
+          total_blocks?: number
+          total_days_tracked?: number
+          total_red_days?: number
+          total_trades?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_memory: {
+        Row: {
+          account_balance: number
+          created_at: string
+          date: string
+          final_vault_status: string
+          id: string
+          risk_mode: string
+          risk_used: number
+          session_paused: boolean
+          trades_blocked: number
+          trades_taken: number
+          user_id: string
+        }
+        Insert: {
+          account_balance?: number
+          created_at?: string
+          date?: string
+          final_vault_status?: string
+          id?: string
+          risk_mode?: string
+          risk_used?: number
+          session_paused?: boolean
+          trades_blocked?: number
+          trades_taken?: number
+          user_id: string
+        }
+        Update: {
+          account_balance?: number
+          created_at?: string
+          date?: string
+          final_vault_status?: string
+          id?: string
+          risk_mode?: string
+          risk_used?: number
+          session_paused?: boolean
+          trades_blocked?: number
+          trades_taken?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       pre_trade_checks: {
         Row: {
           can_trade: boolean
@@ -759,6 +843,7 @@ export type Database = {
         Args: { _event_context?: Json; _event_type: string; _user_id: string }
         Returns: string
       }
+      nightly_memory_aggregation: { Args: never; Returns: undefined }
       set_account_balance: {
         Args: { _balance: number; _user_id: string }
         Returns: {
