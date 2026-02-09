@@ -24,7 +24,7 @@ export function SessionRemindersPanel() {
     GREEN: {
       icon: ShieldCheck,
       label: "Session Active",
-      text: "You are cleared to trade. Limits are enforced.",
+      text: "Your session is live. Limits are enforced.",
       iconClass: "text-emerald-400",
     },
     YELLOW: {
