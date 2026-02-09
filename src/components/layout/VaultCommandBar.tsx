@@ -34,6 +34,13 @@ function deriveMessage(
   sessionPaused?: boolean
 ): string {
   if (sessionPaused) {
+    // Check if this was an auto-pause due to inactivity
+    if (vault.last_activity_at) {
+      const elapsed = Date.now() - new Date(vault.last_activity_at).getTime();
+      if (elapsed >= 60 * 60 * 1000) {
+        return "SESSION AUTO-PAUSED DUE TO INACTIVITY";
+      }
+    }
     return "SESSION PAUSED · NO TRADES ALLOWED";
   }
 
