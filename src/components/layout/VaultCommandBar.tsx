@@ -86,11 +86,12 @@ interface VaultCommandBarProps {
 }
 
 export function VaultCommandBar({ sessionPaused }: VaultCommandBarProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { state: vault, loading } = useVaultState();
   const eod = useEodData(user?.id);
 
   if (!user || loading) return null;
+  if (!profile?.onboarding_completed) return null;
 
   const message = deriveMessage(vault, eod, sessionPaused);
 
