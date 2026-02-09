@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import TraderCockpit from "./pages/TraderCockpit";
 import Settings from "./pages/Settings";
 import VaultLog from "./pages/VaultLog";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient();
 
