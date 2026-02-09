@@ -14,10 +14,12 @@ import { AuthGate } from "@/components/AuthGate";
 import { useAuth } from "@/hooks/useAuth";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useMicroFeedback } from "@/hooks/useMicroFeedback";
 
 function CockpitContent() {
   const { user, profile } = useAuth();
   const { state: vaultState, refetch, loading: vaultLoading } = useVaultState();
+  const microFeedback = useMicroFeedback();
   const [intentOpen, setIntentOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);
@@ -108,6 +110,14 @@ function CockpitContent() {
             onCloseTrade={() => setCloseOpen(true)}
             sessionPaused={vaultState.session_paused}
           />
+
+          {/* Vault Insight — mobile only (desktop shows in side panel) */}
+          {microFeedback && (
+            <div className="lg:hidden px-3 py-2 rounded-lg bg-muted/10 border border-border">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Vault Insight</p>
+              <p className="text-xs text-foreground">{microFeedback}</p>
+            </div>
+          )}
 
           <FlowSection
             title="Today's Limits"
