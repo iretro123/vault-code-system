@@ -21,6 +21,7 @@ interface TradeIntent {
   direction: string;
   contracts: number;
   estimated_risk: number;
+  actual_pnl: number | null;
   status: string;
   closed_at: string | null;
   block_reason: string | null;
