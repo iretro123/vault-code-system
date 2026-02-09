@@ -49,7 +49,7 @@ export default function VaultLog() {
     <AuthGate>
       <AppLayout>
         <div className="max-w-3xl mx-auto p-4 md:p-6 pb-24 space-y-4">
-          <h1 className="text-lg font-semibold text-foreground">Vault Log</h1>
+          <h1 className="text-lg font-semibold text-foreground">History</h1>
           <p className="text-xs text-muted-foreground">
             Read-only history of all trade intents processed by the Vault.
           </p>
