@@ -73,6 +73,9 @@ export function SetBalancePrompt({ onComplete }: SetBalancePromptProps) {
           autoFocus
           disabled={submitting}
         />
+        <p className="text-[11px] text-muted-foreground mt-1.5">
+          Enter your current live trading account balance. Vault OS uses this to calculate limits.
+        </p>
       </div>
 
       {error && (
