@@ -765,6 +765,10 @@ export type Database = {
       }
       daily_vault_reset: { Args: never; Returns: undefined }
       detect_session_behavior: { Args: { _user_id: string }; Returns: string }
+      generate_reports_for_user: {
+        Args: { _period: string; _user_id: string }
+        Returns: undefined
+      }
       get_adaptive_risk_limit: {
         Args: { _user_id: string }
         Returns: {
