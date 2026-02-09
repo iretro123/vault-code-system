@@ -38,7 +38,7 @@ export default function VaultLog() {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(20);
       if (error) throw error;
       return (data ?? []) as TradeIntent[];
     },
