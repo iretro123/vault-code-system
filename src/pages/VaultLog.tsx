@@ -75,11 +75,8 @@ export default function VaultLog() {
                 <TableBody>
                   {trades.map((t, i) => (
                     <TableRow key={t.id}>
-                      <TableCell className="text-xs font-mono tabular-nums">
+                      <TableCell className="text-xs font-mono tabular-nums whitespace-nowrap">
                         {format(new Date(t.created_at), "MM/dd HH:mm")}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {trades.length - i}
                       </TableCell>
                       <TableCell>
                         <span
@@ -97,6 +94,15 @@ export default function VaultLog() {
                       <TableCell className="text-xs font-mono tabular-nums text-right">
                         ${t.estimated_risk.toFixed(0)}
                       </TableCell>
+                      <TableCell className="text-xs font-mono tabular-nums text-right">
+                        {t.actual_pnl != null ? (
+                          <span className={t.actual_pnl >= 0 ? "text-emerald-500" : "text-rose-500"}>
+                            {t.actual_pnl >= 0 ? "+" : ""}${t.actual_pnl.toFixed(0)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <span
                           className={cn(
@@ -110,6 +116,9 @@ export default function VaultLog() {
                         >
                           {t.status}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
+                        {t.block_reason || "—"}
                       </TableCell>
                     </TableRow>
                   ))}
