@@ -13,6 +13,10 @@ interface EodData {
   total_result: number;
 }
 
+interface WeeklyStability {
+  stability_score: number;
+}
+
 const STATUS_ICON: Record<string, React.ElementType> = {
   GREEN: Shield,
   YELLOW: ShieldAlert,
@@ -22,8 +26,10 @@ const STATUS_ICON: Record<string, React.ElementType> = {
 export function EndOfDayReview() {
   const { user } = useAuth();
   const [data, setData] = useState<EodData | null>(null);
+  const [weeklyStability, setWeeklyStability] = useState<WeeklyStability | null>(null);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
+  const stabilityFetched = useRef(false);
 
   const fetch = useCallback(async () => {
     if (!user) return;
@@ -53,8 +59,24 @@ export function EndOfDayReview() {
   useEffect(() => {
     mounted.current = true;
     fetch();
+    // Fetch weekly stability once
+    if (!stabilityFetched.current && user) {
+      stabilityFetched.current = true;
+      supabase
+        .from("weekly_report")
+        .select("stability_score")
+        .eq("user_id", user.id)
+        .order("period_start", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data: report }) => {
+          if (mounted.current && report) {
+            setWeeklyStability({ stability_score: report.stability_score });
+          }
+        });
+    }
     return () => { mounted.current = false; };
-  }, [fetch]);
+  }, [fetch, user]);
 
   // Subscribe to vault_state changes for live updates
   useEffect(() => {
@@ -137,6 +159,12 @@ export function EndOfDayReview() {
         <p className="text-xs text-muted-foreground text-center">
           Blocked {data.trades_blocked} trade{data.trades_blocked !== 1 ? "s" : ""} and
           prevented an estimated <span className="font-mono font-semibold text-foreground">${data.risk_saved.toFixed(0)}</span> loss.
+        </p>
+      )}
+
+      {weeklyStability && (
+        <p className="text-[11px] text-muted-foreground text-center tabular-nums">
+          Stability Score (7d): <span className="font-semibold text-foreground">{weeklyStability.stability_score}</span>/100
         </p>
       )}
     </div>
