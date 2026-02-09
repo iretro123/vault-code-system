@@ -28,6 +28,7 @@ const App = () => (
             <Route path="/cockpit" element={<TraderCockpit />} />
             <Route path="/log" element={<TradeLog />} />
             <Route path="/vault-log" element={<VaultLog />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/auth" element={<Auth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

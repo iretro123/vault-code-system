@@ -127,7 +127,6 @@ const Reports = () => {
           <PageHeader
             title="Reports"
             subtitle="Weekly and monthly performance summaries"
-            icon={<FileText className="w-5 h-5 text-primary" />}
           />
           <Button
             variant="outline"
