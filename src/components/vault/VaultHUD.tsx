@@ -137,9 +137,7 @@ export function VaultHUD({ onBuyingNow, onCloseTrade, sessionPaused }: VaultHUDP
         </Button>
         {buyingDisabled ? (
           <p className="text-[11px] text-muted-foreground text-center -mt-1">
-            {sessionPaused
-              ? "Trading is paused. Turn ON your session above to place trades."
-              : buyingBlockedReason}
+            {buyingBlockedReason}
           </p>
         ) : (
           <p className="text-[11px] text-muted-foreground/60 text-center -mt-1">

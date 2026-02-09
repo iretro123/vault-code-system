@@ -146,7 +146,7 @@ function CockpitContent() {
         </div>
 
         {/* Right-side docked panel (desktop only) */}
-        <CockpitSidePanel />
+        <CockpitSidePanel microFeedback={microFeedback} />
       </div>
 
       <TradeIntentModal open={intentOpen} onClose={() => setIntentOpen(false)} />
