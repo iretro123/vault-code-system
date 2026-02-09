@@ -116,8 +116,6 @@ export function RiskModeSelector() {
         tooltipText = "Session is paused. Changes apply when session resumes.";
       } else if (isConservativeBlocked) {
         tooltipText = "Not viable for your account size.";
-      } else if (inSafeMode && value === "STANDARD") {
-        tooltipText = "Available after next daily reset.";
       } else if (inSafeMode && value === "AGGRESSIVE") {
         tooltipText = "Available after next daily reset.";
       }
