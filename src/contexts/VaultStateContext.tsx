@@ -29,7 +29,7 @@ export interface VaultStateContextValue {
   refetch: () => void;
 }
 
-const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
+const INACTIVITY_TIMEOUT_MS = 45 * 60 * 1000; // 45 minutes
 
 const DEFAULT_STATE: VaultState = {
   vault_status: "RED",
