@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import TradeLog from "./pages/TradeLog";
 import Auth from "./pages/Auth";
 import TraderCockpit from "./pages/TraderCockpit";
+import { VaultOSGate } from "./components/VaultOSGate";
 import Settings from "./pages/Settings";
 import VaultLog from "./pages/VaultLog";
 import Reports from "./pages/Reports";
@@ -37,10 +38,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/hub" replace />} />
             <Route path="/hub" element={<Hub />} />
-            <Route path="/cockpit" element={<TraderCockpit />} />
-            <Route path="/log" element={<TradeLog />} />
-            <Route path="/vault-log" element={<VaultLog />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route path="/cockpit" element={<VaultOSGate><TraderCockpit /></VaultOSGate>} />
+            <Route path="/log" element={<VaultOSGate><TradeLog /></VaultOSGate>} />
+            <Route path="/vault-log" element={<VaultOSGate><VaultLog /></VaultOSGate>} />
+            <Route path="/reports" element={<VaultOSGate><Reports /></VaultOSGate>} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/academy" element={<Navigate to="/academy/home" replace />} />

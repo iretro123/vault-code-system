@@ -1,25 +1,15 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { BookOpen, FileText, Settings, LayoutGrid, Shield } from "lucide-react";
+import { BookOpen, Settings, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
 
-const baseNavItems = [
+const navItems = [
   { icon: LayoutGrid, label: "Mode", path: "/hub" },
   { icon: BookOpen, label: "Academy", path: "/academy" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
-const adminNavItems = [
-  { icon: Shield, label: "Vault OS", path: "/cockpit" },
-  { icon: FileText, label: "Reports", path: "/reports" },
-];
-
 export function MobileNav() {
   const location = useLocation();
-  const { hasRole } = useAuth();
-
-  const isAdmin = hasRole("operator");
-  const navItems = isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-white/10 z-50 md:hidden">
