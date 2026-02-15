@@ -35,10 +35,34 @@ export function useLoginReminder() {
         .select("id")
         .eq("user_id", userId)
         .gte("created_at", `${today}T00:00:00Z`)
-        .in("type", ["reminder", "streak"])
+        .in("type", ["reminder", "streak", "support"])
         .limit(1);
 
       if (existing && existing.length > 0) return; // already notified today
+
+      // Weekly review: every 7 days, check last "support" notification
+      const { data: lastWeekly } = await (supabase as any)
+        .from("notification_log")
+        .select("created_at")
+        .eq("user_id", userId)
+        .eq("type", "support")
+        .eq("title", "Weekly review ready")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const daysSinceLast = lastWeekly?.[0]
+        ? Math.floor((Date.now() - new Date(lastWeekly[0].created_at).getTime()) / 86400000)
+        : 999;
+
+      if (daysSinceLast >= 7) {
+        await (supabase as any).from("notification_log").insert({
+          user_id: userId,
+          type: "support",
+          title: "Weekly review ready",
+          body: "Your week is ready. 60 seconds to review.",
+        });
+        return;
+      }
 
       // Fetch today's pending tasks (daily + onboarding)
       const { data: pendingTasks } = await (supabase as any)
@@ -50,7 +74,6 @@ export function useLoginReminder() {
         .limit(1);
 
       if (pendingTasks && pendingTasks.length > 0) {
-        // Reminder notification
         await (supabase as any).from("notification_log").insert({
           user_id: userId,
           type: "reminder",

@@ -24,6 +24,7 @@ import AcademyResources from "./pages/academy/AcademyResources";
 import AcademyProfile from "./pages/academy/AcademyProfile";
 import AcademyAdmin from "./pages/academy/AcademyAdmin";
 import AcademyJournal from "./pages/academy/AcademyJournal";
+import AcademyProgress from "./pages/academy/AcademyProgress";
 import Hub from "./pages/Hub";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/academy/resources" element={<AcademyResources />} />
             <Route path="/academy/profile" element={<AcademyProfile />} />
             <Route path="/academy/journal" element={<AcademyJournal />} />
+            <Route path="/academy/progress" element={<AcademyProgress />} />
             <Route path="/academy/admin" element={<AcademyAdmin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
