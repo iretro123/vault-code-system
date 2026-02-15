@@ -11,19 +11,19 @@ const AcademyRooms = () => {
   return (
     <AcademyLayout>
       <PageHeader
-        title="Rooms"
-        subtitle="Curated discussion spaces for the community"
+        title="Community Rooms"
+        subtitle="Curated discussion spaces for traders"
       />
       <div className="px-4 md:px-6 pb-6">
         <div className="space-y-2 max-w-2xl">
           {ACADEMY_ROOMS.map(({ slug, name, description, icon: Icon, readOnly }) => (
             <Card
               key={slug}
-              className="p-4 cursor-pointer hover:border-primary/30 transition-colors"
+              className="vault-card p-4 cursor-pointer hover:border-primary/30 transition-colors"
               onClick={() => navigate(`/academy/room/${slug}`)}
             >
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-muted shrink-0">
+                <div className="h-9 w-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
                   <Icon className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -36,9 +36,9 @@ const AcademyRooms = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{description}</p>
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">{description}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0" />
               </div>
             </Card>
           ))}

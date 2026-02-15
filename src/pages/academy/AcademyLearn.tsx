@@ -19,7 +19,7 @@ const AcademyLearn = () => {
           {ACADEMY_MODULES.map((mod, i) => (
             <Card
               key={mod.slug}
-              className="group relative p-5 cursor-pointer transition-colors hover:border-primary/30"
+              className="vault-card group relative p-5 cursor-pointer transition-colors hover:border-primary/30"
               onClick={() => navigate(`/academy/learn/${mod.slug}`)}
             >
               {mod.badge && (
@@ -28,22 +28,20 @@ const AcademyLearn = () => {
                 </span>
               )}
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                <div className="h-10 w-10 shrink-0 rounded-xl bg-muted flex items-center justify-center">
                   <mod.icon className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[10px] font-mono text-muted-foreground/60">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                  </div>
+                  <span className="text-[10px] font-mono text-muted-foreground/50 block mb-0.5">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
                   <h3 className="font-semibold text-foreground text-sm leading-tight">
                     {mod.title}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                     {mod.subtitle}
                   </p>
-                  <p className="text-[11px] text-muted-foreground/60 mt-2">
+                  <p className="text-[11px] text-muted-foreground/50 mt-2">
                     {mod.lessons.length} lessons
                   </p>
                 </div>
