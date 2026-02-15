@@ -72,21 +72,25 @@ export function AcademySidebar() {
           <SidebarGroupLabel>{!collapsed && "Academy"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNav.map(({ icon: Icon, label, path }) => (
-                <SidebarMenuItem key={path}>
-                  <SidebarMenuButton asChild isActive={isActive(path)}>
-                    <NavLink
-                      to={path}
-                      end
-                      className="flex items-center gap-2 px-2 py-1.5"
-                      activeClassName="bg-muted text-primary font-medium"
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="text-sm">{label}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {mainNav.map(({ icon: Icon, label, path }) => {
+                const isLive = label === "Live";
+                const active = isActive(path);
+                return (
+                  <SidebarMenuItem key={path}>
+                    <SidebarMenuButton asChild isActive={active}>
+                      <NavLink
+                        to={path}
+                        end
+                        className={`flex items-center gap-2 px-2 py-1.5 ${isLive ? "text-[hsl(0,72%,60%)] hover:text-[hsl(0,72%,70%)] hover:drop-shadow-[0_0_6px_hsl(0,72%,50%/0.3)]" : ""}`}
+                        activeClassName={isLive ? "bg-muted text-[hsl(0,72%,65%)] font-medium drop-shadow-[0_0_6px_hsl(0,72%,50%/0.25)]" : "bg-muted text-primary font-medium"}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span className="text-sm">{label}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
