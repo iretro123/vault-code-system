@@ -4,7 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, ChevronUp } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Send, ChevronUp, PenLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -13,6 +15,13 @@ interface RoomChatProps {
   canPost: boolean;
 }
 
+const SETUPS = [
+  { value: "momentum", label: "Momentum" },
+  { value: "pullback", label: "Pullback" },
+  { value: "breakout", label: "Breakout" },
+  { value: "other", label: "Other" },
+];
+
 function TradeRecapForm({
   onSubmit,
   sending,
@@ -20,67 +29,125 @@ function TradeRecapForm({
   onSubmit: (body: string) => Promise<void>;
   sending: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   const [ticker, setTicker] = useState("");
-  const [whatIDid, setWhatIDid] = useState("");
-  const [whatILearned, setWhatILearned] = useState("");
+  const [setup, setSetup] = useState("momentum");
+  const [risk, setRisk] = useState("");
+  const [result, setResult] = useState("");
+  const [lesson, setLesson] = useState("");
 
-  const canSend = whatIDid.trim() && whatILearned.trim();
+  const canSend = lesson.trim().length > 0;
 
   const handleSubmit = async () => {
     if (!canSend || sending) return;
-    const parts = [
-      ticker.trim() ? `**Ticker:** ${ticker.trim()}` : null,
-      `**What I did:** ${whatIDid.trim()}`,
-      `**What I learned:** ${whatILearned.trim()}`,
+    const lines = [
+      `**📋 Trade Recap**`,
+      ticker.trim() ? `**Ticker:** ${ticker.trim().toUpperCase()}` : null,
+      `**Setup:** ${SETUPS.find((s) => s.value === setup)?.label ?? setup}`,
+      risk.trim() ? `**Risk:** $${risk.trim()}` : null,
+      result.trim() ? `**Result:** ${result.trim()}` : null,
+      `**Lesson:** ${lesson.trim()}`,
     ]
       .filter(Boolean)
       .join("\n");
-    await onSubmit(parts);
+    await onSubmit(lines);
     setTicker("");
-    setWhatIDid("");
-    setWhatILearned("");
+    setSetup("momentum");
+    setRisk("");
+    setResult("");
+    setLesson("");
+    setOpen(false);
   };
 
+  if (!open) {
+    return (
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)} className="gap-1.5">
+        <PenLine className="h-3.5 w-3.5" />
+        New Recap
+      </Button>
+    );
+  }
+
   return (
-    <div className="space-y-2">
-      <Input
-        value={ticker}
-        onChange={(e) => setTicker(e.target.value)}
-        placeholder="Ticker (optional)"
-        maxLength={20}
-        disabled={sending}
-        className="text-sm"
-      />
-      <Textarea
-        value={whatIDid}
-        onChange={(e) => setWhatIDid(e.target.value)}
-        placeholder="What I did *"
-        maxLength={500}
-        disabled={sending}
-        rows={2}
-        className="text-sm resize-none"
-      />
-      <Textarea
-        value={whatILearned}
-        onChange={(e) => setWhatILearned(e.target.value)}
-        placeholder="What I learned *"
-        maxLength={500}
-        disabled={sending}
-        rows={2}
-        className="text-sm resize-none"
-      />
-      <div className="flex justify-end">
+    <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card">
+      <p className="text-xs font-semibold text-foreground">Post a Trade Recap</p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Ticker <span className="text-muted-foreground/50">(optional)</span></Label>
+          <Input
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+            placeholder="SPY"
+            maxLength={20}
+            disabled={sending}
+            className="text-sm uppercase h-8"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Setup</Label>
+          <Select value={setup} onValueChange={setSetup} disabled={sending}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SETUPS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Risk taken ($)</Label>
+          <Input
+            value={risk}
+            onChange={(e) => setRisk(e.target.value.replace(/[^0-9.]/g, ""))}
+            placeholder="50"
+            maxLength={10}
+            disabled={sending}
+            className="text-sm h-8"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[11px] text-muted-foreground">Result (R or $)</Label>
+          <Input
+            value={result}
+            onChange={(e) => setResult(e.target.value)}
+            placeholder="+1.5R or +$75"
+            maxLength={20}
+            disabled={sending}
+            className="text-sm h-8"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-[11px] text-muted-foreground">Lesson <span className="text-destructive">*</span></Label>
+        <Textarea
+          value={lesson}
+          onChange={(e) => setLesson(e.target.value)}
+          placeholder="What did you learn from this trade?"
+          maxLength={500}
+          disabled={sending}
+          rows={2}
+          className="text-sm resize-none"
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={sending}>
+          Cancel
+        </Button>
         <Button
           size="sm"
           onClick={handleSubmit}
           disabled={!canSend || sending}
           className="gap-1.5"
         >
-          {sending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Send className="h-3.5 w-3.5" />
-          )}
+          {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           Post Recap
         </Button>
       </div>
@@ -88,7 +155,36 @@ function TradeRecapForm({
   );
 }
 
+function isRecapPost(body: string) {
+  return body.startsWith("**📋 Trade Recap**");
+}
+
+function renderRecapCard(body: string) {
+  const lines = body.split("\n").filter(Boolean);
+  // Parse key-value pairs from **Key:** Value format
+  const fields: { label: string; value: string }[] = [];
+  for (const line of lines.slice(1)) {
+    const match = line.match(/^\*\*(.+?):\*\*\s*(.+)$/);
+    if (match) fields.push({ label: match[1], value: match[2] });
+  }
+
+  return (
+    <div className="rounded-lg border border-border/40 bg-card/50 p-3 space-y-1.5 mt-1">
+      <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">📋 Trade Recap</p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+        {fields.map((f, i) => (
+          <div key={i} className={f.label === "Lesson" ? "col-span-2" : ""}>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{f.label}</span>
+            <p className="text-sm text-foreground">{f.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function renderBody(body: string) {
+  if (isRecapPost(body)) return renderRecapCard(body);
   // Render **bold** segments
   const parts = body.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
