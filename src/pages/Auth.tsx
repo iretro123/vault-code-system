@@ -26,24 +26,19 @@
        ? await signIn(email, password)
        : await signUp(email, password);
      
-     if (error) {
-       toast({
-         title: "Error",
-         description: error.message,
-         variant: "destructive",
-       });
-     } else if (mode === "signup") {
-       toast({
-         title: "Check your email",
-         description: "We sent you a confirmation link.",
-       });
-     } else {
-       toast({
-         title: "Welcome back",
-         description: "You have been signed in.",
-       });
-       navigate("/hub");
-     }
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: mode === "signup" ? "Account created" : "Welcome back",
+          description: mode === "signup" ? "You're all set!" : "You have been signed in.",
+        });
+        navigate("/hub");
+      }
      
      setLoading(false);
    };
