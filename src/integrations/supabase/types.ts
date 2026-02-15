@@ -83,6 +83,33 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_requests: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          message: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_memory: {
         Row: {
           account_balance: number

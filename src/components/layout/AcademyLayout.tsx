@@ -4,6 +4,7 @@ import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AskCoachButton } from "@/components/academy/AskCoachButton";
 
 interface AcademyLayoutProps {
   children: ReactNode;
@@ -39,8 +40,8 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
             {children}
           </main>
 
-          {/* Mobile bottom nav */}
           <MobileNav />
+          <AskCoachButton />
         </div>
       </div>
     </SidebarProvider>
