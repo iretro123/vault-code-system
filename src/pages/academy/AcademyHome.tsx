@@ -6,6 +6,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { Rocket, BookOpen, MessageSquare, ChevronRight, Check, ArrowRight, PenLine, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
+import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { cn } from "@/lib/utils";
 
 const TASK_ROUTES: Record<string, string> = {
@@ -30,6 +31,7 @@ const AcademyHome = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
   const { tasks, loading: tasksLoading } = useUserTasks();
+  useLoginReminder();
 
   if (loading) return null;
 
