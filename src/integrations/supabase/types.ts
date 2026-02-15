@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_lessons: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_title: string
+          module_slug: string
+          module_title: string
+          sort_order: number
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_title: string
+          module_slug: string
+          module_title: string
+          sort_order?: number
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_title?: string
+          module_slug?: string
+          module_title?: string
+          sort_order?: number
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       academy_messages: {
         Row: {
           body: string
