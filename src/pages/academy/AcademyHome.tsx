@@ -1,12 +1,14 @@
+import { useState, useEffect, useCallback } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate, Navigate } from "react-router-dom";
-import { Rocket, BookOpen, MessageSquare, ChevronRight, Check, ArrowRight, PenLine, BarChart3 } from "lucide-react";
+import { Rocket, BookOpen, MessageSquare, ChevronRight, Check, ArrowRight, PenLine, BarChart3, X, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 const TASK_ROUTES: Record<string, string> = {
@@ -29,9 +31,92 @@ const TASK_ICONS: Record<string, typeof Rocket> = {
 
 const AcademyHome = () => {
   const navigate = useNavigate();
-  const { profile, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { tasks, loading: tasksLoading } = useUserTasks();
   useLoginReminder();
+
+  // Today strip state
+  const [stripDismissed, setStripDismissed] = useState(false);
+  const [stripItems, setStripItems] = useState<{ label: string; route: string; icon: typeof BookOpen }[]>([]);
+  const [stripLoading, setStripLoading] = useState(true);
+
+  const todayKey = `today_strip_dismissed_${new Date().toISOString().slice(0, 10)}`;
+
+  useEffect(() => {
+    if (localStorage.getItem(todayKey) === "1") {
+      setStripDismissed(true);
+      setStripLoading(false);
+    }
+  }, [todayKey]);
+
+  const computeStrip = useCallback(async () => {
+    if (!user) { setStripLoading(false); return; }
+    const items: { label: string; route: string; icon: typeof BookOpen }[] = [];
+
+    // 1. Onboarding incomplete?
+    const { data: onboarding } = await supabase
+      .from("onboarding_state")
+      .select("claimed_role, first_lesson_completed, intro_posted")
+      .eq("user_id", user.id)
+      .limit(1)
+      .single();
+
+    if (onboarding) {
+      if (!onboarding.claimed_role) {
+        items.push({ label: "Set your experience level", route: "/academy/start", icon: Rocket });
+      } else if (!onboarding.first_lesson_completed) {
+        items.push({ label: "Watch your first lesson", route: "/academy/learn", icon: BookOpen });
+      } else if (!onboarding.intro_posted) {
+        items.push({ label: "Introduce yourself", route: "/academy/room/options-lounge", icon: MessageSquare });
+      }
+    }
+
+    if (items.length < 2) {
+      // 2. Recent lesson?
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: recentLessons } = await supabase
+        .from("lesson_progress")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("completed", true)
+        .gte("completed_at", twoDaysAgo)
+        .limit(1);
+
+      if (!recentLessons || recentLessons.length === 0) {
+        if (!items.some((i) => i.route === "/academy/learn")) {
+          items.push({ label: "Continue learning", route: "/academy/learn", icon: BookOpen });
+        }
+      }
+    }
+
+    if (items.length < 2) {
+      // 3. Journal this week?
+      const monday = new Date();
+      monday.setDate(monday.getDate() - monday.getDay() + (monday.getDay() === 0 ? -6 : 1));
+      const { data: weekJournals } = await supabase
+        .from("journal_entries")
+        .select("id")
+        .eq("user_id", user.id)
+        .gte("entry_date", monday.toISOString().slice(0, 10))
+        .limit(1);
+
+      if (!weekJournals || weekJournals.length === 0) {
+        items.push({ label: "Post a trade journal", route: "/academy/journal", icon: PenLine });
+      }
+    }
+
+    setStripItems(items.slice(0, 2));
+    setStripLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (!stripDismissed) computeStrip();
+  }, [stripDismissed, computeStrip]);
+
+  const dismissStrip = () => {
+    localStorage.setItem(todayKey, "1");
+    setStripDismissed(true);
+  };
 
   if (loading) return null;
 
@@ -65,6 +150,40 @@ const AcademyHome = () => {
         title={`Welcome back, ${displayName}`}
         subtitle="Your trading discipline journey continues"
       />
+
+      {/* Today smart strip */}
+      {!stripDismissed && !stripLoading && stripItems.length > 0 && (
+        <div className="px-4 md:px-6 pt-1">
+          <div className="max-w-2xl rounded-lg border border-primary/20 bg-primary/[0.03] px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold text-foreground">Your next move</span>
+              </div>
+              <button onClick={dismissStrip} className="text-muted-foreground/50 hover:text-muted-foreground transition-colors" title="Dismiss for today">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className={cn("grid gap-2", stripItems.length > 1 && "sm:grid-cols-2")}>
+              {stripItems.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => navigate(item.route)}
+                    className="flex items-center gap-3 rounded-md bg-background border border-border px-3 py-2.5 text-left hover:border-primary/30 transition-colors group"
+                  >
+                    <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                    <span className="text-sm text-foreground">{item.label}</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/30 ml-auto shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 md:px-6 pb-6 space-y-6">
         {/* Today section */}
         {!tasksLoading && totalTasks > 0 && (
