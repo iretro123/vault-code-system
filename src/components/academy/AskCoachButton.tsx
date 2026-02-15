@@ -311,7 +311,8 @@ export function AskCoachButton() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Your Question</label>
-                    <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Describe what you need help with…" className="resize-none text-sm" rows={5} maxLength={1000} />
+                    <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What's going on? Describe the situation, what you tried, and where you're stuck…" className="resize-none text-sm min-h-[180px]" rows={8} maxLength={1000} />
+                    <p className="text-xs text-muted-foreground/60">e.g. "I keep revenge trading after a loss — how do I build a cooldown routine?"</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Screenshot (optional)</label>
@@ -418,11 +419,12 @@ export function AskCoachButton() {
                   <Textarea
                     value={instantQ}
                     onChange={(e) => setInstantQ(e.target.value)}
-                    placeholder="e.g. How should I size my position after a losing streak?"
-                    className="resize-none text-sm"
-                    rows={4}
+                    placeholder="Type your question here — be as specific as you can…"
+                    className="resize-none text-sm min-h-[180px]"
+                    rows={7}
                     maxLength={500}
                   />
+                  <p className="text-xs text-muted-foreground/60">e.g. "How should I size my position after a losing streak?"</p>
                   <div className="sticky bottom-0 bg-background pt-3 pb-1 -mx-5 px-5 md:-mx-6 md:px-6 border-t border-border">
                     <Button
                       onClick={handleInstantAsk}
