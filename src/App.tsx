@@ -12,6 +12,7 @@ import TraderCockpit from "./pages/TraderCockpit";
 import Settings from "./pages/Settings";
 import VaultLog from "./pages/VaultLog";
 import Reports from "./pages/Reports";
+import AcademyHome from "./pages/AcademyHome";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/academy" element={<AcademyHome />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
