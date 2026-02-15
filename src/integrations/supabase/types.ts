@@ -453,6 +453,99 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_log: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          seen: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          seen?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          seen?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_state: {
+        Row: {
+          claimed_role: boolean
+          created_at: string
+          first_lesson_completed: boolean
+          first_lesson_started: boolean
+          intro_posted: boolean
+          role_level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claimed_role?: boolean
+          created_at?: string
+          first_lesson_completed?: boolean
+          first_lesson_started?: boolean
+          intro_posted?: boolean
+          role_level?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claimed_role?: boolean
+          created_at?: string
+          first_lesson_completed?: boolean
+          first_lesson_started?: boolean
+          intro_posted?: boolean
+          role_level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      post_signal: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string | null
+          severity: string
+          signal_type: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          severity?: string
+          signal_type: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          severity?: string
+          signal_type?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pre_trade_checks: {
         Row: {
           can_trade: boolean
@@ -725,6 +818,42 @@ export type Database = {
           subscription_started_at?: string | null
           subscription_status?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_task: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title?: string
+          type?: string
           user_id?: string
         }
         Relationships: []
