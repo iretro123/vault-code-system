@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainNav = [
-  { icon: Home, label: "Home", path: "/academy/home" },
   { icon: Rocket, label: "Start Here", path: "/academy/start" },
+  { icon: Home, label: "Home", path: "/academy/home" },
   { icon: BookOpen, label: "Learn", path: "/academy/learn" },
   { icon: MessageSquare, label: "Rooms", path: "/academy/room/general" },
   { icon: Radio, label: "Live", path: "/academy/live" },
