@@ -1,4 +1,4 @@
-import { Megaphone, Rocket, Coffee, BarChart3, HelpCircle, LucideIcon } from "lucide-react";
+import { Megaphone, Coffee, BarChart3, LucideIcon } from "lucide-react";
 
 export interface AcademyRoom {
   slug: string;
@@ -17,13 +17,6 @@ export const ACADEMY_ROOMS: AcademyRoom[] = [
     readOnly: true,
   },
   {
-    slug: "start-here",
-    name: "Start Here",
-    description: "Introduce yourself and get oriented",
-    icon: Rocket,
-    readOnly: false,
-  },
-  {
     slug: "options-lounge",
     name: "Options Lounge",
     description: "Discuss options strategies and setups",
@@ -35,13 +28,6 @@ export const ACADEMY_ROOMS: AcademyRoom[] = [
     name: "Trade Recaps",
     description: "Share and review your daily trades",
     icon: BarChart3,
-    readOnly: false,
-  },
-  {
-    slug: "ask-coach",
-    name: "Ask a Coach",
-    description: "Get guidance from experienced mentors",
-    icon: HelpCircle,
     readOnly: false,
   },
 ];
