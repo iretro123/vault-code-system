@@ -211,6 +211,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          academy_experience: string
           account_balance: number
           avatar_url: string | null
           created_at: string
@@ -228,6 +229,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          academy_experience?: string
           account_balance?: number
           avatar_url?: string | null
           created_at?: string
@@ -245,6 +247,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          academy_experience?: string
           account_balance?: number
           avatar_url?: string | null
           created_at?: string
