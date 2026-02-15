@@ -13,6 +13,7 @@ import Settings from "./pages/Settings";
 import VaultLog from "./pages/VaultLog";
 import Reports from "./pages/Reports";
 import AcademyHome from "./pages/AcademyHome";
+import Hub from "./pages/Hub";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,8 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
-            <Route path="/" element={<Navigate to="/cockpit" replace />} />
+            <Route path="/" element={<Navigate to="/hub" replace />} />
+            <Route path="/hub" element={<Hub />} />
             <Route path="/cockpit" element={<TraderCockpit />} />
             <Route path="/log" element={<TradeLog />} />
             <Route path="/vault-log" element={<VaultLog />} />

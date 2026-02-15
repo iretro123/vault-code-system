@@ -42,7 +42,7 @@
          title: "Welcome back",
          description: "You have been signed in.",
        });
-       navigate("/");
+       navigate("/hub");
      }
      
      setLoading(false);
