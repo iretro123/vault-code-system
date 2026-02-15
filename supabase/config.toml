@@ -2,3 +2,6 @@ project_id = "oemylhcjqncovnmvvgxh"
 
 [functions.generate-reports]
 verify_jwt = false
+
+[functions.instant-answer]
+verify_jwt = false
