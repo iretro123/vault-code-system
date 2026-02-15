@@ -246,21 +246,22 @@ export function AskCoachButton() {
               <button
                 onClick={() => { setTab("coach"); setCoachView("new"); }}
                 className={cn(
-                  "flex-1 py-3 text-sm font-medium transition-colors border-b-2",
+                  "flex-1 py-3 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
                   tab === "coach" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                Coach
+                <span>Coach</span>
+                <span className="text-[10px] font-normal text-muted-foreground/70">Human response · Reviews + accountability</span>
               </button>
               <button
                 onClick={() => { setTab("instant"); setInstantView("ask"); setInstantResult(null); }}
                 className={cn(
-                  "flex-1 py-3 text-sm font-medium transition-colors border-b-2 flex items-center justify-center gap-1.5",
+                  "flex-1 py-3 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
                   tab === "instant" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Zap className="h-3.5 w-3.5" />
-                Instant Answer
+                <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" /> Instant Answer</span>
+                <span className="text-[10px] font-normal text-muted-foreground/70">Fast education · No signals, no targets</span>
               </button>
             </div>
 
@@ -341,6 +342,9 @@ export function AskCoachButton() {
                         )}>{u}</button>
                       ))}
                     </div>
+                    <p className="text-xs text-muted-foreground/60">
+                      {urgency === "priority" ? "Priority: faster response" : "Standard: within 2–4 hours"}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Question Template</label>
