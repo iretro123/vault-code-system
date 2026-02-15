@@ -29,7 +29,7 @@ const AcademyStart = () => {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ academy_experience: selected })
+      .update({ academy_experience: selected, role_level: selected } as any)
       .eq("user_id", user.id);
     setSaving(false);
     if (error) {

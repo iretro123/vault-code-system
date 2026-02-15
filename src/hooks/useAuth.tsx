@@ -17,6 +17,9 @@ interface Profile {
   initialized_at: string | null;
   access_status: "trial" | "active" | "revoked";
   academy_experience: string;
+  role_level: string;
+  intro_posted: boolean;
+  first_lesson_started: boolean;
 }
 
 interface UserRole {

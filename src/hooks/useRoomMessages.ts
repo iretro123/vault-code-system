@@ -94,6 +94,13 @@ export function useRoomMessages(roomSlug: string) {
         } else {
           setError(err.message);
         }
+      } else {
+        // Mark intro_posted for onboarding checklist
+        supabase
+          .from("profiles")
+          .update({ intro_posted: true } as any)
+          .eq("user_id", user.id)
+          .then(() => {});
       }
       setSending(false);
     },
