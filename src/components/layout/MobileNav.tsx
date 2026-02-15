@@ -1,8 +1,9 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Crosshair, BookOpen, FileText, Settings } from "lucide-react";
+import { Crosshair, BookOpen, FileText, Settings, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  { icon: LayoutGrid, label: "Mode", path: "/hub" },
   { icon: Crosshair, label: "Dashboard", path: "/cockpit" },
   { icon: BookOpen, label: "Academy", path: "/academy" },
   { icon: FileText, label: "Reports", path: "/reports" },
