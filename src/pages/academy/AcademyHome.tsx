@@ -3,13 +3,27 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate, Navigate } from "react-router-dom";
-import { Rocket, BookOpen, MessageSquare, ChevronRight, Check } from "lucide-react";
+import { Rocket, BookOpen, MessageSquare, ChevronRight, Check, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
 import { cn } from "@/lib/utils";
+
+const TASK_ROUTES: Record<string, string> = {
+  "Claim Role": "/academy/start",
+  "Watch First Lesson": "/academy/learn",
+  "Introduce Yourself": "/academy/room/options-lounge",
+};
+
+const TASK_ICONS: Record<string, typeof Rocket> = {
+  "Claim Role": Rocket,
+  "Watch First Lesson": BookOpen,
+  "Introduce Yourself": MessageSquare,
+};
 
 const AcademyHome = () => {
   const navigate = useNavigate();
   const { profile, loading } = useAuth();
+  const { tasks, loading: tasksLoading } = useUserTasks();
 
   if (loading) return null;
 
@@ -24,36 +38,14 @@ const AcademyHome = () => {
 
   const displayName = profile?.display_name || profile?.email?.split("@")[0] || "Trader";
 
-  const roleClaimed = !!profile?.role_level;
-  const lessonStarted = !!profile?.first_lesson_started;
-  const introPosted = !!profile?.intro_posted;
-
-  const steps = [
-    {
-      label: "Claim Role",
-      desc: "Set your experience level",
-      path: "/academy/start",
-      icon: Rocket,
-      done: roleClaimed,
-    },
-    {
-      label: "First Lesson",
-      desc: "Watch a module lesson",
-      path: "/academy/learn",
-      icon: BookOpen,
-      done: lessonStarted,
-    },
-    {
-      label: "Introduce Yourself",
-      desc: "Post in the community",
-      path: "/academy/room/options-lounge",
-      icon: MessageSquare,
-      done: introPosted,
-    },
-  ];
-
-  const allDone = steps.every((s) => s.done);
-  const primaryStep = steps.find((s) => !s.done);
+  // Today section data
+  const pendingTasks = tasks.filter((t) => t.status === "pending");
+  const doneTasks = tasks.filter((t) => t.status === "done");
+  const totalTasks = tasks.length;
+  const remaining = pendingTasks.length;
+  const primaryTask = pendingTasks[0] ?? null;
+  const secondaryTasks = pendingTasks.slice(1, 3);
+  const allDone = remaining === 0 && totalTasks > 0;
 
   return (
     <AcademyLayout>
@@ -62,60 +54,81 @@ const AcademyHome = () => {
         subtitle="Your trading discipline journey continues"
       />
       <div className="px-4 md:px-6 pb-6 space-y-6">
-        {/* Onboarding checklist */}
-        {!allDone && (
-          <div>
-            <p className="section-title">Quick Start</p>
-            <div className="grid gap-2 sm:grid-cols-3 max-w-3xl">
-              {steps.map(({ label, desc, path, icon: Icon, done }) => {
-                const isPrimary = primaryStep?.label === label;
-                return (
-                  <Card
-                    key={label}
-                    className={cn(
-                      "vault-card group cursor-pointer p-4 transition-colors",
-                      done
-                        ? "border-primary/20 bg-primary/5"
-                        : isPrimary
-                          ? "border-primary/40 ring-1 ring-primary/20"
-                          : "hover:border-primary/30"
+        {/* Today section */}
+        {!tasksLoading && totalTasks > 0 && (
+          <div className="space-y-3 max-w-2xl">
+            <p className="section-title">Today</p>
+
+            {/* Progress line */}
+            {!allDone && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    You're <span className="font-semibold text-foreground">{remaining} step{remaining !== 1 ? "s" : ""}</span> from being fully set up.
+                  </p>
+                  <span className="text-xs text-muted-foreground">{doneTasks.length}/{totalTasks}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    style={{ width: `${totalTasks > 0 ? (doneTasks.length / totalTasks) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {allDone && (
+              <p className="text-sm text-primary font-medium">✓ All set up — you're ready to trade with discipline.</p>
+            )}
+
+            {/* Primary task */}
+            {primaryTask && (
+              <Card
+                className="vault-card group cursor-pointer p-5 border-primary/40 ring-1 ring-primary/20 transition-colors hover:border-primary/60"
+                onClick={() => navigate(TASK_ROUTES[primaryTask.title] ?? "/academy/learn")}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <TaskIcon task={primaryTask} className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold text-foreground">{primaryTask.title}</h4>
+                    {primaryTask.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{primaryTask.description}</p>
                     )}
-                    onClick={() => navigate(path)}
+                  </div>
+                  <Button size="sm" className="gap-1.5 shrink-0">
+                    Start <ArrowRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* Secondary tasks */}
+            {secondaryTasks.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {secondaryTasks.map((task) => (
+                  <Card
+                    key={task.id}
+                    className="vault-card group cursor-pointer p-4 transition-colors hover:border-primary/30"
+                    onClick={() => navigate(TASK_ROUTES[task.title] ?? "/academy/learn")}
                   >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={cn(
-                          "h-9 w-9 rounded-xl flex items-center justify-center shrink-0",
-                          done ? "bg-primary/10" : "bg-muted"
-                        )}
-                      >
-                        {done ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : (
-                          <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        )}
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <TaskIcon task={task} className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4
-                          className={cn(
-                            "text-sm font-medium",
-                            done ? "text-primary" : "text-foreground"
-                          )}
-                        >
-                          {label}
-                        </h4>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {done ? "Completed" : desc}
-                        </p>
+                        <h4 className="text-sm font-medium text-foreground">{task.title}</h4>
+                        {task.description && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{task.description}</p>
+                        )}
                       </div>
-                      {!done && (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0 mt-0.5" />
-                      )}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0" />
                     </div>
                   </Card>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -133,5 +146,11 @@ const AcademyHome = () => {
     </AcademyLayout>
   );
 };
+
+function TaskIcon({ task, className }: { task: UserTask; className?: string }) {
+  if (task.status === "done") return <Check className={className} />;
+  const Icon = TASK_ICONS[task.title] ?? BookOpen;
+  return <Icon className={className} />;
+}
 
 export default AcademyHome;
