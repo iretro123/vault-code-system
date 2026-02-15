@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import AcademyHome from "./pages/academy/AcademyHome";
 import AcademyStart from "./pages/academy/AcademyStart";
 import AcademyLearn from "./pages/academy/AcademyLearn";
+import AcademyModule from "./pages/academy/AcademyModule";
 import AcademyRoom from "./pages/academy/AcademyRoom";
 import AcademyRooms from "./pages/academy/AcademyRooms";
 import AcademyLive from "./pages/academy/AcademyLive";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/academy/home" element={<AcademyHome />} />
             <Route path="/academy/start" element={<AcademyStart />} />
             <Route path="/academy/learn" element={<AcademyLearn />} />
+            <Route path="/academy/learn/:moduleSlug" element={<AcademyModule />} />
             <Route path="/academy/rooms" element={<AcademyRooms />} />
             <Route path="/academy/room/:roomSlug" element={<AcademyRoom />} />
             <Route path="/academy/live" element={<AcademyLive />} />
