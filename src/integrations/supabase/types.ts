@@ -253,6 +253,39 @@ export type Database = {
           },
         ]
       }
+      live_sessions: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          join_url: string
+          session_date: string
+          session_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          join_url?: string
+          session_date: string
+          session_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          join_url?: string
+          session_date?: string
+          session_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       monthly_report: {
         Row: {
           avg_risk_per_trade: number
