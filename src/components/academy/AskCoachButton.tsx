@@ -13,6 +13,23 @@ import ReactMarkdown from "react-markdown";
 
 const CATEGORIES = ["Platform", "Options Basics", "Risk", "Mindset", "Trade Review"] as const;
 
+const QUESTION_TEMPLATES: Record<string, string> = {
+  "None": "",
+  "Trade Review": `Ticker: 
+Entry price: 
+Stop loss: 
+Thesis (why I took it): 
+What happened: `,
+  "Risk / Sizing": `Account size: 
+Max loss per trade: 
+Contract cost: 
+My plan: `,
+  "Platform Help": `Broker / Platform: 
+What I clicked: 
+What happened: 
+(Attach a screenshot if possible)`,
+};
+
 interface Ticket {
   id: string;
   category: string;
@@ -70,6 +87,7 @@ export function AskCoachButton() {
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
   const [urgency, setUrgency] = useState("standard");
   const [question, setQuestion] = useState("");
+  const [template, setTemplate] = useState("None");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -161,7 +179,7 @@ export function AskCoachButton() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Got it.", description: "You'll see replies here." });
-      setQuestion(""); setCategory(CATEGORIES[0]); setUrgency("standard"); setScreenshotFile(null);
+      setQuestion(""); setCategory(CATEGORIES[0]); setUrgency("standard"); setScreenshotFile(null); setTemplate("None");
       setCoachView("list"); fetchTickets();
     }
   };
@@ -323,6 +341,19 @@ export function AskCoachButton() {
                         )}>{u}</button>
                       ))}
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Question Template</label>
+                    <Select value={template} onValueChange={(val) => {
+                      setTemplate(val);
+                      if (val !== "None") setQuestion(QUESTION_TEMPLATES[val]);
+                    }}>
+                      <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-background border border-border z-[60]">
+                        {Object.keys(QUESTION_TEMPLATES).map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground/60">Optional — pick a template to get started faster</p>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Your Question</label>
