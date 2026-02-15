@@ -316,6 +316,42 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          biggest_mistake: string
+          created_at: string
+          entry_date: string
+          followed_rules: boolean
+          id: string
+          lesson: string
+          ticker: string | null
+          user_id: string
+          what_happened: string
+        }
+        Insert: {
+          biggest_mistake?: string
+          created_at?: string
+          entry_date?: string
+          followed_rules?: boolean
+          id?: string
+          lesson?: string
+          ticker?: string | null
+          user_id: string
+          what_happened?: string
+        }
+        Update: {
+          biggest_mistake?: string
+          created_at?: string
+          entry_date?: string
+          followed_rules?: boolean
+          id?: string
+          lesson?: string
+          ticker?: string | null
+          user_id?: string
+          what_happened?: string
+        }
+        Relationships: []
+      }
       lesson_progress: {
         Row: {
           completed: boolean
