@@ -513,7 +513,9 @@ export type Database = {
           intro_posted: boolean
           market_type: string
           onboarding_completed: boolean
+          phone_number: string | null
           role_level: string
+          timezone: string
           updated_at: string
           user_id: string
           username: string | null
@@ -535,7 +537,9 @@ export type Database = {
           intro_posted?: boolean
           market_type?: string
           onboarding_completed?: boolean
+          phone_number?: string | null
           role_level?: string
+          timezone?: string
           updated_at?: string
           user_id: string
           username?: string | null
@@ -557,7 +561,9 @@ export type Database = {
           intro_posted?: boolean
           market_type?: string
           onboarding_completed?: boolean
+          phone_number?: string | null
           role_level?: string
+          timezone?: string
           updated_at?: string
           user_id?: string
           username?: string | null
