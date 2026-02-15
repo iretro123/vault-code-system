@@ -14,7 +14,7 @@ const TASK_ROUTES: Record<string, string> = {
   "Watch First Lesson": "/academy/learn",
   "Introduce Yourself": "/academy/room/options-lounge",
   "Watch 1 lesson (10–15 min)": "/academy/learn",
-  "Journal 1 trade (2 min)": "/log",
+  "Journal 1 trade (2 min)": "/academy/journal",
   "Post 1 trade recap or insight": "/academy/room/trade-recaps",
 };
 
