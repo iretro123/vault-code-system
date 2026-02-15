@@ -176,6 +176,80 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_ticket_replies: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_admin: boolean
+          ticket_id: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          ticket_id: string
+          user_id: string
+          user_name?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          ticket_id?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_ticket_replies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "coach_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_tickets: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          question: string
+          screenshot_url: string | null
+          status: string
+          updated_at: string
+          urgency: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          question: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          question?: string
+          screenshot_url?: string | null
+          status?: string
+          updated_at?: string
+          urgency?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_memory: {
         Row: {
           account_balance: number
