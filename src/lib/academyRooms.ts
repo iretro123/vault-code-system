@@ -25,8 +25,8 @@ export const ACADEMY_ROOMS: AcademyRoom[] = [
   },
   {
     slug: "trade-recaps",
-    name: "Trade Recaps",
-    description: "Share and review your daily trades",
+    name: "Post a Trade",
+    description: "Share your trades with the community",
     icon: BarChart3,
     readOnly: false,
   },

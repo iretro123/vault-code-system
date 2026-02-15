@@ -29,7 +29,7 @@ import {
 const mainNav = [
   { icon: Rocket, label: "Start Here", path: "/academy/start" },
   { icon: Home, label: "Home", path: "/academy/home" },
-  { icon: BookOpen, label: "Learn", path: "/academy/learn" },
+  { icon: BookOpen, label: "Lessons", path: "/academy/learn" },
   { icon: Radio, label: "Live", path: "/academy/live" },
   { icon: FolderOpen, label: "Resources", path: "/academy/resources" },
   { icon: User, label: "Profile", path: "/academy/profile" },

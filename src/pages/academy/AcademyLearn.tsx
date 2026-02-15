@@ -81,8 +81,8 @@ const AcademyLearn = () => {
   return (
     <AcademyLayout>
       <PageHeader
-        title="Module Library"
-        subtitle="Your structured path to trading discipline"
+        title="Lessons"
+        subtitle="Learn trading discipline step by step"
       />
       <div className="px-4 md:px-6 pb-6">
         {loading ? (

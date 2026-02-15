@@ -113,7 +113,7 @@ const AcademyProgress = () => {
           <div className="grid gap-3 sm:grid-cols-2 max-w-lg">
             <StatCard icon={BookOpen} label="Lessons Completed" value={stats.lessonsCompleted} />
             <StatCard icon={PenLine} label="Journal Entries" value={stats.journalEntries} />
-            <StatCard icon={BarChart3} label="Recaps Posted" value={stats.recapsPosted} />
+            <StatCard icon={BarChart3} label="Trades Posted" value={stats.recapsPosted} />
             <Card className="vault-card p-4">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">

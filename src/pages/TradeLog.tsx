@@ -219,7 +219,7 @@ const TradeLog = () => {
                     <div className="flex items-center gap-3">
                       <div>
                         <p className="font-mono text-sm text-foreground">
-                          ${entry.risk_used} risk · {entry.risk_reward}R
+                          ${entry.risk_used} risk · {entry.risk_reward}x return
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {new Date(entry.trade_date).toLocaleDateString()}
