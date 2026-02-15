@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useNavigate, Navigate } from "react-router-dom";
-import { Rocket, BookOpen, MessageSquare, ChevronRight, Check, ArrowRight } from "lucide-react";
+import { Rocket, BookOpen, MessageSquare, ChevronRight, Check, ArrowRight, PenLine, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
 import { cn } from "@/lib/utils";
@@ -12,12 +12,18 @@ const TASK_ROUTES: Record<string, string> = {
   "Claim Role": "/academy/start",
   "Watch First Lesson": "/academy/learn",
   "Introduce Yourself": "/academy/room/options-lounge",
+  "Watch 1 lesson (10–15 min)": "/academy/learn",
+  "Journal 1 trade (2 min)": "/log",
+  "Post 1 trade recap or insight": "/academy/room/trade-recaps",
 };
 
 const TASK_ICONS: Record<string, typeof Rocket> = {
   "Claim Role": Rocket,
   "Watch First Lesson": BookOpen,
   "Introduce Yourself": MessageSquare,
+  "Watch 1 lesson (10–15 min)": BookOpen,
+  "Journal 1 trade (2 min)": PenLine,
+  "Post 1 trade recap or insight": BarChart3,
 };
 
 const AcademyHome = () => {
@@ -38,10 +44,14 @@ const AcademyHome = () => {
 
   const displayName = profile?.display_name || profile?.email?.split("@")[0] || "Trader";
 
-  // Today section data
-  const pendingTasks = tasks.filter((t) => t.status === "pending");
-  const doneTasks = tasks.filter((t) => t.status === "done");
-  const totalTasks = tasks.length;
+  // Today section: show daily tasks first, then pending onboarding
+  const today = new Date().toISOString().slice(0, 10);
+  const dailyToday = tasks.filter((t) => t.type === "daily" && t.due_date === today);
+  const onboardingPending = tasks.filter((t) => t.type === "onboarding" && t.status === "pending");
+  const todayTasks = [...dailyToday, ...onboardingPending];
+  const pendingTasks = todayTasks.filter((t) => t.status === "pending");
+  const doneTodayTasks = todayTasks.filter((t) => t.status === "done");
+  const totalTasks = todayTasks.length;
   const remaining = pendingTasks.length;
   const primaryTask = pendingTasks[0] ?? null;
   const secondaryTasks = pendingTasks.slice(1, 3);
@@ -66,12 +76,12 @@ const AcademyHome = () => {
                   <p className="text-xs text-muted-foreground">
                     You're <span className="font-semibold text-foreground">{remaining} step{remaining !== 1 ? "s" : ""}</span> from being fully set up.
                   </p>
-                  <span className="text-xs text-muted-foreground">{doneTasks.length}/{totalTasks}</span>
+                  <span className="text-xs text-muted-foreground">{doneTodayTasks.length}/{totalTasks}</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${totalTasks > 0 ? (doneTasks.length / totalTasks) * 100 : 0}%` }}
+                    style={{ width: `${totalTasks > 0 ? (doneTodayTasks.length / totalTasks) * 100 : 0}%` }}
                   />
                 </div>
               </div>

@@ -20,6 +20,20 @@ const ONBOARDING_SEEDS = [
   { title: "Introduce Yourself", description: "Post in the community", type: "onboarding", profileFlag: "intro_posted" },
 ] as const;
 
+function todayDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+const DAILY_TASKS_DEFAULT = [
+  { title: "Watch 1 lesson (10–15 min)", description: "Keep your learning streak alive" },
+  { title: "Journal 1 trade (2 min)", description: "Log at least one trade today" },
+];
+
+const DAILY_TASKS_ADVANCED = [
+  { title: "Post 1 trade recap or insight", description: "Share a structured recap with the community" },
+  { title: "Journal 1 trade (2 min)", description: "Log at least one trade today" },
+];
+
 export function useUserTasks() {
   const { user, profile } = useAuth();
   const [tasks, setTasks] = useState<UserTask[]>([]);
@@ -43,7 +57,7 @@ export function useUserTasks() {
 
       let rows: UserTask[] = data ?? [];
 
-      // Seed onboarding tasks if none exist
+      // Seed onboarding tasks if no tasks at all exist
       if (rows.length === 0 && !seeded) {
         const seeds = ONBOARDING_SEEDS.map((s) => {
           const done = profile ? !!(profile as any)[s.profileFlag] : false;
@@ -64,6 +78,33 @@ export function useUserTasks() {
 
         if (!insertErr && inserted) rows = inserted;
         setSeeded(true);
+      }
+
+      // Daily task seeding: if no daily tasks for today, create 2
+      const today = todayDateString();
+      const hasDailyToday = rows.some((t) => t.type === "daily" && t.due_date === today);
+
+      if (!hasDailyToday) {
+        const isAdvanced = profile?.role_level === "advanced";
+        const templates = isAdvanced ? DAILY_TASKS_ADVANCED : DAILY_TASKS_DEFAULT;
+
+        const dailySeeds = templates.map((t) => ({
+          user_id: user!.id,
+          title: t.title,
+          description: t.description,
+          type: "daily",
+          status: "pending",
+          due_date: today,
+        }));
+
+        const { data: inserted, error: insertErr } = await (supabase as any)
+          .from("user_task")
+          .insert(dailySeeds)
+          .select("*");
+
+        if (!insertErr && inserted) {
+          rows = [...rows, ...inserted];
+        }
       }
 
       setTasks(rows);
