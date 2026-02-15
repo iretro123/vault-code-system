@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { HelpCircle, X, Loader2, Send, ChevronLeft, Image, Clock, CheckCircle2, AlertCircle, MessageSquare, Zap, History } from "lucide-react";
+import { HelpCircle, X, Loader2, Send, ChevronLeft, Image, Clock, CheckCircle2, AlertCircle, MessageSquare, Zap, History, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,21 @@ interface InstantAnswer {
 type Tab = "coach" | "instant";
 type CoachView = "new" | "list" | "detail";
 type InstantView = "ask" | "history";
+
+function CopyAnswerButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
 
 export function AskCoachButton() {
   const { user, profile } = useAuth();
@@ -437,10 +452,25 @@ export function AskCoachButton() {
                   </div>
 
                   {instantResult && (
-                    <div className="rounded-lg border border-border bg-muted/30 p-5 space-y-2">
-                      <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Answer</p>
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90">
-                        <ReactMarkdown>{instantResult.answer}</ReactMarkdown>
+                    <div className="space-y-4 pt-2">
+                      {/* User question bubble */}
+                      <div className="flex justify-end">
+                        <div className="rounded-xl rounded-tr-sm bg-primary/10 border border-primary/15 px-4 py-3 max-w-[85%]">
+                          <p className="text-sm text-foreground leading-relaxed">{instantResult.question}</p>
+                        </div>
+                      </div>
+
+                      {/* AI answer bubble */}
+                      <div className="flex justify-start">
+                        <div className="rounded-xl rounded-tl-sm bg-muted border border-border px-4 py-4 max-w-[95%] space-y-3">
+                          <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90">
+                            <ReactMarkdown>{instantResult.answer}</ReactMarkdown>
+                          </div>
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                            <CopyAnswerButton text={instantResult.answer} />
+                            <p className="text-[10px] text-muted-foreground/50">Education only · No signals · No price targets</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
