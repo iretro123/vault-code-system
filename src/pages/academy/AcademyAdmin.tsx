@@ -3,9 +3,10 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, CheckCircle, Clock, Loader2, Plus, Trash2, Pencil, Users } from "lucide-react";
+import { ShieldCheck, CheckCircle2, Clock, Loader2, Plus, Trash2, Pencil, Users, AlertCircle, Send, Image, ChevronDown, ChevronUp } from "lucide-react";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { Navigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface UserProfile {
@@ -23,12 +25,24 @@ interface UserProfile {
   access_status: string;
 }
 
-interface CoachRequest {
+interface Ticket {
   id: string;
   user_id: string;
   category: string;
-  message: string;
+  urgency: string;
+  question: string;
+  screenshot_url: string | null;
   status: string;
+  created_at: string;
+}
+
+interface Reply {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  user_name: string;
+  body: string;
+  is_admin: boolean;
   created_at: string;
 }
 
@@ -36,9 +50,7 @@ const EMPTY_FORM = { module_slug: "", module_title: "", lesson_title: "", video_
 
 const AcademyAdmin = () => {
   const { isAdmin } = useAcademyRole();
-  const [requests, setRequests] = useState<CoachRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
+  const { user, profile } = useAuth();
 
   // Lesson management
   const { lessons, loading: lessonsLoading, refetch } = useAcademyLessons();
@@ -46,19 +58,37 @@ const AcademyAdmin = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Tickets
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
+  const [ticketReplies, setTicketReplies] = useState<Record<string, Reply[]>>({});
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [replySending, setReplySending] = useState<string | null>(null);
+  const [statusUpdating, setStatusUpdating] = useState<string | null>(null);
+
   // User access management
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
 
-  const fetchRequests = useCallback(async () => {
+  const fetchTickets = useCallback(async () => {
     const { data } = await supabase
-      .from("coach_requests")
+      .from("coach_tickets")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(50);
-    setRequests((data as CoachRequest[]) || []);
-    setLoading(false);
+      .limit(100);
+    setTickets((data as Ticket[]) || []);
+    setTicketsLoading(false);
+  }, []);
+
+  const fetchReplies = useCallback(async (ticketId: string) => {
+    const { data } = await supabase
+      .from("coach_ticket_replies")
+      .select("*")
+      .eq("ticket_id", ticketId)
+      .order("created_at", { ascending: true });
+    setTicketReplies((prev) => ({ ...prev, [ticketId]: (data as Reply[]) || [] }));
   }, []);
 
   const fetchUsers = useCallback(async () => {
@@ -73,33 +103,50 @@ const AcademyAdmin = () => {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchRequests();
+      fetchTickets();
       fetchUsers();
     }
-  }, [isAdmin, fetchRequests, fetchUsers]);
+  }, [isAdmin, fetchTickets, fetchUsers]);
 
-  const toggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === "open" ? "closed" : "open";
-    setUpdating(id);
-    await supabase.from("coach_requests").update({ status: newStatus }).eq("id", id);
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-    );
-    setUpdating(null);
+  const toggleExpand = (ticketId: string) => {
+    if (expandedTicket === ticketId) {
+      setExpandedTicket(null);
+    } else {
+      setExpandedTicket(ticketId);
+      if (!ticketReplies[ticketId]) fetchReplies(ticketId);
+    }
+  };
+
+  const handleAdminReply = async (ticketId: string) => {
+    const text = replyTexts[ticketId];
+    if (!text?.trim() || !user) return;
+    setReplySending(ticketId);
+    const userName = profile?.display_name || "Coach";
+    await supabase.from("coach_ticket_replies").insert({
+      ticket_id: ticketId,
+      user_id: user.id,
+      user_name: userName,
+      body: text.trim(),
+      is_admin: true,
+    } as any);
+    setReplyTexts((prev) => ({ ...prev, [ticketId]: "" }));
+    setReplySending(null);
+    fetchReplies(ticketId);
+  };
+
+  const updateTicketStatus = async (ticketId: string, newStatus: string) => {
+    setStatusUpdating(ticketId);
+    await supabase.from("coach_tickets").update({ status: newStatus } as any).eq("id", ticketId);
+    setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status: newStatus } : t));
+    setStatusUpdating(null);
   };
 
   const updateAccessStatus = async (userId: string, newStatus: string) => {
     setUpdatingUser(userId);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ access_status: newStatus })
-      .eq("user_id", userId);
-    if (error) {
-      toast.error("Failed to update access");
-    } else {
-      setUsers((prev) =>
-        prev.map((u) => (u.user_id === userId ? { ...u, access_status: newStatus } : u))
-      );
+    const { error } = await supabase.from("profiles").update({ access_status: newStatus }).eq("user_id", userId);
+    if (error) toast.error("Failed to update access");
+    else {
+      setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, access_status: newStatus } : u)));
       toast.success(`Access updated to ${newStatus}`);
     }
     setUpdatingUser(null);
@@ -112,30 +159,17 @@ const AcademyAdmin = () => {
     }
     setSaving(true);
     if (editingId) {
-      const { error } = await supabase
-        .from("academy_lessons")
-        .update({
-          module_slug: form.module_slug,
-          module_title: form.module_title,
-          lesson_title: form.lesson_title,
-          video_url: form.video_url,
-          sort_order: form.sort_order,
-        })
-        .eq("id", editingId);
-      if (error) toast.error(error.message);
-      else toast.success("Lesson updated");
+      const { error } = await supabase.from("academy_lessons").update({
+        module_slug: form.module_slug, module_title: form.module_title,
+        lesson_title: form.lesson_title, video_url: form.video_url, sort_order: form.sort_order,
+      }).eq("id", editingId);
+      if (error) toast.error(error.message); else toast.success("Lesson updated");
     } else {
-      const { error } = await supabase
-        .from("academy_lessons")
-        .insert({
-          module_slug: form.module_slug,
-          module_title: form.module_title,
-          lesson_title: form.lesson_title,
-          video_url: form.video_url,
-          sort_order: form.sort_order,
-        });
-      if (error) toast.error(error.message);
-      else toast.success("Lesson added");
+      const { error } = await supabase.from("academy_lessons").insert({
+        module_slug: form.module_slug, module_title: form.module_title,
+        lesson_title: form.lesson_title, video_url: form.video_url, sort_order: form.sort_order,
+      });
+      if (error) toast.error(error.message); else toast.success("Lesson added");
     }
     setForm(EMPTY_FORM);
     setEditingId(null);
@@ -145,13 +179,7 @@ const AcademyAdmin = () => {
 
   const handleEdit = (lesson: AcademyLesson) => {
     setEditingId(lesson.id);
-    setForm({
-      module_slug: lesson.module_slug,
-      module_title: lesson.module_title,
-      lesson_title: lesson.lesson_title,
-      video_url: lesson.video_url,
-      sort_order: lesson.sort_order,
-    });
+    setForm({ module_slug: lesson.module_slug, module_title: lesson.module_title, lesson_title: lesson.lesson_title, video_url: lesson.video_url, sort_order: lesson.sort_order });
   };
 
   const handleDelete = async (id: string) => {
@@ -160,23 +188,163 @@ const AcademyAdmin = () => {
     refetch();
   };
 
-  if (!isAdmin) {
-    return <Navigate to="/academy/home" replace />;
-  }
+  if (!isAdmin) return <Navigate to="/academy/home" replace />;
 
-  // Group lessons by module
   const grouped = lessons.reduce<Record<string, AcademyLesson[]>>((acc, l) => {
     (acc[l.module_slug] = acc[l.module_slug] || []).push(l);
     return acc;
   }, {});
 
+  const statusIcon = (status: string) => {
+    if (status === "resolved") return <CheckCircle2 className="h-3 w-3 text-emerald-400" />;
+    if (status === "waiting") return <AlertCircle className="h-3 w-3 text-amber-400" />;
+    return <Clock className="h-3 w-3 text-blue-400" />;
+  };
+
+  const openTickets = tickets.filter((t) => t.status !== "resolved");
+  const resolvedTickets = tickets.filter((t) => t.status === "resolved");
+
   return (
     <AcademyLayout>
-      <PageHeader
-        title="Admin Panel"
-        subtitle="Manage Academy content and users"
-      />
+      <PageHeader title="Admin Panel" subtitle="Manage Academy content, tickets, and users" />
       <div className="px-4 md:px-6 pb-6 space-y-8">
+
+        {/* Coach Tickets */}
+        <div>
+          <p className="section-title mb-3">Support Tickets ({openTickets.length} open)</p>
+          {ticketsLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : openTickets.length === 0 ? (
+            <Card className="p-6 text-center max-w-2xl">
+              <p className="text-sm text-muted-foreground">No open tickets.</p>
+            </Card>
+          ) : (
+            <div className="space-y-2 max-w-2xl">
+              {openTickets.map((t) => {
+                const isExpanded = expandedTicket === t.id;
+                const replies = ticketReplies[t.id] || [];
+                return (
+                  <Card key={t.id} className="overflow-hidden">
+                    <button
+                      onClick={() => toggleExpand(t.id)}
+                      className="w-full text-left p-4 hover:bg-muted/20 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5">{statusIcon(t.status)}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.category}</span>
+                            {t.urgency === "priority" && (
+                              <span className="text-[10px] font-semibold uppercase tracking-wider bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">Priority</span>
+                            )}
+                            <span className="text-[10px] text-muted-foreground/50">
+                              {format(new Date(t.created_at), "MMM d, h:mm a")}
+                            </span>
+                          </div>
+                          <p className="text-sm text-foreground line-clamp-2">{t.question}</p>
+                        </div>
+                        {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
+                        {/* Full question */}
+                        <p className="text-sm text-foreground">{t.question}</p>
+                        {t.screenshot_url && (
+                          <a href={t.screenshot_url} target="_blank" rel="noopener noreferrer">
+                            <img src={t.screenshot_url} alt="Screenshot" className="rounded-lg border border-border max-h-40 object-cover" />
+                          </a>
+                        )}
+
+                        {/* Status controls */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-muted-foreground">Status:</label>
+                          <Select
+                            value={t.status}
+                            onValueChange={(val) => updateTicketStatus(t.id, val)}
+                            disabled={statusUpdating === t.id}
+                          >
+                            <SelectTrigger className="w-[120px] h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open">Open</SelectItem>
+                              <SelectItem value="waiting">Waiting</SelectItem>
+                              <SelectItem value="resolved">Resolved</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Replies thread */}
+                        {replies.length > 0 && (
+                          <div className="space-y-2 pt-1">
+                            {replies.map((r) => (
+                              <div key={r.id} className={cn("rounded-lg p-3 text-sm", r.is_admin ? "bg-primary/5 border border-primary/10" : "bg-muted")}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={cn("text-xs font-semibold", r.is_admin ? "text-primary" : "text-foreground")}>
+                                    {r.user_name}
+                                    {r.is_admin && <span className="text-[10px] ml-1 font-normal text-primary/60">Coach</span>}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground/50">
+                                    {format(new Date(r.created_at), "MMM d, h:mm a")}
+                                  </span>
+                                </div>
+                                <p className="text-foreground/90 whitespace-pre-line">{r.body}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Reply input */}
+                        <div className="flex gap-2">
+                          <Input
+                            value={replyTexts[t.id] || ""}
+                            onChange={(e) => setReplyTexts((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                            placeholder="Reply as coach…"
+                            className="flex-1"
+                            maxLength={1000}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdminReply(t.id); } }}
+                          />
+                          <Button
+                            size="icon"
+                            onClick={() => handleAdminReply(t.id)}
+                            disabled={!(replyTexts[t.id] || "").trim() || replySending === t.id}
+                          >
+                            {replySending === t.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {resolvedTickets.length > 0 && (
+            <details className="mt-4 max-w-2xl">
+              <summary className="text-xs text-muted-foreground/60 cursor-pointer hover:text-muted-foreground">
+                {resolvedTickets.length} resolved ticket{resolvedTickets.length !== 1 ? "s" : ""}
+              </summary>
+              <div className="space-y-2 mt-2 opacity-50">
+                {resolvedTickets.map((t) => (
+                  <Card key={t.id} className="p-3">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                      <span className="text-[10px] font-semibold uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.category}</span>
+                      <p className="text-sm text-foreground truncate flex-1">{t.question}</p>
+                      <span className="text-[10px] text-muted-foreground/50 shrink-0">{format(new Date(t.created_at), "MMM d")}</span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
+
         {/* Lesson Management */}
         <div>
           <p className="section-title mb-3">Manage Lessons</p>
@@ -184,46 +352,26 @@ const AcademyAdmin = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Module Slug</Label>
-                <Input
-                  placeholder="e.g. discipline-foundations"
-                  value={form.module_slug}
-                  onChange={(e) => setForm((f) => ({ ...f, module_slug: e.target.value }))}
-                />
+                <Input placeholder="e.g. discipline-foundations" value={form.module_slug} onChange={(e) => setForm((f) => ({ ...f, module_slug: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Module Title</Label>
-                <Input
-                  placeholder="e.g. Discipline Foundations"
-                  value={form.module_title}
-                  onChange={(e) => setForm((f) => ({ ...f, module_title: e.target.value }))}
-                />
+                <Input placeholder="e.g. Discipline Foundations" value={form.module_title} onChange={(e) => setForm((f) => ({ ...f, module_title: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Lesson Title</Label>
-                <Input
-                  placeholder="e.g. Why Discipline Beats Strategy"
-                  value={form.lesson_title}
-                  onChange={(e) => setForm((f) => ({ ...f, lesson_title: e.target.value }))}
-                />
+                <Input placeholder="e.g. Why Discipline Beats Strategy" value={form.lesson_title} onChange={(e) => setForm((f) => ({ ...f, lesson_title: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Sort Order</Label>
-                <Input
-                  type="number"
-                  value={form.sort_order}
-                  onChange={(e) => setForm((f) => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
-                />
+                <Input type="number" value={form.sort_order} onChange={(e) => setForm((f) => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Video URL</Label>
-              <Input
-                placeholder="https://www.youtube.com/watch?v=... or Vimeo/Loom link"
-                value={form.video_url}
-                onChange={(e) => setForm((f) => ({ ...f, video_url: e.target.value }))}
-              />
+              <Input placeholder="https://www.youtube.com/watch?v=..." value={form.video_url} onChange={(e) => setForm((f) => ({ ...f, video_url: e.target.value }))} />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSaveLesson} disabled={saving} className="gap-1.5">
@@ -231,22 +379,15 @@ const AcademyAdmin = () => {
                 {editingId ? "Update Lesson" : "Add Lesson"}
               </Button>
               {editingId && (
-                <Button variant="ghost" onClick={() => { setEditingId(null); setForm(EMPTY_FORM); }}>
-                  Cancel
-                </Button>
+                <Button variant="ghost" onClick={() => { setEditingId(null); setForm(EMPTY_FORM); }}>Cancel</Button>
               )}
             </div>
           </Card>
 
-          {/* Existing lessons grouped by module */}
           {lessonsLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
           ) : Object.keys(grouped).length === 0 ? (
-            <Card className="p-6 text-center mt-4 max-w-2xl">
-              <p className="text-sm text-muted-foreground">No lessons added yet.</p>
-            </Card>
+            <Card className="p-6 text-center mt-4 max-w-2xl"><p className="text-sm text-muted-foreground">No lessons added yet.</p></Card>
           ) : (
             <div className="space-y-4 mt-4 max-w-2xl">
               {Object.entries(grouped).map(([slug, moduleLessons]) => (
@@ -261,12 +402,8 @@ const AcademyAdmin = () => {
                         <span className="text-xs font-mono text-muted-foreground w-6 text-center">{l.sort_order}</span>
                         <span className="text-sm flex-1 truncate">{l.lesson_title}</span>
                         <span className="text-[10px] text-muted-foreground/60 truncate max-w-[200px]">{l.video_url}</span>
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(l)} className="h-7 w-7 p-0">
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(l.id)} className="h-7 w-7 p-0 text-destructive">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(l)} className="h-7 w-7 p-0"><Pencil className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(l.id)} className="h-7 w-7 p-0 text-destructive"><Trash2 className="h-3 w-3" /></Button>
                       </Card>
                     ))}
                   </div>
@@ -276,99 +413,28 @@ const AcademyAdmin = () => {
           )}
         </div>
 
-        {/* Coach Requests */}
-        <div>
-          <p className="section-title mb-3">Coach Requests</p>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : requests.length === 0 ? (
-            <Card className="p-6 text-center">
-              <p className="text-sm text-muted-foreground">No requests yet.</p>
-            </Card>
-          ) : (
-            <div className="space-y-2 max-w-2xl">
-              {requests.map((req) => (
-                <Card key={req.id} className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider bg-muted px-2 py-0.5 rounded text-muted-foreground">
-                          {req.category}
-                        </span>
-                        <span className={cn(
-                          "inline-flex items-center gap-1 text-[10px] font-medium",
-                          req.status === "open" ? "text-amber-400" : "text-emerald-400"
-                        )}>
-                          {req.status === "open" ? (
-                            <Clock className="h-3 w-3" />
-                          ) : (
-                            <CheckCircle className="h-3 w-3" />
-                          )}
-                          {req.status}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/60">
-                          {format(new Date(req.created_at), "MMM d, HH:mm")}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground">{req.message}</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleStatus(req.id, req.status)}
-                      disabled={updating === req.id}
-                      className="shrink-0 text-xs"
-                    >
-                      {updating === req.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : req.status === "open" ? (
-                        "Resolve"
-                      ) : (
-                        "Reopen"
-                      )}
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* User Access Management */}
         <div>
           <p className="section-title mb-3">User Access</p>
           {usersLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
           ) : users.length === 0 ? (
-            <Card className="p-6 text-center max-w-2xl">
-              <p className="text-sm text-muted-foreground">No users found.</p>
-            </Card>
+            <Card className="p-6 text-center max-w-2xl"><p className="text-sm text-muted-foreground">No users found.</p></Card>
           ) : (
             <div className="space-y-2 max-w-2xl">
               {users.map((u) => (
                 <Card key={u.id} className="p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {u.display_name || "Unnamed"}
-                      </p>
+                      <p className="text-sm font-medium text-foreground truncate">{u.display_name || "Unnamed"}</p>
                       <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {updatingUser === u.user_id ? (
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       ) : (
-                        <Select
-                          value={u.access_status}
-                          onValueChange={(val) => updateAccessStatus(u.user_id, val)}
-                        >
-                          <SelectTrigger className="w-[120px] h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
+                        <Select value={u.access_status} onValueChange={(val) => updateAccessStatus(u.user_id, val)}>
+                          <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="trial">Trial</SelectItem>
                             <SelectItem value="active">Active</SelectItem>
