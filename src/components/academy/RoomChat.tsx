@@ -3,6 +3,7 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Send, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -10,6 +11,96 @@ import { format } from "date-fns";
 interface RoomChatProps {
   roomSlug: string;
   canPost: boolean;
+}
+
+function TradeRecapForm({
+  onSubmit,
+  sending,
+}: {
+  onSubmit: (body: string) => Promise<void>;
+  sending: boolean;
+}) {
+  const [ticker, setTicker] = useState("");
+  const [whatIDid, setWhatIDid] = useState("");
+  const [whatILearned, setWhatILearned] = useState("");
+
+  const canSend = whatIDid.trim() && whatILearned.trim();
+
+  const handleSubmit = async () => {
+    if (!canSend || sending) return;
+    const parts = [
+      ticker.trim() ? `**Ticker:** ${ticker.trim()}` : null,
+      `**What I did:** ${whatIDid.trim()}`,
+      `**What I learned:** ${whatILearned.trim()}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    await onSubmit(parts);
+    setTicker("");
+    setWhatIDid("");
+    setWhatILearned("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Input
+        value={ticker}
+        onChange={(e) => setTicker(e.target.value)}
+        placeholder="Ticker (optional)"
+        maxLength={20}
+        disabled={sending}
+        className="text-sm"
+      />
+      <Textarea
+        value={whatIDid}
+        onChange={(e) => setWhatIDid(e.target.value)}
+        placeholder="What I did *"
+        maxLength={500}
+        disabled={sending}
+        rows={2}
+        className="text-sm resize-none"
+      />
+      <Textarea
+        value={whatILearned}
+        onChange={(e) => setWhatILearned(e.target.value)}
+        placeholder="What I learned *"
+        maxLength={500}
+        disabled={sending}
+        rows={2}
+        className="text-sm resize-none"
+      />
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          onClick={handleSubmit}
+          disabled={!canSend || sending}
+          className="gap-1.5"
+        >
+          {sending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Send className="h-3.5 w-3.5" />
+          )}
+          Post Recap
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function renderBody(body: string) {
+  // Render **bold** segments
+  const parts = body.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <span key={i} className="font-semibold text-foreground">
+          {part.slice(2, -2)}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
 
 export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
@@ -21,14 +112,14 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
 
-  // Auto-scroll on new messages
+  const isTradeRecaps = roomSlug === "trade-recaps";
+
   useEffect(() => {
     if (shouldAutoScroll.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages.length]);
 
-  // Initial scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView();
   }, [loading]);
@@ -40,12 +131,12 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
     shouldAutoScroll.current = atBottom;
   };
 
-  const handleSend = async () => {
-    if (!draft.trim() || sending) return;
-    const text = draft;
-    setDraft("");
+  const handleSend = async (text?: string) => {
+    const body = text ?? draft;
+    if (!body.trim() || sending) return;
+    if (!text) setDraft("");
     shouldAutoScroll.current = true;
-    await sendMessage(text);
+    await sendMessage(body);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -106,8 +197,8 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
                   </span>
                 </div>
               )}
-              <p className="text-sm text-foreground/90 leading-relaxed pl-0">
-                {msg.body}
+              <p className="text-sm text-foreground/90 leading-relaxed pl-0 whitespace-pre-line">
+                {renderBody(msg.body)}
               </p>
             </div>
           );
@@ -121,28 +212,32 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
           {error && (
             <p className="text-xs text-destructive mb-2">{error}</p>
           )}
-          <div className="flex gap-2">
-            <Input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message…"
-              className="flex-1"
-              maxLength={1000}
-              disabled={sending}
-            />
-            <Button
-              size="icon"
-              onClick={handleSend}
-              disabled={!draft.trim() || sending}
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+          {isTradeRecaps ? (
+            <TradeRecapForm onSubmit={handleSend} sending={sending} />
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message…"
+                className="flex-1"
+                maxLength={1000}
+                disabled={sending}
+              />
+              <Button
+                size="icon"
+                onClick={() => handleSend()}
+                disabled={!draft.trim() || sending}
+              >
+                {sending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="pt-3 border-t border-border/40 mt-2">
