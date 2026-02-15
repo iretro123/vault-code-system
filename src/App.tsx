@@ -35,7 +35,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
-            <Route path="/" element={<Navigate to="/cockpit" replace />} />
+            <Route path="/" element={<Navigate to="/hub" replace />} />
             <Route path="/hub" element={<Hub />} />
             <Route path="/cockpit" element={<TraderCockpit />} />
             <Route path="/log" element={<TradeLog />} />
