@@ -10,6 +10,7 @@ import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { OnboardingProgressCard } from "@/components/academy/OnboardingProgressCard";
 
 const TASK_ROUTES: Record<string, string> = {
   "Claim Role": "/academy/start",
@@ -185,6 +186,9 @@ const AcademyHome = () => {
       )}
 
       <div className="px-4 md:px-6 pb-6 space-y-6">
+        {/* Onboarding progress */}
+        {user && <OnboardingProgressCard userId={user.id} />}
+
         {/* Today section */}
         {!tasksLoading && totalTasks > 0 && (
           <div className="space-y-3 max-w-2xl">
