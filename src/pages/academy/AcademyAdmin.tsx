@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, CheckCircle, Clock, Loader2, Plus, Trash2, Pencil } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ShieldCheck, CheckCircle, Clock, Loader2, Plus, Trash2, Pencil, Users } from "lucide-react";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { Navigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
@@ -13,6 +14,14 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { toast } from "sonner";
+
+interface UserProfile {
+  id: string;
+  user_id: string;
+  email: string | null;
+  display_name: string | null;
+  access_status: string;
+}
 
 interface CoachRequest {
   id: string;
@@ -37,6 +46,11 @@ const AcademyAdmin = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // User access management
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+
   const fetchRequests = useCallback(async () => {
     const { data } = await supabase
       .from("coach_requests")
@@ -47,9 +61,22 @@ const AcademyAdmin = () => {
     setLoading(false);
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, user_id, email, display_name, access_status")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setUsers((data as UserProfile[]) || []);
+    setUsersLoading(false);
+  }, []);
+
   useEffect(() => {
-    if (isAdmin) fetchRequests();
-  }, [isAdmin, fetchRequests]);
+    if (isAdmin) {
+      fetchRequests();
+      fetchUsers();
+    }
+  }, [isAdmin, fetchRequests, fetchUsers]);
 
   const toggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "open" ? "closed" : "open";
@@ -59,6 +86,23 @@ const AcademyAdmin = () => {
       prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
     );
     setUpdating(null);
+  };
+
+  const updateAccessStatus = async (userId: string, newStatus: string) => {
+    setUpdatingUser(userId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ access_status: newStatus })
+      .eq("user_id", userId);
+    if (error) {
+      toast.error("Failed to update access");
+    } else {
+      setUsers((prev) =>
+        prev.map((u) => (u.user_id === userId ? { ...u, access_status: newStatus } : u))
+      );
+      toast.success(`Access updated to ${newStatus}`);
+    }
+    setUpdatingUser(null);
   };
 
   const handleSaveLesson = async () => {
@@ -285,6 +329,54 @@ const AcademyAdmin = () => {
                         "Reopen"
                       )}
                     </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* User Access Management */}
+        <div>
+          <p className="section-title mb-3">User Access</p>
+          {usersLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : users.length === 0 ? (
+            <Card className="p-6 text-center max-w-2xl">
+              <p className="text-sm text-muted-foreground">No users found.</p>
+            </Card>
+          ) : (
+            <div className="space-y-2 max-w-2xl">
+              {users.map((u) => (
+                <Card key={u.id} className="p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {u.display_name || "Unnamed"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {updatingUser === u.user_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Select
+                          value={u.access_status}
+                          onValueChange={(val) => updateAccessStatus(u.user_id, val)}
+                        >
+                          <SelectTrigger className="w-[120px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="trial">Trial</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="revoked">Revoked</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
                   </div>
                 </Card>
               ))}

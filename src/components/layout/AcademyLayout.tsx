@@ -6,14 +6,14 @@ import { MobileNav } from "./MobileNav";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AskCoachButton } from "@/components/academy/AskCoachButton";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
 
 interface AcademyLayoutProps {
   children: ReactNode;
 }
 
 export function AcademyLayout({ children }: AcademyLayoutProps) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -25,6 +25,30 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  const accessStatus = (profile as any)?.access_status ?? "trial";
+
+  if (accessStatus === "revoked") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-sm space-y-4">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-destructive/10 mx-auto">
+            <ShieldAlert className="h-7 w-7 text-destructive" />
+          </div>
+          <h1 className="text-xl font-semibold text-foreground">Access Revoked</h1>
+          <p className="text-sm text-muted-foreground">
+            Your Academy access has been revoked. Please contact support for assistance.
+          </p>
+          <Link
+            to="/hub"
+            className="inline-block text-sm text-primary hover:underline mt-2"
+          >
+            ← Back to Hub
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

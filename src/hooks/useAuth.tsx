@@ -15,6 +15,8 @@ interface Profile {
   onboarding_completed: boolean;
   default_trading_style: string;
   initialized_at: string | null;
+  access_status: "trial" | "active" | "revoked";
+  academy_experience: string;
 }
 
 interface UserRole {
