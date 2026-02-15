@@ -5,7 +5,9 @@ import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AskCoachButton } from "@/components/academy/AskCoachButton";
+import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
+import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { Loader2, ShieldAlert } from "lucide-react";
 
 interface AcademyLayoutProps {
@@ -14,6 +16,7 @@ interface AcademyLayoutProps {
 
 export function AcademyLayout({ children }: AcademyLayoutProps) {
   const { user, profile, loading } = useAuth();
+  useSmartNotifications();
 
   if (loading) {
     return (
@@ -71,7 +74,10 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
                   </span>
                 </Link>
               </div>
-              <PlayerIdentity />
+              <div className="flex items-center gap-1">
+                <NotificationsPanel />
+                <PlayerIdentity />
+              </div>
             </div>
           </header>
 
