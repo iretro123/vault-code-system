@@ -308,10 +308,13 @@ export type Database = {
           discipline_status: string
           display_name: string | null
           email: string | null
+          first_lesson_started: boolean
           id: string
           initialized_at: string | null
+          intro_posted: boolean
           market_type: string
           onboarding_completed: boolean
+          role_level: string
           updated_at: string
           user_id: string
           username: string | null
@@ -327,10 +330,13 @@ export type Database = {
           discipline_status?: string
           display_name?: string | null
           email?: string | null
+          first_lesson_started?: boolean
           id?: string
           initialized_at?: string | null
+          intro_posted?: boolean
           market_type?: string
           onboarding_completed?: boolean
+          role_level?: string
           updated_at?: string
           user_id: string
           username?: string | null
@@ -346,10 +352,13 @@ export type Database = {
           discipline_status?: string
           display_name?: string | null
           email?: string | null
+          first_lesson_started?: boolean
           id?: string
           initialized_at?: string | null
+          intro_posted?: boolean
           market_type?: string
           onboarding_completed?: boolean
+          role_level?: string
           updated_at?: string
           user_id?: string
           username?: string | null

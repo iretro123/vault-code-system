@@ -6,8 +6,10 @@ import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { getModuleBySlug } from "@/lib/academyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
 import { ArrowLeft, PlayCircle, X, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -32,6 +34,21 @@ const AcademyModule = () => {
   const mod = getModuleBySlug(moduleSlug || "");
   const { lessons, loading } = useAcademyLessons(moduleSlug);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const { user } = useAuth();
+  const markedRef = useRef(false);
+
+  const handlePlayVideo = (url: string) => {
+    setActiveVideo(url);
+    // Mark first_lesson_started once
+    if (user && !markedRef.current) {
+      markedRef.current = true;
+      supabase
+        .from("profiles")
+        .update({ first_lesson_started: true } as any)
+        .eq("user_id", user.id)
+        .then(() => {});
+    }
+  };
 
   if (!mod) {
     return <Navigate to="/academy/learn" replace />;
@@ -113,7 +130,7 @@ const AcademyModule = () => {
                       variant="ghost"
                       size="sm"
                       className="gap-1.5 text-xs shrink-0"
-                      onClick={() => setActiveVideo(lesson.video_url)}
+                      onClick={() => handlePlayVideo(lesson.video_url)}
                     >
                       <PlayCircle className="h-3.5 w-3.5" />
                       Watch
