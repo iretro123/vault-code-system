@@ -30,8 +30,8 @@ const NEXT_STEPS: Record<string, { label: string; desc: string; path: string; ic
     icon: Library,
   },
   advanced: {
-    label: "Post Your First Trade Recap",
-    desc: "Share a trade using the structured recap template",
+    label: "Post Your First Trade",
+    desc: "Share a trade using the simple posting template",
     path: "/academy/room/trade-recaps",
     icon: BarChart3,
   },

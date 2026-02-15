@@ -30,7 +30,7 @@ const DAILY_TASKS_DEFAULT = [
 ];
 
 const DAILY_TASKS_ADVANCED = [
-  { title: "Post 1 trade recap or insight", description: "Share a structured recap with the community" },
+  { title: "Post 1 trade", description: "Share a trade with the community" },
   { title: "Journal 1 trade (2 min)", description: "Log at least one trade today" },
 ];
 

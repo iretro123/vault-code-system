@@ -200,7 +200,7 @@ const AcademyProfile = () => {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Role Level</Label>
+            <Label className="text-xs">Experience Level</Label>
             <Select value={roleLevel} onValueChange={setRoleLevel}>
               <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>

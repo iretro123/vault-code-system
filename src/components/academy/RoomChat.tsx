@@ -41,7 +41,7 @@ function TradeRecapForm({
   const handleSubmit = async () => {
     if (!canSend || sending) return;
     const lines = [
-      `**📋 Trade Recap**`,
+      `**📋 Trade Post**`,
       ticker.trim() ? `**Ticker:** ${ticker.trim().toUpperCase()}` : null,
       `**Setup:** ${SETUPS.find((s) => s.value === setup)?.label ?? setup}`,
       risk.trim() ? `**Risk:** $${risk.trim()}` : null,
@@ -63,14 +63,14 @@ function TradeRecapForm({
     return (
       <Button size="sm" variant="outline" onClick={() => setOpen(true)} className="gap-1.5">
         <PenLine className="h-3.5 w-3.5" />
-        New Recap
+        New Trade
       </Button>
     );
   }
 
   return (
     <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card">
-      <p className="text-xs font-semibold text-foreground">Post a Trade Recap</p>
+      <p className="text-xs font-semibold text-foreground">Post a Trade</p>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
@@ -148,7 +148,7 @@ function TradeRecapForm({
           className="gap-1.5"
         >
           {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-          Post Recap
+          Post Trade
         </Button>
       </div>
     </div>
@@ -156,7 +156,7 @@ function TradeRecapForm({
 }
 
 function isRecapPost(body: string) {
-  return body.startsWith("**📋 Trade Recap**");
+  return body.startsWith("**📋 Trade Post**") || body.startsWith("**📋 Trade Recap**");
 }
 
 function renderRecapCard(body: string) {
@@ -170,7 +170,7 @@ function renderRecapCard(body: string) {
 
   return (
     <div className="rounded-lg border border-border/40 bg-card/50 p-3 space-y-1.5 mt-1">
-      <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">📋 Trade Recap</p>
+      <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">📋 Trade Post</p>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1">
         {fields.map((f, i) => (
           <div key={i} className={f.label === "Lesson" ? "col-span-2" : ""}>
