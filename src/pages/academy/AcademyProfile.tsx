@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, MessageSquare, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ type AvatarMode = "initials" | "icon";
 
 const AcademyProfile = () => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
 
   const [displayName, setDisplayName] = useState("");
   const [roleLevel, setRoleLevel] = useState("beginner");
@@ -230,6 +232,21 @@ const AcademyProfile = () => {
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           {saving ? "Saving…" : "Save Profile"}
         </Button>
+
+        {/* My Questions link */}
+        <Card
+          className="p-4 cursor-pointer hover:border-primary/30 transition-colors group"
+          onClick={() => navigate("/academy/my-questions")}
+        >
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">My Questions</p>
+              <p className="text-[11px] text-muted-foreground">View your coach support history</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
+          </div>
+        </Card>
       </div>
     </AcademyLayout>
   );
