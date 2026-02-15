@@ -7,6 +7,7 @@ export interface AcademyLesson {
   module_title: string;
   lesson_title: string;
   video_url: string;
+  notes: string;
   sort_order: number;
   created_at: string;
 }

@@ -21,6 +21,7 @@ export type Database = {
           lesson_title: string
           module_slug: string
           module_title: string
+          notes: string
           sort_order: number
           updated_at: string
           video_url: string
@@ -31,6 +32,7 @@ export type Database = {
           lesson_title: string
           module_slug: string
           module_title: string
+          notes?: string
           sort_order?: number
           updated_at?: string
           video_url: string
@@ -41,6 +43,7 @@ export type Database = {
           lesson_title?: string
           module_slug?: string
           module_title?: string
+          notes?: string
           sort_order?: number
           updated_at?: string
           video_url?: string
@@ -71,6 +74,36 @@ export type Database = {
           room_slug?: string
           user_id?: string
           user_name?: string
+        }
+        Relationships: []
+      }
+      academy_modules: {
+        Row: {
+          created_at: string
+          id: string
+          slug: string
+          sort_order: number
+          subtitle: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          slug: string
+          sort_order?: number
+          subtitle?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          slug?: string
+          sort_order?: number
+          subtitle?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -184,6 +217,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      lesson_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          lesson_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "academy_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monthly_report: {
         Row: {
