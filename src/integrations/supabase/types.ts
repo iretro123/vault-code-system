@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          room_slug: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          room_slug: string
+          user_id: string
+          user_name?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          room_slug?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       behavior_stats: {
         Row: {
           avg_trades_per_day: number
