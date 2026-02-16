@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Check, Rocket, BookOpen, MessageSquare, ChevronRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
 
 interface OnboardingStep {
   label: string;
@@ -18,30 +17,14 @@ const STEPS: OnboardingStep[] = [
   { label: "Introduce Yourself", key: "intro_posted", route: "/academy/room/options-lounge", icon: MessageSquare },
 ];
 
-interface Props {
-  userId: string;
-}
-
-export function OnboardingProgressCard({ userId }: Props) {
+export function OnboardingProgressCard() {
   const navigate = useNavigate();
-  const [state, setState] = useState<Record<string, boolean> | null>(null);
+  const { onboarding } = useAcademyData();
 
-  useEffect(() => {
-    supabase
-      .from("onboarding_state")
-      .select("claimed_role, first_lesson_completed, intro_posted")
-      .eq("user_id", userId)
-      .limit(1)
-      .single()
-      .then(({ data }) => {
-        if (data) setState(data as Record<string, boolean>);
-      });
-  }, [userId]);
+  if (!onboarding) return null;
 
-  if (!state) return null;
-
-  const completed = STEPS.filter((s) => state[s.key]).length;
-  if (completed === 3) return null; // all done, hide card
+  const completed = STEPS.filter((s) => onboarding[s.key]).length;
+  if (completed === 3) return null;
 
   return (
     <Card className="vault-card p-5 max-w-2xl">
@@ -50,7 +33,6 @@ export function OnboardingProgressCard({ userId }: Props) {
         <span className="text-xs text-muted-foreground font-medium">{completed}/3</span>
       </div>
 
-      {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-muted overflow-hidden mb-4">
         <div
           className="h-full rounded-full bg-primary transition-all duration-500"
@@ -60,7 +42,7 @@ export function OnboardingProgressCard({ userId }: Props) {
 
       <div className="space-y-1">
         {STEPS.map((step) => {
-          const done = state[step.key];
+          const done = onboarding[step.key];
           const Icon = step.icon;
           return (
             <button

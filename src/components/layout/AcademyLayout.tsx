@@ -8,7 +8,9 @@ import { AskCoachButton } from "@/components/academy/AskCoachButton";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { Loader2, ShieldAlert } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AcademyLayoutProps {
   children: ReactNode;
@@ -16,12 +18,22 @@ interface AcademyLayoutProps {
 
 export function AcademyLayout({ children }: AcademyLayoutProps) {
   const { user, profile, loading } = useAuth();
+  const { hydrated } = useAcademyData();
   useSmartNotifications();
 
-  if (loading) {
+  if (loading || !hydrated) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">
+          <Skeleton className="h-5 w-32" />
+          <div className="ml-auto flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
       </div>
     );
   }

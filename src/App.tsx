@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { VaultStateProvider } from "@/contexts/VaultStateContext";
+import { AcademyDataProvider } from "@/contexts/AcademyDataContext";
 import NotFound from "./pages/NotFound";
 import TradeLog from "./pages/TradeLog";
 import Auth from "./pages/Auth";
@@ -36,6 +37,7 @@ const App = () => (
     <BrowserRouter>
       <AuthProvider>
         <VaultStateProvider>
+        <AcademyDataProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -67,6 +69,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>
+        </AcademyDataProvider>
         </VaultStateProvider>
       </AuthProvider>
     </BrowserRouter>
