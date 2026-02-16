@@ -103,26 +103,29 @@ export function AcademySidebar() {
           <SidebarGroupLabel>{!collapsed && "Rooms"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {ACADEMY_ROOMS.map(({ slug, name, icon: Icon, readOnly }) => (
-                <SidebarMenuItem key={slug}>
-                  <SidebarMenuButton asChild isActive={isRoomActive(slug)}>
-                    <NavLink
-                      to={`/academy/room/${slug}`}
-                      end
-                      className="flex items-center gap-2 px-2 py-1.5"
-                      activeClassName="bg-muted text-primary font-medium"
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      {!collapsed && (
-                        <span className="flex items-center gap-1.5 text-sm">
-                          {name}
-                          {readOnly && <Lock className="h-3 w-3 text-muted-foreground/60" />}
-                        </span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {ACADEMY_ROOMS.map(({ slug, name, icon: Icon, readOnly }) => {
+                const isTradingChat = slug === "options-lounge";
+                return (
+                  <SidebarMenuItem key={slug}>
+                    <SidebarMenuButton asChild isActive={isRoomActive(slug)}>
+                      <NavLink
+                        to={`/academy/room/${slug}`}
+                        end
+                        className="flex items-center gap-2 px-2 py-1.5"
+                        activeClassName="bg-muted text-primary font-medium"
+                      >
+                        <Icon className={`h-4 w-4 shrink-0${isTradingChat ? " fill-white text-white" : ""}`} />
+                        {!collapsed && (
+                          <span className="flex items-center gap-1.5 text-sm">
+                            {name}
+                            {readOnly && <Lock className="h-3 w-3 text-muted-foreground/60" />}
+                          </span>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
