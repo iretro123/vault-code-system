@@ -55,7 +55,13 @@ export type Database = {
           attachments: Json | null
           body: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          edit_count: number
+          edited_at: string | null
           id: string
+          is_deleted: boolean
+          original_content: string | null
           room_slug: string
           user_id: string
           user_name: string
@@ -65,7 +71,13 @@ export type Database = {
           attachments?: Json | null
           body: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          edit_count?: number
+          edited_at?: string | null
           id?: string
+          is_deleted?: boolean
+          original_content?: string | null
           room_slug: string
           user_id: string
           user_name?: string
@@ -75,7 +87,13 @@ export type Database = {
           attachments?: Json | null
           body?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          edit_count?: number
+          edited_at?: string | null
           id?: string
+          is_deleted?: boolean
+          original_content?: string | null
           room_slug?: string
           user_id?: string
           user_name?: string
