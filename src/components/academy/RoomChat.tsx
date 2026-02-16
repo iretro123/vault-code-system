@@ -762,16 +762,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 onClick={() => handleSend()}
                 disabled={(!draft.trim() && !uploading) || sending}
                 className={cn(
-                  "shrink-0 p-2 rounded-lg transition-all duration-150",
+                  "shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150",
                   draft.trim() && !sending
                     ? "bg-primary text-primary-foreground hover:brightness-110 active:scale-95"
                     : "text-white/20 cursor-not-allowed"
                 )}
               >
                 {sending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-[18px] w-[18px] animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-[18px] w-[18px] translate-x-[1px]" />
                 )}
               </button>
             </div>
