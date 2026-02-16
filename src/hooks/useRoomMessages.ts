@@ -2,6 +2,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+export interface Attachment {
+  type: "image" | "file";
+  url: string;
+  filename: string;
+  size: number;
+  mime: string;
+}
+
 interface Message {
   id: string;
   room_slug: string;
@@ -9,6 +17,7 @@ interface Message {
   user_name: string;
   user_role: string;
   body: string;
+  attachments: Attachment[];
   created_at: string;
 }
 
@@ -78,8 +87,8 @@ export function useRoomMessages(roomSlug: string) {
 
   // Send message
   const sendMessage = useCallback(
-    async (body: string) => {
-      if (!user || !body.trim()) return;
+    async (body: string, attachments?: Attachment[]) => {
+      if (!user || (!body.trim() && (!attachments || attachments.length === 0))) return;
       setSending(true);
       setError(null);
 
@@ -95,8 +104,9 @@ export function useRoomMessages(roomSlug: string) {
         room_slug: roomSlug,
         user_id: user.id,
         user_name: userName,
-        body: body.trim(),
+        body: body.trim() || (attachments?.length ? "📎 Attachment" : ""),
         user_role: roleStr,
+        attachments: attachments && attachments.length > 0 ? attachments : [],
       } as any);
 
       if (err) {

@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useRoomMessages } from "@/hooks/useRoomMessages";
+import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, ChevronUp, Paperclip, Megaphone, ImageIcon } from "lucide-react";
+import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
@@ -151,6 +151,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
 
   const [draft, setDraft] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
@@ -191,35 +192,48 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     shouldAutoScroll.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   };
 
-  const handleSend = async (text?: string) => {
+  const handleSend = async (text?: string, attachments?: Attachment[]) => {
     const body = text ?? draft;
-    if (!body.trim() || sending) return;
+    if (!body.trim() && (!attachments || attachments.length === 0)) return;
+    if (sending) return;
     if (!text) setDraft("");
     shouldAutoScroll.current = true;
-    await sendMessage(body);
+    await sendMessage(body, attachments);
   };
+
+  const ALLOWED_MIME = [
+    "image/png", "image/jpeg", "image/jpg", "image/gif",
+    "application/pdf", "video/mp4",
+  ];
+  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     e.target.value = "";
+    setUploadError(null);
 
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error("File must be under 5 MB");
+    if (!ALLOWED_MIME.includes(file.type)) {
+      setUploadError("Unsupported file type. Allowed: PNG, JPG, GIF, PDF, MP4");
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError("File must be under 15 MB");
       return;
     }
 
     setUploading(true);
     const ext = file.name.split(".").pop();
-    const path = `${user.id}/${Date.now()}.${ext}`;
+    const path = `${roomSlug}/${user.id}/${Date.now()}_${file.name}`;
 
     const { error: uploadErr } = await supabase.storage
       .from("academy-chat-files")
       .upload(path, file);
 
     if (uploadErr) {
-      toast.error("Upload failed: " + uploadErr.message);
+      setUploadError("Upload failed: " + uploadErr.message);
       setUploading(false);
       return;
     }
@@ -228,14 +242,18 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
       .from("academy-chat-files")
       .getPublicUrl(path);
 
-    const isImage = file.type.startsWith("image/");
-    if (isImage) {
-      await handleSend(`📎 ![image](${urlData.publicUrl})`);
-    } else {
-      await handleSend(`📎 [${file.name}](${urlData.publicUrl})`);
-    }
+    const attachment: Attachment = {
+      type: file.type.startsWith("image/") ? "image" : "file",
+      url: urlData.publicUrl,
+      filename: file.name,
+      size: file.size,
+      mime: file.type,
+    };
+
+    await handleSend(draft, [attachment]);
+    setDraft("");
     setUploading(false);
-  }, [user, sending]);
+  }, [user, roomSlug, draft, sending]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
     const el = textareaRef.current;
@@ -365,14 +383,45 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 ) : (
                   <div className="inline-block max-w-[85%]">
                     <div className="bg-white/[0.04] rounded-lg rounded-tl-sm px-3 py-1.5">
-                      <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
-                        {renderPlainBody(msg.body)}
-                      </p>
+                      {msg.body && msg.body !== "📎 Attachment" && (
+                        <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                          {renderPlainBody(msg.body)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* Reactions — hidden for announcements */}
+                {/* Attachments */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {msg.attachments.map((att: Attachment, idx: number) =>
+                      att.type === "image" ? (
+                        <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={att.url}
+                            alt={att.filename}
+                            className="rounded-lg max-w-[300px] max-h-[240px] object-cover border border-white/[0.06]"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          key={idx}
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 hover:bg-white/[0.06] transition-colors"
+                        >
+                          <FileText className="h-4 w-4 text-primary shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-white/80 truncate max-w-[200px]">{att.filename}</p>
+                            <p className="text-[10px] text-white/30">{(att.size / 1024).toFixed(0)} KB</p>
+                          </div>
+                        </a>
+                      )
+                    )}
+                  </div>
+                )}
                 {!isAnnouncements && (() => {
                   const reactions = getReactions(msg.id);
                   return (
@@ -435,6 +484,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
       {canPost ? (
         <div className="pt-3 border-t border-white/[0.08] mt-2 px-3">
           {error && <p className="text-xs text-destructive mb-2">{error}</p>}
+          {uploadError && <p className="text-xs text-destructive mb-2">{uploadError}</p>}
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
@@ -443,7 +493,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,.pdf,.doc,.docx,.txt"
+                accept="image/png,image/jpeg,image/jpg,image/gif,application/pdf,video/mp4"
                 className="hidden"
                 onChange={handleFileUpload}
               />
