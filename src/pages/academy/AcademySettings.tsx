@@ -3,8 +3,9 @@ import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AcademyProfileForm } from "@/components/academy/AcademyProfileForm";
+import { AccountSecurityForm } from "@/components/academy/AccountSecurityForm";
 import { Button } from "@/components/ui/button";
-import { LogOut, Bell, Sparkles } from "lucide-react";
+import { LogOut, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { SendNotificationModal } from "@/components/academy/SendNotificationModal";
@@ -29,7 +30,8 @@ const AcademySettings = () => {
             <AcademyProfileForm />
           </TabsContent>
 
-          <TabsContent value="account" className="space-y-4">
+          <TabsContent value="account" className="space-y-5">
+            <AccountSecurityForm />
             <Button
               variant="outline"
               className="w-full gap-2 h-12 border-border text-muted-foreground hover:text-foreground"
