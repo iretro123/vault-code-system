@@ -719,7 +719,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
-            <div className="flex items-end gap-2 rounded-xl bg-black/25 border border-white/[0.1] px-3 py-2 focus-within:ring-1 focus-within:ring-white/20 transition-shadow">
+            <div data-chat-composer className="flex items-end gap-2 rounded-xl bg-black/25 border border-white/[0.1] px-3 py-2 focus-within:ring-1 focus-within:ring-white/20 transition-shadow">
               {/* Hidden file input */}
               <input
                 ref={fileInputRef}
