@@ -52,6 +52,7 @@ export type Database = {
       }
       academy_messages: {
         Row: {
+          attachments: Json | null
           body: string
           created_at: string
           id: string
@@ -61,6 +62,7 @@ export type Database = {
           user_role: string
         }
         Insert: {
+          attachments?: Json | null
           body: string
           created_at?: string
           id?: string
@@ -70,6 +72,7 @@ export type Database = {
           user_role?: string
         }
         Update: {
+          attachments?: Json | null
           body?: string
           created_at?: string
           id?: string
