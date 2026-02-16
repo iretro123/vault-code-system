@@ -419,8 +419,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           const showHdr = shouldShowHeader(msg, prev);
           const isRecap = !msg.is_deleted && isRecapPost(msg.body);
           const isOwn = msg.user_id === user?.id;
-          const canEdit = isOwn && !msg.is_deleted;
-          const canDelete = (isOwn || isOperator) && !msg.is_deleted;
+          const ageMs = Date.now() - new Date(msg.created_at).getTime();
+          const within15min = ageMs < 15 * 60 * 1000;
+          const canEdit = !msg.is_deleted && (isOperator || (isOwn && within15min));
+          const canDelete = !msg.is_deleted && (isOwn || isOperator);
           const isEditing = editingId === msg.id;
 
           return (
