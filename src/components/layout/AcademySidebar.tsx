@@ -8,6 +8,7 @@ import {
   Settings,
   ShieldCheck,
   LayoutGrid,
+  Users,
   MessageSquare,
   Lock,
   Inbox,
@@ -181,6 +182,19 @@ export function AcademySidebar() {
                     >
                       <ShieldCheck className="h-4 w-4 shrink-0" />
                       {!collapsed && <span className="text-sm">Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/academy/admin/users")}>
+                    <NavLink
+                      to="/academy/admin/users"
+                      end
+                      className="flex items-center gap-2 px-2 py-1.5"
+                      activeClassName="bg-muted text-primary font-medium"
+                    >
+                      <Users className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="text-sm">User Export</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
