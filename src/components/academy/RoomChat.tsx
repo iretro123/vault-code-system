@@ -771,7 +771,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 {sending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" fill="currentColor" strokeWidth={0} />
+                  <Send className="h-5 w-5" />
                 )}
               </button>
             </div>
