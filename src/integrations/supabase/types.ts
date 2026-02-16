@@ -58,6 +58,7 @@ export type Database = {
           room_slug: string
           user_id: string
           user_name: string
+          user_role: string
         }
         Insert: {
           body: string
@@ -66,6 +67,7 @@ export type Database = {
           room_slug: string
           user_id: string
           user_name?: string
+          user_role?: string
         }
         Update: {
           body?: string
@@ -74,6 +76,7 @@ export type Database = {
           room_slug?: string
           user_id?: string
           user_name?: string
+          user_role?: string
         }
         Relationships: []
       }
