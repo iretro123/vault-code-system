@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -112,7 +113,16 @@ function avatarColor(userId: string) {
 export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error } =
     useRoomMessages(roomSlug);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+
+  const displayName =
+    (profile as any)?.display_name ||
+    (profile as any)?.username ||
+    user?.email?.split("@")[0] ||
+    "Anonymous";
+
+  const { typingText, broadcastTyping } = useTypingIndicator(roomSlug, user?.id, displayName);
+
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -120,6 +130,13 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
 
   const isTradeRecaps = roomSlug === "trade-recaps";
 
+  const handleDraftChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setDraft(e.target.value);
+      broadcastTyping();
+    },
+    [broadcastTyping]
+  );
   useEffect(() => {
     if (shouldAutoScroll.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -243,6 +260,18 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
         <div ref={bottomRef} />
       </div>
 
+      {/* Typing indicator */}
+      {typingText && (
+        <div className="px-3 py-1 flex items-center gap-1.5">
+          <span className="flex gap-0.5">
+            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce [animation-delay:0ms]" />
+            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce [animation-delay:150ms]" />
+            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce [animation-delay:300ms]" />
+          </span>
+          <span className="text-xs text-white/40">{typingText}…</span>
+        </div>
+      )}
+
       {/* Composer */}
       {canPost ? (
         <div className="pt-3 border-t border-white/[0.08] mt-2 px-3">
@@ -253,7 +282,7 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
             <div className="flex gap-2">
               <Input
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={handleDraftChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message…"
                 className="flex-1 bg-black/25 border-white/[0.1] text-white placeholder:text-white/30 focus-visible:ring-white/20"
