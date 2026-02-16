@@ -6,7 +6,7 @@ import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -771,7 +771,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 {sending ? (
                   <Loader2 className="h-[18px] w-[18px] animate-spin" />
                 ) : (
-                  <Send className="h-[18px] w-[18px] translate-x-[1px]" />
+                  <SendHorizontal className="h-[18px] w-[18px]" />
                 )}
               </button>
             </div>
