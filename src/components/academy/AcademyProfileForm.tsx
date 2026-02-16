@@ -154,7 +154,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       setImageUrl(`${publicUrl}?t=${Date.now()}`);
       setAvatarMode("image");
     } catch (err: any) {
-      setUploadError(err.message || "Upload failed. Please retry.");
+      toast.error(err.message || "Upload failed. Please retry.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
