@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 export interface Attachment {
   type: "image" | "file";
@@ -129,11 +130,9 @@ export function useRoomMessages(roomSlug: string) {
 
       if (err) {
         if (err.message.includes("Rate limit")) {
-          setError("Please wait 3 seconds between messages");
-        } else if (err.message.includes("row-level security")) {
-          setError("You don't have permission to post here");
+          toast.error("Please wait 3 seconds between messages.");
         } else {
-          setError(err.message);
+          toast.error("Message failed to send. Try again.");
         }
       } else {
         supabase
