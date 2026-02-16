@@ -123,8 +123,16 @@ export function AcademySidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-              {/* My Questions */}
+        {/* Inbox */}
+        {!collapsed && <div className="mx-3 h-px bg-white/[0.06]" />}
+        <SidebarGroup>
+          <SidebarGroupLabel>{!collapsed && "Inbox"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={isActive("/academy/my-questions")}>
                   <NavLink
@@ -136,7 +144,7 @@ export function AcademySidebar() {
                     <Inbox className="h-4 w-4 shrink-0" />
                     {!collapsed && (
                       <span className="flex items-center gap-1.5 text-sm">
-                        My Questions
+                        Inbox: My Questions
                         {unreadAnswers > 0 && (
                           <span className="flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
                             {unreadAnswers > 9 ? "9+" : unreadAnswers}
