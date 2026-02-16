@@ -151,8 +151,12 @@ export function useRoomMessages(roomSlug: string) {
   const editMessage = useCallback(
     async (messageId: string, newBody: string) => {
       if (!user || !newBody.trim()) return { error: "Empty message" };
+      const isOp = userRole?.role === "operator";
       const msg = messages.find((m) => m.id === messageId);
-      if (!msg || msg.user_id !== user.id) return { error: "Cannot edit" };
+      if (!msg) return { error: "Message not found" };
+      if (!isOp && msg.user_id !== user.id) return { error: "Cannot edit" };
+      const ageMs = Date.now() - new Date(msg.created_at).getTime();
+      if (!isOp && ageMs >= 15 * 60 * 1000) return { error: "Edit window expired (15 min)" };
 
       const updatePayload: any = {
         body: newBody.trim(),
