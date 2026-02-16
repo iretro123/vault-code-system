@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, Send, ChevronUp, Paperclip, Smile } from "lucide-react";
@@ -121,6 +122,14 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
     "Anonymous";
 
   const { typingText, broadcastTyping } = useTypingIndicator(roomSlug, user?.id, displayName);
+  const { trackMessages, getReactions, toggleReaction } = useMessageReactions(roomSlug, user?.id);
+
+  // Track visible message IDs for reaction fetching
+  useEffect(() => {
+    if (messages.length > 0) {
+      trackMessages(messages.map((m) => m.id));
+    }
+  }, [messages, trackMessages]);
 
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -262,6 +271,47 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
                     </div>
                   </div>
                 )}
+
+                {/* Reactions */}
+                {(() => {
+                  const reactions = getReactions(msg.id);
+                  return (
+                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                      {reactions.map((r) => (
+                        <button
+                          key={r.emoji}
+                          type="button"
+                          onClick={() => toggleReaction(msg.id, r.emoji as ReactionEmoji)}
+                          className={cn(
+                            "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
+                            r.reacted
+                              ? "bg-primary/15 border-primary/30 text-primary"
+                              : "bg-white/[0.04] border-white/[0.08] text-white/50 hover:bg-white/[0.08]"
+                          )}
+                        >
+                          <span>{r.emoji}</span>
+                          <span className="text-[11px] font-medium">{r.count}</span>
+                        </button>
+                      ))}
+
+                      {/* Hover add-reaction trigger */}
+                      <span className="hidden group-hover:inline-flex items-center gap-0.5">
+                        {ALLOWED_EMOJIS.filter(
+                          (e) => !reactions.some((r) => r.emoji === e && r.reacted)
+                        ).map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => toggleReaction(msg.id, emoji)}
+                            className="text-xs px-1 py-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );
