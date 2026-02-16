@@ -259,13 +259,15 @@ export function AskCoachButton() {
       <button
         onClick={() => { setOpen(true); setTab("coach"); setCoachView("new"); }}
         className={cn(
-          "fixed z-50 group transition-all duration-300 ease-out",
-          // Desktop: pill with tail, above composer area
-          "md:bottom-[88px] md:right-6",
-          // Mobile: above mobile nav + composer
-          "bottom-[140px] right-3",
+          "fixed z-[60] group transition-all duration-300 ease-out",
+          // Small <768px: circular icon, safe above mobile nav + composer
+          "bottom-[120px] right-4",
+          // Medium 768-1280px
+          "md:bottom-[132px] md:right-6",
+          // Large >1280px
+          "xl:bottom-[140px] xl:right-8",
           // Nudge up when composer is focused
-          composerFocused && "md:translate-y-[-12px] translate-y-[-16px]",
+          composerFocused && "translate-y-[-12px]",
         )}
       >
         {/* Speech bubble shape */}
@@ -273,17 +275,17 @@ export function AskCoachButton() {
           "relative flex items-center gap-2 rounded-2xl shadow-lg transition-all duration-200",
           "bg-foreground text-background",
           "hover:shadow-xl hover:scale-105 active:scale-95",
-          // Desktop: pill shape
+          // Small: circular icon only
+          "p-3 rounded-full",
+          // Medium+: pill with text
           "md:px-4 md:py-2.5 md:rounded-2xl",
-          // Mobile: circular icon only
-          "px-3 py-3 sm:px-4 sm:py-2.5",
         )}>
           <HelpCircle className="h-[18px] w-[18px] shrink-0" />
-          <span className="text-sm font-semibold hidden sm:inline">Ask Coach</span>
+          <span className="text-sm font-semibold hidden md:inline">Ask Coach</span>
         </div>
 
-        {/* Tail / pointer */}
-        <div className="absolute -bottom-[6px] right-5 w-3 h-3 rotate-45 bg-foreground rounded-sm shadow-lg" />
+        {/* Tail / pointer - hidden on small screens */}
+        <div className="absolute -bottom-[6px] right-5 w-3 h-3 rotate-45 bg-foreground rounded-sm shadow-lg hidden md:block" />
       </button>
 
       {open && (
