@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { format, isPast } from "date-fns";
+import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 
 interface LiveSession {
@@ -299,7 +300,7 @@ function SessionCard({
             </span>
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {format(date, "h:mm a")}
+              {formatTime(date)}
             </span>
           </div>
 

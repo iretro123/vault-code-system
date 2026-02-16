@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { formatDateTime, formatDateShort } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
@@ -411,7 +411,7 @@ export function AskCoachButton() {
                             <span className="text-xs text-muted-foreground/60 capitalize">{t.status}</span>
                           </div>
                           <p className="text-sm text-foreground line-clamp-2">{t.question}</p>
-                          <p className="text-xs text-muted-foreground/50 mt-1">{format(new Date(t.created_at), "MMM d, h:mm a")}</p>
+                          <p className="text-xs text-muted-foreground/50 mt-1">{formatDateTime(t.created_at)}</p>
                         </div>
                       </div>
                     </button>
@@ -425,7 +425,7 @@ export function AskCoachButton() {
                     <div className="flex items-center gap-2">
                       {statusIcon(activeTicket.status)}
                       <span className="text-sm font-medium capitalize">{activeTicket.status}</span>
-                      <span className="text-xs text-muted-foreground/50">{format(new Date(activeTicket.created_at), "MMM d, h:mm a")}</span>
+                      <span className="text-xs text-muted-foreground/50">{formatDateTime(activeTicket.created_at)}</span>
                     </div>
                     <p className="text-sm text-foreground leading-relaxed">{activeTicket.question}</p>
                     {activeTicket.screenshot_url && (
@@ -446,7 +446,7 @@ export function AskCoachButton() {
                             {r.user_name}
                             {r.is_admin && <span className="text-xs ml-1 font-normal text-primary/60">Coach</span>}
                           </span>
-                          <span className="text-xs text-muted-foreground/50">{format(new Date(r.created_at), "MMM d, h:mm a")}</span>
+                          <span className="text-xs text-muted-foreground/50">{formatDateTime(r.created_at)}</span>
                         </div>
                         <p className="text-foreground/90 whitespace-pre-line leading-relaxed">{r.body}</p>
                       </div>
@@ -529,7 +529,7 @@ export function AskCoachButton() {
                     <div key={a.id} className="rounded-lg border border-border p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-foreground line-clamp-1">{a.question}</p>
-                        <span className="text-xs text-muted-foreground/50 shrink-0 ml-2">{format(new Date(a.created_at), "MMM d")}</span>
+                        <span className="text-xs text-muted-foreground/50 shrink-0 ml-2">{formatDateShort(a.created_at)}</span>
                       </div>
                       <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/80 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/80">
                         <ReactMarkdown>{a.answer}</ReactMarkdown>

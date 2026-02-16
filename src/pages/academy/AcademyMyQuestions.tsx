@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, MessageSquare, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { formatDateTimeFull, formatDateTime, formatDateWithYear, formatDateShort } from "@/lib/formatTime";
 import { useUnreadAnswers } from "@/hooks/useUnreadAnswers";
 
 interface Ticket {
@@ -164,7 +164,7 @@ const AcademyMyQuestions = () => {
               </div>
               <h2 className="text-base font-semibold text-foreground">{selected.question}</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                {format(new Date(selected.created_at), "MMM d, yyyy · h:mm a")}
+                {formatDateTimeFull(selected.created_at)}
               </p>
               {selected.screenshot_url && (
                 <img
@@ -199,7 +199,7 @@ const AcademyMyQuestions = () => {
                         {r.is_admin ? "Coach" : r.user_name}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
-                        {format(new Date(r.created_at), "MMM d · h:mm a")}
+                        {formatDateTime(r.created_at)}
                       </span>
                     </div>
                     <p className="text-sm text-foreground whitespace-pre-wrap">{r.body}</p>
@@ -266,7 +266,7 @@ const AcademyMyQuestions = () => {
                   </div>
                   <p className="text-sm font-medium text-foreground line-clamp-2">{t.question}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    {format(new Date(t.created_at), "MMM d, yyyy")}
+                    {formatDateWithYear(t.created_at)}
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/30 mt-1 shrink-0" />
