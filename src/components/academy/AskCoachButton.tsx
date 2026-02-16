@@ -107,6 +107,30 @@ export function AskCoachButton() {
   const [pastAnswers, setPastAnswers] = useState<InstantAnswer[]>([]);
   const [pastLoading, setPastLoading] = useState(false);
 
+  // Detect if chat composer is focused to nudge the button up
+  const [composerFocused, setComposerFocused] = useState(false);
+
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === "TEXTAREA" && target.closest("[data-chat-composer]")) {
+        setComposerFocused(true);
+      }
+    };
+    const handleFocusOut = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === "TEXTAREA" && target.closest("[data-chat-composer]")) {
+        setComposerFocused(false);
+      }
+    };
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
+
   const fetchTickets = useCallback(async () => {
     if (!user) return;
     setTicketsLoading(true);
@@ -226,14 +250,40 @@ export function AskCoachButton() {
     return <Clock className="h-3 w-3 text-blue-400" />;
   };
 
+
+
+
   return (
     <>
+      {/* Speech-bubble floating button */}
       <button
         onClick={() => { setOpen(true); setTab("coach"); setCoachView("new"); }}
-        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[#0B0F17] shadow-lg transition-all hover:bg-[#F3F4F6] hover:shadow-xl hover:scale-105 active:scale-95"
+        className={cn(
+          "fixed z-50 group transition-all duration-300 ease-out",
+          // Desktop: pill with tail, above composer area
+          "md:bottom-[88px] md:right-6",
+          // Mobile: above mobile nav + composer
+          "bottom-[140px] right-3",
+          // Nudge up when composer is focused
+          composerFocused && "md:translate-y-[-12px] translate-y-[-16px]",
+        )}
       >
-        <HelpCircle className="h-4 w-4" />
-        <span className="text-sm font-medium">Ask Coach</span>
+        {/* Speech bubble shape */}
+        <div className={cn(
+          "relative flex items-center gap-2 rounded-2xl shadow-lg transition-all duration-200",
+          "bg-foreground text-background",
+          "hover:shadow-xl hover:scale-105 active:scale-95",
+          // Desktop: pill shape
+          "md:px-4 md:py-2.5 md:rounded-2xl",
+          // Mobile: circular icon only
+          "px-3 py-3 sm:px-4 sm:py-2.5",
+        )}>
+          <HelpCircle className="h-[18px] w-[18px] shrink-0" />
+          <span className="text-sm font-semibold hidden sm:inline">Ask Coach</span>
+        </div>
+
+        {/* Tail / pointer */}
+        <div className="absolute -bottom-[6px] right-5 w-3 h-3 rotate-45 bg-foreground rounded-sm shadow-lg" />
       </button>
 
       {open && (
