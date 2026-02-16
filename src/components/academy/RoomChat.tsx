@@ -168,7 +168,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
 
   const [draft, setDraft] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
@@ -252,15 +251,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     const file = e.target.files?.[0];
     if (!file || !user) return;
     e.target.value = "";
-    setUploadError(null);
 
     if (!ALLOWED_MIME.includes(file.type)) {
-      setUploadError("Unsupported file type. Allowed: PNG, JPG, GIF, PDF, MP4");
+      toast.error("Unsupported file type. Allowed: PNG, JPG, GIF, PDF, MP4");
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError("File must be under 15 MB");
+      toast.error("File must be under 15 MB.");
       return;
     }
 
@@ -272,7 +270,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
       .upload(path, file);
 
     if (uploadErr) {
-      setUploadError("Upload failed: " + uploadErr.message);
+      toast.error("Upload failed. Please try again.");
       setUploading(false);
       return;
     }
@@ -683,8 +681,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
       {/* Composer */}
       {canPost ? (
         <div className="pt-3 border-t border-white/[0.08] mt-2 px-3">
-          {error && <p className="text-xs text-destructive mb-2">{error}</p>}
-          {uploadError && <p className="text-xs text-destructive mb-2">{uploadError}</p>}
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
