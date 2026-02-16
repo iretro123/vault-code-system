@@ -185,7 +185,7 @@ export function useRoomMessages(roomSlug: string) {
       );
       return { error: null };
     },
-    [user, messages]
+    [user, messages, userRole]
   );
 
   // Soft-delete message

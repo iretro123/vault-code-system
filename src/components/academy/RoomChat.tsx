@@ -318,7 +318,18 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   };
 
   // Edit handlers
+  const [saving, setSaving] = useState(false);
+
   const startEdit = (msgId: string, currentBody: string) => {
+    // Re-check 15-min window at click time
+    const msg = messages.find((m) => m.id === msgId);
+    if (msg && !isOperator) {
+      const ageMs = Date.now() - new Date(msg.created_at).getTime();
+      if (ageMs >= 15 * 60 * 1000) {
+        toast.error("Edit window expired — messages can only be edited within 15 minutes.");
+        return;
+      }
+    }
     setEditingId(msgId);
     setEditDraft(currentBody);
   };
@@ -329,13 +340,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   };
 
   const confirmEdit = async () => {
-    if (!editingId || !editDraft.trim()) return;
+    if (!editingId || !editDraft.trim() || saving) return;
+    setSaving(true);
     const result = await editMessage(editingId, editDraft);
     if (result.error) {
       toast.error(result.error);
     } else {
       toast.success("Message edited");
     }
+    setSaving(false);
     cancelEdit();
   };
 
