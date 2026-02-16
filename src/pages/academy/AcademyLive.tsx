@@ -41,6 +41,23 @@ function useLiveSessions() {
   return { sessions, loading, refetch: fetch };
 }
 
+function parse12hTo24h(hour: string, minute: string, ampm: string): { h: number; m: number } | null {
+  let h = parseInt(hour, 10);
+  const m = parseInt(minute, 10);
+  if (isNaN(h) || isNaN(m) || h < 1 || h > 12 || m < 0 || m > 59) return null;
+  if (ampm === "AM" && h === 12) h = 0;
+  else if (ampm === "PM" && h !== 12) h += 12;
+  return { h, m };
+}
+
+function to12h(date: Date) {
+  let h = date.getHours();
+  const m = date.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return { hour: String(h), minute: String(m).padStart(2, "0"), ampm };
+}
+
 function SessionForm({
   initial,
   onSave,
@@ -55,17 +72,31 @@ function SessionForm({
   const [title, setTitle] = useState(initial?.title || "");
   const [description, setDescription] = useState(initial?.description || "");
   const [dateStr, setDateStr] = useState(
-    initial ? format(new Date(initial.session_date), "yyyy-MM-dd'T'HH:mm") : ""
+    initial ? format(new Date(initial.session_date), "yyyy-MM-dd") : ""
   );
+  const initTime = initial ? to12h(new Date(initial.session_date)) : { hour: "", minute: "", ampm: "AM" };
+  const [hour, setHour] = useState(initTime.hour);
+  const [minute, setMinute] = useState(initTime.minute);
+  const [ampm, setAmpm] = useState(initTime.ampm);
   const [joinUrl, setJoinUrl] = useState(initial?.join_url || "");
   const [type, setType] = useState(initial?.session_type || "live");
+
+  const buildDate = () => {
+    const parsed = parse12hTo24h(hour, minute, ampm);
+    if (!parsed || !dateStr) return null;
+    const d = new Date(`${dateStr}T00:00:00`);
+    d.setHours(parsed.h, parsed.m, 0, 0);
+    return d;
+  };
+
+  const isValid = !!title.trim() && !!dateStr && !!buildDate();
 
   return (
     <Card className="vault-card p-4 space-y-3">
       <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Session title" />
       <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="resize-none" />
       <div className="grid grid-cols-2 gap-2">
-        <Input type="datetime-local" value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
+        <Input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} />
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
@@ -75,12 +106,48 @@ function SessionForm({
           <option value="office-hours">Office Hours</option>
         </select>
       </div>
+      {/* 12-hour time picker */}
+      <div className="flex items-center gap-2">
+        <Input
+          className="w-16 text-center"
+          placeholder="HH"
+          maxLength={2}
+          value={hour}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+            if (v === "" || (parseInt(v) >= 1 && parseInt(v) <= 12)) setHour(v);
+          }}
+        />
+        <span className="text-muted-foreground font-medium">:</span>
+        <Input
+          className="w-16 text-center"
+          placeholder="MM"
+          maxLength={2}
+          value={minute}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, "").slice(0, 2);
+            if (v === "" || parseInt(v) <= 59) setMinute(v);
+          }}
+        />
+        <select
+          value={ampm}
+          onChange={(e) => setAmpm(e.target.value)}
+          className="flex h-10 rounded-md border border-input bg-background px-2 py-2 text-sm ring-offset-background"
+        >
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
       <Input value={joinUrl} onChange={(e) => setJoinUrl(e.target.value)} placeholder="Join URL (Zoom, Meet, etc.)" />
       <div className="flex gap-2">
         <Button
           size="sm"
-          disabled={saving || !title.trim() || !dateStr}
-          onClick={() => onSave({ title: title.trim(), description: description.trim(), session_date: new Date(dateStr).toISOString(), join_url: joinUrl.trim(), session_type: type })}
+          disabled={saving || !isValid}
+          onClick={() => {
+            const d = buildDate();
+            if (!d) return;
+            onSave({ title: title.trim(), description: description.trim(), session_date: d.toISOString(), join_url: joinUrl.trim(), session_type: type });
+          }}
         >
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : initial ? "Save" : "Add Session"}
         </Button>
