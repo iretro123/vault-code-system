@@ -4,9 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, BookOpen, Library, BarChart3, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -38,24 +39,36 @@ const NEXT_STEPS: Record<string, { label: string; desc: string; path: string; ic
 };
 
 const AcademyStart = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { onboarding, refetchOnboarding } = useAcademyData();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // If profile is completed, redirect — edits go through Settings
+  const profileCompleted = profile && (profile as any).profile_completed;
+  if (profileCompleted && onboarding?.claimed_role) {
+    return <Navigate to="/academy/home" replace />;
+  }
 
   const handleSave = async () => {
     if (!user || !selected) return;
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ academy_experience: selected, role_level: selected } as any)
+      .update({ academy_experience: selected, role_level: selected, profile_completed: true } as any)
       .eq("user_id", user.id);
     setSaving(false);
     if (error) {
       toast.error("Failed to save");
       return;
     }
+    // Also mark claimed_role in onboarding_state
+    await supabase
+      .from("onboarding_state")
+      .upsert({ user_id: user.id, claimed_role: true } as any, { onConflict: "user_id" });
+    refetchOnboarding();
     toast.success("Role claimed!");
     setSaved(true);
   };

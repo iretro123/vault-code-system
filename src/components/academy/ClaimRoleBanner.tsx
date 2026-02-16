@@ -1,29 +1,12 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Rocket, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
 
 export function ClaimRoleBanner() {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [show, setShow] = useState(false);
+  const { onboarding, hydrated } = useAcademyData();
 
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("onboarding_state")
-      .select("claimed_role")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        // Show banner if no onboarding row or role not claimed
-        if (!data || !data.claimed_role) setShow(true);
-      });
-  }, [user]);
-
-  if (!show) return null;
+  if (!hydrated || !onboarding || onboarding.claimed_role) return null;
 
   return (
     <div className="max-w-2xl rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3.5 flex items-center gap-3">

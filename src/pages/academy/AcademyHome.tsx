@@ -182,19 +182,21 @@ const AcademyHome = () => {
       )}
 
       <div className="px-4 md:px-6 pb-6 space-y-6">
-        {/* How to use card */}
-        <Card className="max-w-2xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">How to use VaultAcademy (60 seconds)</h3>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-            <li>Claim your role</li>
-            <li>Watch Lesson 1</li>
-            <li>Ask questions in Trading Chat or Ask Coach</li>
-            <li>Post 1 trade/week for feedback</li>
-          </ol>
-          <Button size="sm" onClick={() => navigate("/academy/start")} className="gap-1.5">
-            <Rocket className="h-3.5 w-3.5" /> Start Here
-          </Button>
-        </Card>
+        {/* How to use card — only shown before profile is completed */}
+        {!(profile && (profile as any).profile_completed) && (
+          <Card className="max-w-2xl p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">How to use VaultAcademy (60 seconds)</h3>
+            <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Claim your role</li>
+              <li>Watch Lesson 1</li>
+              <li>Ask questions in Trading Chat or Ask Coach</li>
+              <li>Post 1 trade/week for feedback</li>
+            </ol>
+            <Button size="sm" onClick={() => navigate("/academy/start")} className="gap-1.5">
+              <Rocket className="h-3.5 w-3.5" /> Start Here
+            </Button>
+          </Card>
+        )}
 
         {/* Claim role banner */}
         <ClaimRoleBanner />
