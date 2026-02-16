@@ -55,8 +55,8 @@ const AcademyAdminUsers = () => {
       escapeCsv(u.email || ""),
       escapeCsv(u.phone_number || ""),
       escapeCsv(u.academy_experience),
-      escapeCsv(u.created_at ? format(new Date(u.created_at), "yyyy-MM-dd HH:mm") : ""),
-      escapeCsv(u.updated_at ? format(new Date(u.updated_at), "yyyy-MM-dd HH:mm") : ""),
+      escapeCsv(u.created_at ? format(new Date(u.created_at), "yyyy-MM-dd h:mm a") : ""),
+      escapeCsv(u.updated_at ? format(new Date(u.updated_at), "yyyy-MM-dd h:mm a") : ""),
     ]);
     const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

@@ -462,7 +462,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   />
                 ) : (
                   <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-white/30 select-none">
-                    {format(new Date(msg.created_at), "HH:mm")}
+                    {format(new Date(msg.created_at), "h:mm a")}
                   </span>
                 )}
               </div>
@@ -479,7 +479,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                       getProfile(msg.user_id)?.role_level
                     )} />
                     <span className="text-[11px] text-white/30">
-                      {format(new Date(msg.created_at), "MMM d, HH:mm")}
+                      {format(new Date(msg.created_at), "MMM d, h:mm a")}
                     </span>
                   </div>
                 )}
