@@ -98,9 +98,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          .eq("user_id", userId)
          .maybeSingle();
  
-       if (profileData) {
-         setProfile(profileData as Profile);
-       }
+        if (profileData) {
+          setProfile(profileData as Profile);
+          
+          // Backfill timezone if empty or default
+          const tz = (profileData as any).timezone;
+          if (!tz || tz === "America/New_York") {
+            try {
+              const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+              if (detected && detected !== "America/New_York" && (!tz || tz === "")) {
+                await supabase
+                  .from("profiles")
+                  .update({ timezone: detected })
+                  .eq("user_id", userId);
+              }
+            } catch {}
+          }
+        }
  
        // Fetch user role
        const { data: roleData } = await supabase
