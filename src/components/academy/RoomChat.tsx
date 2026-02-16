@@ -437,8 +437,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           </p>
         )}
 
-        {messages.map((msg, i) => {
-          const prev = messages[i - 1];
+        {messages.filter((msg) => {
+          // Hide soft-deleted messages older than 15 minutes
+          if (msg.is_deleted && msg.deleted_at) {
+            const deletedAgeMs = Date.now() - new Date(msg.deleted_at).getTime();
+            if (deletedAgeMs >= 15 * 60 * 1000) return false;
+          }
+          return true;
+        }).map((msg, i, filteredMsgs) => {
+          const prev = filteredMsgs[i - 1];
           const showHdr = shouldShowHeader(msg, prev);
           const isRecap = !msg.is_deleted && isRecapPost(msg.body);
           const isOwn = msg.user_id === user?.id;
@@ -580,7 +587,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                               <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
                                 {renderPlainBody(msg.body)}
                               </p>
-                              {msg.edited_at && (
+                              {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
                                 <span className="text-[10px] text-white/25 mt-0.5 block">(edited)</span>
                               )}
                             </div>

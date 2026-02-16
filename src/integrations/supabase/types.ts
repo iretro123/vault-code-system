@@ -1350,6 +1350,7 @@ export type Database = {
           trades_remaining: number
         }[]
       }
+      cleanup_deleted_messages: { Args: never; Returns: undefined }
       close_trade_intent: {
         Args: { _trade_result: number; _user_id: string }
         Returns: {
