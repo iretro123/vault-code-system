@@ -749,7 +749,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 value={draft}
                 onChange={handleDraftChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Message #Trading Chat…"
+                placeholder="Type a message…"
                 maxLength={1000}
                 disabled={sending}
                 rows={1}
@@ -762,9 +762,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 onClick={() => handleSend()}
                 disabled={(!draft.trim() && !uploading) || sending}
                 className={cn(
-                  "shrink-0 p-2 rounded-lg transition-colors",
+                  "shrink-0 p-2 rounded-lg transition-all duration-150",
                   draft.trim() && !sending
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    ? "bg-primary text-primary-foreground hover:brightness-110 active:scale-95"
                     : "text-white/20 cursor-not-allowed"
                 )}
               >
