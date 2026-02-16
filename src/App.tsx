@@ -46,7 +46,7 @@ const App = () => (
             <Route path="/log" element={<VaultOSGate><TradeLog /></VaultOSGate>} />
             <Route path="/vault-log" element={<VaultOSGate><VaultLog /></VaultOSGate>} />
             <Route path="/reports" element={<VaultOSGate><Reports /></VaultOSGate>} />
-            <Route path="/settings" element={<Settings />} />
+            <Route path="/settings" element={<VaultOSGate><Settings /></VaultOSGate>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/academy" element={<Navigate to="/academy/home" replace />} />
             <Route path="/academy/home" element={<AcademyHome />} />
