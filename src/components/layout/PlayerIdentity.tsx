@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, HelpCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 interface ProfileExtras {
@@ -93,22 +93,22 @@ export function PlayerIdentity() {
           </div>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <div className="px-2 py-2 sm:hidden">
+      <DropdownMenuContent align="end" className="w-52 bg-popover border-border z-50">
+        <div className="px-3 py-2.5">
           <p className="text-sm font-medium text-foreground">{displayName}</p>
           <p className="text-xs text-muted-foreground">@{username}</p>
         </div>
-        <DropdownMenuSeparator className="sm:hidden" />
+        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-            <User className="h-4 w-4" />
-            Profile
+          <Link to="/academy/settings" className="flex items-center gap-2 cursor-pointer">
+            <Settings className="h-4 w-4" />
+            Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
-            <Settings className="h-4 w-4" />
-            Settings
+          <Link to="/academy/my-questions" className="flex items-center gap-2 cursor-pointer">
+            <HelpCircle className="h-4 w-4" />
+            Help
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
