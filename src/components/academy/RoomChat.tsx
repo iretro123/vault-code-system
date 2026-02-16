@@ -3,8 +3,9 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
+import { useChatProfiles } from "@/hooks/useChatProfiles";
+import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, Send, ChevronUp, Paperclip, Smile, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -26,6 +27,7 @@ const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
   admin:        { label: "Admin",        cls: "bg-red-500/20 text-red-400 border-red-500/30" },
   coach:        { label: "Coach",        cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   advanced:     { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  professional: { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   veteran:      { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   intermediate: { label: "Intermediate", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
   active:       { label: "Intermediate", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
@@ -93,20 +95,10 @@ function shouldShowHeader(
   return new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 3 * 60 * 1000;
 }
 
-/* ── avatar palette ── */
-const AVATAR_COLORS = [
-  "bg-blue-600/30 text-blue-300",
-  "bg-emerald-600/30 text-emerald-300",
-  "bg-amber-600/30 text-amber-300",
-  "bg-purple-600/30 text-purple-300",
-  "bg-rose-600/30 text-rose-300",
-  "bg-cyan-600/30 text-cyan-300",
-];
-
-function avatarColor(userId: string) {
-  let hash = 0;
-  for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) | 0;
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+/* ── role label from profile data ── */
+function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
+  // Prefer profile role_level if available, fall back to message user_role
+  return profileRoleLevel || userRole || "";
 }
 
 /* ── main component ── */
@@ -124,13 +116,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
 
   const { typingText, broadcastTyping } = useTypingIndicator(roomSlug, user?.id, displayName);
   const { trackMessages, getReactions, toggleReaction } = useMessageReactions(roomSlug, user?.id);
+  const { ensureProfiles, getProfile } = useChatProfiles();
 
-  // Track visible message IDs for reaction fetching
+  // Track visible message IDs for reaction fetching + fetch profiles
   useEffect(() => {
     if (messages.length > 0) {
       trackMessages(messages.map((m) => m.id));
+      const uniqueUserIds = [...new Set(messages.map((m) => m.user_id))];
+      ensureProfiles(uniqueUserIds);
     }
-  }, [messages, trackMessages]);
+  }, [messages, trackMessages, ensureProfiles]);
 
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -244,11 +239,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
               {/* Avatar column */}
               <div className="w-8 shrink-0">
                 {showHdr ? (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className={cn("text-xs font-semibold", avatarColor(msg.user_id))}>
-                      {getInitials(msg.user_name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <ChatAvatar
+                    avatarUrl={getProfile(msg.user_id)?.avatar_url}
+                    userName={msg.user_name}
+                  />
                 ) : (
                   /* Hover timestamp for grouped messages */
                   <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-white/30 select-none">
@@ -264,7 +258,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                     <span className="text-[13px] font-semibold text-white">
                       {msg.user_name}
                     </span>
-                    <RoleBadge role={(msg as any).user_role} />
+                    <RoleBadge role={getRoleBadgeKey(
+                      (msg as any).user_role,
+                      getProfile(msg.user_id)?.role_level
+                    )} />
                     <span className="text-[11px] text-white/30">
                       {format(new Date(msg.created_at), "MMM d, HH:mm")}
                     </span>
