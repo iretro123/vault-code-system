@@ -230,7 +230,7 @@ export function AskCoachButton() {
     <>
       <button
         onClick={() => { setOpen(true); setTab("coach"); setCoachView("new"); }}
-        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[#0B0F17] shadow-lg transition-all hover:bg-[#F3F4F6] hover:shadow-xl hover:scale-105 active:scale-95"
       >
         <HelpCircle className="h-4 w-4" />
         <span className="text-sm font-medium">Ask Coach</span>
