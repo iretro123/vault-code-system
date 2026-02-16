@@ -34,7 +34,7 @@ const GEOMETRIC_ICONS = [
 
 type AvatarMode = "initials" | "icon" | "image";
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function cropToSquare(file: File): Promise<Blob> {
@@ -45,7 +45,7 @@ function cropToSquare(file: File): Promise<Blob> {
       URL.revokeObjectURL(url);
       const size = Math.min(img.width, img.height);
       const canvas = document.createElement("canvas");
-      const target = Math.min(size, 512); // max 512x512
+      const target = Math.min(size, 640); // max 640x640
       canvas.width = target;
       canvas.height = target;
       const ctx = canvas.getContext("2d");
@@ -56,7 +56,7 @@ function cropToSquare(file: File): Promise<Blob> {
       canvas.toBlob(
         (blob) => blob ? resolve(blob) : reject(new Error("Crop failed")),
         "image/webp",
-        0.85
+        0.8
       );
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
@@ -123,11 +123,11 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      toast.error("Upload failed. Please try again (JPG/PNG under 2MB).");
+      toast.error("Upload failed. Please try again (JPG/PNG/WebP under 5MB).");
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      toast.error("Upload failed. Please try again (JPG/PNG under 2MB).");
+      toast.error("Upload failed. Please try again (JPG/PNG/WebP under 5MB).");
       return;
     }
     if (!user) return;
@@ -135,7 +135,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     setUploading(true);
     try {
       const cropped = await cropToSquare(file);
-      const path = `${user.id}/avatar.webp`;
+      const path = `${user.id}/profile-${Date.now()}.webp`;
       
       const { error: uploadErr } = await supabase.storage
         .from("avatars")
@@ -147,11 +147,10 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
         .from("avatars")
         .getPublicUrl(path);
 
-      // Append cache-buster so browser picks up the new image
-      setImageUrl(`${publicUrl}?t=${Date.now()}`);
+      setImageUrl(publicUrl);
       setAvatarMode("image");
     } catch {
-      toast.error("Upload failed. Please try again (JPG/PNG under 2MB).", {
+      toast.error("Upload failed. Please try again (JPG/PNG/WebP under 5MB).", {
         action: { label: "Retry", onClick: () => fileInputRef.current?.click() },
       });
     } finally {
@@ -246,7 +245,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
                   {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                   {uploading ? "Uploading…" : imageUrl ? "Change Photo" : "Upload Photo"}
                 </Button>
-                <p className="text-[10px] text-muted-foreground/60">JPG, PNG, or WebP · Max 2 MB · Auto-cropped to square</p>
+                <p className="text-[10px] text-muted-foreground/60">JPG, PNG, or WebP · Max 5 MB · Auto-cropped to square</p>
               </div>
             )}
 
