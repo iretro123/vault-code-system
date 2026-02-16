@@ -101,12 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (profileData) {
           setProfile(profileData as Profile);
           
-          // Backfill timezone if empty or default
+          // Backfill timezone only if truly empty
           const tz = (profileData as any).timezone;
-          if (!tz || tz === "America/New_York") {
+          if (!tz) {
             try {
               const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-              if (detected && detected !== "America/New_York" && (!tz || tz === "")) {
+              if (detected) {
                 await supabase
                   .from("profiles")
                   .update({ timezone: detected })

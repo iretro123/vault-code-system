@@ -24,7 +24,10 @@ export default function Settings() {
 
   // Profile fields
   const [displayName, setDisplayName] = useState("");
-  const [timezone, setTimezone] = useState("");
+  const [timezone, setTimezone] = useState(() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York"; }
+    catch { return "America/New_York"; }
+  });
   const [accountBalance, setAccountBalance] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -35,7 +38,7 @@ export default function Settings() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
-      setTimezone((profile as any).timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York");
+      setTimezone((profile as any).timezone || timezone);
     }
     if (vaultState.account_balance > 0) {
       setAccountBalance(vaultState.account_balance.toString());
