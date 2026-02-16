@@ -381,15 +381,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                     </div>
                   </div>
                 ) : (
-                  <div className="inline-block max-w-[85%]">
-                    <div className="bg-white/[0.04] rounded-lg rounded-tl-sm px-3 py-1.5">
-                      {msg.body && msg.body !== "📎 Attachment" && (
-                        <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
-                          {renderPlainBody(msg.body)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  <>
+                    {msg.body && msg.body !== "📎 Attachment" && (
+                      <div className="inline-block max-w-[85%]">
+                        <div className="bg-white/[0.04] rounded-lg rounded-tl-sm px-3 py-1.5">
+                          <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                            {renderPlainBody(msg.body)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Attachments */}
@@ -397,12 +399,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   <div className="flex flex-wrap gap-2 mt-1">
                     {msg.attachments.map((att: Attachment, idx: number) =>
                       att.type === "image" ? (
-                        <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer">
+                        <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block">
                           <img
                             src={att.url}
                             alt={att.filename}
-                            className="rounded-lg max-w-[300px] max-h-[240px] object-cover border border-white/[0.06]"
+                            loading="lazy"
+                            className="rounded-lg max-w-[260px] max-h-[200px] object-cover border border-white/[0.06] hover:border-white/20 transition-colors cursor-pointer"
                           />
+                          <span className="text-[10px] text-white/30 mt-0.5 block truncate max-w-[260px]">{att.filename}</span>
                         </a>
                       ) : (
                         <a
@@ -410,12 +414,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                           href={att.url}
                           target="_blank"
                           rel="noopener noreferrer"
+                          download={att.filename}
                           className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 hover:bg-white/[0.06] transition-colors"
                         >
                           <FileText className="h-4 w-4 text-primary shrink-0" />
                           <div className="min-w-0">
                             <p className="text-xs text-white/80 truncate max-w-[200px]">{att.filename}</p>
-                            <p className="text-[10px] text-white/30">{(att.size / 1024).toFixed(0)} KB</p>
+                            <p className="text-[10px] text-white/30">
+                              {att.size >= 1024 * 1024
+                                ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
+                                : `${(att.size / 1024).toFixed(0)} KB`}
+                              {" · "}
+                              <span className="text-primary/70">Download</span>
+                            </p>
                           </div>
                         </a>
                       )
