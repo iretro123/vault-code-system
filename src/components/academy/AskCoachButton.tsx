@@ -238,8 +238,10 @@ export function AskCoachButton() {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div className="relative w-[92vw] max-w-[760px] rounded-t-2xl md:rounded-xl border border-border bg-background shadow-xl animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[80vh] flex flex-col">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
+          <div className="relative w-[92vw] max-w-[760px] rounded-t-2xl md:rounded-xl border border-white/[0.08] bg-[hsl(220,20%,10%)] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)] backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[80vh] flex flex-col overflow-hidden">
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-20" />
 
             {/* Tabs */}
             <div className="flex border-b border-border shrink-0 sticky top-0 bg-background z-10 rounded-t-2xl md:rounded-t-xl max-w-md mx-auto w-full">
