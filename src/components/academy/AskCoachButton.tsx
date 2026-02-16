@@ -238,45 +238,46 @@ export function AskCoachButton() {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-          <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px]" onClick={() => setOpen(false)} />
-          <div className="relative w-[92vw] max-w-[760px] rounded-t-2xl md:rounded-xl border border-white/[0.08] bg-[hsl(220,20%,10%)] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)] backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[80vh] flex flex-col overflow-hidden">
-            {/* Top accent line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary z-20" />
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-[6px]" onClick={() => setOpen(false)} />
+          <div className="relative w-[min(760px,calc(100vw-48px))] rounded-t-2xl md:rounded-xl border border-white/[0.08] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.04)] animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[80vh] flex flex-col overflow-hidden">
 
-            {/* Tabs */}
-            <div className="flex border-b border-border shrink-0 sticky top-0 bg-background z-10 rounded-t-2xl md:rounded-t-xl max-w-md mx-auto w-full">
+            {/* Segmented tab header */}
+            <div className="flex shrink-0 sticky top-0 z-10 rounded-t-2xl md:rounded-t-xl bg-white/[0.03]">
               <button
                 onClick={() => { setTab("coach"); setCoachView("new"); }}
                 className={cn(
-                  "flex-1 py-3.5 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
-                  tab === "coach" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                  "flex-1 py-4 text-sm font-medium transition-colors relative flex flex-col items-center gap-0.5",
+                  tab === "coach" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span>Coach</span>
+                <span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Coach</span>
                 <span className="text-[11px] font-normal text-muted-foreground/70">Human response</span>
+                {tab === "coach" && <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-primary rounded-full" />}
               </button>
               <button
                 onClick={() => { setTab("instant"); setInstantView("ask"); setInstantResult(null); }}
                 className={cn(
-                  "flex-1 py-3.5 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
-                  tab === "instant" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                  "flex-1 py-4 text-sm font-medium transition-colors relative flex flex-col items-center gap-0.5",
+                  tab === "instant" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" /> Instant Answer</span>
+                <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" style={{ color: tab === "instant" ? "#FACC15" : undefined }} /> Instant Answer</span>
                 <span className="text-[11px] font-normal text-muted-foreground/70">Fast education</span>
+                {tab === "instant" && <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-[#FACC15] rounded-full" />}
               </button>
             </div>
+            <div className="h-px bg-white/[0.06]" />
 
             {/* Sub-header for coach tab */}
             {tab === "coach" && (
-              <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+              <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/[0.06] shrink-0">
                 <div className="flex items-center gap-2">
                   {coachView !== "new" && (
                     <button onClick={() => { setCoachView(coachView === "detail" ? "list" : "new"); setActiveTicket(null); }} className="text-muted-foreground hover:text-foreground">
                       <ChevronLeft className="h-5 w-5" />
                     </button>
                   )}
-                  <h3 className="font-semibold text-foreground text-base">
+                  <h3 className="font-bold text-foreground text-xl">
                     {coachView === "new" ? "Ask a Coach" : coachView === "list" ? "My Questions" : activeTicket?.category}
                   </h3>
                 </div>
@@ -286,7 +287,7 @@ export function AskCoachButton() {
                       <MessageSquare className="h-5 w-5" />
                     </button>
                   )}
-                   <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2.5 rounded-md hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                   <button onClick={() => setOpen(false)} className="min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
@@ -295,14 +296,15 @@ export function AskCoachButton() {
 
             {/* Sub-header for instant tab */}
             {tab === "instant" && (
-              <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
+              <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/[0.06] shrink-0">
                 <div className="flex items-center gap-2">
                   {instantView === "history" && (
                     <button onClick={() => { setInstantView("ask"); }} className="text-muted-foreground hover:text-foreground">
                       <ChevronLeft className="h-5 w-5" />
                     </button>
                   )}
-                  <h3 className="font-semibold text-foreground text-base">
+                  <h3 className="font-bold text-foreground text-xl flex items-center gap-2">
+                    <Zap className="h-5 w-5" style={{ color: "#FACC15" }} />
                     {instantView === "ask" ? "Instant Answer" : "Past Answers"}
                   </h3>
                 </div>
@@ -312,7 +314,7 @@ export function AskCoachButton() {
                       <History className="h-5 w-5" />
                     </button>
                   )}
-                   <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2.5 rounded-md hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                   <button onClick={() => setOpen(false)} className="min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
@@ -320,54 +322,54 @@ export function AskCoachButton() {
             )}
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-7">
+            <div className="flex-1 overflow-y-auto px-6 py-5 md:px-7 md:py-6">
 
               {/* ========== COACH TAB ========== */}
               {tab === "coach" && coachView === "new" && (
-                <div className="space-y-[18px]">
+                <div className="space-y-5">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground/80">Category</label>
+                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Category</label>
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="h-[46px] text-base leading-relaxed"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-12 text-base leading-relaxed focus:ring-[rgba(59,130,246,0.35)]"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {CATEGORIES.map((c) => <SelectItem key={c} value={c} className="text-base">{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground/80">Urgency</label>
+                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Urgency</label>
                     <div className="flex gap-2">
                       {["standard", "priority"].map((u) => (
                         <button key={u} onClick={() => setUrgency(u)} className={cn(
-                          "px-5 py-2.5 h-[46px] rounded-lg text-base font-medium transition-colors capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                          urgency === u ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                          "px-5 py-3 h-12 rounded-lg text-base font-medium transition-colors capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(59,130,246,0.35)]",
+                          urgency === u ? "bg-primary text-primary-foreground" : "bg-white/[0.04] text-muted-foreground hover:text-foreground border border-white/[0.08]"
                         )}>{u}</button>
                       ))}
                     </div>
-                    <p className="text-sm text-muted-foreground/70">
+                    <p className="text-[13px] text-muted-foreground">
                       {urgency === "priority" ? "Priority: faster response" : "Standard: within 2–4 hours"}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground/80">Question Template</label>
+                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Question Template</label>
                     <Select value={template} onValueChange={(val) => {
                       setTemplate(val);
                       if (val !== "None") setQuestion(QUESTION_TEMPLATES[val]);
                     }}>
-                      <SelectTrigger className="h-[46px] text-base leading-relaxed"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-background border border-border z-[60]">
+                      <SelectTrigger className="h-12 text-base leading-relaxed focus:ring-[rgba(59,130,246,0.35)]"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover border border-border z-[60]">
                         {Object.keys(QUESTION_TEMPLATES).map((t) => <SelectItem key={t} value={t} className="text-base">{t}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-muted-foreground/70">Optional — pick a template to get started faster</p>
+                    <p className="text-[13px] text-muted-foreground">Optional — pick a template to get started faster</p>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground/80">Your Question</label>
-                    <p className="text-sm text-muted-foreground/70">Keep it simple: what you tried + what happened + what you want.</p>
-                    <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What's going on? Describe the situation, what you tried, and where you're stuck…" className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-base" rows={8} maxLength={1000} />
-                    <p className="text-sm text-muted-foreground/70">e.g. "I keep revenge trading after a loss — how do I build a cooldown routine?"</p>
+                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Your Question</label>
+                    <p className="text-[13px] text-muted-foreground">Keep it simple: what you tried + what happened + what you want.</p>
+                    <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What's going on? Describe the situation, what you tried, and where you're stuck…" className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-[15px] py-3.5 px-4 focus-visible:ring-[rgba(59,130,246,0.35)]" rows={8} maxLength={1000} />
+                    <p className="text-[13px] text-muted-foreground">e.g. "I keep revenge trading after a loss — how do I build a cooldown routine?"</p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)} />
                     {screenshotFile ? (
                       <div className="flex items-center gap-2 text-base text-foreground">
@@ -376,14 +378,14 @@ export function AskCoachButton() {
                         <button onClick={() => setScreenshotFile(null)} className="text-muted-foreground hover:text-foreground p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"><X className="h-4 w-4" /></button>
                       </div>
                     ) : (
-                      <Button variant="outline" className="gap-2 text-base h-[46px] px-4 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => fileRef.current?.click()}>
+                      <Button variant="outline" className="gap-2 text-base h-12 px-4 w-full sm:w-auto border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => fileRef.current?.click()}>
                         <span>📎</span> Attach Screenshot
                       </Button>
                     )}
                   </div>
-                  <div className="sticky bottom-0 bg-background pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-border">
-                    <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-[50px] text-base font-semibold">
-                      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  <div className="sticky bottom-0 pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
+                    <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-14 text-[17px] font-semibold">
+                      {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                       {sending ? "Submitting…" : "Submit Question"}
                     </Button>
                   </div>
@@ -467,23 +469,23 @@ export function AskCoachButton() {
               {/* ========== INSTANT ANSWER TAB ========== */}
               {tab === "instant" && instantView === "ask" && (
                 <div className="space-y-5">
-                  <p className="text-sm text-muted-foreground">Ask any trading education question. No signals or price targets — just frameworks and checklists.</p>
+                  <p className="text-[14px] text-muted-foreground">Ask any trading education question. No signals or price targets — just frameworks and checklists.</p>
                   <Textarea
                     value={instantQ}
                     onChange={(e) => setInstantQ(e.target.value)}
                     placeholder="Type your question here — be as specific as you can…"
-                    className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-base"
+                    className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-[15px] py-3.5 px-4 focus-visible:ring-[rgba(250,204,21,0.35)]"
                     rows={7}
                     maxLength={500}
                   />
-                  <p className="text-sm text-muted-foreground/70">e.g. "How should I size my position after a losing streak?"</p>
-                  <div className="sticky bottom-0 bg-background pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-border">
+                  <p className="text-[13px] text-muted-foreground">e.g. "How should I size my position after a losing streak?"</p>
+                  <div className="sticky bottom-0 pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                     <Button
                       onClick={handleInstantAsk}
                       disabled={!instantQ.trim() || instantLoading}
-                      className="w-full gap-2 h-[50px] text-base font-semibold"
+                      className="w-full gap-2 h-14 text-[17px] font-semibold"
                     >
-                      {instantLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                      {instantLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" style={{ color: "#FACC15" }} />}
                       {instantLoading ? "Thinking…" : "Get Answer"}
                     </Button>
                   </div>
