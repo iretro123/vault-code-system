@@ -3,9 +3,8 @@ import { useRoomMessages } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Send, ChevronUp } from "lucide-react";
+import { Loader2, Send, ChevronUp, Paperclip, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
@@ -131,12 +130,22 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
   const isTradeRecaps = roomSlug === "trade-recaps";
 
   const handleDraftChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setDraft(e.target.value);
       broadcastTyping();
     },
     [broadcastTyping]
   );
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "0";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, [draft]);
   useEffect(() => {
     if (shouldAutoScroll.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -161,7 +170,7 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
     await sendMessage(body);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -279,27 +288,56 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
-            <div className="flex gap-2">
-              <Input
+            <div className="flex items-end gap-2 rounded-xl bg-black/25 border border-white/[0.1] px-3 py-2 focus-within:ring-1 focus-within:ring-white/20 transition-shadow">
+              {/* Left icon row */}
+              <div className="flex items-center gap-1 pb-0.5">
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
+                  title="Attach image"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
+                  title="Emoji"
+                >
+                  <Smile className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Textarea */}
+              <textarea
+                ref={textareaRef}
                 value={draft}
                 onChange={handleDraftChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Type a message…"
-                className="flex-1 bg-black/25 border-white/[0.1] text-white placeholder:text-white/30 focus-visible:ring-white/20"
+                placeholder="Message #Trading Chat…"
                 maxLength={1000}
                 disabled={sending}
+                rows={1}
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 resize-none outline-none min-h-[24px] max-h-[120px] leading-relaxed py-0.5"
               />
-              <Button
-                size="icon"
+
+              {/* Send button */}
+              <button
+                type="button"
                 onClick={() => handleSend()}
                 disabled={!draft.trim() || sending}
+                className={cn(
+                  "shrink-0 p-2 rounded-lg transition-colors",
+                  draft.trim() && !sending
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "text-white/20 cursor-not-allowed"
+                )}
               >
                 {sending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 )}
-              </Button>
+              </button>
             </div>
           )}
         </div>
