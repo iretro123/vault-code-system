@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
 
 export interface AcademyNotification {
   id: string;
@@ -15,6 +16,7 @@ export interface AcademyNotification {
 
 export function useAcademyNotifications() {
   const { user } = useAuth();
+  const { refetchNotifications } = useAcademyData();
   const [notifications, setNotifications] = useState<AcademyNotification[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -60,26 +62,38 @@ export function useAcademyNotifications() {
 
   const markRead = useCallback(async (notificationId: string) => {
     if (!user) return;
-    await supabase
+    const { error } = await supabase
       .from("academy_notification_reads" as any)
       .upsert({ notification_id: notificationId, user_id: user.id } as any, {
         onConflict: "notification_id,user_id",
       });
+    if (error) {
+      console.error("Failed to mark notification read:", error);
+      return;
+    }
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     );
-  }, [user]);
+    // Sync context badge count
+    refetchNotifications();
+  }, [user, refetchNotifications]);
 
   const markAllRead = useCallback(async () => {
     if (!user) return;
     const unread = notifications.filter((n) => !n.is_read);
     if (unread.length === 0) return;
     const rows = unread.map((n) => ({ notification_id: n.id, user_id: user.id }));
-    await supabase
+    const { error } = await supabase
       .from("academy_notification_reads" as any)
       .upsert(rows as any, { onConflict: "notification_id,user_id" });
+    if (error) {
+      console.error("Failed to mark all notifications read:", error);
+      return;
+    }
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-  }, [user, notifications]);
+    // Sync context badge count
+    refetchNotifications();
+  }, [user, notifications, refetchNotifications]);
 
   return { notifications, unreadCount, loading, markRead, markAllRead, refetch: fetchNotifications };
 }
