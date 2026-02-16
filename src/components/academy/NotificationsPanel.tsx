@@ -91,7 +91,7 @@ export function NotificationsPanel() {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -149,7 +149,7 @@ export function NotificationsPanel() {
                     >
                       <div className="flex items-start gap-3">
                         {!n.seen && (
-                          <span className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
+                          <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
                         )}
                         <div className={cn("flex-1 min-w-0", n.seen && "ml-5")}>
                           <div className="flex items-center gap-2 mb-0.5">
