@@ -1,0 +1,1 @@
+ALTER TABLE public.academy_messages ADD COLUMN user_role text NOT NULL DEFAULT '';

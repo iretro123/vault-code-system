@@ -7,6 +7,7 @@ interface Message {
   room_slug: string;
   user_id: string;
   user_name: string;
+  user_role: string;
   body: string;
   created_at: string;
 }
@@ -14,7 +15,7 @@ interface Message {
 const PAGE_SIZE = 40;
 
 export function useRoomMessages(roomSlug: string) {
-  const { user, profile } = useAuth();
+  const { user, profile, userRole } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -38,7 +39,7 @@ export function useRoomMessages(roomSlug: string) {
       return;
     }
 
-    const sorted = (data as Message[]).reverse();
+    const sorted = (data as unknown as Message[]).reverse();
     setMessages(sorted);
     setHasMore((data?.length ?? 0) >= PAGE_SIZE);
     oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
@@ -57,7 +58,7 @@ export function useRoomMessages(roomSlug: string) {
       .limit(PAGE_SIZE);
 
     if (data && data.length > 0) {
-      const sorted = (data as Message[]).reverse();
+      const sorted = (data as unknown as Message[]).reverse();
       setMessages((prev) => [...sorted, ...prev]);
       oldestRef.current = sorted[0].created_at;
       setHasMore(data.length >= PAGE_SIZE);
@@ -65,6 +66,15 @@ export function useRoomMessages(roomSlug: string) {
       setHasMore(false);
     }
   }, [roomSlug]);
+
+  // Compute role string for current user
+  const computeRole = useCallback(() => {
+    if (userRole?.role === "operator") return "admin";
+    const exp = (profile as any)?.academy_experience;
+    if (exp === "veteran") return "advanced";
+    if (exp === "active") return "intermediate";
+    return "beginner";
+  }, [userRole, profile]);
 
   // Send message
   const sendMessage = useCallback(
@@ -79,12 +89,15 @@ export function useRoomMessages(roomSlug: string) {
         user.email?.split("@")[0] ||
         "Anonymous";
 
+      const roleStr = computeRole();
+
       const { error: err } = await supabase.from("academy_messages").insert({
         room_slug: roomSlug,
         user_id: user.id,
         user_name: userName,
         body: body.trim(),
-      });
+        user_role: roleStr,
+      } as any);
 
       if (err) {
         if (err.message.includes("Rate limit")) {
@@ -104,7 +117,7 @@ export function useRoomMessages(roomSlug: string) {
       }
       setSending(false);
     },
-    [user, profile, roomSlug]
+    [user, profile, roomSlug, computeRole]
   );
 
   // Initial load
@@ -127,7 +140,6 @@ export function useRoomMessages(roomSlug: string) {
         (payload) => {
           const msg = payload.new as Message;
           setMessages((prev) => {
-            // Avoid duplicates
             if (prev.some((m) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
