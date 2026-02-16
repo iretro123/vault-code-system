@@ -41,7 +41,7 @@ const AcademyRoom = () => {
             />
           </div>
         )}
-        <RoomChat roomSlug={room.slug} canPost={canPost} />
+        <RoomChat roomSlug={room.slug} canPost={canPost} isAnnouncements={isAnnouncements} />
       </div>
     </AcademyLayout>
   );

@@ -5,7 +5,7 @@ import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, Send, ChevronUp, Paperclip, Smile } from "lucide-react";
+import { Loader2, Send, ChevronUp, Paperclip, Smile, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
@@ -13,6 +13,7 @@ import { TradeRecapForm } from "./chat/TradeRecapForm";
 interface RoomChatProps {
   roomSlug: string;
   canPost: boolean;
+  isAnnouncements?: boolean;
 }
 
 /* ── helpers ── */
@@ -110,7 +111,7 @@ function avatarColor(userId: string) {
 
 /* ── main component ── */
 
-export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
+export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomChatProps) {
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error } =
     useRoomMessages(roomSlug);
   const { user, profile } = useAuth();
@@ -202,6 +203,16 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto"
       >
+        {/* Announcements pinned banner */}
+        {isAnnouncements && (
+          <div className="mx-3 mt-2 mb-3 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2">
+            <Megaphone className="h-4 w-4 text-amber-400 shrink-0" />
+            <p className="text-xs text-amber-300/80">
+              Official updates only. Turn on notifications if you want alerts.
+            </p>
+          </div>
+        )}
+
         {hasMore && (
           <div className="flex justify-center py-2">
             <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs text-white/50 hover:text-white">
@@ -262,6 +273,20 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
 
                 {isRecap ? (
                   renderRecapCard(msg.body)
+                ) : isAnnouncements ? (
+                  <div className="max-w-[90%] mt-1">
+                    <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-white/[0.03] overflow-hidden">
+                      <div className="w-1 self-stretch bg-amber-500/60 shrink-0" />
+                      <div className="px-3 py-2 flex-1">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
+                          <Megaphone className="h-3 w-3" /> Official
+                        </span>
+                        <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                          {renderPlainBody(msg.body)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="inline-block max-w-[85%]">
                     <div className="bg-white/[0.04] rounded-lg rounded-tl-sm px-3 py-1.5">
@@ -272,8 +297,8 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
                   </div>
                 )}
 
-                {/* Reactions */}
-                {(() => {
+                {/* Reactions — hidden for announcements */}
+                {!isAnnouncements && (() => {
                   const reactions = getReactions(msg.id);
                   return (
                     <div className="flex items-center gap-1 mt-0.5 flex-wrap">
