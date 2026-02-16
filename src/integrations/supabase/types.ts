@@ -107,6 +107,65 @@ export type Database = {
         }
         Relationships: []
       }
+      academy_notification_reads: {
+        Row: {
+          id: string
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "academy_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          link_path: string | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          link_path?: string | null
+          title: string
+          type?: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          link_path?: string | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       behavior_stats: {
         Row: {
           avg_trades_per_day: number

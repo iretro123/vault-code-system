@@ -4,12 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Plus, Loader2, Pencil, Trash2, BookOpen } from "lucide-react";
+import { ChevronRight, Plus, Loader2, Pencil, Trash2, BookOpen, Bell } from "lucide-react";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
+import { SendNotificationModal } from "@/components/academy/SendNotificationModal";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ const AcademyLearn = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editSubtitle, setEditSubtitle] = useState("");
+  const [notifyOpen, setNotifyOpen] = useState(false);
 
   const handleAddModule = async () => {
     if (!newTitle.trim()) return;
@@ -189,10 +191,23 @@ const AcademyLearn = () => {
                   </div>
                 </Card>
               ) : (
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
-                  <Plus className="h-3.5 w-3.5" />
-                  Add Module
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Module
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setNotifyOpen(true)}>
+                    <Bell className="h-3.5 w-3.5" />
+                    Notify: New Module
+                  </Button>
+                  <SendNotificationModal
+                    open={notifyOpen}
+                    onClose={() => setNotifyOpen(false)}
+                    defaultType="new_module"
+                    defaultTitle="New module available!"
+                    defaultLinkPath="/academy/learn"
+                  />
+                </div>
               )
             )}
           </div>
