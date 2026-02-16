@@ -8,6 +8,18 @@ function generateShortId(): string {
 }
 
 /**
+ * Detects the user's timezone, falling back to America/New_York
+ */
+function detectTimezone(): string {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return tz || "America/New_York";
+  } catch {
+    return "America/New_York";
+  }
+}
+
+/**
  * Ensures a profile exists for the authenticated user.
  * Creates one with defaults if it doesn't exist.
  */
@@ -36,6 +48,7 @@ export async function ensureProfile(userId: string, email?: string | null): Prom
     const defaultUsername = `trader_${generateShortId()}`;
 
     // Create profile with defaults
+    const detectedTz = detectTimezone();
     const { error: insertError } = await supabase.from("profiles").insert({
       user_id: userId,
       email: email || null,
@@ -43,6 +56,7 @@ export async function ensureProfile(userId: string, email?: string | null): Prom
       username: defaultUsername,
       discipline_status: "inactive",
       discipline_score: 0,
+      timezone: detectedTz,
     });
 
     if (insertError) {
@@ -56,6 +70,7 @@ export async function ensureProfile(userId: string, email?: string | null): Prom
           username: retryUsername,
           discipline_status: "inactive",
           discipline_score: 0,
+          timezone: detectedTz,
         });
       } else {
         console.error("Error creating profile:", insertError);
