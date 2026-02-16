@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Navigate, useParams } from "react-router-dom";
@@ -8,12 +8,21 @@ import { RoomChat } from "@/components/academy/RoomChat";
 import { SendNotificationModal } from "@/components/academy/SendNotificationModal";
 import { Button } from "@/components/ui/button";
 import { Bell } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const AcademyRoom = () => {
   const { roomSlug } = useParams();
   const room = getRoomBySlug(roomSlug || "");
   const { isAdmin } = useAcademyRole();
+  const { user } = useAuth();
   const [notifyOpen, setNotifyOpen] = useState(false);
+
+  // Persist last visited room per user
+  useEffect(() => {
+    if (room && user) {
+      localStorage.setItem(`academy_last_room_${user.id}`, `/academy/room/${room.slug}`);
+    }
+  }, [room, user]);
 
   if (!room) {
     return <Navigate to="/academy/rooms" replace />;

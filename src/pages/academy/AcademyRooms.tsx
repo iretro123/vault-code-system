@@ -2,11 +2,19 @@ import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Lock, ChevronRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const AcademyRooms = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Deep-link to last visited room if available
+  const lastRoom = user ? localStorage.getItem(`academy_last_room_${user.id}`) : null;
+  if (lastRoom) {
+    return <Navigate to={lastRoom} replace />;
+  }
 
   return (
     <AcademyLayout>
