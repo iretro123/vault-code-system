@@ -134,18 +134,50 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
 
     setUploading(true);
     try {
+      // Refresh session to ensure we have a valid JWT for storage
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      console.debug("[AvatarUpload] session present:", !!accessToken, "uid:", sessionData?.session?.user?.id);
+
+      if (!accessToken) {
+        console.error("[AvatarUpload] No active session — user must re-login");
+        toast.error("Session expired. Please sign out and sign back in.", {
+          action: { label: "Retry", onClick: () => fileInputRef.current?.click() },
+        });
+        setUploading(false);
+        return;
+      }
+
       const cropped = await cropToSquare(file);
       const path = `${user.id}/profile-${Date.now()}.webp`;
       
       console.debug("[AvatarUpload] bucket=avatars path=", path, "blob size=", cropped.size);
-      
-      const { error: uploadErr } = await supabase.storage
-        .from("avatars")
-        .upload(path, cropped, { upsert: true, contentType: "image/webp" });
 
-      if (uploadErr) {
-        console.error("[AvatarUpload] upload failed:", uploadErr.message, "status:", (uploadErr as any).statusCode ?? (uploadErr as any).status);
-        throw uploadErr;
+      // Upload using fetch with explicit auth header to guarantee JWT is sent
+      const formData = new FormData();
+      formData.append("", cropped);
+      formData.append("cacheControl", "3600");
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      
+      const uploadRes = await fetch(
+        `${supabaseUrl}/storage/v1/object/avatars/${path}`,
+        {
+          method: "POST",
+          headers: {
+            "apikey": supabaseKey,
+            "authorization": `Bearer ${accessToken}`,
+            "x-upsert": "true",
+          },
+          body: formData,
+        }
+      );
+
+      if (!uploadRes.ok) {
+        const errBody = await uploadRes.json().catch(() => ({}));
+        console.error("[AvatarUpload] upload failed:", errBody.message || uploadRes.statusText, "status:", uploadRes.status, "body:", errBody);
+        throw new Error(errBody.message || "Upload failed");
       }
 
       const { data: { publicUrl } } = supabase.storage
