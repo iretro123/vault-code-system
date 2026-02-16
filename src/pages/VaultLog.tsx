@@ -77,7 +77,7 @@ export default function VaultLog() {
                   {trades.map((t, i) => (
                     <TableRow key={t.id}>
                       <TableCell className="text-xs font-mono tabular-nums whitespace-nowrap">
-                        {format(new Date(t.created_at), "MM/dd HH:mm")}
+                        {format(new Date(t.created_at), "MM/dd h:mm a")}
                       </TableCell>
                       <TableCell>
                         <span
