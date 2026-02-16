@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
@@ -19,19 +19,18 @@ export function useAcademyNotifications() {
   const { refetchNotifications } = useAcademyData();
   const [notifications, setNotifications] = useState<AcademyNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [newArrival, setNewArrival] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     setLoading(true);
 
-    // Fetch notifications (RLS filters to own + broadcasts)
     const { data: notifs } = await supabase
       .from("academy_notifications" as any)
       .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
 
-    // Fetch reads
     const { data: reads } = await supabase
       .from("academy_notification_reads" as any)
       .select("notification_id")
@@ -58,6 +57,49 @@ export function useAcademyNotifications() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Realtime: listen for new notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("academy-notifs-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "academy_notifications",
+        },
+        (payload) => {
+          const n = payload.new as any;
+          // Only process if it's for this user or a broadcast (null)
+          if (n.user_id !== null && n.user_id !== user.id) return;
+
+          const newNotif: AcademyNotification = {
+            id: n.id,
+            user_id: n.user_id,
+            type: n.type,
+            title: n.title,
+            body: n.body,
+            link_path: n.link_path,
+            created_at: n.created_at,
+            is_read: false,
+          };
+
+          setNotifications((prev) => [newNotif, ...prev]);
+          setNewArrival(true);
+          refetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, refetchNotifications]);
+
+  const clearNewArrival = useCallback(() => setNewArrival(false), []);
+
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const markRead = useCallback(async (notificationId: string) => {
@@ -74,7 +116,6 @@ export function useAcademyNotifications() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
     );
-    // Sync context badge count
     refetchNotifications();
   }, [user, refetchNotifications]);
 
@@ -91,9 +132,17 @@ export function useAcademyNotifications() {
       return;
     }
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    // Sync context badge count
     refetchNotifications();
   }, [user, notifications, refetchNotifications]);
 
-  return { notifications, unreadCount, loading, markRead, markAllRead, refetch: fetchNotifications };
+  return {
+    notifications,
+    unreadCount,
+    loading,
+    markRead,
+    markAllRead,
+    refetch: fetchNotifications,
+    newArrival,
+    clearNewArrival,
+  };
 }
