@@ -5,15 +5,17 @@ import {
   BookOpen,
   Radio,
   FolderOpen,
-  User,
+  Settings,
   ShieldCheck,
   LayoutGrid,
   MessageSquare,
   Lock,
+  Inbox,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
+import { useUnreadAnswers } from "@/hooks/useUnreadAnswers";
 import {
   Sidebar,
   SidebarContent,
@@ -32,7 +34,7 @@ const mainNav = [
   { icon: BookOpen, label: "Learn", path: "/academy/learn" },
   { icon: Radio, label: "Live", path: "/academy/live" },
   { icon: FolderOpen, label: "Resources", path: "/academy/resources" },
-  { icon: User, label: "Profile", path: "/academy/profile" },
+  { icon: Settings, label: "Settings", path: "/academy/settings" },
 ];
 
 export function AcademySidebar() {
@@ -41,6 +43,7 @@ export function AcademySidebar() {
   const location = useLocation();
   const { hasRole } = useAuth();
   const isAdmin = hasRole("operator");
+  const { unreadCount: unreadAnswers } = useUnreadAnswers();
 
   const isActive = (path: string) => location.pathname === path;
   const isRoomActive = (slug: string) => location.pathname === `/academy/room/${slug}`;
@@ -120,6 +123,33 @@ export function AcademySidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* My Questions */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/academy/my-questions")}>
+                  <NavLink
+                    to="/academy/my-questions"
+                    end
+                    className="flex items-center gap-2 px-2 py-1.5"
+                    activeClassName="bg-muted text-primary font-medium"
+                  >
+                    <Inbox className="h-4 w-4 shrink-0" />
+                    {!collapsed && (
+                      <span className="flex items-center gap-1.5 text-sm">
+                        My Questions
+                        {unreadAnswers > 0 && (
+                          <span className="flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
+                            {unreadAnswers > 9 ? "9+" : unreadAnswers}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {collapsed && unreadAnswers > 0 && (
+                      <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
+                    )}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
