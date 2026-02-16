@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TIMEZONES, formatTimezone } from "@/lib/timezones";
-import { Loader2, Check, Upload, X, AlertCircle } from "lucide-react";
+import { Loader2, Check, Upload, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,7 +82,6 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const [avatarIcon, setAvatarIcon] = useState(GEOMETRIC_ICONS[0].id);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -123,14 +122,12 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadError(null);
-
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      setUploadError("Only JPG, PNG, or WebP images are allowed.");
+      toast.error("Upload failed. Please try again (JPG/PNG under 2MB).");
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError("Image must be under 2 MB.");
+      toast.error("Upload failed. Please try again (JPG/PNG under 2MB).");
       return;
     }
     if (!user) return;
@@ -153,8 +150,10 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       // Append cache-buster so browser picks up the new image
       setImageUrl(`${publicUrl}?t=${Date.now()}`);
       setAvatarMode("image");
-    } catch (err: any) {
-      toast.error(err.message || "Upload failed. Please retry.");
+    } catch {
+      toast.error("Upload failed. Please try again (JPG/PNG under 2MB).", {
+        action: { label: "Retry", onClick: () => fileInputRef.current?.click() },
+      });
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -248,13 +247,6 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
                   {uploading ? "Uploading…" : imageUrl ? "Change Photo" : "Upload Photo"}
                 </Button>
                 <p className="text-[10px] text-muted-foreground/60">JPG, PNG, or WebP · Max 2 MB · Auto-cropped to square</p>
-                {uploadError && (
-                  <div className="flex items-center gap-1.5 text-xs text-destructive">
-                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>{uploadError}</span>
-                    <button onClick={() => fileInputRef.current?.click()} className="underline ml-1">Retry</button>
-                  </div>
-                )}
               </div>
             )}
 
