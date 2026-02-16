@@ -8,6 +8,7 @@ import { Rocket, BookOpen, MessageSquare, ChevronRight, Check, ArrowRight, PenLi
 import { useAuth } from "@/hooks/useAuth";
 import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { OnboardingProgressCard } from "@/components/academy/OnboardingProgressCard";
@@ -34,6 +35,7 @@ const TASK_ICONS: Record<string, typeof Rocket> = {
 const AcademyHome = () => {
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
+  const { onboarding } = useAcademyData();
   const { tasks, loading: tasksLoading } = useUserTasks();
   useLoginReminder();
 
@@ -55,14 +57,7 @@ const AcademyHome = () => {
     if (!user) { setStripLoading(false); return; }
     const items: { label: string; route: string; icon: typeof BookOpen }[] = [];
 
-    // 1. Onboarding incomplete?
-    const { data: onboarding } = await supabase
-      .from("onboarding_state")
-      .select("claimed_role, first_lesson_completed, intro_posted")
-      .eq("user_id", user.id)
-      .limit(1)
-      .single();
-
+    // 1. Onboarding incomplete? Use shared context
     if (onboarding) {
       if (!onboarding.claimed_role) {
         items.push({ label: "Set your experience level", route: "/academy/start", icon: Rocket });
@@ -109,7 +104,7 @@ const AcademyHome = () => {
 
     setStripItems(items.slice(0, 2));
     setStripLoading(false);
-  }, [user]);
+  }, [user, onboarding]);
 
   useEffect(() => {
     if (!stripDismissed) computeStrip();
@@ -205,7 +200,7 @@ const AcademyHome = () => {
         <ClaimRoleBanner />
 
         {/* Onboarding progress */}
-        {user && <OnboardingProgressCard userId={user.id} />}
+        <OnboardingProgressCard />
 
         {/* Today section */}
         {!tasksLoading && totalTasks > 0 && (
