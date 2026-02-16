@@ -149,6 +149,35 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_answer_reads: {
+        Row: {
+          id: string
+          read_at: string
+          reply_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          read_at?: string
+          reply_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          read_at?: string
+          reply_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_answer_reads_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "coach_ticket_replies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_requests: {
         Row: {
           category: string
@@ -643,6 +672,7 @@ export type Database = {
           market_type: string
           onboarding_completed: boolean
           phone_number: string | null
+          profile_completed: boolean
           role_level: string
           timezone: string
           updated_at: string
@@ -667,6 +697,7 @@ export type Database = {
           market_type?: string
           onboarding_completed?: boolean
           phone_number?: string | null
+          profile_completed?: boolean
           role_level?: string
           timezone?: string
           updated_at?: string
@@ -691,6 +722,7 @@ export type Database = {
           market_type?: string
           onboarding_completed?: boolean
           phone_number?: string | null
+          profile_completed?: boolean
           role_level?: string
           timezone?: string
           updated_at?: string

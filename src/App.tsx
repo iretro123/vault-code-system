@@ -22,6 +22,7 @@ import AcademyRooms from "./pages/academy/AcademyRooms";
 import AcademyLive from "./pages/academy/AcademyLive";
 import AcademyResources from "./pages/academy/AcademyResources";
 import AcademyProfile from "./pages/academy/AcademyProfile";
+import AcademySettings from "./pages/academy/AcademySettings";
 import AcademyAdmin from "./pages/academy/AcademyAdmin";
 import AcademyJournal from "./pages/academy/AcademyJournal";
 import AcademyProgress from "./pages/academy/AcademyProgress";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/academy/live" element={<AcademyLive />} />
             <Route path="/academy/resources" element={<AcademyResources />} />
             <Route path="/academy/profile" element={<AcademyProfile />} />
+            <Route path="/academy/settings" element={<AcademySettings />} />
             <Route path="/academy/my-questions" element={<AcademyMyQuestions />} />
             <Route path="/academy/journal" element={<AcademyJournal />} />
             <Route path="/academy/progress" element={<AcademyProgress />} />
