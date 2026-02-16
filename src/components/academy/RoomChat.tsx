@@ -6,7 +6,13 @@ import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check } from "lucide-react";
+import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
@@ -429,7 +435,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
             <div
               key={msg.id}
               className={cn(
-                "group flex gap-3 px-3 py-0.5 hover:bg-white/[0.02] transition-colors",
+                "group relative flex gap-3 px-3 py-0.5 hover:bg-white/[0.02] transition-colors",
                 showHdr && "mt-3 pt-1.5",
                 isEditing && "bg-white/[0.03]"
               )}
@@ -575,29 +581,31 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   </div>
                 )}
 
-                {/* Edit/Delete action buttons on hover */}
+                {/* 3-dot context menu */}
                 {!msg.is_deleted && !isEditing && (canEdit || canDelete) && (
-                  <div className="hidden group-hover:flex items-center gap-0.5 mt-0.5">
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => startEdit(msg.id, msg.body)}
-                        className="p-1 rounded text-white/20 hover:text-white/50 hover:bg-white/[0.06] transition-colors"
-                        title="Edit message"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                    )}
-                    {canDelete && (
-                      <button
-                        type="button"
-                        onClick={() => setDeleteConfirmId(msg.id)}
-                        className="p-1 rounded text-white/20 hover:text-red-400 hover:bg-white/[0.06] transition-colors"
-                        title="Delete message"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
+                  <div className="absolute -top-2 right-1 hidden group-hover:block z-10">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="p-1 rounded-md bg-background/80 border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.08] backdrop-blur-sm transition-colors shadow-sm"
+                        >
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[120px]">
+                        {canEdit && (
+                          <DropdownMenuItem onClick={() => startEdit(msg.id, msg.body)} className="gap-2 text-xs">
+                            <Pencil className="h-3 w-3" /> Edit
+                          </DropdownMenuItem>
+                        )}
+                        {canDelete && (
+                          <DropdownMenuItem onClick={() => setDeleteConfirmId(msg.id)} className="gap-2 text-xs text-destructive focus:text-destructive">
+                            <Trash2 className="h-3 w-3" /> Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 )}
 
