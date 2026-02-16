@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { parseAvatarUrl, ChatAvatar } from "@/lib/chatAvatars";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,12 +78,7 @@ export function PlayerIdentity() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          <Avatar className="h-8 w-8 border border-white/10">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-            <AvatarFallback className="bg-primary/20 text-primary text-xs font-medium">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
           <div className="hidden sm:flex flex-col items-start">
             <span className="text-sm font-medium text-foreground leading-tight">
               {displayName}

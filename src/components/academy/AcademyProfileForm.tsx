@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TIMEZONES, formatTimezone } from "@/lib/timezones";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, Upload, X, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,6 @@ const ROLE_LEVELS = [
   { value: "advanced", label: "Advanced" },
   { value: "professional", label: "Professional" },
 ];
-
 
 const AVATAR_COLORS = [
   "hsl(220, 70%, 50%)", "hsl(260, 60%, 55%)", "hsl(340, 65%, 50%)", "hsl(10, 70%, 50%)",
@@ -33,16 +32,46 @@ const GEOMETRIC_ICONS = [
   { id: "cross", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><rect x="15" y="6" width="10" height="28" rx="3" fill="currentColor" opacity="0.8" /><rect x="6" y="15" width="28" height="10" rx="3" fill="currentColor" opacity="0.8" /></svg> },
 ];
 
-type AvatarMode = "initials" | "icon";
+type AvatarMode = "initials" | "icon" | "image";
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function cropToSquare(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = Math.min(img.width, img.height);
+      const canvas = document.createElement("canvas");
+      const target = Math.min(size, 512); // max 512x512
+      canvas.width = target;
+      canvas.height = target;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas not supported")); return; }
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, target, target);
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error("Crop failed")),
+        "image/webp",
+        0.85
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
+    img.src = url;
+  });
+}
 
 interface Props {
-  /** If true, completing the form redirects to /academy/home and sets profile_completed */
   isOnboarding?: boolean;
 }
 
 export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [roleLevel, setRoleLevel] = useState("beginner");
@@ -51,6 +80,9 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const [avatarMode, setAvatarMode] = useState<AvatarMode>("initials");
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
   const [avatarIcon, setAvatarIcon] = useState(GEOMETRIC_ICONS[0].id);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -66,6 +98,9 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       } else if (av.startsWith("initials:")) {
         setAvatarMode("initials");
         setAvatarColor(av.replace("initials:", "") || AVATAR_COLORS[0]);
+      } else if (av.startsWith("http")) {
+        setAvatarMode("image");
+        setImageUrl(av);
       }
       setTimezone((profile as any).timezone || "America/New_York");
       setPhoneNumber((profile as any).phone_number || "");
@@ -78,9 +113,53 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     return (name.slice(0, 2) || "??").toUpperCase();
   };
 
-  const avatarUrl = avatarMode === "initials"
-    ? `initials:${avatarColor}`
-    : `icon:${avatarIcon}|${avatarColor}`;
+  const avatarUrl =
+    avatarMode === "image" && imageUrl
+      ? imageUrl
+      : avatarMode === "initials"
+        ? `initials:${avatarColor}`
+        : `icon:${avatarIcon}|${avatarColor}`;
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setUploadError("Only JPG, PNG, or WebP images are allowed.");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError("Image must be under 2 MB.");
+      return;
+    }
+    if (!user) return;
+
+    setUploading(true);
+    try {
+      const cropped = await cropToSquare(file);
+      const path = `${user.id}/avatar.webp`;
+      
+      const { error: uploadErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, cropped, { upsert: true, contentType: "image/webp" });
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(path);
+
+      // Append cache-buster so browser picks up the new image
+      setImageUrl(`${publicUrl}?t=${Date.now()}`);
+      setAvatarMode("image");
+    } catch (err: any) {
+      setUploadError(err.message || "Upload failed. Please retry.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -108,6 +187,15 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   };
 
   const renderAvatar = (size: string) => {
+    if (avatarMode === "image" && imageUrl) {
+      return (
+        <img
+          src={imageUrl}
+          alt="Avatar"
+          className={`${size} rounded-2xl object-cover`}
+        />
+      );
+    }
     if (avatarMode === "icon") {
       const icon = GEOMETRIC_ICONS.find((i) => i.id === avatarIcon) || GEOMETRIC_ICONS[0];
       return (
@@ -131,15 +219,55 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
         <div className="flex items-center gap-5">
           {renderAvatar("h-20 w-20")}
           <div className="space-y-3 flex-1">
-            <div className="flex gap-2">
+            {/* Mode tabs */}
+            <div className="flex gap-2 flex-wrap">
               <button onClick={() => setAvatarMode("initials")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "initials" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Initials</button>
               <button onClick={() => setAvatarMode("icon")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "icon" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Icon</button>
+              <button onClick={() => setAvatarMode("image")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "image" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Photo</button>
             </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {AVATAR_COLORS.map((c) => (
-                <button key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
-              ))}
-            </div>
+
+            {/* Image upload UI */}
+            {avatarMode === "image" && (
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-1.5"
+                >
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {uploading ? "Uploading…" : imageUrl ? "Change Photo" : "Upload Photo"}
+                </Button>
+                <p className="text-[10px] text-muted-foreground/60">JPG, PNG, or WebP · Max 2 MB · Auto-cropped to square</p>
+                {uploadError && (
+                  <div className="flex items-center gap-1.5 text-xs text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>{uploadError}</span>
+                    <button onClick={() => fileInputRef.current?.click()} className="underline ml-1">Retry</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Color picker for initials/icon */}
+            {avatarMode !== "image" && (
+              <div className="flex gap-1.5 flex-wrap">
+                {AVATAR_COLORS.map((c) => (
+                  <button key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            )}
+
+            {/* Icon picker */}
             {avatarMode === "icon" && (
               <div className="flex gap-1.5 flex-wrap">
                 {GEOMETRIC_ICONS.map((icon) => (
