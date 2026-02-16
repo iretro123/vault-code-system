@@ -6,13 +6,19 @@ import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal } from "lucide-react";
+import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
@@ -442,225 +448,254 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           const canDelete = !msg.is_deleted && (isOwn || isOperator);
           const isEditing = editingId === msg.id;
 
-          return (
-            <div
-              key={msg.id}
-              className={cn(
-                "group relative flex gap-3 px-3 py-0.5 hover:bg-white/[0.02] transition-colors",
-                showHdr && "mt-3 pt-1.5",
-                isEditing && "bg-white/[0.03]"
+          const copyMessage = () => {
+            navigator.clipboard.writeText(msg.body).then(
+              () => toast.success("Copied to clipboard"),
+              () => toast.error("Failed to copy")
+            );
+          };
+
+          /* Shared menu items for both dropdown and context menu */
+          const menuActions = (
+            ItemComponent: typeof DropdownMenuItem | typeof ContextMenuItem
+          ) => (
+            <>
+              {!msg.is_deleted && (
+                <ItemComponent onClick={copyMessage} className="gap-2 text-xs">
+                  <Copy className="h-3 w-3" /> Copy
+                </ItemComponent>
               )}
-            >
-              {/* Avatar column */}
-              <div className="w-8 shrink-0">
-                {showHdr ? (
-                  <ChatAvatar
-                    avatarUrl={getProfile(msg.user_id)?.avatar_url}
-                    userName={msg.user_name}
-                  />
-                ) : (
-                  <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-white/30 select-none">
-                    {formatTime(msg.created_at)}
-                  </span>
-                )}
-              </div>
+              {canEdit && (
+                <ItemComponent onClick={() => startEdit(msg.id, msg.body)} className="gap-2 text-xs">
+                  <Pencil className="h-3 w-3" /> Edit
+                </ItemComponent>
+              )}
+              {canDelete && (
+                <ItemComponent onClick={() => setDeleteConfirmId(msg.id)} className="gap-2 text-xs text-destructive focus:text-destructive">
+                  <Trash2 className="h-3 w-3" /> Delete
+                </ItemComponent>
+              )}
+            </>
+          );
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                {showHdr && (
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-[13px] font-semibold text-white">
-                      {msg.user_name}
-                    </span>
-                    <RoleBadge role={getRoleBadgeKey(
-                      (msg as any).user_role,
-                      getProfile(msg.user_id)?.role_level
-                    )} />
-                    <span className="text-[11px] text-white/30">
-                      {formatDateTime(msg.created_at)}
-                    </span>
+          return (
+            <ContextMenu key={msg.id}>
+              <ContextMenuTrigger asChild>
+                <div
+                  className={cn(
+                    "group relative flex gap-3 px-3 py-0.5 hover:bg-white/[0.02] transition-colors",
+                    showHdr && "mt-3 pt-1.5",
+                    isEditing && "bg-white/[0.03]"
+                  )}
+                >
+                  {/* Avatar column */}
+                  <div className="w-8 shrink-0">
+                    {showHdr ? (
+                      <ChatAvatar
+                        avatarUrl={getProfile(msg.user_id)?.avatar_url}
+                        userName={msg.user_name}
+                      />
+                    ) : (
+                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-white/30 select-none">
+                        {formatTime(msg.created_at)}
+                      </span>
+                    )}
                   </div>
-                )}
 
-                {/* Soft-deleted message */}
-                {msg.is_deleted ? (
-                  <div className="inline-block max-w-[85%]">
-                    <div className="bg-white/[0.02] rounded-lg rounded-tl-sm px-3 py-1.5 border border-white/[0.04]">
-                      <p className="text-sm text-white/30 italic">This message was deleted.</p>
-                    </div>
-                  </div>
-                ) : isEditing ? (
-                  /* Inline edit mode */
-                  <div className="max-w-[85%]">
-                    <textarea
-                      ref={editInputRef}
-                      value={editDraft}
-                      onChange={(e) => setEditDraft(e.target.value)}
-                      onKeyDown={handleEditKeyDown}
-                      maxLength={1000}
-                      rows={1}
-                      className="w-full bg-white/[0.06] border border-white/[0.12] rounded-lg px-3 py-1.5 text-sm text-white/90 resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
-                    />
-                    <div className="flex items-center gap-2 mt-1">
-                      <button
-                        type="button"
-                        onClick={confirmEdit}
-                        className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <Check className="h-3 w-3" /> Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelEdit}
-                        className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/60 transition-colors"
-                      >
-                        <X className="h-3 w-3" /> Cancel
-                      </button>
-                      <span className="text-[10px] text-white/20">esc to cancel · enter to save</span>
-                    </div>
-                  </div>
-                ) : isRecap ? (
-                  renderRecapCard(msg.body)
-                ) : isAnnouncements ? (
-                  <div className="max-w-[90%] mt-1">
-                    <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-white/[0.03] overflow-hidden">
-                      <div className="w-1 self-stretch bg-amber-500/60 shrink-0" />
-                      <div className="px-3 py-2 flex-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
-                          <Megaphone className="h-3 w-3" /> Official
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {showHdr && (
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[13px] font-semibold text-white">
+                          {msg.user_name}
                         </span>
-                        <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
-                          {renderPlainBody(msg.body)}
-                        </p>
+                        <RoleBadge role={getRoleBadgeKey(
+                          (msg as any).user_role,
+                          getProfile(msg.user_id)?.role_level
+                        )} />
+                        <span className="text-[11px] text-white/30">
+                          {formatDateTime(msg.created_at)}
+                        </span>
                       </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {msg.body && msg.body !== "📎 Attachment" && (
+                    )}
+
+                    {/* Soft-deleted message */}
+                    {msg.is_deleted ? (
                       <div className="inline-block max-w-[85%]">
-                        <div className="bg-white/[0.04] rounded-lg rounded-tl-sm px-3 py-1.5">
-                          <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
-                            {renderPlainBody(msg.body)}
-                          </p>
-                          {msg.edited_at && (
-                            <span className="text-[10px] text-white/25 mt-0.5 block">(edited)</span>
-                          )}
+                        <div className="bg-white/[0.02] rounded-lg rounded-tl-sm px-3 py-1.5 border border-white/[0.04]">
+                          <p className="text-sm text-white/30 italic">This message was deleted.</p>
                         </div>
                       </div>
-                    )}
-                  </>
-                )}
-
-                {/* Attachments (only if not deleted) */}
-                {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {msg.attachments.map((att: Attachment, idx: number) =>
-                      att.type === "image" ? (
-                        <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block">
-                          <img
-                            src={att.url}
-                            alt={att.filename}
-                            loading="lazy"
-                            className="rounded-lg max-w-[260px] max-h-[200px] object-cover border border-white/[0.06] hover:border-white/20 transition-colors cursor-pointer"
-                          />
-                          <span className="text-[10px] text-white/30 mt-0.5 block truncate max-w-[260px]">{att.filename}</span>
-                        </a>
-                      ) : (
-                        <a
-                          key={idx}
-                          href={att.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download={att.filename}
-                          className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 hover:bg-white/[0.06] transition-colors"
-                        >
-                          <FileText className="h-4 w-4 text-primary shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs text-white/80 truncate max-w-[200px]">{att.filename}</p>
-                            <p className="text-[10px] text-white/30">
-                              {att.size >= 1024 * 1024
-                                ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
-                                : `${(att.size / 1024).toFixed(0)} KB`}
-                              {" · "}
-                              <span className="text-primary/70">Download</span>
+                    ) : isEditing ? (
+                      /* Inline edit mode */
+                      <div className="max-w-[85%]">
+                        <textarea
+                          ref={editInputRef}
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          onKeyDown={handleEditKeyDown}
+                          maxLength={1000}
+                          rows={1}
+                          className="w-full bg-white/[0.06] border border-white/[0.12] rounded-lg px-3 py-1.5 text-sm text-white/90 resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
+                        />
+                        <div className="flex items-center gap-2 mt-1">
+                          <button
+                            type="button"
+                            onClick={confirmEdit}
+                            className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <Check className="h-3 w-3" /> Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/60 transition-colors"
+                          >
+                            <X className="h-3 w-3" /> Cancel
+                          </button>
+                          <span className="text-[10px] text-white/20">esc to cancel · enter to save</span>
+                        </div>
+                      </div>
+                    ) : isRecap ? (
+                      renderRecapCard(msg.body)
+                    ) : isAnnouncements ? (
+                      <div className="max-w-[90%] mt-1">
+                        <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-white/[0.03] overflow-hidden">
+                          <div className="w-1 self-stretch bg-amber-500/60 shrink-0" />
+                          <div className="px-3 py-2 flex-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
+                              <Megaphone className="h-3 w-3" /> Official
+                            </span>
+                            <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                              {renderPlainBody(msg.body)}
                             </p>
                           </div>
-                        </a>
-                      )
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {msg.body && msg.body !== "📎 Attachment" && (
+                          <div className="inline-block max-w-[85%]">
+                            <div className="bg-white/[0.04] rounded-lg rounded-tl-sm px-3 py-1.5">
+                              <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                                {renderPlainBody(msg.body)}
+                              </p>
+                              {msg.edited_at && (
+                                <span className="text-[10px] text-white/25 mt-0.5 block">(edited)</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
-                  </div>
-                )}
 
-                {/* 3-dot context menu */}
-                {!msg.is_deleted && !isEditing && (canEdit || canDelete) && (
-                  <div className="absolute -top-2 right-1 hidden group-hover:block z-10">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="p-1 rounded-md bg-background/80 border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.08] backdrop-blur-sm transition-colors shadow-sm"
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="min-w-[120px]">
-                        {canEdit && (
-                          <DropdownMenuItem onClick={() => startEdit(msg.id, msg.body)} className="gap-2 text-xs">
-                            <Pencil className="h-3 w-3" /> Edit
-                          </DropdownMenuItem>
+                    {/* Attachments (only if not deleted) */}
+                    {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {msg.attachments.map((att: Attachment, idx: number) =>
+                          att.type === "image" ? (
+                            <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block">
+                              <img
+                                src={att.url}
+                                alt={att.filename}
+                                loading="lazy"
+                                className="rounded-lg max-w-[260px] max-h-[200px] object-cover border border-white/[0.06] hover:border-white/20 transition-colors cursor-pointer"
+                              />
+                              <span className="text-[10px] text-white/30 mt-0.5 block truncate max-w-[260px]">{att.filename}</span>
+                            </a>
+                          ) : (
+                            <a
+                              key={idx}
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={att.filename}
+                              className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 hover:bg-white/[0.06] transition-colors"
+                            >
+                              <FileText className="h-4 w-4 text-primary shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-xs text-white/80 truncate max-w-[200px]">{att.filename}</p>
+                                <p className="text-[10px] text-white/30">
+                                  {att.size >= 1024 * 1024
+                                    ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
+                                    : `${(att.size / 1024).toFixed(0)} KB`}
+                                  {" · "}
+                                  <span className="text-primary/70">Download</span>
+                                </p>
+                              </div>
+                            </a>
+                          )
                         )}
-                        {canDelete && (
-                          <DropdownMenuItem onClick={() => setDeleteConfirmId(msg.id)} className="gap-2 text-xs text-destructive focus:text-destructive">
-                            <Trash2 className="h-3 w-3" /> Delete
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      </div>
+                    )}
+
+                    {/* 3-dot actions menu — use opacity so Radix can always measure trigger position */}
+                    {!msg.is_deleted && !isEditing && (
+                      <div className="absolute -top-2 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="p-1 rounded-md bg-popover border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.08] backdrop-blur-sm transition-colors shadow-sm"
+                            >
+                              <MoreHorizontal className="h-3.5 w-3.5" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" sideOffset={4} className="min-w-[120px]">
+                            {menuActions(DropdownMenuItem)}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+
+                    {!isAnnouncements && !msg.is_deleted && (() => {
+                      const reactions = getReactions(msg.id);
+                      return (
+                        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                          {reactions.map((r) => (
+                            <button
+                              key={r.emoji}
+                              type="button"
+                              onClick={() => toggleReaction(msg.id, r.emoji as ReactionEmoji)}
+                              className={cn(
+                                "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
+                                r.reacted
+                                  ? "bg-primary/15 border-primary/30 text-primary"
+                                  : "bg-white/[0.04] border-white/[0.08] text-white/50 hover:bg-white/[0.08]"
+                              )}
+                            >
+                              <span>{r.emoji}</span>
+                              <span className="text-[11px] font-medium">{r.count}</span>
+                            </button>
+                          ))}
+
+                          {/* Hover add-reaction trigger */}
+                          <span className="hidden group-hover:inline-flex items-center gap-0.5">
+                            {ALLOWED_EMOJIS.filter(
+                              (e) => !reactions.some((r) => r.emoji === e && r.reacted)
+                            ).map((emoji) => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => toggleReaction(msg.id, emoji)}
+                                className="text-xs px-1 py-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
-                )}
+                </div>
+              </ContextMenuTrigger>
 
-                {!isAnnouncements && !msg.is_deleted && (() => {
-                  const reactions = getReactions(msg.id);
-                  return (
-                    <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                      {reactions.map((r) => (
-                        <button
-                          key={r.emoji}
-                          type="button"
-                          onClick={() => toggleReaction(msg.id, r.emoji as ReactionEmoji)}
-                          className={cn(
-                            "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
-                            r.reacted
-                              ? "bg-primary/15 border-primary/30 text-primary"
-                              : "bg-white/[0.04] border-white/[0.08] text-white/50 hover:bg-white/[0.08]"
-                          )}
-                        >
-                          <span>{r.emoji}</span>
-                          <span className="text-[11px] font-medium">{r.count}</span>
-                        </button>
-                      ))}
-
-                      {/* Hover add-reaction trigger */}
-                      <span className="hidden group-hover:inline-flex items-center gap-0.5">
-                        {ALLOWED_EMOJIS.filter(
-                          (e) => !reactions.some((r) => r.emoji === e && r.reacted)
-                        ).map((emoji) => (
-                          <button
-                            key={emoji}
-                            type="button"
-                            onClick={() => toggleReaction(msg.id, emoji)}
-                            className="text-xs px-1 py-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </span>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
+              {/* Right-click context menu */}
+              <ContextMenuContent className="min-w-[120px]">
+                {menuActions(ContextMenuItem)}
+              </ContextMenuContent>
+            </ContextMenu>
           );
         })}
         <div ref={bottomRef} />
