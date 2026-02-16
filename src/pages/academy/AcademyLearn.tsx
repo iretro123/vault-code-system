@@ -1,10 +1,10 @@
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Plus, Loader2, Pencil, Trash2, BookOpen, Bell } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight } from "lucide-react";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
@@ -14,6 +14,8 @@ import { SendNotificationModal } from "@/components/academy/SendNotificationModa
 import { ClaimRoleBanner } from "@/components/academy/ClaimRoleBanner";
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import courseCoverDefault from "@/assets/course-cover-default.jpg";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
@@ -22,7 +24,7 @@ const AcademyLearn = () => {
   const { progress } = useLessonProgress();
   const { isAdmin } = useAcademyRole();
 
-  // Admin: add module form
+  // Admin state
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newSubtitle, setNewSubtitle] = useState("");
@@ -66,7 +68,6 @@ const AcademyLearn = () => {
 
   const handleDeleteModule = async (id: string, slug: string) => {
     if (!confirm("Delete this module and all its lessons?")) return;
-    // Delete lessons first
     await supabase.from("academy_lessons").delete().eq("module_slug", slug);
     await supabase.from("academy_modules").delete().eq("id", id);
     toast.success("Module deleted");
@@ -75,7 +76,6 @@ const AcademyLearn = () => {
 
   const loading = modsLoading || lessonsLoading;
 
-  // Count lessons per module
   const lessonsByModule = lessons.reduce<Record<string, typeof lessons>>((acc, l) => {
     (acc[l.module_slug] ||= []).push(l);
     return acc;
@@ -83,27 +83,36 @@ const AcademyLearn = () => {
 
   return (
     <AcademyLayout>
-      <PageHeader
-        title="Lessons"
-        subtitle="Learn trading discipline step by step"
-      />
-      <div className="px-4 md:px-6 pb-6">
+      <div className="px-4 md:px-8 pt-6 pb-10 max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Courses</h1>
+          <p className="text-muted-foreground mt-1">Master discipline, one module at a time.</p>
+        </div>
+
+        <ClaimRoleBanner />
+
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="flex justify-center py-20">
+            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-3 max-w-3xl">
-            <ClaimRoleBanner />
-            {modules.map((mod, i) => {
-              const modLessons = lessonsByModule[mod.slug] || [];
-              const completedCount = modLessons.filter((l) => progress[l.id]).length;
-              const isEditing = editingId === mod.id;
+          <>
+            {/* Course grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {modules.map((mod, i) => {
+                const modLessons = lessonsByModule[mod.slug] || [];
+                const completedCount = modLessons.filter((l) => progress[l.id]).length;
+                const totalLessons = modLessons.length;
+                const progressPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+                const isStarted = completedCount > 0;
+                const isComplete = totalLessons > 0 && completedCount === totalLessons;
+                const isEditing = editingId === mod.id;
+                const isLocked = false; // Future: support locked courses
 
-              return (
-                <Card key={mod.id} className="vault-card group relative overflow-hidden">
-                  {isEditing && isAdmin ? (
-                    <div className="p-4 space-y-2">
+                if (isEditing && isAdmin) {
+                  return (
+                    <Card key={mod.id} className="vault-card p-5 space-y-3">
                       <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
                       <Input value={editSubtitle} onChange={(e) => setEditSubtitle(e.target.value)} placeholder="Subtitle" />
                       <div className="flex gap-2">
@@ -112,107 +121,172 @@ const AcademyLearn = () => {
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
                       </div>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <Card
+                    key={mod.id}
+                    className={cn(
+                      "vault-card overflow-hidden group transition-all duration-200",
+                      isLocked ? "opacity-70" : "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer"
+                    )}
+                    onClick={() => !isLocked && navigate(`/academy/learn/${mod.slug}`)}
+                  >
+                    {/* Cover image */}
+                    <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+                      <img
+                        src={courseCoverDefault}
+                        alt={mod.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      {/* Overlay gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                      {/* Module number badge */}
+                      <div className="absolute top-3 left-3">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm text-[11px] font-mono text-white/70">
+                          Module {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </div>
+
+                      {/* Lock overlay */}
+                      {isLocked && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-[2px]">
+                          <Lock className="h-8 w-8 text-white/40 mb-2" />
+                          <span className="text-xs font-medium text-white/50">Private Access</span>
+                        </div>
+                      )}
+
+                      {/* Play icon on hover */}
+                      {!isLocked && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="h-12 w-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg">
+                            <Play className="h-5 w-5 text-primary-foreground ml-0.5" fill="currentColor" />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div
-                      className="p-5 cursor-pointer transition-colors hover:bg-muted/30"
-                      onClick={() => navigate(`/academy/learn/${mod.slug}`)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 shrink-0 rounded-xl bg-muted flex items-center justify-center">
-                          <BookOpen className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-mono text-muted-foreground/50 block mb-0.5">
-                            Module {String(i + 1).padStart(2, "0")}
+
+                    {/* Content */}
+                    <div className="p-5">
+                      <h3 className="font-semibold text-foreground text-base leading-snug mb-1">
+                        {mod.title}
+                      </h3>
+                      {mod.subtitle && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                          {mod.subtitle}
+                        </p>
+                      )}
+
+                      {/* Progress */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs text-muted-foreground">
+                            {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
                           </span>
-                          <h3 className="font-semibold text-foreground text-sm leading-tight">
-                            {mod.title}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {mod.subtitle}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground/50 mt-2">
-                            {modLessons.length} lessons
-                            {modLessons.length > 0 && (
-                              <span className="text-primary ml-1.5">
-                                · {completedCount}/{modLessons.length} complete
-                              </span>
-                            )}
-                          </p>
+                          <span className={cn(
+                            "text-xs font-medium",
+                            isComplete ? "text-emerald-400" : "text-muted-foreground"
+                          )}>
+                            {progressPct}% complete
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 mt-1">
-                          {isAdmin && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingId(mod.id);
-                                  setEditTitle(mod.title);
-                                  setEditSubtitle(mod.subtitle);
-                                }}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteModule(mod.id, mod.slug);
-                                }}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </>
-                          )}
-                          <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                        </div>
+                        <Progress value={progressPct} className="h-1.5" />
+                      </div>
+
+                      {/* CTA */}
+                      <div className="flex items-center gap-2">
+                        {isLocked ? (
+                          <Button disabled variant="secondary" className="w-full gap-2">
+                            <Lock className="h-4 w-4" />
+                            Locked
+                          </Button>
+                        ) : isComplete ? (
+                          <Button variant="secondary" className="w-full gap-2">
+                            Review
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button className="w-full gap-2">
+                            {isStarted ? "Continue" : "Start"}
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        {/* Admin controls */}
+                        {isAdmin && (
+                          <div className="flex gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingId(mod.id);
+                                setEditTitle(mod.title);
+                                setEditSubtitle(mod.subtitle);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteModule(mod.id, mod.slug);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
-                </Card>
-              );
-            })}
+                  </Card>
+                );
+              })}
+            </div>
 
             {/* Admin: Add module */}
             {isAdmin && (
-              showAdd ? (
-                <Card className="vault-card p-4 space-y-2">
-                  <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Module title" />
-                  <Input value={newSubtitle} onChange={(e) => setNewSubtitle(e.target.value)} placeholder="Subtitle (optional)" />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleAddModule} disabled={saving || !newTitle.trim()}>
-                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add Module"}
+              <div className="mt-6">
+                {showAdd ? (
+                  <Card className="vault-card p-5 space-y-3 max-w-md">
+                    <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Module title" />
+                    <Input value={newSubtitle} onChange={(e) => setNewSubtitle(e.target.value)} placeholder="Subtitle (optional)" />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleAddModule} disabled={saving || !newTitle.trim()}>
+                        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add Module"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+                    </div>
+                  </Card>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Module
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setNotifyOpen(true)}>
+                      <Bell className="h-3.5 w-3.5" />
+                      Notify: New Module
+                    </Button>
+                    <SendNotificationModal
+                      open={notifyOpen}
+                      onClose={() => setNotifyOpen(false)}
+                      defaultType="new_module"
+                      defaultTitle="New module available!"
+                      defaultLinkPath="/academy/learn"
+                    />
                   </div>
-                </Card>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
-                    <Plus className="h-3.5 w-3.5" />
-                    Add Module
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setNotifyOpen(true)}>
-                    <Bell className="h-3.5 w-3.5" />
-                    Notify: New Module
-                  </Button>
-                  <SendNotificationModal
-                    open={notifyOpen}
-                    onClose={() => setNotifyOpen(false)}
-                    defaultType="new_module"
-                    defaultTitle="New module available!"
-                    defaultLinkPath="/academy/learn"
-                  />
-                </div>
-              )
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </AcademyLayout>
