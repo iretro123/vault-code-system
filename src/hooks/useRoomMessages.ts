@@ -19,6 +19,12 @@ interface Message {
   body: string;
   attachments: Attachment[];
   created_at: string;
+  edited_at: string | null;
+  edit_count: number;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  original_content: string | null;
 }
 
 const PAGE_SIZE = 40;
@@ -31,6 +37,18 @@ export function useRoomMessages(roomSlug: string) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const oldestRef = useRef<string | null>(null);
+
+  const castMessages = (data: any[]): Message[] =>
+    data.map((d) => ({
+      ...d,
+      attachments: d.attachments ?? [],
+      edited_at: d.edited_at ?? null,
+      edit_count: d.edit_count ?? 0,
+      is_deleted: d.is_deleted ?? false,
+      deleted_at: d.deleted_at ?? null,
+      deleted_by: d.deleted_by ?? null,
+      original_content: d.original_content ?? null,
+    }));
 
   // Initial fetch
   const fetchMessages = useCallback(async () => {
@@ -48,7 +66,7 @@ export function useRoomMessages(roomSlug: string) {
       return;
     }
 
-    const sorted = (data as unknown as Message[]).reverse();
+    const sorted = castMessages(data ?? []).reverse();
     setMessages(sorted);
     setHasMore((data?.length ?? 0) >= PAGE_SIZE);
     oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
@@ -67,7 +85,7 @@ export function useRoomMessages(roomSlug: string) {
       .limit(PAGE_SIZE);
 
     if (data && data.length > 0) {
-      const sorted = (data as unknown as Message[]).reverse();
+      const sorted = castMessages(data).reverse();
       setMessages((prev) => [...sorted, ...prev]);
       oldestRef.current = sorted[0].created_at;
       setHasMore(data.length >= PAGE_SIZE);
@@ -118,7 +136,6 @@ export function useRoomMessages(roomSlug: string) {
           setError(err.message);
         }
       } else {
-        // Mark intro_posted for onboarding checklist
         supabase
           .from("profiles")
           .update({ intro_posted: true } as any)
@@ -128,6 +145,76 @@ export function useRoomMessages(roomSlug: string) {
       setSending(false);
     },
     [user, profile, roomSlug, computeRole]
+  );
+
+  // Edit message
+  const editMessage = useCallback(
+    async (messageId: string, newBody: string) => {
+      if (!user || !newBody.trim()) return { error: "Empty message" };
+      const msg = messages.find((m) => m.id === messageId);
+      if (!msg || msg.user_id !== user.id) return { error: "Cannot edit" };
+
+      const updatePayload: any = {
+        body: newBody.trim(),
+        edited_at: new Date().toISOString(),
+        edit_count: (msg.edit_count || 0) + 1,
+      };
+      // Save original content on first edit
+      if (!msg.original_content) {
+        updatePayload.original_content = msg.body;
+      }
+
+      const { error: err } = await supabase
+        .from("academy_messages")
+        .update(updatePayload)
+        .eq("id", messageId);
+
+      if (err) return { error: err.message };
+
+      // Optimistic update
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, ...updatePayload, original_content: updatePayload.original_content ?? m.original_content }
+            : m
+        )
+      );
+      return { error: null };
+    },
+    [user, messages]
+  );
+
+  // Soft-delete message
+  const deleteMessage = useCallback(
+    async (messageId: string) => {
+      if (!user) return { error: "Not authenticated" };
+      const msg = messages.find((m) => m.id === messageId);
+      if (!msg) return { error: "Message not found" };
+
+      const isOwner = msg.user_id === user.id;
+      const isOp = userRole?.role === "operator";
+      if (!isOwner && !isOp) return { error: "No permission" };
+
+      const updatePayload: any = {
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.id,
+      };
+
+      const { error: err } = await supabase
+        .from("academy_messages")
+        .update(updatePayload)
+        .eq("id", messageId);
+
+      if (err) return { error: err.message };
+
+      // Optimistic update
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, ...updatePayload } : m))
+      );
+      return { error: null };
+    },
+    [user, messages, userRole]
   );
 
   // Initial load
@@ -148,11 +235,26 @@ export function useRoomMessages(roomSlug: string) {
           filter: `room_slug=eq.${roomSlug}`,
         },
         (payload) => {
-          const msg = payload.new as Message;
+          const msg = castMessages([payload.new])[0];
           setMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "academy_messages",
+          filter: `room_slug=eq.${roomSlug}`,
+        },
+        (payload) => {
+          const updated = castMessages([payload.new])[0];
+          setMessages((prev) =>
+            prev.map((m) => (m.id === updated.id ? updated : m))
+          );
         }
       )
       .on(
@@ -175,5 +277,5 @@ export function useRoomMessages(roomSlug: string) {
     };
   }, [roomSlug]);
 
-  return { messages, loading, hasMore, loadMore, sendMessage, sending, error };
+  return { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage };
 }

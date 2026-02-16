@@ -6,13 +6,23 @@ import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText } from "lucide-react";
+import { Loader2, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { EmojiPicker } from "./chat/EmojiPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface RoomChatProps {
   roomSlug: string;
@@ -119,16 +129,17 @@ function shouldShowHeader(
 
 /* ── role label from profile data ── */
 function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
-  // Prefer profile role_level if available, fall back to message user_role
   return profileRoleLevel || userRole || "";
 }
 
 /* ── main component ── */
 
 export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomChatProps) {
-  const { messages, loading, hasMore, loadMore, sendMessage, sending, error } =
+  const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
     useRoomMessages(roomSlug);
-  const { user, profile } = useAuth();
+  const { user, profile, userRole: authUserRole } = useAuth();
+
+  const isOperator = authUserRole?.role === "operator";
 
   const displayName =
     (profile as any)?.display_name ||
@@ -157,6 +168,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   const shouldAutoScroll = useRef(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Delete confirmation state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const isTradeRecaps = roomSlug === "trade-recaps";
 
   const handleDraftChange = useCallback(
@@ -176,6 +195,22 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     el.style.height = "0";
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
   }, [draft]);
+
+  // Auto-resize edit textarea
+  useEffect(() => {
+    const el = editInputRef.current;
+    if (!el) return;
+    el.style.height = "0";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, [editDraft]);
+
+  // Focus edit input when entering edit mode
+  useEffect(() => {
+    if (editingId) {
+      requestAnimationFrame(() => editInputRef.current?.focus());
+    }
+  }, [editingId]);
+
   useEffect(() => {
     if (shouldAutoScroll.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -205,8 +240,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     "image/png", "image/jpeg", "image/jpg", "image/gif",
     "application/pdf", "video/mp4",
   ];
-  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
-
+  const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -225,7 +259,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     }
 
     setUploading(true);
-    const ext = file.name.split(".").pop();
     const path = `${roomSlug}/${user.id}/${Date.now()}_${file.name}`;
 
     const { error: uploadErr } = await supabase.storage
@@ -278,6 +311,50 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     }
   };
 
+  // Edit handlers
+  const startEdit = (msgId: string, currentBody: string) => {
+    setEditingId(msgId);
+    setEditDraft(currentBody);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditDraft("");
+  };
+
+  const confirmEdit = async () => {
+    if (!editingId || !editDraft.trim()) return;
+    const result = await editMessage(editingId, editDraft);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Message edited");
+    }
+    cancelEdit();
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      confirmEdit();
+    }
+    if (e.key === "Escape") {
+      cancelEdit();
+    }
+  };
+
+  // Delete handler
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    const result = await deleteMessage(deleteConfirmId);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Message deleted");
+    }
+    setDeleteConfirmId(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -288,6 +365,24 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
 
   return (
     <div className="flex flex-col h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)] max-w-[920px] w-full">
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This message will be removed from the chat for everyone. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Messages */}
       <div
         ref={containerRef}
@@ -322,14 +417,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
         {messages.map((msg, i) => {
           const prev = messages[i - 1];
           const showHdr = shouldShowHeader(msg, prev);
-          const isRecap = isRecapPost(msg.body);
+          const isRecap = !msg.is_deleted && isRecapPost(msg.body);
+          const isOwn = msg.user_id === user?.id;
+          const canEdit = isOwn && !msg.is_deleted;
+          const canDelete = (isOwn || isOperator) && !msg.is_deleted;
+          const isEditing = editingId === msg.id;
 
           return (
             <div
               key={msg.id}
               className={cn(
                 "group flex gap-3 px-3 py-0.5 hover:bg-white/[0.02] transition-colors",
-                showHdr && "mt-3 pt-1.5"
+                showHdr && "mt-3 pt-1.5",
+                isEditing && "bg-white/[0.03]"
               )}
             >
               {/* Avatar column */}
@@ -340,7 +440,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                     userName={msg.user_name}
                   />
                 ) : (
-                  /* Hover timestamp for grouped messages */
                   <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-white/30 select-none">
                     {format(new Date(msg.created_at), "HH:mm")}
                   </span>
@@ -364,7 +463,44 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   </div>
                 )}
 
-                {isRecap ? (
+                {/* Soft-deleted message */}
+                {msg.is_deleted ? (
+                  <div className="inline-block max-w-[85%]">
+                    <div className="bg-white/[0.02] rounded-lg rounded-tl-sm px-3 py-1.5 border border-white/[0.04]">
+                      <p className="text-sm text-white/30 italic">This message was deleted.</p>
+                    </div>
+                  </div>
+                ) : isEditing ? (
+                  /* Inline edit mode */
+                  <div className="max-w-[85%]">
+                    <textarea
+                      ref={editInputRef}
+                      value={editDraft}
+                      onChange={(e) => setEditDraft(e.target.value)}
+                      onKeyDown={handleEditKeyDown}
+                      maxLength={1000}
+                      rows={1}
+                      className="w-full bg-white/[0.06] border border-white/[0.12] rounded-lg px-3 py-1.5 text-sm text-white/90 resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
+                    />
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        onClick={confirmEdit}
+                        className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors"
+                      >
+                        <Check className="h-3 w-3" /> Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/60 transition-colors"
+                      >
+                        <X className="h-3 w-3" /> Cancel
+                      </button>
+                      <span className="text-[10px] text-white/20">esc to cancel · enter to save</span>
+                    </div>
+                  </div>
+                ) : isRecap ? (
                   renderRecapCard(msg.body)
                 ) : isAnnouncements ? (
                   <div className="max-w-[90%] mt-1">
@@ -388,14 +524,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                           <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
                             {renderPlainBody(msg.body)}
                           </p>
+                          {msg.edited_at && (
+                            <span className="text-[10px] text-white/25 mt-0.5 block">(edited)</span>
+                          )}
                         </div>
                       </div>
                     )}
                   </>
                 )}
 
-                {/* Attachments */}
-                {msg.attachments && msg.attachments.length > 0 && (
+                {/* Attachments (only if not deleted) */}
+                {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-1">
                     {msg.attachments.map((att: Attachment, idx: number) =>
                       att.type === "image" ? (
@@ -433,7 +572,34 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                     )}
                   </div>
                 )}
-                {!isAnnouncements && (() => {
+
+                {/* Edit/Delete action buttons on hover */}
+                {!msg.is_deleted && !isEditing && (canEdit || canDelete) && (
+                  <div className="hidden group-hover:flex items-center gap-0.5 mt-0.5">
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => startEdit(msg.id, msg.body)}
+                        className="p-1 rounded text-white/20 hover:text-white/50 hover:bg-white/[0.06] transition-colors"
+                        title="Edit message"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(msg.id)}
+                        className="p-1 rounded text-white/20 hover:text-red-400 hover:bg-white/[0.06] transition-colors"
+                        title="Delete message"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {!isAnnouncements && !msg.is_deleted && (() => {
                   const reactions = getReactions(msg.id);
                   return (
                     <div className="flex items-center gap-1 mt-0.5 flex-wrap">
