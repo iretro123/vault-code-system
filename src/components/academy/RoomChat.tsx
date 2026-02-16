@@ -6,10 +6,13 @@ import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, ChevronUp, Paperclip, Smile, Megaphone } from "lucide-react";
+import { Loader2, Send, ChevronUp, Paperclip, Megaphone, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
+import { EmojiPicker } from "./chat/EmojiPicker";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RoomChatProps {
   roomSlug: string;
@@ -75,6 +78,25 @@ function renderRecapCard(body: string) {
 }
 
 function renderPlainBody(body: string) {
+  // Handle image markdown: ![alt](url)
+  const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  if (imageRegex.test(body)) {
+    const parts = body.split(/(!?\[[^\]]*\]\([^)]+\))/g);
+    return parts.map((part, i) => {
+      const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+      if (imgMatch) {
+        return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-[300px] max-h-[240px] mt-1 object-cover" />;
+      }
+      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-primary underline">{linkMatch[1]}</a>;
+      }
+      if (!part) return null;
+      return <span key={i}>{part}</span>;
+    });
+  }
+
+  // Bold markdown
   const parts = body.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
@@ -128,9 +150,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   }, [messages, trackMessages, ensureProfiles]);
 
   const [draft, setDraft] = useState("");
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isTradeRecaps = roomSlug === "trade-recaps";
 
@@ -174,6 +198,60 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     shouldAutoScroll.current = true;
     await sendMessage(body);
   };
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    e.target.value = "";
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error("File must be under 5 MB");
+      return;
+    }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/${Date.now()}.${ext}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("academy-chat-files")
+      .upload(path, file);
+
+    if (uploadErr) {
+      toast.error("Upload failed: " + uploadErr.message);
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("academy-chat-files")
+      .getPublicUrl(path);
+
+    const isImage = file.type.startsWith("image/");
+    if (isImage) {
+      await handleSend(`📎 ![image](${urlData.publicUrl})`);
+    } else {
+      await handleSend(`📎 [${file.name}](${urlData.publicUrl})`);
+    }
+    setUploading(false);
+  }, [user, sending]);
+
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    const el = textareaRef.current;
+    if (!el) {
+      setDraft((prev) => prev + emoji);
+      return;
+    }
+    const start = el.selectionStart ?? draft.length;
+    const end = el.selectionEnd ?? draft.length;
+    const newDraft = draft.slice(0, start) + emoji + draft.slice(end);
+    setDraft(newDraft);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + emoji.length, start + emoji.length);
+    });
+  }, [draft]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -361,22 +439,27 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
             <div className="flex items-end gap-2 rounded-xl bg-black/25 border border-white/[0.1] px-3 py-2 focus-within:ring-1 focus-within:ring-white/20 transition-shadow">
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+
               {/* Left icon row */}
               <div className="flex items-center gap-1 pb-0.5">
                 <button
                   type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
                   className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
-                  title="Attach image"
+                  title="Attach file"
                 >
-                  <Paperclip className="h-4 w-4" />
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                 </button>
-                <button
-                  type="button"
-                  className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
-                  title="Emoji"
-                >
-                  <Smile className="h-4 w-4" />
-                </button>
+                <EmojiPicker onSelect={handleEmojiSelect} />
               </div>
 
               {/* Textarea */}
@@ -396,7 +479,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
               <button
                 type="button"
                 onClick={() => handleSend()}
-                disabled={!draft.trim() || sending}
+                disabled={(!draft.trim() && !uploading) || sending}
                 className={cn(
                   "shrink-0 p-2 rounded-lg transition-colors",
                   draft.trim() && !sending
