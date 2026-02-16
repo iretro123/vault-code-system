@@ -1,4 +1,4 @@
-import { Megaphone, Coffee, BarChart3, LucideIcon } from "lucide-react";
+import { Megaphone, MessageCircle, BarChart3, LucideIcon } from "lucide-react";
 
 export interface AcademyRoom {
   slug: string;
@@ -18,9 +18,9 @@ export const ACADEMY_ROOMS: AcademyRoom[] = [
   },
   {
     slug: "options-lounge",
-    name: "Options Lounge",
-    description: "Discuss options strategies and setups",
-    icon: Coffee,
+    name: "Trading Chat",
+    description: "Discuss trading strategies and setups",
+    icon: MessageCircle,
     readOnly: false,
   },
   {
