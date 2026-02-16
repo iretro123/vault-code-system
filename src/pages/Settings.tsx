@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { useTradingRules } from "@/hooks/useTradingRules";
@@ -14,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import { LogOut, User, Shield, AlertTriangle, Loader2 } from "lucide-react";
 import { RiskModeSelector } from "@/components/vault/RiskModeSelector";
 import { cn } from "@/lib/utils";
+import { TIMEZONES, formatTimezone } from "@/lib/timezones";
 
 export default function Settings() {
   const { user, profile, signOut } = useAuth();
@@ -33,12 +35,11 @@ export default function Settings() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
+      setTimezone((profile as any).timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York");
     }
     if (vaultState.account_balance > 0) {
       setAccountBalance(vaultState.account_balance.toString());
     }
-    // Default timezone to browser timezone
-    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, [profile, vaultState.account_balance]);
 
   const handleSaveProfile = async () => {
@@ -49,7 +50,7 @@ export default function Settings() {
       // Update display name
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ display_name: displayName.trim() || null })
+        .update({ display_name: displayName.trim() || null, timezone })
         .eq("user_id", user.id);
 
       if (profileError) throw profileError;
@@ -194,14 +195,18 @@ export default function Settings() {
               <Label htmlFor="timezone" className="text-sm text-muted-foreground">
                 Timezone
               </Label>
-              <Input
-                id="timezone"
-                value={timezone}
-                readOnly
-                className="bg-background border-border text-muted-foreground cursor-default"
-              />
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger className="bg-background border-border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 bg-popover border-border z-50">
+                  {TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>{formatTimezone(tz)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <p className="text-[11px] text-muted-foreground">
-                Detected from your browser. Cannot be changed manually.
+                Override if your device timezone is incorrect (e.g. while traveling).
               </p>
             </div>
 

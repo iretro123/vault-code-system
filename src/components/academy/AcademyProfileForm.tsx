@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TIMEZONES, formatTimezone } from "@/lib/timezones";
 import { Loader2, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -17,12 +18,6 @@ const ROLE_LEVELS = [
   { value: "professional", label: "Professional" },
 ];
 
-const TIMEZONES = [
-  "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-  "America/Anchorage", "Pacific/Honolulu", "Europe/London", "Europe/Berlin",
-  "Europe/Paris", "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Tokyo",
-  "Australia/Sydney",
-];
 
 const AVATAR_COLORS = [
   "hsl(220, 70%, 50%)", "hsl(260, 60%, 55%)", "hsl(340, 65%, 50%)", "hsl(10, 70%, 50%)",
@@ -175,8 +170,8 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
           <Label className="text-xs">Timezone</Label>
           <Select value={timezone} onValueChange={setTimezone}>
             <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{tz.replace("_", " ")}</SelectItem>)}
+            <SelectContent className="max-h-60 bg-popover border-border z-50">
+              {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{formatTimezone(tz)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
