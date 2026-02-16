@@ -239,29 +239,29 @@ export function AskCoachButton() {
       {open && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <div className="relative w-full max-w-full md:max-w-[920px] md:mx-4 rounded-t-2xl md:rounded-xl border border-border bg-background shadow-xl animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[80vh] flex flex-col">
+          <div className="relative w-[92vw] max-w-[760px] rounded-t-2xl md:rounded-xl border border-border bg-background shadow-xl animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[80vh] flex flex-col">
 
             {/* Tabs */}
-            <div className="flex border-b border-border shrink-0 sticky top-0 bg-background z-10 rounded-t-2xl md:rounded-t-xl">
+            <div className="flex border-b border-border shrink-0 sticky top-0 bg-background z-10 rounded-t-2xl md:rounded-t-xl max-w-md mx-auto w-full">
               <button
                 onClick={() => { setTab("coach"); setCoachView("new"); }}
                 className={cn(
-                  "flex-1 py-3 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
+                  "flex-1 py-3.5 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
                   tab === "coach" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span>Coach</span>
-                <span className="text-[10px] font-normal text-muted-foreground/70">Human response · Reviews + accountability</span>
+                <span className="text-[11px] font-normal text-muted-foreground/70">Human response</span>
               </button>
               <button
                 onClick={() => { setTab("instant"); setInstantView("ask"); setInstantResult(null); }}
                 className={cn(
-                  "flex-1 py-3 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
+                  "flex-1 py-3.5 text-sm font-medium transition-colors border-b-2 flex flex-col items-center gap-0.5",
                   tab === "instant" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
                 <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" /> Instant Answer</span>
-                <span className="text-[10px] font-normal text-muted-foreground/70">Fast education · No signals, no targets</span>
+                <span className="text-[11px] font-normal text-muted-foreground/70">Fast education</span>
               </button>
             </div>
 
@@ -284,7 +284,7 @@ export function AskCoachButton() {
                       <MessageSquare className="h-5 w-5" />
                     </button>
                   )}
-                  <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-1">
+                   <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2.5 rounded-md hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
@@ -310,7 +310,7 @@ export function AskCoachButton() {
                       <History className="h-5 w-5" />
                     </button>
                   )}
-                  <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-1">
+                   <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-2.5 rounded-md hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
@@ -318,69 +318,69 @@ export function AskCoachButton() {
             )}
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-5 md:p-6">
+            <div className="flex-1 overflow-y-auto p-6 md:p-7">
 
               {/* ========== COACH TAB ========== */}
               {tab === "coach" && coachView === "new" && (
-                <div className="space-y-5">
+                <div className="space-y-[18px]">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Category</label>
+                    <label className="text-sm font-medium text-foreground/80">Category</label>
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-[46px] text-base leading-relaxed"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        {CATEGORIES.map((c) => <SelectItem key={c} value={c} className="text-base">{c}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Urgency</label>
+                    <label className="text-sm font-medium text-foreground/80">Urgency</label>
                     <div className="flex gap-2">
                       {["standard", "priority"].map((u) => (
                         <button key={u} onClick={() => setUrgency(u)} className={cn(
-                          "px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize",
+                          "px-5 py-2.5 h-[46px] rounded-lg text-base font-medium transition-colors capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           urgency === u ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
                         )}>{u}</button>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground/60">
+                    <p className="text-sm text-muted-foreground/70">
                       {urgency === "priority" ? "Priority: faster response" : "Standard: within 2–4 hours"}
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Question Template</label>
+                    <label className="text-sm font-medium text-foreground/80">Question Template</label>
                     <Select value={template} onValueChange={(val) => {
                       setTemplate(val);
                       if (val !== "None") setQuestion(QUESTION_TEMPLATES[val]);
                     }}>
-                      <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-[46px] text-base leading-relaxed"><SelectValue /></SelectTrigger>
                       <SelectContent className="bg-background border border-border z-[60]">
-                        {Object.keys(QUESTION_TEMPLATES).map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        {Object.keys(QUESTION_TEMPLATES).map((t) => <SelectItem key={t} value={t} className="text-base">{t}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground/60">Optional — pick a template to get started faster</p>
+                    <p className="text-sm text-muted-foreground/70">Optional — pick a template to get started faster</p>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Your Question</label>
-                    <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What's going on? Describe the situation, what you tried, and where you're stuck…" className="resize-none text-sm min-h-[180px]" rows={8} maxLength={1000} />
-                    <p className="text-xs text-muted-foreground/60">e.g. "I keep revenge trading after a loss — how do I build a cooldown routine?"</p>
+                    <label className="text-sm font-medium text-foreground/80">Your Question</label>
+                    <p className="text-sm text-muted-foreground/70">Keep it simple: what you tried + what happened + what you want.</p>
+                    <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What's going on? Describe the situation, what you tried, and where you're stuck…" className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-base" rows={8} maxLength={1000} />
+                    <p className="text-sm text-muted-foreground/70">e.g. "I keep revenge trading after a loss — how do I build a cooldown routine?"</p>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Screenshot (optional)</label>
                     <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)} />
                     {screenshotFile ? (
-                      <div className="flex items-center gap-2 text-sm text-foreground">
+                      <div className="flex items-center gap-2 text-base text-foreground">
                         <Image className="h-4 w-4 text-muted-foreground" />
                         <span className="truncate flex-1">{screenshotFile.name}</span>
-                        <button onClick={() => setScreenshotFile(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+                        <button onClick={() => setScreenshotFile(null)} className="text-muted-foreground hover:text-foreground p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"><X className="h-4 w-4" /></button>
                       </div>
                     ) : (
-                      <Button variant="outline" size="sm" className="gap-1.5 text-sm" onClick={() => fileRef.current?.click()}>
-                        <Image className="h-4 w-4" /> Attach Screenshot
+                      <Button variant="outline" className="gap-2 text-base h-[46px] px-4 w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => fileRef.current?.click()}>
+                        <span>📎</span> Attach Screenshot
                       </Button>
                     )}
                   </div>
-                  <div className="sticky bottom-0 bg-background pt-3 pb-1 -mx-5 px-5 md:-mx-6 md:px-6 border-t border-border">
-                    <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-11 text-sm">
+                  <div className="sticky bottom-0 bg-background pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-border">
+                    <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-[50px] text-base font-semibold">
                       {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       {sending ? "Submitting…" : "Submit Question"}
                     </Button>
@@ -470,16 +470,16 @@ export function AskCoachButton() {
                     value={instantQ}
                     onChange={(e) => setInstantQ(e.target.value)}
                     placeholder="Type your question here — be as specific as you can…"
-                    className="resize-none text-sm min-h-[180px]"
+                    className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-base"
                     rows={7}
                     maxLength={500}
                   />
-                  <p className="text-xs text-muted-foreground/60">e.g. "How should I size my position after a losing streak?"</p>
-                  <div className="sticky bottom-0 bg-background pt-3 pb-1 -mx-5 px-5 md:-mx-6 md:px-6 border-t border-border">
+                  <p className="text-sm text-muted-foreground/70">e.g. "How should I size my position after a losing streak?"</p>
+                  <div className="sticky bottom-0 bg-background pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-border">
                     <Button
                       onClick={handleInstantAsk}
                       disabled={!instantQ.trim() || instantLoading}
-                      className="w-full gap-2 h-11 text-sm"
+                      className="w-full gap-2 h-[50px] text-base font-semibold"
                     >
                       {instantLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                       {instantLoading ? "Thinking…" : "Get Answer"}
