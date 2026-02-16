@@ -12,14 +12,21 @@ const GEOMETRIC_ICONS: Record<string, React.ReactNode> = {
 
 const DEFAULT_COLOR = "hsl(220, 15%, 45%)";
 
+
+
 export interface ParsedAvatar {
-  mode: "initials" | "icon";
+  mode: "initials" | "icon" | "image";
   color: string;
   iconId?: string;
+  imageUrl?: string;
 }
 
 export function parseAvatarUrl(avatarUrl: string | null | undefined): ParsedAvatar {
   if (!avatarUrl) return { mode: "initials", color: DEFAULT_COLOR };
+
+  if (avatarUrl.startsWith("http")) {
+    return { mode: "image", imageUrl: avatarUrl, color: DEFAULT_COLOR };
+  }
 
   if (avatarUrl.startsWith("icon:")) {
     const parts = avatarUrl.replace("icon:", "").split("|");
@@ -54,6 +61,16 @@ export function ChatAvatar({
   size?: string;
 }) {
   const parsed = parseAvatarUrl(avatarUrl);
+
+  if (parsed.mode === "image" && parsed.imageUrl) {
+    return (
+      <img
+        src={parsed.imageUrl}
+        alt={userName}
+        className={`${size} rounded-full object-cover`}
+      />
+    );
+  }
 
   if (parsed.mode === "icon" && parsed.iconId && GEOMETRIC_ICONS[parsed.iconId]) {
     return (
