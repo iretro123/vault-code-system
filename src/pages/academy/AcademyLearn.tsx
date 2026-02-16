@@ -11,6 +11,7 @@ import { useLessonProgress } from "@/hooks/useLessonProgress";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
 import { SendNotificationModal } from "@/components/academy/SendNotificationModal";
+import { ClaimRoleBanner } from "@/components/academy/ClaimRoleBanner";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -93,6 +94,7 @@ const AcademyLearn = () => {
           </div>
         ) : (
           <div className="space-y-3 max-w-3xl">
+            <ClaimRoleBanner />
             {modules.map((mod, i) => {
               const modLessons = lessonsByModule[mod.slug] || [];
               const completedCount = modLessons.filter((l) => progress[l.id]).length;
