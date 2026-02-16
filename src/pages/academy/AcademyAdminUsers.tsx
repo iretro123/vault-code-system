@@ -11,6 +11,7 @@ import { Navigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { formatDateExport, formatDateWithYear } from "@/lib/formatTime";
 
 interface UserRow {
   display_name: string | null;
@@ -55,8 +56,8 @@ const AcademyAdminUsers = () => {
       escapeCsv(u.email || ""),
       escapeCsv(u.phone_number || ""),
       escapeCsv(u.academy_experience),
-      escapeCsv(u.created_at ? format(new Date(u.created_at), "yyyy-MM-dd h:mm a") : ""),
-      escapeCsv(u.updated_at ? format(new Date(u.updated_at), "yyyy-MM-dd h:mm a") : ""),
+      escapeCsv(u.created_at ? formatDateExport(u.created_at) : ""),
+      escapeCsv(u.updated_at ? formatDateExport(u.updated_at) : ""),
     ]);
     const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -119,10 +120,10 @@ const AcademyAdminUsers = () => {
                       </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
-                      {format(new Date(u.created_at), "MMM d, yyyy")}
+                      {formatDateWithYear(u.created_at)}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
-                      {format(new Date(u.updated_at), "MMM d, yyyy")}
+                      {formatDateWithYear(u.updated_at)}
                     </TableCell>
                   </TableRow>
                 ))}

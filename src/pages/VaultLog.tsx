@@ -12,7 +12,7 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
-import { format } from "date-fns";
+import { formatDateCompact } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 
 interface TradeIntent {
@@ -77,7 +77,7 @@ export default function VaultLog() {
                   {trades.map((t, i) => (
                     <TableRow key={t.id}>
                       <TableCell className="text-xs font-mono tabular-nums whitespace-nowrap">
-                        {format(new Date(t.created_at), "MM/dd h:mm a")}
+                        {formatDateCompact(t.created_at)}
                       </TableCell>
                       <TableCell>
                         <span

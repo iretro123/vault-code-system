@@ -3,7 +3,7 @@ import { Bell, X, Check, Loader2 } from "lucide-react";
 import { useAcademyNotifications } from "@/hooks/useAcademyNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { formatDateTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 
 export function NotificationsPanel() {
@@ -115,7 +115,7 @@ export function NotificationsPanel() {
                               {typeLabel(n.type)}
                             </span>
                             <span className="text-[10px] text-muted-foreground/40">
-                              {format(new Date(n.created_at), "MMM d, h:mm a")}
+                              {formatDateTime(n.created_at)}
                             </span>
                           </div>
                           <p className="text-sm font-medium text-foreground">{n.title}</p>

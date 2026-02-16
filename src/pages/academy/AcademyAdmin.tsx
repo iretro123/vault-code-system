@@ -11,7 +11,7 @@ import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { Navigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { formatDateTime, formatDateShort } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { useAuth } from "@/hooks/useAuth";
@@ -240,7 +240,7 @@ const AcademyAdmin = () => {
                               <span className="text-[10px] font-semibold uppercase tracking-wider bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">Priority</span>
                             )}
                             <span className="text-[10px] text-muted-foreground/50">
-                              {format(new Date(t.created_at), "MMM d, h:mm a")}
+                              {formatDateTime(t.created_at)}
                             </span>
                           </div>
                           <p className="text-sm text-foreground line-clamp-2">{t.question}</p>
@@ -289,7 +289,7 @@ const AcademyAdmin = () => {
                                     {r.is_admin && <span className="text-[10px] ml-1 font-normal text-primary/60">Coach</span>}
                                   </span>
                                   <span className="text-[10px] text-muted-foreground/50">
-                                    {format(new Date(r.created_at), "MMM d, h:mm a")}
+                                    {formatDateTime(r.created_at)}
                                   </span>
                                 </div>
                                 <p className="text-foreground/90 whitespace-pre-line">{r.body}</p>
@@ -336,7 +336,7 @@ const AcademyAdmin = () => {
                       <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
                       <span className="text-[10px] font-semibold uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.category}</span>
                       <p className="text-sm text-foreground truncate flex-1">{t.question}</p>
-                      <span className="text-[10px] text-muted-foreground/50 shrink-0">{format(new Date(t.created_at), "MMM d")}</span>
+                      <span className="text-[10px] text-muted-foreground/50 shrink-0">{formatDateShort(t.created_at)}</span>
                     </div>
                   </Card>
                 ))}

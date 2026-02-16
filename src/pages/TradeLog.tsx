@@ -222,7 +222,7 @@ const TradeLog = () => {
                           ${entry.risk_used} risk · {entry.risk_reward}x return
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(entry.trade_date).toLocaleDateString()}
+                          {new Date(entry.trade_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </p>
                       </div>
                     </div>
