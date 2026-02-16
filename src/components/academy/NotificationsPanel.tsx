@@ -1,80 +1,36 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Bell, X, Check, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAcademyNotifications } from "@/hooks/useAcademyNotifications";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-interface Notification {
-  id: string;
-  title: string;
-  body: string;
-  type: string;
-  seen: boolean;
-  created_at: string;
-}
-
 export function NotificationsPanel() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const fetchNotifications = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    const { data } = await supabase
-      .from("notification_log")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(30);
-    const items = (data as Notification[]) || [];
-    setNotifications(items);
-    setUnreadCount(items.filter((n) => !n.seen).length);
-    setLoading(false);
-  }, [user]);
-
-  // Fetch on mount + when panel opens
-  useEffect(() => {
-    if (user) fetchNotifications();
-  }, [user, fetchNotifications]);
+  const { notifications, unreadCount, loading, markRead, markAllRead, refetch } =
+    useAcademyNotifications();
 
   useEffect(() => {
-    if (open) fetchNotifications();
-  }, [open, fetchNotifications]);
+    if (open) refetch();
+  }, [open, refetch]);
 
-  const markAllRead = async () => {
-    if (!user) return;
-    const unreadIds = notifications.filter((n) => !n.seen).map((n) => n.id);
-    if (unreadIds.length === 0) return;
-    await supabase
-      .from("notification_log")
-      .update({ seen: true })
-      .eq("user_id", user.id)
-      .eq("seen", false);
-    setNotifications((prev) => prev.map((n) => ({ ...n, seen: true })));
-    setUnreadCount(0);
-  };
-
-  const markOneRead = async (id: string) => {
-    await supabase
-      .from("notification_log")
-      .update({ seen: true })
-      .eq("id", id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, seen: true } : n))
-    );
-    setUnreadCount((c) => Math.max(0, c - 1));
+  const handleClickItem = async (n: (typeof notifications)[0]) => {
+    if (!n.is_read) await markRead(n.id);
+    if (n.link_path) {
+      setOpen(false);
+      navigate(n.link_path);
+    }
   };
 
   const typeLabel = (type: string) => {
     switch (type) {
-      case "smart": return "Smart";
-      case "reminder": return "Reminder";
-      case "streak": return "Streak";
-      case "support": return "Review";
+      case "announcement": return "Announcement";
+      case "new_module": return "New Module";
+      case "coach_reply": return "Coach";
+      case "motivation": return "Motivation";
       default: return "System";
     }
   };
@@ -91,7 +47,7 @@ export function NotificationsPanel() {
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,85%,55%)] text-[hsl(45,90%,10%)] text-[10px] font-bold">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -134,24 +90,26 @@ export function NotificationsPanel() {
                 <div className="text-center py-12 px-5">
                   <Bell className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">No notifications yet.</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">We'll nudge you when there's something to do.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    We'll nudge you when there's something to do.
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-border">
                   {notifications.map((n) => (
                     <button
                       key={n.id}
-                      onClick={() => { if (!n.seen) markOneRead(n.id); }}
+                      onClick={() => handleClickItem(n)}
                       className={cn(
                         "w-full text-left px-5 py-4 transition-colors hover:bg-muted/30",
-                        !n.seen && "bg-primary/[0.03]"
+                        !n.is_read && "bg-primary/[0.03]"
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        {!n.seen && (
-                          <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
+                        {!n.is_read && (
+                          <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,85%,55%)] shrink-0" />
                         )}
-                        <div className={cn("flex-1 min-w-0", n.seen && "ml-5")}>
+                        <div className={cn("flex-1 min-w-0", n.is_read && "ml-5")}>
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                               {typeLabel(n.type)}
@@ -161,7 +119,11 @@ export function NotificationsPanel() {
                             </span>
                           </div>
                           <p className="text-sm font-medium text-foreground">{n.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{n.body}</p>
+                          {n.body && (
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                              {n.body}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </button>
