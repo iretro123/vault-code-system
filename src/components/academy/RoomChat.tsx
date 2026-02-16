@@ -251,7 +251,7 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)] max-w-2xl">
+    <div className="flex flex-col h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)] max-w-[920px] w-full rounded-2xl border border-white/[0.08] bg-white/[0.06] backdrop-blur-[12px] shadow-[0_2px_24px_rgba(0,0,0,0.12)] p-4 md:p-5">
       {/* Messages */}
       <div
         ref={containerRef}
@@ -260,7 +260,7 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
       >
         {hasMore && (
           <div className="flex justify-center py-2">
-            <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs">
+            <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs text-white/70 hover:text-white">
               <ChevronUp className="h-3 w-3" />
               Load older
             </Button>
@@ -268,7 +268,7 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
         )}
 
         {messages.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">
+          <p className="text-sm text-white/50 text-center py-8">
             No messages yet. Be the first to say something.
           </p>
         )}
@@ -284,16 +284,16 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
                 <div className="flex items-baseline gap-2 mb-0.5">
                   <span className={cn(
                     "text-xs font-semibold",
-                    isOwn ? "text-primary" : "text-foreground"
+                    isOwn ? "text-primary" : "text-white"
                   )}>
                     {msg.user_name}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/60">
+                  <span className="text-[10px] text-white/40">
                     {format(new Date(msg.created_at), "HH:mm")}
                   </span>
                 </div>
               )}
-              <p className="text-sm text-foreground/90 leading-relaxed pl-0 whitespace-pre-line">
+              <p className="text-sm text-white/90 leading-relaxed pl-0 whitespace-pre-line">
                 {renderBody(msg.body)}
               </p>
             </div>
@@ -304,7 +304,7 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
 
       {/* Input */}
       {canPost ? (
-        <div className="pt-3 border-t border-border/40 mt-2">
+        <div className="pt-3 border-t border-white/[0.08] mt-2">
           {error && (
             <p className="text-xs text-destructive mb-2">{error}</p>
           )}
@@ -317,7 +317,7 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a message…"
-                className="flex-1"
+                className="flex-1 bg-black/25 border-white/[0.1] text-white placeholder:text-white/40 focus-visible:ring-white/20"
                 maxLength={1000}
                 disabled={sending}
               />
@@ -336,8 +336,8 @@ export function RoomChat({ roomSlug, canPost }: RoomChatProps) {
           )}
         </div>
       ) : (
-        <div className="pt-3 border-t border-border/40 mt-2">
-          <p className="text-xs text-muted-foreground text-center">
+        <div className="pt-3 border-t border-white/[0.08] mt-2">
+          <p className="text-xs text-white/50 text-center">
             This room is read-only for students.
           </p>
         </div>
