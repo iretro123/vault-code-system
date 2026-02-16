@@ -137,19 +137,26 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       const cropped = await cropToSquare(file);
       const path = `${user.id}/profile-${Date.now()}.webp`;
       
+      console.debug("[AvatarUpload] bucket=avatars path=", path, "blob size=", cropped.size);
+      
       const { error: uploadErr } = await supabase.storage
         .from("avatars")
         .upload(path, cropped, { upsert: true, contentType: "image/webp" });
 
-      if (uploadErr) throw uploadErr;
+      if (uploadErr) {
+        console.error("[AvatarUpload] upload failed:", uploadErr.message, "status:", (uploadErr as any).statusCode ?? (uploadErr as any).status);
+        throw uploadErr;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from("avatars")
         .getPublicUrl(path);
 
+      console.debug("[AvatarUpload] success, publicUrl=", publicUrl);
       setImageUrl(publicUrl);
       setAvatarMode("image");
-    } catch {
+    } catch (err) {
+      console.error("[AvatarUpload] caught:", err);
       toast.error("Upload failed. Please try again (JPG/PNG/WebP under 5MB).", {
         action: { label: "Retry", onClick: () => fileInputRef.current?.click() },
       });
