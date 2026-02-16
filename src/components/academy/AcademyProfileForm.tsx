@@ -221,9 +221,9 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
           <div className="space-y-3 flex-1">
             {/* Mode tabs */}
             <div className="flex gap-2 flex-wrap">
-              <button onClick={() => setAvatarMode("initials")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "initials" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Initials</button>
-              <button onClick={() => setAvatarMode("icon")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "icon" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Icon</button>
-              <button onClick={() => setAvatarMode("image")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "image" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Photo</button>
+              <button type="button" onClick={() => setAvatarMode("initials")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "initials" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Initials</button>
+              <button type="button" onClick={() => setAvatarMode("icon")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "icon" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Icon</button>
+              <button type="button" onClick={() => setAvatarMode("image")} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === "image" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}>Photo</button>
             </div>
 
             {/* Image upload UI */}
@@ -262,7 +262,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
             {avatarMode !== "image" && (
               <div className="flex gap-1.5 flex-wrap">
                 {AVATAR_COLORS.map((c) => (
-                  <button key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
+                  <button type="button" key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
                 ))}
               </div>
             )}
@@ -271,7 +271,9 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
             {avatarMode === "icon" && (
               <div className="flex gap-1.5 flex-wrap">
                 {GEOMETRIC_ICONS.map((icon) => (
-                  <button key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>{icon.svg}</button>
+                  <button type="button" key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
+                    <span className="pointer-events-none">{icon.svg}</span>
+                  </button>
                 ))}
               </div>
             )}
