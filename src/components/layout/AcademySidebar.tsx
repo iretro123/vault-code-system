@@ -20,7 +20,7 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
-import { useUnreadAnswers } from "@/hooks/useUnreadAnswers";
+import { useInboxItems } from "@/hooks/useInboxItems";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -55,7 +55,7 @@ export function AcademySidebar() {
   const location = useLocation();
   const { hasRole, profile, user } = useAuth();
   const isAdmin = hasRole("operator");
-  const { unreadCount: unreadAnswers } = useUnreadAnswers();
+  const { unreadCount: unreadAnswers } = useInboxItems();
   const { stats: referralStats } = useReferralStats();
 
   const displayName = profile?.display_name || "Trader";
