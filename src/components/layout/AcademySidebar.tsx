@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Home,
@@ -23,6 +24,7 @@ import { useUnreadAnswers } from "@/hooks/useUnreadAnswers";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { InboxDrawer } from "@/components/academy/InboxDrawer";
 import {
   Sidebar,
   SidebarContent,
@@ -46,6 +48,7 @@ const mainNav = [
 ];
 
 export function AcademySidebar() {
+  const [inboxOpen, setInboxOpen] = useState(false);
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
@@ -231,11 +234,9 @@ export function AcademySidebar() {
         </div>
 
         {/* Inbox Button */}
-        <NavLink
-          to="/academy/my-questions"
-          end
-          className="flex items-center gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-          activeClassName="bg-muted text-primary font-medium"
+        <button
+          onClick={() => setInboxOpen(true)}
+          className="relative flex items-center gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors w-full text-left"
         >
           <Mail className="h-4 w-4 shrink-0" />
           {!collapsed && (
@@ -251,7 +252,8 @@ export function AcademySidebar() {
           {collapsed && unreadAnswers > 0 && (
             <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
           )}
-        </NavLink>
+        </button>
+        <InboxDrawer open={inboxOpen} onOpenChange={setInboxOpen} />
 
         {/* Refer a Trader Card */}
         {!collapsed && (
