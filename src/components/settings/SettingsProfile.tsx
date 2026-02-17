@@ -1,0 +1,298 @@
+import { useState, useEffect, useRef } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TIMEZONES, formatTimezone } from "@/lib/timezones";
+import { Loader2, Check, Upload } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const AVATAR_COLORS = [
+  "hsl(220, 70%, 50%)", "hsl(260, 60%, 55%)", "hsl(340, 65%, 50%)", "hsl(10, 70%, 50%)",
+  "hsl(30, 80%, 50%)", "hsl(50, 75%, 45%)", "hsl(150, 55%, 40%)", "hsl(180, 55%, 42%)",
+];
+
+const GEOMETRIC_ICONS = [
+  { id: "diamond", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><rect x="8" y="8" width="24" height="24" rx="4" transform="rotate(45 20 20)" fill="currentColor" opacity="0.9" /><rect x="14" y="14" width="12" height="12" rx="2" transform="rotate(45 20 20)" fill="currentColor" opacity="0.4" /></svg> },
+  { id: "circles", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><circle cx="20" cy="16" r="8" fill="currentColor" opacity="0.8" /><circle cx="14" cy="26" r="5" fill="currentColor" opacity="0.5" /><circle cx="26" cy="26" r="5" fill="currentColor" opacity="0.5" /></svg> },
+  { id: "hexagon", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><polygon points="20,4 34,12 34,28 20,36 6,28 6,12" fill="currentColor" opacity="0.8" /><polygon points="20,12 27,16 27,24 20,28 13,24 13,16" fill="currentColor" opacity="0.3" /></svg> },
+  { id: "triangle", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><polygon points="20,6 36,34 4,34" fill="currentColor" opacity="0.8" /><polygon points="20,16 28,30 12,30" fill="currentColor" opacity="0.3" /></svg> },
+  { id: "bars", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><rect x="6" y="8" width="8" height="24" rx="3" fill="currentColor" opacity="0.9" /><rect x="16" y="14" width="8" height="18" rx="3" fill="currentColor" opacity="0.6" /><rect x="26" y="10" width="8" height="22" rx="3" fill="currentColor" opacity="0.75" /></svg> },
+  { id: "cross", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><rect x="15" y="6" width="10" height="28" rx="3" fill="currentColor" opacity="0.8" /><rect x="6" y="15" width="28" height="10" rx="3" fill="currentColor" opacity="0.8" /></svg> },
+];
+
+type AvatarMode = "initials" | "icon" | "image";
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function cropToSquare(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const size = Math.min(img.width, img.height);
+      const canvas = document.createElement("canvas");
+      const target = Math.min(size, 640);
+      canvas.width = target;
+      canvas.height = target;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas not supported")); return; }
+      const sx = (img.width - size) / 2;
+      const sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, target, target);
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error("Crop failed")),
+        "image/webp",
+        0.8
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
+    img.src = url;
+  });
+}
+
+export function SettingsProfile() {
+  const { user, profile } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [timezone, setTimezone] = useState("America/New_York");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [avatarMode, setAvatarMode] = useState<AvatarMode>("initials");
+  const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
+  const [avatarIcon, setAvatarIcon] = useState(GEOMETRIC_ICONS[0].id);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
+
+  useEffect(() => {
+    if (!profile) return;
+    setDisplayName(profile.display_name || "");
+    setTimezone((profile as any).timezone || "America/New_York");
+    setPhoneNumber((profile as any).phone_number || "");
+    setUsername((profile as any).username || "");
+    const av = (profile as any).avatar_url || "";
+    if (av.startsWith("icon:")) {
+      const parts = av.replace("icon:", "").split("|");
+      setAvatarMode("icon");
+      setAvatarIcon(parts[0] || GEOMETRIC_ICONS[0].id);
+      setAvatarColor(parts[1] || AVATAR_COLORS[0]);
+    } else if (av.startsWith("initials:")) {
+      setAvatarMode("initials");
+      setAvatarColor(av.replace("initials:", "") || AVATAR_COLORS[0]);
+    } else if (av.startsWith("http")) {
+      setAvatarMode("image");
+      setImageUrl(av);
+    }
+  }, [profile]);
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return (name.slice(0, 2) || "??").toUpperCase();
+  };
+
+  const avatarUrl =
+    avatarMode === "image" && imageUrl
+      ? imageUrl
+      : avatarMode === "initials"
+        ? `initials:${avatarColor}`
+        : `icon:${avatarIcon}|${avatarColor}`;
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!ACCEPTED_TYPES.includes(file.type) || file.size > MAX_FILE_SIZE) {
+      toast.error("JPG/PNG/WebP under 5 MB only.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) { toast.error("Session expired. Please sign in again."); setUploading(false); return; }
+      const cropped = await cropToSquare(file);
+      const path = `${user.id}/profile-${Date.now()}.webp`;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const formData = new FormData();
+      formData.append("", cropped);
+      formData.append("cacheControl", "3600");
+      const res = await fetch(`${supabaseUrl}/storage/v1/object/avatars/${path}`, {
+        method: "POST",
+        headers: { apikey: supabaseKey, authorization: `Bearer ${accessToken}`, "x-upsert": "true" },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      setImageUrl(publicUrl);
+      setAvatarMode("image");
+    } catch {
+      toast.error("Upload failed. Try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    setSaved(false);
+    setUsernameError("");
+
+    // Check username uniqueness
+    const trimmedUsername = username.trim().toLowerCase();
+    if (trimmedUsername) {
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("username", trimmedUsername)
+        .neq("user_id", user.id)
+        .maybeSingle();
+      if (existing) {
+        setUsernameError("Username is already taken.");
+        setSaving(false);
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: displayName.trim() || null,
+        username: trimmedUsername || null,
+        timezone,
+        phone_number: phoneNumber.trim() || null,
+        avatar_url: avatarUrl,
+      })
+      .eq("user_id", user.id);
+
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const renderAvatar = () => {
+    if (avatarMode === "image" && imageUrl) {
+      return <img src={imageUrl} alt="Avatar" className="h-20 w-20 rounded-2xl object-cover" />;
+    }
+    if (avatarMode === "icon") {
+      const icon = GEOMETRIC_ICONS.find((i) => i.id === avatarIcon) || GEOMETRIC_ICONS[0];
+      return (
+        <div className="h-20 w-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: avatarColor + "22", color: avatarColor }}>
+          {icon.svg}
+        </div>
+      );
+    }
+    return (
+      <div className="h-20 w-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl" style={{ backgroundColor: avatarColor }}>
+        {getInitials(displayName || "?")}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Avatar Card */}
+      <Card className="vault-card p-5">
+        <div className="mb-1">
+          <h3 className="text-sm font-semibold text-foreground">Avatar</h3>
+          <p className="text-xs text-muted-foreground">This is how you appear in chat and the Academy.</p>
+        </div>
+        <div className="flex items-start gap-5 mt-4">
+          {renderAvatar()}
+          <div className="space-y-3 flex-1">
+            <div className="flex gap-2 flex-wrap">
+              {(["initials", "icon", "image"] as const).map((m) => (
+                <button key={m} onClick={() => setAvatarMode(m)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === m ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground"}`}>
+                  {m === "image" ? "Photo" : m.charAt(0).toUpperCase() + m.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {avatarMode === "image" && (
+              <div className="space-y-2">
+                <input ref={fileInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={handleFileSelect} />
+                <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()} className="gap-1.5">
+                  {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                  {uploading ? "Uploading…" : imageUrl ? "Change Photo" : "Upload Photo"}
+                </Button>
+                <p className="text-[10px] text-muted-foreground/60">JPG, PNG, or WebP · Max 5 MB</p>
+              </div>
+            )}
+
+            {avatarMode !== "image" && (
+              <div className="flex gap-1.5 flex-wrap">
+                {AVATAR_COLORS.map((c) => (
+                  <button key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
+                ))}
+              </div>
+            )}
+
+            {avatarMode === "icon" && (
+              <div className="flex gap-1.5 flex-wrap">
+                {GEOMETRIC_ICONS.map((icon) => (
+                  <button key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
+                    <span className="pointer-events-none">{icon.svg}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {/* Identity Card */}
+      <Card className="vault-card p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Identity</h3>
+          <p className="text-xs text-muted-foreground">Your public profile information.</p>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Display Name</Label>
+          <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" maxLength={50} className="vault-input" />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Username <span className="text-muted-foreground/50">(optional)</span></Label>
+          <Input value={username} onChange={(e) => { setUsername(e.target.value); setUsernameError(""); }} placeholder="trader_one" maxLength={30} className="vault-input" />
+          {usernameError && <p className="text-xs text-destructive">{usernameError}</p>}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Timezone</Label>
+          <Select value={timezone} onValueChange={setTimezone}>
+            <SelectTrigger className="vault-input"><SelectValue /></SelectTrigger>
+            <SelectContent className="max-h-60 bg-popover border-border z-50">
+              {TIMEZONES.map((tz) => <SelectItem key={tz} value={tz}>{formatTimezone(tz)}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Phone Number <span className="text-muted-foreground/50">(optional)</span></Label>
+          <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+1 555 000 0000" maxLength={20} className="vault-input" />
+          <p className="text-[10px] text-muted-foreground/60">For important alerts only.</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Save Profile
+          </Button>
+          {saved && <span className="text-xs text-emerald-500 font-medium">Saved</span>}
+        </div>
+      </Card>
+    </div>
+  );
+}

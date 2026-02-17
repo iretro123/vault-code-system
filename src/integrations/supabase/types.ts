@@ -972,6 +972,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          default_market: string
+          notifications_enabled: boolean
+          notify_announcements: boolean
+          notify_coach_reply: boolean
+          notify_live_events: boolean
+          notify_new_modules: boolean
+          session_autopause_minutes: number
+          trading_style: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          default_market?: string
+          notifications_enabled?: boolean
+          notify_announcements?: boolean
+          notify_coach_reply?: boolean
+          notify_live_events?: boolean
+          notify_new_modules?: boolean
+          session_autopause_minutes?: number
+          trading_style?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          default_market?: string
+          notifications_enabled?: boolean
+          notify_announcements?: boolean
+          notify_coach_reply?: boolean
+          notify_live_events?: boolean
+          notify_new_modules?: boolean
+          session_autopause_minutes?: number
+          trading_style?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
