@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, ExternalLink, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio } from "lucide-react";
-import { useInboxItems, InboxItem } from "@/hooks/useInboxItems";
+import { useAcademyData, InboxItem } from "@/contexts/AcademyDataContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -93,7 +93,7 @@ function ItemList({
 export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("inbox");
-  const { items, loading, unreadCount, refetch, markRead, markAllRead } = useInboxItems();
+  const { inboxItems: items, inboxLoading: loading, inboxUnreadCount: unreadCount, refetchInbox: refetch, markInboxRead: markRead, markAllInboxRead: markAllRead } = useAcademyData();
 
   const inboxItems = items.filter((i) => INBOX_TYPES.includes(i.type));
   const whatsNewItems = items.filter((i) => WHATS_NEW_TYPES.includes(i.type));

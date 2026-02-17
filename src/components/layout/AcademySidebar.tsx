@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   LayoutGrid,
   Users,
-  MessageSquare,
   Lock,
   Inbox,
   Mail,
@@ -20,12 +19,11 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
-import { useInboxItems } from "@/hooks/useInboxItems";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { InboxDrawer } from "@/components/academy/InboxDrawer";
-import { useReferralStats } from "@/hooks/useReferralStats";
 import {
   Sidebar,
   SidebarContent,
@@ -55,8 +53,7 @@ export function AcademySidebar() {
   const location = useLocation();
   const { hasRole, profile, user } = useAuth();
   const isAdmin = hasRole("operator");
-  const { unreadCount: unreadAnswers } = useInboxItems();
-  const { stats: referralStats } = useReferralStats();
+  const { inboxUnreadCount, referralStats } = useAcademyData();
 
   const displayName = profile?.display_name || "Trader";
   const avatarUrl = (profile as any)?.avatar_url || null;
@@ -164,14 +161,14 @@ export function AcademySidebar() {
                     {!collapsed && (
                       <span className="flex items-center gap-1.5 text-sm">
                         Inbox: My Questions
-                        {unreadAnswers > 0 && (
+                        {inboxUnreadCount > 0 && (
                           <span className="flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
-                            {unreadAnswers > 9 ? "9+" : unreadAnswers}
+                            {inboxUnreadCount > 9 ? "9+" : inboxUnreadCount}
                           </span>
                         )}
                       </span>
                     )}
-                    {collapsed && unreadAnswers > 0 && (
+                    {collapsed && inboxUnreadCount > 0 && (
                       <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
                     )}
                   </NavLink>
@@ -244,14 +241,14 @@ export function AcademySidebar() {
           {!collapsed && (
             <span className="flex items-center gap-1.5">
               Inbox
-              {unreadAnswers > 0 && (
+              {inboxUnreadCount > 0 && (
                 <span className="flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
-                  {unreadAnswers > 9 ? "9+" : unreadAnswers}
+                  {inboxUnreadCount > 9 ? "9+" : inboxUnreadCount}
                 </span>
               )}
             </span>
           )}
-          {collapsed && unreadAnswers > 0 && (
+          {collapsed && inboxUnreadCount > 0 && (
             <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
           )}
         </button>
