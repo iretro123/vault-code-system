@@ -8,12 +8,42 @@ interface OnboardingState {
   intro_posted: boolean;
 }
 
+export interface InboxItem {
+  id: string;
+  user_id: string | null;
+  type: string;
+  title: string;
+  body: string;
+  link: string | null;
+  created_at: string;
+  read_at: string | null;
+  pinned: boolean;
+}
+
+interface ReferralStats {
+  total_signed_up: number;
+  total_paid: number;
+  current_streak_weeks: number;
+  last_referral_at: string | null;
+}
+
 interface AcademyData {
   onboarding: OnboardingState | null;
   notificationUnreadCount: number;
   hydrated: boolean;
   refetchOnboarding: () => Promise<void>;
   refetchNotifications: () => Promise<void>;
+  // Inbox
+  inboxItems: InboxItem[];
+  inboxLoading: boolean;
+  inboxUnreadCount: number;
+  refetchInbox: () => Promise<void>;
+  markInboxRead: (itemId: string) => Promise<void>;
+  markAllInboxRead: () => Promise<void>;
+  // Referral
+  referralStats: ReferralStats;
+  referralLoading: boolean;
+  refetchReferrals: () => Promise<void>;
 }
 
 const defaultOnboarding: OnboardingState = {
@@ -22,12 +52,28 @@ const defaultOnboarding: OnboardingState = {
   intro_posted: false,
 };
 
+const defaultReferralStats: ReferralStats = {
+  total_signed_up: 0,
+  total_paid: 0,
+  current_streak_weeks: 0,
+  last_referral_at: null,
+};
+
 const AcademyDataContext = createContext<AcademyData>({
   onboarding: null,
   notificationUnreadCount: 0,
   hydrated: false,
   refetchOnboarding: async () => {},
   refetchNotifications: async () => {},
+  inboxItems: [],
+  inboxLoading: false,
+  inboxUnreadCount: 0,
+  refetchInbox: async () => {},
+  markInboxRead: async () => {},
+  markAllInboxRead: async () => {},
+  referralStats: defaultReferralStats,
+  referralLoading: true,
+  refetchReferrals: async () => {},
 });
 
 export function AcademyDataProvider({ children }: { children: ReactNode }) {
@@ -35,6 +81,14 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
   const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+
+  // Inbox state
+  const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
+  const [inboxLoading, setInboxLoading] = useState(false);
+
+  // Referral state
+  const [referralStats, setReferralStats] = useState<ReferralStats>(defaultReferralStats);
+  const [referralLoading, setReferralLoading] = useState(true);
 
   const fetchOnboarding = useCallback(async () => {
     if (!user) return;
@@ -49,7 +103,6 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
-    // Count unread: notifications not in reads table
     const { data: notifs } = await supabase
       .from("academy_notifications" as any)
       .select("id")
@@ -71,23 +124,107 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     setNotificationUnreadCount(unread);
   }, [user]);
 
+  const fetchInbox = useCallback(async () => {
+    if (!user) return;
+    setInboxLoading(true);
+
+    const { data } = await supabase
+      .from("inbox_items" as any)
+      .select("*")
+      .or(`user_id.eq.${user.id},user_id.is.null`)
+      .order("pinned", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    setInboxItems((data as any[] || []).map((d: any) => ({
+      id: d.id,
+      user_id: d.user_id,
+      type: d.type,
+      title: d.title,
+      body: d.body,
+      link: d.link,
+      created_at: d.created_at,
+      read_at: d.read_at,
+      pinned: d.pinned ?? false,
+    })));
+    setInboxLoading(false);
+  }, [user]);
+
+  const markInboxRead = useCallback(async (itemId: string) => {
+    if (!user) return;
+    await supabase
+      .from("inbox_items" as any)
+      .update({ read_at: new Date().toISOString() } as any)
+      .eq("id", itemId);
+    setInboxItems((prev) =>
+      prev.map((i) => (i.id === itemId ? { ...i, read_at: new Date().toISOString() } : i))
+    );
+  }, [user]);
+
+  const markAllInboxRead = useCallback(async () => {
+    if (!user) return;
+    const unread = inboxItems.filter((i) => !i.read_at);
+    if (unread.length === 0) return;
+
+    const userItems = unread.filter((i) => i.user_id === user.id);
+    if (userItems.length > 0) {
+      await supabase
+        .from("inbox_items" as any)
+        .update({ read_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id)
+        .is("read_at", null);
+    }
+
+    setInboxItems((prev) => prev.map((i) => ({ ...i, read_at: i.read_at || new Date().toISOString() })));
+  }, [user, inboxItems]);
+
+  const fetchReferrals = useCallback(async () => {
+    if (!user) {
+      setReferralLoading(false);
+      return;
+    }
+
+    const { data } = await supabase
+      .from("referral_stats" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (data) {
+      setReferralStats({
+        total_signed_up: (data as any).total_signed_up ?? 0,
+        total_paid: (data as any).total_paid ?? 0,
+        current_streak_weeks: (data as any).current_streak_weeks ?? 0,
+        last_referral_at: (data as any).last_referral_at ?? null,
+      });
+    }
+    setReferralLoading(false);
+  }, [user]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setOnboarding(null);
       setNotificationUnreadCount(0);
+      setInboxItems([]);
+      setReferralStats(defaultReferralStats);
       setHydrated(true);
       return;
     }
 
     let cancelled = false;
 
-    Promise.all([fetchOnboarding(), fetchNotifications()]).then(() => {
+    Promise.all([
+      fetchOnboarding(),
+      fetchNotifications(),
+      fetchInbox(),
+      fetchReferrals(),
+    ]).then(() => {
       if (!cancelled) setHydrated(true);
     });
 
     return () => { cancelled = true; };
-  }, [user, authLoading, fetchOnboarding, fetchNotifications]);
+  }, [user, authLoading, fetchOnboarding, fetchNotifications, fetchInbox, fetchReferrals]);
 
   return (
     <AcademyDataContext.Provider
@@ -97,6 +234,15 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
         hydrated,
         refetchOnboarding: fetchOnboarding,
         refetchNotifications: fetchNotifications,
+        inboxItems,
+        inboxLoading,
+        inboxUnreadCount: inboxItems.filter((i) => !i.read_at).length,
+        refetchInbox: fetchInbox,
+        markInboxRead,
+        markAllInboxRead,
+        referralStats,
+        referralLoading,
+        refetchReferrals: fetchReferrals,
       }}
     >
       {children}

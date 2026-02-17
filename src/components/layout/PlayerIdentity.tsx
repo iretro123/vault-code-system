@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { parseAvatarUrl, ChatAvatar } from "@/lib/chatAvatars";
+import { ChatAvatar } from "@/lib/chatAvatars";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,37 +8,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase } from "@/integrations/supabase/client";
 import { Settings, LogOut, HelpCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-
-interface ProfileExtras {
-  username: string | null;
-  avatar_url: string | null;
-}
 
 export function PlayerIdentity() {
   const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [extras, setExtras] = useState<ProfileExtras>({ username: null, avatar_url: null });
-
-  useEffect(() => {
-    if (user) {
-      supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("user_id", user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) {
-            setExtras({
-              username: (data as any).username || null,
-              avatar_url: (data as any).avatar_url || null,
-            });
-          }
-        });
-    }
-  }, [user]);
 
   if (loading) {
     return (
@@ -60,8 +33,8 @@ export function PlayerIdentity() {
 
   const displayName = profile?.display_name || "Trader";
   const email = user.email || "";
-  const username = extras.username || email.split("@")[0];
-  const avatarUrl = extras.avatar_url;
+  const username = (profile as any)?.username || email.split("@")[0];
+  const avatarUrl = (profile as any)?.avatar_url || null;
   const initials = displayName
     .split(" ")
     .map((n) => n[0])
