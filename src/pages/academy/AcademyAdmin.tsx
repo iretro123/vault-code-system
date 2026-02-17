@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldCheck, CheckCircle2, Clock, Loader2, Plus, Trash2, Pencil, Users, AlertCircle, Send, Image, ChevronDown, ChevronUp } from "lucide-react";
+import { ShieldCheck, CheckCircle2, Clock, Loader2, Plus, Trash2, Pencil, Users, AlertCircle, Send, Image, ChevronDown, ChevronUp, Megaphone, Heart, Pin } from "lucide-react";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { Navigate } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 
 interface UserProfile {
   id: string;
@@ -71,6 +72,56 @@ const AcademyAdmin = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+
+  // Announcement form
+  const [annoTitle, setAnnoTitle] = useState("");
+  const [annoBody, setAnnoBody] = useState("");
+  const [annoLink, setAnnoLink] = useState("");
+  const [annoPinned, setAnnoPinned] = useState(false);
+  const [annoSending, setAnnoSending] = useState(false);
+
+  // Motivation DM
+  const [motiUserId, setMotiUserId] = useState("");
+  const [motiTitle, setMotiTitle] = useState("");
+  const [motiBody, setMotiBody] = useState("");
+  const [motiSending, setMotiSending] = useState(false);
+
+  const handlePostAnnouncement = async () => {
+    if (!annoTitle.trim()) { toast.error("Title is required"); return; }
+    setAnnoSending(true);
+    const { error } = await supabase.from("inbox_items" as any).insert({
+      user_id: null,
+      type: "announcement",
+      title: annoTitle.trim(),
+      body: annoBody.trim(),
+      link: annoLink.trim() || null,
+      pinned: annoPinned,
+    } as any);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Announcement posted");
+      setAnnoTitle(""); setAnnoBody(""); setAnnoLink(""); setAnnoPinned(false);
+    }
+    setAnnoSending(false);
+  };
+
+  const handleSendMotivation = async () => {
+    if (!motiUserId || !motiTitle.trim()) { toast.error("Select a user and enter a title"); return; }
+    setMotiSending(true);
+    const { error } = await supabase.from("inbox_items" as any).insert({
+      user_id: motiUserId,
+      type: "reminder",
+      title: motiTitle.trim(),
+      body: motiBody.trim(),
+      link: null,
+    } as any);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Motivation sent");
+      setMotiTitle(""); setMotiBody(""); setMotiUserId("");
+    }
+    setMotiSending(false);
+  };
 
   const fetchTickets = useCallback(async () => {
     const { data } = await supabase
@@ -208,6 +259,73 @@ const AcademyAdmin = () => {
     <AcademyLayout>
       <PageHeader title="Admin Panel" subtitle="Manage Academy content, tickets, and users" />
       <div className="px-4 md:px-6 pb-6 space-y-8">
+
+        {/* Post Announcement */}
+        <div>
+          <p className="section-title mb-3 flex items-center gap-2">
+            <Megaphone className="h-4 w-4" /> Post Announcement
+          </p>
+          <Card className="p-5 max-w-2xl space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Title</Label>
+              <Input placeholder="e.g. New Trading Challenge starts Monday" value={annoTitle} onChange={(e) => setAnnoTitle(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Body (optional)</Label>
+              <Textarea placeholder="Details…" value={annoBody} onChange={(e) => setAnnoBody(e.target.value)} rows={2} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Link (optional)</Label>
+              <Input placeholder="/academy/room/announcements" value={annoLink} onChange={(e) => setAnnoLink(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={annoPinned} onCheckedChange={setAnnoPinned} />
+              <Label className="text-xs flex items-center gap-1.5">
+                <Pin className="h-3 w-3" /> Pin to top
+              </Label>
+            </div>
+            <Button onClick={handlePostAnnouncement} disabled={annoSending || !annoTitle.trim()} className="gap-1.5">
+              {annoSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Megaphone className="h-3.5 w-3.5" />}
+              Broadcast
+            </Button>
+          </Card>
+        </div>
+
+        {/* Send Motivation DM */}
+        <div>
+          <p className="section-title mb-3 flex items-center gap-2">
+            <Heart className="h-4 w-4" /> Send Motivation (1:1)
+          </p>
+          <Card className="p-5 max-w-2xl space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">User</Label>
+              <Select value={motiUserId} onValueChange={setMotiUserId}>
+                <SelectTrigger className="w-full h-9 text-sm">
+                  <SelectValue placeholder="Select a user…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.user_id} value={u.user_id}>
+                      {u.display_name || u.email || "Unnamed"} {u.email ? `(${u.email})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Title</Label>
+              <Input placeholder="e.g. Keep grinding 🔥" value={motiTitle} onChange={(e) => setMotiTitle(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Message (optional)</Label>
+              <Textarea placeholder="Personal note…" value={motiBody} onChange={(e) => setMotiBody(e.target.value)} rows={2} />
+            </div>
+            <Button onClick={handleSendMotivation} disabled={motiSending || !motiUserId || !motiTitle.trim()} className="gap-1.5">
+              {motiSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              Send
+            </Button>
+          </Card>
+        </div>
 
         {/* Coach Tickets */}
         <div>

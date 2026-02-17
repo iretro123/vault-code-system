@@ -11,6 +11,7 @@ export interface InboxItem {
   link: string | null;
   created_at: string;
   read_at: string | null;
+  pinned: boolean;
 }
 
 export function useInboxItems() {
@@ -26,6 +27,7 @@ export function useInboxItems() {
       .from("inbox_items" as any)
       .select("*")
       .or(`user_id.eq.${user.id},user_id.is.null`)
+      .order("pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(30);
 
@@ -38,6 +40,7 @@ export function useInboxItems() {
       link: d.link,
       created_at: d.created_at,
       read_at: d.read_at,
+      pinned: d.pinned ?? false,
     })));
     setLoading(false);
   }, [user]);
@@ -64,7 +67,6 @@ export function useInboxItems() {
     const unread = items.filter((i) => !i.read_at);
     if (unread.length === 0) return;
 
-    // For user-owned items
     const userItems = unread.filter((i) => i.user_id === user.id);
     if (userItems.length > 0) {
       await supabase
@@ -74,8 +76,6 @@ export function useInboxItems() {
         .is("read_at", null);
     }
 
-    // For broadcast items (user_id is null), we can't update them for all users
-    // so we handle broadcast read state client-side or skip
     setItems((prev) => prev.map((i) => ({ ...i, read_at: i.read_at || new Date().toISOString() })));
   }, [user, items]);
 
