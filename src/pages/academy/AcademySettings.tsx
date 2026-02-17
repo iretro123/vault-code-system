@@ -1,72 +1,125 @@
 import { useState } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AcademyProfileForm } from "@/components/academy/AcademyProfileForm";
-import { AccountSecurityForm } from "@/components/academy/AccountSecurityForm";
-import { Button } from "@/components/ui/button";
-import { LogOut, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
-import { SendNotificationModal } from "@/components/academy/SendNotificationModal";
+import { cn } from "@/lib/utils";
+import {
+  User,
+  BarChart3,
+  Bell,
+  Shield,
+  HelpCircle,
+  Database,
+} from "lucide-react";
+
+import { SettingsProfile } from "@/components/settings/SettingsProfile";
+import { SettingsTradingPrefs } from "@/components/settings/SettingsTradingPrefs";
+import { SettingsNotifications } from "@/components/settings/SettingsNotifications";
+import { SettingsPrivacy } from "@/components/settings/SettingsPrivacy";
+import { SettingsSecurity } from "@/components/settings/SettingsSecurity";
+import { SettingsHelp } from "@/components/settings/SettingsHelp";
+
+const NAV_ITEMS = [
+  { id: "profile", label: "Profile", icon: User },
+  { id: "trading", label: "Trading Preferences", icon: BarChart3 },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "privacy", label: "Privacy & Data", icon: Database },
+  { id: "security", label: "Security", icon: Shield },
+  { id: "help", label: "Help", icon: HelpCircle },
+] as const;
+
+type SectionId = (typeof NAV_ITEMS)[number]["id"];
 
 const AcademySettings = () => {
-  const { signOut } = useAuth();
-  const { isAdmin } = useAcademyRole();
-  const [motivationOpen, setMotivationOpen] = useState(false);
+  const [section, setSection] = useState<SectionId>("profile");
 
   return (
     <AcademyLayout>
-      <PageHeader title="Settings" subtitle="Manage your account and preferences" />
-      <div className="px-4 md:px-6 pb-6 max-w-lg">
-        <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList className={`grid w-full ${isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
-            {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
-          </TabsList>
-
-          <TabsContent value="profile">
-            <AcademyProfileForm />
-          </TabsContent>
-
-          <TabsContent value="account" className="space-y-5">
-            <AccountSecurityForm />
-            <Button
-              variant="outline"
-              className="w-full gap-2 h-12 border-border text-muted-foreground hover:text-foreground"
-              onClick={() => signOut()}
+      <div className="flex flex-1 min-h-0">
+        {/* Left nav — desktop */}
+        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-border/40 py-6 px-3 gap-1">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-3 mb-3">
+            Settings
+          </h2>
+          {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setSection(id)}
+              className={cn(
+                "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors text-left w-full",
+                section === id
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              )}
             >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-          </TabsContent>
+              <Icon className="h-4 w-4 shrink-0" />
+              {label}
+            </button>
+          ))}
+        </aside>
 
-          {isAdmin && (
-            <TabsContent value="admin" className="space-y-4">
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Admin Actions</h3>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 h-12 border-border text-muted-foreground hover:text-foreground"
-                  onClick={() => setMotivationOpen(true)}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Send Motivation
-                </Button>
-                <SendNotificationModal
-                  open={motivationOpen}
-                  onClose={() => setMotivationOpen(false)}
-                  defaultType="motivation"
-                  defaultTitle=""
-                />
-              </div>
-            </TabsContent>
-          )}
-        </Tabs>
+        {/* Mobile section picker */}
+        <div className="md:hidden w-full">
+          <div className="px-4 pt-4 pb-2">
+            <h1 className="text-lg font-bold text-foreground">Vault Settings</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Control your profile, trading preferences, and alerts.
+            </p>
+          </div>
+          <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-none">
+            {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setSection(id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+                  section === id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/30 text-muted-foreground"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="px-4 pb-24">
+            <SettingsPanel section={section} />
+          </div>
+        </div>
+
+        {/* Main panel — desktop */}
+        <div className="hidden md:flex flex-1 flex-col min-w-0">
+          <div className="px-8 pt-6 pb-4">
+            <h1 className="text-xl font-bold text-foreground">Vault Settings</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Control your profile, trading preferences, and alerts.
+            </p>
+          </div>
+          <div className="px-8 pb-12 max-w-2xl">
+            <SettingsPanel section={section} />
+          </div>
+        </div>
       </div>
     </AcademyLayout>
   );
 };
+
+function SettingsPanel({ section }: { section: SectionId }) {
+  switch (section) {
+    case "profile":
+      return <SettingsProfile />;
+    case "trading":
+      return <SettingsTradingPrefs />;
+    case "notifications":
+      return <SettingsNotifications />;
+    case "privacy":
+      return <SettingsPrivacy />;
+    case "security":
+      return <SettingsSecurity />;
+    case "help":
+      return <SettingsHelp />;
+  }
+}
 
 export default AcademySettings;
