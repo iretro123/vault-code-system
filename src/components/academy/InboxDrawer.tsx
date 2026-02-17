@@ -119,9 +119,9 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={handleOpen}>
-      <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
-        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border/40">
-          <SheetTitle className="text-lg font-semibold">Inbox</SheetTitle>
+      <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col bg-[hsl(220,20%,8%)]/95 backdrop-blur-xl border-l border-white/[0.08]">
+        <SheetHeader className="px-5 pt-5 pb-3 border-b border-white/[0.06]">
+          <SheetTitle className="text-lg font-semibold text-foreground">Inbox</SheetTitle>
         </SheetHeader>
 
         <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col min-h-0">

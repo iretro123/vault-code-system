@@ -16,13 +16,13 @@ import {
   Gift,
   Copy,
 } from "lucide-react";
+import { ReferralModal } from "@/components/academy/ReferralModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { InboxDrawer } from "@/components/academy/InboxDrawer";
 import {
   Sidebar,
@@ -48,6 +48,7 @@ const mainNav = [
 
 export function AcademySidebar() {
   const [inboxOpen, setInboxOpen] = useState(false);
+  const [referralOpen, setReferralOpen] = useState(false);
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
@@ -216,13 +217,22 @@ export function AcademySidebar() {
         )}
       </SidebarContent>
 
-      {/* Utility Footer */}
-      <SidebarFooter className="sticky bottom-0 border-t border-border/40 bg-sidebar backdrop-blur-md p-3 space-y-3">
-        {/* User Chip */}
-        <div className="flex items-center gap-2.5 select-none pointer-events-none">
+      {/* Premium Bottom Dock */}
+      <SidebarFooter className="sticky bottom-0 border-t border-white/[0.06] bg-[hsl(220,20%,8%)]/80 backdrop-blur-xl p-2.5 space-y-1.5">
+        {/* 1. Refer a Trader */}
+        <button
+          onClick={() => setReferralOpen(true)}
+          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-colors w-full text-left"
+        >
+          <Gift className="h-4 w-4 shrink-0 text-primary" />
+          {!collapsed && <span>Refer a Trader</span>}
+        </button>
+
+        {/* 2. User Identity (not clickable) */}
+        <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 select-none pointer-events-none">
           <div className="relative shrink-0">
             <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-sidebar" />
+            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-[hsl(220,20%,8%)]" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
@@ -232,10 +242,10 @@ export function AcademySidebar() {
           )}
         </div>
 
-        {/* Inbox Button */}
+        {/* 3. Inbox */}
         <button
           onClick={() => setInboxOpen(true)}
-          className="relative flex items-center gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors w-full text-left"
+          className="relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-colors w-full text-left"
         >
           <Mail className="h-4 w-4 shrink-0" />
           {!collapsed && (
@@ -252,56 +262,9 @@ export function AcademySidebar() {
             <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
           )}
         </button>
-        <InboxDrawer open={inboxOpen} onOpenChange={setInboxOpen} />
 
-        {/* Refer a Trader Card */}
-        {!collapsed && (
-          <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2.5">
-            <div className="flex items-center gap-2">
-              <Gift className="h-4 w-4 text-primary shrink-0" />
-              <div>
-                <span className="text-xs font-semibold text-foreground">Refer a Trader</span>
-                <p className="text-[10px] text-muted-foreground leading-tight">Earn rewards for invites</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">Referrals</span>
-              <span className="font-medium text-foreground">{referralStats.total_signed_up}</span>
-            </div>
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground">Streak</span>
-              <span className="font-medium text-foreground">{referralStats.current_streak_weeks} weeks</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full h-7 text-xs gap-1.5"
-              onClick={() => {
-                const refLink = `${window.location.origin}/auth?ref=${user?.id || ""}`;
-                navigator.clipboard.writeText(refLink);
-                toast.success("Referral link copied!");
-              }}
-            >
-              <Copy className="h-3 w-3" />
-              Copy Link
-            </Button>
-            <p className="text-[10px] text-muted-foreground/60 text-center leading-snug">
-              Rewards unlock at 3 / 7 / 15 referrals
-            </p>
-          </div>
-        )}
-        {collapsed && (
-          <button
-            className="flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-            onClick={() => {
-              const refLink = `${window.location.origin}/auth?ref=${user?.id || ""}`;
-              navigator.clipboard.writeText(refLink);
-              toast.success("Referral link copied!");
-            }}
-          >
-            <Gift className="h-4 w-4" />
-          </button>
-        )}
+        <InboxDrawer open={inboxOpen} onOpenChange={setInboxOpen} />
+        <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />
       </SidebarFooter>
     </Sidebar>
   );
