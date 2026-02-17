@@ -12,14 +12,21 @@ import {
   MessageSquare,
   Lock,
   Inbox,
+  Mail,
+  Gift,
+  Copy,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
 import { useUnreadAnswers } from "@/hooks/useUnreadAnswers";
+import { ChatAvatar } from "@/lib/chatAvatars";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -42,9 +49,12 @@ export function AcademySidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { hasRole } = useAuth();
+  const { hasRole, profile } = useAuth();
   const isAdmin = hasRole("operator");
   const { unreadCount: unreadAnswers } = useUnreadAnswers();
+
+  const displayName = profile?.display_name || "Trader";
+  const avatarUrl = (profile as any)?.avatar_url || null;
 
   const isActive = (path: string) => location.pathname === path;
   const isRoomActive = (slug: string) => location.pathname === `/academy/room/${slug}`;
@@ -203,6 +213,82 @@ export function AcademySidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
+
+      {/* Utility Footer */}
+      <SidebarFooter className="sticky bottom-0 border-t border-border/40 bg-sidebar backdrop-blur-md p-3 space-y-3">
+        {/* User Chip */}
+        <div className="flex items-center gap-2.5">
+          <div className="relative shrink-0">
+            <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
+            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-sidebar" />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground truncate leading-tight">{displayName}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">Online</p>
+            </div>
+          )}
+        </div>
+
+        {/* Inbox Button */}
+        <NavLink
+          to="/academy/my-questions"
+          end
+          className="flex items-center gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          activeClassName="bg-muted text-primary font-medium"
+        >
+          <Mail className="h-4 w-4 shrink-0" />
+          {!collapsed && (
+            <span className="flex items-center gap-1.5">
+              Inbox
+              {unreadAnswers > 0 && (
+                <span className="flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
+                  {unreadAnswers > 9 ? "9+" : unreadAnswers}
+                </span>
+              )}
+            </span>
+          )}
+          {collapsed && unreadAnswers > 0 && (
+            <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
+          )}
+        </NavLink>
+
+        {/* Refer a Trader Card */}
+        {!collapsed && (
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Gift className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-xs font-semibold text-foreground">Refer a Trader</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-snug">
+              Share the Vault with a fellow trader.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full h-7 text-xs gap-1.5"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.origin + "/auth");
+                toast.success("Referral link copied!");
+              }}
+            >
+              <Copy className="h-3 w-3" />
+              Copy Link
+            </Button>
+          </div>
+        )}
+        {collapsed && (
+          <button
+            className="flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.origin + "/auth");
+              toast.success("Referral link copied!");
+            }}
+          >
+            <Gift className="h-4 w-4" />
+          </button>
+        )}
+      </SidebarFooter>
     </Sidebar>
   );
 }
