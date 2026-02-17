@@ -90,16 +90,6 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     setLoadingReplies(false);
   }, [user]);
 
-  const handleOpen = useCallback(
-    (isOpen: boolean) => {
-      onOpenChange(isOpen);
-      if (isOpen) {
-        fetchCoachReplies();
-      }
-    },
-    [onOpenChange, fetchCoachReplies]
-  );
-
   const markReplyRead = useCallback(
     async (replyId: string) => {
       if (!user) return;
@@ -127,6 +117,23 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     setCoachReplies((prev) => prev.map((r) => ({ ...r, is_read: true })));
     refetchUnread();
   }, [user, coachReplies, refetchUnread]);
+
+  const handleOpen = useCallback(
+    (isOpen: boolean) => {
+      if (!isOpen) {
+        // Auto-mark everything as read when closing
+        const hasUnreadReplies = coachReplies.some((r) => !r.is_read);
+        if (hasUnreadReplies) markAllRepliesRead();
+        const hasUnreadNotifs = notifications.some((n) => !n.is_read);
+        if (hasUnreadNotifs) markAllRead();
+      }
+      onOpenChange(isOpen);
+      if (isOpen) {
+        fetchCoachReplies();
+      }
+    },
+    [onOpenChange, fetchCoachReplies, coachReplies, notifications, markAllRepliesRead, markAllRead]
+  );
 
   const inboxUnread = coachReplies.filter((r) => !r.is_read).length;
 
