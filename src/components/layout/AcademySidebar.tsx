@@ -217,7 +217,7 @@ export function AcademySidebar() {
       {/* Utility Footer */}
       <SidebarFooter className="sticky bottom-0 border-t border-border/40 bg-sidebar backdrop-blur-md p-3 space-y-3">
         {/* User Chip */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 select-none pointer-events-none">
           <div className="relative shrink-0">
             <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
             <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-sidebar" />
@@ -225,7 +225,7 @@ export function AcademySidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground truncate leading-tight">{displayName}</p>
-              <p className="text-[11px] text-muted-foreground leading-tight">Online</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">Vault Academy Member</p>
             </div>
           )}
         </div>
