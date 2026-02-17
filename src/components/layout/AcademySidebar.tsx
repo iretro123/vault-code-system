@@ -257,14 +257,18 @@ export function AcademySidebar() {
 
         {/* Refer a Trader Card */}
         {!collapsed && (
-          <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2">
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2.5">
             <div className="flex items-center gap-2">
               <Gift className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-xs font-semibold text-foreground">Refer a Trader</span>
+              <div>
+                <span className="text-xs font-semibold text-foreground">Refer a Trader</span>
+                <p className="text-[10px] text-muted-foreground leading-tight">Earn rewards for invites</p>
+              </div>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-snug">
-              Share the Vault with a fellow trader.
-            </p>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground">Streak</span>
+              <span className="font-medium text-foreground">0 weeks</span>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -277,6 +281,9 @@ export function AcademySidebar() {
               <Copy className="h-3 w-3" />
               Copy Link
             </Button>
+            <p className="text-[10px] text-muted-foreground/60 text-center leading-snug">
+              Rewards unlock at 3 / 7 / 15 referrals
+            </p>
           </div>
         )}
         {collapsed && (
