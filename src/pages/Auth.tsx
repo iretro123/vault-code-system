@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,12 +14,21 @@ const Auth = () => {
   const { toast } = useToast();
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
+
+  // Persist ref code from URL
+  const refCode = searchParams.get("ref");
+  useEffect(() => {
+    if (refCode) {
+      sessionStorage.setItem("vault_ref", refCode);
+    }
+  }, [refCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +49,34 @@ const Auth = () => {
         title: mode === "signup" ? "Account created" : "Welcome back",
         description: mode === "signup" ? "Check your email to verify your account." : "You have been signed in.",
       });
+
+      // Record referral on signup
+      if (mode === "signup") {
+        const savedRef = sessionStorage.getItem("vault_ref");
+        if (savedRef) {
+          try {
+            // Get the newly created user
+            const { data: sessionData } = await supabase.auth.getSession();
+            const newUserId = sessionData?.session?.user?.id;
+            await supabase.from("referrals" as any).insert({
+              referrer_user_id: savedRef,
+              referred_user_id: newUserId || null,
+              referred_email: email,
+              status: "signed_up",
+            } as any);
+            sessionStorage.removeItem("vault_ref");
+          } catch (e) {
+            // Silently fail - don't block signup
+            console.error("Referral tracking error:", e);
+          }
+        }
+      }
+
       if (mode === "login") navigate("/hub");
     }
 
     setLoading(false);
   };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;

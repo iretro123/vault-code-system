@@ -25,6 +25,7 @@ import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { InboxDrawer } from "@/components/academy/InboxDrawer";
+import { useReferralStats } from "@/hooks/useReferralStats";
 import {
   Sidebar,
   SidebarContent,
@@ -52,9 +53,10 @@ export function AcademySidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { hasRole, profile } = useAuth();
+  const { hasRole, profile, user } = useAuth();
   const isAdmin = hasRole("operator");
   const { unreadCount: unreadAnswers } = useUnreadAnswers();
+  const { stats: referralStats } = useReferralStats();
 
   const displayName = profile?.display_name || "Trader";
   const avatarUrl = (profile as any)?.avatar_url || null;
@@ -266,15 +268,20 @@ export function AcademySidebar() {
               </div>
             </div>
             <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground">Referrals</span>
+              <span className="font-medium text-foreground">{referralStats.total_signed_up}</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px]">
               <span className="text-muted-foreground">Streak</span>
-              <span className="font-medium text-foreground">0 weeks</span>
+              <span className="font-medium text-foreground">{referralStats.current_streak_weeks} weeks</span>
             </div>
             <Button
               variant="outline"
               size="sm"
               className="w-full h-7 text-xs gap-1.5"
               onClick={() => {
-                navigator.clipboard.writeText(window.location.origin + "/auth");
+                const refLink = `${window.location.origin}/auth?ref=${user?.id || ""}`;
+                navigator.clipboard.writeText(refLink);
                 toast.success("Referral link copied!");
               }}
             >
@@ -290,7 +297,8 @@ export function AcademySidebar() {
           <button
             className="flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
             onClick={() => {
-              navigator.clipboard.writeText(window.location.origin + "/auth");
+              const refLink = `${window.location.origin}/auth?ref=${user?.id || ""}`;
+              navigator.clipboard.writeText(refLink);
               toast.success("Referral link copied!");
             }}
           >

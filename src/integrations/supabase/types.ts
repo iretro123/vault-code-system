@@ -846,6 +846,33 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referred_email: string | null
+          referred_user_id: string | null
+          referrer_user_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_user_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_user_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       trade_entries: {
         Row: {
           created_at: string
@@ -1322,7 +1349,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      referral_stats: {
+        Row: {
+          current_streak_weeks: number | null
+          last_referral_at: string | null
+          total_paid: number | null
+          total_signed_up: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_discipline_metrics: {
