@@ -410,6 +410,7 @@ export type Database = {
           created_at: string
           id: string
           link: string | null
+          pinned: boolean
           read_at: string | null
           title: string
           type: string
@@ -420,6 +421,7 @@ export type Database = {
           created_at?: string
           id?: string
           link?: string | null
+          pinned?: boolean
           read_at?: string | null
           title: string
           type?: string
@@ -430,6 +432,7 @@ export type Database = {
           created_at?: string
           id?: string
           link?: string | null
+          pinned?: boolean
           read_at?: string | null
           title?: string
           type?: string

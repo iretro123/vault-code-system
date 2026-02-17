@@ -57,14 +57,15 @@ function ItemList({
         ) : items.length === 0 ? (
           <div className="px-2 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</div>
         ) : (
-          items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onItemClick(item)}
-              className={`w-full text-left rounded-lg px-3 py-3 transition-colors hover:bg-muted/60 ${
-                !item.read_at ? "bg-muted/40 border border-[hsl(45,90%,50%)]/20" : ""
-              }`}
-            >
+              items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => onItemClick(item)}
+                  className={`w-full text-left rounded-lg px-3 py-3 transition-colors hover:bg-muted/60 ${
+                    item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
+                    !item.read_at ? "bg-muted/40 border border-[hsl(45,90%,50%)]/20" : ""
+                  }`}
+                >
               <div className="flex items-start gap-2.5">
                 <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
                 {!item.read_at && (

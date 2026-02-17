@@ -18,6 +18,7 @@ interface UserRow {
   username: string | null;
   email: string | null;
   phone_number: string | null;
+  timezone: string;
   academy_experience: string;
   created_at: string;
   updated_at: string;
@@ -36,7 +37,7 @@ const AcademyAdminUsers = () => {
   const fetchUsers = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
-      .select("display_name, username, email, phone_number, academy_experience, created_at, updated_at")
+      .select("display_name, username, email, phone_number, timezone, academy_experience, created_at, updated_at")
       .order("created_at", { ascending: false })
       .limit(1000);
     setUsers((data as UserRow[]) || []);
@@ -50,11 +51,12 @@ const AcademyAdminUsers = () => {
   if (!isAdmin) return <Navigate to="/academy/home" replace />;
 
   const handleExport = () => {
-    const header = ["Display Name", "Email", "Phone", "Experience Level", "Joined At", "Last Active At"];
+    const header = ["Display Name", "Email", "Phone", "Timezone", "Experience Level", "Joined At", "Last Active At"];
     const rows = users.map((u) => [
       escapeCsv(u.display_name || ""),
       escapeCsv(u.email || ""),
       escapeCsv(u.phone_number || ""),
+      escapeCsv(u.timezone || ""),
       escapeCsv(u.academy_experience),
       escapeCsv(u.created_at ? formatDateExport(u.created_at) : ""),
       escapeCsv(u.updated_at ? formatDateExport(u.updated_at) : ""),
@@ -101,8 +103,9 @@ const AcademyAdminUsers = () => {
                   <TableHead>Display Name</TableHead>
                   <TableHead>Username</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Experience</TableHead>
+                   <TableHead>Phone</TableHead>
+                   <TableHead>Timezone</TableHead>
+                   <TableHead>Experience</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead>Last Active</TableHead>
                 </TableRow>
@@ -114,6 +117,7 @@ const AcademyAdminUsers = () => {
                     <TableCell className="text-muted-foreground">{u.username || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{u.email || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{u.phone_number || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{u.timezone || "—"}</TableCell>
                     <TableCell>
                       <span className="text-xs font-medium capitalize bg-muted px-1.5 py-0.5 rounded">
                         {u.academy_experience}
