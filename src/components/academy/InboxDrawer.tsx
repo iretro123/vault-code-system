@@ -195,7 +195,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="inbox" className="flex-1 flex flex-col min-h-0 mt-0 px-0">
+        <TabsContent value="inbox" className="flex-1 min-h-0 mt-0 px-0 data-[state=active]:flex data-[state=active]:flex-col">
           <ItemList
             items={inboxItems}
             onItemClick={handleClick}
@@ -206,7 +206,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
           />
         </TabsContent>
 
-        <TabsContent value="whats-new" className="flex-1 flex flex-col min-h-0 mt-0 px-0">
+        <TabsContent value="whats-new" className="flex-1 min-h-0 mt-0 px-0 data-[state=active]:flex data-[state=active]:flex-col">
           <ItemList
             items={whatsNewItems}
             onItemClick={handleClick}
