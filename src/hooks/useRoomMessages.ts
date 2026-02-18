@@ -30,14 +30,19 @@ interface Message {
 
 const PAGE_SIZE = 40;
 
+// ── Global message cache per room (survives remounts) ──
+const roomMessageCache = new Map<string, Message[]>();
+
 export function useRoomMessages(roomSlug: string) {
   const { user, profile, userRole } = useAuth();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = roomMessageCache.get(roomSlug);
+  const [messages, setMessages] = useState<Message[]>(cached ?? []);
+  // If we have cached messages, skip loading state entirely
+  const [loading, setLoading] = useState(!cached);
   const [hasMore, setHasMore] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const oldestRef = useRef<string | null>(null);
+  const oldestRef = useRef<string | null>(cached?.length ? cached[0].created_at : null);
 
   const castMessages = (data: any[]): Message[] =>
     data.map((d) => ({
@@ -51,9 +56,19 @@ export function useRoomMessages(roomSlug: string) {
       original_content: d.original_content ?? null,
     }));
 
-  // Initial fetch
+  // Persist to cache whenever messages change
+  const updateMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
+    setMessages((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      roomMessageCache.set(roomSlug, next);
+      return next;
+    });
+  }, [roomSlug]);
+
+  // Initial fetch (background refresh if cached)
   const fetchMessages = useCallback(async () => {
-    setLoading(true);
+    if (!cached) setLoading(true);
+
     const { data, error: err } = await supabase
       .from("academy_messages")
       .select("*")
@@ -68,11 +83,11 @@ export function useRoomMessages(roomSlug: string) {
     }
 
     const sorted = castMessages(data ?? []).reverse();
-    setMessages(sorted);
+    updateMessages(sorted);
     setHasMore((data?.length ?? 0) >= PAGE_SIZE);
     oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
     setLoading(false);
-  }, [roomSlug]);
+  }, [roomSlug, cached, updateMessages]);
 
   // Load older messages
   const loadMore = useCallback(async () => {
@@ -87,13 +102,13 @@ export function useRoomMessages(roomSlug: string) {
 
     if (data && data.length > 0) {
       const sorted = castMessages(data).reverse();
-      setMessages((prev) => [...sorted, ...prev]);
+      updateMessages((prev) => [...sorted, ...prev]);
       oldestRef.current = sorted[0].created_at;
       setHasMore(data.length >= PAGE_SIZE);
     } else {
       setHasMore(false);
     }
-  }, [roomSlug]);
+  }, [roomSlug, updateMessages]);
 
   // Compute role string for current user
   const computeRole = useCallback(() => {
@@ -162,7 +177,6 @@ export function useRoomMessages(roomSlug: string) {
         edited_at: new Date().toISOString(),
         edit_count: (msg.edit_count || 0) + 1,
       };
-      // Save original content on first edit
       if (!msg.original_content) {
         updatePayload.original_content = msg.body;
       }
@@ -174,8 +188,7 @@ export function useRoomMessages(roomSlug: string) {
 
       if (err) return { error: err.message };
 
-      // Optimistic update
-      setMessages((prev) =>
+      updateMessages((prev) =>
         prev.map((m) =>
           m.id === messageId
             ? { ...m, ...updatePayload, original_content: updatePayload.original_content ?? m.original_content }
@@ -184,7 +197,7 @@ export function useRoomMessages(roomSlug: string) {
       );
       return { error: null };
     },
-    [user, messages, userRole]
+    [user, messages, userRole, updateMessages]
   );
 
   // Soft-delete message
@@ -211,13 +224,12 @@ export function useRoomMessages(roomSlug: string) {
 
       if (err) return { error: err.message };
 
-      // Optimistic update
-      setMessages((prev) =>
+      updateMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, ...updatePayload } : m))
       );
       return { error: null };
     },
-    [user, messages, userRole]
+    [user, messages, userRole, updateMessages]
   );
 
   // Initial load
@@ -239,7 +251,7 @@ export function useRoomMessages(roomSlug: string) {
         },
         (payload) => {
           const msg = castMessages([payload.new])[0];
-          setMessages((prev) => {
+          updateMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
@@ -255,7 +267,7 @@ export function useRoomMessages(roomSlug: string) {
         },
         (payload) => {
           const updated = castMessages([payload.new])[0];
-          setMessages((prev) =>
+          updateMessages((prev) =>
             prev.map((m) => (m.id === updated.id ? updated : m))
           );
         }
@@ -270,7 +282,7 @@ export function useRoomMessages(roomSlug: string) {
         },
         (payload) => {
           const id = (payload.old as any).id;
-          setMessages((prev) => prev.filter((m) => m.id !== id));
+          updateMessages((prev) => prev.filter((m) => m.id !== id));
         }
       )
       .subscribe();
@@ -278,7 +290,7 @@ export function useRoomMessages(roomSlug: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomSlug]);
+  }, [roomSlug, updateMessages]);
 
   return { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage };
 }
