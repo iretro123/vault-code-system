@@ -248,30 +248,28 @@ export function AcademySidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-
-        {/* Share Vault — last item in scroll area */}
-        {!collapsed && (
-          <div className="px-3 pt-2 pb-4">
-            <button
-              onClick={() => setReferralOpen(true)}
-              className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
-            >
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-[16px] font-semibold text-white/90 leading-tight">Share Vault</p>
-                  <p className="text-[13px] text-white/[0.57] mt-0.5">Earn rewards for invites</p>
-                </div>
-                <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
-                  <Gift className="h-4 w-4 text-white/80" />
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
       </SidebarContent>
 
-      {/* Bottom Dock — fixed footer */}
+      {/* Bottom Dock — pinned footer */}
       <SidebarFooter className="mt-auto border-t border-white/[0.10] bg-gradient-to-t from-[hsl(220,20%,6%)] to-[hsl(220,18%,8%)] p-2.5 space-y-1.5">
+        {/* Share Vault Card */}
+        {!collapsed && (
+          <button
+            onClick={() => setReferralOpen(true)}
+            className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[16px] font-semibold text-white/90 leading-tight">Share Vault</p>
+                <p className="text-[13px] text-white/[0.57] mt-0.5">Earn rewards for invites</p>
+              </div>
+              <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
+                <Gift className="h-4 w-4 text-white/80" />
+              </div>
+            </div>
+          </button>
+        )}
+
         {/* User Identity (not clickable) */}
         <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 select-none pointer-events-none bg-white/[0.02] border border-white/[0.05] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
           <div className="relative shrink-0">
