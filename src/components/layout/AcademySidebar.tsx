@@ -15,8 +15,10 @@ import {
   Mail,
   Gift,
   Copy,
+  Search,
 } from "lucide-react";
 import { ReferralModal } from "@/components/academy/ReferralModal";
+import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
@@ -52,6 +54,7 @@ export function AcademySidebar() {
     try { return localStorage.getItem("va_inbox_open") === "true"; } catch { return false; }
   });
   const [referralOpen, setReferralOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Persist inbox panel state
   const handleInboxChange = (open: boolean) => {
@@ -92,6 +95,25 @@ export function AcademySidebar() {
                     <LayoutGrid className="h-4 w-4 shrink-0" />
                     {!collapsed && <span className="text-sm">Mode Select</span>}
                   </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Search */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setSearchOpen(true)}>
+                  <Search className="h-4 w-4 shrink-0" />
+                  {!collapsed && (
+                    <span className="flex items-center justify-between w-full text-sm">
+                      Search
+                      <kbd className="ml-auto text-[10px] text-muted-foreground/50 bg-white/[0.06] border border-white/[0.08] rounded px-1.5 py-0.5 font-mono">⌘K</kbd>
+                    </span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -307,6 +329,7 @@ export function AcademySidebar() {
 
         <InboxDrawer open={inboxOpen} onOpenChange={handleInboxChange} />
         <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />
+        <VaultSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       </SidebarFooter>
     </Sidebar>
   );
