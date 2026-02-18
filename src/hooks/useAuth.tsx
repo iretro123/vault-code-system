@@ -44,11 +44,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const roleHierarchy: AppRole[] = ["free", "vault_os_owner", "vault_access", "vault_intelligence", "operator"];
 
+const PROFILE_CACHE_KEY = "va_cache_profile";
+const ROLE_CACHE_KEY = "va_cache_role";
+
+function readCache<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(() => readCache(PROFILE_CACHE_KEY, null));
+  const [userRole, setUserRole] = useState<UserRole | null>(() => readCache(ROLE_CACHE_KEY, null));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -98,23 +108,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          .eq("user_id", userId)
          .maybeSingle();
  
-        if (profileData) {
-          setProfile(profileData as Profile);
-          
-          // Backfill timezone only if truly empty
-          const tz = (profileData as any).timezone;
-          if (!tz) {
-            try {
-              const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-              if (detected) {
-                await supabase
-                  .from("profiles")
-                  .update({ timezone: detected })
-                  .eq("user_id", userId);
-              }
-            } catch {}
-          }
-        }
+         if (profileData) {
+           setProfile(profileData as Profile);
+           try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch {}
+           
+           // Backfill timezone only if truly empty
+           const tz = (profileData as any).timezone;
+           if (!tz) {
+             try {
+               const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+               if (detected) {
+                 await supabase
+                   .from("profiles")
+                   .update({ timezone: detected })
+                   .eq("user_id", userId);
+               }
+             } catch {}
+           }
+         }
  
        // Fetch user role
        const { data: roleData } = await supabase
@@ -125,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  
        if (roleData) {
          setUserRole(roleData as UserRole);
+         try { localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(roleData)); } catch {}
        }
      } catch (error) {
        console.error("Error fetching user data:", error);
@@ -156,6 +168,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      await supabase.auth.signOut();
      setProfile(null);
      setUserRole(null);
+     try {
+       localStorage.removeItem(PROFILE_CACHE_KEY);
+       localStorage.removeItem(ROLE_CACHE_KEY);
+       localStorage.removeItem("va_cache_inbox");
+       localStorage.removeItem("va_cache_referral");
+       localStorage.removeItem("va_cache_onboarding");
+       localStorage.removeItem("va_inbox_open");
+     } catch {}
    }
  
    function hasRole(role: AppRole): boolean {
