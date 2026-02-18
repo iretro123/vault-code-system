@@ -76,18 +76,34 @@ const AcademyDataContext = createContext<AcademyData>({
   refetchReferrals: async () => {},
 });
 
+// localStorage cache helpers
+const CACHE_KEY_INBOX = "va_cache_inbox";
+const CACHE_KEY_REFERRAL = "va_cache_referral";
+const CACHE_KEY_ONBOARDING = "va_cache_onboarding";
+
+function readCache<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+
+function writeCache(key: string, value: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
 export function AcademyDataProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const [onboarding, setOnboarding] = useState<OnboardingState | null>(null);
+
+  // Seed from cache to prevent flash
+  const [onboarding, setOnboarding] = useState<OnboardingState | null>(() => readCache(CACHE_KEY_ONBOARDING, null));
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
-  // Inbox state
-  const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
+  const [inboxItems, setInboxItems] = useState<InboxItem[]>(() => readCache(CACHE_KEY_INBOX, []));
   const [inboxLoading, setInboxLoading] = useState(false);
 
-  // Referral state
-  const [referralStats, setReferralStats] = useState<ReferralStats>(defaultReferralStats);
+  const [referralStats, setReferralStats] = useState<ReferralStats>(() => readCache(CACHE_KEY_REFERRAL, defaultReferralStats));
   const [referralLoading, setReferralLoading] = useState(true);
 
   const fetchOnboarding = useCallback(async () => {
@@ -98,7 +114,9 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       .eq("user_id", user.id)
       .limit(1)
       .single();
-    setOnboarding(data ? (data as OnboardingState) : defaultOnboarding);
+    const result = data ? (data as OnboardingState) : defaultOnboarding;
+    setOnboarding(result);
+    writeCache(CACHE_KEY_ONBOARDING, result);
   }, [user]);
 
   const fetchNotifications = useCallback(async () => {
@@ -136,7 +154,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       .order("created_at", { ascending: false })
       .limit(30);
 
-    setInboxItems((data as any[] || []).map((d: any) => ({
+    const mapped = (data as any[] || []).map((d: any) => ({
       id: d.id,
       user_id: d.user_id,
       type: d.type,
@@ -146,7 +164,9 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       created_at: d.created_at,
       read_at: d.read_at,
       pinned: d.pinned ?? false,
-    })));
+    }));
+    setInboxItems(mapped);
+    writeCache(CACHE_KEY_INBOX, mapped);
     setInboxLoading(false);
   }, [user]);
 
@@ -191,12 +211,14 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (data) {
-      setReferralStats({
+      const stats = {
         total_signed_up: (data as any).total_signed_up ?? 0,
         total_paid: (data as any).total_paid ?? 0,
         current_streak_weeks: (data as any).current_streak_weeks ?? 0,
         last_referral_at: (data as any).last_referral_at ?? null,
-      });
+      };
+      setReferralStats(stats);
+      writeCache(CACHE_KEY_REFERRAL, stats);
     }
     setReferralLoading(false);
   }, [user]);
