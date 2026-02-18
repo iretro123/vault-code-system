@@ -80,7 +80,7 @@ export function AcademySidebar() {
   const isRoomActive = (slug: string) => location.pathname === `/academy/room/${slug}`;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-white/[0.06]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+    <Sidebar collapsible="icon" className="border-r border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
       <SidebarContent>
         {/* Hub link */}
         <SidebarGroup>
@@ -276,13 +276,13 @@ export function AcademySidebar() {
       </SidebarContent>
 
       {/* Bottom Dock — pinned footer */}
-      <SidebarFooter className="mt-auto border-t border-white/[0.06] p-2.5 space-y-1.5" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.15) 100%)' }}>
+      <SidebarFooter className="mt-auto border-t border-white/[0.06] p-2.5 space-y-1.5" style={{ background: 'rgba(10,10,14,0.55)' }}>
         {/* Share Vault Card */}
         {!collapsed && (
           <button
             onClick={() => setReferralOpen(true)}
-            className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-colors duration-[120ms] hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
-            style={{ boxShadow: '0 12px 30px rgba(0,0,0,0.35)' }}
+            className="group w-full text-left rounded-2xl border border-white/[0.08] px-4 py-3.5 transition-colors duration-[120ms] hover:bg-[rgba(20,20,24,0.7)] hover:border-white/[0.12] active:scale-[0.98]"
+            style={{ background: 'rgba(20,20,24,0.55)', boxShadow: '0 12px 30px rgba(0,0,0,0.35)' }}
           >
             <div className="flex items-center justify-between">
               <div className="min-w-0">
@@ -297,7 +297,7 @@ export function AcademySidebar() {
         )}
 
         {/* User Identity (not clickable) */}
-        <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 select-none pointer-events-none bg-white/[0.02] border border-white/[0.05] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
+        <div className="flex items-center gap-2.5 rounded-2xl px-3 py-2 select-none pointer-events-none border border-white/[0.08]" style={{ background: 'rgba(20,20,24,0.55)', boxShadow: '0 12px 30px rgba(0,0,0,0.35)' }}>
           <div className="relative shrink-0">
             <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-7 w-7" />
             <span className="absolute -bottom-px -right-px h-2 w-2 rounded-full bg-emerald-500 ring-[1.5px] ring-[hsl(220,20%,6%)]" />
@@ -318,7 +318,8 @@ export function AcademySidebar() {
             e.stopPropagation();
             handleInboxChange(!inboxOpen);
           }}
-          className="relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-colors bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.10] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+          className="relative flex items-center gap-2.5 rounded-2xl px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-colors duration-[120ms] border border-white/[0.08] hover:bg-[rgba(20,20,24,0.7)] hover:border-white/[0.12]"
+          style={{ background: 'rgba(20,20,24,0.55)', boxShadow: '0 12px 30px rgba(0,0,0,0.35)' }}
         >
           <Mail className="h-4 w-4 shrink-0" />
           {!collapsed && (
