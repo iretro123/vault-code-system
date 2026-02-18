@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useSyncExternalStore } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ChatProfile {
@@ -12,21 +12,10 @@ export interface ChatProfile {
 // ── Global profile cache (survives component remounts) ──
 const globalProfileCache = new Map<string, ChatProfile>();
 const globalFetchedIds = new Set<string>();
-let cacheVersion = 0;
 const listeners = new Set<() => void>();
 
 function notifyListeners() {
-  cacheVersion++;
   listeners.forEach((l) => l());
-}
-
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-function getSnapshot() {
-  return cacheVersion;
 }
 
 /**
@@ -34,8 +23,14 @@ function getSnapshot() {
  * for user IDs seen in chat messages. Cache is global and survives remounts.
  */
 export function useChatProfiles() {
-  // Subscribe to cache changes to trigger re-renders
-  useSyncExternalStore(subscribe, getSnapshot);
+  const [, setTick] = useState(0);
+
+  // Subscribe to global cache updates
+  useEffect(() => {
+    const cb = () => setTick((t) => t + 1);
+    listeners.add(cb);
+    return () => { listeners.delete(cb); };
+  }, []);
 
   const ensureProfiles = useCallback(async (userIds: string[]) => {
     const missing = userIds.filter((id) => !globalFetchedIds.has(id));
