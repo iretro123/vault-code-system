@@ -7,6 +7,7 @@ import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
 import { Loader2, SendHorizontal, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy } from "lucide-react";
+import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,8 +50,6 @@ function getInitials(name: string) {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  admin:        { label: "Admin",        cls: "bg-red-500/20 text-red-400 border-red-500/30" },
-  coach:        { label: "Coach",        cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   advanced:     { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   professional: { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   veteran:      { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
@@ -60,7 +59,7 @@ const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
   newbie:       { label: "Beginner",     cls: "bg-white/10 text-white/50 border-white/10" },
 };
 
-function RoleBadge({ role }: { role?: string }) {
+function ExperienceBadge({ role }: { role?: string }) {
   const cfg = ROLE_CONFIG[role?.toLowerCase() ?? ""];
   if (!cfg) return null;
   return (
@@ -516,7 +515,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                         <span className="text-[13px] font-semibold text-white">
                           {msg.user_name}
                         </span>
-                        <RoleBadge role={getRoleBadgeKey(
+                        <AcademyRoleBadge roleName={getProfile(msg.user_id)?.academy_role_name} />
+                        <ExperienceBadge role={getRoleBadgeKey(
                           (msg as any).user_role,
                           getProfile(msg.user_id)?.role_level
                         )} />
