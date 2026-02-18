@@ -80,7 +80,7 @@ export function AcademySidebar() {
   const isRoomActive = (slug: string) => location.pathname === `/academy/room/${slug}`;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-white/[0.06] bg-gradient-to-b from-sidebar to-[hsl(222,47%,9%)]">
+    <Sidebar collapsible="icon" className="border-r border-white/[0.06]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
       <SidebarContent>
         {/* Hub link */}
         <SidebarGroup>
@@ -125,7 +125,7 @@ export function AcademySidebar() {
 
         {/* Main nav */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Academy"}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[11px] tracking-[0.08em] uppercase opacity-60">{!collapsed && "Academy"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNav.map(({ icon: Icon, label, path }) => {
@@ -153,7 +153,7 @@ export function AcademySidebar() {
 
         {/* Rooms */}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Rooms"}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[11px] tracking-[0.08em] uppercase opacity-60">{!collapsed && "Rooms"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {ACADEMY_ROOMS.map(({ slug, name, icon: Icon, readOnly }) => {
@@ -186,7 +186,7 @@ export function AcademySidebar() {
         {/* Inbox */}
         {!collapsed && <div className="mx-3 h-px bg-white/[0.06]" />}
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Inbox"}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[11px] tracking-[0.08em] uppercase opacity-60">{!collapsed && "Inbox"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -221,7 +221,7 @@ export function AcademySidebar() {
         {/* Admin */}
         {(isAdmin || showAdminPanel) && (
           <SidebarGroup>
-            <SidebarGroupLabel>{!collapsed && "Admin"}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-[11px] tracking-[0.08em] uppercase opacity-60">{!collapsed && "Admin"}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {showAdminPanel && (
@@ -276,19 +276,20 @@ export function AcademySidebar() {
       </SidebarContent>
 
       {/* Bottom Dock — pinned footer */}
-      <SidebarFooter className="mt-auto border-t border-white/[0.10] bg-gradient-to-t from-[hsl(220,20%,6%)] to-[hsl(220,18%,8%)] p-2.5 space-y-1.5">
+      <SidebarFooter className="mt-auto border-t border-white/[0.06] p-2.5 space-y-1.5" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.15) 100%)' }}>
         {/* Share Vault Card */}
         {!collapsed && (
           <button
             onClick={() => setReferralOpen(true)}
-            className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-colors hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
+            className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-colors duration-[120ms] hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
+            style={{ boxShadow: '0 12px 30px rgba(0,0,0,0.35)' }}
           >
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <p className="text-[16px] font-semibold text-white/90 leading-tight">Share Vault</p>
                 <p className="text-[13px] text-white/[0.57] mt-0.5">Earn rewards for invites</p>
               </div>
-              <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
+              <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors duration-[120ms]">
                 <Gift className="h-4 w-4 text-white/80" />
               </div>
             </div>
