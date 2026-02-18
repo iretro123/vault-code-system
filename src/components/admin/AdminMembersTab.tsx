@@ -2,15 +2,20 @@ import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Download, Loader2, Crown, Shield, Zap, Search } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Download, Loader2, Search, UserX, Ban, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
-import { formatDateWithYear } from "@/lib/formatTime";
+import { useAuth } from "@/hooks/useAuth";
+import { formatDateWithYear, formatDateTimeFull } from "@/lib/formatTime";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
@@ -21,17 +26,13 @@ interface UserRow {
   username: string | null;
   email: string | null;
   phone_number: string | null;
+  avatar_url: string | null;
   timezone: string;
   academy_experience: string;
   access_status: string;
+  is_banned: boolean;
   created_at: string;
   updated_at: string;
-}
-
-interface AcademyUserRole {
-  user_id: string;
-  role_id: string;
-  academy_roles: { name: string } | null;
 }
 
 interface AcademyRole {
@@ -39,20 +40,28 @@ interface AcademyRole {
   name: string;
 }
 
+type ConfirmAction = {
+  type: "kick" | "ban" | "reset";
+  userId: string;
+  displayName: string;
+};
+
 export function AdminMembersTab() {
-  const { isCEO } = useAcademyPermissions();
+  const { isCEO, isAdmin } = useAcademyPermissions();
+  const { user } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [userRoles, setUserRoles] = useState<Map<string, string>>(new Map());
   const [roles, setRoles] = useState<AcademyRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const fetchData = useCallback(async () => {
     const [{ data: usersData }, { data: rolesData }, { data: userRolesData }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("user_id, display_name, username, email, phone_number, timezone, academy_experience, access_status, created_at, updated_at")
+        .select("user_id, display_name, username, email, phone_number, avatar_url, timezone, academy_experience, access_status, is_banned, created_at, updated_at")
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase.from("academy_roles").select("id, name").order("sort_order"),
@@ -74,9 +83,20 @@ export function AdminMembersTab() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const logAuditAction = async (action: string, targetUserId: string, metadata: Record<string, unknown> = {}) => {
+    if (!user?.id) return;
+    await supabase.from("audit_logs" as any).insert({
+      admin_id: user.id,
+      action,
+      target_user_id: targetUserId,
+      metadata,
+    } as any);
+  };
+
   const handleRoleChange = async (userId: string, newRoleName: string) => {
     const role = roles.find((r) => r.name === newRoleName);
     if (!role) return;
+    const oldRole = userRoles.get(userId) || "Member";
     setUpdatingUser(userId);
 
     const { error } = await supabase
@@ -88,32 +108,85 @@ export function AdminMembersTab() {
     } else {
       setUserRoles((prev) => new Map(prev).set(userId, newRoleName));
       toast.success(`Role updated to ${newRoleName}`);
+      await logAuditAction("role_change", userId, { from: oldRole, to: newRoleName });
     }
     setUpdatingUser(null);
   };
 
-  const handleAccessChange = async (userId: string, newStatus: string) => {
+  const handleKick = async () => {
+    if (!confirmAction || confirmAction.type !== "kick") return;
+    const { userId, displayName } = confirmAction;
     setUpdatingUser(userId);
-    const { error } = await supabase.from("profiles").update({ access_status: newStatus }).eq("user_id", userId);
-    if (error) toast.error("Failed to update access");
-    else {
-      setUsers((prev) => prev.map((u) => u.user_id === userId ? { ...u, access_status: newStatus } : u));
-      toast.success(`Access updated to ${newStatus}`);
+    setConfirmAction(null);
+
+    const { error } = await supabase.from("profiles").update({ access_status: "revoked" }).eq("user_id", userId);
+    if (error) {
+      toast.error("Failed to kick user");
+    } else {
+      setUsers((prev) => prev.map((u) => u.user_id === userId ? { ...u, access_status: "revoked" } : u));
+      toast.success(`${displayName || "User"} removed from Academy`);
+      await logAuditAction("kick", userId, { display_name: displayName });
     }
     setUpdatingUser(null);
+  };
+
+  const handleBan = async () => {
+    if (!confirmAction || confirmAction.type !== "ban") return;
+    const { userId, displayName } = confirmAction;
+    setUpdatingUser(userId);
+    setConfirmAction(null);
+
+    const { error } = await supabase.from("profiles").update({
+      access_status: "revoked",
+      is_banned: true,
+    } as any).eq("user_id", userId);
+
+    if (error) {
+      toast.error("Failed to ban user");
+    } else {
+      setUsers((prev) => prev.map((u) => u.user_id === userId ? { ...u, access_status: "revoked", is_banned: true } : u));
+      toast.success(`${displayName || "User"} banned`);
+      await logAuditAction("ban", userId, { display_name: displayName });
+    }
+    setUpdatingUser(null);
+  };
+
+  const handleResetProgress = async () => {
+    if (!confirmAction || confirmAction.type !== "reset") return;
+    const { userId, displayName } = confirmAction;
+    setUpdatingUser(userId);
+    setConfirmAction(null);
+
+    const { error } = await supabase.from("lesson_progress").delete().eq("user_id", userId);
+    if (error) {
+      toast.error("Failed to reset progress");
+    } else {
+      toast.success(`Progress reset for ${displayName || "user"}`);
+      await logAuditAction("reset_progress", userId, { display_name: displayName });
+    }
+    setUpdatingUser(null);
+  };
+
+  const handleConfirm = () => {
+    if (!confirmAction) return;
+    if (confirmAction.type === "kick") handleKick();
+    else if (confirmAction.type === "ban") handleBan();
+    else if (confirmAction.type === "reset") handleResetProgress();
   };
 
   const handleExport = () => {
-    const header = ["Display Name", "Email", "Role", "Access", "Experience", "Joined"];
+    const header = ["Display Name", "Email", "Phone", "Role", "Access", "Banned", "Experience", "Joined"];
     const rows = filteredUsers.map((u) => [
       u.display_name || "",
       u.email || "",
+      u.phone_number || "",
       userRoles.get(u.user_id) || "Member",
       u.access_status,
+      u.is_banned ? "Yes" : "No",
       u.academy_experience,
       u.created_at ? format(new Date(u.created_at), "yyyy-MM-dd") : "",
     ]);
-    const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const csv = [header.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -129,9 +202,33 @@ export function AdminMembersTab() {
     return (
       (u.display_name?.toLowerCase().includes(q)) ||
       (u.email?.toLowerCase().includes(q)) ||
-      (u.username?.toLowerCase().includes(q))
+      (u.username?.toLowerCase().includes(q)) ||
+      (u.phone_number?.toLowerCase().includes(q))
     );
   });
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "?";
+    return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+  };
+
+  const confirmMessages: Record<string, { title: string; description: string; actionLabel: string }> = {
+    kick: {
+      title: "Remove from Academy",
+      description: `This will revoke access for "${confirmAction?.displayName || "this user"}". They won't be able to access Academy routes until reinstated.`,
+      actionLabel: "Remove",
+    },
+    ban: {
+      title: "Ban User",
+      description: `This will permanently ban "${confirmAction?.displayName || "this user"}" and prevent them from logging into Academy. This is a serious action.`,
+      actionLabel: "Ban User",
+    },
+    reset: {
+      title: "Reset User Progress",
+      description: `This will delete all lesson progress for "${confirmAction?.displayName || "this user"}". This cannot be undone.`,
+      actionLabel: "Reset Progress",
+    },
+  };
 
   if (loading) {
     return (
@@ -141,13 +238,15 @@ export function AdminMembersTab() {
     );
   }
 
+  const currentConfirm = confirmAction ? confirmMessages[confirmAction.type] : null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search by name or email…"
+            placeholder="Search name, email, phone…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-9 text-sm"
@@ -164,26 +263,46 @@ export function AdminMembersTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Member</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Access</TableHead>
-                <TableHead>Experience</TableHead>
                 <TableHead>Joined</TableHead>
+                <TableHead>Last Active</TableHead>
+                {isAdmin && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.map((u) => {
                 const roleName = userRoles.get(u.user_id) || "Member";
                 return (
-                  <TableRow key={u.user_id}>
+                  <TableRow key={u.user_id} className={u.is_banned ? "opacity-50" : ""}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{u.display_name || "—"}</span>
-                        <AcademyRoleBadge roleName={roleName} />
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={u.avatar_url || undefined} />
+                          <AvatarFallback className="text-[10px] font-medium bg-muted">
+                            {getInitials(u.display_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-sm truncate">{u.display_name || "—"}</span>
+                            <AcademyRoleBadge roleName={roleName} />
+                            {u.is_banned && (
+                              <span className="text-[10px] bg-destructive/20 text-destructive px-1.5 py-0.5 rounded font-medium">
+                                BANNED
+                              </span>
+                            )}
+                          </div>
+                          {u.username && (
+                            <span className="text-xs text-muted-foreground">@{u.username}</span>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{u.email || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{u.phone_number || "—"}</TableCell>
                     <TableCell>
                       {isCEO ? (
                         <Select
@@ -204,32 +323,48 @@ export function AdminMembersTab() {
                         <span className="text-sm">{roleName}</span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {isCEO ? (
-                        <Select
-                          value={u.access_status}
-                          onValueChange={(val) => handleAccessChange(u.user_id, val)}
-                          disabled={updatingUser === u.user_id}
-                        >
-                          <SelectTrigger className="w-[100px] h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="trial">Trial</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="revoked">Revoked</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-xs capitalize bg-muted px-1.5 py-0.5 rounded">{u.access_status}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs capitalize bg-muted px-1.5 py-0.5 rounded">{u.academy_experience}</span>
-                    </TableCell>
                     <TableCell className="text-muted-foreground text-xs">
                       {formatDateWithYear(u.created_at)}
                     </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {u.updated_at ? formatDateTimeFull(u.updated_at) : "—"}
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Remove from Academy"
+                            disabled={updatingUser === u.user_id || u.access_status === "revoked"}
+                            onClick={() => setConfirmAction({ type: "kick", userId: u.user_id, displayName: u.display_name || "Unknown" })}
+                          >
+                            <UserX className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            title="Ban user"
+                            disabled={updatingUser === u.user_id || u.is_banned}
+                            onClick={() => setConfirmAction({ type: "ban", userId: u.user_id, displayName: u.display_name || "Unknown" })}
+                          >
+                            <Ban className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Reset progress"
+                            disabled={updatingUser === u.user_id}
+                            onClick={() => setConfirmAction({ type: "reset", userId: u.user_id, displayName: u.display_name || "Unknown" })}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
@@ -237,6 +372,25 @@ export function AdminMembersTab() {
           </Table>
         </div>
       </Card>
+
+      {/* Confirmation Modal */}
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{currentConfirm?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{currentConfirm?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              className={confirmAction?.type === "ban" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {currentConfirm?.actionLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -288,6 +288,33 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          target_user_id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_user_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       behavior_stats: {
         Row: {
           avg_trades_per_day: number
@@ -918,6 +945,7 @@ export type Database = {
           id: string
           initialized_at: string | null
           intro_posted: boolean
+          is_banned: boolean
           market_type: string
           onboarding_completed: boolean
           phone_number: string | null
@@ -943,6 +971,7 @@ export type Database = {
           id?: string
           initialized_at?: string | null
           intro_posted?: boolean
+          is_banned?: boolean
           market_type?: string
           onboarding_completed?: boolean
           phone_number?: string | null
@@ -968,6 +997,7 @@ export type Database = {
           id?: string
           initialized_at?: string | null
           intro_posted?: boolean
+          is_banned?: boolean
           market_type?: string
           onboarding_completed?: boolean
           phone_number?: string | null
