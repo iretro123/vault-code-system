@@ -41,8 +41,28 @@ function ItemList({
   onMarkAllRead: () => void;
   unreadCount: number;
 }) {
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-center">
+        <div className="flex flex-col items-center gap-0">
+          <Mail className="h-[26px] w-[26px] text-white/[0.87] mb-4" strokeWidth={1.5} />
+          <p className="text-[18px] font-semibold text-white/90 leading-snug">{emptyMessage.split('.')[0]}</p>
+          <p className="text-[14px] text-white/[0.57] mt-2">{emptyMessage.split('.').slice(1).join('.').trim()}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="flex-1">
       {unreadCount > 0 && (
         <div className="px-4 py-2 flex justify-end">
           <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-7" onClick={onMarkAllRead}>
@@ -51,47 +71,33 @@ function ItemList({
         </div>
       )}
       <div className="px-3 pb-4 space-y-1">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          </div>
-        ) : items.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-0 text-center">
-              <Mail className="h-[26px] w-[26px] text-white/[0.87] mb-4" strokeWidth={1.5} />
-              <p className="text-[18px] font-semibold text-white/90 leading-snug">{emptyMessage.split('.')[0]}</p>
-              <p className="text-[14px] text-white/[0.57] mt-2">{emptyMessage.split('.').slice(1).join('.').trim()}</p>
-            </div>
-          </div>
-        ) : (
-          items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onItemClick(item)}
-              className={`w-full text-left rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.05] ${
-                item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
-                !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
-              }`}
-            >
-              <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
-                {!item.read_at && (
-                  <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                  {item.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.body}</p>}
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-                  </p>
-                </div>
-                {item.link && (
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0 mt-1" />
-                )}
+        {items.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onItemClick(item)}
+            className={`w-full text-left rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.05] ${
+              item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
+              !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
+              {!item.read_at && (
+                <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                {item.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.body}</p>}
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                </p>
               </div>
-            </button>
-          ))
-        )}
+              {item.link && (
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0 mt-1" />
+              )}
+            </div>
+          </button>
+        ))}
       </div>
     </ScrollArea>
   );
@@ -189,7 +195,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="inbox" className="flex-1 min-h-0 mt-0 px-0">
+        <TabsContent value="inbox" className="flex-1 flex flex-col min-h-0 mt-0 px-0">
           <ItemList
             items={inboxItems}
             onItemClick={handleClick}
@@ -200,7 +206,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
           />
         </TabsContent>
 
-        <TabsContent value="whats-new" className="flex-1 min-h-0 mt-0 px-0">
+        <TabsContent value="whats-new" className="flex-1 flex flex-col min-h-0 mt-0 px-0">
           <ItemList
             items={whatsNewItems}
             onItemClick={handleClick}
