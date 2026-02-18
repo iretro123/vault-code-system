@@ -58,7 +58,7 @@
     --background: 216 30% 6%;
     --foreground: 220 14% 90%;
     
-    --card: 220 39% 11%;
+    --card: 220 33% 12%;
     --card-foreground: 220 14% 90%;
     
     --popover: 222 47% 11%;
@@ -81,9 +81,9 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders: white/8% → very subtle */
+    /* Borders: white/10–12% */
     --border: 220 14% 20%;
-    --input: 220 39% 11%;
+    --input: 220 33% 12%;
     --ring: 217 91% 60%;
     
     /* Status colors - emerald, amber, rose */
@@ -100,6 +100,10 @@
     --sidebar-accent-foreground: 220 14% 90%;
     --sidebar-border: 220 14% 20%;
     --sidebar-ring: 217 91% 60%;
+    
+    /* Premium elevation */
+    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --card-border: rgba(255, 255, 255, 0.10);
   }
 }
 
@@ -119,9 +123,10 @@
 }
 
 @layer utilities {
-  /* Clean card style - Robinhood dark */
+  /* Clean card style - Premium dark */
   .vault-card {
-    @apply rounded-2xl border border-white/10 bg-card backdrop-blur-sm;
+    @apply rounded-2xl border border-white/[0.10] bg-card backdrop-blur-sm;
+    box-shadow: var(--card-shadow, 0 8px 24px rgba(0,0,0,0.35));
   }
   
   /* Primary CTA - solid blue */
@@ -164,7 +169,7 @@
   
   /* Section title */
   .section-title {
-    @apply text-xs font-semibold tracking-widest uppercase text-muted-foreground mb-4;
+    @apply text-[12px] font-semibold tracking-[0.12em] uppercase text-muted-foreground/60 mb-4;
   }
   
   /* Flow indicator breathing glow */

@@ -68,15 +68,21 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="min-h-screen flex w-full bg-background relative overflow-hidden">
+        {/* Ambient background depth */}
+        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-[hsl(217,80%,40%/0.12)] blur-[140px]" />
+          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[hsl(200,70%,45%/0.08)] blur-[120px]" />
+        </div>
+
         {/* Desktop sidebar */}
-        <div className="hidden md:block">
+        <div className="hidden md:block relative z-10">
           <AcademySidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 relative z-10">
           {/* Header */}
-          <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/80 backdrop-blur-md">
+          <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/70 backdrop-blur-xl">
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="hidden md:flex" />

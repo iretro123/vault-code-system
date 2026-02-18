@@ -80,7 +80,7 @@ export function AcademySidebar() {
   const isRoomActive = (slug: string) => location.pathname === `/academy/room/${slug}`;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40">
+    <Sidebar collapsible="icon" className="border-r border-white/[0.06] bg-gradient-to-b from-sidebar to-[hsl(222,47%,9%)]">
       <SidebarContent>
         {/* Hub link */}
         <SidebarGroup>
