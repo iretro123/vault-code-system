@@ -4,10 +4,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, Send, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Send, Loader2, Zap, Radio, Mail, Smartphone, Clock, CheckCircle2,
+  AlertTriangle, FileText, Trash2, RotateCcw,
+} from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { formatDateTimeFull } from "@/lib/formatTime";
+
+/* ── Feature flag: set true when Email/SMS providers are configured ── */
+const enableMessagingProviders = false;
+
+/* ── Templates ── */
+const TEMPLATES = [
+  { key: "daily_reminder", title: "Daily reminder: journal your trades", body: "Don't forget to log today's trades and reflect on your performance. Consistency builds discipline 📝" },
+  { key: "new_module", title: "New module dropped", body: "A new module is now available in the Academy. Head over to Learn and level up your skills 🚀" },
+  { key: "live_session", title: "Live session starting soon", body: "A live session is about to start! Join now so you don't miss it 🔴" },
+  { key: "coach_replied", title: "Coach replied to your question", body: "Your coach has responded. Check your inbox for the latest answer 💬" },
+];
 
 interface UserOption {
   user_id: string;
@@ -15,12 +37,40 @@ interface UserOption {
   email: string | null;
 }
 
+interface BroadcastRecord {
+  id: string;
+  mode: string;
+  channel: string;
+  recipient_type: string;
+  recipient_user_id: string | null;
+  title: string;
+  body: string;
+  template_key: string | null;
+  status: string;
+  created_at: string;
+  sent_at: string | null;
+}
+
 export function AdminBroadcastTab() {
-  const [users, setUsers] = useState<UserOption[]>([]);
+  const { user } = useAuth();
+
+  /* ── Form state ── */
+  const [mode, setMode] = useState<"motivation_ping" | "broadcast">("motivation_ping");
+  const [channel, setChannel] = useState("in_app");
+  const [recipientType, setRecipientType] = useState<"all" | "single">("single");
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [templateKey, setTemplateKey] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+
+  /* ── Users list ── */
+  const [users, setUsers] = useState<UserOption[]>([]);
+
+  /* ── History ── */
+  const [history, setHistory] = useState<BroadcastRecord[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     const { data } = await supabase
@@ -31,60 +81,438 @@ export function AdminBroadcastTab() {
     setUsers((data as UserOption[]) || []);
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  const fetchHistory = useCallback(async () => {
+    const { data } = await supabase
+      .from("broadcast_messages" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setHistory((data as any[] || []) as BroadcastRecord[]);
+    setLoadingHistory(false);
+  }, []);
 
+  useEffect(() => { fetchUsers(); fetchHistory(); }, [fetchUsers, fetchHistory]);
+
+  /* ── Apply template ── */
+  const applyTemplate = (key: string) => {
+    const t = TEMPLATES.find((t) => t.key === key);
+    if (t) { setTitle(t.title); setBody(t.body); setTemplateKey(key); }
+  };
+
+  /* ── Send ── */
   const handleSend = async () => {
-    if (!userId || !title.trim()) { toast.error("Select a user and enter a title"); return; }
+    if (!title.trim()) { toast.error("Title is required"); return; }
+    if (recipientType === "single" && !userId) { toast.error("Select a recipient"); return; }
+    if (!user) return;
+
     setSending(true);
-    const { error } = await supabase.from("inbox_items" as any).insert({
-      user_id: userId,
-      type: "reminder",
+
+    const targetUserId = recipientType === "single" ? userId : null;
+
+    // 1) Deliver in-app
+    if (channel === "in_app") {
+      if (mode === "motivation_ping") {
+        // Single user notification via inbox
+        if (targetUserId) {
+          await supabase.from("inbox_items" as any).insert({
+            user_id: targetUserId,
+            type: "reminder",
+            title: title.trim(),
+            body: body.trim(),
+            link: null,
+          } as any);
+        } else {
+          // Broadcast to all via inbox (user_id = null)
+          await supabase.from("inbox_items" as any).insert({
+            user_id: null,
+            type: "reminder",
+            title: title.trim(),
+            body: body.trim(),
+            link: null,
+          } as any);
+        }
+      } else {
+        // Full broadcast: inbox + notification
+        await supabase.from("inbox_items" as any).insert({
+          user_id: targetUserId,
+          type: "announcement",
+          title: title.trim(),
+          body: body.trim(),
+          link: null,
+          pinned: false,
+        } as any);
+        await supabase.from("academy_notifications" as any).insert({
+          user_id: targetUserId,
+          type: "announcement",
+          title: title.trim(),
+          body: body.trim(),
+          link_path: null,
+        } as any);
+      }
+    }
+
+    // 2) Log to history
+    await supabase.from("broadcast_messages" as any).insert({
+      sender_id: user.id,
+      mode,
+      channel,
+      recipient_type: recipientType,
+      recipient_user_id: targetUserId,
       title: title.trim(),
       body: body.trim(),
-      link: null,
+      template_key: templateKey,
+      status: channel === "in_app" ? "sent" : "draft",
+      sent_at: channel === "in_app" ? new Date().toISOString() : null,
     } as any);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Message sent");
-      setTitle(""); setBody(""); setUserId("");
-    }
+
+    toast.success(channel === "in_app" ? "Message sent" : "Draft saved (provider not configured)");
+    setTitle(""); setBody(""); setUserId(""); setTemplateKey(null);
+    fetchHistory();
     setSending(false);
   };
 
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    await supabase.from("broadcast_messages" as any).delete().eq("id", deleteId);
+    toast.success("Record deleted");
+    setDeleteId(null);
+    fetchHistory();
+  };
+
+  const handleResend = (r: BroadcastRecord) => {
+    setMode(r.mode as any);
+    setChannel(r.channel);
+    setRecipientType(r.recipient_type as any);
+    setUserId(r.recipient_user_id || "");
+    setTitle(r.title);
+    setBody(r.body);
+    setTemplateKey(r.template_key);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const recipientLabel = (r: BroadcastRecord) => {
+    if (r.recipient_type === "all") return "All Members";
+    const u = users.find((u) => u.user_id === r.recipient_user_id);
+    return u?.display_name || u?.email || r.recipient_user_id?.slice(0, 8) || "—";
+  };
+
   return (
-    <div className="max-w-2xl space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Send a direct motivation message to a specific user's inbox.
-      </p>
-      <Card className="p-5 space-y-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Recipient</Label>
-          <Select value={userId} onValueChange={setUserId}>
-            <SelectTrigger className="w-full h-9 text-sm">
-              <SelectValue placeholder="Select a user…" />
-            </SelectTrigger>
-            <SelectContent>
-              {users.map((u) => (
-                <SelectItem key={u.user_id} value={u.user_id}>
-                  {u.display_name || u.email || "Unnamed"} {u.email ? `(${u.email})` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Title</Label>
-          <Input placeholder="e.g. Keep grinding 🔥" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Message (optional)</Label>
-          <Textarea placeholder="Personal note…" value={body} onChange={(e) => setBody(e.target.value)} rows={3} />
-        </div>
-        <Button onClick={handleSend} disabled={sending || !userId || !title.trim()} className="gap-1.5">
-          {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-          Send Message
-        </Button>
-      </Card>
+    <div className="space-y-6 max-w-3xl">
+      <Tabs defaultValue="compose" className="space-y-4">
+        <TabsList className="bg-white/[0.03] border border-white/[0.06] p-1 h-auto">
+          <TabsTrigger value="compose" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
+            <Send className="h-3.5 w-3.5" /> Compose
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
+            <Clock className="h-3.5 w-3.5" /> Send History
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
+            <FileText className="h-3.5 w-3.5" /> Templates
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ─── COMPOSE ─── */}
+        <TabsContent value="compose">
+          <Card className="p-5 space-y-4">
+            {/* Mode selector */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Mode</Label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setMode("motivation_ping"); setChannel("in_app"); }}
+                  className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                    mode === "motivation_ping"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Zap className="h-4 w-4" />
+                  <div className="text-left">
+                    <p className="font-medium text-xs">Motivation Ping</p>
+                    <p className="text-[10px] opacity-60">Quick in-app notification</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setMode("broadcast")}
+                  className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                    mode === "broadcast"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Radio className="h-4 w-4" />
+                  <div className="text-left">
+                    <p className="font-medium text-xs">Broadcast</p>
+                    <p className="text-[10px] opacity-60">In-app + Email/SMS</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Channel (only for broadcast mode) */}
+            {mode === "broadcast" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Channel</Label>
+                <div className="flex gap-2">
+                  <ChannelButton
+                    active={channel === "in_app"}
+                    onClick={() => setChannel("in_app")}
+                    icon={<Zap className="h-3.5 w-3.5" />}
+                    label="In-App"
+                  />
+                  <ChannelButton
+                    active={channel === "email"}
+                    onClick={() => enableMessagingProviders ? setChannel("email") : toast.info("Email provider not configured yet")}
+                    icon={<Mail className="h-3.5 w-3.5" />}
+                    label="Email"
+                    disabled={!enableMessagingProviders}
+                  />
+                  <ChannelButton
+                    active={channel === "sms"}
+                    onClick={() => enableMessagingProviders ? setChannel("sms") : toast.info("SMS provider not configured yet")}
+                    icon={<Smartphone className="h-3.5 w-3.5" />}
+                    label="SMS"
+                    disabled={!enableMessagingProviders}
+                  />
+                </div>
+                {!enableMessagingProviders && (channel === "email" || channel === "sms") && (
+                  <p className="text-[10px] text-amber-400 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> Provider not connected. Message will be saved as draft.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Recipient */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Recipient</Label>
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => setRecipientType("single")}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors ${
+                    recipientType === "single"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  Single User
+                </button>
+                <button
+                  onClick={() => { setRecipientType("all"); setUserId(""); }}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors ${
+                    recipientType === "all"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  All Members
+                </button>
+              </div>
+              {recipientType === "single" && (
+                <Select value={userId} onValueChange={setUserId}>
+                  <SelectTrigger className="w-full h-9 text-sm">
+                    <SelectValue placeholder="Select a user…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((u) => (
+                      <SelectItem key={u.user_id} value={u.user_id}>
+                        {u.display_name || u.email || "Unnamed"} {u.email ? `(${u.email})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* SMS opt-in notice */}
+            {channel === "sms" && (
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.04] p-3 space-y-1">
+                <p className="text-xs font-medium text-amber-400">SMS Requirements</p>
+                <ul className="text-[10px] text-muted-foreground space-y-0.5 list-disc list-inside">
+                  <li>Recipient must have a verified phone number</li>
+                  <li>User must have explicitly opted in to SMS notifications</li>
+                  <li>Do-not-contact and unsubscribe flags are respected</li>
+                </ul>
+              </div>
+            )}
+
+            {/* Template quick-fill */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Quick Template</Label>
+              <Select value={templateKey || ""} onValueChange={(v) => v && applyTemplate(v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Choose a template…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEMPLATES.map((t) => (
+                    <SelectItem key={t.key} value={t.key}>{t.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Title & Body */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Title</Label>
+              <Input
+                placeholder={mode === "motivation_ping" ? "e.g. Keep grinding 🔥" : "e.g. Important update"}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Message {mode === "motivation_ping" ? "(optional)" : ""}</Label>
+              <Textarea
+                placeholder="Message body…"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            {/* Email-specific fields (behind feature flag) */}
+            {enableMessagingProviders && channel === "email" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Subject Line Override (optional)</Label>
+                <Input placeholder="Override email subject…" disabled />
+                <p className="text-[10px] text-muted-foreground">Leave empty to use the title above</p>
+              </div>
+            )}
+
+            <Button
+              onClick={handleSend}
+              disabled={sending || !title.trim() || (recipientType === "single" && !userId)}
+              className="gap-1.5"
+            >
+              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              {channel !== "in_app" && !enableMessagingProviders ? "Save Draft" : "Send"}
+            </Button>
+          </Card>
+        </TabsContent>
+
+        {/* ─── HISTORY ─── */}
+        <TabsContent value="history">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Recent Messages ({history.length})
+            </p>
+            {loadingHistory ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : history.length === 0 ? (
+              <Card className="p-6 text-center">
+                <p className="text-sm text-muted-foreground">No messages sent yet.</p>
+              </Card>
+            ) : (
+              history.map((r) => (
+                <Card key={r.id} className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-semibold text-foreground">{r.title}</h3>
+                        <Badge
+                          variant={r.status === "sent" ? "default" : r.status === "draft" ? "secondary" : "destructive"}
+                          className="text-[10px] h-5 gap-1"
+                        >
+                          {r.status === "sent" && <CheckCircle2 className="h-2.5 w-2.5" />}
+                          {r.status === "draft" && <Clock className="h-2.5 w-2.5" />}
+                          {r.status === "failed" && <AlertTriangle className="h-2.5 w-2.5" />}
+                          {r.status}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] h-5">
+                          {r.mode === "motivation_ping" ? "Ping" : "Broadcast"}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] h-5">{r.channel}</Badge>
+                      </div>
+                      {r.body && <p className="text-xs text-muted-foreground line-clamp-2">{r.body}</p>}
+                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground/60">
+                        <span>To: {recipientLabel(r)}</span>
+                        <span>{formatDateTimeFull(r.created_at)}</span>
+                        {r.template_key && <span>Template: {r.template_key}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" title="Resend" onClick={() => handleResend(r)}>
+                        <RotateCcw className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" title="Delete" onClick={() => setDeleteId(r.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ─── TEMPLATES ─── */}
+        <TabsContent value="templates">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Available Templates
+            </p>
+            {TEMPLATES.map((t) => (
+              <Card key={t.key} className="p-4 hover:bg-white/[0.02] transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold text-foreground">{t.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{t.body}</p>
+                    <Badge variant="secondary" className="text-[10px] h-5 mt-2">{t.key}</Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-xs gap-1"
+                    onClick={() => { applyTemplate(t.key); /* switch to compose tab — handled by parent Tabs state */ }}
+                  >
+                    <Send className="h-3 w-3" /> Use
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this message from the send history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+/* ── Small helper component ── */
+function ChannelButton({ active, onClick, icon, label, disabled }: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-colors ${
+        disabled ? "opacity-40 cursor-not-allowed" : ""
+      } ${
+        active
+          ? "border-primary/40 bg-primary/[0.08] text-primary"
+          : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+      }`}
+    >
+      {icon} {label}
+    </button>
   );
 }
