@@ -484,6 +484,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
             </>
           );
 
+          const msgProfile = getProfile(msg.user_id);
+          const msgAcademyRole = msgProfile?.academy_role_name;
+          const isCeoOrAdmin = msgAcademyRole === "CEO" || msgAcademyRole === "Admin" || msgAcademyRole === "Coach";
+          const isOfficialAnnouncement = !msg.is_deleted && msg.body.startsWith("📢 ");
+
           return (
             <ContextMenu key={msg.id}>
               <ContextMenuTrigger asChild>
@@ -491,14 +496,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   className={cn(
                     "group relative flex gap-3 px-3 py-0.5 hover:bg-white/[0.02] transition-colors",
                     showHdr && "mt-3 pt-1.5",
-                    isEditing && "bg-white/[0.03]"
+                    isEditing && "bg-white/[0.03]",
+                    isCeoOrAdmin && "border-l-2 border-l-amber-500/25",
+                    isOfficialAnnouncement && "bg-amber-500/[0.03]"
                   )}
                 >
                   {/* Avatar column */}
                   <div className="w-8 shrink-0">
                     {showHdr ? (
                       <ChatAvatar
-                        avatarUrl={getProfile(msg.user_id)?.avatar_url}
+                        avatarUrl={msgProfile?.avatar_url}
                         userName={msg.user_name}
                       />
                     ) : (
@@ -512,19 +519,39 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   <div className="flex-1 min-w-0">
                     {showHdr && (
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[13px] font-semibold text-white">
+                        <span className={cn(
+                          "text-[13px] font-semibold",
+                          isCeoOrAdmin ? "text-amber-300" : "text-white"
+                        )}>
                           {msg.user_name}
                         </span>
-                        <AcademyRoleBadge roleName={getProfile(msg.user_id)?.academy_role_name} />
+                        <AcademyRoleBadge roleName={msgAcademyRole} />
                         <ExperienceBadge role={getRoleBadgeKey(
                           (msg as any).user_role,
-                          getProfile(msg.user_id)?.role_level
+                          msgProfile?.role_level
                         )} />
                         <span className="text-[11px] text-white/30">
                           {formatDateTime(msg.created_at)}
                         </span>
                       </div>
                     )}
+
+                    {/* Official Announcement banner */}
+                    {isOfficialAnnouncement && !isEditing && !isRecap ? (
+                      <div className="max-w-[90%] mt-1">
+                        <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] overflow-hidden">
+                          <div className="w-1 self-stretch bg-amber-500/50 shrink-0" />
+                          <div className="px-3 py-2 flex-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
+                              <Megaphone className="h-3 w-3" /> Official Announcement
+                            </span>
+                            <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                              {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
 
                     {/* Soft-deleted message */}
                     {msg.is_deleted ? (
@@ -583,7 +610,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                       <>
                         {msg.body && msg.body !== "📎 Attachment" && (
                           <div className="inline-block max-w-[85%]">
-                            <div className="bg-white/[0.04] rounded-lg rounded-tl-sm px-3 py-1.5">
+                            <div className={cn(
+                              "rounded-lg rounded-tl-sm px-3 py-1.5",
+                              isCeoOrAdmin ? "bg-amber-500/[0.04]" : "bg-white/[0.04]"
+                            )}>
                               <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
                                 {renderPlainBody(msg.body)}
                               </p>
