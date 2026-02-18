@@ -1,7 +1,8 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { PlayerIdentity } from "@/components/layout/PlayerIdentity";
-import { Shield, BookOpen, Lock, Loader2 } from "lucide-react";
+import { Shield, Lock, Loader2 } from "lucide-react";
+import vaultAcademyLogo from "@/assets/vault-academy-logo.png";
 import { Link } from "react-router-dom";
 
 const Hub = () => {
@@ -52,9 +53,7 @@ const Hub = () => {
               onClick={() => navigate("/academy")}
               className="group relative flex flex-col items-center gap-4 rounded-xl border border-primary/30 bg-primary/5 p-8 text-left transition-all hover:border-primary/60 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition-transform group-hover:scale-105">
-                <BookOpen className="h-8 w-8 text-primary" />
-              </div>
+              <img src={vaultAcademyLogo} alt="Vault Academy" className="h-12 w-auto" />
               <div className="text-center">
                 <h2 className="text-lg font-semibold text-foreground">Vault Academy</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
