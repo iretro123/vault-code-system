@@ -161,12 +161,10 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   return (
     <div
       ref={panelRef}
-      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[400px] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl transition-all duration-150 ease-out ${
-        open
-          ? "opacity-100 translate-y-0 pointer-events-auto"
-          : "opacity-0 translate-y-1 pointer-events-none"
+      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[400px] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl ${
+        open ? "visible pointer-events-auto" : "invisible pointer-events-none"
       }`}
-      style={{ marginLeft: "8px" }}
+      style={{ marginLeft: "8px", transition: "none", animation: "none" }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/[0.06]">
