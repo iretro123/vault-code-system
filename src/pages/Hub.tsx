@@ -53,7 +53,7 @@ const Hub = () => {
               onClick={() => navigate("/academy")}
               className="group relative flex flex-col items-center gap-4 rounded-xl border border-primary/30 bg-primary/5 p-8 text-left transition-all hover:border-primary/60 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <img src={vaultAcademyLogo} alt="Vault Academy" className="h-12 w-auto" />
+              <img src={vaultAcademyLogo} alt="Vault Academy" className="h-[72px] w-auto mb-1" />
               <div className="text-center">
                 <h2 className="text-lg font-semibold text-foreground">Vault Academy</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
