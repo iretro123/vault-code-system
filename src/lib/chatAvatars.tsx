@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 /** Geometric icon SVGs — must match AcademyProfileForm */
 const GEOMETRIC_ICONS: Record<string, React.ReactNode> = {
@@ -12,7 +12,8 @@ const GEOMETRIC_ICONS: Record<string, React.ReactNode> = {
 
 const DEFAULT_COLOR = "hsl(220, 15%, 45%)";
 
-
+// Simple in-memory cache for loaded image URLs
+const loadedImages = new Set<string>();
 
 export interface ParsedAvatar {
   mode: "initials" | "icon" | "image";
@@ -61,21 +62,38 @@ export function ChatAvatar({
   size?: string;
 }) {
   const parsed = parseAvatarUrl(avatarUrl);
+  const [imgLoaded, setImgLoaded] = useState(() =>
+    parsed.mode === "image" && parsed.imageUrl ? loadedImages.has(parsed.imageUrl) : false
+  );
 
   if (parsed.mode === "image" && parsed.imageUrl) {
+    const url = parsed.imageUrl;
     return (
-      <img
-        src={parsed.imageUrl}
-        alt={userName}
-        className={`${size} rounded-full object-cover`}
-      />
+      <div className={`${size} rounded-full shrink-0 relative overflow-hidden`}>
+        {/* Initials fallback — always rendered, hidden when image loads */}
+        {!imgLoaded && (
+          <div
+            className={`absolute inset-0 rounded-full flex items-center justify-center text-xs font-semibold`}
+            style={{ backgroundColor: DEFAULT_COLOR + "33", color: DEFAULT_COLOR }}
+          >
+            {getInitials(userName)}
+          </div>
+        )}
+        <img
+          src={url}
+          alt={userName}
+          loading="eager"
+          className={`absolute inset-0 h-full w-full rounded-full object-cover ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+          onLoad={() => { loadedImages.add(url); setImgLoaded(true); }}
+        />
+      </div>
     );
   }
 
   if (parsed.mode === "icon" && parsed.iconId && GEOMETRIC_ICONS[parsed.iconId]) {
     return (
       <div
-        className={`${size} rounded-full flex items-center justify-center p-1.5`}
+        className={`${size} rounded-full flex items-center justify-center p-1.5 shrink-0`}
         style={{ backgroundColor: parsed.color + "33", color: parsed.color }}
       >
         {GEOMETRIC_ICONS[parsed.iconId]}
@@ -86,7 +104,7 @@ export function ChatAvatar({
   // Initials mode
   return (
     <div
-      className={`${size} rounded-full flex items-center justify-center text-xs font-semibold`}
+      className={`${size} rounded-full flex items-center justify-center text-xs font-semibold shrink-0`}
       style={{ backgroundColor: parsed.color + "33", color: parsed.color }}
     >
       {getInitials(userName)}
