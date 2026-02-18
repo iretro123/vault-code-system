@@ -849,7 +849,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
-            <div data-chat-composer className="flex items-end gap-2 rounded-xl bg-black/25 border border-white/[0.1] px-3 py-2 focus-within:ring-1 focus-within:ring-white/20 transition-shadow">
+            <div data-chat-composer className="flex items-end gap-2 rounded-xl bg-white/[0.08] border border-white/[0.15] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07)] px-3 py-2 focus-within:border-primary/60 focus-within:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07),0_0_8px_2px_hsl(217_91%_60%/0.10)] transition-all duration-200">
               {/* Hidden file input */}
               <input
                 ref={fileInputRef}
@@ -865,7 +865,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
+                  className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors"
                   title="Attach file"
                 >
                   {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
@@ -883,7 +883,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 maxLength={1000}
                 disabled={sending}
                 rows={1}
-                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 resize-none outline-none min-h-[24px] max-h-[120px] leading-relaxed py-0.5"
+                className="flex-1 bg-transparent text-sm text-white/[0.92] placeholder:text-white/[0.45] resize-none outline-none min-h-[24px] max-h-[120px] leading-relaxed py-0.5 caret-primary"
               />
 
               {/* Send button */}
@@ -895,7 +895,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   "shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150",
                   draft.trim() && !sending
                     ? "bg-primary text-primary-foreground hover:brightness-110 active:scale-95"
-                    : "text-white/20 cursor-not-allowed"
+                    : "text-white/[0.35] cursor-not-allowed"
                 )}
               >
                 {sending ? (
