@@ -450,6 +450,36 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_mutes: {
+        Row: {
+          created_at: string
+          id: string
+          muted_by: string
+          muted_until: string
+          reason: string | null
+          room_slug: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          muted_by: string
+          muted_until: string
+          reason?: string | null
+          room_slug?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          muted_by?: string
+          muted_until?: string
+          reason?: string | null
+          room_slug?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       coach_answer_reads: {
         Row: {
           id: string
@@ -950,6 +980,35 @@ export type Database = {
         }
         Relationships: []
       }
+      pinned_messages: {
+        Row: {
+          message_id: string
+          pinned_at: string
+          pinned_by: string
+          room_slug: string
+        }
+        Insert: {
+          message_id: string
+          pinned_at?: string
+          pinned_by: string
+          room_slug: string
+        }
+        Update: {
+          message_id?: string
+          pinned_at?: string
+          pinned_by?: string
+          room_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_messages_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "academy_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_signal: {
         Row: {
           created_at: string
@@ -1127,6 +1186,24 @@ export type Database = {
           referred_user_id?: string | null
           referrer_user_id?: string
           status?: string
+        }
+        Relationships: []
+      }
+      room_locks: {
+        Row: {
+          locked_at: string
+          locked_by: string
+          room_slug: string
+        }
+        Insert: {
+          locked_at?: string
+          locked_by: string
+          room_slug: string
+        }
+        Update: {
+          locked_at?: string
+          locked_by?: string
+          room_slug?: string
         }
         Relationships: []
       }
