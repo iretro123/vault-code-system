@@ -26,6 +26,7 @@ import AcademyProfile from "./pages/academy/AcademyProfile";
 import AcademySettings from "./pages/academy/AcademySettings";
 import AcademyAdmin from "./pages/academy/AcademyAdmin";
 import AcademyAdminUsers from "./pages/academy/AcademyAdminUsers";
+import AdminPanel from "./pages/academy/AdminPanel";
 import AcademyJournal from "./pages/academy/AcademyJournal";
 import AcademyProgress from "./pages/academy/AcademyProgress";
 import AcademyMyQuestions from "./pages/academy/AcademyMyQuestions";
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/academy/progress" element={<AcademyProgress />} />
             <Route path="/academy/admin" element={<AcademyAdmin />} />
             <Route path="/academy/admin/users" element={<AcademyAdminUsers />} />
+            <Route path="/academy/admin/panel" element={<AdminPanel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
