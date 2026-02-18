@@ -52,9 +52,17 @@ function ItemList({
       )}
       <div className="px-3 pb-4 space-y-1">
         {loading ? (
-          <div className="px-2 py-8 text-center text-sm text-muted-foreground">Loading…</div>
+          <div className="flex items-center justify-center h-full">
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          </div>
         ) : items.length === 0 ? (
-          <div className="px-2 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</div>
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-0 text-center">
+              <Mail className="h-[26px] w-[26px] text-white/[0.87] mb-4" strokeWidth={1.5} />
+              <p className="text-[18px] font-semibold text-white/90 leading-snug">{emptyMessage.split('.')[0]}</p>
+              <p className="text-[14px] text-white/[0.57] mt-2">{emptyMessage.split('.').slice(1).join('.').trim()}</p>
+            </div>
+          </div>
         ) : (
           items.map((item) => (
             <button
