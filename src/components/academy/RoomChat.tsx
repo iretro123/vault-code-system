@@ -4,9 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { useChatProfiles } from "@/hooks/useChatProfiles";
+import { useChatModeration } from "@/hooks/useChatModeration";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
@@ -149,6 +150,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
     useRoomMessages(roomSlug);
   const { user, profile, userRole: authUserRole } = useAuth();
+  const {
+    canModerate, isRoomLocked, isMuted, muteExpiresAt,
+    pinnedMessageId, timeoutUser, lockRoom, unlockRoom,
+    pinMessage, unpinMessage, moderatorDelete,
+  } = useChatModeration(roomSlug);
 
   const isOperator = authUserRole?.role === "operator";
 
@@ -365,10 +371,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
     }
   };
 
-  // Delete handler
+  // Delete handler (with audit logging for moderator deletes)
   const confirmDelete = async () => {
     if (!deleteConfirmId) return;
-    const result = await deleteMessage(deleteConfirmId);
+    const msg = messages.find((m) => m.id === deleteConfirmId);
+    const isModAction = msg && msg.user_id !== user?.id && canModerate;
+
+    const result = isModAction
+      ? await moderatorDelete(deleteConfirmId, msg.user_id, deleteMessage)
+      : await deleteMessage(deleteConfirmId);
+
     if (result.error) {
       toast.error(result.error);
     } else {
@@ -421,6 +433,50 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           </div>
         )}
 
+        {/* Room locked banner */}
+        {isRoomLocked && (
+          <div className="mx-3 mt-2 mb-1 flex items-center justify-between rounded-lg border border-destructive/20 bg-destructive/[0.06] px-3 py-2">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-destructive shrink-0" />
+              <p className="text-xs text-destructive/80">This room is currently locked by a moderator.</p>
+            </div>
+            {canModerate && (
+              <Button variant="ghost" size="sm" onClick={unlockRoom} className="h-6 gap-1 text-[11px] text-destructive hover:text-destructive">
+                <Unlock className="h-3 w-3" /> Unlock
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Moderator room controls */}
+        {canModerate && !isRoomLocked && (
+          <div className="mx-3 mt-2 mb-1 flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={lockRoom} className="h-6 gap-1 text-[11px] text-white/40 hover:text-white/70">
+              <Lock className="h-3 w-3" /> Lock Room
+            </Button>
+          </div>
+        )}
+
+        {/* Pinned message banner */}
+        {pinnedMessageId && (() => {
+          const pinned = messages.find((m) => m.id === pinnedMessageId);
+          if (!pinned || pinned.is_deleted) return null;
+          return (
+            <div className="mx-3 mt-1 mb-2 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2">
+              <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider mb-0.5">Pinned</p>
+                <p className="text-xs text-white/80 truncate">{pinned.body}</p>
+              </div>
+              {canModerate && (
+                <button onClick={unpinMessage} className="p-1 text-white/30 hover:text-white/60">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
         {hasMore && (
           <div className="flex justify-center py-2">
             <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs text-white/50 hover:text-white">
@@ -450,8 +506,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           const isOwn = msg.user_id === user?.id;
           const ageMs = Date.now() - new Date(msg.created_at).getTime();
           const within15min = ageMs < 15 * 60 * 1000;
-          const canEdit = !msg.is_deleted && (isOperator || (isOwn && within15min));
-          const canDelete = !msg.is_deleted && (isOwn || isOperator);
+          const canEdit = !msg.is_deleted && (isOperator || canModerate || (isOwn && within15min));
+          const canDelete = !msg.is_deleted && (isOwn || isOperator || canModerate);
           const isEditing = editingId === msg.id;
 
           const copyMessage = () => {
@@ -460,6 +516,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
               () => toast.error("Failed to copy")
             );
           };
+
+          const isPinned = pinnedMessageId === msg.id;
 
           /* Shared menu items for both dropdown and context menu */
           const menuActions = (
@@ -480,6 +538,26 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 <ItemComponent onClick={() => setDeleteConfirmId(msg.id)} className="gap-2 text-xs text-destructive focus:text-destructive">
                   <Trash2 className="h-3 w-3" /> Delete
                 </ItemComponent>
+              )}
+              {/* Moderator-only actions */}
+              {canModerate && !msg.is_deleted && (
+                <>
+                  <ItemComponent
+                    onClick={() => isPinned ? unpinMessage() : pinMessage(msg.id)}
+                    className="gap-2 text-xs"
+                  >
+                    {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+                    {isPinned ? "Unpin" : "Pin message"}
+                  </ItemComponent>
+                  {!isOwn && (
+                    <ItemComponent
+                      onClick={() => timeoutUser(msg.user_id, msg.user_name)}
+                      className="gap-2 text-xs text-amber-400 focus:text-amber-400"
+                    >
+                      <Clock className="h-3 w-3" /> Timeout 24h
+                    </ItemComponent>
+                  )}
+                </>
               )}
             </>
           );
@@ -751,7 +829,22 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
       )}
 
       {/* Composer */}
-      {canPost ? (
+      {isMuted ? (
+        <div className="pt-3 border-t border-white/[0.08] mt-2 px-3">
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] px-3 py-2.5">
+            <Clock className="h-4 w-4 text-amber-400 shrink-0" />
+            <p className="text-xs text-amber-300/80">
+              You are timed out until {muteExpiresAt ? new Date(muteExpiresAt).toLocaleString() : "later"}.
+            </p>
+          </div>
+        </div>
+      ) : isRoomLocked && !canModerate ? (
+        <div className="pt-3 border-t border-white/[0.08] mt-2">
+          <p className="text-xs text-white/50 text-center">
+            This room is locked by a moderator.
+          </p>
+        </div>
+      ) : canPost ? (
         <div className="pt-3 border-t border-white/[0.08] mt-2 px-3">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
