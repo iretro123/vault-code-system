@@ -107,6 +107,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("inbox");
   const panelRef = useRef<HTMLDivElement>(null);
+  const hasFetchedRef = useRef(false);
   const { inboxItems: items, inboxLoading: loading, inboxUnreadCount: unreadCount, refetchInbox: refetch, markInboxRead: markRead, markAllInboxRead: markAllRead } = useAcademyData();
 
   const inboxItems = items.filter((i) => INBOX_TYPES.includes(i.type));
@@ -119,9 +120,12 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     onOpenChange(false);
   }, [onOpenChange, unreadCount, markAllRead]);
 
-  // Fetch on open
+  // Fetch once on first open, then background-refresh
   useEffect(() => {
-    if (open) refetch();
+    if (open && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      refetch();
+    }
   }, [open, refetch]);
 
   // Close on Escape
@@ -137,7 +141,6 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Ignore clicks on the sidebar inbox trigger button — it handles its own toggle
       if (target.closest("[data-inbox-trigger]")) return;
       if (panelRef.current && !panelRef.current.contains(target)) {
         handleClose();
@@ -155,12 +158,14 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     }
   };
 
-  if (!open) return null;
-
   return (
     <div
       ref={panelRef}
-      className="fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[400px] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl animate-slide-in-left"
+      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[400px] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl transition-all duration-150 ease-out ${
+        open
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 translate-y-1 pointer-events-none"
+      }`}
       style={{ marginLeft: "8px" }}
     >
       {/* Header */}
