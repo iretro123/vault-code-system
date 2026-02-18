@@ -252,13 +252,20 @@ export function AcademySidebar() {
 
       {/* Premium Bottom Dock */}
       <SidebarFooter className="mt-auto border-t border-white/[0.10] bg-gradient-to-t from-[hsl(220,20%,6%)] to-[hsl(220,18%,8%)] p-2.5 space-y-1.5">
-        {/* 1. Refer a Trader */}
+        {/* 1. Share Vault Card */}
         <button
           onClick={() => setReferralOpen(true)}
-          className="group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-all bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.10] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+          className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
         >
-          <Gift className="h-4 w-4 shrink-0 text-primary group-hover:text-primary/90" />
-          {!collapsed && <span className="font-medium">Refer a Trader</span>}
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-[16px] font-semibold text-white/90 leading-tight">Share Vault</p>
+              <p className="text-[13px] text-white/[0.57] mt-0.5">Earn rewards for invites</p>
+            </div>
+            <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
+              <Gift className="h-4 w-4 text-white/80" />
+            </div>
+          </div>
         </button>
 
         {/* 2. User Identity (not clickable) */}
