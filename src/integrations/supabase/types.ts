@@ -190,6 +190,104 @@ export type Database = {
         }
         Relationships: []
       }
+      academy_permissions: {
+        Row: {
+          description: string
+          key: string
+        }
+        Insert: {
+          description?: string
+          key: string
+        }
+        Update: {
+          description?: string
+          key?: string
+        }
+        Relationships: []
+      }
+      academy_role_permissions: {
+        Row: {
+          permission_key: string
+          role_id: string
+        }
+        Insert: {
+          permission_key: string
+          role_id: string
+        }
+        Update: {
+          permission_key?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_role_permissions_permission_key_fkey"
+            columns: ["permission_key"]
+            isOneToOne: false
+            referencedRelation: "academy_permissions"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "academy_role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "academy_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      academy_roles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      academy_user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academy_user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "academy_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       behavior_stats: {
         Row: {
           avg_trades_per_day: number
@@ -1500,6 +1598,7 @@ export type Database = {
         Args: { _period: string; _user_id: string }
         Returns: undefined
       }
+      get_academy_role_name: { Args: { _user_id: string }; Returns: string }
       get_adaptive_risk_limit: {
         Args: { _user_id: string }
         Returns: {
@@ -1705,6 +1804,10 @@ export type Database = {
           event_type: string
         }[]
       }
+      has_academy_permission: {
+        Args: { _permission_key: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1712,6 +1815,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_academy_ceo: { Args: { _user_id: string }; Returns: boolean }
       log_vault_event: {
         Args: { _event_context?: Json; _event_type: string; _user_id: string }
         Returns: string

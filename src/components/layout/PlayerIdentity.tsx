@@ -1,4 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
+import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import { Button } from "@/components/ui/button";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import {
@@ -13,6 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 export function PlayerIdentity() {
   const { user, profile, loading, signOut } = useAuth();
+  const { roleName } = useAcademyPermissions();
   const navigate = useNavigate();
 
   if (loading) {
@@ -53,9 +56,12 @@ export function PlayerIdentity() {
         <button className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
           <div className="hidden sm:flex flex-col items-start">
-            <span className="text-sm font-medium text-foreground leading-tight">
-              {displayName}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-medium text-foreground leading-tight">
+                {displayName}
+              </span>
+              <AcademyRoleBadge roleName={roleName} />
+            </div>
             <span className="text-xs text-muted-foreground leading-tight">
               @{username}
             </span>
