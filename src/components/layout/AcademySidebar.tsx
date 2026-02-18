@@ -250,79 +250,60 @@ export function AcademySidebar() {
         )}
       </SidebarContent>
 
-      {/* Two-layer footer */}
-      <SidebarFooter className="mt-auto p-0">
-        {/* FooterContent — cards, NO bottom padding */}
-        <div className="border-t border-white/[0.10] bg-gradient-to-t from-[hsl(220,20%,6%)] to-[hsl(220,18%,8%)] px-2.5 pt-2.5 space-y-1.5">
-          {/* Share Vault Card */}
-          {!collapsed && (
-            <button
-              onClick={() => setReferralOpen(true)}
-              className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
-            >
-              <div className="flex items-center justify-between">
-                <div className="min-w-0">
-                  <p className="text-[16px] font-semibold text-white/90 leading-tight">Share Vault</p>
-                  <p className="text-[13px] text-white/[0.57] mt-0.5">Earn rewards for invites</p>
-                </div>
-                <div className="relative shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
-                  <div className="absolute inset-0 rounded-full bg-[#3B82F6] opacity-[0.12] blur-[12px]" />
-                  <svg className="h-4 w-4 relative z-10" viewBox="0 0 24 24" fill="none" stroke="url(#gift-grad)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <defs>
-                      <linearGradient id="gift-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
-                        <stop stopColor="#3B82F6" />
-                        <stop offset="1" stopColor="#22D3EE" />
-                      </linearGradient>
-                    </defs>
-                    <rect x="3" y="8" width="18" height="4" rx="1" />
-                    <rect x="3" y="12" width="18" height="8" rx="1" />
-                    <line x1="12" y1="8" x2="12" y2="20" />
-                    <path d="M12 8c-2-2-4-4-2-5s4 1 2 5" />
-                    <path d="M12 8c2-2 4-4 2-5s-4 1-2 5" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-          )}
-
-          {/* User Identity */}
-          <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 select-none pointer-events-none bg-white/[0.02] border border-white/[0.05] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
-            <div className="relative shrink-0">
-              <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-7 w-7" />
-              <span className="absolute -bottom-px -right-px h-2 w-2 rounded-full bg-emerald-500 ring-[1.5px] ring-[hsl(220,20%,6%)]" />
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-foreground truncate leading-tight">{displayName}</p>
-                <p className="text-[11px] text-muted-foreground/60 leading-tight">Vault Academy Member</p>
-              </div>
-            )}
-          </div>
-
-          {/* Inbox */}
+      {/* Bottom Dock — pinned footer */}
+      <SidebarFooter className="mt-auto border-t border-white/[0.10] bg-gradient-to-t from-[hsl(220,20%,6%)] to-[hsl(220,18%,8%)] p-2.5 space-y-1.5">
+        {/* Share Vault Card */}
+        {!collapsed && (
           <button
-            onClick={() => handleInboxChange(true)}
-            className="relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-all bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.10] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+            onClick={() => setReferralOpen(true)}
+            className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
           >
-            <Mail className="h-4 w-4 shrink-0" />
-            {!collapsed && (
-              <span className="flex items-center gap-1.5 font-medium">
-                Inbox
-                {inboxUnreadCount > 0 && (
-                  <span className="flex items-center justify-center h-[18px] min-w-[18px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
-                    {inboxUnreadCount > 9 ? "9+" : inboxUnreadCount}
-                  </span>
-                )}
-              </span>
-            )}
-            {collapsed && inboxUnreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
-            )}
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[16px] font-semibold text-white/90 leading-tight">Share Vault</p>
+                <p className="text-[13px] text-white/[0.57] mt-0.5">Earn rewards for invites</p>
+              </div>
+              <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
+                <Gift className="h-4 w-4 text-white/80" />
+              </div>
+            </div>
           </button>
+        )}
+
+        {/* User Identity (not clickable) */}
+        <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 select-none pointer-events-none bg-white/[0.02] border border-white/[0.05] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
+          <div className="relative shrink-0">
+            <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-7 w-7" />
+            <span className="absolute -bottom-px -right-px h-2 w-2 rounded-full bg-emerald-500 ring-[1.5px] ring-[hsl(220,20%,6%)]" />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-foreground truncate leading-tight">{displayName}</p>
+              <p className="text-[11px] text-muted-foreground/60 leading-tight">Vault Academy Member</p>
+            </div>
+          )}
         </div>
 
-        {/* SafeAreaSpacer — black padding only */}
-        <div className="bg-[hsl(220,20%,6%)]" style={{ height: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }} />
+        {/* Inbox */}
+        <button
+          onClick={() => handleInboxChange(true)}
+          className="relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-all bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.10] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+        >
+          <Mail className="h-4 w-4 shrink-0" />
+          {!collapsed && (
+            <span className="flex items-center gap-1.5 font-medium">
+              Inbox
+              {inboxUnreadCount > 0 && (
+                <span className="flex items-center justify-center h-[18px] min-w-[18px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
+                  {inboxUnreadCount > 9 ? "9+" : inboxUnreadCount}
+                </span>
+              )}
+            </span>
+          )}
+          {collapsed && inboxUnreadCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)]" />
+          )}
+        </button>
 
         <InboxDrawer open={inboxOpen} onOpenChange={handleInboxChange} />
         <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />
