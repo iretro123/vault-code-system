@@ -265,8 +265,21 @@ export function AcademySidebar() {
                   <p className="text-[16px] font-semibold text-white/90 leading-tight">Share Vault</p>
                   <p className="text-[13px] text-white/[0.57] mt-0.5">Earn rewards for invites</p>
                 </div>
-                <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
-                  <Gift className="h-4 w-4 text-white/80" />
+                <div className="relative shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.06] border border-white/[0.08] group-hover:bg-white/[0.10] transition-colors">
+                  <div className="absolute inset-0 rounded-full bg-[#3B82F6] opacity-[0.12] blur-[12px]" />
+                  <svg className="h-4 w-4 relative z-10" viewBox="0 0 24 24" fill="none" stroke="url(#gift-grad)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <defs>
+                      <linearGradient id="gift-grad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#3B82F6" />
+                        <stop offset="1" stopColor="#22D3EE" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="3" y="8" width="18" height="4" rx="1" />
+                    <rect x="3" y="12" width="18" height="8" rx="1" />
+                    <line x1="12" y1="8" x2="12" y2="20" />
+                    <path d="M12 8c-2-2-4-4-2-5s4 1 2 5" />
+                    <path d="M12 8c2-2 4-4 2-5s-4 1-2 5" />
+                  </svg>
                 </div>
               </div>
             </button>
