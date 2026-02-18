@@ -19,6 +19,7 @@ import {
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
@@ -61,7 +62,12 @@ export function AcademySidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { hasRole, profile, user } = useAuth();
+  const { hasPermission } = useAcademyPermissions();
   const isAdmin = hasRole("operator");
+  const showAdminPanel =
+    hasPermission("view_admin_panel") ||
+    hasPermission("manage_users") ||
+    hasPermission("manage_notifications");
   const { inboxUnreadCount, referralStats } = useAcademyData();
 
   const displayName = profile?.display_name || "Trader";
@@ -188,37 +194,56 @@ export function AcademySidebar() {
         </SidebarGroup>
 
         {/* Admin */}
-        {isAdmin && (
+        {(isAdmin || showAdminPanel) && (
           <SidebarGroup>
             <SidebarGroupLabel>{!collapsed && "Admin"}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/academy/admin")}>
-                    <NavLink
-                      to="/academy/admin"
-                      end
-                      className="flex items-center gap-2 px-2 py-1.5"
-                      activeClassName="bg-muted text-primary font-medium"
-                    >
-                      <ShieldCheck className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="text-sm">Admin</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/academy/admin/users")}>
-                    <NavLink
-                      to="/academy/admin/users"
-                      end
-                      className="flex items-center gap-2 px-2 py-1.5"
-                      activeClassName="bg-muted text-primary font-medium"
-                    >
-                      <Users className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="text-sm">User Export</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {showAdminPanel && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/academy/admin/panel")}>
+                      <NavLink
+                        to="/academy/admin/panel"
+                        end
+                        className="flex items-center gap-2 px-2 py-1.5"
+                        activeClassName="bg-muted text-primary font-medium"
+                      >
+                        <ShieldCheck className="h-4 w-4 shrink-0" />
+                        {!collapsed && <span className="text-sm">Admin Panel</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {isAdmin && (
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={isActive("/academy/admin")}>
+                        <NavLink
+                          to="/academy/admin"
+                          end
+                          className="flex items-center gap-2 px-2 py-1.5"
+                          activeClassName="bg-muted text-primary font-medium"
+                        >
+                          <ShieldCheck className="h-4 w-4 shrink-0" />
+                          {!collapsed && <span className="text-sm">Legacy Admin</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={isActive("/academy/admin/users")}>
+                        <NavLink
+                          to="/academy/admin/users"
+                          end
+                          className="flex items-center gap-2 px-2 py-1.5"
+                          activeClassName="bg-muted text-primary font-medium"
+                        >
+                          <Users className="h-4 w-4 shrink-0" />
+                          {!collapsed && <span className="text-sm">User Export</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
