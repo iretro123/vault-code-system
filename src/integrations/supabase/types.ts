@@ -402,6 +402,54 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_messages: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          mode: string
+          recipient_type: string
+          recipient_user_id: string | null
+          sender_id: string
+          sent_at: string | null
+          status: string
+          template_key: string | null
+          title: string
+        }
+        Insert: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          mode?: string
+          recipient_type?: string
+          recipient_user_id?: string | null
+          sender_id: string
+          sent_at?: string | null
+          status?: string
+          template_key?: string | null
+          title: string
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          mode?: string
+          recipient_type?: string
+          recipient_user_id?: string | null
+          sender_id?: string
+          sent_at?: string | null
+          status?: string
+          template_key?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       coach_answer_reads: {
         Row: {
           id: string
