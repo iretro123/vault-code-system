@@ -108,7 +108,7 @@ export function AcademySidebar() {
               <SidebarMenuItem>
                 <button
                   onClick={() => setSearchOpen(true)}
-                  className="group/search flex items-center gap-2.5 w-full rounded-xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-[6px] px-3 py-2.5 transition-all duration-[120ms] ease-out hover:bg-white/[0.06] hover:border-white/[0.12] focus-visible:bg-white/[0.08] focus-visible:border-[rgba(59,130,246,0.6)] focus-visible:shadow-[0_0_0_2px_rgba(59,130,246,0.15)] focus-visible:outline-none"
+                  className="group/search flex items-center gap-2 w-full rounded-[10px] bg-[rgba(255,255,255,0.035)] border border-white/[0.08] backdrop-blur-[6px] px-2.5 py-2 h-10 transition-all duration-[120ms] ease-out hover:bg-white/[0.06] hover:border-white/[0.12] focus-visible:bg-white/[0.08] focus-visible:border-[rgba(59,130,246,0.55)] focus-visible:shadow-[0_0_0_2px_rgba(59,130,246,0.12)] focus-visible:outline-none"
                 >
                   <Search className="h-4 w-4 shrink-0 text-white/60 group-focus-visible/search:text-white/90 transition-opacity duration-[120ms]" />
                   {!collapsed && (
