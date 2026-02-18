@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_announcements: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          delivery_mode: string
+          id: string
+          image_url: string | null
+          is_pinned: boolean
+          link: string | null
+          replies_locked: boolean
+          segment: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body?: string
+          created_at?: string
+          delivery_mode?: string
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean
+          link?: string | null
+          replies_locked?: boolean
+          segment?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          delivery_mode?: string
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean
+          link?: string | null
+          replies_locked?: boolean
+          segment?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       academy_lessons: {
         Row: {
           created_at: string
