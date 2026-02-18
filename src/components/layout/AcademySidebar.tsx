@@ -218,26 +218,26 @@ export function AcademySidebar() {
       </SidebarContent>
 
       {/* Premium Bottom Dock */}
-      <SidebarFooter className="sticky bottom-0 border-t border-white/[0.06] bg-[hsl(220,20%,8%)]/80 backdrop-blur-xl p-2.5 space-y-1.5">
+      <SidebarFooter className="mt-auto border-t border-white/[0.08] bg-[hsl(220,18%,7%)] p-2 space-y-0.5">
         {/* 1. Refer a Trader */}
         <button
           onClick={() => setReferralOpen(true)}
-          className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-colors w-full text-left"
+          className="group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors w-full text-left"
         >
-          <Gift className="h-4 w-4 shrink-0 text-primary" />
+          <Gift className="h-4 w-4 shrink-0 text-primary group-hover:text-primary/90" />
           {!collapsed && <span>Refer a Trader</span>}
         </button>
 
         {/* 2. User Identity (not clickable) */}
-        <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 select-none pointer-events-none">
+        <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5 select-none pointer-events-none">
           <div className="relative shrink-0">
-            <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
-            <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-[hsl(220,20%,8%)]" />
+            <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-7 w-7" />
+            <span className="absolute -bottom-px -right-px h-2 w-2 rounded-full bg-emerald-500 ring-[1.5px] ring-[hsl(220,18%,7%)]" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground truncate leading-tight">{displayName}</p>
-              <p className="text-[11px] text-muted-foreground leading-tight">Vault Academy Member</p>
+              <p className="text-[13px] font-medium text-foreground truncate leading-tight">{displayName}</p>
+              <p className="text-[11px] text-muted-foreground/70 leading-tight">Vault Academy Member</p>
             </div>
           )}
         </div>
@@ -245,14 +245,14 @@ export function AcademySidebar() {
         {/* 3. Inbox */}
         <button
           onClick={() => setInboxOpen(true)}
-          className="relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-colors w-full text-left"
+          className="relative flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] text-muted-foreground hover:text-foreground hover:bg-white/[0.05] transition-colors w-full text-left"
         >
           <Mail className="h-4 w-4 shrink-0" />
           {!collapsed && (
             <span className="flex items-center gap-1.5">
               Inbox
               {inboxUnreadCount > 0 && (
-                <span className="flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
+                <span className="flex items-center justify-center h-[18px] min-w-[18px] px-1 rounded-full bg-[hsl(45,90%,50%)] text-[hsl(45,90%,10%)] text-[10px] font-bold leading-none">
                   {inboxUnreadCount > 9 ? "9+" : inboxUnreadCount}
                 </span>
               )}
