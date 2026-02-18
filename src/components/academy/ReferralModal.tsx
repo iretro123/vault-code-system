@@ -13,10 +13,42 @@ interface ReferralModalProps {
 }
 
 const STEPS = [
-  { icon: Send, text: "Share your invite link" },
-  { icon: UserPlus, text: "They sign up and get a bonus" },
-  { icon: Star, text: "You get rewards when they upgrade" },
+  { icon: Send, text: "Share your referral link" },
+  { icon: UserPlus, text: "They sign up and receive a bonus" },
+  { icon: Star, text: "You earn rewards when they upgrade" },
 ];
+
+function HeroBanner() {
+  return (
+    <div className="relative w-full h-[140px] sm:h-[140px] overflow-hidden rounded-t-[22px]"
+      style={{ background: "linear-gradient(135deg, #0B1220 0%, #1D4ED8 55%, #38BDF8 100%)" }}
+    >
+      {/* Dot grid texture */}
+      <div className="absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "16px 16px",
+        }}
+      />
+      {/* Aero blob */}
+      <div className="absolute -right-10 -top-6 w-[260px] h-[220px] opacity-[0.85]">
+        <div className="absolute inset-0 rounded-full"
+          style={{
+            background: "radial-gradient(ellipse at 40% 50%, rgba(56,189,248,0.45) 0%, rgba(99,102,241,0.2) 50%, transparent 80%)",
+            filter: "blur(30px)",
+            transform: "rotate(-15deg) scale(1.2, 0.9)",
+          }}
+        />
+        <div className="absolute right-8 top-10 w-[120px] h-[100px] rounded-full"
+          style={{
+            background: "radial-gradient(ellipse at center, rgba(139,92,246,0.25) 0%, transparent 70%)",
+            filter: "blur(20px)",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function ReferralBody({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
@@ -29,60 +61,59 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="relative">
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-0 right-0 z-10 flex items-center justify-center h-8 w-8 rounded-full hover:bg-white/[0.06] transition-colors"
-      >
-        <X className="h-4 w-4 text-white/60" />
-      </button>
+    <div className="flex flex-col overflow-hidden">
+      {/* Banner */}
+      <div className="relative">
+        <HeroBanner />
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 flex items-center justify-center h-8 w-8 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-colors"
+        >
+          <X className="h-4 w-4 text-white/80" />
+        </button>
+      </div>
 
-      {/* Hero */}
-      <div className="flex items-start justify-between gap-6 pb-6 border-b border-white/[0.06]">
-        <div className="min-w-0 space-y-3">
+      {/* Content */}
+      <div className="px-6 py-6 space-y-5">
+        {/* Pill + headline */}
+        <div className="space-y-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] px-3 py-1 text-[12px] font-medium text-white/70">
             <Gift className="h-3 w-3" />
-            Earn rewards
+            Affiliate Program
           </span>
-          <h2 className="text-[22px] sm:text-[26px] font-semibold text-white/90 leading-tight tracking-tight">
-            Invite traders.<br />Get rewards.
+          <h2 className="text-[24px] font-semibold text-white/90 leading-[1.12] max-w-[420px]">
+            Invite traders. Earn rewards.
           </h2>
-          <p className="text-[14px] text-white/[0.55] leading-relaxed max-w-[340px]">
-            Share Vault OS and earn credits when they join.
+          <p className="text-[14px] text-white/[0.55] leading-[1.4] max-w-[420px]">
+            Share Vault OS with other traders and earn credits when they join and upgrade.
           </p>
         </div>
-        <div className="hidden sm:flex shrink-0 items-center justify-center h-20 w-20 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
-          <Gift className="h-9 w-9 text-white/[0.18]" strokeWidth={1.5} />
-        </div>
-      </div>
 
-      {/* How it works */}
-      <div className="pt-5 pb-5 space-y-3.5">
-        <h3 className="text-[13px] font-semibold text-white/50 uppercase tracking-wider">How it works</h3>
+        {/* How it works */}
         <div className="space-y-3">
-          {STEPS.map((step, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/[0.04] border border-white/[0.06] shrink-0">
-                <step.icon className="h-4 w-4 text-white/[0.75]" strokeWidth={1.8} />
+          <h3 className="text-[13px] font-semibold text-white/50 uppercase tracking-wider">How it works</h3>
+          <div className="space-y-2.5">
+            {STEPS.map((step, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/[0.04] border border-white/[0.06] shrink-0">
+                  <step.icon className="h-4 w-4 text-white/[0.75]" strokeWidth={1.8} />
+                </div>
+                <p className="text-[14px] text-white/[0.80] leading-[1.4]">{step.text}</p>
               </div>
-              <p className="text-[14px] text-white/[0.80] leading-snug">{step.text}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div className="py-3 border-t border-white/[0.06]">
-        <p className="text-[13px] text-white/[0.40]">
-          {referralStats.total_signed_up} invited · {referralStats.total_paid} upgraded
-        </p>
-      </div>
+        {/* Stats */}
+        <div className="pt-1">
+          <p className="text-[13px] text-white/[0.40]">
+            {referralStats.total_signed_up} invited · {referralStats.total_paid} upgraded
+          </p>
+        </div>
 
-      {/* Copy link */}
-      <div className="pt-3 pb-4 space-y-2">
+        {/* Copy link */}
         <div className="flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] px-3.5 py-2.5 min-w-0">
+          <div className="flex-1 flex items-center gap-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] px-3.5 py-2.5 min-w-0 overflow-hidden">
             <Link className="h-4 w-4 text-white/[0.35] shrink-0" strokeWidth={1.8} />
             <p className="text-[13px] text-white/[0.70] font-mono truncate select-all">{refLink}</p>
           </div>
@@ -94,13 +125,13 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
             Copy link
           </Button>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="pt-2 border-t border-white/[0.06]">
-        <button className="text-[12px] text-white/[0.35] hover:text-white/[0.55] transition-colors">
-          View Terms
-        </button>
+        {/* Footer */}
+        <div className="pt-1">
+          <button className="text-[12px] text-white/[0.35] hover:text-white/[0.55] transition-colors">
+            View Terms
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -112,7 +143,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] px-5 pb-6 pt-4">
+        <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] p-0 overflow-hidden">
           <ReferralBody onClose={() => onOpenChange(false)} />
         </DrawerContent>
       </Drawer>
@@ -121,7 +152,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[680px] p-6 bg-[hsl(220,18%,8%)]/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl rounded-3xl overflow-hidden [&>button:last-child]:hidden">
+      <DialogContent className="w-[680px] max-w-[92vw] p-0 bg-[hsl(220,18%,8%)] border border-white/[0.08] rounded-[22px] overflow-hidden [&>button:last-child]:hidden">
         <ReferralBody onClose={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
