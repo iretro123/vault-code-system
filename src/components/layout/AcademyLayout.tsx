@@ -68,19 +68,20 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background relative overflow-hidden">
+      <div className="h-screen flex w-full bg-background relative overflow-hidden">
         {/* Ambient background depth */}
         <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
           <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-[hsl(217,80%,40%/0.12)] blur-[140px]" />
           <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[hsl(200,70%,45%/0.08)] blur-[120px]" />
         </div>
 
-        {/* Desktop sidebar */}
+        {/* Desktop sidebar — contained column, z-10 via sidebar.tsx */}
         <div className="hidden md:block relative z-10">
           <AcademySidebar />
         </div>
 
-        <div className="flex-1 flex flex-col min-w-0 relative z-10">
+        {/* Main content — flex:1, isolated from sidebar */}
+        <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
           {/* Header */}
           <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/70 backdrop-blur-xl">
             <div className="flex h-14 items-center justify-between px-4">
@@ -99,8 +100,8 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
             </div>
           </header>
 
-          {/* Content */}
-          <main className="flex-1 pb-20 md:pb-6">
+          {/* Content — scrollable area */}
+          <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
             {children}
           </main>
 
