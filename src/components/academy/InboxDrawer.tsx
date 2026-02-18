@@ -136,11 +136,13 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      // Ignore clicks on the sidebar inbox trigger button — it handles its own toggle
+      if (target.closest("[data-inbox-trigger]")) return;
+      if (panelRef.current && !panelRef.current.contains(target)) {
         handleClose();
       }
     };
-    // Delay to avoid the triggering click
     const id = setTimeout(() => document.addEventListener("mousedown", onClick), 50);
     return () => { clearTimeout(id); document.removeEventListener("mousedown", onClick); };
   }, [open, handleClose]);

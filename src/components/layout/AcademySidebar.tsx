@@ -308,7 +308,12 @@ export function AcademySidebar() {
 
         {/* Inbox */}
         <button
-          onClick={() => handleInboxChange(!inboxOpen)}
+          data-inbox-trigger
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleInboxChange(!inboxOpen);
+          }}
           className="relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-all bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.10] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
         >
           <Mail className="h-4 w-4 shrink-0" />
