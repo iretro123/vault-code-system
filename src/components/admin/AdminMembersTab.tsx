@@ -196,16 +196,28 @@ export function AdminMembersTab() {
     URL.revokeObjectURL(url);
   };
 
-  const filteredUsers = users.filter((u) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      (u.display_name?.toLowerCase().includes(q)) ||
-      (u.email?.toLowerCase().includes(q)) ||
-      (u.username?.toLowerCase().includes(q)) ||
-      (u.phone_number?.toLowerCase().includes(q))
-    );
-  });
+  const filteredUsers = users
+    .filter((u) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        (u.display_name?.toLowerCase().includes(q)) ||
+        (u.email?.toLowerCase().includes(q)) ||
+        (u.username?.toLowerCase().includes(q)) ||
+        (u.phone_number?.toLowerCase().includes(q))
+      );
+    })
+    .sort((a, b) => {
+      // Pin CEO/Admin/Coach to top
+      const roleOrder = (userId: string) => {
+        const r = userRoles.get(userId);
+        if (r === "CEO") return 0;
+        if (r === "Admin") return 1;
+        if (r === "Coach") return 2;
+        return 3;
+      };
+      return roleOrder(a.user_id) - roleOrder(b.user_id);
+    });
 
   const getInitials = (name: string | null) => {
     if (!name) return "?";
