@@ -69,10 +69,10 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
   return (
     <SidebarProvider>
       <div className="h-screen flex w-full bg-background relative overflow-hidden">
-        {/* Ambient background depth */}
+        {/* Ambient background depth — lightweight, no blur */}
         <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
-          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-[hsl(217,80%,40%/0.12)] blur-[140px]" />
-          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[hsl(200,70%,45%/0.08)] blur-[120px]" />
+          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-[hsl(217,80%,40%/0.08)] opacity-60" />
+          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[hsl(200,70%,45%/0.05)] opacity-50" />
         </div>
 
         {/* Desktop sidebar — contained column, z-10 via sidebar.tsx */}
@@ -83,7 +83,7 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
         {/* Main content — flex:1, isolated from sidebar */}
         <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
           {/* Header */}
-          <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/70 backdrop-blur-xl">
+          <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="hidden md:flex" />

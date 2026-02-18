@@ -278,7 +278,7 @@ export function AcademySidebar() {
         {!collapsed && (
           <button
             onClick={() => setReferralOpen(true)}
-            className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-all hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
+            className="group w-full text-left rounded-2xl bg-white/[0.05] border border-white/[0.08] px-4 py-3.5 transition-colors hover:bg-white/[0.07] hover:border-white/[0.12] active:scale-[0.98]"
           >
             <div className="flex items-center justify-between">
               <div className="min-w-0">
@@ -314,7 +314,7 @@ export function AcademySidebar() {
             e.stopPropagation();
             handleInboxChange(!inboxOpen);
           }}
-          className="relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-all bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.10] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+          className="relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground w-full text-left transition-colors bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-white/[0.10] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
         >
           <Mail className="h-4 w-4 shrink-0" />
           {!collapsed && (
