@@ -26,13 +26,13 @@ export function NextMoveCard() {
 
   return (
     <div
-      className="rounded-2xl p-6 space-y-4"
+      className="rounded-2xl p-6 space-y-4 border border-white/[0.10]"
       style={{
-        background: "rgba(247,249,252,0.94)",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)",
+        background: "rgba(255,255,255,0.07)",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
       }}
     >
-      <h3 className="text-base font-bold" style={{ color: "hsl(220,25%,10%)" }}>
+      <h3 className="text-base font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>
         Your Next Move
       </h3>
 
@@ -44,7 +44,7 @@ export function NextMoveCard() {
         <ArrowRight className="h-4 w-4" />
       </Button>
 
-      <p className="text-xs" style={{ color: "hsl(220,14%,45%)" }}>
+      <p className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
         Serious traders log at least 1 trade per week for feedback.
       </p>
     </div>
