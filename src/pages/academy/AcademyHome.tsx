@@ -5,12 +5,13 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
-import { TraderHUD } from "@/components/academy/TraderHUD";
-import { NextStepCard } from "@/components/academy/NextStepCard";
-import { VaultIntelligenceCard } from "@/components/academy/VaultIntelligenceCard";
-import { ThisWeekCard } from "@/components/academy/ThisWeekCard";
-import { WeeklySnapshotCard } from "@/components/academy/WeeklySnapshotCard";
-import { QuickAccessBar } from "@/components/academy/QuickAccessBar";
+import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
+import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
+import { ScoreboardCard } from "@/components/academy/dashboard/ScoreboardCard";
+import { CoachCard } from "@/components/academy/dashboard/CoachCard";
+import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
+import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
+import { QuickAccessRow } from "@/components/academy/dashboard/QuickAccessRow";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
 
 const AcademyHome = () => {
@@ -21,14 +22,10 @@ const AcademyHome = () => {
 
   const [checkInOpen, setCheckInOpen] = useState(false);
 
-  // Open modal when navigated to #checkin
   useEffect(() => {
-    if (location.hash === "#checkin") {
-      setCheckInOpen(true);
-    }
+    if (location.hash === "#checkin") setCheckInOpen(true);
   }, [location.hash]);
 
-  // Listen for custom event from NextStepCard or other triggers
   useEffect(() => {
     const handler = () => setCheckInOpen(true);
     window.addEventListener("open-checkin", handler);
@@ -46,24 +43,35 @@ const AcademyHome = () => {
     return <Navigate to="/academy/start" replace />;
   }
 
-  const displayName = profile?.display_name || profile?.email?.split("@")[0] || "Trader";
+  const firstName = profile?.display_name?.split(" ")[0] || profile?.email?.split("@")[0] || "Trader";
 
   return (
     <AcademyLayout>
-      {/* HEADER */}
-      <header className="px-4 pt-6 pb-2 md:px-6 md:pt-8">
-        <h1 className="text-[28px] md:text-[32px] font-bold tracking-tight leading-tight text-foreground">
-          Welcome back, {displayName}
-        </h1>
-      </header>
+      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl">
+        {/* 1) Hero Header */}
+        <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
 
-      <div className="px-4 md:px-6 pb-10 space-y-5 max-w-5xl">
-        <TraderHUD />
-        <NextStepCard onCheckIn={() => setCheckInOpen(true)} />
-        <VaultIntelligenceCard onCheckIn={() => setCheckInOpen(true)} />
-        <ThisWeekCard />
-        <WeeklySnapshotCard />
-        <QuickAccessBar />
+        {/* 2 + 3) Gameplan + Scoreboard */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          <div className="lg:col-span-3">
+            <GameplanCard onCheckIn={() => setCheckInOpen(true)} />
+          </div>
+          <div className="lg:col-span-2">
+            <ScoreboardCard />
+          </div>
+        </div>
+
+        {/* 4) Coach Card */}
+        <CoachCard />
+
+        {/* 5 + 6) Live Calls + Toolkit */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <LiveCallsCard />
+          <ToolkitCard />
+        </div>
+
+        {/* 7) Quick Access */}
+        <QuickAccessRow />
       </div>
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />

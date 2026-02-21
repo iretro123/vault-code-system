@@ -1,0 +1,78 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Plus, ChevronDown, PenLine, TrendingUp, Sparkles, ClipboardCheck, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+interface Props {
+  firstName: string;
+  onCheckIn: () => void;
+}
+
+const CREATE_ITEMS = [
+  { icon: TrendingUp, label: "Log Trade", route: "/academy/trade" },
+  { icon: PenLine, label: "Post in Trade Floor", route: "/academy/community" },
+  { icon: Sparkles, label: "Ask Coach", action: "coach" },
+  { icon: ClipboardCheck, label: "Start Daily Check-In", action: "checkin" },
+  { icon: BarChart3, label: "Run Weekly Review", route: "/academy/journal" },
+];
+
+export function HeroHeader({ firstName, onCheckIn }: Props) {
+  const navigate = useNavigate();
+
+  const handleItem = (item: (typeof CREATE_ITEMS)[number]) => {
+    if (item.action === "coach") {
+      window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
+    } else if (item.action === "checkin") {
+      onCheckIn();
+    } else if (item.route) {
+      navigate(item.route);
+    }
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div className="space-y-1.5">
+        <h1 className="text-[28px] md:text-[34px] font-bold tracking-tight leading-tight text-foreground">
+          Welcome back, {firstName} 👋
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-lg">
+          You're one disciplined week away from your next breakthrough.
+        </p>
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="gap-2 h-11 px-5 shrink-0">
+            <Plus className="h-4 w-4" />
+            Create
+            <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-56 bg-popover border border-border z-50"
+        >
+          {CREATE_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <DropdownMenuItem
+                key={item.label}
+                onClick={() => handleItem(item)}
+                className="gap-2.5 py-2.5 cursor-pointer"
+              >
+                <Icon className="h-4 w-4 text-primary/70" />
+                {item.label}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
