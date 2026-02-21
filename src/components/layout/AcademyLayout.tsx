@@ -69,11 +69,23 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
   return (
     <SidebarProvider>
       <div className="h-screen flex w-full bg-background relative overflow-hidden">
-        {/* Ambient background depth — lightweight, no blur */}
-        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
-          <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full bg-[hsl(217,80%,40%/0.08)] opacity-60" />
-          <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[hsl(200,70%,45%/0.05)] opacity-50" />
-        </div>
+        {/* FluxCharts-inspired ambient background — layered radials, vignette */}
+        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true"
+          style={{
+            background: [
+              // Vignette overlay (darkens edges)
+              'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)',
+              // Top-left cyan/blue aura
+              'radial-gradient(ellipse 50% 50% at 15% 10%, rgba(56,189,248,0.10) 0%, transparent 70%)',
+              // Mid-right blue aura
+              'radial-gradient(ellipse 45% 55% at 85% 45%, rgba(59,130,246,0.08) 0%, transparent 70%)',
+              // Bottom-left faint blue
+              'radial-gradient(ellipse 40% 40% at 10% 90%, rgba(56,130,246,0.06) 0%, transparent 70%)',
+              // Base gradient (near-black to deep navy)
+              'linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)',
+            ].join(', '),
+          }}
+        />
 
         {/* Desktop sidebar — contained column, z-10 via sidebar.tsx */}
         <div className="hidden md:block relative z-10">
