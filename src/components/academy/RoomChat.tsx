@@ -97,18 +97,18 @@ function renderTradeCard(body: string, attachments?: any[]) {
   const imageAtt = attachments?.find((a: any) => a.type === "image");
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm mt-1.5 overflow-hidden max-w-[520px]">
+    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-md mt-2 overflow-hidden max-w-[560px] shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-white/[0.12] transition-colors">
       <div className="flex">
         {/* Left — Fields */}
-        <div className="flex-1 p-4 space-y-2">
-          <p className="text-[10px] font-semibold text-primary uppercase tracking-widest">Trade Setup</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+        <div className="flex-1 p-5 space-y-3">
+          <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Setup</p>
+          <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
             {fields.map((f, i) => (
               <div key={i} className={
                 ["thesis", "lesson", "lesson learned", "notes"].includes(f.label.toLowerCase()) ? "col-span-2" : ""
               }>
-                <span className="text-[10px] text-white/30 uppercase tracking-wider">{f.label}</span>
-                <p className="text-[15px] text-white/90">{f.value}</p>
+                <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">{f.label}</span>
+                <p className="text-[15px] text-white/90 font-medium mt-0.5">{f.value}</p>
               </div>
             ))}
           </div>
@@ -116,7 +116,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
 
         {/* Right — Chart image */}
         {imageAtt && (
-          <div className="w-[180px] shrink-0 bg-white/[0.02]">
+          <div className="w-[200px] shrink-0 bg-white/[0.02] border-l border-white/[0.04]">
             <img
               src={(imageAtt as any).url}
               alt="Chart"
@@ -128,14 +128,14 @@ function renderTradeCard(body: string, attachments?: any[]) {
       </div>
 
       {/* Bottom actions */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-white/[0.04]">
-        <button className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]">
+      <div className="flex items-center gap-1 px-5 py-3 border-t border-white/[0.05] bg-white/[0.02]">
+        <button className="text-xs text-white/35 hover:text-white/70 transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.05] font-medium">
           Ask Coach
         </button>
-        <button className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]">
+        <button className="text-xs text-white/35 hover:text-white/70 transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.05] font-medium">
           Log Trade
         </button>
-        <button className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]">
+        <button className="text-xs text-white/35 hover:text-white/70 transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.05] font-medium">
           Request Feedback
         </button>
       </div>
@@ -152,13 +152,13 @@ function renderRecapCard(body: string) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-4 space-y-2 mt-1.5">
-      <p className="text-[10px] font-semibold text-primary uppercase tracking-widest">Trade Post</p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-md p-5 space-y-3 mt-2 shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-white/[0.12] transition-colors max-w-[560px]">
+      <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Post</p>
+      <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
         {fields.map((f, i) => (
           <div key={i} className={f.label === "Lesson" ? "col-span-2" : ""}>
-            <span className="text-[10px] text-white/30 uppercase tracking-wider">{f.label}</span>
-            <p className="text-[15px] text-white/90">{f.value}</p>
+            <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">{f.label}</span>
+            <p className="text-[15px] text-white/90 font-medium mt-0.5">{f.value}</p>
           </div>
         ))}
       </div>
@@ -677,8 +677,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "group relative flex gap-3.5 px-4 py-1 hover:bg-white/[0.015] transition-colors",
-                    showHdr && "mt-4 pt-2",
+                    "group relative flex gap-4 px-5 py-1.5 hover:bg-white/[0.02] transition-colors",
+                    showHdr && "mt-5 pt-3",
                     isEditing && "bg-white/[0.03]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/25",
                     isOfficialAnnouncement && "bg-amber-500/[0.03]"
@@ -706,9 +706,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     {showHdr && (
-                      <div className="flex items-center gap-2 mb-0.5 min-h-[20px]">
+                      <div className="flex items-center gap-2 mb-1 min-h-[22px]">
                         <span className={cn(
-                          "text-[13px] font-semibold",
+                          "text-[15px] font-semibold tracking-[-0.01em]",
                           isCeoOrAdmin ? "text-amber-300" : "text-white"
                         )}>
                           {msg.user_name}
@@ -724,7 +724,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         ) : (
                           <div className="h-4 w-16 rounded bg-white/[0.06] animate-pulse" />
                         )}
-                        <span className="text-[11px] text-white/30">
+                        <span className="text-[11px] text-white/25">
                           {formatDateTime(msg.created_at)}
                         </span>
                       </div>
@@ -805,12 +805,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     ) : (
                       <>
                         {msg.body && msg.body !== "📎 Attachment" && (
-                          <div className="inline-block max-w-[85%]">
+                          <div className="inline-block max-w-[88%]">
                             <div className={cn(
-                              "rounded-xl rounded-tl-sm px-3.5 py-2",
-                              isCeoOrAdmin ? "bg-amber-500/[0.04]" : "bg-white/[0.03]"
+                              "rounded-2xl rounded-tl-md px-4 py-2.5",
+                              isCeoOrAdmin ? "bg-amber-500/[0.04]" : ""
                             )}>
-                              <p className="text-[15px] text-white/90 leading-relaxed whitespace-pre-line">
+                              <p className="text-[16px] text-white/90 leading-[1.65] whitespace-pre-line">
                                 {renderPlainBody(msg.body)}
                               </p>
                               {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
@@ -994,11 +994,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </p>
         </div>
       ) : canPost ? (
-        <div className="pt-3 border-t border-white/[0.06] mt-2 px-4 pb-3">
+        <div className="px-4 pb-4 pt-3">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
-            <div data-chat-composer className="flex items-end gap-2 rounded-xl bg-white/[0.08] border border-white/[0.15] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07)] px-3 py-2 focus-within:border-primary/60 focus-within:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.07),0_0_8px_2px_hsl(217_91%_60%/0.10)] transition-all duration-200">
+            <div data-chat-composer className="flex items-end gap-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] shadow-[0_2px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)] px-4 py-3 focus-within:border-primary/50 focus-within:shadow-[0_2px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05),0_0_12px_2px_hsl(217_91%_60%/0.08)] transition-all duration-200">
               {/* Hidden file input */}
               <input
                 ref={fileInputRef}
@@ -1014,10 +1014,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors"
+                  className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
                   title="Attach file"
                 >
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                  {uploading ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Paperclip className="h-4.5 w-4.5" />}
                 </button>
                 <EmojiPicker onSelect={handleEmojiSelect} />
               </div>
@@ -1032,7 +1032,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 maxLength={1000}
                 disabled={sending}
                 rows={1}
-                className="flex-1 bg-transparent text-sm text-white/[0.92] placeholder:text-white/[0.45] resize-none outline-none min-h-[24px] max-h-[120px] leading-relaxed py-0.5 caret-primary"
+                className="flex-1 bg-transparent text-[15px] text-white/[0.92] placeholder:text-white/[0.35] resize-none outline-none min-h-[28px] max-h-[120px] leading-relaxed py-1 caret-primary"
               />
 
               {/* Send button */}
@@ -1041,16 +1041,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 onClick={() => handleSend()}
                 disabled={(!draft.trim() && !uploading) || sending}
                 className={cn(
-                  "shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150",
+                  "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150",
                   draft.trim() && !sending
-                    ? "bg-primary text-primary-foreground hover:brightness-110 active:scale-95"
-                    : "text-white/[0.35] cursor-not-allowed"
+                    ? "bg-primary text-primary-foreground shadow-[0_2px_8px_hsl(217_91%_60%/0.3)] hover:brightness-110 active:scale-95"
+                    : "text-white/[0.25] cursor-not-allowed"
                 )}
               >
                 {sending ? (
-                  <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  <SendHorizontal className="h-[18px] w-[18px]" />
+                  <SendHorizontal className="h-5 w-5" />
                 )}
               </button>
             </div>

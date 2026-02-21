@@ -27,23 +27,23 @@ const AcademyCommunity = () => {
   return (
     <AcademyLayout>
       <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-        {/* Tab Navigation */}
-        <div className="shrink-0 flex justify-center py-4 px-4 border-b border-white/[0.06]">
-          <div className="inline-flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/[0.06] p-1 backdrop-blur-sm">
+        {/* Tab Navigation — iOS segmented control */}
+        <div className="shrink-0 flex justify-center py-5 px-4">
+          <div className="inline-flex items-center gap-1.5 rounded-2xl bg-white/[0.05] border border-white/[0.08] p-1.5 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)]">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
                 className={cn(
-                  "relative px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                  "relative px-7 py-3 text-base font-semibold rounded-xl transition-all duration-200 tracking-[-0.01em]",
                   activeTab === tab.key
-                    ? "text-foreground bg-white/[0.08] shadow-sm"
-                    : "text-white/40 hover:text-white/60"
+                    ? "text-foreground bg-white/[0.10] shadow-[0_2px_12px_rgba(0,0,0,0.2)]"
+                    : "text-white/35 hover:text-white/55"
                 )}
               >
                 {tab.label}
                 {activeTab === tab.key && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-primary/60 shadow-[0_0_8px_2px_hsl(217_91%_60%/0.25)]" />
+                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-10 h-[2.5px] rounded-full bg-primary shadow-[0_0_12px_3px_hsl(217_91%_60%/0.35)]" />
                 )}
               </button>
             ))}
