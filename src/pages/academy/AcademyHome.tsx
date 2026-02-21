@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,11 +11,29 @@ import { VaultIntelligenceCard } from "@/components/academy/VaultIntelligenceCar
 import { ThisWeekCard } from "@/components/academy/ThisWeekCard";
 import { WeeklySnapshotCard } from "@/components/academy/WeeklySnapshotCard";
 import { QuickAccessBar } from "@/components/academy/QuickAccessBar";
+import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
   const { onboarding } = useAcademyData();
+  const location = useLocation();
   useLoginReminder();
+
+  const [checkInOpen, setCheckInOpen] = useState(false);
+
+  // Open modal when navigated to #checkin
+  useEffect(() => {
+    if (location.hash === "#checkin") {
+      setCheckInOpen(true);
+    }
+  }, [location.hash]);
+
+  // Listen for custom event from NextStepCard or other triggers
+  useEffect(() => {
+    const handler = () => setCheckInOpen(true);
+    window.addEventListener("open-checkin", handler);
+    return () => window.removeEventListener("open-checkin", handler);
+  }, []);
 
   if (loading) return null;
 
@@ -38,24 +58,15 @@ const AcademyHome = () => {
       </header>
 
       <div className="px-4 md:px-6 pb-10 space-y-5 max-w-5xl">
-        {/* A) Status Pills */}
         <TraderHUD />
-
-        {/* B) Next Move — ONE primary CTA */}
-        <NextStepCard />
-
-        {/* C) Coach Feed — max 2 items */}
-        <VaultIntelligenceCard />
-
-        {/* D) This Week Progress */}
+        <NextStepCard onCheckIn={() => setCheckInOpen(true)} />
+        <VaultIntelligenceCard onCheckIn={() => setCheckInOpen(true)} />
         <ThisWeekCard />
-
-        {/* E) Weekly Performance Snapshot */}
         <WeeklySnapshotCard />
-
-        {/* F) Quick Access */}
         <QuickAccessBar />
       </div>
+
+      <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
     </AcademyLayout>
   );
 };
