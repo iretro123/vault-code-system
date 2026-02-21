@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { BookOpen, TrendingUp, Video, ClipboardCheck, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { Progress } from "@/components/ui/progress";
 
 function getWeekRange() {
   const now = new Date();
@@ -18,7 +19,7 @@ function getWeekRange() {
 interface WeekStats {
   lessonsCompleted: number;
   tradesLogged: number;
-  journalEntries: number;
+  liveAttended: number;
   weeklyReviewDone: boolean;
 }
 
@@ -45,12 +46,17 @@ export function ThisWeekCard() {
       supabase.from("journal_entries").select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
         .gte("entry_date", startDate).lte("entry_date", endDate),
-    ]).then(([lessonsRes, recapsRes, journalRes]) => {
+      // Live attendance: count vault_daily_checklist entries this week as proxy
+      supabase.from("vault_daily_checklist").select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("date", startDate).lte("date", endDate),
+    ]).then(([lessonsRes, recapsRes, journalRes, checkinsRes]) => {
+      const weeklyReviewDone = (journalRes.count ?? 0) > 0;
       setStats({
         lessonsCompleted: lessonsRes.count ?? 0,
         tradesLogged: recapsRes.count ?? 0,
-        journalEntries: journalRes.count ?? 0,
-        weeklyReviewDone: (journalRes.count ?? 0) > 0,
+        liveAttended: checkinsRes.count ?? 0,
+        weeklyReviewDone,
       });
       setLoading(false);
     });
@@ -65,15 +71,25 @@ export function ThisWeekCard() {
   }
 
   const items = [
-    { icon: BookOpen, label: "Lessons completed", value: String(stats?.lessonsCompleted ?? 0), color: "rgba(59,130,246,0.14)" },
-    { icon: TrendingUp, label: "Trades logged", value: String(stats?.tradesLogged ?? 0), color: "rgba(34,197,94,0.12)" },
-    { icon: Video, label: "Journal entries", value: String(stats?.journalEntries ?? 0), color: "rgba(168,85,247,0.12)" },
-    { icon: ClipboardCheck, label: "Weekly review", value: stats?.weeklyReviewDone ? "Done" : "Pending", color: "rgba(245,158,11,0.12)" },
+    { icon: BookOpen, label: "Lessons", value: String(stats?.lessonsCompleted ?? 0), done: (stats?.lessonsCompleted ?? 0) > 0, color: "rgba(59,130,246,0.14)" },
+    { icon: TrendingUp, label: "Trades Logged", value: String(stats?.tradesLogged ?? 0), done: (stats?.tradesLogged ?? 0) > 0, color: "rgba(34,197,94,0.12)" },
+    { icon: Video, label: "Live Attendance", value: String(stats?.liveAttended ?? 0), done: (stats?.liveAttended ?? 0) > 0, color: "rgba(168,85,247,0.12)" },
+    { icon: ClipboardCheck, label: "Weekly Review", value: stats?.weeklyReviewDone ? "Done" : "Pending", done: !!stats?.weeklyReviewDone, color: "rgba(245,158,11,0.12)" },
   ];
+
+  const completedCount = items.filter((i) => i.done).length;
+  const progressPercent = Math.round((completedCount / items.length) * 100);
 
   return (
     <div className="vault-glass-card p-6 space-y-4">
-      <h3 className="text-lg font-bold text-[rgba(255,255,255,0.94)]">This Week</h3>
+      <div className="flex items-baseline justify-between">
+        <h3 className="text-lg font-bold text-[rgba(255,255,255,0.94)]">This Week</h3>
+        <span className="text-xs font-medium text-[rgba(255,255,255,0.45)]">
+          {progressPercent}% complete
+        </span>
+      </div>
+
+      <Progress value={progressPercent} className="h-1.5" />
 
       <div className="grid grid-cols-2 gap-3">
         {items.map((s) => {
@@ -83,8 +99,8 @@ export function ThisWeekCard() {
               key={s.label}
               className="rounded-xl px-4 py-3.5"
               style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                background: s.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${s.done ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.07)"}`,
               }}
             >
               <div className="flex items-center gap-2 mb-2">

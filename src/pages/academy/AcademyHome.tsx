@@ -1,15 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
-import { supabase } from "@/integrations/supabase/client";
-import { TraderHUD } from "@/components/academy/TraderHUD";
+import { DashboardStatusLine } from "@/components/academy/DashboardStatusLine";
 import { NextStepCard } from "@/components/academy/NextStepCard";
-import { TodayChecklistCard } from "@/components/academy/TodayChecklistCard";
-import { CoachFeedCard } from "@/components/academy/CoachFeedCard";
+import { VaultIntelligenceCard } from "@/components/academy/VaultIntelligenceCard";
 import { ThisWeekCard } from "@/components/academy/ThisWeekCard";
 import { WeeklySnapshotCard } from "@/components/academy/WeeklySnapshotCard";
 import { QuickAccessBar } from "@/components/academy/QuickAccessBar";
@@ -18,25 +15,6 @@ const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
   const { onboarding } = useAcademyData();
   useLoginReminder();
-
-  const [hasJournaled, setHasJournaled] = useState(true);
-
-  const checkJournal = useCallback(async () => {
-    if (!user) return;
-    const monday = new Date();
-    monday.setDate(monday.getDate() - monday.getDay() + (monday.getDay() === 0 ? -6 : 1));
-    const { data } = await supabase
-      .from("journal_entries")
-      .select("id")
-      .eq("user_id", user.id)
-      .gte("entry_date", monday.toISOString().slice(0, 10))
-      .limit(1);
-    setHasJournaled((data?.length ?? 0) > 0);
-  }, [user]);
-
-  useEffect(() => {
-    checkJournal();
-  }, [checkJournal]);
 
   if (loading) return null;
 
@@ -53,34 +31,28 @@ const AcademyHome = () => {
 
   return (
     <AcademyLayout>
-      <PageHeader
-        title={`Welcome back, ${displayName}`}
-        subtitle="Your trading discipline journey continues"
-      />
+      {/* HEADER */}
+      <header className="px-4 pt-6 pb-4 md:px-6 md:pt-8">
+        <h1 className="text-[28px] md:text-[32px] font-bold tracking-tight leading-tight text-foreground">
+          Welcome back, {displayName}
+        </h1>
+        <DashboardStatusLine />
+      </header>
 
       <div className="px-4 md:px-6 pb-10 space-y-6 max-w-5xl">
-        {/* ROW 1: Quick Stats */}
-        <TraderHUD />
+        {/* PRIMARY CTA */}
+        <NextStepCard />
 
-        {/* MAIN GRID: 2 columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* LEFT COLUMN */}
-          <div className="space-y-5">
-            <NextStepCard />
-            <TodayChecklistCard hasJournaledThisWeek={hasJournaled} />
-          </div>
+        {/* VAULT INTELLIGENCE */}
+        <VaultIntelligenceCard />
 
-          {/* RIGHT COLUMN */}
-          <div className="space-y-5">
-            <CoachFeedCard />
-            <ThisWeekCard />
-          </div>
-        </div>
+        {/* THIS WEEK */}
+        <ThisWeekCard />
 
-        {/* BOTTOM: Weekly Snapshot */}
+        {/* WEEKLY PERFORMANCE SNAPSHOT (collapsed) */}
         <WeeklySnapshotCard />
 
-        {/* BOTTOM: Quick Access */}
+        {/* QUICK ACCESS */}
         <QuickAccessBar />
       </div>
     </AcademyLayout>
