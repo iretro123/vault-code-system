@@ -1,10 +1,9 @@
-import { useEffect, useCallback } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
-import { DashboardStatusLine } from "@/components/academy/DashboardStatusLine";
+import { TraderHUD } from "@/components/academy/TraderHUD";
 import { NextStepCard } from "@/components/academy/NextStepCard";
 import { VaultIntelligenceCard } from "@/components/academy/VaultIntelligenceCard";
 import { ThisWeekCard } from "@/components/academy/ThisWeekCard";
@@ -32,27 +31,29 @@ const AcademyHome = () => {
   return (
     <AcademyLayout>
       {/* HEADER */}
-      <header className="px-4 pt-6 pb-4 md:px-6 md:pt-8">
+      <header className="px-4 pt-6 pb-2 md:px-6 md:pt-8">
         <h1 className="text-[28px] md:text-[32px] font-bold tracking-tight leading-tight text-foreground">
           Welcome back, {displayName}
         </h1>
-        <DashboardStatusLine />
       </header>
 
-      <div className="px-4 md:px-6 pb-10 space-y-6 max-w-5xl">
-        {/* PRIMARY CTA */}
+      <div className="px-4 md:px-6 pb-10 space-y-5 max-w-5xl">
+        {/* A) Status Pills */}
+        <TraderHUD />
+
+        {/* B) Next Move — ONE primary CTA */}
         <NextStepCard />
 
-        {/* VAULT INTELLIGENCE */}
+        {/* C) Coach Feed — max 2 items */}
         <VaultIntelligenceCard />
 
-        {/* THIS WEEK */}
+        {/* D) This Week Progress */}
         <ThisWeekCard />
 
-        {/* WEEKLY PERFORMANCE SNAPSHOT (collapsed) */}
+        {/* E) Weekly Performance Snapshot */}
         <WeeklySnapshotCard />
 
-        {/* QUICK ACCESS */}
+        {/* F) Quick Access */}
         <QuickAccessBar />
       </div>
     </AcademyLayout>
