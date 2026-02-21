@@ -3,57 +3,135 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { getNextStep, type NextStep } from "@/lib/getNextStep";
+import { supabase } from "@/integrations/supabase/client";
+
+interface NextMove {
+  title: string;
+  ctaLabel: string;
+  route: string;
+}
 
 export function NextStepCard() {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const [step, setStep] = useState<NextStep | null>(null);
+  const [move, setMove] = useState<NextMove | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!user) return;
     let cancelled = false;
 
-    getNextStep({
-      userId: user.id,
-      onboardingComplete: !!profile.onboarding_completed,
-      profileComplete: !!(profile as any).profile_completed,
-    }).then((s) => {
+    resolveNextMove(user.id).then((m) => {
       if (!cancelled) {
-        setStep(s);
+        setMove(m);
         setLoading(false);
       }
     });
 
     return () => { cancelled = true; };
-  }, [user, profile]);
+  }, [user]);
 
-  if (loading || !step) {
+  if (loading || !move) {
     return (
-      <div className="vault-glass-card p-6 flex items-center justify-center h-[140px]">
+      <div className="vault-glass-card p-8 flex items-center justify-center h-[140px]">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="vault-glass-card p-6 space-y-4">
-      <h3 className="text-lg font-bold text-[rgba(255,255,255,0.94)]">
-        {step.title}
+    <div className="vault-glass-card p-8 space-y-5">
+      <h3 className="text-xl font-bold text-[rgba(255,255,255,0.94)] leading-tight">
+        {move.title}
       </h3>
-
       <Button
-        onClick={() => navigate(step.cta_route)}
-        className="rounded-xl font-semibold gap-2 h-12 px-7 text-sm"
+        onClick={() => navigate(move.route)}
+        className="rounded-xl font-semibold gap-2 h-12 px-8 text-sm"
       >
-        {step.cta_label}
+        {move.ctaLabel}
         <ArrowRight className="h-4 w-4" />
       </Button>
-
-      <p className="text-xs leading-relaxed text-[rgba(255,255,255,0.50)]">
-        {step.description}
-      </p>
     </div>
   );
+}
+
+async function resolveNextMove(userId: string): Promise<NextMove> {
+  const now = new Date();
+  const todayDate = now.toISOString().slice(0, 10);
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+  const mondayDate = monday.toISOString().slice(0, 10);
+
+  // Run all checks in parallel
+  const [tradesWeekRes, firstLessonRes, checkinRes, journalWeekRes] = await Promise.all([
+    // Trades logged this week
+    supabase
+      .from("academy_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("room_slug", "trade-recaps")
+      .gte("created_at", new Date(monday).toISOString()),
+    // First lesson completion
+    supabase
+      .from("lesson_progress")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("completed", true),
+    // Daily check-in today
+    supabase
+      .from("vault_daily_checklist")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("date", todayDate),
+    // Journal this week (weekly review proxy)
+    supabase
+      .from("journal_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("entry_date", mondayDate),
+  ]);
+
+  const tradesThisWeek = tradesWeekRes.count ?? 0;
+  const lessonsCompleted = firstLessonRes.count ?? 0;
+  const checkedInToday = (checkinRes.count ?? 0) > 0;
+  const journaledThisWeek = (journalWeekRes.count ?? 0) > 0;
+
+  // Priority order per spec
+  if (tradesThisWeek === 0) {
+    return {
+      title: "Log 1 trade to stay on track",
+      ctaLabel: "Log Trade",
+      route: "/academy/trade",
+    };
+  }
+
+  if (lessonsCompleted === 0) {
+    return {
+      title: "Watch Lesson 1 (10 min)",
+      ctaLabel: "Watch",
+      route: "/academy/learn",
+    };
+  }
+
+  if (!checkedInToday) {
+    return {
+      title: "Check in (30s)",
+      ctaLabel: "Check In",
+      route: "/academy/home#checkin",
+    };
+  }
+
+  if (!journaledThisWeek) {
+    return {
+      title: "Weekly Review due",
+      ctaLabel: "Complete Review",
+      route: "/academy/journal",
+    };
+  }
+
+  return {
+    title: "You're on track",
+    ctaLabel: "Go to Trade Floor",
+    route: "/academy/community",
+  };
 }
