@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { RoomChat } from "@/components/academy/RoomChat";
 import { ThreadDrawer } from "@/components/academy/community/ThreadDrawer";
-import { TradeFloorHeader } from "@/components/academy/community/TradeFloorHeader";
-import { SmartReminderBar } from "@/components/academy/community/SmartReminderBar";
-import { TradeFloorRightSidebar } from "@/components/academy/community/TradeFloorRightSidebar";
+import { TradeFloorHero } from "@/components/academy/community/TradeFloorHero";
+import { CockpitPanel } from "@/components/academy/community/CockpitPanel";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -13,35 +12,31 @@ export function CommunityTradeFloor() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Center — Feed */}
-      <div className="flex-1 flex flex-col min-w-0 mx-auto w-full max-w-[1100px]">
-        <TradeFloorHeader />
-        <SmartReminderBar />
-        <div className="flex-1 overflow-hidden flex">
-          {/* Messages */}
-          <div className="flex-1 min-w-0">
-            <RoomChat
-              key="trade-floor"
-              roomSlug="trade-floor"
-              canPost={true}
-              isAnnouncements={false}
-              onThreadOpen={setThreadMessage}
-            />
-          </div>
-
-          {/* Right sidebar — desktop only */}
-          {!isMobile && (
-            <div className="w-[260px] shrink-0 border-l border-white/[0.06] hidden lg:block">
-              <TradeFloorRightSidebar />
-            </div>
-          )}
+      {/* Primary Feed — 70% */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <TradeFloorHero />
+        <div className="flex-1 overflow-hidden">
+          <RoomChat
+            key="trade-floor"
+            roomSlug="trade-floor"
+            canPost={true}
+            isAnnouncements={false}
+            onThreadOpen={setThreadMessage}
+          />
         </div>
       </div>
+
+      {/* Cockpit Panel — 30%, fixed, no scroll */}
+      {!isMobile && (
+        <div className="w-[320px] shrink-0 border-l border-white/[0.05] hidden lg:flex flex-col">
+          <CockpitPanel />
+        </div>
+      )}
 
       {/* Thread Drawer */}
       {threadMessage && (
         <div className={cn(
-          "shrink-0 border-l border-white/[0.06] transition-all duration-150 overflow-hidden",
+          "shrink-0 border-l border-white/[0.05] overflow-hidden",
           isMobile
             ? "absolute inset-y-0 right-0 z-30 w-80 bg-background shadow-2xl"
             : "w-80"
