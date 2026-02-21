@@ -3,6 +3,7 @@ import { RoomChat } from "@/components/academy/RoomChat";
 import { ThreadDrawer } from "@/components/academy/community/ThreadDrawer";
 import { TradeFloorHeader } from "@/components/academy/community/TradeFloorHeader";
 import { SmartReminderBar } from "@/components/academy/community/SmartReminderBar";
+import { TradeFloorRightSidebar } from "@/components/academy/community/TradeFloorRightSidebar";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -13,17 +14,27 @@ export function CommunityTradeFloor() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Center — Feed */}
-      <div className="flex-1 flex flex-col min-w-0 max-w-[1000px] mx-auto w-full">
+      <div className="flex-1 flex flex-col min-w-0 mx-auto w-full max-w-[1100px]">
         <TradeFloorHeader />
         <SmartReminderBar />
-        <div className="flex-1 overflow-hidden">
-          <RoomChat
-            key="trade-floor"
-            roomSlug="trade-floor"
-            canPost={true}
-            isAnnouncements={false}
-            onThreadOpen={setThreadMessage}
-          />
+        <div className="flex-1 overflow-hidden flex">
+          {/* Messages */}
+          <div className="flex-1 min-w-0">
+            <RoomChat
+              key="trade-floor"
+              roomSlug="trade-floor"
+              canPost={true}
+              isAnnouncements={false}
+              onThreadOpen={setThreadMessage}
+            />
+          </div>
+
+          {/* Right sidebar — desktop only */}
+          {!isMobile && (
+            <div className="w-[260px] shrink-0 border-l border-white/[0.06] hidden lg:block">
+              <TradeFloorRightSidebar />
+            </div>
+          )}
         </div>
       </div>
 
