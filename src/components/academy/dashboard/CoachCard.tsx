@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Sparkles, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import rzAvatar from "@/assets/rz-avatar.png";
 
 export function CoachCard() {
-  const navigate = useNavigate();
+  const [imgError, setImgError] = useState(false);
 
   const openCoach = () => {
     window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
@@ -17,17 +18,26 @@ export function CoachCard() {
       }}
     >
       <div className="flex items-start gap-4">
-        <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
-          <Sparkles className="h-6 w-6 text-primary" />
+        <div className="relative shrink-0">
+          {!imgError ? (
+            <img
+              src={rzAvatar}
+              alt="RZ"
+              onError={() => setImgError(true)}
+              className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border border-white/15 shadow-md"
+            />
+          ) : (
+            <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-primary/15 flex items-center justify-center">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+          )}
+          <span className="absolute bottom-0 left-0 h-3 w-3 rounded-full bg-emerald-400 border-2 border-background status-dot-active" />
         </div>
         <div className="space-y-1 min-w-0">
           <h2 className="text-lg font-bold text-foreground">
             Meet Your Personal Trading Coach
           </h2>
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 status-dot-active" />
-            <span className="text-xs font-medium text-emerald-400">Available now</span>
-          </div>
+          <span className="text-xs font-medium text-emerald-400">Available now</span>
         </div>
       </div>
 
