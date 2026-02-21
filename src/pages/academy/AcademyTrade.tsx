@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, PenLine, MessageSquare, BarChart3, Loader2, Check } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -82,6 +83,7 @@ function PostTradeForm() {
   const [entryExit, setEntryExit] = useState("");
   const [risk, setRisk] = useState("");
   const [thesis, setThesis] = useState("");
+  const [requestCoach, setRequestCoach] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -92,35 +94,59 @@ function PostTradeForm() {
     setSending(true);
 
     const userName = profile?.display_name || user.email?.split("@")[0] || "Trader";
-    const body = `**${ticker.toUpperCase()}** — ${setupType}\nEntry/Exit: ${entryExit}\nRisk: ${risk}\nThesis: ${thesis}`;
+    const formattedBody = `**${ticker.toUpperCase()}** — ${setupType}\nEntry/Exit: ${entryExit}\nRisk: ${risk}\nThesis: ${thesis}`;
 
-    // Post to community trade-recaps room
+    // 1) Create journal entry
+    const { error: journalErr } = await supabase.from("journal_entries").insert({
+      user_id: user.id,
+      ticker: ticker.toUpperCase(),
+      what_happened: `${setupType} — Entry/Exit: ${entryExit}, Risk: ${risk}`,
+      biggest_mistake: "none",
+      lesson: thesis,
+      followed_rules: true,
+    });
+
+    if (journalErr) {
+      toast.error("Failed to create journal entry");
+      setSending(false);
+      return;
+    }
+
+    // 2) Post to Community Trade Floor
     const { error: msgError } = await supabase.from("academy_messages").insert({
       room_slug: "trade-recaps",
       user_id: user.id,
       user_name: userName,
-      body,
+      body: formattedBody,
     });
 
-    // Also add to coach queue via coach_tickets
-    await supabase.from("coach_tickets").insert({
-      user_id: user.id,
-      category: "Trade Review",
-      urgency: "standard",
-      question: `Trade Recap: ${ticker.toUpperCase()} — ${setupType}\nEntry/Exit: ${entryExit}\nRisk: ${risk}\nThesis: ${thesis}`,
-    } as any);
-
-    setSending(false);
     if (msgError) {
-      toast.error("Failed to post trade");
+      toast.error("Failed to post to Trade Floor");
+      setSending(false);
       return;
     }
-    toast.success("Trade posted to Community + Coach Queue");
+
+    // 3) Optionally request coach feedback
+    if (requestCoach) {
+      await supabase.from("coach_tickets").insert({
+        user_id: user.id,
+        category: "Trade Review",
+        urgency: "standard",
+        question: `Trade Recap: ${ticker.toUpperCase()} — ${setupType}\nEntry/Exit: ${entryExit}\nRisk: ${risk}\nThesis: ${thesis}`,
+      });
+    }
+
+    setSending(false);
+    toast.success(
+      requestCoach
+        ? "Trade posted to Trade Floor, journaled, and sent to Coach"
+        : "Trade posted to Trade Floor and journaled"
+    );
     setSent(true);
   };
 
   const handleReset = () => {
-    setTicker(""); setSetupType(""); setEntryExit(""); setRisk(""); setThesis(""); setSent(false);
+    setTicker(""); setSetupType(""); setEntryExit(""); setRisk(""); setThesis(""); setRequestCoach(false); setSent(false);
   };
 
   if (sent) {
@@ -131,7 +157,7 @@ function PostTradeForm() {
         </div>
         <div>
           <h3 className="text-sm font-semibold text-foreground">Trade Posted</h3>
-          <p className="text-xs text-muted-foreground mt-1">Visible in Community &amp; sent to Coach for review.</p>
+          <p className="text-xs text-muted-foreground mt-1">Logged in your journal and visible on Trade Floor.{requestCoach ? " Sent to Coach for review." : ""}</p>
         </div>
         <Button variant="outline" size="sm" onClick={handleReset}>Post Another</Button>
       </Card>
@@ -164,6 +190,10 @@ function PostTradeForm() {
       <div className="space-y-1.5">
         <Label className="text-xs">Thesis (1 sentence)</Label>
         <Textarea placeholder="Why did you take this trade?" value={thesis} onChange={(e) => setThesis(e.target.value)} rows={2} />
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <Checkbox id="coach-feedback" checked={requestCoach} onCheckedChange={(v) => setRequestCoach(v === true)} />
+        <Label htmlFor="coach-feedback" className="text-xs text-muted-foreground cursor-pointer">Request Coach Feedback</Label>
       </div>
       <Button onClick={handleSubmit} disabled={!canSubmit || sending} className="w-full gap-2">
         {sending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
