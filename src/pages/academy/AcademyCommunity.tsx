@@ -48,7 +48,7 @@ const AcademyCommunity = () => {
             </TabsTrigger>
             <TabsTrigger value="chat" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
               <MessageSquare className="h-3.5 w-3.5" />
-              Trading Chat
+              Trade Floor
             </TabsTrigger>
             <TabsTrigger value="wins" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
               <Trophy className="h-3.5 w-3.5" />

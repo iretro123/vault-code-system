@@ -4,7 +4,7 @@ import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AskCoachButton } from "@/components/academy/AskCoachButton";
+import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
@@ -106,7 +106,7 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
           </main>
 
           <MobileNav />
-          <AskCoachButton />
+          <CoachDrawer />
         </div>
       </div>
     </SidebarProvider>

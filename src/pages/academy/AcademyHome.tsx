@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { OnboardingProgressCard } from "@/components/academy/OnboardingProgressCard";
 import { ClaimRoleBanner } from "@/components/academy/ClaimRoleBanner";
+import { TraderHUD } from "@/components/academy/TraderHUD";
+import { WeeklyPerformanceCard } from "@/components/academy/WeeklyPerformanceCard";
 
 const TASK_ROUTES: Record<string, string> = {
   "Claim Role": "/academy/start",
@@ -182,6 +184,8 @@ const AcademyHome = () => {
       )}
 
       <div className="px-4 md:px-6 pb-6 space-y-6">
+        {/* Trader HUD */}
+        <TraderHUD />
         {/* How to use card — only shown before profile is completed */}
         {!(profile && (profile as any).profile_completed) && (
           <Card className="max-w-2xl p-4 space-y-3">
@@ -281,6 +285,9 @@ const AcademyHome = () => {
             )}
           </div>
         )}
+
+        {/* Weekly Performance Report */}
+        <WeeklyPerformanceCard />
 
         {/* Main CTA */}
         <div className="max-w-lg">
