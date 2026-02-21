@@ -498,9 +498,21 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
         )}
 
         {messages.length === 0 && (
-          <p className="text-sm text-white/40 text-center py-16">
-            No messages yet. Be the first to say something.
-          </p>
+          <div className="text-center py-16 max-w-xs mx-auto space-y-2">
+            {roomSlug === "options-lounge" ? (
+              <>
+                <p className="text-sm font-medium text-white/60">No posts yet.</p>
+                <p className="text-xs text-white/30">Serious traders post 1 trade/week. Use Trade → Post a Trade.</p>
+              </>
+            ) : roomSlug === "trade-recaps" ? (
+              <>
+                <p className="text-sm font-medium text-white/60">Proof is earned.</p>
+                <p className="text-xs text-white/30">Post screenshot + ticker + entry/exit + risk.</p>
+              </>
+            ) : (
+              <p className="text-sm text-white/40">No messages yet.</p>
+            )}
+          </div>
         )}
 
         {messages.filter((msg) => {
@@ -590,15 +602,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                     isOfficialAnnouncement && "bg-amber-500/[0.03]"
                   )}
                 >
-                  {/* Avatar column */}
-                  <div className="w-8 shrink-0">
+                  {/* Avatar column — fixed dimensions prevent layout shift */}
+                  <div className="w-8 h-8 shrink-0">
                     {showHdr ? (
-                      <ChatAvatar
-                        avatarUrl={msgProfile?.avatar_url}
-                        userName={msg.user_name}
-                      />
+                      msgProfile ? (
+                        <ChatAvatar
+                          avatarUrl={msgProfile.avatar_url}
+                          userName={msg.user_name}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-white/[0.06] animate-pulse" />
+                      )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-white/30 select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-8 text-[10px] text-white/30 select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
@@ -607,18 +623,24 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     {showHdr && (
-                      <div className="flex items-center gap-2 mb-0.5">
+                      <div className="flex items-center gap-2 mb-0.5 min-h-[20px]">
                         <span className={cn(
                           "text-[13px] font-semibold",
                           isCeoOrAdmin ? "text-amber-300" : "text-white"
                         )}>
                           {msg.user_name}
                         </span>
-                        <AcademyRoleBadge roleName={msgAcademyRole} />
-                        <ExperienceBadge role={getRoleBadgeKey(
-                          (msg as any).user_role,
-                          msgProfile?.role_level
-                        )} />
+                        {msgProfile ? (
+                          <>
+                            <AcademyRoleBadge roleName={msgAcademyRole} />
+                            <ExperienceBadge role={getRoleBadgeKey(
+                              (msg as any).user_role,
+                              msgProfile?.role_level
+                            )} />
+                          </>
+                        ) : (
+                          <div className="h-4 w-16 rounded bg-white/[0.06] animate-pulse" />
+                        )}
                         <span className="text-[11px] text-white/30">
                           {formatDateTime(msg.created_at)}
                         </span>

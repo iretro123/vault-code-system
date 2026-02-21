@@ -1,9 +1,41 @@
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FolderOpen, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Calculator, FileText, ClipboardList, Layers, Download } from "lucide-react";
+
+const RESOURCES = [
+  {
+    title: "Risk Calculator",
+    description: "Position sizing based on account balance, stop loss, and risk tolerance.",
+    icon: Calculator,
+    route: "/risk-calculator",
+  },
+  {
+    title: "Templates",
+    description: "Pre-trade checklists, journal templates, and daily review forms.",
+    icon: FileText,
+    route: null,
+  },
+  {
+    title: "Market Prep Checklist",
+    description: "Step-by-step routine to run before the market opens.",
+    icon: ClipboardList,
+    route: null,
+  },
+  {
+    title: "Setup Library",
+    description: "Reference library of documented setups with entry/exit criteria.",
+    icon: Layers,
+    route: null,
+  },
+  {
+    title: "Downloads",
+    description: "PDF guides, worksheets, and quick-reference cards.",
+    icon: Download,
+    route: null,
+  },
+];
 
 const AcademyResources = () => {
   const navigate = useNavigate();
@@ -12,22 +44,33 @@ const AcademyResources = () => {
     <AcademyLayout>
       <PageHeader
         title="Resources"
-        subtitle="Guides, templates, and reference material"
+        subtitle="Trader toolkit — guides, templates, and reference material"
       />
       <div className="px-4 md:px-6 pb-6">
-        <Card className="vault-card p-10 flex flex-col items-center text-center max-w-md mx-auto">
-          <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mb-5">
-            <FolderOpen className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h3 className="text-base font-semibold text-foreground mb-2">Resources are on the way</h3>
-          <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-            Downloadable checklists, rule templates, and trading guides will live here. Start with the modules in the meantime.
-          </p>
-          <Button variant="outline" onClick={() => navigate("/academy/learn")} className="gap-2">
-            <BookOpen className="h-3.5 w-3.5" />
-            Explore Modules
-          </Button>
-        </Card>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
+          {RESOURCES.map((r) => {
+            const Icon = r.icon;
+            const isActive = !!r.route;
+            return (
+              <Card
+                key={r.title}
+                className={`vault-card p-5 flex flex-col gap-3 ${isActive ? "cursor-pointer hover:border-primary/30 transition-colors" : "opacity-60"}`}
+                onClick={() => isActive && navigate(r.route!)}
+              >
+                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <Icon className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">{r.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{r.description}</p>
+                </div>
+                {!isActive && (
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium">Coming Soon</span>
+                )}
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </AcademyLayout>
   );
