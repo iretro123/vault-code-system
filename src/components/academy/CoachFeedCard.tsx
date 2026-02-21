@@ -118,7 +118,7 @@ async function buildFeed(userId: string): Promise<FeedItem[]> {
   const mondayDate = monday.toISOString().slice(0, 10);
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-  const [stuckSignals, journalThisWeekRes, checkinTodayRes, liveRes, coachRepliesRes] = await Promise.all([
+  const [stuckSignals, journalThisWeekRes, checkinTodayRes, liveRes, coachRepliesRes, toolkitRes] = await Promise.all([
     detectStuck(userId),
     supabase
       .from("journal_entries")
@@ -144,6 +144,13 @@ async function buildFeed(userId: string): Promise<FeedItem[]> {
       .gte("created_at", twoDaysAgoDate)
       .order("created_at", { ascending: false })
       .limit(3),
+    supabase
+      .from("inbox_items")
+      .select("id, title")
+      .eq("type", "toolkit_activity")
+      .gte("created_at", twoDaysAgoDate)
+      .order("created_at", { ascending: false })
+      .limit(1),
   ]);
 
   // Priority 1: Stuck alerts
@@ -221,6 +228,19 @@ async function buildFeed(userId: string): Promise<FeedItem[]> {
       cta: "Open",
       priority: 6,
       iconBg: "rgba(59,130,246,0.14)",
+    });
+  }
+
+  // Priority 6: New toolkit items
+  if (toolkitRes.data && toolkitRes.data.length > 0) {
+    feed.push({
+      icon: Wrench,
+      label: "New resource added",
+      desc: "A new item was added to the Toolkit. Check it out.",
+      action: "/academy/resources",
+      cta: "Open",
+      priority: 7,
+      iconBg: "rgba(168,85,247,0.14)",
     });
   }
 

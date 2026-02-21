@@ -1207,6 +1207,51 @@ export type Database = {
         }
         Relationships: []
       }
+      toolkit_items: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          external_url: string | null
+          file_url: string | null
+          icon: string
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by: string
+          description?: string
+          external_url?: string | null
+          file_url?: string | null
+          icon?: string
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          description?: string
+          external_url?: string | null
+          file_url?: string | null
+          icon?: string
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       trade_entries: {
         Row: {
           created_at: string
