@@ -78,6 +78,71 @@ function isRecapPost(body: string) {
   return body.startsWith("**📋 Trade Post**") || body.startsWith("**📋 Trade Recap**");
 }
 
+function isTradeFormatPost(body: string) {
+  const lower = body.toLowerCase();
+  return (
+    (lower.includes("ticker:") || lower.includes("**ticker:**")) &&
+    (lower.includes("risk:") || lower.includes("**risk:**"))
+  );
+}
+
+function renderTradeCard(body: string, attachments?: any[]) {
+  const lines = body.split("\n").filter(Boolean);
+  const fields: { label: string; value: string }[] = [];
+  for (const line of lines) {
+    const match = line.match(/^\*?\*?(.+?):\*?\*?\s*(.+)$/);
+    if (match) fields.push({ label: match[1].replace(/\*/g, "").trim(), value: match[2].trim() });
+  }
+
+  const imageAtt = attachments?.find((a: any) => a.type === "image");
+
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm mt-1.5 overflow-hidden max-w-[520px]">
+      <div className="flex">
+        {/* Left — Fields */}
+        <div className="flex-1 p-4 space-y-2">
+          <p className="text-[10px] font-semibold text-primary uppercase tracking-widest">Trade Setup</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            {fields.map((f, i) => (
+              <div key={i} className={
+                ["thesis", "lesson", "lesson learned", "notes"].includes(f.label.toLowerCase()) ? "col-span-2" : ""
+              }>
+                <span className="text-[10px] text-white/30 uppercase tracking-wider">{f.label}</span>
+                <p className="text-[15px] text-white/90">{f.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right — Chart image */}
+        {imageAtt && (
+          <div className="w-[180px] shrink-0 bg-white/[0.02]">
+            <img
+              src={(imageAtt as any).url}
+              alt="Chart"
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Bottom actions */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-white/[0.04]">
+        <button className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]">
+          Ask Coach
+        </button>
+        <button className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]">
+          Log Trade
+        </button>
+        <button className="text-[11px] text-white/30 hover:text-white/60 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.04]">
+          Request Feedback
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function renderRecapCard(body: string) {
   const lines = body.split("\n").filter(Boolean);
   const fields: { label: string; value: string }[] = [];
@@ -87,13 +152,13 @@ function renderRecapCard(body: string) {
   }
 
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-3 space-y-1.5 mt-1">
-      <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">📋 Trade Post</p>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-4 space-y-2 mt-1.5">
+      <p className="text-[10px] font-semibold text-primary uppercase tracking-widest">Trade Post</p>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
         {fields.map((f, i) => (
           <div key={i} className={f.label === "Lesson" ? "col-span-2" : ""}>
-            <span className="text-[10px] text-white/40 uppercase tracking-wider">{f.label}</span>
-            <p className="text-sm text-white/90">{f.value}</p>
+            <span className="text-[10px] text-white/30 uppercase tracking-wider">{f.label}</span>
+            <p className="text-[15px] text-white/90">{f.value}</p>
           </div>
         ))}
       </div>
@@ -612,26 +677,27 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "group relative flex gap-3 px-3 py-0.5 hover:bg-white/[0.02] transition-colors",
-                    showHdr && "mt-3 pt-1.5",
+                    "group relative flex gap-3.5 px-4 py-1 hover:bg-white/[0.015] transition-colors",
+                    showHdr && "mt-4 pt-2",
                     isEditing && "bg-white/[0.03]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/25",
                     isOfficialAnnouncement && "bg-amber-500/[0.03]"
                   )}
                 >
-                  {/* Avatar column — fixed dimensions prevent layout shift */}
-                  <div className="w-8 h-8 shrink-0">
+                  {/* Avatar column — 40px for premium feel */}
+                  <div className="w-10 h-10 shrink-0">
                     {showHdr ? (
                       msgProfile ? (
                         <ChatAvatar
                           avatarUrl={msgProfile.avatar_url}
                           userName={msg.user_name}
+                          size="h-10 w-10"
                         />
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-white/[0.06] animate-pulse" />
+                        <div className="w-10 h-10 rounded-full bg-white/[0.06] animate-pulse" />
                       )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-8 text-[10px] text-white/30 select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-10 text-[10px] text-white/20 select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
@@ -720,15 +786,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       </div>
                     ) : isRecap ? (
                       renderRecapCard(msg.body)
+                    ) : !msg.is_deleted && isTradeFormatPost(msg.body) ? (
+                      renderTradeCard(msg.body, msg.attachments)
                     ) : isAnnouncements ? (
                       <div className="max-w-[90%] mt-1">
-                        <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-white/[0.03] overflow-hidden">
+                        <div className="flex items-start gap-0 rounded-xl border border-amber-500/15 bg-white/[0.03] overflow-hidden">
                           <div className="w-1 self-stretch bg-amber-500/60 shrink-0" />
                           <div className="px-3 py-2 flex-1">
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
                               <Megaphone className="h-3 w-3" /> Official
                             </span>
-                            <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                            <p className="text-[15px] text-white/90 leading-relaxed whitespace-pre-line">
                               {renderPlainBody(msg.body)}
                             </p>
                           </div>
@@ -739,14 +807,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         {msg.body && msg.body !== "📎 Attachment" && (
                           <div className="inline-block max-w-[85%]">
                             <div className={cn(
-                              "rounded-lg rounded-tl-sm px-3 py-1.5",
-                              isCeoOrAdmin ? "bg-amber-500/[0.04]" : "bg-white/[0.04]"
+                              "rounded-xl rounded-tl-sm px-3.5 py-2",
+                              isCeoOrAdmin ? "bg-amber-500/[0.04]" : "bg-white/[0.03]"
                             )}>
-                              <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                              <p className="text-[15px] text-white/90 leading-relaxed whitespace-pre-line">
                                 {renderPlainBody(msg.body)}
                               </p>
                               {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
-                                <span className="text-[10px] text-white/25 mt-0.5 block">(edited)</span>
+                                <span className="text-[10px] text-white/20 mt-0.5 block">(edited)</span>
                               )}
                             </div>
                           </div>
@@ -926,7 +994,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </p>
         </div>
       ) : canPost ? (
-        <div className="pt-3 border-t border-white/[0.08] mt-2 px-3">
+        <div className="pt-3 border-t border-white/[0.06] mt-2 px-4 pb-3">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
