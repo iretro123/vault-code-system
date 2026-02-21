@@ -13,6 +13,7 @@ import {
   Users,
   TrendingUp,
   Sparkles,
+  Wrench,
 } from "lucide-react";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
@@ -40,6 +41,7 @@ const coreNav = [
   { icon: TrendingUp, label: "Trade", path: "/academy/trade" },
   { icon: Users, label: "Community", path: "/academy/community" },
   { icon: Radio, label: "Live", path: "/academy/live", isLive: true },
+  { icon: Wrench, label: "Toolkit", path: "/academy/resources" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
   { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];
