@@ -44,11 +44,11 @@ export function CoachCard() {
 
       {/* Founder message */}
       <p className="text-sm text-muted-foreground leading-relaxed">
-        I'm RZ, founder of Vault Trading Academy. Vault was built for traders who are done gambling and ready to operate like professionals. We focus on risk control, execution discipline, and structured growth. If you follow the system, track your trades, and stay accountable, results compound. Just process and consistency.
+        I'm RZ, founder of Vault Trading Academy, and I'm here to help you operate like a professional trader. Whether you're learning the foundations or refining your edge, I'll guide you through building disciplined risk systems, structured trade execution, and consistent performance habits that compound over time.
       </p>
 
       <p className="text-xs text-muted-foreground/70 leading-relaxed">
-        We're here to help — ask a mentor for feedback or use Instant AI for a fast answer.
+        We're here to help — ask for feedback or get an instant AI answer anytime.
       </p>
 
       {/* CTAs */}
