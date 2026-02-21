@@ -12,11 +12,12 @@ export function CoachCard() {
 
   return (
     <div
-      className="vault-glass-card p-6 md:p-8 space-y-5"
+      className="vault-glass-card p-6 md:p-8 space-y-6 rounded-2xl"
       style={{
-        background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(255,255,255,0.06) 100%)",
+        background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(255,255,255,0.04) 100%)",
       }}
     >
+      {/* Header row */}
       <div className="flex items-start gap-4">
         <div className="relative shrink-0">
           {!imgError ? (
@@ -27,8 +28,8 @@ export function CoachCard() {
               className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover border border-white/15 shadow-md"
             />
           ) : (
-            <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-primary/15 flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-primary" />
+            <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-primary/15 flex items-center justify-center text-sm font-bold text-primary">
+              RZ
             </div>
           )}
           <span className="absolute bottom-0 left-0 h-3 w-3 rounded-full bg-emerald-400 border-2 border-background status-dot-active" />
@@ -41,10 +42,16 @@ export function CoachCard() {
         </div>
       </div>
 
+      {/* Founder message */}
       <p className="text-sm text-muted-foreground leading-relaxed">
-        Fix the leaks in your trading. Get personalized feedback from a mentor or instant answers from our AI trading assistant.
+        I'm RZ, founder of Vault Trading Academy. Vault was built for traders who are done gambling and ready to operate like professionals. We focus on risk control, execution discipline, and structured growth. If you follow the system, track your trades, and stay accountable, results compound. Just process and consistency.
       </p>
 
+      <p className="text-xs text-muted-foreground/70 leading-relaxed">
+        We're here to help — ask a mentor for feedback or use Instant AI for a fast answer.
+      </p>
+
+      {/* CTAs */}
       <div className="flex flex-col sm:flex-row gap-2.5">
         <Button onClick={openCoach} className="gap-2 h-11 flex-1">
           <Sparkles className="h-4 w-4" />
