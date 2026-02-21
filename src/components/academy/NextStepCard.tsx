@@ -1,56 +1,58 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { getNextStep, type NextStep } from "@/lib/getNextStep";
 
-interface Props {
-  hasJournaledThisWeek: boolean;
-}
-
-export function NextStepCard({ hasJournaledThisWeek }: Props) {
+export function NextStepCard() {
   const navigate = useNavigate();
-  const { onboarding } = useAcademyData();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+  const [step, setStep] = useState<NextStep | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  let label = "Continue Learning";
-  let route = "/academy/learn";
-  let hint = "Stay consistent. One lesson per week builds mastery.";
+  useEffect(() => {
+    if (!user || !profile) return;
+    let cancelled = false;
 
-  if (onboarding && !onboarding.claimed_role) {
-    label = "Continue Setup";
-    route = "/academy/start";
-    hint = "Complete your profile to unlock the full academy.";
-  } else if (onboarding && !onboarding.first_lesson_completed) {
-    label = "Watch Lesson 1";
-    route = "/academy/learn";
-    hint = "Start with the fundamentals. 15 minutes changes everything.";
-  } else if (!hasJournaledThisWeek) {
-    label = "Post Your First Trade";
-    route = "/academy/trade";
-    hint = "Serious traders log at least 1 trade per week for feedback.";
-  } else if (!(profile as any)?.profile_completed) {
-    label = "Complete Your Profile";
-    route = "/academy/settings";
-    hint = "A complete profile helps your coach give better feedback.";
+    getNextStep({
+      userId: user.id,
+      onboardingComplete: !!profile.onboarding_completed,
+      profileComplete: !!(profile as any).profile_completed,
+    }).then((s) => {
+      if (!cancelled) {
+        setStep(s);
+        setLoading(false);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [user, profile]);
+
+  if (loading || !step) {
+    return (
+      <div className="vault-glass-card p-6 flex items-center justify-center h-[140px]">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
     <div className="vault-glass-card p-6 space-y-4">
       <h3 className="text-lg font-bold text-[rgba(255,255,255,0.94)]">
-        Your Next Step
+        {step.title}
       </h3>
 
       <Button
-        onClick={() => navigate(route)}
+        onClick={() => navigate(step.cta_route)}
         className="rounded-xl font-semibold gap-2 h-12 px-7 text-sm"
       >
-        {label}
+        {step.cta_label}
         <ArrowRight className="h-4 w-4" />
       </Button>
 
       <p className="text-xs leading-relaxed text-[rgba(255,255,255,0.50)]">
-        {hint}
+        {step.description}
       </p>
     </div>
   );

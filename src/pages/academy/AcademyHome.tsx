@@ -66,7 +66,7 @@ const AcademyHome = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* LEFT COLUMN */}
           <div className="space-y-5">
-            <NextStepCard hasJournaledThisWeek={hasJournaled} />
+            <NextStepCard />
             <TodayChecklistCard hasJournaledThisWeek={hasJournaled} />
           </div>
 
