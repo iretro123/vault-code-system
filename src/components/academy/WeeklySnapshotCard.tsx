@@ -1,4 +1,7 @@
-import { BarChart3 } from "lucide-react";
+import { useState } from "react";
+import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const DATA = {
   trades: 7,
@@ -8,31 +11,57 @@ const DATA = {
 };
 
 export function WeeklySnapshotCard() {
-  return (
-    <div className="vault-glass-card p-6 space-y-5">
-      <div className="flex items-center gap-2.5">
-        <BarChart3 className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-bold text-[rgba(255,255,255,0.94)]">
-          Weekly Performance Snapshot
-        </h3>
-      </div>
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <MetricBlock label="Trades" value={String(DATA.trades)} />
-        <MetricBlock label="Compliance" value={`${DATA.compliance}%`} />
-        <div className="col-span-2 sm:col-span-1">
-          <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-[rgba(255,255,255,0.45)]">
-            Biggest Mistake
-          </p>
-          <p className="text-sm text-[rgba(255,255,255,0.70)] mt-1 leading-snug line-clamp-2">{DATA.mistake}</p>
+  return (
+    <div className="vault-glass-card">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between p-6 text-left"
+      >
+        <div className="flex items-center gap-2.5">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-bold text-[rgba(255,255,255,0.94)]">
+            Weekly Performance Snapshot
+          </h3>
         </div>
-        <div className="col-span-2 sm:col-span-1">
-          <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-[rgba(255,255,255,0.45)]">
-            Focus Next Week
-          </p>
-          <p className="text-sm font-semibold text-[rgba(255,255,255,0.92)] mt-1 leading-snug">{DATA.focus}</p>
+        {open ? (
+          <ChevronUp className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-[rgba(255,255,255,0.45)]" />
+        )}
+      </button>
+
+      {open && (
+        <div className="px-6 pb-6 space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <MetricBlock label="Trades" value={String(DATA.trades)} />
+            <MetricBlock label="Compliance" value={`${DATA.compliance}%`} />
+            <div className="col-span-2 sm:col-span-1">
+              <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-[rgba(255,255,255,0.45)]">
+                Biggest Mistake
+              </p>
+              <p className="text-sm text-[rgba(255,255,255,0.70)] mt-1 leading-snug line-clamp-2">{DATA.mistake}</p>
+            </div>
+            <div className="col-span-2 sm:col-span-1">
+              <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-[rgba(255,255,255,0.45)]">
+                Focus Next Week
+              </p>
+              <p className="text-sm font-semibold text-[rgba(255,255,255,0.92)] mt-1 leading-snug">{DATA.focus}</p>
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs font-semibold text-primary hover:text-primary"
+            onClick={() => navigate("/academy/progress")}
+          >
+            View Full Review
+          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
