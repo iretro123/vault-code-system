@@ -7,11 +7,12 @@ import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { supabase } from "@/integrations/supabase/client";
 import { TraderHUD } from "@/components/academy/TraderHUD";
-import { NextMoveCard } from "@/components/academy/NextMoveCard";
-import { DailyCheckInCard } from "@/components/academy/DailyCheckInCard";
-import { PathMilestonesCard } from "@/components/academy/PathMilestonesCard";
-import { AccountabilityNudge } from "@/components/academy/AccountabilityNudge";
-import { WeeklyPerformanceCard } from "@/components/academy/WeeklyPerformanceCard";
+import { NextStepCard } from "@/components/academy/NextStepCard";
+import { TodayChecklistCard } from "@/components/academy/TodayChecklistCard";
+import { CoachFeedCard } from "@/components/academy/CoachFeedCard";
+import { ThisWeekCard } from "@/components/academy/ThisWeekCard";
+import { WeeklySnapshotCard } from "@/components/academy/WeeklySnapshotCard";
+import { QuickAccessBar } from "@/components/academy/QuickAccessBar";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
@@ -57,24 +58,30 @@ const AcademyHome = () => {
         subtitle="Your trading discipline journey continues"
       />
 
-      <div className="px-4 md:px-6 pb-8 space-y-6 max-w-3xl">
-        {/* ZONE 1: Status Strip */}
+      <div className="px-4 md:px-6 pb-10 space-y-6 max-w-5xl">
+        {/* ROW 1: Quick Stats */}
         <TraderHUD />
 
-        {/* ZONE 2: Your Next Move */}
-        <NextMoveCard />
+        {/* MAIN GRID: 2 columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* LEFT COLUMN */}
+          <div className="space-y-5">
+            <NextStepCard hasJournaledThisWeek={hasJournaled} />
+            <TodayChecklistCard hasJournaledThisWeek={hasJournaled} />
+          </div>
 
-        {/* ZONE 3: Daily Check-In */}
-        <DailyCheckInCard />
+          {/* RIGHT COLUMN */}
+          <div className="space-y-5">
+            <CoachFeedCard />
+            <ThisWeekCard />
+          </div>
+        </div>
 
-        {/* ZONE 4: Your Path */}
-        <PathMilestonesCard />
+        {/* BOTTOM: Weekly Snapshot */}
+        <WeeklySnapshotCard />
 
-        {/* ZONE 5: Accountability Nudge */}
-        <AccountabilityNudge hasJournaledThisWeek={hasJournaled} />
-
-        {/* Weekly Performance Report */}
-        <WeeklyPerformanceCard />
+        {/* BOTTOM: Quick Access */}
+        <QuickAccessBar />
       </div>
     </AcademyLayout>
   );
