@@ -77,6 +77,21 @@ export function CoachDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("coach");
 
+  // Listen for sidebar toggle event
+  useEffect(() => {
+    const handler = () => setOpen((prev) => !prev);
+    window.addEventListener("toggle-coach-drawer", handler);
+    return () => window.removeEventListener("toggle-coach-drawer", handler);
+  }, []);
+
+  // ESC to close
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open]);
+
   // Coach state
   const [coachView, setCoachView] = useState<CoachView>("new");
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
@@ -222,19 +237,24 @@ export function CoachDrawer() {
 
   return (
     <>
-      {/* Right-edge pill trigger */}
-      <button
-        onClick={() => { setOpen(true); setTab("coach"); setCoachView("new"); }}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-[55] bg-primary text-primary-foreground px-2 py-3 rounded-l-lg text-xs font-semibold shadow-lg hover:px-2.5 transition-all"
-        style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+      {/* Right-side drawer — always mounted, toggled via transform */}
+      <div
+        className="fixed top-0 right-0 z-[60] h-full flex"
+        style={{
+          pointerEvents: open ? "auto" : "none",
+        }}
       >
-        Coach
-      </button>
-
-      {open && (
-        <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
-          <div className="absolute inset-0 bg-black/65 backdrop-blur-[6px]" onClick={() => setOpen(false)} />
-          <div className="relative w-[min(760px,calc(100vw-48px))] rounded-t-2xl md:rounded-xl border border-white/[0.08] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.04)] animate-in slide-in-from-bottom-4 duration-150 h-[95vh] md:h-auto md:max-h-[80vh] flex flex-col overflow-hidden">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 transition-opacity duration-100"
+          style={{ opacity: open ? 1 : 0 }}
+          onClick={() => setOpen(false)}
+        />
+        {/* Panel */}
+        <div
+          className="relative ml-auto h-full w-[min(480px,100vw)] border-l border-white/[0.08] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[-8px_0_30px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden transition-transform duration-100 ease-out"
+          style={{ transform: open ? "translateX(0)" : "translateX(100%)" }}
+        >
 
             {/* Two-tab header */}
             <div className="flex shrink-0 sticky top-0 z-10 rounded-t-2xl md:rounded-t-xl bg-white/[0.03]">
@@ -529,7 +549,6 @@ export function CoachDrawer() {
             </div>
           </div>
         </div>
-      )}
-    </>
-  );
-}
+      </>
+    );
+  }

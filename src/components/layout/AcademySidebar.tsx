@@ -12,6 +12,7 @@ import {
   Mail,
   Users,
   TrendingUp,
+  Sparkles,
 } from "lucide-react";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
@@ -40,6 +41,7 @@ const coreNav = [
   { icon: Users, label: "Community", path: "/academy/community" },
   { icon: Radio, label: "Live", path: "/academy/live", isLive: true },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
+  { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];
 
 export function AcademySidebar() {
@@ -132,7 +134,26 @@ export function AcademySidebar() {
                 </SidebarMenuItem>
               )}
 
-              {coreNav.map(({ icon: Icon, label, path, isLive }) => {
+              {coreNav.map(({ icon: Icon, label, path, isLive, isCoach }) => {
+                if (isCoach) {
+                  return (
+                    <SidebarMenuItem key={path}>
+                      <SidebarMenuButton asChild>
+                        <button
+                          onClick={() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))}
+                          className="flex items-center gap-2 px-2 py-1.5 w-full rounded-lg text-left transition-colors"
+                          style={{
+                            background: "linear-gradient(135deg, hsl(217,91%,60%) 0%, hsl(217,80%,55%) 100%)",
+                            color: "#fff",
+                          }}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          {!collapsed && <span className="text-sm font-semibold">{label}</span>}
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                }
                 const active = isActive(path);
                 return (
                   <SidebarMenuItem key={path}>
