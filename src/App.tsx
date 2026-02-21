@@ -18,8 +18,9 @@ import AcademyHome from "./pages/academy/AcademyHome";
 import AcademyStart from "./pages/academy/AcademyStart";
 import AcademyLearn from "./pages/academy/AcademyLearn";
 import AcademyModule from "./pages/academy/AcademyModule";
+import AcademyCommunity from "./pages/academy/AcademyCommunity";
+import AcademyTrade from "./pages/academy/AcademyTrade";
 import AcademyRoom from "./pages/academy/AcademyRoom";
-import AcademyRooms from "./pages/academy/AcademyRooms";
 import AcademyLive from "./pages/academy/AcademyLive";
 import AcademyResources from "./pages/academy/AcademyResources";
 import AcademyProfile from "./pages/academy/AcademyProfile";
@@ -57,7 +58,10 @@ const App = () => (
             <Route path="/academy/start" element={<AcademyStart />} />
             <Route path="/academy/learn" element={<AcademyLearn />} />
             <Route path="/academy/learn/:moduleSlug" element={<AcademyModule />} />
-            <Route path="/academy/rooms" element={<AcademyRooms />} />
+            <Route path="/academy/community" element={<AcademyCommunity />} />
+            <Route path="/academy/trade" element={<AcademyTrade />} />
+            {/* Legacy room routes — redirect to community */}
+            <Route path="/academy/rooms" element={<Navigate to="/academy/community" replace />} />
             <Route path="/academy/room/:roomSlug" element={<AcademyRoom />} />
             <Route path="/academy/live" element={<AcademyLive />} />
             <Route path="/academy/resources" element={<AcademyResources />} />
