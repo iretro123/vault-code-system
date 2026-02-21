@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./community/DateSeparator";
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
@@ -7,7 +8,7 @@ import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { useChatModeration } from "@/hooks/useChatModeration";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ interface RoomChatProps {
   roomSlug: string;
   canPost: boolean;
   isAnnouncements?: boolean;
+  onThreadOpen?: (msg: any) => void;
 }
 
 /* ── helpers ── */
@@ -146,7 +148,7 @@ function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
 
 /* ── main component ── */
 
-export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomChatProps) {
+export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen }: RoomChatProps) {
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
     useRoomMessages(roomSlug);
   const { user, profile, userRole: authUserRole } = useAuth();
@@ -193,6 +195,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const isTradeRecaps = roomSlug === "trade-recaps";
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -240,7 +243,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
-    shouldAutoScroll.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    shouldAutoScroll.current = atBottom;
+    setShowJumpToLatest(!atBottom);
+  };
+
+  const jumpToLatest = () => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowJumpToLatest(false);
   };
 
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
@@ -391,7 +401,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
 
   if (loading) {
     return (
-      <div className="flex flex-col h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)] max-w-[920px] w-full">
+      <div className="flex flex-col h-full w-full">
         <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
@@ -409,7 +419,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)] max-w-[920px] w-full">
+    <div className="relative flex flex-col h-full w-full">
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
@@ -521,10 +531,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
             const deletedAgeMs = Date.now() - new Date(msg.deleted_at).getTime();
             if (deletedAgeMs >= 15 * 60 * 1000) return false;
           }
+          // Hide thread replies from main feed
+          if ((msg as any).parent_message_id) return false;
           return true;
         }).map((msg, i, filteredMsgs) => {
           const prev = filteredMsgs[i - 1];
           const showHdr = shouldShowHeader(msg, prev);
+          const showDate = shouldShowDateSeparator(msg.created_at, prev?.created_at);
           const isRecap = !msg.is_deleted && isRecapPost(msg.body);
           const isOwn = msg.user_id === user?.id;
           const ageMs = Date.now() - new Date(msg.created_at).getTime();
@@ -590,8 +603,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
           const isCeoOrAdmin = msgAcademyRole === "CEO" || msgAcademyRole === "Admin" || msgAcademyRole === "Coach";
           const isOfficialAnnouncement = !msg.is_deleted && msg.body.startsWith("📢 ");
 
+          const replyCount = (msg as any).reply_count || 0;
+
           return (
-            <ContextMenu key={msg.id}>
+            <div key={msg.id}>
+              {showDate && <DateSeparator date={getDateLabel(msg.created_at)} />}
+            <ContextMenu>
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
@@ -835,6 +852,23 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                         </div>
                       );
                     })()}
+                    {/* Thread reply trigger */}
+                    {!msg.is_deleted && !isEditing && !isAnnouncements && onThreadOpen && (
+                      <button
+                        onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
+                        className={cn(
+                          "flex items-center gap-1.5 mt-1 text-[11px] transition-colors",
+                          replyCount > 0
+                            ? "text-primary hover:text-primary/80"
+                            : "text-white/20 hover:text-white/40 hidden group-hover:flex"
+                        )}
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        {replyCount > 0
+                          ? `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`
+                          : "Reply in thread"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </ContextMenuTrigger>
@@ -844,10 +878,24 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false }: RoomCha
                 {menuActions(ContextMenuItem)}
               </ContextMenuContent>
             </ContextMenu>
+            </div>
           );
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* Jump to latest */}
+      {showJumpToLatest && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-10">
+          <button
+            onClick={jumpToLatest}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:brightness-110 active:scale-95 transition-all"
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+            Jump to latest
+          </button>
+        </div>
+      )}
 
       {/* Typing indicator */}
       {typingText && (

@@ -107,6 +107,8 @@ export type Database = {
           id: string
           is_deleted: boolean
           original_content: string | null
+          parent_message_id: string | null
+          reply_count: number
           room_slug: string
           user_id: string
           user_name: string
@@ -123,6 +125,8 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           original_content?: string | null
+          parent_message_id?: string | null
+          reply_count?: number
           room_slug: string
           user_id: string
           user_name?: string
@@ -139,12 +143,22 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           original_content?: string | null
+          parent_message_id?: string | null
+          reply_count?: number
           room_slug?: string
           user_id?: string
           user_name?: string
           user_role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "academy_messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "academy_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       academy_modules: {
         Row: {
