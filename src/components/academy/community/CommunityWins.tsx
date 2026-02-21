@@ -70,8 +70,8 @@ export function CommunityWins() {
 
   return (
     <div className="overflow-y-auto h-full">
-      <div className="max-w-[900px] mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="max-w-[900px] mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {wins.map((win) => {
             const profile = getProfile(win.user_id);
             const reactions = getReactions(win.id);
@@ -79,13 +79,12 @@ export function CommunityWins() {
             const attachments = (win.attachments as any[]) ?? [];
             const imageAtt = attachments.find((a: any) => a.type === "image");
 
-            // Parse structured fields
             const fields = parseWinFields(win.body);
 
             return (
               <div
                 key={win.id}
-                className="rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm overflow-hidden transition-colors hover:border-white/[0.10]"
+                className="rounded-[20px] border border-white/[0.07] bg-white/[0.04] backdrop-blur-md overflow-hidden transition-all hover:border-white/[0.12] shadow-[0_4px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
               >
                 {/* Image */}
                 {imageAtt && (
@@ -99,35 +98,35 @@ export function CommunityWins() {
                   </div>
                 )}
 
-                <div className="p-4 space-y-3">
+                <div className="p-5 space-y-4">
                   {/* Author */}
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-3">
                     {profile ? (
-                      <ChatAvatar avatarUrl={profile.avatar_url} userName={win.user_name} />
+                      <ChatAvatar avatarUrl={profile.avatar_url} userName={win.user_name} size="h-10 w-10" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-white/[0.06]" />
+                      <div className="w-10 h-10 rounded-full bg-white/[0.06]" />
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-white truncate">{win.user_name}</span>
+                        <span className="text-[15px] font-semibold text-white truncate">{win.user_name}</span>
                         <AcademyRoleBadge roleName={profile?.academy_role_name} />
                       </div>
-                      <span className="text-[11px] text-white/25">{formatDateTime(win.created_at)}</span>
+                      <span className="text-[11px] text-white/20">{formatDateTime(win.created_at)}</span>
                     </div>
                   </div>
 
                   {/* Fields or body */}
                   {fields.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                       {fields.map((f, i) => (
                         <div key={i} className={f.label.toLowerCase() === "lesson learned" ? "col-span-2" : ""}>
-                          <span className="text-[10px] text-white/30 uppercase tracking-wider">{f.label}</span>
-                          <p className="text-sm text-white/80">{f.value}</p>
+                          <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">{f.label}</span>
+                          <p className="text-sm text-white/80 mt-0.5">{f.value}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-white/70 leading-relaxed whitespace-pre-line line-clamp-4">{win.body}</p>
+                    <p className="text-[15px] text-white/65 leading-[1.65] whitespace-pre-line line-clamp-4">{win.body}</p>
                   )}
 
                   {/* Fire reaction */}
@@ -135,13 +134,13 @@ export function CommunityWins() {
                     <button
                       onClick={() => toggleReaction(win.id, "🔥" as ReactionEmoji)}
                       className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                        "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all",
                         fireReaction?.reacted
-                          ? "bg-orange-500/15 border-orange-500/30 text-orange-400"
+                          ? "bg-orange-500/15 border-orange-500/30 text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.1)]"
                           : "bg-white/[0.03] border-white/[0.06] text-white/30 hover:text-white/50 hover:bg-white/[0.06]"
                       )}
                     >
-                      <Flame className="h-3.5 w-3.5" />
+                      <Flame className="h-4 w-4" />
                       {fireReaction?.count ?? 0}
                     </button>
                   </div>
