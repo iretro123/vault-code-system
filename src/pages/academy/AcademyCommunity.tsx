@@ -1,116 +1,61 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
-import { ChannelSidebar } from "@/components/academy/community/ChannelSidebar";
-import { ChannelHeader } from "@/components/academy/community/ChannelHeader";
-import { RightRail } from "@/components/academy/community/RightRail";
-import { ThreadDrawer } from "@/components/academy/community/ThreadDrawer";
-import { RoomChat } from "@/components/academy/RoomChat";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
+import { CommunityAnnouncements } from "@/components/academy/community/CommunityAnnouncements";
+import { CommunityWins } from "@/components/academy/community/CommunityWins";
+
+const TABS = [
+  { key: "trade-floor", label: "Trade Floor" },
+  { key: "announcements", label: "Announcements" },
+  { key: "wins", label: "Wins & Proof" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
 
 const AcademyCommunity = () => {
-  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const saved = localStorage.getItem("vault_community_tab");
+    return (saved as TabKey) || "trade-floor";
+  });
 
-  // Persist channel selection
-  const [activeChannel, setActiveChannel] = useState(() =>
-    localStorage.getItem("vault_active_channel") || "trade-floor"
-  );
-  const [leftOpen, setLeftOpen] = useState(!isMobile);
-  const [rightOpen, setRightOpen] = useState(false);
-  const [threadMessage, setThreadMessage] = useState<any>(null);
-
-  useEffect(() => {
-    localStorage.setItem("vault_active_channel", activeChannel);
-  }, [activeChannel]);
-
-  // On mobile, close sidebars when channel changes
-  const handleChannelSelect = (slug: string) => {
-    setActiveChannel(slug);
-    if (isMobile) {
-      setLeftOpen(false);
-      setRightOpen(false);
-    }
-    setThreadMessage(null);
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+    localStorage.setItem("vault_community_tab", tab);
   };
 
   return (
     <AcademyLayout>
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-        {/* LEFT RAIL — Channel sidebar */}
-        <div
-          className={cn(
-            "shrink-0 border-r border-white/[0.06] bg-white/[0.02] transition-all duration-150 overflow-hidden",
-            leftOpen ? "w-56" : "w-0",
-            isMobile && leftOpen && "absolute inset-y-0 left-0 z-30 w-64 bg-background shadow-2xl"
-          )}
-        >
-          <ChannelSidebar
-            activeSlug={activeChannel}
-            onSelect={handleChannelSelect}
-            onClose={isMobile ? () => setLeftOpen(false) : undefined}
-          />
-        </div>
-
-        {/* CENTER — Channel header + message feed + composer */}
-        <div className="flex-1 flex flex-col min-w-0">
-          <ChannelHeader
-            slug={activeChannel}
-            onToggleLeft={() => setLeftOpen(!leftOpen)}
-            onToggleRight={() => setRightOpen(!rightOpen)}
-            leftOpen={leftOpen}
-            rightOpen={rightOpen}
-          />
-
-          <div className="flex-1 overflow-hidden px-0">
-            <RoomChat
-              key={activeChannel}
-              roomSlug={activeChannel}
-              canPost={true}
-              isAnnouncements={false}
-              onThreadOpen={setThreadMessage}
-            />
+      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Tab Navigation */}
+        <div className="shrink-0 flex justify-center py-4 px-4 border-b border-white/[0.06]">
+          <div className="inline-flex items-center gap-1 rounded-xl bg-white/[0.04] border border-white/[0.06] p-1 backdrop-blur-sm">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => handleTabChange(tab.key)}
+                className={cn(
+                  "relative px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                  activeTab === tab.key
+                    ? "text-foreground bg-white/[0.08] shadow-sm"
+                    : "text-white/40 hover:text-white/60"
+                )}
+              >
+                {tab.label}
+                {activeTab === tab.key && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-primary/60 shadow-[0_0_8px_2px_hsl(217_91%_60%/0.25)]" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* THREAD DRAWER — overlays right rail when open */}
-        {threadMessage && (
-          <div className={cn(
-            "shrink-0 border-l border-white/[0.06] transition-all duration-150 overflow-hidden",
-            isMobile ? "absolute inset-y-0 right-0 z-30 w-80 bg-background shadow-2xl" : "w-80"
-          )}>
-            <ThreadDrawer
-              parentMessage={threadMessage}
-              onClose={() => setThreadMessage(null)}
-            />
-          </div>
-        )}
-
-        {/* RIGHT RAIL — Details panel (hidden when thread is open) */}
-        {!threadMessage && (
-          <div
-            className={cn(
-              "shrink-0 border-l border-white/[0.06] bg-white/[0.02] transition-all duration-150 overflow-hidden",
-              rightOpen ? (isMobile ? "absolute inset-y-0 right-0 z-30 w-72 bg-background shadow-2xl" : "w-64") : "w-0"
-            )}
-          >
-            <RightRail
-              slug={activeChannel}
-              onClose={() => setRightOpen(false)}
-            />
-          </div>
-        )}
-
-        {/* Backdrop for mobile overlays */}
-        {isMobile && (leftOpen || rightOpen || threadMessage) && (
-          <div
-            className="fixed inset-0 z-20 bg-black/50"
-            onClick={() => {
-              setLeftOpen(false);
-              setRightOpen(false);
-              setThreadMessage(null);
-            }}
-          />
-        )}
+        {/* Tab Content */}
+        <div className="flex-1 overflow-hidden">
+          {activeTab === "trade-floor" && <CommunityTradeFloor />}
+          {activeTab === "announcements" && <CommunityAnnouncements />}
+          {activeTab === "wins" && <CommunityWins />}
+        </div>
       </div>
     </AcademyLayout>
   );
