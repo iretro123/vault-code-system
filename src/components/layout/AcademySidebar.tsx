@@ -139,7 +139,8 @@ export function AcademySidebar() {
               {coreNav.map(({ icon: Icon, label, path, isLive, isCoach }) => {
                 if (isCoach) {
                   return (
-                    <SidebarMenuItem key={path}>
+                    <SidebarMenuItem key={path} className="mt-0">
+                      <div className="mx-2 my-3 h-px bg-white/[0.10]" />
                       <SidebarMenuButton asChild>
                         <button
                           onClick={() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))}
