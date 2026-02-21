@@ -88,6 +88,19 @@ const AcademyLearn = () => {
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Courses</h1>
           <p className="text-muted-foreground mt-1">Master discipline, one module at a time.</p>
+          {!loading && lessons.length > 0 && (() => {
+            const totalLessons = lessons.length;
+            const completedLessons = lessons.filter((l) => progress[l.id]).length;
+            const overallPct = Math.round((completedLessons / totalLessons) * 100);
+            return (
+              <div className="mt-4 flex items-center gap-3">
+                <Progress value={overallPct} className="h-2 flex-1 max-w-xs" />
+                <span className="text-sm font-medium text-muted-foreground">
+                  {overallPct}% overall ({completedLessons}/{totalLessons} lessons)
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         <ClaimRoleBanner />
