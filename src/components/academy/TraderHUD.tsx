@@ -25,18 +25,18 @@ export function TraderHUD() {
         return (
           <div
             key={item.label}
-            className="flex items-center gap-2.5 rounded-[14px] px-4 py-2.5"
+            className="flex items-center gap-2.5 rounded-[14px] px-4 py-2.5 border border-white/[0.10]"
             style={{
-              background: "rgba(247,249,252,0.94)",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)",
+              background: "rgba(255,255,255,0.06)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
             }}
           >
             <Icon className="h-4 w-4 shrink-0" style={{ color: item.accent }} />
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.08em] font-medium leading-none" style={{ color: "hsl(220,14%,45%)" }}>
+              <p className="text-[10px] uppercase tracking-[0.08em] font-medium leading-none" style={{ color: "rgba(255,255,255,0.55)" }}>
                 {item.label}
               </p>
-              <p className="text-sm font-bold mt-0.5 leading-tight" style={{ color: "hsl(220,25%,10%)" }}>
+              <p className="text-sm font-bold mt-0.5 leading-tight" style={{ color: "rgba(255,255,255,0.92)" }}>
                 {item.value}
               </p>
             </div>
