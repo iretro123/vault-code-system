@@ -209,17 +209,17 @@ export function AcademySidebar() {
         )}
 
         {/* Icon Dock */}
-        <div className="flex items-center gap-3.5 px-1 py-1">
+        <div className="flex items-center gap-4 px-2 py-1.5">
           {/* Profile */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => navigate("/academy/settings")}
                 aria-label="Profile"
-                className="sidebar-dock-btn relative shrink-0 h-10 w-10 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="sidebar-dock-btn relative shrink-0 h-[44px] w-[44px] rounded-full bg-white/[0.04] border border-white/[0.06] overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-10 w-10" />
-                <span className="absolute -bottom-px -right-px h-2.5 w-2.5 rounded-full bg-emerald-500 ring-[2px] ring-[#0B0F14]" />
+                <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-[44px] w-[44px]" />
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-[2px] ring-[#0B0F14]" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs">Profile</TooltipContent>
@@ -236,9 +236,9 @@ export function AcademySidebar() {
                   handleInboxChange(!inboxOpen);
                 }}
                 aria-label="Inbox"
-                className="sidebar-dock-btn relative flex items-center justify-center h-10 w-10 rounded-full bg-white/[0.04] border border-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="sidebar-dock-btn relative flex items-center justify-center h-[44px] w-[44px] rounded-full bg-white/[0.04] border border-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <Mail className="h-[18px] w-[18px] text-[#8B949E]" />
+                <Mail className="h-5 w-5 text-[#8B949E]" />
                 {inboxUnreadCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-[16px] min-w-[16px] px-0.5 rounded-full bg-[#3B82F6] text-white text-[9px] font-bold leading-none">
                     {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
