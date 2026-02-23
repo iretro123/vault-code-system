@@ -22,6 +22,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { InboxDrawer } from "@/components/academy/InboxDrawer";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -60,6 +62,7 @@ export function AcademySidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { inboxUnreadCount, onboarding } = useAcademyData();
 
@@ -181,13 +184,13 @@ export function AcademySidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Bottom Dock — pinned footer (untouched) */}
-      <SidebarFooter className="mt-auto p-2.5 space-y-1.5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: '#0B0F14' }}>
+      {/* Bottom Dock */}
+      <SidebarFooter className="mt-auto px-2.5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: '#0B0F14' }}>
         {/* Share Vault Card */}
         {!collapsed && (
           <button
             onClick={() => setReferralOpen(true)}
-            className="group w-full text-left rounded-2xl px-4 py-3.5 transition-colors duration-150 hover:bg-[#131922] active:scale-[0.98]"
+            className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 transition-colors duration-150 hover:bg-[#131922] active:scale-[0.98]"
             style={{
               background: '#0F1319',
               border: '1px solid rgba(255,255,255,0.04)',
@@ -205,46 +208,47 @@ export function AcademySidebar() {
           </button>
         )}
 
-        {/* User Identity */}
-        <div className="flex items-center gap-3 rounded-2xl px-3 py-2.5 select-none pointer-events-none border border-white/[0.04]" style={{ background: '#0F1319' }}>
-          <div className="relative shrink-0">
-            <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
-            <span className="absolute -bottom-px -right-px h-2.5 w-2.5 rounded-full bg-emerald-500 ring-[2px] ring-[#0B0F14] sidebar-online-pulse" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-[#E6EDF3] truncate leading-tight">{displayName}</p>
-              <p className="text-[10px] text-[#8B949E]/60 leading-tight uppercase tracking-[0.08em] font-medium mt-0.5">Vault Academy Member</p>
-            </div>
-          )}
-        </div>
+        {/* Icon Dock */}
+        <div className="flex items-center gap-2 px-1 py-1">
+          {/* Profile */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => navigate("/academy/settings")}
+                aria-label="Profile"
+                className="sidebar-dock-btn relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <ChatAvatar avatarUrl={avatarUrl} userName={displayName} size="h-8 w-8" />
+                <span className="absolute -bottom-px -right-px h-2.5 w-2.5 rounded-full bg-emerald-500 ring-[2px] ring-[#0B0F14]" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">Profile</TooltipContent>
+          </Tooltip>
 
-        {/* Inbox */}
-        <button
-          data-inbox-trigger
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            handleInboxChange(!inboxOpen);
-          }}
-          className="relative flex items-center gap-2.5 rounded-2xl px-3 py-2 text-[13px] text-[#8B949E] hover:text-[#E6EDF3] w-full text-left transition-colors duration-[120ms] border border-white/[0.04] hover:bg-[#131922]"
-          style={{ background: '#0F1319' }}
-        >
-          <Mail className="h-4 w-4 shrink-0" />
-          {!collapsed && (
-            <span className="flex items-center gap-1.5 font-medium">
-              Inbox
-              {inboxUnreadCount > 0 && (
-                <span className="flex items-center justify-center h-[18px] min-w-[18px] px-1 rounded-full bg-[#3B82F6] text-white text-[10px] font-bold leading-none">
-                  {inboxUnreadCount > 9 ? "9+" : inboxUnreadCount}
-                </span>
-              )}
-            </span>
-          )}
-          {collapsed && inboxUnreadCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-[#3B82F6]" />
-          )}
-        </button>
+          {/* Inbox */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                data-inbox-trigger
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleInboxChange(!inboxOpen);
+                }}
+                aria-label="Inbox"
+                className="sidebar-dock-btn relative flex items-center justify-center h-8 w-8 rounded-full bg-white/[0.04] border border-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <Mail className="h-4 w-4 text-[#8B949E]" />
+                {inboxUnreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-[16px] min-w-[16px] px-0.5 rounded-full bg-[#3B82F6] text-white text-[9px] font-bold leading-none">
+                    {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">Inbox</TooltipContent>
+          </Tooltip>
+        </div>
 
         <InboxDrawer open={inboxOpen} onOpenChange={handleInboxChange} />
         <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />

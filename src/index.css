@@ -256,6 +256,15 @@ html {
     .sidebar-online-pulse { animation: none; }
   }
 
+  /* Sidebar dock icon buttons */
+  .sidebar-dock-btn {
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .sidebar-dock-btn:hover {
+    box-shadow: 0 0 0 1px rgba(59,130,246,0.35);
+    transform: translateY(-1px);
+  }
+
   /* Ask Coach animated border sweep */
   .ask-coach-btn {
     border: 1px solid rgba(255,255,255,0.08);
