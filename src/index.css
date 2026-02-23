@@ -55,29 +55,29 @@ html {
   }
 
   .dark {
-    /* VAULT OS Robinhood Dark Theme
-       Background: #0B0F14 → hsl(216, 30%, 6%)
-       Surface: #111827 → hsl(220, 39%, 11%)
-       Elevated: #0F172A → hsl(222, 47%, 11%)
+    /* Neutral Ash Layered System
+       Workspace: #11161C → hsl(212, 25%, 9%)
+       Card: #1A212B → hsl(214, 22%, 14%)
+       Sidebar: #0B0F14 → hsl(213, 30%, 6%)
     */
-    --background: 220 40% 5%;
-    --foreground: 220 14% 90%;
+    --background: 212 25% 9%;
+    --foreground: 212 33% 93%;
     
-    --card: 220 33% 12%;
-    --card-foreground: 220 14% 90%;
+    --card: 214 22% 14%;
+    --card-foreground: 212 33% 93%;
     
-    --popover: 222 47% 11%;
-    --popover-foreground: 220 14% 90%;
+    --popover: 214 22% 14%;
+    --popover-foreground: 212 33% 93%;
     
-    /* Primary: Blue-500 #3B82F6 */
+    /* Primary: Blue-500 #3B82F6 — controlled accent */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 220 14% 90%;
+    --secondary: 213 18% 16%;
+    --secondary-foreground: 212 33% 93%;
     
-    --muted: 217 33% 17%;
-    --muted-foreground: 220 14% 60%;
+    --muted: 213 18% 16%;
+    --muted-foreground: 212 8% 58%;
     
     --accent: 217 91% 60%;
     --accent-foreground: 0 0% 100%;
@@ -86,9 +86,9 @@ html {
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders: white/10–12% */
-    --border: 220 14% 20%;
-    --input: 220 33% 12%;
+    /* Borders: rgba(255,255,255,0.05) ≈ very dark */
+    --border: 213 12% 15%;
+    --input: 214 22% 14%;
     --ring: 217 91% 60%;
     
     /* Status colors - emerald, amber, rose */
@@ -96,19 +96,19 @@ html {
     --status-warning: 38 92% 50%;
     --status-danger: 0 72% 51%;
     
-    /* Sidebar */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 220 14% 75%;
+    /* Sidebar — flat matte */
+    --sidebar-background: 213 30% 6%;
+    --sidebar-foreground: 212 8% 58%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 100%;
-    --sidebar-accent-foreground: 220 14% 93%;
-    --sidebar-border: 220 14% 20%;
+    --sidebar-accent: 214 24% 12%;
+    --sidebar-accent-foreground: 212 33% 93%;
+    --sidebar-border: 213 12% 12%;
     --sidebar-ring: 217 91% 60%;
     
-    /* Premium elevation */
-    --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    --card-border: rgba(255, 255, 255, 0.10);
+    /* Elevation */
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    --card-border: rgba(255, 255, 255, 0.05);
   }
 }
 
@@ -125,8 +125,7 @@ html {
   body {
     @apply bg-background text-foreground antialiased;
     background:
-      radial-gradient(ellipse 60% 50% at 10% 10%, rgba(80,160,255,0.18) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 40% at 85% 45%, rgba(40,120,255,0.10) 0%, transparent 55%),
+      radial-gradient(circle at 50% 0%, rgba(59,130,246,0.06), transparent 60%),
       hsl(var(--background));
   }
 
@@ -139,8 +138,9 @@ html {
 @layer utilities {
   /* Clean card style - Premium dark */
   .vault-card {
-    @apply rounded-2xl border border-white/[0.10] bg-card backdrop-blur-sm;
-    box-shadow: var(--card-shadow, 0 8px 24px rgba(0,0,0,0.35));
+    @apply rounded-2xl border bg-card;
+    border-color: var(--card-border);
+    box-shadow: var(--card-shadow);
   }
   
   /* Primary CTA - solid blue */
@@ -150,12 +150,12 @@ html {
   
   /* Secondary button style */
   .vault-secondary {
-    @apply bg-white/5 hover:bg-white/10 text-foreground border border-white/10 rounded-xl transition-colors;
+    @apply bg-white/5 hover:bg-white/8 text-foreground border border-white/[0.05] rounded-xl transition-colors;
   }
   
   /* Clean input style */
   .vault-input {
-    @apply bg-black/30 border border-white/10 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary/30 rounded-xl;
+    @apply bg-black/20 border border-white/[0.05] text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary/30 rounded-xl;
   }
   
   /* Status badge base */
@@ -219,10 +219,10 @@ html {
   
   /* Premium glass card surface */
   .vault-glass-card {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: hsl(214, 22%, 14%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.30);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   }
 
   /* Respect reduced motion preference */
