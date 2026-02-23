@@ -142,20 +142,17 @@ export function AcademySidebar() {
                     <SidebarMenuItem key={path} className="mt-0">
                       <div className="mx-2 my-3 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
                       <SidebarMenuButton asChild>
-                        <div className="ask-coach-container">
-                          <div className="ask-coach-border" />
-                          <button
-                            onClick={() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))}
-                            className="ask-coach-btn flex items-center gap-2 px-3 py-2 w-full rounded-xl text-left transition-colors duration-150 hover:brightness-110 active:scale-[0.98]"
-                            style={{
-                              background: "#3B82F6",
-                              color: "#fff",
-                            }}
-                          >
-                            <Icon className="h-4 w-4 shrink-0" style={{ strokeWidth: 2.2 }} />
-                            {!collapsed && <span className="text-sm font-semibold tracking-[-0.01em]">{label}</span>}
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))}
+                          className="ask-coach-btn flex items-center gap-2 px-3 py-2 w-full rounded-xl text-left transition-colors duration-150 hover:brightness-110 active:scale-[0.98]"
+                          style={{
+                            background: "#3B82F6",
+                            color: "#fff",
+                          }}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" style={{ strokeWidth: 2.2 }} />
+                          {!collapsed && <span className="text-sm font-semibold tracking-[-0.01em]">{label}</span>}
+                        </button>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   );
