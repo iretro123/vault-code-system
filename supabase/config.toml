@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.instant-answer]
 verify_jwt = false
+
+[functions.playbook-signed-url]
+verify_jwt = false

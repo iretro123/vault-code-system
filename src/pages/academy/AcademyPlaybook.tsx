@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { usePlaybookProgress, PlaybookChapter, ChapterProgress } from "@/hooks/usePlaybookProgress";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, Check, ChevronRight, Clock, Loader2, Play, StickyNote, Trophy, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -95,28 +96,53 @@ function ChapterList({
 
 /* ── Reader Panel (Center Column) ── */
 function ReaderPanel({
-  chapter, progress: chProgress, onUpdateProgress,
+  chapter, progress: chProgress, onUpdateProgress, isAdmin,
 }: {
   chapter: PlaybookChapter;
   progress?: ChapterProgress;
   onUpdateProgress: (chapterId: string, updates: Partial<ChapterProgress>) => Promise<void>;
+  isAdmin?: boolean;
 }) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(true);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const timerRef = useRef<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
 
-  // Fetch signed URL for the PDF
+  // Fetch signed URL via edge function (server-side, service role)
   useEffect(() => {
     async function getUrl() {
       setLoadingPdf(true);
-      const { data } = await supabase.storage
-        .from("playbook")
-        .createSignedUrl("vault-playbook.pdf", 3600);
-      if (data?.signedUrl) {
-        // Add page fragment for PDF viewer
-        const pageParam = `#page=${chapter.pdf_page_start}`;
-        setPdfUrl(data.signedUrl + pageParam);
+      setPdfError(null);
+      try {
+        const { data: invokeData, error: invokeError } = await supabase.functions.invoke(
+          "playbook-signed-url",
+          { method: "POST" }
+        );
+
+        if (invokeError) {
+          console.error("Edge function invoke error:", invokeError);
+          setPdfError("Unable to load Playbook PDF. Check storage path.");
+          setLoadingPdf(false);
+          return;
+        }
+
+        if (invokeData?.error) {
+          console.error("Signed URL error:", invokeData.error, invokeData.details, "bucket:", invokeData.bucket, "path:", invokeData.objectPath);
+          setPdfError("Unable to load Playbook PDF. Check storage path.");
+          setLoadingPdf(false);
+          return;
+        }
+
+        if (invokeData?.signedUrl) {
+          const pageParam = `#page=${chapter.pdf_page_start}`;
+          setPdfUrl(invokeData.signedUrl + pageParam);
+        } else {
+          setPdfError("Unable to load Playbook PDF. Check storage path.");
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching signed URL:", err);
+        setPdfError("Unable to load Playbook PDF. Check storage path.");
       }
       setLoadingPdf(false);
     }
@@ -133,7 +159,6 @@ function ReaderPanel({
 
     return () => {
       clearInterval(intervalRef.current);
-      // Save on unmount (debounced effect)
       if (timerRef.current > (chProgress?.time_in_reader_seconds || 0)) {
         onUpdateProgress(chapter.id, {
           time_in_reader_seconds: timerRef.current,
@@ -169,6 +194,11 @@ function ReaderPanel({
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : pdfError ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-8">
+            <BookOpen className="h-12 w-12 text-white/10 mb-4" />
+            <p className="text-sm text-destructive font-medium">{pdfError}</p>
+          </div>
         ) : pdfUrl ? (
           <iframe
             src={pdfUrl}
@@ -185,6 +215,13 @@ function ReaderPanel({
           </div>
         )}
       </div>
+
+      {/* Debug line (admin only) */}
+      {isAdmin && (
+        <div className="px-4 py-2 border-t border-white/[0.06] text-[10px] text-white/20 font-mono">
+          DEBUG: signedUrl exists: {pdfUrl ? "true" : "false"}
+        </div>
+      )}
     </div>
   );
 }
@@ -424,6 +461,7 @@ function RightPanel({
 const AcademyPlaybook = () => {
   const [searchParams] = useSearchParams();
   const { chapters, progress, loading, nextChapter, updateProgress } = usePlaybookProgress();
+  const { isAdmin } = useAcademyRole();
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
 
   // Set initial chapter from URL or first available
@@ -498,6 +536,7 @@ const AcademyPlaybook = () => {
                 chapter={activeChapter}
                 progress={progress[activeChapter.id]}
                 onUpdateProgress={updateProgress}
+                isAdmin={isAdmin}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-white/20">
