@@ -209,7 +209,7 @@ export function AcademySidebar() {
         )}
 
         {/* Icon Dock */}
-        <div className="flex items-center justify-between px-4 py-1.5">
+        <div className={`flex items-center w-full py-1.5 ${collapsed ? 'justify-center px-0' : 'justify-between px-3'}`}>
           {/* Profile */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -227,29 +227,31 @@ export function AcademySidebar() {
             <TooltipContent side="top" className="text-xs">Profile</TooltipContent>
           </Tooltip>
 
-          {/* Inbox */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                data-inbox-trigger
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleInboxChange(!inboxOpen);
-                }}
-                aria-label="Inbox"
-                className="sidebar-dock-btn relative flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.04] border border-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                <Mail className="h-[18px] w-[18px] text-[#8B949E]" />
-                {inboxUnreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-[16px] min-w-[16px] px-0.5 rounded-full bg-[#3B82F6] text-white text-[9px] font-bold leading-none">
-                    {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
-                  </span>
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">Inbox</TooltipContent>
-          </Tooltip>
+          {/* Inbox — hidden when collapsed */}
+          {!collapsed && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  data-inbox-trigger
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleInboxChange(!inboxOpen);
+                  }}
+                  aria-label="Inbox"
+                  className="sidebar-dock-btn relative flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.04] border border-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <Mail className="h-[18px] w-[18px] text-[#8B949E]" />
+                  {inboxUnreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-[16px] min-w-[16px] px-0.5 rounded-full bg-[#3B82F6] text-white text-[9px] font-bold leading-none">
+                      {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Inbox</TooltipContent>
+            </Tooltip>
+          )}
         </div>
 
         <InboxDrawer open={inboxOpen} onOpenChange={handleInboxChange} />
