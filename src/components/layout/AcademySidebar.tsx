@@ -144,7 +144,7 @@ export function AcademySidebar() {
                       <SidebarMenuButton asChild>
                         <button
                           onClick={() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))}
-                          className="flex items-center gap-2 px-3 py-2 w-full rounded-xl text-left transition-colors duration-150 hover:brightness-110 active:scale-[0.98]"
+                          className="ask-coach-btn flex items-center gap-2 px-3 py-2 w-full rounded-xl text-left transition-colors duration-150 hover:brightness-110 active:scale-[0.98]"
                           style={{
                             background: "#3B82F6",
                             color: "#fff",
