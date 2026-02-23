@@ -1525,6 +1525,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_playbook_state: {
+        Row: {
+          last_chapter_id: string | null
+          last_page_viewed: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_chapter_id?: string | null
+          last_page_viewed?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_chapter_id?: string | null
+          last_page_viewed?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_playbook_state_last_chapter_id_fkey"
+            columns: ["last_chapter_id"]
+            isOneToOne: false
+            referencedRelation: "playbook_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_preferences: {
         Row: {
           default_market: string
