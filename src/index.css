@@ -256,34 +256,39 @@ html {
     .sidebar-online-pulse { animation: none; }
   }
 
-  /* Ask Coach animated border ring */
+  /* Ask Coach animated border sweep */
   .ask-coach-btn {
     position: relative;
-    z-index: 1;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
   }
 
   .ask-coach-btn::before {
     content: "";
     position: absolute;
-    inset: -2px;
+    inset: 0;
     border-radius: inherit;
-    padding: 2px;
-    background: conic-gradient(
-      from 0deg,
+    padding: 1px;
+    background: linear-gradient(
+      120deg,
       transparent 0%,
-      #3B82F6 20%,
-      #60A5FA 40%,
-      #3B82F6 60%,
-      transparent 80%
+      transparent 30%,
+      rgba(59,130,246,0.8) 50%,
+      transparent 70%,
+      transparent 100%
     );
+    background-size: 300% 300%;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    animation: borderSweep 2s linear infinite;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
     mask-composite: exclude;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    animation: spinBorder 2.5s linear infinite;
+    -webkit-mask-composite: xor;
     pointer-events: none;
   }
 
@@ -291,9 +296,9 @@ html {
     opacity: 1;
   }
 
-  @keyframes spinBorder {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+  @keyframes borderSweep {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
