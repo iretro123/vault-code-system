@@ -1023,6 +1023,121 @@ export type Database = {
           },
         ]
       }
+      playbook_chapters: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          checkpoint_json: Json
+          created_at: string
+          id: string
+          minutes_estimate: number
+          order_index: number
+          pdf_page_end: number
+          pdf_page_start: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action_payload?: Json
+          action_type?: string
+          checkpoint_json?: Json
+          created_at?: string
+          id?: string
+          minutes_estimate?: number
+          order_index?: number
+          pdf_page_end?: number
+          pdf_page_start?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          checkpoint_json?: Json
+          created_at?: string
+          id?: string
+          minutes_estimate?: number
+          order_index?: number
+          pdf_page_end?: number
+          pdf_page_start?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      playbook_notes: {
+        Row: {
+          chapter_id: string
+          note_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          note_text?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          note_text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_notes_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "playbook_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playbook_progress: {
+        Row: {
+          chapter_id: string
+          checkpoint_passed: boolean
+          checkpoint_score: number
+          completed_at: string | null
+          last_page_viewed: number
+          status: string
+          time_in_reader_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chapter_id: string
+          checkpoint_passed?: boolean
+          checkpoint_score?: number
+          completed_at?: string | null
+          last_page_viewed?: number
+          status?: string
+          time_in_reader_seconds?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chapter_id?: string
+          checkpoint_passed?: boolean
+          checkpoint_score?: number
+          completed_at?: string | null
+          last_page_viewed?: number
+          status?: string
+          time_in_reader_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_progress_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "playbook_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_signal: {
         Row: {
           created_at: string
@@ -1388,6 +1503,24 @@ export type Database = {
           max_risk_per_trade?: number
           max_trades_per_day?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_nudges_dismissed: {
+        Row: {
+          dismissed_until: string
+          nudge_key: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_until?: string
+          nudge_key: string
+          user_id: string
+        }
+        Update: {
+          dismissed_until?: string
+          nudge_key?: string
           user_id?: string
         }
         Relationships: []

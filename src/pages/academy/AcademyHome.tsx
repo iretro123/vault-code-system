@@ -8,6 +8,7 @@ import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
 import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
 import { ScoreboardCard } from "@/components/academy/dashboard/ScoreboardCard";
+import { PlaybookCard } from "@/components/academy/dashboard/PlaybookCard";
 import { CoachCard } from "@/components/academy/dashboard/CoachCard";
 import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
 import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
@@ -50,6 +51,9 @@ const AcademyHome = () => {
       <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl">
         {/* 1) Hero Header */}
         <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
+
+        {/* Playbook Card */}
+        <PlaybookCard />
 
         {/* 2 + 3) Gameplan + Scoreboard */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
