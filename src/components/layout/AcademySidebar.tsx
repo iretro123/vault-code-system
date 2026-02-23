@@ -171,7 +171,7 @@ export function AcademySidebar() {
                         activeClassName="!text-[#E6EDF3] !bg-[#151C26] font-medium border-l-[3px] border-l-[#3B82F6]"
                       >
                         <span className="relative flex items-center gap-2.5">
-                          <Icon className="h-4 w-4 shrink-0" style={{ strokeWidth: active ? 2.2 : 1.8 }} />
+                          <Icon className={`h-4 w-4 shrink-0${isLive ? ' text-[hsl(217,92%,68%)]' : ''}`} style={{ strokeWidth: active ? 2.2 : 1.8 }} />
                           {!collapsed && <span className="text-sm">{label}</span>}
                         </span>
                       </NavLink>
