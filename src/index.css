@@ -255,4 +255,48 @@ html {
   @media (prefers-reduced-motion: reduce) {
     .sidebar-online-pulse { animation: none; }
   }
+
+  /* Ask Coach animated border ring */
+  .ask-coach-btn {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ask-coach-btn::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0%,
+      #3B82F6 20%,
+      #60A5FA 40%,
+      #3B82F6 60%,
+      transparent 80%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    animation: spinBorder 2.5s linear infinite;
+    pointer-events: none;
+  }
+
+  .ask-coach-btn:hover::before {
+    opacity: 1;
+  }
+
+  @keyframes spinBorder {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ask-coach-btn::before { animation: none; }
+  }
 }
