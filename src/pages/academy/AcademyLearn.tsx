@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
-import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight, BookOpen } from "lucide-react";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
@@ -16,6 +16,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import courseCoverDefault from "@/assets/course-cover-default.jpg";
+import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const AcademyLearn = () => {
   const { lessons, loading: lessonsLoading } = useAcademyLessons();
   const { progress } = useLessonProgress();
   const { isAdmin } = useAcademyRole();
+  const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
 
   // Admin state
   const [showAdd, setShowAdd] = useState(false);
@@ -104,6 +106,36 @@ const AcademyLearn = () => {
         </div>
 
         <ClaimRoleBanner />
+
+        {/* Playbook Hero Strip */}
+        {pbTotal > 0 && pbDone < pbTotal && (
+          <div
+            className="vault-glass-card p-6 mb-6 flex items-center justify-between gap-4 cursor-pointer hover:border-primary/20 transition-colors"
+            onClick={() => navigate(`/academy/playbook${pbNext ? `?chapter=${pbNext.id}` : ""}`)}
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <BookOpen className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-foreground">Vault Playbook</h3>
+                <p className="text-xs text-white/30 truncate">
+                  Finish the Operating System before you binge modules.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <div className="text-right hidden sm:block">
+                <span className="text-sm font-bold text-foreground">{pbPct}%</span>
+                <p className="text-[10px] text-white/20">{pbDone}/{pbTotal} chapters</p>
+              </div>
+              <Button size="sm" className="gap-1.5">
+                {pbDone > 0 ? "Continue" : "Start"}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-20">

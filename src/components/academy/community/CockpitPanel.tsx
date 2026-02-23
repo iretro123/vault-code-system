@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useTradeLog } from "@/hooks/useTradeLog";
+import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useNavigate } from "react-router-dom";
 import {
   FileText, HelpCircle, ClipboardCheck, BookOpen,
@@ -93,6 +94,7 @@ interface CoachItem {
 
 function CoachFeedCard() {
   const navigate = useNavigate();
+  const { nextChapter, gatesPassed, completedCount, totalCount } = usePlaybookProgress();
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem("vault_coach_dismissed");
@@ -102,11 +104,32 @@ function CoachFeedCard() {
     }
   });
 
-  const items: CoachItem[] = [
+  const items: CoachItem[] = [];
+
+  // Dynamic playbook nudges
+  if (nextChapter && completedCount < totalCount) {
+    items.push({
+      id: "playbook_continue",
+      message: `Continue Playbook: ${nextChapter.title} (${nextChapter.minutes_estimate} min)`,
+      cta: "Continue",
+      ctaPath: `/academy/playbook?chapter=${nextChapter.id}`,
+    });
+  }
+  if (!gatesPassed && totalCount > 0) {
+    items.push({
+      id: "unlock_setups",
+      message: "You're 1 checkpoint away from unlocking Post Setups.",
+      cta: "Open Playbook",
+      ctaPath: "/academy/playbook",
+    });
+  }
+
+  // Static nudges
+  items.push(
     { id: "journal_missing", message: "No journal entry yesterday.", cta: "Write now", ctaPath: "/academy/journal" },
     { id: "weekly_review", message: "Weekly review due Sunday 6 PM.", cta: "Review", ctaPath: "/academy/progress" },
     { id: "lesson_incomplete", message: "Module 2 lesson 3 is incomplete.", cta: "Continue", ctaPath: "/academy/learn" },
-  ];
+  );
 
   const visibleItems = items.filter((it) => !dismissed.has(it.id));
 

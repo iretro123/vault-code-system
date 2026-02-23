@@ -31,6 +31,7 @@ import AdminPanel from "./pages/academy/AdminPanel";
 import AcademyJournal from "./pages/academy/AcademyJournal";
 import AcademyProgress from "./pages/academy/AcademyProgress";
 import AcademyMyQuestions from "./pages/academy/AcademyMyQuestions";
+import AcademyPlaybook from "./pages/academy/AcademyPlaybook";
 import Hub from "./pages/Hub";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/academy/my-questions" element={<AcademyMyQuestions />} />
             <Route path="/academy/journal" element={<AcademyJournal />} />
             <Route path="/academy/progress" element={<AcademyProgress />} />
+            <Route path="/academy/playbook" element={<AcademyPlaybook />} />
             <Route path="/academy/admin" element={<AcademyAdmin />} />
             <Route path="/academy/admin/users" element={<AcademyAdminUsers />} />
             <Route path="/academy/admin/panel" element={<AdminPanel />} />
