@@ -257,51 +257,46 @@ html {
   }
 
   /* Ask Coach animated border sweep */
-  .ask-coach-btn {
+  .ask-coach-container {
     position: relative;
-    border: 1px solid rgba(255,255,255,0.08);
-    overflow: hidden;
+    border-radius: 0.75rem;
   }
 
-  .ask-coach-btn::before {
-    content: "";
+  .ask-coach-border {
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
+    inset: -2px;
+    border-radius: 0.75rem;
     background: linear-gradient(
       120deg,
       transparent 0%,
-      transparent 30%,
-      rgba(59,130,246,0.8) 50%,
-      transparent 70%,
+      transparent 40%,
+      #3B82F6 50%,
+      transparent 60%,
       transparent 100%
     );
     background-size: 300% 300%;
     opacity: 0;
     transition: opacity 0.25s ease;
-    animation: borderSweep 2s linear infinite;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    -webkit-mask-composite: xor;
+    animation: sweep 2s linear infinite;
     pointer-events: none;
   }
 
-  .ask-coach-btn:hover::before {
+  .ask-coach-container:hover .ask-coach-border {
     opacity: 1;
   }
 
-  @keyframes borderSweep {
+  .ask-coach-btn {
+    position: relative;
+    z-index: 2;
+    border-radius: 0.75rem;
+  }
+
+  @keyframes sweep {
     0% { background-position: 0% 50%; }
     100% { background-position: 300% 50%; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ask-coach-btn::before { animation: none; }
+    .ask-coach-border { animation: none; }
   }
 }
