@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { format, isPast, isThisWeek } from "date-fns";
 import { formatTime } from "@/lib/formatTime";
@@ -135,18 +136,44 @@ function SessionForm({
   );
 }
 
+/* ── Mock data for dev preview ── */
+function getMockSessions(): LiveSession[] {
+  return [
+    { id: "mock-1", title: "Market Prep + Q&A", description: "Weekly market overview and open Q&A", session_date: "2025-04-30T22:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-2", title: "Trading Psychology Workshop", description: "", session_date: "2025-05-01T17:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-3", title: "Advanced Options Strategies", description: "", session_date: "2025-05-02T19:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-4", title: "Weekly Market Review", description: "", session_date: "2025-05-03T09:30:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "office-hours" },
+    { id: "mock-r1", title: "Risk Management Essentials", description: "35 min", session_date: "2025-04-23T14:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-r2", title: "Options Risk Firewall", description: "42 min", session_date: "2025-04-19T15:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
+  ];
+}
+
 /* ═══════════════ PAGE ═══════════════ */
 const AcademyLive = () => {
-  const { sessions, loading, refetch } = useLiveSessions();
+  const { sessions: realSessions, loading, refetch } = useLiveSessions();
   const { isAdmin } = useAcademyRole();
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  const isMockMode = searchParams.get("mockLive") === "1";
+  const realUpcoming = realSessions.filter((s) => !isPast(new Date(s.session_date)));
+
+  // Use mock data ONLY when: mock flag active AND zero real upcoming sessions
+  const sessions = useMemo(() => {
+    if (isMockMode && realUpcoming.length === 0) {
+      return [...getMockSessions(), ...realSessions];
+    }
+    return realSessions;
+  }, [isMockMode, realUpcoming.length, realSessions]);
 
   const upcoming = sessions.filter((s) => !isPast(new Date(s.session_date)));
   const past = sessions.filter((s) => isPast(new Date(s.session_date)));
   const nextSession = upcoming[0] || null;
   const thisWeek = upcoming.filter((s) => isThisWeek(new Date(s.session_date), { weekStartsOn: 1 }));
+  // If no thisWeek matches (mock dates may be outside current week), show all upcoming
+  const weekList = thisWeek.length > 0 ? thisWeek : upcoming;
 
   /* ── Handlers (unchanged) ── */
   const handleAdd = async (data: any) => {
@@ -197,6 +224,13 @@ const AcademyLive = () => {
       <div className="liveSessionsPage">
         <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
 
+        {/* Mock mode indicator */}
+        {isMockMode && realUpcoming.length === 0 && (
+          <div className="mx-4 md:mx-6 mb-4 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-300/80 bg-amber-500/10 border border-amber-500/20 inline-flex items-center gap-1.5">
+            ⚡ Dev preview — showing mock data
+          </div>
+        )}
+
         <div className="px-4 md:px-6 pb-8">
           <div className="flex gap-6 max-w-[1200px]">
 
@@ -205,7 +239,7 @@ const AcademyLive = () => {
 
               {/* Next Live Session Hero */}
               {nextSession && editingId !== nextSession.id ? (
-                <div className="live-glass-card p-6 relative group">
+                <div className="live-glass-card live-glass-card--hero p-6 relative group">
                   <div className="flex items-start justify-between mb-1">
                     <p className="text-xs font-semibold uppercase tracking-widest text-white/50">Next Live Session</p>
                     <div className="flex items-center gap-1">
@@ -263,11 +297,11 @@ const AcademyLive = () => {
               )}
 
               {/* This Week */}
-              {thisWeek.length > 0 && (
+              {weekList.length > 0 && (
                 <section>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
                   <div className="live-glass-card divide-y divide-white/[0.05]">
-                    {thisWeek.map((s) => (
+                    {weekList.map((s) => (
                       <div key={s.id} className="flex items-center gap-3 px-5 py-3.5 group/row hover:bg-white/[0.02] transition-colors">
                         <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
                           <CalendarDays className="h-3.5 w-3.5 text-white/35" />
@@ -345,11 +379,11 @@ const AcademyLive = () => {
               </button>
 
               {/* This Week sidebar cards */}
-              {thisWeek.length > 0 && (
+              {weekList.length > 0 && (
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
                   <div className="space-y-2">
-                    {thisWeek.map((s) => {
+                    {weekList.map((s) => {
                       const d = new Date(s.session_date);
                       return (
                         <div key={s.id} className="live-glass-card p-4">
