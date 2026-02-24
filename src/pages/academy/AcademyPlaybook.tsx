@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { PlaybookReader } from "@/components/playbook/PlaybookReader";
 import { PlaybookChapterList } from "@/components/playbook/PlaybookChapterList";
@@ -148,7 +149,15 @@ const AcademyPlaybook = () => {
     <AcademyLayout>
       <div className="h-[calc(100vh-64px)] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-white/[0.06]">
+        <div className="px-6 py-5 border-b border-white/[0.06] space-y-3">
+          <AdminActionBar
+            title="Playbook Admin"
+            permission="manage_content"
+            actions={[
+              { label: "Replace PDF", disabled: true },
+              { label: "Edit Chapters", disabled: true },
+            ]}
+          />
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
               <VaultPlaybookIcon className="h-5 w-5" />

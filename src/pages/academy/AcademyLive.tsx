@@ -6,10 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Radio, Calendar, Clock, ExternalLink, Plus, Pencil, Trash2, Loader2,
+import { Radio, Calendar, Clock, ExternalLink, Plus, Pencil, Trash2, Loader2,
   Bell, Link2, CalendarPlus, Play, ChevronRight, CalendarDays, Settings2,
 } from "lucide-react";
+import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -308,7 +308,15 @@ const AcademyLive = () => {
           </div>
         )}
 
-        <div className="px-4 md:px-6 pb-8">
+        <div className="px-4 md:px-6 pb-8 space-y-4">
+          <AdminActionBar
+            title="Live Sessions Admin"
+            permission="manage_content"
+            actions={[
+              { label: "Bulk Import", disabled: true },
+              { label: "Calendar Sync", disabled: true },
+            ]}
+          />
           <div className="flex gap-6 max-w-[1200px]">
 
             {/* ─── LEFT COLUMN (main) ─── */}

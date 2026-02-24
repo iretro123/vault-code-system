@@ -16,6 +16,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AdminActionBar } from "@/components/admin/AdminActionBar";
 
 /* ─── Types ─── */
 const DB_CATEGORIES = [
@@ -438,7 +439,15 @@ const AcademyResources = () => {
   return (
     <AcademyLayout>
       <PageHeader title="Toolkit" subtitle="Calculators, templates, presets, and downloads" />
-      <div className="px-4 md:px-6 pb-10">
+      <div className="px-4 md:px-6 pb-10 space-y-4">
+        <AdminActionBar
+          title="Toolkit Admin"
+          permission="manage_content"
+          actions={[
+            { label: "Upload Resource", disabled: true },
+            { label: "Reorder Items", disabled: true },
+          ]}
+        />
         {isAdmin ? (
           <Tabs value={tab} onValueChange={setTab} className="space-y-4">
             <TabsList className="bg-white/[0.03] border border-white/[0.06] p-1 h-auto">

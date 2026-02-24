@@ -10,12 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Settings, LogOut, HelpCircle, LayoutGrid } from "lucide-react";
+import { Settings, LogOut, HelpCircle, LayoutGrid, ShieldCheck, Eye } from "lucide-react";
+import { useAdminMode } from "@/contexts/AdminModeContext";
+import { Switch } from "@/components/ui/switch";
 import { Link, useNavigate } from "react-router-dom";
 
 export function PlayerIdentity() {
   const { user, profile, loading, signOut } = useAuth();
   const { roleName } = useAcademyPermissions();
+  const { canToggle, adminModeOn, previewAsMember, toggleAdminMode, togglePreviewAsMember } = useAdminMode();
   const navigate = useNavigate();
 
   if (loading) {
@@ -80,6 +83,27 @@ export function PlayerIdentity() {
             Mode Select
           </Link>
         </DropdownMenuItem>
+        {canToggle && (
+          <>
+            <DropdownMenuSeparator />
+            <div className="px-3 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary/70" />
+                <span className="text-sm font-medium">Admin Mode</span>
+              </div>
+              <Switch checked={adminModeOn} onCheckedChange={toggleAdminMode} className="h-5 w-9" thumbClassName="h-4 w-4 data-[state=checked]:translate-x-4" />
+            </div>
+            {adminModeOn && (
+              <div className="px-3 pb-1 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Preview as Member</span>
+                </div>
+                <Switch checked={previewAsMember} onCheckedChange={togglePreviewAsMember} className="h-4 w-7" thumbClassName="h-3 w-3 data-[state=checked]:translate-x-3" />
+              </div>
+            )}
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/academy/settings" className="flex items-center gap-2 cursor-pointer">
