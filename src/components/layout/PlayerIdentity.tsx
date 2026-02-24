@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Settings, LogOut, HelpCircle } from "lucide-react";
+import { Settings, LogOut, HelpCircle, LayoutGrid } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 export function PlayerIdentity() {
@@ -73,6 +73,13 @@ export function PlayerIdentity() {
           <p className="text-sm font-medium text-foreground">{displayName}</p>
           <p className="text-xs text-muted-foreground">@{username}</p>
         </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/hub" className="flex items-center gap-2 cursor-pointer">
+            <LayoutGrid className="h-4 w-4" />
+            Mode Select
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/academy/settings" className="flex items-center gap-2 cursor-pointer">
