@@ -3,7 +3,9 @@ import { Link, Navigate } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { PanelLeft } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +18,24 @@ interface AcademyLayoutProps {
   children: ReactNode;
 }
 
+function HeaderSidebarToggle() {
+  const { state, toggleSidebar } = useSidebar();
+  if (state !== "collapsed") return null;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={toggleSidebar}
+          aria-label="Open sidebar"
+          className="hidden md:flex items-center justify-center h-8 w-8 rounded-lg hover:bg-white/[0.06] transition-colors duration-[120ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <PanelLeft className="h-[18px] w-[18px] text-muted-foreground" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="text-xs">Open sidebar</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export function AcademyLayout({ children }: AcademyLayoutProps) {
   const { user, profile, loading } = useAuth();
@@ -99,6 +119,7 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
           <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
+                <HeaderSidebarToggle />
                 <Link to="/academy/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <span className="text-lg font-bold tracking-tight text-foreground">
                     Vault<span className="text-primary">Academy</span>
