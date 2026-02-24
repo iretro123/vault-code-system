@@ -4,13 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Radio, Calendar, Clock, ExternalLink, Plus, Pencil, Trash2, Loader2,
   Bell, Link2, CalendarPlus, Play, ChevronRight, CalendarDays, Settings2,
+  Eye, EyeOff,
 } from "lucide-react";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
-import { useAcademyRole } from "@/hooks/useAcademyRole";
+import { AdminOnly } from "@/components/admin/AdminOnly";
+import { useAdminMode } from "@/contexts/AdminModeContext";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -72,7 +75,17 @@ function to12h(date: Date) {
   return { hour: String(h), minute: String(m).padStart(2, "0"), ampm };
 }
 
-/* ── Session Form (used in modal + inline edit) ── */
+/* ── Audit helper ── */
+async function logAudit(adminId: string, action: string, targetId: string, metadata?: Record<string, any>) {
+  await supabase.from("audit_logs").insert({
+    admin_id: adminId,
+    action,
+    target_user_id: targetId,
+    metadata: metadata ?? {},
+  } as any);
+}
+
+/* ── Session Form (used in modal) ── */
 function SessionForm({
   initial,
   onSave,
@@ -208,17 +221,20 @@ function getMockSessions(): LiveSession[] {
 /* ═══════════════ PAGE ═══════════════ */
 const AcademyLive = () => {
   const { sessions: realSessions, loading, refetch } = useLiveSessions();
-  const { isAdmin } = useAcademyRole();
   const { user } = useAuth();
+  const { isAdminActive } = useAdminMode();
+  const { hasPermission } = useAcademyPermissions();
+  const canManage = isAdminActive && hasPermission("manage_live_sessions");
+
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
 
   const isMockMode = searchParams.get("mockLive") === "1";
   const realUpcoming = realSessions.filter((s) => !isPast(new Date(s.session_date)));
 
-  // Use mock data ONLY when: mock flag active AND zero real upcoming sessions
   const sessions = useMemo(() => {
     if (isMockMode && realUpcoming.length === 0) {
       return [...getMockSessions(), ...realSessions];
@@ -232,32 +248,68 @@ const AcademyLive = () => {
   const thisWeek = upcoming.filter((s) => isThisWeek(new Date(s.session_date), { weekStartsOn: 1 }));
   const weekList = thisWeek.length > 0 ? thisWeek : upcoming;
 
+  const selectedSession = selectedId ? sessions.find((s) => s.id === selectedId) ?? null : null;
+
   /* ── Handlers ── */
   const handleAdd = async (data: any) => {
+    if (!user?.id) return;
     setSaving(true);
-    const { error } = await supabase.from("live_sessions").insert({
+    const { data: inserted, error } = await supabase.from("live_sessions").insert({
       ...data,
-      created_by: user?.id || null,
-    } as any);
+      created_by: user.id,
+    } as any).select().single();
     setSaving(false);
     if (error) { toast.error(error.message); return; }
+    await logAudit(user.id, "live_session.create", user.id, { session_id: (inserted as any)?.id, title: data.title });
     toast.success("Session created");
     setShowAdd(false);
     refetch();
   };
+
   const handleUpdate = async (id: string, data: any) => {
+    if (!user?.id) return;
     setSaving(true);
     const { error } = await supabase.from("live_sessions").update(data as any).eq("id", id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
+    await logAudit(user.id, "live_session.update", user.id, { session_id: id, changes: data });
     toast.success("Session updated");
     setEditingId(null);
     refetch();
   };
+
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this session?")) return;
-    await supabase.from("live_sessions").delete().eq("id", id);
+    if (!user?.id || !confirm("Delete this session?")) return;
+    const { error } = await supabase.from("live_sessions").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    await logAudit(user.id, "live_session.delete", user.id, { session_id: id });
     toast.success("Session deleted");
+    if (selectedId === id) setSelectedId(null);
+    refetch();
+  };
+
+  const handleTogglePublish = async (session: LiveSession) => {
+    if (!user?.id) return;
+    const newStatus = session.status === "scheduled" ? "completed" : "scheduled";
+    const { error } = await supabase.from("live_sessions").update({ status: newStatus } as any).eq("id", session.id);
+    if (error) { toast.error(error.message); return; }
+    await logAudit(user.id, `live_session.${newStatus === "completed" ? "unpublish" : "publish"}`, user.id, { session_id: session.id });
+    toast.success(newStatus === "scheduled" ? "Session published" : "Session unpublished");
+    refetch();
+  };
+
+  const handleMarkReplay = async (session: LiveSession) => {
+    if (!user?.id) return;
+    const replayUrl = prompt("Enter replay URL:", session.replay_url || "");
+    if (replayUrl === null) return;
+    const { error } = await supabase.from("live_sessions").update({
+      is_replay: true,
+      replay_url: replayUrl.trim() || null,
+      status: "completed",
+    } as any).eq("id", session.id);
+    if (error) { toast.error(error.message); return; }
+    await logAudit(user.id, "live_session.mark_replay", user.id, { session_id: session.id, replay_url: replayUrl });
+    toast.success("Marked as replay");
     refetch();
   };
 
@@ -284,22 +336,30 @@ const AcademyLive = () => {
       <div className="liveSessionsPage">
         <div className="flex items-center justify-between px-4 md:px-6">
           <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
-          {isAdmin && (
-            <Dialog open={showAdd} onOpenChange={setShowAdd}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1.5">
-                  <Plus className="h-3.5 w-3.5" /> Create Session
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Create Live Session</DialogTitle>
-                </DialogHeader>
-                <SessionForm onSave={handleAdd} onCancel={() => setShowAdd(false)} saving={saving} />
-              </DialogContent>
-            </Dialog>
+          {/* Create button only visible in admin mode */}
+          {canManage && (
+            <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
+              <Plus className="h-3.5 w-3.5" /> Create Session
+            </Button>
           )}
         </div>
+
+        {/* Create / Edit Dialog */}
+        <Dialog open={showAdd || !!editingId} onOpenChange={(open) => { if (!open) { setShowAdd(false); setEditingId(null); } }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingId ? "Edit Session" : "Create Live Session"}</DialogTitle>
+            </DialogHeader>
+            {editingId ? (
+              (() => {
+                const s = sessions.find((x) => x.id === editingId);
+                return s ? <SessionForm initial={s} onSave={(data) => handleUpdate(s.id, data)} onCancel={() => setEditingId(null)} saving={saving} /> : null;
+              })()
+            ) : (
+              <SessionForm onSave={handleAdd} onCancel={() => setShowAdd(false)} saving={saving} />
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Mock mode indicator */}
         {isMockMode && realUpcoming.length === 0 && (
@@ -309,29 +369,37 @@ const AcademyLive = () => {
         )}
 
         <div className="px-4 md:px-6 pb-8 space-y-4">
+          {/* Admin Action Bar — real actions */}
           <AdminActionBar
             title="Live Sessions Admin"
-            permission="manage_content"
+            permission="manage_live_sessions"
             actions={[
-              { label: "Bulk Import", disabled: true },
-              { label: "Calendar Sync", disabled: true },
+              { label: "Create Session", icon: Plus, onClick: () => setShowAdd(true) },
+              { label: "Edit", icon: Pencil, onClick: selectedSession ? () => setEditingId(selectedSession.id) : undefined, disabled: !selectedSession },
+              { label: "Delete", icon: Trash2, onClick: selectedSession ? () => handleDelete(selectedSession.id) : undefined, disabled: !selectedSession },
+              { label: selectedSession?.status === "completed" ? "Publish" : "Unpublish", icon: selectedSession?.status === "completed" ? Eye : EyeOff, onClick: selectedSession ? () => handleTogglePublish(selectedSession) : undefined, disabled: !selectedSession },
+              { label: "Mark Replay", icon: Play, onClick: selectedSession ? () => handleMarkReplay(selectedSession) : undefined, disabled: !selectedSession },
             ]}
           />
+
           <div className="flex gap-6 max-w-[1200px]">
 
             {/* ─── LEFT COLUMN (main) ─── */}
             <div className="flex-1 min-w-0 space-y-6">
 
               {/* Next Live Session Hero */}
-              {nextSession && editingId !== nextSession.id ? (
-                <div className="live-glass-card live-glass-card--hero p-6 relative group">
+              {nextSession ? (
+                <div
+                  className={cn("live-glass-card live-glass-card--hero p-6 relative group", canManage && "cursor-pointer", selectedId === nextSession.id && canManage && "ring-1 ring-primary/40")}
+                  onClick={canManage ? () => setSelectedId(selectedId === nextSession.id ? null : nextSession.id) : undefined}
+                >
                   <div className="flex items-start justify-between mb-1">
                     <p className="text-xs font-semibold uppercase tracking-widest text-white/50">Next Live Session</p>
                     <div className="flex items-center gap-1">
-                      {isAdmin && (
+                      {canManage && (
                         <>
-                          <button onClick={() => setEditingId(nextSession.id)} className="live-icon-btn"><Pencil className="h-3.5 w-3.5" /></button>
-                          <button onClick={() => handleDelete(nextSession.id)} className="live-icon-btn text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingId(nextSession.id); }} className="live-icon-btn"><Pencil className="h-3.5 w-3.5" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(nextSession.id); }} className="live-icon-btn text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
                         </>
                       )}
                       <button className="live-icon-btn"><CalendarDays className="h-3.5 w-3.5" /></button>
@@ -347,31 +415,27 @@ const AcademyLive = () => {
 
                   <div className="flex items-center gap-3 mt-5 flex-wrap">
                     {nextSession.join_url && (
-                      <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer">
+                      <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                         <button className="live-btn-primary">
                           <ExternalLink className="h-4 w-4" /> Join Zoom
                         </button>
                       </a>
                     )}
                     {nextSession.join_url && (
-                      <button className="live-btn-glass" onClick={() => copyLink(nextSession.join_url)}>
+                      <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); copyLink(nextSession.join_url); }}>
                         <Link2 className="h-3.5 w-3.5" /> Copy Link
                       </button>
                     )}
-                    <button className="live-btn-glass">
+                    <button className="live-btn-glass" onClick={(e) => e.stopPropagation()}>
                       <CalendarPlus className="h-3.5 w-3.5" /> Add to Calendar
                     </button>
                   </div>
 
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
-                    <button className="live-btn-glass text-xs gap-1.5">
+                    <button className="live-btn-glass text-xs gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <Bell className="h-3.5 w-3.5" /> Notify Me
                     </button>
                   </div>
-                </div>
-              ) : nextSession && editingId === nextSession.id ? (
-                <div className="live-glass-card p-4">
-                  <SessionForm initial={nextSession} onSave={(data) => handleUpdate(nextSession.id, data)} onCancel={() => setEditingId(null)} saving={saving} />
                 </div>
               ) : (
                 <div className="live-glass-card p-8 flex flex-col items-center text-center">
@@ -379,7 +443,7 @@ const AcademyLive = () => {
                     <Radio className="h-5 w-5 text-white/30" />
                   </div>
                   <p className="text-sm text-white/40">No upcoming live sessions scheduled.</p>
-                  {isAdmin && <p className="text-xs text-white/30 mt-1">Click "Create Session" to add one.</p>}
+                  {canManage && <p className="text-xs text-white/30 mt-1">Click "Create Session" to add one.</p>}
                 </div>
               )}
 
@@ -389,7 +453,15 @@ const AcademyLive = () => {
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
                   <div className="live-glass-card divide-y divide-white/[0.05]">
                     {weekList.map((s) => (
-                      <div key={s.id} className="flex items-center gap-3 px-5 py-3.5 group/row hover:bg-white/[0.02] transition-colors">
+                      <div
+                        key={s.id}
+                        className={cn(
+                          "flex items-center gap-3 px-5 py-3.5 group/row hover:bg-white/[0.02] transition-colors",
+                          canManage && "cursor-pointer",
+                          selectedId === s.id && canManage && "bg-primary/[0.06]"
+                        )}
+                        onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}
+                      >
                         <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
                           <CalendarDays className="h-3.5 w-3.5 text-white/35" />
                         </div>
@@ -397,10 +469,10 @@ const AcademyLive = () => {
                         <span className="text-sm font-medium text-white/85 flex-1 truncate">{s.title}</span>
                         <span className="text-xs text-white/30 shrink-0">{s.duration_minutes} min</span>
                         <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)}</span>
-                        {isAdmin && (
+                        {canManage && (
                           <>
-                            <button onClick={() => setEditingId(s.id)} className="live-icon-btn opacity-0 group-hover/row:opacity-100"><Pencil className="h-3 w-3" /></button>
-                            <button onClick={() => handleDelete(s.id)} className="live-icon-btn text-red-400 opacity-0 group-hover/row:opacity-100"><Trash2 className="h-3 w-3" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/row:opacity-100"><Pencil className="h-3 w-3" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/row:opacity-100"><Trash2 className="h-3 w-3" /></button>
                           </>
                         )}
                         <ChevronRight className="h-3.5 w-3.5 text-white/20 shrink-0" />
@@ -410,23 +482,21 @@ const AcademyLive = () => {
                 </section>
               )}
 
-              {/* Editing inline for non-hero sessions */}
-              {editingId && editingId !== nextSession?.id && (() => {
-                const s = sessions.find((x) => x.id === editingId);
-                return s ? (
-                  <div className="live-glass-card p-4">
-                    <SessionForm initial={s} onSave={(data) => handleUpdate(s.id, data)} onCancel={() => setEditingId(null)} saving={saving} />
-                  </div>
-                ) : null;
-              })()}
-
               {/* Replays (past / completed sessions) */}
               {past.length > 0 && (
                 <section>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
                   <div className="space-y-2">
                     {past.map((s) => (
-                      <div key={s.id} className="live-glass-card px-5 py-4 flex items-center gap-4 group/replay">
+                      <div
+                        key={s.id}
+                        className={cn(
+                          "live-glass-card px-5 py-4 flex items-center gap-4 group/replay",
+                          canManage && "cursor-pointer",
+                          selectedId === s.id && canManage && "ring-1 ring-primary/40"
+                        )}
+                        onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}
+                      >
                         <div className="h-10 w-10 rounded-xl bg-white/[0.05] flex items-center justify-center shrink-0">
                           <Play className="h-4 w-4 text-white/30" />
                         </div>
@@ -437,14 +507,14 @@ const AcademyLive = () => {
                             {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
                           </p>
                         </div>
-                        {isAdmin && (
+                        {canManage && (
                           <>
-                            <button onClick={() => setEditingId(s.id)} className="live-icon-btn opacity-0 group-hover/replay:opacity-100"><Pencil className="h-3 w-3" /></button>
-                            <button onClick={() => handleDelete(s.id)} className="live-icon-btn text-red-400 opacity-0 group-hover/replay:opacity-100"><Trash2 className="h-3 w-3" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/replay:opacity-100"><Pencil className="h-3 w-3" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/replay:opacity-100"><Trash2 className="h-3 w-3" /></button>
                           </>
                         )}
                         {(s.replay_url || s.join_url) && (
-                          <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer">
+                          <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
                             <button className="live-pill-btn">Watch Replay</button>
                           </a>
                         )}
