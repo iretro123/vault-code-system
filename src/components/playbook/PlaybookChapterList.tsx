@@ -86,24 +86,24 @@ export function PlaybookChapterList({
                   <span className="text-[11px] text-white/25">{ch.minutes_estimate} min</span>
                   {isCompleted && (
                     <span
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-full border"
-                      style={{ background: "rgba(34,197,94,0.18)", borderColor: "rgba(34,197,94,0.35)", color: "#EFFFF3" }}
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap leading-none"
+                      style={{ background: "rgba(34,197,94,0.24)", color: "rgba(236,253,245,0.95)", border: "0.5px solid rgba(34,197,94,0.28)" }}
                     >
                       Complete
                     </span>
                   )}
                   {!isCompleted && status === "in_progress" && !isLocked && (
                     <span
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-full border"
-                      style={{ background: "rgba(59,130,246,0.18)", borderColor: "rgba(59,130,246,0.35)", color: "rgba(255,255,255,0.9)" }}
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap leading-none"
+                      style={{ background: "rgba(59,130,246,0.28)", color: "rgba(239,246,255,0.95)", border: "0.5px solid rgba(59,130,246,0.30)" }}
                     >
                       In Progress
                     </span>
                   )}
                   {isLocked && (
                     <span
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-full border"
-                      style={{ background: "rgba(148,163,184,0.10)", borderColor: "rgba(148,163,184,0.20)", color: "rgba(226,232,240,0.75)" }}
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap leading-none"
+                      style={{ background: "rgba(148,163,184,0.16)", color: "rgba(226,232,240,0.85)", border: "0.5px solid rgba(148,163,184,0.18)" }}
                     >
                       Preview
                     </span>
