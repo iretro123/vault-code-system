@@ -85,17 +85,26 @@ export function PlaybookChapterList({
                   <Clock className="h-3 w-3 text-white/20" />
                   <span className="text-[11px] text-white/25">{ch.minutes_estimate} min</span>
                   {isCompleted && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400/70">
+                    <span
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full border"
+                      style={{ background: "rgba(34,197,94,0.18)", borderColor: "rgba(34,197,94,0.35)", color: "#EFFFF3" }}
+                    >
                       Complete
                     </span>
                   )}
                   {!isCompleted && status === "in_progress" && !isLocked && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary/70">
+                    <span
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full border"
+                      style={{ background: "rgba(59,130,246,0.18)", borderColor: "rgba(59,130,246,0.35)", color: "rgba(255,255,255,0.9)" }}
+                    >
                       In Progress
                     </span>
                   )}
                   {isLocked && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/[0.04] text-white/20">
+                    <span
+                      className="text-[11px] font-medium px-2.5 py-1 rounded-full border"
+                      style={{ background: "rgba(148,163,184,0.10)", borderColor: "rgba(148,163,184,0.20)", color: "rgba(226,232,240,0.75)" }}
+                    >
                       Preview
                     </span>
                   )}
