@@ -138,13 +138,21 @@ function SessionForm({
 
 /* ── Mock data for dev preview ── */
 function getMockSessions(): LiveSession[] {
+  // Build dates relative to NOW so mocks are always in the future
+  const now = new Date();
+  const day = (offset: number, h: number, m: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() + offset);
+    d.setHours(h, m, 0, 0);
+    return d.toISOString();
+  };
   return [
-    { id: "mock-1", title: "Market Prep + Q&A", description: "Weekly market overview and open Q&A", session_date: "2025-04-30T22:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-2", title: "Trading Psychology Workshop", description: "", session_date: "2025-05-01T17:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-3", title: "Advanced Options Strategies", description: "", session_date: "2025-05-02T19:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-4", title: "Weekly Market Review", description: "", session_date: "2025-05-03T09:30:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "office-hours" },
-    { id: "mock-r1", title: "Risk Management Essentials", description: "35 min", session_date: "2025-04-23T14:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-r2", title: "Options Risk Firewall", description: "42 min", session_date: "2025-04-19T15:00:00.000Z", join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-1", title: "Market Prep + Q&A", description: "Weekly market overview and open Q&A", session_date: day(1, 22, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-2", title: "Trading Psychology Workshop", description: "", session_date: day(2, 17, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-3", title: "Advanced Options Strategies", description: "", session_date: day(3, 19, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-4", title: "Weekly Market Review", description: "", session_date: day(4, 9, 30), join_url: "https://zoom.us/j/123456789", session_type: "office-hours" },
+    { id: "mock-r1", title: "Risk Management Essentials", description: "35 min", session_date: day(-5, 14, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-r2", title: "Options Risk Firewall", description: "42 min", session_date: day(-10, 15, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
   ];
 }
 
