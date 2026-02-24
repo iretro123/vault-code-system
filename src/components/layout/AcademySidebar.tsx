@@ -1,4 +1,5 @@
 import { useState } from "react";
+import vaultVLogo from "@/assets/vault-v-logo.png";
 import { useLocation } from "react-router-dom";
 import {
   Home,
@@ -59,7 +60,7 @@ export function AcademySidebar() {
     setInboxOpen(open);
     try { localStorage.setItem("va_inbox_open", String(open)); } catch {}
   };
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -76,6 +77,29 @@ export function AcademySidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-white/[0.04]" style={{ background: '#0B0F14' }}>
       <SidebarContent>
+        {/* Vault V toggle */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleSidebar}
+                      aria-label="Toggle sidebar"
+                      className={`flex items-center ${collapsed ? 'justify-center w-full' : 'gap-2 px-2'} h-10 rounded-xl transition-colors duration-[120ms] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+                    >
+                      <img src={vaultVLogo} alt="" className="h-[24px] w-[24px] object-contain shrink-0" />
+                      {!collapsed && <span className="text-sm font-semibold text-foreground tracking-tight">Vault</span>}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs">Toggle sidebar</TooltipContent>
+                </Tooltip>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Search */}
 
         <SidebarGroup>
