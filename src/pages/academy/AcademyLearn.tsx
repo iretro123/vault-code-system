@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
-import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight, BookOpen } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight } from "lucide-react";
+import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
@@ -115,7 +116,7 @@ const AcademyLearn = () => {
           >
             <div className="flex items-center gap-4 min-w-0">
               <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <BookOpen className="h-5 w-5 text-primary" />
+                <VaultPlaybookIcon className="h-6 w-6" />
               </div>
               <div className="min-w-0">
                 <h3 className="text-base font-bold text-foreground">Vault Playbook</h3>

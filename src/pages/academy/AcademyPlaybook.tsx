@@ -5,7 +5,8 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { PlaybookReader } from "@/components/playbook/PlaybookReader";
 import { PlaybookChapterList } from "@/components/playbook/PlaybookChapterList";
 import { PlaybookRightPanel } from "@/components/playbook/PlaybookRightPanel";
@@ -120,7 +121,7 @@ const AcademyPlaybook = () => {
     return (
       <AcademyLayout>
         <div className="flex flex-col items-center justify-center h-[60vh] text-center px-8">
-          <BookOpen className="h-16 w-16 text-white/10 mb-6" />
+          <VaultPlaybookIcon className="h-16 w-16 opacity-10 mb-6" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Vault Playbook</h2>
           <p className="text-sm text-white/40 max-w-md">
             The Trading OS playbook is being prepared. Chapters will appear here once configured.
@@ -137,7 +138,7 @@ const AcademyPlaybook = () => {
         <div className="px-6 py-5 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <BookOpen className="h-4.5 w-4.5 text-primary" />
+              <VaultPlaybookIcon className="h-5 w-5" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Vault Playbook</h1>

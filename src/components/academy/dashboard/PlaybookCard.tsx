@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
-import { BookOpen, ArrowRight, Check, Clock } from "lucide-react";
+import { ArrowRight, Check, Clock } from "lucide-react";
+import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
@@ -61,7 +62,7 @@ export function PlaybookCard() {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <BookOpen className="h-5 w-5 text-primary" />
+            <VaultPlaybookIcon className="h-7 w-7" />
           </div>
           <div>
             <h3 className="text-base font-bold text-foreground">Vault Playbook</h3>

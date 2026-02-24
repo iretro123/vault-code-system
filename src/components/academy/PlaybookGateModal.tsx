@@ -3,7 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
+import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 
 interface Props {
   open: boolean;
@@ -50,7 +51,7 @@ export function PlaybookGateModal({ open, onOpenChange, type }: Props) {
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-primary" />
+              <VaultPlaybookIcon className="h-6 w-6" />
             </div>
             <DialogTitle className="text-lg font-bold">{title}</DialogTitle>
           </div>
@@ -67,7 +68,7 @@ export function PlaybookGateModal({ open, onOpenChange, type }: Props) {
             }}
           >
             {isSetup ? "Continue Playbook" : "Log a Trade"}
-            <BookOpen className="h-4 w-4" />
+            <VaultPlaybookIcon className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
