@@ -5,7 +5,7 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { PlaybookReader } from "@/components/playbook/PlaybookReader";
 import { PlaybookChapterList } from "@/components/playbook/PlaybookChapterList";
@@ -30,7 +30,18 @@ const AcademyPlaybook = () => {
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [reachedEnd, setReachedEnd] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // ESC to exit expanded mode
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsExpanded(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isExpanded]);
 
   // Fetch signed URL once user is authenticated
   useEffect(() => {
@@ -164,7 +175,25 @@ const AcademyPlaybook = () => {
           </div>
 
           {/* Center: Reader */}
-          <div className="flex-1 min-w-0 p-4">
+          <div
+            className="min-w-0 p-4 relative transition-all duration-200 ease-in-out"
+            style={{
+              flex: isExpanded ? "1 1 0%" : "1 1 0%",
+              maxWidth: isExpanded ? "1300px" : undefined,
+              margin: isExpanded ? "0 auto" : undefined,
+              width: isExpanded ? "95%" : undefined,
+            }}
+          >
+            {/* Expand/Collapse toggle */}
+            <button
+              onClick={() => setIsExpanded((v) => !v)}
+              aria-label={isExpanded ? "Exit expanded view" : "Expand reader"}
+              className="absolute top-6 right-6 z-30 h-8 w-8 flex items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm border border-white/[0.08] text-white/40 hover:text-foreground hover:bg-white/[0.08] transition-colors"
+              title={isExpanded ? "Exit expanded view (Esc)" : "Expand reader"}
+            >
+              {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+
             {activeChapter ? (
               <PlaybookReader
                 key={activeChapter.id}
@@ -186,8 +215,12 @@ const AcademyPlaybook = () => {
           </div>
 
           {/* Right: Notes + Checkpoint + Progress */}
-          <div className="w-[300px] shrink-0 border-l border-white/[0.06] overflow-y-auto p-4">
-            {activeChapter && (
+          <div
+            className={`shrink-0 border-l border-white/[0.06] overflow-y-auto p-4 transition-all duration-200 ease-in-out ${
+              isExpanded ? "w-0 opacity-0 overflow-hidden p-0 border-l-0" : "w-[300px] opacity-100"
+            }`}
+          >
+            {activeChapter && !isExpanded && (
               <PlaybookRightPanel
                 chapter={activeChapter}
                 chProgress={progress[activeChapter.id]}
