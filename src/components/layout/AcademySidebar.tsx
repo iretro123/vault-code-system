@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Sparkles,
   Wrench,
+  PanelLeft,
 } from "lucide-react";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
@@ -83,19 +84,42 @@ export function AcademySidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                    <button
-                      onClick={toggleSidebar}
-                      aria-label="Toggle sidebar"
-                      className={`flex items-center w-full ${collapsed ? 'justify-center' : 'justify-between px-2'} h-11 rounded-xl transition-colors duration-[120ms] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <img src={vaultVLogo} alt="" className={`object-contain shrink-0 ${collapsed ? 'h-[28px] w-[28px]' : 'h-[26px] w-[26px]'}`} />
-                        {!collapsed && <span className="text-sm font-semibold text-foreground tracking-tight">Vault</span>}
-                      </span>
-                      {!collapsed && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {collapsed ? (
+                      <button
+                        onClick={toggleSidebar}
+                        aria-label="Open sidebar"
+                        className="group/toggle relative flex items-center justify-center w-10 h-10 mx-auto rounded-xl transition-all duration-[150ms] hover:bg-white/[0.06] hover:shadow-[0_0_12px_rgba(59,130,246,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      >
+                        <img
+                          src={vaultVLogo}
+                          alt=""
+                          className="absolute inset-0 m-auto h-[20px] w-[20px] object-contain transition-all duration-[180ms] opacity-100 scale-100 group-hover/toggle:opacity-0 group-hover/toggle:scale-[0.98]"
+                        />
+                        <PanelLeft
+                          className="absolute inset-0 m-auto h-[18px] w-[18px] text-muted-foreground transition-all duration-[180ms] opacity-0 scale-[0.98] group-hover/toggle:opacity-100 group-hover/toggle:scale-100"
+                        />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={toggleSidebar}
+                        aria-label="Collapse sidebar"
+                        className="flex items-center w-full justify-between px-2 h-11 rounded-xl transition-colors duration-[120ms] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      >
+                        <span className="flex items-center gap-2">
+                          <img src={vaultVLogo} alt="" className="h-[26px] w-[26px] object-contain shrink-0" />
+                          <span className="text-sm font-semibold text-foreground tracking-tight">Vault</span>
+                        </span>
                         <ChevronLeft className="h-4 w-4 text-muted-foreground transition-transform duration-[120ms]" />
-                      )}
-                    </button>
+                      </button>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs flex items-center gap-2">
+                    {collapsed ? "Open sidebar" : "Collapse sidebar"}
+                    <kbd className="text-[10px] text-muted-foreground/60 bg-white/[0.03] border border-white/[0.04] rounded px-1 py-0.5 font-mono">⌘B</kbd>
+                  </TooltipContent>
+                </Tooltip>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
