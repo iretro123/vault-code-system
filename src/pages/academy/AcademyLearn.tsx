@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight } from "lucide-react";
+import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
@@ -105,6 +106,15 @@ const AcademyLearn = () => {
             );
           })()}
         </div>
+
+        <AdminActionBar
+          title="Learn Admin"
+          permission="manage_content"
+          actions={[
+            { label: "Reorder Modules", disabled: true },
+            { label: "Add Module", disabled: true },
+          ]}
+        />
 
         <ClaimRoleBanner />
 

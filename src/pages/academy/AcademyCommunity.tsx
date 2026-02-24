@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { CommunityAnnouncements } from "@/components/academy/community/CommunityAnnouncements";
 import { CommunityWins } from "@/components/academy/community/CommunityWins";
+import { AdminActionBar } from "@/components/admin/AdminActionBar";
 
 const TABS = [
   { key: "trade-floor", label: "Trade Floor" },
@@ -28,6 +29,16 @@ const AcademyCommunity = () => {
     <AcademyLayout>
       <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
         {/* Tab Navigation — Premium segmented control */}
+        <div className="shrink-0 px-4 pt-3">
+          <AdminActionBar
+            title="Community Admin"
+            permission="moderate_chat"
+            actions={[
+              { label: "Lock Room", disabled: true },
+              { label: "Pin Message", disabled: true },
+            ]}
+          />
+        </div>
         <div className="shrink-0 flex justify-center pt-5 pb-3 px-4">
           <div className="inline-flex items-center gap-0.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5">
             {TABS.map((tab) => (
