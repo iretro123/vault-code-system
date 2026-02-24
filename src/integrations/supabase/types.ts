@@ -800,31 +800,46 @@ export type Database = {
       live_sessions: {
         Row: {
           created_at: string
+          created_by: string | null
           description: string
+          duration_minutes: number
           id: string
+          is_replay: boolean
           join_url: string
+          replay_url: string | null
           session_date: string
           session_type: string
+          status: string
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           description?: string
+          duration_minutes?: number
           id?: string
+          is_replay?: boolean
           join_url?: string
+          replay_url?: string | null
           session_date: string
           session_type?: string
+          status?: string
           title: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           description?: string
+          duration_minutes?: number
           id?: string
+          is_replay?: boolean
           join_url?: string
+          replay_url?: string | null
           session_date?: string
           session_type?: string
+          status?: string
           title?: string
           updated_at?: string
         }

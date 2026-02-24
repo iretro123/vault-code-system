@@ -4,11 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Radio, Calendar, Clock, ExternalLink, Plus, Pencil, Trash2, Loader2,
   Bell, Link2, CalendarPlus, Play, ChevronRight, CalendarDays, Settings2,
 } from "lucide-react";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -24,9 +28,14 @@ interface LiveSession {
   session_date: string;
   join_url: string;
   session_type: string;
+  duration_minutes: number;
+  status: string;
+  is_replay: boolean;
+  replay_url: string | null;
+  created_by: string | null;
 }
 
-/* ── Data hook (unchanged) ── */
+/* ── Data hook ── */
 function useLiveSessions() {
   const [sessions, setSessions] = useState<LiveSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +54,7 @@ function useLiveSessions() {
   return { sessions, loading, refetch: fetch };
 }
 
-/* ── 12h time helpers (unchanged) ── */
+/* ── 12h time helpers ── */
 function parse12hTo24h(hour: string, minute: string, ampm: string): { h: number; m: number } | null {
   let h = parseInt(hour, 10);
   const m = parseInt(minute, 10);
@@ -63,7 +72,7 @@ function to12h(date: Date) {
   return { hour: String(h), minute: String(m).padStart(2, "0"), ampm };
 }
 
-/* ── Admin Session Form (unchanged logic, scoped styles) ── */
+/* ── Session Form (used in modal + inline edit) ── */
 function SessionForm({
   initial,
   onSave,
@@ -71,7 +80,11 @@ function SessionForm({
   saving,
 }: {
   initial?: LiveSession;
-  onSave: (data: { title: string; description: string; session_date: string; join_url: string; session_type: string }) => void;
+  onSave: (data: {
+    title: string; description: string; session_date: string; join_url: string;
+    session_type: string; duration_minutes: number; status: string;
+    is_replay: boolean; replay_url: string | null;
+  }) => void;
   onCancel: () => void;
   saving: boolean;
 }) {
@@ -86,6 +99,10 @@ function SessionForm({
   const [ampm, setAmpm] = useState(initTime.ampm);
   const [joinUrl, setJoinUrl] = useState(initial?.join_url || "");
   const [type, setType] = useState(initial?.session_type || "live");
+  const [duration, setDuration] = useState(String(initial?.duration_minutes ?? 60));
+  const [status, setStatus] = useState(initial?.status || "scheduled");
+  const [isReplay, setIsReplay] = useState(initial?.is_replay ?? false);
+  const [replayUrl, setReplayUrl] = useState(initial?.replay_url || "");
 
   const buildDate = () => {
     const parsed = parse12hTo24h(hour, minute, ampm);
@@ -98,7 +115,7 @@ function SessionForm({
   const isValid = !!title.trim() && !!dateStr && !!buildDate();
 
   return (
-    <div className="live-glass-card p-4 space-y-3">
+    <div className="space-y-3">
       <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Session title" />
       <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2} className="resize-none" />
       <div className="grid grid-cols-2 gap-2">
@@ -124,11 +141,44 @@ function SessionForm({
           <option value="PM">PM</option>
         </select>
       </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Duration (min)</label>
+          <Input value={duration} onChange={(e) => setDuration(e.target.value.replace(/\D/g, ""))} placeholder="60" />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+          >
+            <option value="scheduled">Scheduled</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
       <Input value={joinUrl} onChange={(e) => setJoinUrl(e.target.value)} placeholder="Join URL (Zoom, Meet, etc.)" />
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
+        <input type="checkbox" id="is-replay" checked={isReplay} onChange={(e) => setIsReplay(e.target.checked)} className="rounded" />
+        <label htmlFor="is-replay" className="text-sm text-muted-foreground">Has replay</label>
+      </div>
+      {isReplay && (
+        <Input value={replayUrl} onChange={(e) => setReplayUrl(e.target.value)} placeholder="Replay URL" />
+      )}
+      <div className="flex gap-2 pt-2">
         <Button size="sm" disabled={saving || !isValid}
-          onClick={() => { const d = buildDate(); if (!d) return; onSave({ title: title.trim(), description: description.trim(), session_date: d.toISOString(), join_url: joinUrl.trim(), session_type: type }); }}>
-          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : initial ? "Save" : "Add Session"}
+          onClick={() => {
+            const d = buildDate();
+            if (!d) return;
+            onSave({
+              title: title.trim(), description: description.trim(),
+              session_date: d.toISOString(), join_url: joinUrl.trim(),
+              session_type: type, duration_minutes: parseInt(duration) || 60,
+              status, is_replay: isReplay, replay_url: replayUrl.trim() || null,
+            });
+          }}>
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : initial ? "Save" : "Create Session"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
       </div>
@@ -138,7 +188,6 @@ function SessionForm({
 
 /* ── Mock data for dev preview ── */
 function getMockSessions(): LiveSession[] {
-  // Build dates relative to NOW so mocks are always in the future
   const now = new Date();
   const day = (offset: number, h: number, m: number) => {
     const d = new Date(now);
@@ -147,12 +196,12 @@ function getMockSessions(): LiveSession[] {
     return d.toISOString();
   };
   return [
-    { id: "mock-1", title: "Market Prep + Q&A", description: "Weekly market overview and open Q&A", session_date: day(1, 22, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-2", title: "Trading Psychology Workshop", description: "", session_date: day(2, 17, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-3", title: "Advanced Options Strategies", description: "", session_date: day(3, 19, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-4", title: "Weekly Market Review", description: "", session_date: day(4, 9, 30), join_url: "https://zoom.us/j/123456789", session_type: "office-hours" },
-    { id: "mock-r1", title: "Risk Management Essentials", description: "35 min", session_date: day(-5, 14, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
-    { id: "mock-r2", title: "Options Risk Firewall", description: "42 min", session_date: day(-10, 15, 0), join_url: "https://zoom.us/j/123456789", session_type: "live" },
+    { id: "mock-1", title: "Market Prep + Q&A", description: "Weekly market overview and open Q&A", session_date: day(1, 22, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 60, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-2", title: "Trading Psychology Workshop", description: "", session_date: day(2, 17, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 45, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-3", title: "Advanced Options Strategies", description: "", session_date: day(3, 19, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 60, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-4", title: "Weekly Market Review", description: "", session_date: day(4, 9, 30), join_url: "https://zoom.us/j/123456789", session_type: "office-hours", duration_minutes: 30, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-r1", title: "Risk Management Essentials", description: "35 min", session_date: day(-5, 14, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 35, status: "completed", is_replay: true, replay_url: "https://zoom.us/j/123456789", created_by: null },
+    { id: "mock-r2", title: "Options Risk Firewall", description: "42 min", session_date: day(-10, 15, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 42, status: "completed", is_replay: true, replay_url: "https://zoom.us/j/123456789", created_by: null },
   ];
 }
 
@@ -160,6 +209,7 @@ function getMockSessions(): LiveSession[] {
 const AcademyLive = () => {
   const { sessions: realSessions, loading, refetch } = useLiveSessions();
   const { isAdmin } = useAcademyRole();
+  const { user } = useAuth();
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -176,20 +226,22 @@ const AcademyLive = () => {
     return realSessions;
   }, [isMockMode, realUpcoming.length, realSessions]);
 
-  const upcoming = sessions.filter((s) => !isPast(new Date(s.session_date)));
-  const past = sessions.filter((s) => isPast(new Date(s.session_date)));
+  const upcoming = sessions.filter((s) => !isPast(new Date(s.session_date)) && s.status !== "completed");
+  const past = sessions.filter((s) => isPast(new Date(s.session_date)) || s.status === "completed");
   const nextSession = upcoming[0] || null;
   const thisWeek = upcoming.filter((s) => isThisWeek(new Date(s.session_date), { weekStartsOn: 1 }));
-  // If no thisWeek matches (mock dates may be outside current week), show all upcoming
   const weekList = thisWeek.length > 0 ? thisWeek : upcoming;
 
-  /* ── Handlers (unchanged) ── */
+  /* ── Handlers ── */
   const handleAdd = async (data: any) => {
     setSaving(true);
-    const { error } = await supabase.from("live_sessions").insert(data as any);
+    const { error } = await supabase.from("live_sessions").insert({
+      ...data,
+      created_by: user?.id || null,
+    } as any);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Session added");
+    toast.success("Session created");
     setShowAdd(false);
     refetch();
   };
@@ -230,7 +282,24 @@ const AcademyLive = () => {
   return (
     <AcademyLayout>
       <div className="liveSessionsPage">
-        <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
+        <div className="flex items-center justify-between px-4 md:px-6">
+          <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
+          {isAdmin && (
+            <Dialog open={showAdd} onOpenChange={setShowAdd}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1.5">
+                  <Plus className="h-3.5 w-3.5" /> Create Session
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create Live Session</DialogTitle>
+                </DialogHeader>
+                <SessionForm onSave={handleAdd} onCancel={() => setShowAdd(false)} saving={saving} />
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
 
         {/* Mock mode indicator */}
         {isMockMode && realUpcoming.length === 0 && (
@@ -265,9 +334,9 @@ const AcademyLive = () => {
                   {nextSession.description && <p className="text-sm text-white/50 mt-1">{nextSession.description}</p>}
                   <p className="text-sm text-white/45 mt-1">
                     {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)}
+                    {nextSession.duration_minutes > 0 && <span className="ml-2 text-white/30">· {nextSession.duration_minutes} min</span>}
                   </p>
 
-                  {/* Buttons row */}
                   <div className="flex items-center gap-3 mt-5 flex-wrap">
                     {nextSession.join_url && (
                       <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer">
@@ -286,7 +355,6 @@ const AcademyLive = () => {
                     </button>
                   </div>
 
-                  {/* Notify Me */}
                   <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
                     <button className="live-btn-glass text-xs gap-1.5">
                       <Bell className="h-3.5 w-3.5" /> Notify Me
@@ -294,13 +362,16 @@ const AcademyLive = () => {
                   </div>
                 </div>
               ) : nextSession && editingId === nextSession.id ? (
-                <SessionForm initial={nextSession} onSave={(data) => handleUpdate(nextSession.id, data)} onCancel={() => setEditingId(null)} saving={saving} />
+                <div className="live-glass-card p-4">
+                  <SessionForm initial={nextSession} onSave={(data) => handleUpdate(nextSession.id, data)} onCancel={() => setEditingId(null)} saving={saving} />
+                </div>
               ) : (
                 <div className="live-glass-card p-8 flex flex-col items-center text-center">
                   <div className="h-11 w-11 rounded-2xl bg-white/[0.06] flex items-center justify-center mb-4">
                     <Radio className="h-5 w-5 text-white/30" />
                   </div>
                   <p className="text-sm text-white/40">No upcoming live sessions scheduled.</p>
+                  {isAdmin && <p className="text-xs text-white/30 mt-1">Click "Create Session" to add one.</p>}
                 </div>
               )}
 
@@ -316,6 +387,7 @@ const AcademyLive = () => {
                         </div>
                         <span className="text-xs text-white/40 w-10 shrink-0">{format(new Date(s.session_date), "EEE d")}</span>
                         <span className="text-sm font-medium text-white/85 flex-1 truncate">{s.title}</span>
+                        <span className="text-xs text-white/30 shrink-0">{s.duration_minutes} min</span>
                         <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)}</span>
                         {isAdmin && (
                           <>
@@ -333,10 +405,14 @@ const AcademyLive = () => {
               {/* Editing inline for non-hero sessions */}
               {editingId && editingId !== nextSession?.id && (() => {
                 const s = sessions.find((x) => x.id === editingId);
-                return s ? <SessionForm initial={s} onSave={(data) => handleUpdate(s.id, data)} onCancel={() => setEditingId(null)} saving={saving} /> : null;
+                return s ? (
+                  <div className="live-glass-card p-4">
+                    <SessionForm initial={s} onSave={(data) => handleUpdate(s.id, data)} onCancel={() => setEditingId(null)} saving={saving} />
+                  </div>
+                ) : null;
               })()}
 
-              {/* Replays (past sessions) */}
+              {/* Replays (past / completed sessions) */}
               {past.length > 0 && (
                 <section>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
@@ -348,7 +424,10 @@ const AcademyLive = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white/85 truncate">{s.title}</p>
-                          <p className="text-xs text-white/35">{format(new Date(s.session_date), "EEEE, MMM d")}</p>
+                          <p className="text-xs text-white/35">
+                            {format(new Date(s.session_date), "EEEE, MMM d")}
+                            {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
+                          </p>
                         </div>
                         {isAdmin && (
                           <>
@@ -356,8 +435,8 @@ const AcademyLive = () => {
                             <button onClick={() => handleDelete(s.id)} className="live-icon-btn text-red-400 opacity-0 group-hover/replay:opacity-100"><Trash2 className="h-3 w-3" /></button>
                           </>
                         )}
-                        {s.join_url && (
-                          <a href={s.join_url} target="_blank" rel="noopener noreferrer">
+                        {(s.replay_url || s.join_url) && (
+                          <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer">
                             <button className="live-pill-btn">Watch Replay</button>
                           </a>
                         )}
@@ -366,27 +445,14 @@ const AcademyLive = () => {
                   </div>
                 </section>
               )}
-
-              {/* Admin: add session */}
-              {isAdmin && (
-                showAdd ? (
-                  <SessionForm onSave={handleAdd} onCancel={() => setShowAdd(false)} saving={saving} />
-                ) : (
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
-                    <Plus className="h-3.5 w-3.5" /> Add Session
-                  </Button>
-                )
-              )}
             </div>
 
             {/* ─── RIGHT COLUMN (sidebar) ─── */}
             <div className="hidden lg:flex flex-col gap-5 w-[300px] shrink-0">
-              {/* Full Schedule btn */}
               <button className="live-btn-glass w-full justify-center py-2.5 gap-2">
                 <CalendarDays className="h-4 w-4" /> Full Schedule
               </button>
 
-              {/* This Week sidebar cards */}
               {weekList.length > 0 && (
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
@@ -413,7 +479,6 @@ const AcademyLive = () => {
                 </div>
               )}
 
-              {/* Replays sidebar */}
               {past.length > 0 && (
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
@@ -422,9 +487,12 @@ const AcademyLive = () => {
                       <div key={s.id} className="live-glass-card p-4">
                         <p className="text-sm font-semibold text-white/85 mb-1">{s.title}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-white/40">{format(new Date(s.session_date), "EEEE, MMM d")}</span>
-                          {s.join_url && (
-                            <a href={s.join_url} target="_blank" rel="noopener noreferrer">
+                          <span className="text-xs text-white/40">
+                            {format(new Date(s.session_date), "EEEE, MMM d")}
+                            {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
+                          </span>
+                          {(s.replay_url || s.join_url) && (
+                            <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer">
                               <button className="live-pill-btn text-[11px]">Watch Replay</button>
                             </a>
                           )}
