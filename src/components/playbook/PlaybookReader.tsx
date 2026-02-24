@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { ChevronLeft, ChevronRight, BookOpen, Loader2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, Loader2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PlaybookChapter, ChapterProgress } from "@/hooks/usePlaybookProgress";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +46,7 @@ function PlaybookReaderInner({
 
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [docLoaded, setDocLoaded] = useState(false);
+  const [zoom, setZoom] = useState(100);
   const notifiedEnd = useRef(false);
 
   // Reset page when chapter changes
@@ -133,24 +135,78 @@ function PlaybookReaderInner({
       </div>
 
       {/* PDF single page */}
-      <div className="flex-1 min-h-0 overflow-auto flex items-start justify-center bg-black/20 py-4">
-        <Document
-          file={pdfUrl}
-          onLoadSuccess={() => setDocLoaded(true)}
-          onLoadError={(err) => console.error("PDF load error:", err)}
-          loading={
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          }
-        >
-          <Page
-            pageNumber={currentPage}
-            width={680}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
-          />
-        </Document>
+      <div className="flex-1 min-h-0 relative">
+        {/* Zoom controls */}
+        <div className="absolute top-3 right-3 z-20 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/[0.08] px-1.5 py-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                aria-label="Zoom out"
+                onClick={() => setZoom((z) => Math.max(80, z - 10))}
+                disabled={zoom <= 80}
+                className="h-7 w-7 flex items-center justify-center rounded-full text-white/50 hover:text-foreground hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ZoomOut className="h-[15px] w-[15px]" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Zoom out</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                aria-label="Reset zoom"
+                onClick={() => setZoom(100)}
+                className="h-7 min-w-[40px] flex items-center justify-center rounded-full text-[11px] font-semibold text-white/60 hover:text-foreground hover:bg-white/[0.08] transition-colors font-mono"
+              >
+                {zoom}%
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Reset zoom</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                aria-label="Zoom in"
+                onClick={() => setZoom((z) => Math.min(180, z + 10))}
+                disabled={zoom >= 180}
+                className="h-7 w-7 flex items-center justify-center rounded-full text-white/50 hover:text-foreground hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ZoomIn className="h-[15px] w-[15px]" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Zoom in</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Scrollable + zoomable content */}
+        <div className="overflow-auto h-full flex items-start justify-center bg-black/20 py-4">
+          <div
+            style={{
+              transform: `scale(${zoom / 100})`,
+              transformOrigin: "top center",
+            }}
+          >
+            <Document
+              file={pdfUrl}
+              onLoadSuccess={() => setDocLoaded(true)}
+              onLoadError={(err) => console.error("PDF load error:", err)}
+              loading={
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              }
+            >
+              <Page
+                pageNumber={currentPage}
+                width={680}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+              />
+            </Document>
+          </div>
+        </div>
       </div>
 
       {/* Nav controls */}
