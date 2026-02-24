@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import handGiftImg from "@/assets/hand-gift.png";
+import vaultVLogo from "@/assets/vault-v-logo.png";
 import { Button } from "@/components/ui/button";
 import { Copy, Gift, Link, Send, UserPlus, Star, X, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,22 +33,21 @@ function HeroBanner() {
           backgroundSize: "16px 16px",
         }}
       />
-      {/* Aero blob */}
-      <div className="absolute -right-10 -top-6 w-[260px] h-[220px] opacity-[0.85]">
-        <div className="absolute inset-0 rounded-full"
-          style={{
-            background: "radial-gradient(ellipse at 40% 50%, rgba(56,189,248,0.45) 0%, rgba(99,102,241,0.2) 50%, transparent 80%)",
-            filter: "blur(30px)",
-            transform: "rotate(-15deg) scale(1.2, 0.9)",
-          }}
-        />
-        <div className="absolute right-8 top-10 w-[120px] h-[100px] rounded-full"
-          style={{
-            background: "radial-gradient(ellipse at center, rgba(139,92,246,0.25) 0%, transparent 70%)",
-            filter: "blur(20px)",
-          }}
+      {/* Hand + Gift illustration — LEFT */}
+      <div className="absolute left-3 bottom-0 h-[140px] flex items-end">
+        <img
+          src={handGiftImg}
+          alt=""
+          className="h-[120px] w-auto object-contain drop-shadow-[0_0_40px_rgba(59,130,246,0.25)]"
+          style={{ mixBlendMode: "screen" }}
         />
       </div>
+      {/* Vault "V" logo — FAR RIGHT */}
+      <img
+        src={vaultVLogo}
+        alt=""
+        className="absolute right-4 top-1/2 -translate-y-1/2 h-[90px] w-auto opacity-[0.12] blur-[1px] pointer-events-none select-none"
+      />
     </div>
   );
 }
