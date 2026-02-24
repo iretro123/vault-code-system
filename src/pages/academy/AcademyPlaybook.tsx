@@ -24,6 +24,7 @@ const AcademyPlaybook = () => {
     lastChapterId,
   } = usePlaybookProgress();
   const { isAdmin } = useAcademyRole();
+  const { user } = useAuth();
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(true);
@@ -31,8 +32,9 @@ const AcademyPlaybook = () => {
   const [reachedEnd, setReachedEnd] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Fetch signed URL once
+  // Fetch signed URL once user is authenticated
   useEffect(() => {
+    if (!user) return;
     async function getUrl() {
       setPdfLoading(true);
       setPdfError(null);
@@ -58,7 +60,7 @@ const AcademyPlaybook = () => {
       setPdfLoading(false);
     }
     getUrl();
-  }, []);
+  }, [user]);
 
   // Set initial chapter from URL > saved state > next chapter > first
   useEffect(() => {
