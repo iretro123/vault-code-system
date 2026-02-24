@@ -76,26 +76,8 @@ export function AcademySidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-white/[0.04]" style={{ background: '#0B0F14' }}>
       <SidebarContent>
-        {/* Hub link */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/hub"
-                    className="flex items-center gap-2 px-2 py-1.5 text-muted-foreground hover:text-foreground"
-                  >
-                    <LayoutGrid className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span className="text-sm">Mode Select</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {/* Search */}
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
