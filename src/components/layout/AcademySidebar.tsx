@@ -8,6 +8,7 @@ import {
   Radio,
   Settings,
   LayoutGrid,
+  ChevronLeft,
   Search,
   Gift,
   Mail,
@@ -82,19 +83,19 @@ export function AcademySidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <Tooltip>
-                  <TooltipTrigger asChild>
                     <button
                       onClick={toggleSidebar}
                       aria-label="Toggle sidebar"
-                      className={`flex items-center ${collapsed ? 'justify-center w-full' : 'gap-2 px-2'} h-10 rounded-xl transition-colors duration-[120ms] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+                      className={`flex items-center w-full ${collapsed ? 'justify-center' : 'justify-between px-2'} h-11 rounded-xl transition-colors duration-[120ms] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
                     >
-                      <img src={vaultVLogo} alt="" className="h-[24px] w-[24px] object-contain shrink-0" />
-                      {!collapsed && <span className="text-sm font-semibold text-foreground tracking-tight">Vault</span>}
+                      <span className="flex items-center gap-2">
+                        <img src={vaultVLogo} alt="" className={`object-contain shrink-0 ${collapsed ? 'h-[28px] w-[28px]' : 'h-[26px] w-[26px]'}`} />
+                        {!collapsed && <span className="text-sm font-semibold text-foreground tracking-tight">Vault</span>}
+                      </span>
+                      {!collapsed && (
+                        <ChevronLeft className="h-4 w-4 text-muted-foreground transition-transform duration-[120ms]" />
+                      )}
                     </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs">Toggle sidebar</TooltipContent>
-                </Tooltip>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
