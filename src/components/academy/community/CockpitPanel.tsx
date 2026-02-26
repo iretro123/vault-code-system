@@ -41,10 +41,10 @@ function MetricRow({ label, value, accent, warn }: {
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[12px] text-white/35">{label}</span>
+      <span className="text-[12px] text-[hsl(220,10%,45%)]">{label}</span>
       <span className={cn(
         "text-[12px] font-semibold",
-        warn ? "text-amber-400/70" : accent ? "text-emerald-400/70" : "text-white/50"
+        warn ? "text-amber-600" : accent ? "text-emerald-600" : "text-[hsl(220,10%,25%)]"
       )}>
         {value}
       </span>
