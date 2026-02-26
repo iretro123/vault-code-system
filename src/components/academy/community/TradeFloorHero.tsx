@@ -52,20 +52,20 @@ export function TradeFloorHero() {
         </div>
 
         {/* Focus strip + Hot Tickers — single compact line */}
-        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[hsl(220,10%,85%)]">
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[hsl(220,12%,88%)]">
           {hotTickers.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <TrendingUp className="h-3 w-3 text-[hsl(220,10%,55%)]" />
+              <TrendingUp className="h-3 w-3 text-[hsl(220,10%,50%)]" />
               {hotTickers.slice(0, 4).map((t) => (
-                <span key={t} className="text-[11px] font-mono font-semibold text-primary">
+                <span key={t} className="text-[11px] font-mono font-semibold text-primary bg-primary/[0.06] border border-primary/[0.12] rounded px-1.5 py-0.5">
                   ${t}
                 </span>
               ))}
             </div>
           )}
           <div className="flex items-center gap-2 ml-auto">
-            <span className="text-[10px] text-[hsl(220,10%,55%)] uppercase tracking-wider font-bold">Focus</span>
-            <p className="text-[12px] text-[hsl(220,10%,45%)] font-medium">Wait for confirmation before entering.</p>
+            <span className="text-[10px] text-[hsl(220,10%,48%)] uppercase tracking-wider font-bold bg-[hsl(220,14%,93%)] px-2 py-0.5 rounded">Focus</span>
+            <p className="text-[12px] text-[hsl(220,10%,40%)] font-medium">Wait for confirmation before entering.</p>
           </div>
         </div>
       </div>

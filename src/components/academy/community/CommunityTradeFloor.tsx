@@ -11,8 +11,8 @@ export function CommunityTradeFloor() {
   const [threadMessage, setThreadMessage] = useState<any>(null);
 
   return (
-    <div className="flex h-full overflow-hidden bg-[hsl(220,14%,94%)]">
-      {/* Primary Feed — 70% */}
+    <div className="flex h-full overflow-hidden bg-[hsl(220,15%,93%)]">
+      {/* Primary Feed */}
       <div className="flex-1 flex flex-col min-w-0">
         <TradeFloorHero />
         <div className="flex-1 overflow-hidden">
@@ -26,9 +26,9 @@ export function CommunityTradeFloor() {
         </div>
       </div>
 
-      {/* Cockpit Panel — 30%, fixed, no scroll */}
+      {/* Cockpit Panel — structured right rail */}
       {!isMobile && (
-        <div className="w-[280px] shrink-0 border-l border-[hsl(220,12%,85%)] hidden lg:flex flex-col bg-[hsl(220,12%,91%)]">
+        <div className="w-[280px] shrink-0 border-l border-[hsl(220,12%,84%)] hidden lg:flex flex-col bg-[hsl(220,14%,89%)]">
           <CockpitPanel />
         </div>
       )}
