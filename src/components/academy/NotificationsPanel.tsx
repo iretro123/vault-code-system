@@ -4,6 +4,7 @@ import { useAcademyNotifications } from "@/hooks/useAcademyNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 /* ── time helpers ── */
 function relativeTime(iso: string) {
