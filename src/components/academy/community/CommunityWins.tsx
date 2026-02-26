@@ -104,7 +104,7 @@ export function CommunityWins() {
                     {profile ? (
                       <ChatAvatar avatarUrl={profile.avatar_url} userName={win.user_name} size="h-10 w-10" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-white/[0.06]" />
+                      <div className="w-10 h-10 rounded-full bg-[hsl(220,10%,90%)]" />
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
