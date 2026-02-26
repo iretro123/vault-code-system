@@ -8,13 +8,13 @@ import {
   validateInputs,
   calculatePlan,
   buildCopyText,
+  formatCurrency,
 } from "@/lib/tradePlannerCalc";
 import { XPWindow } from "./XPWindow";
 import { XPButton } from "./XPButton";
 import { XPInput } from "./XPInput";
 import { XPFieldset } from "./XPFieldset";
 import { XPStatusBadge } from "./XPStatusBadge";
-import { XPTooltip } from "./XPTooltip";
 import { TradePlannerLoading } from "./TradePlannerLoading";
 import { TradePlannerResults } from "./TradePlannerResults";
 import { xp } from "./xp-styles";
@@ -33,18 +33,33 @@ function loadSaved(): Partial<PlannerInputs> {
   }
 }
 
+/** Safe currency display — returns placeholder if value is invalid */
+function safeCurrency(n: number | undefined | null): string {
+  if (n == null || !isFinite(n) || isNaN(n)) return "—";
+  return formatCurrency(n);
+}
+
+function LivePreviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between text-[11px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-mono font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
+
 export function VaultTradePlanner() {
   const saved = loadSaved();
 
   const [tier, setTier] = useState<AccountTierLabel>("Small");
-  const [accountSize, setAccountSize] = useState(saved.accountSize?.toString() ?? "2000");
+  const [accountSize, setAccountSize] = useState(saved.accountSize?.toString() ?? "");
   const [riskPercent, setRiskPercent] = useState(saved.riskPercent?.toString() ?? "2");
   const [debitCapPercent, setDebitCapPercent] = useState(saved.debitCapPercent?.toString() ?? "5");
   const [direction, setDirection] = useState<TradeDirection>(saved.direction ?? "Long Call");
-  const [entryPremium, setEntryPremium] = useState(saved.entryPremium?.toString() ?? "0.80");
-  const [stopPremium, setStopPremium] = useState(saved.stopPremium?.toString() ?? "0.40");
-  const [tp1, setTp1] = useState(saved.tp1Percent?.toString() ?? "30");
-  const [tp2, setTp2] = useState(saved.tp2Percent?.toString() ?? "50");
+  const [entryPremium, setEntryPremium] = useState(saved.entryPremium?.toString() ?? "");
+  const [stopPremium, setStopPremium] = useState(saved.stopPremium?.toString() ?? "");
+  const [tp1] = useState("30");
+  const [tp2] = useState("50");
   const [showMore, setShowMore] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [dte, setDte] = useState(saved.dte?.toString() ?? "");
@@ -80,12 +95,18 @@ export function VaultTradePlanner() {
     underlyingEntry: underlyingEntry ? parseFloat(underlyingEntry) : undefined,
   }), [accountSize, riskPercent, debitCapPercent, direction, entryPremium, stopPremium, tp1, tp2, dte, delta, strike, chartStop, underlyingEntry]);
 
-  const liveResult = (() => {
+  // Live result — only valid when all required fields pass validation
+  const liveResult: PlannerResult | null = (() => {
     const inputs = buildInputs();
     const errs = validateInputs(inputs);
     if (errs.length > 0) return null;
-    return calculatePlan(inputs);
+    const r = calculatePlan(inputs);
+    // Guard against broken values
+    if (!isFinite(r.finalContracts) || isNaN(r.totalPlannedRisk)) return null;
+    return r;
   })();
+
+  const isValid = liveResult !== null;
 
   useEffect(() => {
     try {
@@ -114,12 +135,10 @@ export function VaultTradePlanner() {
 
   const handleReset = () => {
     handleTierChange("Small");
-    setAccountSize("2000");
+    setAccountSize("");
     setDirection("Long Call");
-    setEntryPremium("0.80");
-    setStopPremium("0.40");
-    setTp1("30");
-    setTp2("50");
+    setEntryPremium("");
+    setStopPremium("");
     setDte("");
     setDelta("");
     setStrike("");
@@ -128,6 +147,21 @@ export function VaultTradePlanner() {
     setErrors({});
     setResult(null);
     setUIState("input");
+  };
+
+  const handleLoadExample = () => {
+    handleTierChange("Small");
+    setAccountSize("2000");
+    setDirection("Long Call");
+    setEntryPremium("0.80");
+    setStopPremium("0.40");
+    setDte("30");
+    setDelta("0.40");
+    setStrike("");
+    setChartStop("");
+    setUnderlyingEntry("");
+    setErrors({});
+    toast.success("Example loaded — click Generate to see results");
   };
 
   const handleCopyPlan = () => {
@@ -195,7 +229,7 @@ export function VaultTradePlanner() {
           ))}
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <XPInput label="Account Size" type="number" value={accountSize} onChange={(e) => setAccountSize(e.target.value)} error={errors.accountSize} placeholder="$2,000" />
+          <XPInput label="Account Size" type="number" value={accountSize} onChange={(e) => setAccountSize(e.target.value)} error={errors.accountSize} placeholder="2000" />
           <XPInput
             label="% I Can Lose"
             type="number" step="0.1" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)} error={errors.riskPercent}
@@ -220,10 +254,10 @@ export function VaultTradePlanner() {
           ))}
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <XPInput label="Option Buy Price" type="number" step="0.01" value={entryPremium} onChange={(e) => setEntryPremium(e.target.value)} error={errors.entryPremium} placeholder="$0.80" />
+          <XPInput label="Option Buy Price" type="number" step="0.01" value={entryPremium} onChange={(e) => setEntryPremium(e.target.value)} error={errors.entryPremium} placeholder="0.80" />
           <XPInput
             label="Option Stop Price"
-            type="number" step="0.01" value={stopPremium} onChange={(e) => setStopPremium(e.target.value)} error={errors.stopPremium} placeholder="$0.40"
+            type="number" step="0.01" value={stopPremium} onChange={(e) => setStopPremium(e.target.value)} error={errors.stopPremium} placeholder="0.40"
             tooltip="If option price hits this, cut the trade."
           />
         </div>
@@ -251,11 +285,44 @@ export function VaultTradePlanner() {
 
       {/* Section 3: Generate */}
       <XPFieldset legend="3) Generate">
-        <p className="text-[11px] text-muted-foreground">Click Generate to create your trade plan</p>
+        {/* Live preview / empty state */}
+        <div
+          className="rounded-[3px] p-3 space-y-1"
+          style={{ background: xp.heroBg, border: xp.heroBorder }}
+        >
+          {isValid ? (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1">Live Preview</p>
+              <LivePreviewRow label="How Many Contracts" value={`${liveResult.finalContracts}`} />
+              <LivePreviewRow label="Option Stop Price" value={safeCurrency(buildInputs().stopPremium)} />
+              <LivePreviewRow label="Planned Loss If Stop Hits" value={safeCurrency(liveResult.totalPlannedRisk)} />
+              <LivePreviewRow label="Money Needed to Enter" value={safeCurrency(liveResult.totalPositionCost)} />
+              <LivePreviewRow label="Main Target (1:2)" value={safeCurrency(liveResult.rr1to2Target)} />
+              <LivePreviewRow label="Quick Profit Idea (TP1)" value={safeCurrency(liveResult.tp1Premium)} />
+              <LivePreviewRow label="Bigger Profit Idea (TP2)" value={safeCurrency(liveResult.tp2Premium)} />
+            </>
+          ) : (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-1">Preview</p>
+              <LivePreviewRow label="How Many Contracts" value="—" />
+              <LivePreviewRow label="Option Stop Price" value="—" />
+              <LivePreviewRow label="Planned Loss If Stop Hits" value="—" />
+              <LivePreviewRow label="Money Needed to Enter" value="—" />
+              <LivePreviewRow label="Main Target (1:2)" value="—" />
+              <LivePreviewRow label="Quick Profit Idea (TP1)" value="—" />
+              <LivePreviewRow label="Bigger Profit Idea (TP2)" value="—" />
+              <p className="text-[10px] text-muted-foreground/50 pt-1">
+                Enter Account Size, Option Buy Price, and Option Stop Price to generate your trade plan.
+              </p>
+            </>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-2">
-          <XPButton variant="primary" onClick={handleGenerate}>Generate</XPButton>
+          <XPButton variant="primary" onClick={handleGenerate} disabled={!isValid}>Generate</XPButton>
+          <XPButton onClick={handleLoadExample}>Load Example</XPButton>
           <XPButton onClick={handleReset}>Reset</XPButton>
-          <XPButton onClick={handleCopyPlan}>Copy Trade Plan</XPButton>
+          <XPButton onClick={handleCopyPlan} disabled={!isValid}>Copy Trade Plan</XPButton>
         </div>
 
         <div className="flex gap-1.5">
