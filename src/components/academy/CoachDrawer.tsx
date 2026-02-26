@@ -80,9 +80,14 @@ export function CoachDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
 
-  // Listen for sidebar toggle event
+  // Listen for sidebar toggle event — supports optional detail.tab to open specific tab
   useEffect(() => {
-    const handler = () => setOpen((prev) => !prev);
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.tab === "coach") setTab("coach");
+      else if (detail?.tab === "instant") setTab("instant");
+      setOpen((prev) => !prev);
+    };
     window.addEventListener("toggle-coach-drawer", handler);
     return () => window.removeEventListener("toggle-coach-drawer", handler);
   }, []);
@@ -234,9 +239,16 @@ export function CoachDrawer() {
   };
 
   const handleHandoffToCoach = () => {
-    const prefill = instantResult
-      ? `${instantResult.question}\n\n— Need deeper help with this.`
-      : instantQ;
+    let prefill: string;
+    if (instantResult) {
+      // Truncate AI answer to first ~200 chars for summary
+      const excerpt = instantResult.answer.length > 200
+        ? instantResult.answer.slice(0, 200).trim() + "…"
+        : instantResult.answer;
+      prefill = `What I asked:\n${instantResult.question}\n\nWhat the instant answer said:\n${excerpt}\n\nWhat I still need help with:\nI want a deeper review and exact next steps for my situation.`;
+    } else {
+      prefill = instantQ || "";
+    }
     setQuestion(prefill);
     setTab("coach");
     setCoachView("new");
@@ -413,17 +425,26 @@ export function CoachDrawer() {
                   </div>
 
                   {/* ── Coach handoff CTA ── */}
-                  <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-2">
-                    <p className="text-sm font-medium text-foreground">Need more help?</p>
-                    <p className="text-[13px] text-muted-foreground">Get a personalized review from Coach RZ — human response, usually within 2–4 hours.</p>
-                    <Button
-                      variant="outline"
-                      className="gap-2 mt-1 border-primary/20 hover:bg-primary/10 text-foreground"
-                      onClick={handleHandoffToCoach}
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      Ask Coach RZ
-                    </Button>
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-3">
+                    <p className="text-sm font-semibold text-foreground">Need more help?</p>
+                    <p className="text-[13px] text-muted-foreground">Get human feedback with clear next steps — usually within 2–4 hours.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        className="gap-2"
+                        onClick={handleHandoffToCoach}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Ask Coach RZ
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="gap-2 border-primary/20 hover:bg-primary/10 text-foreground"
+                        onClick={handleHandoffToCoach}
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Send this to Coach
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -539,8 +560,9 @@ export function CoachDrawer() {
               <div className="sticky bottom-0 pt-3 pb-1 -mx-6 px-6 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-12 text-base font-semibold">
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {sending ? "Submitting…" : "Submit to Coach"}
+                  {sending ? "Submitting…" : "Send to Coach"}
                 </Button>
+                <p className="text-[11px] text-muted-foreground/60 text-center mt-2">Human response • usually within 2–4 hours</p>
               </div>
             </div>
           )}
