@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 export interface AcademyNotification {
   id: string;
