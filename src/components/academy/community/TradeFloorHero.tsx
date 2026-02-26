@@ -9,14 +9,14 @@ export function TradeFloorHero() {
 
   return (
     <>
-      <div className="shrink-0 px-5 py-2 bg-[hsl(220,14%,97%)] border-b border-[hsl(220,12%,85%)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <div className="shrink-0 px-5 py-2.5 bg-[hsl(220,16%,98%)] border-b border-[hsl(220,12%,84%)] shadow-[0_1px_3px_rgba(0,0,0,0.05),inset_0_-1px_0_rgba(0,0,0,0.02)]">
         {/* Compact header bar */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <h2 className="text-[15px] font-bold text-[hsl(220,15%,20%)] tracking-[-0.01em] shrink-0">
+            <h2 className="text-[15px] font-bold text-[hsl(220,15%,16%)] tracking-[-0.01em] shrink-0">
               VAULT Community
             </h2>
-            <span className="text-[12px] text-[hsl(220,10%,50%)] font-medium hidden sm:block">
+            <span className="text-[12px] text-[hsl(220,10%,46%)] font-medium hidden sm:block">
               Trade Floor · fast, clean, and focused
             </span>
           </div>
