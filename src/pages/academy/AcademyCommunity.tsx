@@ -29,7 +29,7 @@ const AcademyCommunity = () => {
     <AcademyLayout>
       <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background">
         {/* Floating workspace panel — inset inside dark shell */}
-        <div className="flex flex-col flex-1 m-3 rounded-2xl overflow-hidden border border-[hsl(220,20%,25%)] bg-[hsl(220,15%,95%)] shadow-[0_4px_24px_rgba(0,0,0,0.3),0_0_0_1px_rgba(59,130,246,0.06)]">
+        <div className="flex flex-col flex-1 m-3 rounded-2xl overflow-hidden border border-[hsl(220,18%,28%)] bg-[hsl(220,16%,96%)] shadow-[0_6px_32px_rgba(0,0,0,0.35),0_0_0_1px_rgba(59,130,246,0.08),0_0_12px_rgba(59,130,246,0.04)]">
           {/* Admin bar — only visible to admins */}
           <div className="shrink-0 px-4 pt-2">
             <AdminActionBar
