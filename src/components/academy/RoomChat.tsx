@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./community/DateSeparator";
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
@@ -308,13 +308,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     bottomRef.current?.scrollIntoView();
   }, [loading]);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     shouldAutoScroll.current = atBottom;
     setShowJumpToLatest(!atBottom);
-  };
+  }, []);
 
   const jumpToLatest = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -669,16 +669,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </div>
         )}
 
-        {messages.filter((msg) => {
-          // Hide soft-deleted messages older than 15 minutes
+        {useMemo(() => messages.filter((msg) => {
           if (msg.is_deleted && msg.deleted_at) {
             const deletedAgeMs = Date.now() - new Date(msg.deleted_at).getTime();
             if (deletedAgeMs >= 15 * 60 * 1000) return false;
           }
-          // Hide thread replies from main feed
           if ((msg as any).parent_message_id) return false;
           return true;
-        }).map((msg, i, filteredMsgs) => {
+        }), [messages]).map((msg, i, filteredMsgs) => {
           const prev = filteredMsgs[i - 1];
           const showHdr = shouldShowHeader(msg, prev);
           const showDate = shouldShowDateSeparator(msg.created_at, prev?.created_at);
@@ -1040,7 +1038,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           "flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75",
                           replyCount > 0
                             ? "text-primary hover:text-primary/80"
-                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] opacity-0 group-hover:opacity-100 h-0 group-hover:h-auto overflow-hidden"
+                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
                         )}
                       >
                         <MessageSquare className="h-3 w-3" />
