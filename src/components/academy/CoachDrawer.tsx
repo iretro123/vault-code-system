@@ -80,9 +80,14 @@ export function CoachDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
 
-  // Listen for sidebar toggle event
+  // Listen for sidebar toggle event — supports optional detail.tab to open specific tab
   useEffect(() => {
-    const handler = () => setOpen((prev) => !prev);
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.tab === "coach") setTab("coach");
+      else if (detail?.tab === "instant") setTab("instant");
+      setOpen((prev) => !prev);
+    };
     window.addEventListener("toggle-coach-drawer", handler);
     return () => window.removeEventListener("toggle-coach-drawer", handler);
   }, []);
