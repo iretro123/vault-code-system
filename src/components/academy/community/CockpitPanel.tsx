@@ -65,8 +65,8 @@ function QuickActionsCard() {
   ];
 
   return (
-    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
-      <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.12em]">Quick Actions</p>
+    <div className="rounded-xl border border-[hsl(220,10%,82%)] bg-white p-3.5 space-y-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <p className="text-[10px] font-bold text-[hsl(220,10%,40%)] uppercase tracking-[0.12em]">Quick Actions</p>
       <div className="space-y-0">
         {actions.map((a) => (
           <button
