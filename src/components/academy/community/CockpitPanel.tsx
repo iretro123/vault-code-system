@@ -72,7 +72,7 @@ function QuickActionsCard() {
           <button
             key={a.label}
             onClick={() => a.path && navigate(a.path)}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left hover:bg-white/[0.03] transition-colors group"
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.03] transition-colors group"
           >
             <a.icon className="h-3.5 w-3.5 text-white/20 group-hover:text-white/40 shrink-0" />
             <span className="text-[13px] text-white/45 group-hover:text-white/70 flex-1">{a.label}</span>
