@@ -87,7 +87,7 @@ function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Annou
           </div>
 
           {a.body && (
-            <p className="text-[15px] text-white/65 leading-[1.7] whitespace-pre-wrap">{a.body}</p>
+            <p className="text-[15px] text-[hsl(220,10%,35%)] leading-[1.7] whitespace-pre-wrap">{a.body}</p>
           )}
 
           {a.image_url && (
