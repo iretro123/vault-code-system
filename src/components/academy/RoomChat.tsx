@@ -1040,7 +1040,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           "flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75",
                           replyCount > 0
                             ? "text-primary hover:text-primary/80"
-                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] opacity-0 group-hover:opacity-100 h-0 group-hover:h-auto overflow-hidden"
+                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
                         )}
                       >
                         <MessageSquare className="h-3 w-3" />
