@@ -862,22 +862,48 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       </div>
                     )}
 
-                    {/* 3-dot actions menu — use opacity so Radix can always measure trigger position */}
+                    {/* Hover action bar — Discord-style floating toolbar */}
                     {!msg.is_deleted && !isEditing && (
-                      <div className="absolute -top-2 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                      <div className="absolute -top-3.5 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-10">
+                        <div className="flex items-center gap-0.5 rounded-lg bg-[hsl(215,25%,12%)] border border-[hsl(217,30%,18%)] shadow-[0_2px_8px_rgba(0,0,0,0.4)] px-1 py-0.5">
+                          {/* Quick reactions */}
+                          {!isAnnouncements && ALLOWED_EMOJIS.map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => toggleReaction(msg.id, emoji)}
+                              className="text-sm px-1.5 py-1 rounded-md hover:bg-white/[0.08] transition-colors"
+                              title={`React ${emoji}`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                          {/* Reply */}
+                          {!isAnnouncements && onThreadOpen && (
                             <button
                               type="button"
-                              className="p-1 rounded-md bg-popover border border-white/[0.08] text-white/40 hover:text-white/70 hover:bg-white/[0.08] backdrop-blur-sm transition-colors shadow-sm"
+                              onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
+                              className="p-1.5 rounded-md text-white/35 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
+                              title="Reply in thread"
                             >
-                              <MoreHorizontal className="h-3.5 w-3.5" />
+                              <MessageSquare className="h-3.5 w-3.5" />
                             </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" sideOffset={4} className="min-w-[120px]">
-                            {menuActions(DropdownMenuItem)}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          )}
+                          {/* More menu */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="p-1.5 rounded-md text-white/35 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
+                              >
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={4} className="min-w-[120px]">
+                              {menuActions(DropdownMenuItem)}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     )}
 
