@@ -425,17 +425,26 @@ export function CoachDrawer() {
                   </div>
 
                   {/* ── Coach handoff CTA ── */}
-                  <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-2">
-                    <p className="text-sm font-medium text-foreground">Need more help?</p>
-                    <p className="text-[13px] text-muted-foreground">Get a personalized review from Coach RZ — human response, usually within 2–4 hours.</p>
-                    <Button
-                      variant="outline"
-                      className="gap-2 mt-1 border-primary/20 hover:bg-primary/10 text-foreground"
-                      onClick={handleHandoffToCoach}
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      Ask Coach RZ
-                    </Button>
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-3">
+                    <p className="text-sm font-semibold text-foreground">Need more help?</p>
+                    <p className="text-[13px] text-muted-foreground">Get human feedback with clear next steps — usually within 2–4 hours.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        className="gap-2"
+                        onClick={handleHandoffToCoach}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Ask Coach RZ
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="gap-2 border-primary/20 hover:bg-primary/10 text-foreground"
+                        onClick={handleHandoffToCoach}
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        Send this to Coach
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
