@@ -189,7 +189,7 @@ function renderPlainBody(body: string) {
   const parts = body.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      return <span key={i} className="font-semibold text-white">{part.slice(2, -2)}</span>;
+      return <span key={i} className="font-semibold text-[hsl(220,15%,15%)]">{part.slice(2, -2)}</span>;
     }
     return <span key={i}>{part}</span>;
   });
