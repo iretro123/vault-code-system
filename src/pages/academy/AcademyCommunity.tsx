@@ -27,7 +27,7 @@ const AcademyCommunity = () => {
 
   return (
     <AcademyLayout>
-      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[hsl(215,28%,7%)]">
+      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[hsl(220,10%,90%)]">
         {/* Admin bar — only visible to admins */}
         <div className="shrink-0 px-4 pt-2">
           <AdminActionBar
@@ -42,7 +42,7 @@ const AcademyCommunity = () => {
 
         {/* Compact tab navigation */}
         <div className="shrink-0 flex justify-center pt-2 pb-1 px-4">
-          <div className="inline-flex items-center gap-0.5 rounded-lg bg-[hsl(215,25%,8%)] border border-[hsl(217,30%,15%)] p-0.5">
+          <div className="inline-flex items-center gap-0.5 rounded-lg bg-white/80 border border-[hsl(220,10%,82%)] p-0.5 shadow-sm">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
@@ -50,13 +50,13 @@ const AcademyCommunity = () => {
                 className={cn(
                   "relative px-5 py-1.5 text-[12px] font-semibold rounded-md transition-all duration-100",
                   activeTab === tab.key
-                    ? "text-white bg-[hsl(217,35%,15%)] border border-[hsl(217,40%,20%)] shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
-                    : "text-white/25 hover:text-white/50 border border-transparent"
+                    ? "text-[hsl(220,15%,20%)] bg-white border border-[hsl(220,10%,82%)] shadow-sm"
+                    : "text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] border border-transparent"
                 )}
               >
                 {tab.label}
                 {activeTab === tab.key && (
-                  <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-6 h-[1.5px] rounded-full bg-primary/50" />
+                  <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-6 h-[1.5px] rounded-full bg-primary" />
                 )}
               </button>
             ))}

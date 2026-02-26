@@ -9,14 +9,14 @@ export function TradeFloorHero() {
 
   return (
     <>
-      <div className="shrink-0 px-5 py-2">
+      <div className="shrink-0 px-5 py-2 bg-white/60 border-b border-[hsl(220,10%,82%)]">
         {/* Compact header bar */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <h2 className="text-[15px] font-bold text-white tracking-[-0.01em] shrink-0">
+            <h2 className="text-[15px] font-bold text-[hsl(220,15%,20%)] tracking-[-0.01em] shrink-0">
               VAULT Community
             </h2>
-            <span className="text-[12px] text-white/25 font-medium hidden sm:block">
+            <span className="text-[12px] text-[hsl(220,10%,50%)] font-medium hidden sm:block">
               Trade Floor · fast, clean, and focused
             </span>
           </div>
@@ -26,46 +26,46 @@ export function TradeFloorHero() {
             {/* Guidelines */}
             <button
               onClick={() => setGuidelinesOpen(true)}
-              className="flex items-center gap-1.5 text-[11px] text-white/30 hover:text-white/55 border border-[hsl(217,25%,16%)] rounded-lg px-2.5 py-1.5 transition-colors hover:bg-white/[0.03]"
+              className="flex items-center gap-1.5 text-[11px] text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,25%)] border border-[hsl(220,10%,82%)] rounded-lg px-2.5 py-1.5 transition-colors hover:bg-[hsl(220,10%,92%)]"
             >
               <BookOpen className="h-3 w-3" />
               Guidelines
             </button>
 
             {/* Reply / React badges */}
-            <span className="flex items-center gap-1.5 text-[11px] text-white/30 border border-[hsl(217,25%,16%)] rounded-lg px-2.5 py-1.5">
+            <span className="flex items-center gap-1.5 text-[11px] text-[hsl(220,10%,50%)] border border-[hsl(220,10%,82%)] rounded-lg px-2.5 py-1.5">
               ↩ Reply
             </span>
-            <span className="flex items-center gap-1.5 text-[11px] text-white/30 border border-[hsl(217,25%,16%)] rounded-lg px-2.5 py-1.5">
+            <span className="flex items-center gap-1.5 text-[11px] text-[hsl(220,10%,50%)] border border-[hsl(220,10%,82%)] rounded-lg px-2.5 py-1.5">
               😀 React
             </span>
 
             {/* Active Now */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[hsl(217,25%,16%)]">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[hsl(220,10%,82%)]">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" />
-                <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-30" />
+                <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-500" />
               </span>
-              <span className="text-[11px] font-medium text-white/40">12 Active</span>
+              <span className="text-[11px] font-medium text-[hsl(220,10%,40%)]">12 Active</span>
             </div>
           </div>
         </div>
 
         {/* Focus strip + Hot Tickers — single compact line */}
-        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[hsl(217,25%,12%)]">
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[hsl(220,10%,85%)]">
           {hotTickers.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <TrendingUp className="h-3 w-3 text-white/15" />
+              <TrendingUp className="h-3 w-3 text-[hsl(220,10%,55%)]" />
               {hotTickers.slice(0, 4).map((t) => (
-                <span key={t} className="text-[11px] font-mono font-semibold text-primary/50">
+                <span key={t} className="text-[11px] font-mono font-semibold text-primary">
                   ${t}
                 </span>
               ))}
             </div>
           )}
           <div className="flex items-center gap-2 ml-auto">
-            <span className="text-[10px] text-white/15 uppercase tracking-wider font-bold">Focus</span>
-            <p className="text-[12px] text-white/30 font-medium">Wait for confirmation before entering.</p>
+            <span className="text-[10px] text-[hsl(220,10%,55%)] uppercase tracking-wider font-bold">Focus</span>
+            <p className="text-[12px] text-[hsl(220,10%,45%)] font-medium">Wait for confirmation before entering.</p>
           </div>
         </div>
       </div>

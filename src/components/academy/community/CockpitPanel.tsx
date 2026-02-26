@@ -145,23 +145,23 @@ function CoachFeedCard() {
   if (visibleItems.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
+    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
       <div className="flex items-center gap-1.5">
-        <Flame className="h-3 w-3 text-amber-400/40" />
-        <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Coach Feed</p>
+        <Flame className="h-3 w-3 text-amber-500" />
+        <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.15em]">Coach Feed</p>
       </div>
       <div className="space-y-1.5">
         {visibleItems.map((item) => (
           <div
             key={item.id}
-            className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-white/[0.015] border border-white/[0.03] group"
+            className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[hsl(220,10%,96%)] border border-[hsl(220,10%,88%)] group"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] text-white/45 leading-relaxed">{item.message}</p>
+              <p className="text-[12px] text-[hsl(220,10%,35%)] leading-relaxed">{item.message}</p>
               {item.cta && item.ctaPath && (
                 <button
                   onClick={() => navigate(item.ctaPath!)}
-                  className="text-[11px] text-primary/70 hover:text-primary font-medium mt-1 transition-colors"
+                  className="text-[11px] text-primary hover:text-primary/80 font-medium mt-1 transition-colors"
                 >
                   {item.cta} →
                 </button>
@@ -169,7 +169,7 @@ function CoachFeedCard() {
             </div>
             <button
               onClick={() => dismiss(item.id)}
-              className="p-0.5 rounded text-white/10 hover:text-white/30 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+              className="p-0.5 rounded text-[hsl(220,10%,70%)] hover:text-[hsl(220,10%,40%)] transition-colors shrink-0 opacity-0 group-hover:opacity-100"
             >
               <X className="h-3 w-3" />
             </button>
