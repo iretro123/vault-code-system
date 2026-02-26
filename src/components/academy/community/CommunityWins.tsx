@@ -111,7 +111,7 @@ export function CommunityWins() {
                         <span className="text-[15px] font-semibold text-[hsl(220,15%,15%)] truncate">{win.user_name}</span>
                         <AcademyRoleBadge roleName={profile?.academy_role_name} />
                       </div>
-                      <span className="text-[11px] text-white/20">{formatDateTime(win.created_at)}</span>
+                      <span className="text-[11px] text-[hsl(220,10%,55%)]">{formatDateTime(win.created_at)}</span>
                     </div>
                   </div>
 
