@@ -27,47 +27,50 @@ const AcademyCommunity = () => {
 
   return (
     <AcademyLayout>
-      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[hsl(220,10%,90%)]">
-        {/* Admin bar — only visible to admins */}
-        <div className="shrink-0 px-4 pt-2">
-          <AdminActionBar
-            title="Community Admin"
-            permission="moderate_chat"
-            actions={[
-              { label: "Lock Room", disabled: true },
-              { label: "Pin Message", disabled: true },
-            ]}
-          />
-        </div>
-
-        {/* Compact tab navigation */}
-        <div className="shrink-0 flex justify-center pt-2 pb-1 px-4">
-          <div className="inline-flex items-center gap-0.5 rounded-lg bg-white/80 border border-[hsl(220,10%,82%)] p-0.5 shadow-sm">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => handleTabChange(tab.key)}
-                className={cn(
-                  "relative px-5 py-1.5 text-[12px] font-semibold rounded-md transition-all duration-100",
-                  activeTab === tab.key
-                    ? "text-[hsl(220,15%,20%)] bg-white border border-[hsl(220,10%,82%)] shadow-sm"
-                    : "text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] border border-transparent"
-                )}
-              >
-                {tab.label}
-                {activeTab === tab.key && (
-                  <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-6 h-[1.5px] rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
+      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background">
+        {/* Floating workspace panel — inset inside dark shell */}
+        <div className="flex flex-col flex-1 m-3 rounded-2xl overflow-hidden border border-[hsl(220,20%,25%)] bg-[hsl(220,15%,95%)] shadow-[0_4px_24px_rgba(0,0,0,0.3),0_0_0_1px_rgba(59,130,246,0.06)]">
+          {/* Admin bar — only visible to admins */}
+          <div className="shrink-0 px-4 pt-2">
+            <AdminActionBar
+              title="Community Admin"
+              permission="moderate_chat"
+              actions={[
+                { label: "Lock Room", disabled: true },
+                { label: "Pin Message", disabled: true },
+              ]}
+            />
           </div>
-        </div>
 
-        {/* Tab Content — maximized */}
-        <div className="flex-1 overflow-hidden">
-          {activeTab === "trade-floor" && <CommunityTradeFloor />}
-          {activeTab === "announcements" && <CommunityAnnouncements />}
-          {activeTab === "wins" && <CommunityWins />}
+          {/* Compact tab navigation */}
+          <div className="shrink-0 flex justify-center pt-2 pb-1 px-4">
+            <div className="inline-flex items-center gap-0.5 rounded-lg bg-[hsl(220,12%,91%)] border border-[hsl(220,12%,85%)] p-0.5 shadow-sm">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => handleTabChange(tab.key)}
+                  className={cn(
+                    "relative px-5 py-1.5 text-[12px] font-semibold rounded-md transition-all duration-100",
+                    activeTab === tab.key
+                      ? "text-[hsl(220,15%,20%)] bg-white border border-[hsl(220,10%,82%)] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_0_6px_rgba(59,130,246,0.12)]"
+                      : "text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] border border-transparent"
+                  )}
+                >
+                  {tab.label}
+                  {activeTab === tab.key && (
+                    <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-6 h-[1.5px] rounded-full bg-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab Content — maximized */}
+          <div className="flex-1 overflow-hidden">
+            {activeTab === "trade-floor" && <CommunityTradeFloor />}
+            {activeTab === "announcements" && <CommunityAnnouncements />}
+            {activeTab === "wins" && <CommunityWins />}
+          </div>
         </div>
       </div>
     </AcademyLayout>

@@ -552,10 +552,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider mb-0.5">Pinned</p>
-                <p className="text-xs text-white/80 truncate">{pinned.body}</p>
+                <p className="text-xs text-[hsl(220,15%,25%)] truncate">{pinned.body}</p>
               </div>
               {canModerate && (
-                <button onClick={unpinMessage} className="p-1 text-white/30 hover:text-white/60">
+                <button onClick={unpinMessage} className="p-1 text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)]">
                   <X className="h-3 w-3" />
                 </button>
               )}
