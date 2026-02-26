@@ -224,21 +224,11 @@ export function VaultTradePlanner() {
           <XPInput
             label="Option Stop Price"
             type="number" step="0.01" value={stopPremium} onChange={(e) => setStopPremium(e.target.value)} error={errors.stopPremium} placeholder="$0.40"
-            tooltip="If the option drops to this price, cut the trade."
+            tooltip="If option price hits this, cut the trade."
           />
         </div>
-        <p className="text-[10px] text-muted-foreground">This is your stop loss on the option.</p>
-        <div className="grid grid-cols-3 gap-2">
-          <XPInput
-            label="Target Style"
-            value="1:2"
-            readOnly
-            style={{ opacity: 0.7 }}
-            tooltip="1:2 means if you risk $1, aim to make $2."
-          />
-          <XPInput label="Take Profit 1 %" type="number" value={tp1} onChange={(e) => setTp1(e.target.value)} />
-          <XPInput label="Take Profit 2 %" type="number" value={tp2} onChange={(e) => setTp2(e.target.value)} />
-        </div>
+        <p className="text-[10px] text-muted-foreground">If option price hits your stop, cut the trade.</p>
+        <p className="text-[10px] text-primary/70 font-medium">Simple Mode uses a 1:2 main target. We auto-calculate your targets (1:2 + profit suggestions).</p>
 
         <button
           onClick={() => setShowMore(!showMore)}
