@@ -73,7 +73,7 @@ function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Annou
             <Badge variant="outline" className="text-[10px] gap-1 h-5 border-primary/30 text-primary font-bold">
               Official
             </Badge>
-            <h3 className="text-base font-semibold text-foreground tracking-[-0.01em]">{a.title}</h3>
+            <h3 className="text-base font-semibold text-[hsl(220,15%,15%)] tracking-[-0.01em]">{a.title}</h3>
             {a.is_pinned && (
               <Badge variant="outline" className="text-[10px] gap-1 h-5 border-amber-500/30 text-amber-400">
                 <Pin className="h-2.5 w-2.5" /> Pinned
