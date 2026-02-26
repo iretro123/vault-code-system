@@ -4,7 +4,7 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useNavigate } from "react-router-dom";
 import {
   FileText, HelpCircle, ClipboardCheck, BookOpen,
-  ChevronRight, X, Flame, Target
+  ChevronRight, X, Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
