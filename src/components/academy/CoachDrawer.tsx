@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   MessageSquare, X, Loader2, Send, ChevronLeft, Image,
   Clock, CheckCircle2, AlertCircle, Zap, History, Copy, Check,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +25,8 @@ const QUESTION_TEMPLATES: Record<string, string> = {
   "Risk / Sizing": `Account size: \nMax loss per trade: \nContract cost: \nMy plan: `,
   "Platform Help": `Broker / Platform: \nWhat I clicked: \nWhat happened: \n(Attach a screenshot if possible)`,
 };
+
+const INSTANT_CHIPS = ["Setup Review", "Risk Question", "Options Basics", "Trade Management"] as const;
 
 interface Ticket {
   id: string;
@@ -67,7 +70,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-type Tab = "coach" | "instant";
+type Tab = "instant" | "coach";
 type CoachView = "new" | "list" | "detail";
 type InstantView = "ask" | "history";
 
@@ -75,7 +78,7 @@ export function CoachDrawer() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<Tab>("coach");
+  const [tab, setTab] = useState<Tab>("instant");
 
   // Listen for sidebar toggle event
   useEffect(() => {
@@ -100,6 +103,7 @@ export function CoachDrawer() {
   const [template, setTemplate] = useState("None");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
@@ -229,326 +233,393 @@ export function CoachDrawer() {
     setInstantLoading(false);
   };
 
+  const handleHandoffToCoach = () => {
+    const prefill = instantResult
+      ? `${instantResult.question}\n\n— Need deeper help with this.`
+      : instantQ;
+    setQuestion(prefill);
+    setTab("coach");
+    setCoachView("new");
+  };
+
   const statusIcon = (status: string) => {
     if (status === "resolved") return <CheckCircle2 className="h-3 w-3 text-emerald-400" />;
     if (status === "waiting") return <AlertCircle className="h-3 w-3 text-amber-400" />;
     return <Clock className="h-3 w-3 text-blue-400" />;
   };
 
+  if (!open) return null;
+
   return (
-    <>
-      {/* Right-side drawer — always mounted, toggled via transform */}
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
+      {/* Backdrop */}
       <div
-        className="fixed top-0 right-0 z-[60] h-full flex"
-        style={{
-          pointerEvents: open ? "auto" : "none",
-        }}
-      >
-        {/* Backdrop */}
-        <div
-          className="absolute inset-0 bg-black/50 transition-opacity duration-100"
-          style={{ opacity: open ? 1 : 0 }}
-          onClick={() => setOpen(false)}
-        />
-        {/* Panel */}
-        <div
-          className="relative ml-auto h-full w-[min(480px,100vw)] border-l border-white/[0.08] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[-8px_0_30px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden transition-transform duration-100 ease-out"
-          style={{ transform: open ? "translateX(0)" : "translateX(100%)" }}
-        >
+        className="absolute inset-0 bg-black/65 backdrop-blur-[6px]"
+        onClick={() => setOpen(false)}
+      />
 
-            {/* Two-tab header */}
-            <div className="flex shrink-0 sticky top-0 z-10 rounded-t-2xl md:rounded-t-xl bg-white/[0.03]">
-              <button
-                onClick={() => { setTab("coach"); setCoachView("new"); }}
-                className={cn(
-                  "flex-1 py-4 text-sm font-medium transition-colors relative flex flex-col items-center gap-0.5",
-                  tab === "coach" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Coach</span>
-                <span className="text-[11px] font-normal text-muted-foreground/70">Human response</span>
-                {tab === "coach" && <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-primary rounded-full" />}
-              </button>
-              <button
-                onClick={() => { setTab("instant"); setInstantView("ask"); setInstantResult(null); }}
-                className={cn(
-                  "flex-1 py-4 text-sm font-medium transition-colors relative flex flex-col items-center gap-0.5",
-                  tab === "instant" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" style={{ color: tab === "instant" ? "#FACC15" : undefined }} /> Instant Answer</span>
-                <span className="text-[11px] font-normal text-muted-foreground/70">Fast education</span>
-                {tab === "instant" && <div className="absolute bottom-0 left-1/4 right-1/4 h-[2px] bg-[#FACC15] rounded-full" />}
-              </button>
+      {/* Modal */}
+      <div className="relative w-[min(860px,calc(100vw-32px))] rounded-t-2xl md:rounded-xl border border-white/[0.10] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[85vh] flex flex-col overflow-hidden">
+
+        {/* ── Premium header ── */}
+        <div className="px-6 pt-5 pb-3 shrink-0">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Ask a Coach</h2>
+              <p className="text-[13px] text-muted-foreground mt-0.5">Fast AI help first. Coach review when you need deeper guidance.</p>
             </div>
-            <div className="h-px bg-white/[0.06]" />
+            <button
+              onClick={() => setOpen(false)}
+              className="min-w-[36px] min-h-[36px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/[0.06] transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
 
-            {/* Coach sub-header */}
-            {tab === "coach" && (
-              <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/[0.06] shrink-0">
-                <div className="flex items-center gap-2">
-                  {coachView !== "new" && (
-                    <button onClick={() => { setCoachView(coachView === "detail" ? "list" : "new"); setActiveTicket(null); }} className="text-muted-foreground hover:text-foreground">
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                  )}
-                  <h3 className="font-bold text-foreground text-xl">
-                    {coachView === "new" ? "Ask a Coach" : coachView === "list" ? "My Questions" : activeTicket?.category}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1">
-                  {coachView === "new" && (
-                    <button onClick={() => setCoachView("list")} className="text-muted-foreground hover:text-foreground p-1" title="My Questions">
-                      <MessageSquare className="h-5 w-5" />
-                    </button>
-                  )}
-                  <button onClick={() => setOpen(false)} className="min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-white/[0.06] transition-colors">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
+        {/* ── Segmented tabs ── */}
+        <div className="flex shrink-0 mx-6 rounded-lg bg-white/[0.04] border border-white/[0.06] p-0.5">
+          <button
+            onClick={() => { setTab("instant"); setInstantView("ask"); setInstantResult(null); }}
+            className={cn(
+              "flex-1 py-2.5 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5",
+              tab === "instant"
+                ? "bg-white/[0.08] text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
-
-            {/* Instant sub-header */}
-            {tab === "instant" && (
-              <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/[0.06] shrink-0">
-                <div className="flex items-center gap-2">
-                  {instantView === "history" && (
-                    <button onClick={() => setInstantView("ask")} className="text-muted-foreground hover:text-foreground">
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                  )}
-                  <h3 className="font-bold text-foreground text-xl flex items-center gap-2">
-                    <Zap className="h-5 w-5" style={{ color: "#FACC15" }} />
-                    {instantView === "ask" ? "Instant Answer" : "Past Answers"}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1">
-                  {instantView === "ask" && (
-                    <button onClick={() => setInstantView("history")} className="text-muted-foreground hover:text-foreground p-1" title="Past Answers">
-                      <History className="h-5 w-5" />
-                    </button>
-                  )}
-                  <button onClick={() => setOpen(false)} className="min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-md hover:bg-white/[0.06] transition-colors">
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
+          >
+            <Zap className="h-3.5 w-3.5" style={{ color: tab === "instant" ? "#FACC15" : undefined }} />
+            Instant Answer
+            <span className="text-[10px] font-normal text-muted-foreground/60 hidden sm:inline ml-0.5">AI</span>
+          </button>
+          <button
+            onClick={() => { setTab("coach"); setCoachView("new"); }}
+            className={cn(
+              "flex-1 py-2.5 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5",
+              tab === "coach"
+                ? "bg-white/[0.08] text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            Coach
+            <span className="text-[10px] font-normal text-muted-foreground/60 hidden sm:inline ml-0.5">Human</span>
+          </button>
+        </div>
 
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 md:px-7 md:py-6">
-
-              {/* ========== COACH TAB ========== */}
-              {tab === "coach" && coachView === "new" && (
-                <div className="space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Category</label>
-                    <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="h-12 text-base leading-relaxed"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CATEGORIES.map((c) => <SelectItem key={c} value={c} className="text-base">{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Urgency</label>
-                    <div className="flex gap-2">
-                      {["standard", "priority"].map((u) => (
-                        <button key={u} onClick={() => setUrgency(u)} className={cn(
-                          "px-5 py-3 h-12 rounded-lg text-base font-medium transition-colors capitalize",
-                          urgency === u ? "bg-primary text-primary-foreground" : "bg-white/[0.04] text-muted-foreground hover:text-foreground border border-white/[0.08]"
-                        )}>{u}</button>
-                      ))}
-                    </div>
-                    <p className="text-[13px] text-muted-foreground">
-                      {urgency === "priority" ? "Priority: faster response" : "Standard: within 2–4 hours"}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Question Template</label>
-                    <Select value={template} onValueChange={(val) => { setTemplate(val); if (val !== "None") setQuestion(QUESTION_TEMPLATES[val]); }}>
-                      <SelectTrigger className="h-12 text-base leading-relaxed"><SelectValue /></SelectTrigger>
-                      <SelectContent className="bg-popover border border-border z-[70]">
-                        {Object.keys(QUESTION_TEMPLATES).map((t) => <SelectItem key={t} value={t} className="text-base">{t}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[13px] text-muted-foreground">Optional — pick a template to get started faster</p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-foreground/80 tracking-wide">Your Question</label>
-                    <p className="text-[13px] text-muted-foreground">Keep it simple: what you tried + what happened + what you want.</p>
-                    <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="What's going on? Describe the situation, what you tried, and where you're stuck…" className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-[15px] py-3.5 px-4" rows={8} maxLength={1000} />
-                  </div>
-                  <div className="space-y-3">
-                    <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)} />
-                    {screenshotFile ? (
-                      <div className="flex items-center gap-2 text-base text-foreground">
-                        <Image className="h-4 w-4 text-muted-foreground" />
-                        <span className="truncate flex-1">{screenshotFile.name}</span>
-                        <button onClick={() => setScreenshotFile(null)} className="text-muted-foreground hover:text-foreground p-1"><X className="h-4 w-4" /></button>
-                      </div>
-                    ) : (
-                      <Button variant="outline" className="gap-2 text-base h-12 px-4 w-full sm:w-auto border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06]" onClick={() => fileRef.current?.click()}>
-                        📎 Attach Screenshot
-                      </Button>
-                    )}
-                  </div>
-                  <div className="sticky bottom-0 pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
-                    <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-14 text-[17px] font-semibold">
-                      {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                      {sending ? "Submitting…" : "Submit Question"}
-                    </Button>
-                  </div>
-                </div>
+        {/* ── Sub-header ── */}
+        {tab === "coach" && (
+          <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.06] shrink-0">
+            <div className="flex items-center gap-2">
+              {coachView !== "new" && (
+                <button onClick={() => { setCoachView(coachView === "detail" ? "list" : "new"); setActiveTicket(null); }} className="text-muted-foreground hover:text-foreground">
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
               )}
-
-              {tab === "coach" && coachView === "list" && (
-                <div className="space-y-3">
-                  {ticketsLoading ? (
-                    <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-                  ) : tickets.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-muted-foreground">No questions yet.</p>
-                      <Button variant="ghost" size="sm" className="mt-2 text-sm" onClick={() => setCoachView("new")}>Ask your first question</Button>
-                    </div>
-                  ) : tickets.map((t) => (
-                    <button key={t.id} onClick={() => { setActiveTicket(t); setCoachView("detail"); }} className="w-full text-left rounded-lg border border-border p-4 hover:bg-muted/30 transition-colors">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">{statusIcon(t.status)}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-semibold uppercase tracking-wider bg-muted px-2 py-0.5 rounded text-muted-foreground">{t.category}</span>
-                            <span className="text-xs text-muted-foreground/60 capitalize">{t.status}</span>
-                          </div>
-                          <p className="text-sm text-foreground line-clamp-2">{t.question}</p>
-                          <p className="text-xs text-muted-foreground/50 mt-1">{formatDateTime(t.created_at)}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {tab === "coach" && coachView === "detail" && activeTicket && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      {statusIcon(activeTicket.status)}
-                      <span className="text-sm font-medium capitalize">{activeTicket.status}</span>
-                      <span className="text-xs text-muted-foreground/50">{formatDateTime(activeTicket.created_at)}</span>
-                    </div>
-                    <p className="text-sm text-foreground leading-relaxed">{activeTicket.question}</p>
-                    {activeTicket.screenshot_url && (
-                      <a href={activeTicket.screenshot_url} target="_blank" rel="noopener noreferrer">
-                        <img src={activeTicket.screenshot_url} alt="Screenshot" className="rounded-lg border border-border max-h-40 object-cover" />
-                      </a>
-                    )}
-                  </div>
-                  <div className="border-t border-border pt-3 space-y-3">
-                    {repliesLoading ? (
-                      <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
-                    ) : replies.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">No replies yet. A coach will respond soon.</p>
-                    ) : replies.map((r) => (
-                      <div key={r.id} className={cn("rounded-lg p-4 text-sm", r.is_admin ? "bg-primary/5 border border-primary/10" : "bg-muted")}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={cn("text-sm font-semibold", r.is_admin ? "text-primary" : "text-foreground")}>
-                            {r.user_name}
-                            {r.is_admin && <span className="text-xs ml-1 font-normal text-primary/60">Coach</span>}
-                          </span>
-                          <span className="text-xs text-muted-foreground/50">{formatDateTime(r.created_at)}</span>
-                        </div>
-                        <p className="text-foreground/90 whitespace-pre-line leading-relaxed">{r.body}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {activeTicket.status !== "resolved" && (
-                    <div className="sticky bottom-0 bg-background pt-3 pb-1 -mx-5 px-5 md:-mx-6 md:px-6 border-t border-border">
-                      <div className="flex gap-2">
-                        <Input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Add a reply…" className="flex-1 h-10 text-sm" maxLength={500}
-                          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }} />
-                        <Button size="icon" className="h-10 w-10" onClick={handleReply} disabled={!replyText.trim() || replySending}>
-                          {replySending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ========== INSTANT ANSWER TAB ========== */}
-              {tab === "instant" && instantView === "ask" && (
-                <div className="space-y-5">
-                  <p className="text-[14px] text-muted-foreground">Ask any trading education question. No signals or price targets — just frameworks and checklists.</p>
-                  <Textarea
-                    value={instantQ}
-                    onChange={(e) => setInstantQ(e.target.value)}
-                    placeholder="Type your question here — be as specific as you can…"
-                    className="resize-none text-base min-h-[160px] leading-[1.5] placeholder:text-[15px] py-3.5 px-4"
-                    rows={7}
-                    maxLength={500}
-                  />
-                  <p className="text-[13px] text-muted-foreground">e.g. "How should I size my position after a losing streak?"</p>
-                  <div className="sticky bottom-0 pt-4 pb-1 -mx-6 px-6 md:-mx-7 md:px-7 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
-                    <Button
-                      onClick={handleInstantAsk}
-                      disabled={!instantQ.trim() || instantLoading}
-                      className="w-full gap-2 h-14 text-[17px] font-semibold"
-                    >
-                      {instantLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" style={{ color: "#FACC15" }} />}
-                      {instantLoading ? "Thinking…" : "Get Answer"}
-                    </Button>
-                  </div>
-
-                  {instantResult && (
-                    <div className="space-y-4 pt-2">
-                      <div className="flex justify-end">
-                        <div className="rounded-xl rounded-tr-sm bg-primary/10 border border-primary/15 px-4 py-3 max-w-[85%]">
-                          <p className="text-sm text-foreground leading-relaxed">{instantResult.question}</p>
-                        </div>
-                      </div>
-                      <div className="flex justify-start">
-                        <div className="rounded-xl rounded-tl-sm bg-muted border border-border px-4 py-4 max-w-[95%] space-y-3">
-                          <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90">
-                            <ReactMarkdown>{instantResult.answer}</ReactMarkdown>
-                          </div>
-                          <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                            <CopyButton text={instantResult.answer} />
-                            <p className="text-[10px] text-muted-foreground/50">Education only · No signals · No price targets</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {tab === "instant" && instantView === "history" && (
-                <div className="space-y-3">
-                  {pastLoading ? (
-                    <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
-                  ) : pastAnswers.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-sm text-muted-foreground">No past answers yet.</p>
-                      <Button variant="ghost" size="sm" className="mt-2 text-sm" onClick={() => setInstantView("ask")}>Ask your first question</Button>
-                    </div>
-                  ) : pastAnswers.map((a) => (
-                    <div key={a.id} className="rounded-lg border border-border p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-foreground line-clamp-1">{a.question}</p>
-                        <span className="text-xs text-muted-foreground/50 shrink-0 ml-2">{formatDateShort(a.created_at)}</span>
-                      </div>
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/80 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/80">
-                        <ReactMarkdown>{a.answer}</ReactMarkdown>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <h3 className="font-semibold text-foreground text-base">
+                {coachView === "new" ? "New Question" : coachView === "list" ? "My Questions" : activeTicket?.category}
+              </h3>
+            </div>
+            <div className="flex items-center gap-1">
+              {coachView === "new" && (
+                <button onClick={() => setCoachView("list")} className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06]" title="My Questions">
+                  <History className="h-4 w-4" />
+                </button>
               )}
             </div>
           </div>
+        )}
+
+        {tab === "instant" && (
+          <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.06] shrink-0">
+            <div className="flex items-center gap-2">
+              {instantView === "history" && (
+                <button onClick={() => setInstantView("ask")} className="text-muted-foreground hover:text-foreground">
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              )}
+              <h3 className="font-semibold text-foreground text-base flex items-center gap-2">
+                {instantView === "ask" ? "Ask a Trading Question" : "Past Answers"}
+              </h3>
+            </div>
+            {instantView === "ask" && (
+              <button onClick={() => setInstantView("history")} className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06]" title="Past Answers">
+                <History className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Body ── */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+
+          {/* ========== INSTANT ANSWER TAB ========== */}
+          {tab === "instant" && instantView === "ask" && (
+            <div className="space-y-4">
+              <p className="text-[13px] text-muted-foreground">Instant Answer is for trading questions only — options, risk, setups, entries, exits, psychology, execution.</p>
+
+              {/* Quick category chips */}
+              <div className="flex flex-wrap gap-1.5">
+                {INSTANT_CHIPS.map((chip) => (
+                  <button
+                    key={chip}
+                    onClick={() => setInstantQ((prev) => prev ? prev : `[${chip}] `)}
+                    className="text-xs px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+
+              <Textarea
+                value={instantQ}
+                onChange={(e) => setInstantQ(e.target.value)}
+                placeholder="Type your trading question here…"
+                className="resize-none text-base min-h-[120px] leading-[1.5] placeholder:text-[15px] py-3.5 px-4 bg-white/[0.03] border-white/[0.08]"
+                rows={5}
+                maxLength={500}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleInstantAsk(); } }}
+              />
+
+              <Button
+                onClick={handleInstantAsk}
+                disabled={!instantQ.trim() || instantLoading}
+                className="w-full gap-2 h-12 text-base font-semibold"
+              >
+                {instantLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" style={{ color: "#FACC15" }} />}
+                {instantLoading ? "Thinking…" : "Get Instant Answer"}
+              </Button>
+
+              {instantResult && (
+                <div className="space-y-4 pt-2">
+                  {/* User question */}
+                  <div className="flex justify-end">
+                    <div className="rounded-xl rounded-tr-sm bg-primary/10 border border-primary/15 px-4 py-3 max-w-[85%]">
+                      <p className="text-sm text-foreground leading-relaxed">{instantResult.question}</p>
+                    </div>
+                  </div>
+
+                  {/* AI answer */}
+                  <div className="flex justify-start">
+                    <div className="rounded-xl rounded-tl-sm bg-white/[0.03] border border-white/[0.08] px-4 py-4 max-w-[95%] space-y-3">
+                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90">
+                        <ReactMarkdown>{instantResult.answer}</ReactMarkdown>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+                        <CopyButton text={instantResult.answer} />
+                        <p className="text-[10px] text-muted-foreground/50">Education only · No signals</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Coach handoff CTA ── */}
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-2">
+                    <p className="text-sm font-medium text-foreground">Need more help?</p>
+                    <p className="text-[13px] text-muted-foreground">Get a personalized review from Coach RZ — human response, usually within 2–4 hours.</p>
+                    <Button
+                      variant="outline"
+                      className="gap-2 mt-1 border-primary/20 hover:bg-primary/10 text-foreground"
+                      onClick={handleHandoffToCoach}
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      Ask Coach RZ
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === "instant" && instantView === "history" && (
+            <div className="space-y-3">
+              {pastLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : pastAnswers.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No past answers yet.</p>
+                  <Button variant="ghost" size="sm" className="mt-2 text-sm" onClick={() => setInstantView("ask")}>Ask your first question</Button>
+                </div>
+              ) : pastAnswers.map((a) => (
+                <div key={a.id} className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-foreground line-clamp-1">{a.question}</p>
+                    <span className="text-xs text-muted-foreground/50 shrink-0 ml-2">{formatDateShort(a.created_at)}</span>
+                  </div>
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/80 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/80">
+                    <ReactMarkdown>{a.answer}</ReactMarkdown>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ========== COACH TAB ========== */}
+          {tab === "coach" && coachView === "new" && (
+            <div className="space-y-4">
+              {/* Urgency */}
+              <div className="space-y-2">
+                <label className="text-[13px] font-semibold text-foreground/80">Urgency</label>
+                <div className="flex gap-2">
+                  {["standard", "priority"].map((u) => (
+                    <button key={u} onClick={() => setUrgency(u)} className={cn(
+                      "px-4 py-2.5 rounded-lg text-sm font-medium transition-colors capitalize",
+                      urgency === u ? "bg-primary text-primary-foreground" : "bg-white/[0.04] text-muted-foreground hover:text-foreground border border-white/[0.08]"
+                    )}>{u}</button>
+                  ))}
+                </div>
+                <p className="text-[12px] text-muted-foreground">
+                  {urgency === "priority" ? "Priority: faster response" : "Standard: usually within 2–4 hours"}
+                </p>
+              </div>
+
+              {/* Main question */}
+              <div className="space-y-2">
+                <label className="text-[13px] font-semibold text-foreground/80">Your Question</label>
+                <p className="text-[12px] text-muted-foreground">Keep it simple: what you tried + what happened + what you want.</p>
+                <Textarea
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Describe the situation, what you tried, and where you're stuck…"
+                  className="resize-none text-base min-h-[140px] leading-[1.5] py-3.5 px-4 bg-white/[0.03] border-white/[0.08]"
+                  rows={6}
+                  maxLength={1000}
+                />
+              </div>
+
+              {/* Screenshot */}
+              <div>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)} />
+                {screenshotFile ? (
+                  <div className="flex items-center gap-2 text-sm text-foreground">
+                    <Image className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate flex-1">{screenshotFile.name}</span>
+                    <button onClick={() => setScreenshotFile(null)} className="text-muted-foreground hover:text-foreground p-1"><X className="h-4 w-4" /></button>
+                  </div>
+                ) : (
+                  <Button variant="outline" size="sm" className="gap-2 border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]" onClick={() => fileRef.current?.click()}>
+                    <span>📎</span> Attach Screenshot
+                  </Button>
+                )}
+              </div>
+
+              {/* Show More (category + template) */}
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showAdvanced ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                {showAdvanced ? "Hide options" : "Show more options"}
+              </button>
+
+              {showAdvanced && (
+                <div className="space-y-4 pt-1">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-semibold text-foreground/80">Category</label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-semibold text-foreground/80">Question Template</label>
+                    <Select value={template} onValueChange={(val) => { setTemplate(val); if (val !== "None") setQuestion(QUESTION_TEMPLATES[val]); }}>
+                      <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-popover border border-border z-[70]">
+                        {Object.keys(QUESTION_TEMPLATES).map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[12px] text-muted-foreground">Optional — pick a template to get started faster</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit */}
+              <div className="sticky bottom-0 pt-3 pb-1 -mx-6 px-6 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
+                <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-12 text-base font-semibold">
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {sending ? "Submitting…" : "Submit to Coach"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {tab === "coach" && coachView === "list" && (
+            <div className="space-y-3">
+              {ticketsLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : tickets.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">No questions yet.</p>
+                  <Button variant="ghost" size="sm" className="mt-2 text-sm" onClick={() => setCoachView("new")}>Ask your first question</Button>
+                </div>
+              ) : tickets.map((t) => (
+                <button key={t.id} onClick={() => { setActiveTicket(t); setCoachView("detail"); }} className="w-full text-left rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 hover:bg-white/[0.04] transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5">{statusIcon(t.status)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold uppercase tracking-wider bg-white/[0.06] px-2 py-0.5 rounded text-muted-foreground">{t.category}</span>
+                        <span className="text-xs text-muted-foreground/60 capitalize">{t.status}</span>
+                      </div>
+                      <p className="text-sm text-foreground line-clamp-2">{t.question}</p>
+                      <p className="text-xs text-muted-foreground/50 mt-1">{formatDateTime(t.created_at)}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tab === "coach" && coachView === "detail" && activeTicket && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {statusIcon(activeTicket.status)}
+                  <span className="text-sm font-medium capitalize">{activeTicket.status}</span>
+                  <span className="text-xs text-muted-foreground/50">{formatDateTime(activeTicket.created_at)}</span>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed">{activeTicket.question}</p>
+                {activeTicket.screenshot_url && (
+                  <a href={activeTicket.screenshot_url} target="_blank" rel="noopener noreferrer">
+                    <img src={activeTicket.screenshot_url} alt="Screenshot" className="rounded-lg border border-white/[0.08] max-h-40 object-cover" />
+                  </a>
+                )}
+              </div>
+              <div className="border-t border-white/[0.06] pt-3 space-y-3">
+                {repliesLoading ? (
+                  <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+                ) : replies.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No replies yet. A coach will respond soon.</p>
+                ) : replies.map((r) => (
+                  <div key={r.id} className={cn("rounded-lg p-4 text-sm", r.is_admin ? "bg-primary/5 border border-primary/10" : "bg-white/[0.04]")}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={cn("text-sm font-semibold", r.is_admin ? "text-primary" : "text-foreground")}>
+                        {r.user_name}
+                        {r.is_admin && <span className="text-xs ml-1 font-normal text-primary/60">Coach</span>}
+                      </span>
+                      <span className="text-xs text-muted-foreground/50">{formatDateTime(r.created_at)}</span>
+                    </div>
+                    <p className="text-foreground/90 whitespace-pre-line leading-relaxed">{r.body}</p>
+                  </div>
+                ))}
+              </div>
+              {activeTicket.status !== "resolved" && (
+                <div className="sticky bottom-0 pt-3 pb-1 -mx-6 px-6 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
+                  <div className="flex gap-2">
+                    <Input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Add a reply…" className="flex-1 h-10 text-sm bg-white/[0.03] border-white/[0.08]" maxLength={500}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }} />
+                    <Button size="icon" className="h-10 w-10" onClick={handleReply} disabled={!replyText.trim() || replySending}>
+                      {replySending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      </>
-    );
-  }
+      </div>
+    </div>
+  );
+}
