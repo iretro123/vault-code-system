@@ -97,7 +97,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
   const imageAtt = attachments?.find((a: any) => a.type === "image");
 
   return (
-    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] backdrop-blur-md mt-2 overflow-hidden max-w-[560px] shadow-[0_4px_20px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-white/[0.12] transition-colors">
+    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white mt-2 overflow-hidden max-w-[560px] shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors">
       <div className="flex">
         {/* Left — Fields */}
         <div className="flex-1 p-5 space-y-3">
@@ -107,8 +107,8 @@ function renderTradeCard(body: string, attachments?: any[]) {
               <div key={i} className={
                 ["thesis", "lesson", "lesson learned", "notes"].includes(f.label.toLowerCase()) ? "col-span-2" : ""
               }>
-                <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">{f.label}</span>
-                <p className="text-[15px] text-white/90 font-medium mt-0.5">{f.value}</p>
+                <span className="text-[10px] text-[hsl(220,10%,50%)] uppercase tracking-wider font-medium">{f.label}</span>
+                <p className="text-[15px] text-[hsl(220,15%,15%)] font-medium mt-0.5">{f.value}</p>
               </div>
             ))}
           </div>
@@ -116,7 +116,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
 
         {/* Right — Chart image */}
         {imageAtt && (
-          <div className="w-[200px] shrink-0 bg-white/[0.02] border-l border-white/[0.04]">
+          <div className="w-[200px] shrink-0 bg-[hsl(220,10%,96%)] border-l border-[hsl(220,10%,88%)]">
             <img
               src={(imageAtt as any).url}
               alt="Chart"
@@ -128,14 +128,14 @@ function renderTradeCard(body: string, attachments?: any[]) {
       </div>
 
       {/* Bottom actions */}
-      <div className="flex items-center gap-1 px-5 py-3 border-t border-white/[0.05] bg-white/[0.02]">
-        <button className="text-xs text-white/35 hover:text-white/70 transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.05] font-medium">
+      <div className="flex items-center gap-1 px-5 py-3 border-t border-[hsl(220,10%,90%)] bg-[hsl(220,10%,97%)]">
+        <button className="text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)] transition-colors px-3.5 py-2 rounded-xl hover:bg-[hsl(220,10%,92%)] font-medium">
           Ask Coach
         </button>
-        <button className="text-xs text-white/35 hover:text-white/70 transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.05] font-medium">
+        <button className="text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)] transition-colors px-3.5 py-2 rounded-xl hover:bg-[hsl(220,10%,92%)] font-medium">
           Log Trade
         </button>
-        <button className="text-xs text-white/35 hover:text-white/70 transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.05] font-medium">
+        <button className="text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)] transition-colors px-3.5 py-2 rounded-xl hover:bg-[hsl(220,10%,92%)] font-medium">
           Request Feedback
         </button>
       </div>
