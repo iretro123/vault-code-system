@@ -84,7 +84,7 @@ export function CommunityWins() {
             return (
               <div
                 key={win.id}
-                className="rounded-[20px] border border-white/[0.07] bg-white/[0.04] backdrop-blur-md overflow-hidden transition-all hover:border-white/[0.12] shadow-[0_4px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
+                className="rounded-[20px] border border-[hsl(220,10%,82%)] bg-white overflow-hidden transition-all hover:border-[hsl(220,10%,75%)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
               >
                 {/* Image */}
                 {imageAtt && (
