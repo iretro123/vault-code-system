@@ -239,9 +239,16 @@ export function CoachDrawer() {
   };
 
   const handleHandoffToCoach = () => {
-    const prefill = instantResult
-      ? `${instantResult.question}\n\n— Need deeper help with this.`
-      : instantQ;
+    let prefill: string;
+    if (instantResult) {
+      // Truncate AI answer to first ~200 chars for summary
+      const excerpt = instantResult.answer.length > 200
+        ? instantResult.answer.slice(0, 200).trim() + "…"
+        : instantResult.answer;
+      prefill = `What I asked:\n${instantResult.question}\n\nWhat the instant answer said:\n${excerpt}\n\nWhat I still need help with:\nI want a deeper review and exact next steps for my situation.`;
+    } else {
+      prefill = instantQ || "";
+    }
     setQuestion(prefill);
     setTab("coach");
     setCoachView("new");
