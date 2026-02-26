@@ -45,7 +45,7 @@ function WhatToDoSummary({ inputs, result }: { inputs: PlannerInputs; result: Pl
       <p>• Money needed to enter: <strong>{formatCurrency(result.totalPositionCost)}</strong></p>
       <p>• Planned loss if stop hits: <strong>{formatCurrency(result.totalPlannedRisk)}</strong></p>
       <p>• Main target (1:2): <strong>{formatCurrency(result.rr1to2Target)}</strong></p>
-      <p>• Optional take profits: <strong>{formatCurrency(result.tp1Premium)}</strong> and <strong>{formatCurrency(result.tp2Premium)}</strong></p>
+      <p>• Optional take profits: <strong>{formatCurrency(result.tp1Premium)}</strong> (Quick Profit) and <strong>{formatCurrency(result.tp2Premium)}</strong> (Bigger Profit)</p>
     </div>
   );
 }
@@ -123,8 +123,8 @@ export function TradePlannerResults({ inputs, result, onBack }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-[4px] overflow-hidden" style={{ border: xp.fieldsetBorder }}>
           <MetricCell label="Money Needed to Enter" value={formatCurrency(result.totalPositionCost)} />
           <MetricCell label="Main Target (1:2)" value={formatCurrency(result.rr1to2Target)} />
-          <MetricCell label="Take Profit 1 (+30%)" value={formatCurrency(result.tp1Premium)} />
-          <MetricCell label="Take Profit 2 (+50%)" value={formatCurrency(result.tp2Premium)} />
+          <MetricCell label="Quick Profit Idea (TP1 +30%)" value={formatCurrency(result.tp1Premium)} />
+          <MetricCell label="Bigger Profit Idea (TP2 +50%)" value={formatCurrency(result.tp2Premium)} />
         </div>
 
         {/* Secondary stats */}
