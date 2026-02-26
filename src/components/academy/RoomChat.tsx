@@ -576,16 +576,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           <div className="text-center py-16 max-w-xs mx-auto space-y-2">
             {roomSlug === "options-lounge" ? (
               <>
-                <p className="text-sm font-medium text-white/60">No posts yet.</p>
-                <p className="text-xs text-white/30">Serious traders post 1 trade/week. Use Trade → Post a Trade.</p>
+                <p className="text-sm font-medium text-[hsl(220,10%,35%)]">No posts yet.</p>
+                <p className="text-xs text-[hsl(220,10%,50%)]">Serious traders post 1 trade/week. Use Trade → Post a Trade.</p>
               </>
             ) : roomSlug === "trade-recaps" ? (
               <>
-                <p className="text-sm font-medium text-white/60">Proof is earned.</p>
-                <p className="text-xs text-white/30">Post screenshot + ticker + entry/exit + risk.</p>
+                <p className="text-sm font-medium text-[hsl(220,10%,35%)]">Proof is earned.</p>
+                <p className="text-xs text-[hsl(220,10%,50%)]">Post screenshot + ticker + entry/exit + risk.</p>
               </>
             ) : (
-              <p className="text-sm text-white/40">No messages yet.</p>
+              <p className="text-sm text-[hsl(220,10%,45%)]">No messages yet.</p>
             )}
           </div>
         )}
