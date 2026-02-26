@@ -110,7 +110,7 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
       <div
         className={
           fitViewport
-            ? "p-3 md:p-4 space-y-3 overflow-y-auto flex-1 min-h-0"
+            ? "p-3 md:p-4 space-y-3 overflow-y-auto flex-1 min-h-0 xp-scroll"
             : "p-4 md:p-5 space-y-4"
         }
       >
