@@ -980,13 +980,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
       {/* Jump to latest */}
       {showJumpToLatest && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-10">
+        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10">
           <button
             onClick={jumpToLatest}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg hover:brightness-110 active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[hsl(215,25%,12%)] border border-[hsl(217,35%,18%)] text-white/80 text-xs font-medium shadow-[0_2px_12px_rgba(0,0,0,0.5)] hover:bg-[hsl(215,25%,15%)] active:scale-95 transition-all"
           >
-            <ArrowDown className="h-3.5 w-3.5" />
-            Jump to latest
+            <ArrowDown className="h-3.5 w-3.5 text-primary" />
+            New messages
           </button>
         </div>
       )}
