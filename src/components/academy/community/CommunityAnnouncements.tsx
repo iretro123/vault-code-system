@@ -100,7 +100,7 @@ function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Annou
           )}
 
           <div className="flex items-center gap-3 pt-1">
-            <span className="text-[11px] text-white/20">{formatDateTimeFull(a.created_at)}</span>
+            <span className="text-[11px] text-[hsl(220,10%,55%)]">{formatDateTimeFull(a.created_at)}</span>
             {a.link && (
               <button
                 onClick={() => onNavigate(a.link!)}

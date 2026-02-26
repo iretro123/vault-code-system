@@ -26,6 +26,7 @@ export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
             canPost={true}
             isAnnouncements={false}
             onThreadOpen={setThreadMessage}
+            onSwitchTab={onSwitchTab}
           />
         </div>
       </div>

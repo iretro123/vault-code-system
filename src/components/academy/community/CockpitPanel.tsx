@@ -57,7 +57,6 @@ function QuickActionsCard() {
   const navigate = useNavigate();
 
   const actions = [
-    { label: "Post Setup", icon: Target, path: "/academy/trade" },
     { label: "Log Trade", icon: FileText, path: "/academy/trade" },
     { label: "Ask Question", icon: HelpCircle, path: null },
     { label: "Weekly Review", icon: ClipboardCheck, path: "/academy/progress" },
