@@ -809,16 +809,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <div className={cn(
                               "rounded-xl px-3.5 py-2 mt-0.5",
                               isCeoOrAdmin
-                                ? "bg-amber-500/[0.06] border border-amber-500/10"
+                                ? "bg-amber-50 border border-amber-200"
                                 : isOwn
-                                  ? "bg-[hsl(217,40%,14%)] border border-[hsl(217,35%,20%)]"
-                                  : "bg-[hsl(215,22%,12%)] border border-[hsl(215,18%,16%)]"
+                                  ? "bg-primary text-white border border-primary/80 shadow-sm"
+                                  : "bg-white border border-[hsl(220,10%,85%)] shadow-sm"
                             )}>
-                              <p className="text-[14px] text-white/90 leading-[1.6] whitespace-pre-line">
+                              <p className={cn(
+                                "text-[14px] leading-[1.6] whitespace-pre-line",
+                                isOwn && !isCeoOrAdmin ? "text-white" : "text-[hsl(220,15%,15%)]"
+                              )}>
                                 {renderPlainBody(msg.body)}
                               </p>
                               {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
-                                <span className="text-[10px] text-white/20 mt-0.5 block">(edited)</span>
+                                <span className={cn("text-[10px] mt-0.5 block", isOwn && !isCeoOrAdmin ? "text-white/60" : "text-[hsl(220,10%,55%)]")}>(edited)</span>
                               )}
                             </div>
                           </div>
