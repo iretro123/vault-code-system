@@ -1035,15 +1035,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             <div className="space-y-2">
               {/* Template chips */}
               <div className="flex items-center gap-1 px-1">
-                {[
-                  { label: "Post Setup", emoji: "📊" },
-                  { label: "Log Trade", emoji: "📋" },
-                  { label: "Ask Question", emoji: "❓" },
-                  { label: "Share Win", emoji: "🏆" },
+              {[
+                  { label: "Log Trade", emoji: "📋", action: undefined },
+                  { label: "Ask Question", emoji: "❓", action: undefined },
+                  { label: "Share Win", emoji: "🏆", action: () => onSwitchTab?.("wins") },
                 ].map((chip) => (
                   <button
                     key={chip.label}
                     type="button"
+                    onClick={chip.action}
                     className="text-[11px] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] px-2 py-0.5 rounded-md hover:bg-[hsl(220,10%,92%)] transition-colors font-medium"
                   >
                     {chip.emoji} {chip.label}
