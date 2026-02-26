@@ -25,8 +25,8 @@ function YourWeekCard() {
   const reviewStatus = "Due";
 
   return (
-    <div className="rounded-xl border border-[hsl(217,30%,14%)] bg-[hsl(215,25%,10%)] p-4 space-y-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Your Week</p>
+    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
+      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.12em]">Your Week</p>
       <div className="space-y-2">
         <MetricRow label="Trades Logged" value={String(tradesThisWeek)} accent={tradesThisWeek > 0} />
         <MetricRow label="Journal Entries" value={String(journalCount)} />
