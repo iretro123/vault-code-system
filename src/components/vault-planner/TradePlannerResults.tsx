@@ -33,6 +33,23 @@ function MetricCell({ label, value }: { label: string; value: string }) {
   );
 }
 
+function WhatToDoSummary({ inputs, result }: { inputs: PlannerInputs; result: PlannerResult }) {
+  return (
+    <div
+      className="rounded-[4px] p-3 space-y-1 text-[12px] text-foreground"
+      style={{ background: xp.heroBg, border: xp.heroBorder }}
+    >
+      <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1.5">What To Do</p>
+      <p>• Buy <strong>{result.finalContracts}</strong> {inputs.direction} at <strong>{formatCurrency(inputs.entryPremium)}</strong></p>
+      <p>• Cut the trade if the option hits <strong>{formatCurrency(inputs.stopPremium)}</strong></p>
+      <p>• Money needed to enter: <strong>{formatCurrency(result.totalPositionCost)}</strong></p>
+      <p>• Planned loss if stop hits: <strong>{formatCurrency(result.totalPlannedRisk)}</strong></p>
+      <p>• Main target (1:2): <strong>{formatCurrency(result.rr1to2Target)}</strong></p>
+      <p>• Optional take profits: <strong>{formatCurrency(result.tp1Premium)}</strong> and <strong>{formatCurrency(result.tp2Premium)}</strong></p>
+    </div>
+  );
+}
+
 export function TradePlannerResults({ inputs, result, onBack }: Props) {
   const canTrade = result.finalContracts > 0;
 
@@ -67,9 +84,9 @@ export function TradePlannerResults({ inputs, result, onBack }: Props) {
             <p className="text-sm font-bold" style={{ color: xp.warningText }}>Why you can't take this trade yet</p>
             <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
               <li>Try a cheaper option</li>
-              <li>Move your stop closer (only if chart idea still makes sense)</li>
+              <li>Pick a setup with a tighter stop (only if chart setup still makes sense)</li>
+              <li>Wait for a better entry</li>
               <li>Lower the option price you choose</li>
-              <li>Wait for a better setup</li>
             </ul>
           </div>
           <div className="flex justify-end">
@@ -92,32 +109,36 @@ export function TradePlannerResults({ inputs, result, onBack }: Props) {
           </div>
         </div>
 
-        {/* Hero cards */}
+        {/* Hero cards — outcome-first order */}
         <div className="flex flex-wrap gap-2">
-          <HeroCard label="HOW MANY CONTRACTS?" value={`${result.finalContracts}`} sub="contract" />
-          <HeroCard label="CUT LOSS AT (Option)" value={formatCurrency(inputs.stopPremium)} sub="Get out here if stop hits" />
+          <HeroCard label="HOW MANY CONTRACTS?" value={`${result.finalContracts}`} sub="contracts" />
+          <HeroCard label="OPTION STOP PRICE" value={formatCurrency(inputs.stopPremium)} sub="Cut the trade here" />
           <HeroCard label="PLANNED LOSS IF STOP HITS" value={formatCurrency(result.totalPlannedRisk)} sub="Your planned max loss" />
         </div>
 
-        {/* Secondary metrics */}
+        {/* What To Do summary */}
+        <WhatToDoSummary inputs={inputs} result={result} />
+
+        {/* Primary metrics — outcome-first */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-[4px] overflow-hidden" style={{ border: xp.fieldsetBorder }}>
-          <MetricCell label="Money You Can Lose" value={formatCurrency(result.riskBudget)} />
           <MetricCell label="Money Needed to Enter" value={formatCurrency(result.totalPositionCost)} />
-          <MetricCell label="Cost Per Contract" value={formatCurrency(result.costPerContract)} />
-          <MetricCell label="Planned Loss / Contract" value={formatCurrency(result.plannedRiskPerContract)} />
+          <MetricCell label="Main Target (1:2)" value={formatCurrency(result.rr1to2Target)} />
+          <MetricCell label="Take Profit 1 (+30%)" value={formatCurrency(result.tp1Premium)} />
+          <MetricCell label="Take Profit 2 (+50%)" value={formatCurrency(result.tp2Premium)} />
         </div>
 
+        {/* Secondary stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-[4px] overflow-hidden" style={{ border: xp.fieldsetBorder }}>
-          <MetricCell label="1:2 Target" value={formatCurrency(result.rr1to2Target)} />
-          <MetricCell label="TP1 (+30%)" value={formatCurrency(result.tp1Premium)} />
+          <MetricCell label="Money I Can Lose" value={formatCurrency(result.riskBudget)} />
+          <MetricCell label="Cost Per Contract" value={formatCurrency(result.costPerContract)} />
+          <MetricCell label="Planned Loss / Contract" value={formatCurrency(result.plannedRiskPerContract)} />
           <MetricCell label="1:3 Target" value={formatCurrency(result.rr1to3Target)} />
-          <MetricCell label="TP2 (+50%)" value={formatCurrency(result.tp2Premium)} />
         </div>
 
         {/* Delta exposure */}
         {result.deltaExposure != null && (
           <div className="grid grid-cols-1 gap-px rounded-[4px] overflow-hidden" style={{ border: xp.fieldsetBorder }}>
-            <MetricCell label="Delta Exposure ($ per $1 stock move)" value={formatCurrency(result.deltaExposure)} />
+            <MetricCell label="Option Speed ($ per $1 stock move)" value={formatCurrency(result.deltaExposure)} />
           </div>
         )}
 
