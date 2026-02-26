@@ -809,10 +809,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <div className={cn(
                               "rounded-xl px-3.5 py-2 mt-0.5",
                               isCeoOrAdmin
-                                ? "bg-amber-50 border border-amber-200"
+                                ? "bg-amber-50 border border-amber-200 shadow-sm"
                                 : isOwn
-                                  ? "bg-primary text-white border border-primary/80 shadow-sm"
-                                  : "bg-white border border-[hsl(220,10%,85%)] shadow-sm"
+                                  ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,54%)] text-white border border-primary/70 shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
+                                  : "bg-white border border-[hsl(220,10%,83%)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                             )}>
                               <p className={cn(
                                 "text-[14px] leading-[1.6] whitespace-pre-line",
