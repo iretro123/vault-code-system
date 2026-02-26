@@ -65,18 +65,18 @@ function QuickActionsCard() {
   ];
 
   return (
-    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
-      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.12em]">Quick Actions</p>
+    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
+      <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.12em]">Quick Actions</p>
       <div className="space-y-0">
         {actions.map((a) => (
           <button
             key={a.label}
             onClick={() => a.path && navigate(a.path)}
-            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.03] transition-colors group"
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-[hsl(220,10%,95%)] transition-colors group"
           >
-            <a.icon className="h-3.5 w-3.5 text-white/20 group-hover:text-white/40 shrink-0" />
-            <span className="text-[13px] text-white/45 group-hover:text-white/70 flex-1">{a.label}</span>
-            <ChevronRight className="h-3 w-3 text-white/10 group-hover:text-white/25" />
+            <a.icon className="h-3.5 w-3.5 text-[hsl(220,10%,55%)] group-hover:text-[hsl(220,10%,35%)] shrink-0" />
+            <span className="text-[13px] text-[hsl(220,10%,40%)] group-hover:text-[hsl(220,10%,20%)] flex-1">{a.label}</span>
+            <ChevronRight className="h-3 w-3 text-[hsl(220,10%,70%)] group-hover:text-[hsl(220,10%,45%)]" />
           </button>
         ))}
       </div>
