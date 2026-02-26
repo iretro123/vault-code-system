@@ -408,9 +408,7 @@ const AcademyResources = () => {
       {/* Vault Trade Planner (XP-style) */}
       <div>
         <SectionLabel icon={Calculator} label="Trade Planner" />
-        <div className="max-w-2xl">
-          <VaultTradePlanner />
-        </div>
+        <VaultTradePlanner />
       </div>
 
       {/* 2) Templates */}
