@@ -44,6 +44,7 @@ interface RoomChatProps {
   canPost: boolean;
   isAnnouncements?: boolean;
   onThreadOpen?: (msg: any) => void;
+  onSwitchTab?: (tab: string) => void;
 }
 
 /* ── helpers ── */
