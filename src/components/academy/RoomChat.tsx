@@ -777,11 +777,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           <button
                             type="button"
                             onClick={cancelEdit}
-                            className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/60 transition-colors"
+                            className="flex items-center gap-1 text-[11px] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] transition-colors"
                           >
                             <X className="h-3 w-3" /> Cancel
                           </button>
-                          <span className="text-[10px] text-white/20">esc to cancel · enter to save</span>
+                          <span className="text-[10px] text-[hsl(220,10%,60%)]">esc to cancel · enter to save</span>
                         </div>
                       </div>
                     ) : isRecap ? (
