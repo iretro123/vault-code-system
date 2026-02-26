@@ -1097,8 +1097,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     className={cn(
                       "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-100",
                       draft.trim() && !sending
-                        ? "bg-gradient-to-b from-[hsl(217,91%,62%)] to-[hsl(217,91%,52%)] text-white shadow-[0_2px_8px_hsl(217_91%_60%/0.35),inset_0_1px_0_rgba(255,255,255,0.15)] hover:brightness-110 active:scale-95"
-                        : "text-[hsl(220,10%,75%)] cursor-not-allowed"
+                        ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,50%)] text-white shadow-[0_2px_10px_hsl(217_91%_60%/0.4),inset_0_1px_0_rgba(255,255,255,0.2)] hover:brightness-110 active:scale-95"
+                        : "text-[hsl(220,10%,78%)] cursor-not-allowed"
                     )}
                   >
                     {sending ? (
