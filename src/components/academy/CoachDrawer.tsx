@@ -78,6 +78,7 @@ type InstantView = "ask" | "history";
 export function CoachDrawer() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { requestIfNeeded: requestOSPermission } = useOSNotifications();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
 
