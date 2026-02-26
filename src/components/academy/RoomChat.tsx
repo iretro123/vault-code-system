@@ -1086,7 +1086,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     maxLength={1000}
                     disabled={sending}
                     rows={1}
-                    className="flex-1 bg-transparent text-[14px] text-white/90 placeholder:text-white/20 resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
+                    className="flex-1 bg-transparent text-[14px] text-[hsl(220,15%,15%)] placeholder:text-[hsl(220,10%,60%)] resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
                   />
 
                   {/* Send button — premium Vault blue */}
