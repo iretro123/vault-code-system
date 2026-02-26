@@ -88,7 +88,7 @@ export function CommunityWins() {
               >
                 {/* Image */}
                 {imageAtt && (
-                  <div className="aspect-video bg-white/[0.02] overflow-hidden">
+                  <div className="aspect-video bg-[hsl(220,10%,95%)] overflow-hidden">
                     <img
                       src={(imageAtt as any).url}
                       alt="Trade screenshot"
