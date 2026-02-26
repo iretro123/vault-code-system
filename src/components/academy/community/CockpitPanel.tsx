@@ -25,8 +25,8 @@ function YourWeekCard() {
   const reviewStatus = "Due";
 
   return (
-    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
-      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.12em]">Your Week</p>
+    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
+      <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.12em]">Your Week</p>
       <div className="space-y-2">
         <MetricRow label="Trades" value={String(tradesThisWeek)} accent={tradesThisWeek > 0} />
         <MetricRow label="Journal" value={String(journalCount)} />
@@ -41,10 +41,10 @@ function MetricRow({ label, value, accent, warn }: {
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[12px] text-white/35">{label}</span>
+      <span className="text-[12px] text-[hsl(220,10%,45%)]">{label}</span>
       <span className={cn(
         "text-[12px] font-semibold",
-        warn ? "text-amber-400/70" : accent ? "text-emerald-400/70" : "text-white/50"
+        warn ? "text-amber-600" : accent ? "text-emerald-600" : "text-[hsl(220,10%,25%)]"
       )}>
         {value}
       </span>
@@ -65,18 +65,18 @@ function QuickActionsCard() {
   ];
 
   return (
-    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
-      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.12em]">Quick Actions</p>
+    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
+      <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.12em]">Quick Actions</p>
       <div className="space-y-0">
         {actions.map((a) => (
           <button
             key={a.label}
             onClick={() => a.path && navigate(a.path)}
-            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.03] transition-colors group"
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-[hsl(220,10%,95%)] transition-colors group"
           >
-            <a.icon className="h-3.5 w-3.5 text-white/20 group-hover:text-white/40 shrink-0" />
-            <span className="text-[13px] text-white/45 group-hover:text-white/70 flex-1">{a.label}</span>
-            <ChevronRight className="h-3 w-3 text-white/10 group-hover:text-white/25" />
+            <a.icon className="h-3.5 w-3.5 text-[hsl(220,10%,55%)] group-hover:text-[hsl(220,10%,35%)] shrink-0" />
+            <span className="text-[13px] text-[hsl(220,10%,40%)] group-hover:text-[hsl(220,10%,20%)] flex-1">{a.label}</span>
+            <ChevronRight className="h-3 w-3 text-[hsl(220,10%,70%)] group-hover:text-[hsl(220,10%,45%)]" />
           </button>
         ))}
       </div>
@@ -145,23 +145,23 @@ function CoachFeedCard() {
   if (visibleItems.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
+    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
       <div className="flex items-center gap-1.5">
-        <Flame className="h-3 w-3 text-amber-400/40" />
-        <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Coach Feed</p>
+        <Flame className="h-3 w-3 text-amber-500" />
+        <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.15em]">Coach Feed</p>
       </div>
       <div className="space-y-1.5">
         {visibleItems.map((item) => (
           <div
             key={item.id}
-            className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-white/[0.015] border border-white/[0.03] group"
+            className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-[hsl(220,10%,96%)] border border-[hsl(220,10%,88%)] group"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] text-white/45 leading-relaxed">{item.message}</p>
+              <p className="text-[12px] text-[hsl(220,10%,35%)] leading-relaxed">{item.message}</p>
               {item.cta && item.ctaPath && (
                 <button
                   onClick={() => navigate(item.ctaPath!)}
-                  className="text-[11px] text-primary/70 hover:text-primary font-medium mt-1 transition-colors"
+                  className="text-[11px] text-primary hover:text-primary/80 font-medium mt-1 transition-colors"
                 >
                   {item.cta} →
                 </button>
@@ -169,7 +169,7 @@ function CoachFeedCard() {
             </div>
             <button
               onClick={() => dismiss(item.id)}
-              className="p-0.5 rounded text-white/10 hover:text-white/30 transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+              className="p-0.5 rounded text-[hsl(220,10%,70%)] hover:text-[hsl(220,10%,40%)] transition-colors shrink-0 opacity-0 group-hover:opacity-100"
             >
               <X className="h-3 w-3" />
             </button>
