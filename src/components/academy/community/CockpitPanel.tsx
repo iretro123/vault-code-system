@@ -25,8 +25,8 @@ function YourWeekCard() {
   const reviewStatus = "Due";
 
   return (
-    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
-      <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.12em]">Your Week</p>
+    <div className="rounded-xl border border-[hsl(220,10%,82%)] bg-white p-3.5 space-y-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <p className="text-[10px] font-bold text-[hsl(220,10%,40%)] uppercase tracking-[0.12em]">Your Week</p>
       <div className="space-y-2">
         <MetricRow label="Trades" value={String(tradesThisWeek)} accent={tradesThisWeek > 0} />
         <MetricRow label="Journal" value={String(journalCount)} />
@@ -65,8 +65,8 @@ function QuickActionsCard() {
   ];
 
   return (
-    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
-      <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.12em]">Quick Actions</p>
+    <div className="rounded-xl border border-[hsl(220,10%,82%)] bg-white p-3.5 space-y-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <p className="text-[10px] font-bold text-[hsl(220,10%,40%)] uppercase tracking-[0.12em]">Quick Actions</p>
       <div className="space-y-0">
         {actions.map((a) => (
           <button
@@ -145,10 +145,10 @@ function CoachFeedCard() {
   if (visibleItems.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-[hsl(220,10%,85%)] bg-white p-3 space-y-2 shadow-sm">
+    <div className="rounded-xl border border-[hsl(220,10%,82%)] bg-white p-3.5 space-y-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
       <div className="flex items-center gap-1.5">
         <Flame className="h-3 w-3 text-amber-500" />
-        <p className="text-[10px] font-bold text-[hsl(220,10%,45%)] uppercase tracking-[0.15em]">Coach Feed</p>
+        <p className="text-[10px] font-bold text-[hsl(220,10%,40%)] uppercase tracking-[0.15em]">Coach Feed</p>
       </div>
       <div className="space-y-1.5">
         {visibleItems.map((item) => (
@@ -183,7 +183,7 @@ function CoachFeedCard() {
 /* ── Main Cockpit Panel ── */
 export function CockpitPanel() {
   return (
-    <div className="flex flex-col gap-3 p-3 h-full overflow-y-auto">
+    <div className="flex flex-col gap-3 p-3.5 h-full overflow-y-auto">
       <YourWeekCard />
       <QuickActionsCard />
       <CoachFeedCard />

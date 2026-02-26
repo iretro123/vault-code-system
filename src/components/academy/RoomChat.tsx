@@ -466,25 +466,25 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full w-full bg-[hsl(220,14%,94%)]">
-        <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
+      <div className="flex flex-col h-full w-full bg-[hsl(220,15%,92%)]">
+      <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <div className="h-8 w-8 rounded-full bg-[hsl(220,12%,86%)] shrink-0" />
+              <div className="h-8 w-8 rounded-full bg-[hsl(220,12%,84%)] shrink-0" />
               <div className="space-y-1.5 flex-1">
-                <div className="h-3 w-24 rounded bg-[hsl(220,12%,86%)]" />
-                <div className="h-3 rounded bg-[hsl(220,12%,88%)]" style={{ width: `${40 + (i % 3) * 20}%` }} />
+                <div className="h-3 w-24 rounded bg-[hsl(220,12%,84%)]" />
+                <div className="h-3 rounded bg-[hsl(220,12%,86%)]" style={{ width: `${40 + (i % 3) * 20}%` }} />
               </div>
             </div>
           ))}
         </div>
-        <div className="h-14 border-t border-[hsl(220,12%,85%)] bg-white" />
+        <div className="h-14 border-t border-[hsl(220,12%,84%)] bg-white" />
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-col h-full w-full bg-[hsl(220,14%,94%)]">
+    <div className="relative flex flex-col h-full w-full bg-[hsl(220,15%,92%)]">
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
@@ -677,8 +677,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "group relative flex gap-4 px-6 py-1.5 hover:bg-[hsl(220,10%,92%)] transition-colors duration-75",
-                    showHdr && "mt-4 pt-3",
+                    "group relative flex gap-4 px-6 py-1 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
+                    showHdr && "mt-3 pt-2.5",
                     isEditing && "bg-[hsl(220,10%,93%)]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-50"
@@ -706,10 +706,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     {showHdr && (
-                      <div className="flex items-center gap-2 mb-1 min-h-[22px]">
+                      <div className="flex items-center gap-2 mb-0.5 min-h-[22px]">
                         <span className={cn(
-                          "text-[15px] font-semibold tracking-[-0.01em]",
-                          isCeoOrAdmin ? "text-amber-700" : "text-[hsl(220,15%,15%)]"
+                          "text-[14px] font-semibold tracking-[-0.01em]",
+                          isCeoOrAdmin ? "text-amber-700" : "text-[hsl(220,15%,12%)]"
                         )}>
                           {msg.user_name}
                         </span>
@@ -724,7 +724,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         ) : (
                           <div className="h-4 w-16 rounded bg-[hsl(220,10%,88%)] animate-pulse" />
                         )}
-                        <span className="text-[11px] text-[hsl(220,10%,55%)]">
+                        <span className="text-[11px] text-[hsl(220,10%,52%)]">
                           {formatDateTime(msg.created_at)}
                         </span>
                       </div>
@@ -736,10 +736,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] overflow-hidden">
                           <div className="w-1 self-stretch bg-amber-500/50 shrink-0" />
                           <div className="px-3 py-2 flex-1">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
                               <Megaphone className="h-3 w-3" /> Official Announcement
                             </span>
-                            <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                            <p className="text-sm text-[hsl(220,15%,15%)] leading-relaxed whitespace-pre-line">
                               {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
                             </p>
                           </div>
@@ -793,10 +793,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="flex items-start gap-0 rounded-xl border border-amber-500/15 bg-white/[0.03] overflow-hidden">
                           <div className="w-1 self-stretch bg-amber-500/60 shrink-0" />
                           <div className="px-3 py-2 flex-1">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
                               <Megaphone className="h-3 w-3" /> Official
                             </span>
-                            <p className="text-[15px] text-white/90 leading-relaxed whitespace-pre-line">
+                            <p className="text-[15px] text-[hsl(220,15%,15%)] leading-relaxed whitespace-pre-line">
                               {renderPlainBody(msg.body)}
                             </p>
                           </div>
@@ -809,10 +809,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <div className={cn(
                               "rounded-xl px-3.5 py-2 mt-0.5",
                               isCeoOrAdmin
-                                ? "bg-amber-50 border border-amber-200"
+                                ? "bg-amber-50 border border-amber-200 shadow-sm"
                                 : isOwn
-                                  ? "bg-primary text-white border border-primary/80 shadow-sm"
-                                  : "bg-white border border-[hsl(220,10%,85%)] shadow-sm"
+                                  ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,54%)] text-white border border-primary/70 shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
+                                  : "bg-white border border-[hsl(220,10%,83%)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                             )}>
                               <p className={cn(
                                 "text-[14px] leading-[1.6] whitespace-pre-line",
@@ -990,7 +990,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10">
           <button
             onClick={jumpToLatest}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-[hsl(220,10%,82%)] text-[hsl(220,15%,20%)] text-xs font-medium shadow-md hover:bg-[hsl(220,10%,97%)] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-[hsl(220,10%,80%)] text-[hsl(220,15%,18%)] text-xs font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,0.08)] hover:bg-[hsl(220,10%,97%)] active:scale-95 transition-all"
           >
             <ArrowDown className="h-3.5 w-3.5 text-primary" />
             New messages
@@ -1027,7 +1027,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </p>
         </div>
       ) : canPost ? (
-        <div className="px-5 pb-4 pt-2">
+        <div className="px-5 pb-4 pt-2 bg-[hsl(220,14%,94%)] border-t border-[hsl(220,12%,88%)]">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
@@ -1051,7 +1051,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               </div>
 
               {/* Composer bar — obsidian shell + light input */}
-              <div data-chat-composer className="rounded-xl bg-white border border-[hsl(220,10%,82%)] shadow-sm focus-within:border-primary focus-within:shadow-[0_0_0_1px_hsl(217_91%_60%/0.3)] transition-all duration-100">
+              <div data-chat-composer className="rounded-xl bg-white border border-[hsl(220,10%,80%)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-100">
                 <div className="flex items-end gap-2 px-3 py-2">
                   {/* Hidden file input */}
                   <input
@@ -1097,8 +1097,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     className={cn(
                       "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-100",
                       draft.trim() && !sending
-                        ? "bg-gradient-to-b from-[hsl(217,91%,62%)] to-[hsl(217,91%,52%)] text-white shadow-[0_2px_8px_hsl(217_91%_60%/0.35),inset_0_1px_0_rgba(255,255,255,0.15)] hover:brightness-110 active:scale-95"
-                        : "text-[hsl(220,10%,75%)] cursor-not-allowed"
+                        ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,50%)] text-white shadow-[0_2px_10px_hsl(217_91%_60%/0.4),inset_0_1px_0_rgba(255,255,255,0.2)] hover:brightness-110 active:scale-95"
+                        : "text-[hsl(220,10%,78%)] cursor-not-allowed"
                     )}
                   >
                     {sending ? (
