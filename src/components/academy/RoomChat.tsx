@@ -936,8 +936,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </button>
                           ))}
 
-                          {/* Hover add-reaction trigger */}
-                          <span className="hidden group-hover:inline-flex items-center gap-0.5">
+                          {/* Hover add-reaction trigger — use opacity to avoid reflow */}
+                          <span className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-75">
                             {ALLOWED_EMOJIS.filter(
                               (e) => !reactions.some((r) => r.emoji === e && r.reacted)
                             ).map((emoji) => (
