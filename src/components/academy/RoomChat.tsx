@@ -565,7 +565,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
         {hasMore && (
           <div className="flex justify-center py-2">
-            <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs text-white/50 hover:text-white">
+            <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)]">
               <ChevronUp className="h-3 w-3" />
               Load older
             </Button>
