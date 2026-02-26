@@ -183,7 +183,7 @@ function CoachFeedCard() {
 /* ── Main Cockpit Panel ── */
 export function CockpitPanel() {
   return (
-    <div className="flex flex-col gap-4 p-4 h-full overflow-hidden">
+    <div className="flex flex-col gap-3 p-3 h-full overflow-y-auto">
       <YourWeekCard />
       <QuickActionsCard />
       <CoachFeedCard />
