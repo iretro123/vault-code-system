@@ -381,6 +381,82 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     setUploading(false);
   }, [user, roomSlug, draft, sending]);
 
+  // Drag-and-drop file upload
+  const processDroppedFile = useCallback(async (file: File) => {
+    if (!user) return;
+    if (!ALLOWED_MIME.includes(file.type)) {
+      toast.error("Unsupported file type. Allowed: PNG, JPG, GIF, PDF, MP4");
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File must be under 15 MB.");
+      return;
+    }
+
+    setUploading(true);
+    const path = `${roomSlug}/${user.id}/${Date.now()}_${file.name}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("academy-chat-files")
+      .upload(path, file);
+
+    if (uploadErr) {
+      toast.error("Upload failed. Please try again.");
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("academy-chat-files")
+      .getPublicUrl(path);
+
+    const attachment: Attachment = {
+      type: file.type.startsWith("image/") ? "image" : "file",
+      url: urlData.publicUrl,
+      filename: file.name,
+      size: file.size,
+      mime: file.type,
+    };
+
+    await handleSend(draft, [attachment]);
+    setDraft("");
+    setUploading(false);
+  }, [user, roomSlug, draft, sending]);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current += 1;
+    if (dragDepthRef.current === 1) setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current -= 1;
+    if (dragDepthRef.current <= 0) {
+      dragDepthRef.current = 0;
+      setDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = 0;
+    setDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processDroppedFile(files[0]);
+    }
+  }, [processDroppedFile]);
+
   const handleEmojiSelect = useCallback((emoji: string) => {
     const el = textareaRef.current;
     if (!el) {
