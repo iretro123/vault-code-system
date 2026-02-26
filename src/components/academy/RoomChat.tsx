@@ -484,7 +484,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }
 
   return (
-    <div className="relative flex flex-col h-full w-full bg-[hsl(215,28%,7%)]">
+    <div className="relative flex flex-col h-full w-full bg-[hsl(220,10%,96%)]">
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
