@@ -108,7 +108,7 @@ export function CommunityWins() {
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-semibold text-white truncate">{win.user_name}</span>
+                        <span className="text-[15px] font-semibold text-[hsl(220,15%,15%)] truncate">{win.user_name}</span>
                         <AcademyRoleBadge roleName={profile?.academy_role_name} />
                       </div>
                       <span className="text-[11px] text-white/20">{formatDateTime(win.created_at)}</span>
