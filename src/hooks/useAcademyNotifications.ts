@@ -18,6 +18,7 @@ export interface AcademyNotification {
 export function useAcademyNotifications() {
   const { user } = useAuth();
   const { refetchNotifications } = useAcademyData();
+  const { notify } = useOSNotifications();
   const [notifications, setNotifications] = useState<AcademyNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [newArrival, setNewArrival] = useState(false);
