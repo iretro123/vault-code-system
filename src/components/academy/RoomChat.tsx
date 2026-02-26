@@ -53,13 +53,13 @@ function getInitials(name: string) {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  advanced:     { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-  professional: { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-  veteran:      { label: "Advanced",     cls: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
-  intermediate: { label: "Intermediate", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  active:       { label: "Intermediate", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  beginner:     { label: "Beginner",     cls: "bg-white/10 text-white/50 border-white/10" },
-  newbie:       { label: "Beginner",     cls: "bg-white/10 text-white/50 border-white/10" },
+  advanced:     { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
+  professional: { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
+  veteran:      { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
+  intermediate: { label: "Intermediate", cls: "bg-blue-100 text-blue-700 border-blue-200" },
+  active:       { label: "Intermediate", cls: "bg-blue-100 text-blue-700 border-blue-200" },
+  beginner:     { label: "Beginner",     cls: "bg-gray-100 text-gray-500 border-gray-200" },
+  newbie:       { label: "Beginner",     cls: "bg-gray-100 text-gray-500 border-gray-200" },
 };
 
 function ExperienceBadge({ role }: { role?: string }) {
