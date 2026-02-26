@@ -807,10 +807,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         {msg.body && msg.body !== "📎 Attachment" && (
                           <div className="inline-block max-w-[88%]">
                             <div className={cn(
-                              "rounded-2xl rounded-tl-md px-4 py-2.5",
-                              isCeoOrAdmin ? "bg-amber-500/[0.04]" : ""
+                              "rounded-xl px-3.5 py-2 mt-0.5",
+                              isCeoOrAdmin
+                                ? "bg-amber-500/[0.06] border border-amber-500/10"
+                                : isOwn
+                                  ? "bg-[hsl(217,40%,14%)] border border-[hsl(217,35%,20%)]"
+                                  : "bg-[hsl(215,22%,12%)] border border-[hsl(215,18%,16%)]"
                             )}>
-                              <p className="text-[16px] text-white/90 leading-[1.65] whitespace-pre-line">
+                              <p className="text-[14px] text-white/90 leading-[1.6] whitespace-pre-line">
                                 {renderPlainBody(msg.body)}
                               </p>
                               {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
