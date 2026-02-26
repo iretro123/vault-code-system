@@ -220,6 +220,7 @@ export function VaultTradePlanner() {
     <XPWindow
       title="Vault Trade Planner.exe"
       menuBar
+      fitViewport
       footer="Vault Academy Toolkit • Daily-use pre-trade planner"
     >
       {/* Header */}
