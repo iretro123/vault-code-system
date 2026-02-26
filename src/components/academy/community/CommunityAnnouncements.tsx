@@ -59,8 +59,8 @@ export function CommunityAnnouncements() {
 function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Announcement; onNavigate: (path: string) => void }) {
   return (
     <div className={cn(
-      "rounded-[20px] border bg-white/[0.04] backdrop-blur-md p-6 space-y-4 transition-colors shadow-[0_4px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-white/[0.12]",
-      a.is_pinned ? "border-amber-500/15" : "border-white/[0.07]"
+      "rounded-[20px] border bg-white p-6 space-y-4 transition-colors shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-[hsl(220,10%,75%)]",
+      a.is_pinned ? "border-amber-500/30" : "border-[hsl(220,10%,82%)]"
     )}>
       <div className="flex items-start gap-4">
         <div className="mt-0.5 shrink-0">
