@@ -1012,17 +1012,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
       {/* Composer */}
       {isMuted ? (
-        <div className="pt-3 border-t border-white/[0.06] mt-2 px-4">
-          <div className="flex items-center gap-2 rounded-xl border border-amber-500/15 bg-amber-500/[0.03] px-4 py-3">
-            <Clock className="h-4 w-4 text-amber-400/60 shrink-0" />
-            <p className="text-[13px] text-amber-300/60">
+        <div className="pt-3 border-t border-[hsl(220,10%,85%)] mt-2 px-4">
+          <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <Clock className="h-4 w-4 text-amber-600 shrink-0" />
+            <p className="text-[13px] text-amber-700">
               You are timed out until {muteExpiresAt ? new Date(muteExpiresAt).toLocaleString() : "later"}.
             </p>
           </div>
         </div>
       ) : isRoomLocked && !canModerate ? (
-        <div className="pt-3 border-t border-white/[0.06] mt-2">
-          <p className="text-[13px] text-white/40 text-center py-2">
+        <div className="pt-3 border-t border-[hsl(220,10%,85%)] mt-2">
+          <p className="text-[13px] text-[hsl(220,10%,45%)] text-center py-2">
             This room is locked by a moderator.
           </p>
         </div>
