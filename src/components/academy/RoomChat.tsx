@@ -1051,7 +1051,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               </div>
 
               {/* Composer bar — obsidian shell + light input */}
-              <div data-chat-composer className="rounded-xl bg-[hsl(215,25%,10%)] border border-[hsl(217,35%,16%)] shadow-[0_2px_12px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.03)] focus-within:border-[hsl(217,60%,30%)] focus-within:shadow-[0_2px_12px_rgba(0,0,0,0.3),0_0_0_1px_hsl(217_60%_30%)] transition-all duration-100">
+              <div data-chat-composer className="rounded-xl bg-white border border-[hsl(220,10%,82%)] shadow-sm focus-within:border-primary focus-within:shadow-[0_0_0_1px_hsl(217_91%_60%/0.3)] transition-all duration-100">
                 <div className="flex items-end gap-2 px-3 py-2">
                   {/* Hidden file input */}
                   <input
