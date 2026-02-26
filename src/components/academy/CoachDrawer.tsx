@@ -240,6 +240,8 @@ export function CoachDrawer() {
       toast({ title: "Error", description: e.message || "Failed to get answer", variant: "destructive" });
     }
     setInstantLoading(false);
+    // Request OS notification permission after instant answer action (user gesture)
+    requestOSPermission();
   };
 
   const handleHandoffToCoach = () => {
