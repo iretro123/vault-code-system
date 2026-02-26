@@ -67,7 +67,7 @@ const AcademyCommunity = () => {
 
           {/* Tab Content — maximized */}
           <div className="flex-1 overflow-hidden">
-            {activeTab === "trade-floor" && <CommunityTradeFloor />}
+            {activeTab === "trade-floor" && <CommunityTradeFloor onSwitchTab={handleTabChange} />}
             {activeTab === "announcements" && <CommunityAnnouncements />}
             {activeTab === "wins" && <CommunityWins />}
           </div>

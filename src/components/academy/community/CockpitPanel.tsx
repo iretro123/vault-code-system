@@ -4,7 +4,7 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useNavigate } from "react-router-dom";
 import {
   FileText, HelpCircle, ClipboardCheck, BookOpen,
-  ChevronRight, X, Flame, Target
+  ChevronRight, X, Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +57,6 @@ function QuickActionsCard() {
   const navigate = useNavigate();
 
   const actions = [
-    { label: "Post Setup", icon: Target, path: "/academy/trade" },
     { label: "Log Trade", icon: FileText, path: "/academy/trade" },
     { label: "Ask Question", icon: HelpCircle, path: null },
     { label: "Weekly Review", icon: ClipboardCheck, path: "/academy/progress" },

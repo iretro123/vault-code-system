@@ -61,9 +61,9 @@ export function CommunityWins() {
   if (wins.length === 0) {
     return (
       <div className="text-center py-24 max-w-xs mx-auto">
-        <Trophy className="h-8 w-8 text-white/10 mx-auto mb-3" />
-        <p className="text-sm text-white/40">No wins posted yet.</p>
-        <p className="text-xs text-white/20 mt-1">Post proof of wins with screenshots and trade summaries.</p>
+        <Trophy className="h-8 w-8 text-[hsl(220,10%,70%)] mx-auto mb-3" />
+        <p className="text-sm text-[hsl(220,10%,40%)]">No wins posted yet.</p>
+        <p className="text-xs text-[hsl(220,10%,55%)] mt-1">Post proof of wins with screenshots and trade summaries.</p>
       </div>
     );
   }
@@ -84,11 +84,11 @@ export function CommunityWins() {
             return (
               <div
                 key={win.id}
-                className="rounded-[20px] border border-white/[0.07] bg-white/[0.04] backdrop-blur-md overflow-hidden transition-all hover:border-white/[0.12] shadow-[0_4px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.04)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
+                className="rounded-[20px] border border-[hsl(220,10%,82%)] bg-white overflow-hidden transition-all hover:border-[hsl(220,10%,75%)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]"
               >
                 {/* Image */}
                 {imageAtt && (
-                  <div className="aspect-video bg-white/[0.02] overflow-hidden">
+                  <div className="aspect-video bg-[hsl(220,10%,95%)] overflow-hidden">
                     <img
                       src={(imageAtt as any).url}
                       alt="Trade screenshot"
@@ -104,14 +104,14 @@ export function CommunityWins() {
                     {profile ? (
                       <ChatAvatar avatarUrl={profile.avatar_url} userName={win.user_name} size="h-10 w-10" />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-white/[0.06]" />
+                      <div className="w-10 h-10 rounded-full bg-[hsl(220,10%,90%)]" />
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[15px] font-semibold text-white truncate">{win.user_name}</span>
+                        <span className="text-[15px] font-semibold text-[hsl(220,15%,15%)] truncate">{win.user_name}</span>
                         <AcademyRoleBadge roleName={profile?.academy_role_name} />
                       </div>
-                      <span className="text-[11px] text-white/20">{formatDateTime(win.created_at)}</span>
+                      <span className="text-[11px] text-[hsl(220,10%,55%)]">{formatDateTime(win.created_at)}</span>
                     </div>
                   </div>
 
@@ -120,13 +120,13 @@ export function CommunityWins() {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                       {fields.map((f, i) => (
                         <div key={i} className={f.label.toLowerCase() === "lesson learned" ? "col-span-2" : ""}>
-                          <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">{f.label}</span>
-                          <p className="text-sm text-white/80 mt-0.5">{f.value}</p>
+                          <span className="text-[10px] text-[hsl(220,10%,50%)] uppercase tracking-wider font-medium">{f.label}</span>
+                          <p className="text-sm text-[hsl(220,15%,20%)] mt-0.5">{f.value}</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[15px] text-white/65 leading-[1.65] whitespace-pre-line line-clamp-4">{win.body}</p>
+                    <p className="text-[15px] text-[hsl(220,10%,35%)] leading-[1.65] whitespace-pre-line line-clamp-4">{win.body}</p>
                   )}
 
                   {/* Fire reaction */}
@@ -136,8 +136,8 @@ export function CommunityWins() {
                       className={cn(
                         "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all",
                         fireReaction?.reacted
-                          ? "bg-orange-500/15 border-orange-500/30 text-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.1)]"
-                          : "bg-white/[0.03] border-white/[0.06] text-white/30 hover:text-white/50 hover:bg-white/[0.06]"
+                          ? "bg-orange-500/15 border-orange-500/30 text-orange-600 shadow-[0_0_8px_rgba(249,115,22,0.1)]"
+                          : "bg-[hsl(220,10%,95%)] border-[hsl(220,10%,85%)] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] hover:bg-[hsl(220,10%,90%)]"
                       )}
                     >
                       <Flame className="h-4 w-4" />

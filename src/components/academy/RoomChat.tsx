@@ -44,6 +44,7 @@ interface RoomChatProps {
   canPost: boolean;
   isAnnouncements?: boolean;
   onThreadOpen?: (msg: any) => void;
+  onSwitchTab?: (tab: string) => void;
 }
 
 /* ── helpers ── */
@@ -213,7 +214,7 @@ function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
 
 /* ── main component ── */
 
-export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen }: RoomChatProps) {
+export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab }: RoomChatProps) {
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
     useRoomMessages(roomSlug);
   const { user, profile, userRole: authUserRole } = useAuth();
@@ -869,9 +870,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       </div>
                     )}
 
-                    {/* Hover action bar — Discord-style floating toolbar */}
+                    {/* Hover action bar — Discord-style floating toolbar, absolutely positioned to avoid reflow */}
                     {!msg.is_deleted && !isEditing && (
-                      <div className="absolute -top-3.5 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-10">
+                      <div className="absolute -top-4 right-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-10">
                         <div className="flex items-center gap-0.5 rounded-lg bg-white border border-[hsl(220,10%,82%)] shadow-md px-1 py-0.5">
                           {/* Quick reactions */}
                           {!isAnnouncements && ALLOWED_EMOJIS.map((emoji) => (
@@ -935,8 +936,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </button>
                           ))}
 
-                          {/* Hover add-reaction trigger */}
-                          <span className="hidden group-hover:inline-flex items-center gap-0.5">
+                          {/* Hover add-reaction trigger — use opacity to avoid reflow */}
+                          <span className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-75">
                             {ALLOWED_EMOJIS.filter(
                               (e) => !reactions.some((r) => r.emoji === e && r.reacted)
                             ).map((emoji) => (
@@ -953,15 +954,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         </div>
                       );
                     })()}
-                    {/* Thread reply trigger */}
+                    {/* Thread reply trigger — use opacity for hover items to prevent reflow */}
                     {!msg.is_deleted && !isEditing && !isAnnouncements && onThreadOpen && (
                       <button
                         onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
                         className={cn(
-                          "flex items-center gap-1.5 mt-1 text-[11px] transition-colors",
+                          "flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75",
                           replyCount > 0
                             ? "text-primary hover:text-primary/80"
-                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] hidden group-hover:flex"
+                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] opacity-0 group-hover:opacity-100 h-0 group-hover:h-auto overflow-hidden"
                         )}
                       >
                         <MessageSquare className="h-3 w-3" />
@@ -1034,15 +1035,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             <div className="space-y-2">
               {/* Template chips */}
               <div className="flex items-center gap-1 px-1">
-                {[
-                  { label: "Post Setup", emoji: "📊" },
-                  { label: "Log Trade", emoji: "📋" },
-                  { label: "Ask Question", emoji: "❓" },
-                  { label: "Share Win", emoji: "🏆" },
+              {[
+                  { label: "Log Trade", emoji: "📋", action: undefined },
+                  { label: "Ask Question", emoji: "❓", action: undefined },
+                  { label: "Share Win", emoji: "🏆", action: () => onSwitchTab?.("wins") },
                 ].map((chip) => (
                   <button
                     key={chip.label}
                     type="button"
+                    onClick={chip.action}
                     className="text-[11px] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] px-2 py-0.5 rounded-md hover:bg-[hsl(220,10%,92%)] transition-colors font-medium"
                   >
                     {chip.emoji} {chip.label}

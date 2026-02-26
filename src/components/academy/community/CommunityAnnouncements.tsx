@@ -23,9 +23,9 @@ export function CommunityAnnouncements() {
   if (announcements.length === 0) {
     return (
       <div className="text-center py-24 max-w-xs mx-auto">
-        <Megaphone className="h-8 w-8 text-white/10 mx-auto mb-3" />
-        <p className="text-sm text-white/40">No announcements yet.</p>
-        <p className="text-xs text-white/20 mt-1">Official updates from coaches and admins will appear here.</p>
+        <Megaphone className="h-8 w-8 text-[hsl(220,10%,70%)] mx-auto mb-3" />
+        <p className="text-sm text-[hsl(220,10%,40%)]">No announcements yet.</p>
+        <p className="text-xs text-[hsl(220,10%,55%)] mt-1">Official updates from coaches and admins will appear here.</p>
       </div>
     );
   }
@@ -36,7 +36,7 @@ export function CommunityAnnouncements() {
         {/* Pinned section */}
         {pinned.length > 0 && (
           <div className="space-y-4">
-            <p className="text-[10px] font-bold text-white/25 uppercase tracking-[0.15em] flex items-center gap-1.5">
+            <p className="text-[10px] font-bold text-[hsl(220,10%,50%)] uppercase tracking-[0.15em] flex items-center gap-1.5">
               <Pin className="h-3 w-3" /> Pinned
             </p>
             {pinned.map((a) => (
@@ -59,8 +59,8 @@ export function CommunityAnnouncements() {
 function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Announcement; onNavigate: (path: string) => void }) {
   return (
     <div className={cn(
-      "rounded-[20px] border bg-white/[0.04] backdrop-blur-md p-6 space-y-4 transition-colors shadow-[0_4px_20px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-white/[0.12]",
-      a.is_pinned ? "border-amber-500/15" : "border-white/[0.07]"
+      "rounded-[20px] border bg-white p-6 space-y-4 transition-colors shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:border-[hsl(220,10%,75%)]",
+      a.is_pinned ? "border-amber-500/30" : "border-[hsl(220,10%,82%)]"
     )}>
       <div className="flex items-start gap-4">
         <div className="mt-0.5 shrink-0">
@@ -73,7 +73,7 @@ function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Annou
             <Badge variant="outline" className="text-[10px] gap-1 h-5 border-primary/30 text-primary font-bold">
               Official
             </Badge>
-            <h3 className="text-base font-semibold text-foreground tracking-[-0.01em]">{a.title}</h3>
+            <h3 className="text-base font-semibold text-[hsl(220,15%,15%)] tracking-[-0.01em]">{a.title}</h3>
             {a.is_pinned && (
               <Badge variant="outline" className="text-[10px] gap-1 h-5 border-amber-500/30 text-amber-400">
                 <Pin className="h-2.5 w-2.5" /> Pinned
@@ -87,20 +87,20 @@ function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Annou
           </div>
 
           {a.body && (
-            <p className="text-[15px] text-white/65 leading-[1.7] whitespace-pre-wrap">{a.body}</p>
+            <p className="text-[15px] text-[hsl(220,10%,35%)] leading-[1.7] whitespace-pre-wrap">{a.body}</p>
           )}
 
           {a.image_url && (
             <img
               src={a.image_url}
               alt=""
-              className="rounded-2xl max-w-full max-h-[300px] object-cover border border-white/[0.06]"
+              className="rounded-2xl max-w-full max-h-[300px] object-cover border border-[hsl(220,10%,85%)]"
               loading="lazy"
             />
           )}
 
           <div className="flex items-center gap-3 pt-1">
-            <span className="text-[11px] text-white/20">{formatDateTimeFull(a.created_at)}</span>
+            <span className="text-[11px] text-[hsl(220,10%,55%)]">{formatDateTimeFull(a.created_at)}</span>
             {a.link && (
               <button
                 onClick={() => onNavigate(a.link!)}
