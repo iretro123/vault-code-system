@@ -961,7 +961,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           "flex items-center gap-1.5 mt-1 text-[11px] transition-colors",
                           replyCount > 0
                             ? "text-primary hover:text-primary/80"
-                            : "text-white/20 hover:text-white/40 hidden group-hover:flex"
+                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] hidden group-hover:flex"
                         )}
                       >
                         <MessageSquare className="h-3 w-3" />
