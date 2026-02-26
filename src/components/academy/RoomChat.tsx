@@ -872,14 +872,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     {/* Hover action bar — Discord-style floating toolbar */}
                     {!msg.is_deleted && !isEditing && (
                       <div className="absolute -top-3.5 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-75 z-10">
-                        <div className="flex items-center gap-0.5 rounded-lg bg-[hsl(215,25%,12%)] border border-[hsl(217,30%,18%)] shadow-[0_2px_8px_rgba(0,0,0,0.4)] px-1 py-0.5">
+                        <div className="flex items-center gap-0.5 rounded-lg bg-white border border-[hsl(220,10%,82%)] shadow-md px-1 py-0.5">
                           {/* Quick reactions */}
                           {!isAnnouncements && ALLOWED_EMOJIS.map((emoji) => (
                             <button
                               key={emoji}
                               type="button"
                               onClick={() => toggleReaction(msg.id, emoji)}
-                              className="text-sm px-1.5 py-1 rounded-md hover:bg-white/[0.08] transition-colors"
+                              className="text-sm px-1.5 py-1 rounded-md hover:bg-[hsl(220,10%,94%)] transition-colors"
                               title={`React ${emoji}`}
                             >
                               {emoji}
@@ -890,7 +890,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <button
                               type="button"
                               onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
-                              className="p-1.5 rounded-md text-white/35 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
+                              className="p-1.5 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
                               title="Reply in thread"
                             >
                               <MessageSquare className="h-3.5 w-3.5" />
@@ -901,7 +901,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <DropdownMenuTrigger asChild>
                               <button
                                 type="button"
-                                className="p-1.5 rounded-md text-white/35 hover:text-white/70 hover:bg-white/[0.08] transition-colors"
+                                className="p-1.5 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
                               >
                                 <MoreHorizontal className="h-3.5 w-3.5" />
                               </button>
