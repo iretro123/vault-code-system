@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 export interface AcademyNotification {
   id: string;
@@ -17,6 +18,7 @@ export interface AcademyNotification {
 export function useAcademyNotifications() {
   const { user } = useAuth();
   const { refetchNotifications } = useAcademyData();
+  const { notify } = useOSNotifications();
   const [notifications, setNotifications] = useState<AcademyNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [newArrival, setNewArrival] = useState(false);
@@ -89,6 +91,15 @@ export function useAcademyNotifications() {
           setNotifications((prev) => [newNotif, ...prev]);
           setNewArrival(true);
           refetchNotifications();
+
+          // OS/browser notification when tab is hidden
+          notify({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            body: n.body || "",
+            linkPath: n.link_path,
+          });
         }
       )
       .subscribe();

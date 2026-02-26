@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateTime, formatDateShort } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 const CATEGORIES = ["Platform", "Options Basics", "Risk", "Mindset", "Trade Review"] as const;
 
@@ -77,6 +78,7 @@ type InstantView = "ask" | "history";
 export function CoachDrawer() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { requestIfNeeded: requestOSPermission } = useOSNotifications();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
 
@@ -200,6 +202,8 @@ export function CoachDrawer() {
       toast({ title: "Got it.", description: "You'll see replies here." });
       setQuestion(""); setCategory(CATEGORIES[0]); setUrgency("standard"); setScreenshotFile(null); setTemplate("None");
       setCoachView("list"); fetchTickets();
+      // Request OS notification permission on successful coach submit (user gesture)
+      requestOSPermission();
     }
   };
 
@@ -236,6 +240,8 @@ export function CoachDrawer() {
       toast({ title: "Error", description: e.message || "Failed to get answer", variant: "destructive" });
     }
     setInstantLoading(false);
+    // Request OS notification permission after instant answer action (user gesture)
+    requestOSPermission();
   };
 
   const handleHandoffToCoach = () => {
