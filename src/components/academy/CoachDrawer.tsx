@@ -560,8 +560,9 @@ export function CoachDrawer() {
               <div className="sticky bottom-0 pt-3 pb-1 -mx-6 px-6 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-12 text-base font-semibold">
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  {sending ? "Submitting…" : "Submit to Coach"}
+                  {sending ? "Submitting…" : "Send to Coach"}
                 </Button>
+                <p className="text-[11px] text-muted-foreground/60 text-center mt-2">Human response • usually within 2–4 hours</p>
               </div>
             </div>
           )}
