@@ -1129,8 +1129,26 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 ))}
               </div>
 
-              {/* Composer bar — obsidian shell + light input */}
-              <div data-chat-composer className="rounded-xl bg-white border border-[hsl(220,10%,80%)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-100">
+              {/* Composer bar — with drag-and-drop support */}
+              <div
+                data-chat-composer
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className={cn(
+                  "relative rounded-xl bg-white border shadow-[0_1px_4px_rgba(0,0,0,0.06)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-100",
+                  dragOver
+                    ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.06)]"
+                    : "border-[hsl(220,10%,80%)]"
+                )}
+              >
+                {/* Drop overlay */}
+                {dragOver && (
+                  <div className="absolute inset-0 rounded-xl bg-primary/[0.06] flex items-center justify-center z-10 pointer-events-none">
+                    <span className="text-[13px] font-semibold text-primary">Drop files to attach</span>
+                  </div>
+                )}
                 <div className="flex items-end gap-2 px-3 py-2">
                   {/* Hidden file input */}
                   <input
