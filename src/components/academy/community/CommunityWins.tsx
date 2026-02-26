@@ -61,9 +61,9 @@ export function CommunityWins() {
   if (wins.length === 0) {
     return (
       <div className="text-center py-24 max-w-xs mx-auto">
-        <Trophy className="h-8 w-8 text-white/10 mx-auto mb-3" />
-        <p className="text-sm text-white/40">No wins posted yet.</p>
-        <p className="text-xs text-white/20 mt-1">Post proof of wins with screenshots and trade summaries.</p>
+        <Trophy className="h-8 w-8 text-[hsl(220,10%,70%)] mx-auto mb-3" />
+        <p className="text-sm text-[hsl(220,10%,40%)]">No wins posted yet.</p>
+        <p className="text-xs text-[hsl(220,10%,55%)] mt-1">Post proof of wins with screenshots and trade summaries.</p>
       </div>
     );
   }
