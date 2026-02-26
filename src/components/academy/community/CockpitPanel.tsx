@@ -25,12 +25,12 @@ function YourWeekCard() {
   const reviewStatus = "Due";
 
   return (
-    <div className="rounded-xl border border-[hsl(217,30%,14%)] bg-[hsl(215,25%,10%)] p-4 space-y-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Your Week</p>
+    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
+      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.12em]">Your Week</p>
       <div className="space-y-2">
-        <MetricRow label="Trades Logged" value={String(tradesThisWeek)} accent={tradesThisWeek > 0} />
-        <MetricRow label="Journal Entries" value={String(journalCount)} />
-        <MetricRow label="Weekly Review" value={reviewStatus} warn={reviewStatus === "Due"} />
+        <MetricRow label="Trades" value={String(tradesThisWeek)} accent={tradesThisWeek > 0} />
+        <MetricRow label="Journal" value={String(journalCount)} />
+        <MetricRow label="Review" value={reviewStatus} warn={reviewStatus === "Due"} />
       </div>
     </div>
   );
@@ -41,9 +41,9 @@ function MetricRow({ label, value, accent, warn }: {
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[13px] text-white/35">{label}</span>
+      <span className="text-[12px] text-white/35">{label}</span>
       <span className={cn(
-        "text-[13px] font-semibold",
+        "text-[12px] font-semibold",
         warn ? "text-amber-400/70" : accent ? "text-emerald-400/70" : "text-white/50"
       )}>
         {value}
@@ -65,14 +65,14 @@ function QuickActionsCard() {
   ];
 
   return (
-    <div className="rounded-xl border border-[hsl(217,30%,14%)] bg-[hsl(215,25%,10%)] p-4 space-y-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Quick Actions</p>
-      <div className="space-y-0.5">
+    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
+      <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.12em]">Quick Actions</p>
+      <div className="space-y-0">
         {actions.map((a) => (
           <button
             key={a.label}
             onClick={() => a.path && navigate(a.path)}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left hover:bg-white/[0.03] transition-colors group"
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.03] transition-colors group"
           >
             <a.icon className="h-3.5 w-3.5 text-white/20 group-hover:text-white/40 shrink-0" />
             <span className="text-[13px] text-white/45 group-hover:text-white/70 flex-1">{a.label}</span>
@@ -145,7 +145,7 @@ function CoachFeedCard() {
   if (visibleItems.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-[hsl(217,30%,14%)] bg-[hsl(215,25%,10%)] p-4 space-y-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
+    <div className="rounded-lg border border-[hsl(217,25%,14%)] bg-[hsl(215,24%,10%)] p-3 space-y-2">
       <div className="flex items-center gap-1.5">
         <Flame className="h-3 w-3 text-amber-400/40" />
         <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Coach Feed</p>
@@ -183,7 +183,7 @@ function CoachFeedCard() {
 /* ── Main Cockpit Panel ── */
 export function CockpitPanel() {
   return (
-    <div className="flex flex-col gap-4 p-4 h-full overflow-hidden">
+    <div className="flex flex-col gap-3 p-3 h-full overflow-y-auto">
       <YourWeekCard />
       <QuickActionsCard />
       <CoachFeedCard />

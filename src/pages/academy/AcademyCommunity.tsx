@@ -27,9 +27,9 @@ const AcademyCommunity = () => {
 
   return (
     <AcademyLayout>
-      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
-        {/* Tab Navigation — Premium segmented control */}
-        <div className="shrink-0 px-4 pt-3">
+      <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-[hsl(215,28%,7%)]">
+        {/* Admin bar — only visible to admins */}
+        <div className="shrink-0 px-4 pt-2">
           <AdminActionBar
             title="Community Admin"
             permission="moderate_chat"
@@ -39,29 +39,31 @@ const AcademyCommunity = () => {
             ]}
           />
         </div>
-        <div className="shrink-0 flex justify-center pt-4 pb-2 px-4">
-          <div className="inline-flex items-center gap-0.5 rounded-xl bg-[hsl(215,25%,8%)] border border-[hsl(217,40%,18%)] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_2px_8px_rgba(0,0,0,0.3)]">
+
+        {/* Compact tab navigation */}
+        <div className="shrink-0 flex justify-center pt-2 pb-1 px-4">
+          <div className="inline-flex items-center gap-0.5 rounded-lg bg-[hsl(215,25%,8%)] border border-[hsl(217,30%,15%)] p-0.5">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
                 className={cn(
-                  "relative px-6 py-2 text-[13px] font-semibold rounded-lg transition-all duration-100 tracking-[-0.01em]",
+                  "relative px-5 py-1.5 text-[12px] font-semibold rounded-md transition-all duration-100",
                   activeTab === tab.key
-                    ? "text-white bg-[hsl(217,40%,16%)] shadow-[0_1px_4px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] border border-[hsl(217,50%,22%)]"
-                    : "text-white/30 hover:text-white/55 hover:bg-white/[0.03]"
+                    ? "text-white bg-[hsl(217,35%,15%)] border border-[hsl(217,40%,20%)] shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+                    : "text-white/25 hover:text-white/50 border border-transparent"
                 )}
               >
                 {tab.label}
                 {activeTab === tab.key && (
-                  <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-primary/60 shadow-[0_0_8px_2px_hsl(217_91%_60%/0.3)]" />
+                  <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-6 h-[1.5px] rounded-full bg-primary/50" />
                 )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content — maximized */}
         <div className="flex-1 overflow-hidden">
           {activeTab === "trade-floor" && <CommunityTradeFloor />}
           {activeTab === "announcements" && <CommunityAnnouncements />}

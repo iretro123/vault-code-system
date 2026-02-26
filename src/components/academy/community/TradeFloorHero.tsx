@@ -9,67 +9,63 @@ export function TradeFloorHero() {
 
   return (
     <>
-      <div className="shrink-0 px-5 pt-3 pb-1">
-        <div className="rounded-xl bg-[hsl(215,25%,9%)] border border-[hsl(217,35%,16%)] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-          <div className="flex items-start justify-between gap-6">
-            {/* Left — Title */}
-            <div>
-              <p className="text-[11px] font-bold text-primary/50 uppercase tracking-[0.15em] mb-1">
-                Trade Floor
-              </p>
-              <p className="text-[14px] text-white/35 font-medium">
-                Live execution. Structured setups. Disciplined traders.
-              </p>
-            </div>
-
-            {/* Right — HUD chips */}
-            <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
-              {/* Active Now */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" />
-                  <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-400" />
-                </span>
-                <Users className="h-3 w-3 text-white/20" />
-                <span className="text-[12px] font-medium text-white/35">12 Active</span>
-              </div>
-
-              {/* Hot Tickers */}
-              {hotTickers.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                  <TrendingUp className="h-3 w-3 text-white/20" />
-                  <div className="flex items-center gap-1">
-                    {hotTickers.slice(0, 4).map((t) => (
-                      <span
-                        key={t}
-                        className="text-[12px] font-mono font-semibold text-primary/60"
-                      >
-                        ${t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Guidelines */}
-              <button
-                onClick={() => setGuidelinesOpen(true)}
-                className="flex items-center gap-1.5 text-[12px] text-white/25 hover:text-white/45 border border-white/[0.05] rounded-xl px-3 py-1.5 transition-colors hover:bg-white/[0.02]"
-              >
-                <BookOpen className="h-3 w-3" />
-                Guidelines
-              </button>
-            </div>
+      <div className="shrink-0 px-5 py-2">
+        {/* Compact header bar */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <h2 className="text-[15px] font-bold text-white tracking-[-0.01em] shrink-0">
+              VAULT Community
+            </h2>
+            <span className="text-[12px] text-white/25 font-medium hidden sm:block">
+              Trade Floor · fast, clean, and focused
+            </span>
           </div>
 
-          {/* Today's Focus */}
-          <div className="flex items-center gap-2.5 mt-4 pt-3.5 border-t border-white/[0.04]">
-            <span className="text-[10px] text-white/15 uppercase tracking-wider font-bold shrink-0">
-              Focus
+          {/* Right — HUD chips */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Guidelines */}
+            <button
+              onClick={() => setGuidelinesOpen(true)}
+              className="flex items-center gap-1.5 text-[11px] text-white/30 hover:text-white/55 border border-[hsl(217,25%,16%)] rounded-lg px-2.5 py-1.5 transition-colors hover:bg-white/[0.03]"
+            >
+              <BookOpen className="h-3 w-3" />
+              Guidelines
+            </button>
+
+            {/* Reply / React badges */}
+            <span className="flex items-center gap-1.5 text-[11px] text-white/30 border border-[hsl(217,25%,16%)] rounded-lg px-2.5 py-1.5">
+              ↩ Reply
             </span>
-            <p className="text-[13px] text-white/40 font-medium">
-              Wait for confirmation before entering.
-            </p>
+            <span className="flex items-center gap-1.5 text-[11px] text-white/30 border border-[hsl(217,25%,16%)] rounded-lg px-2.5 py-1.5">
+              😀 React
+            </span>
+
+            {/* Active Now */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[hsl(217,25%,16%)]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" />
+                <span className="relative rounded-full h-1.5 w-1.5 bg-emerald-400" />
+              </span>
+              <span className="text-[11px] font-medium text-white/40">12 Active</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Focus strip + Hot Tickers — single compact line */}
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[hsl(217,25%,12%)]">
+          {hotTickers.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="h-3 w-3 text-white/15" />
+              {hotTickers.slice(0, 4).map((t) => (
+                <span key={t} className="text-[11px] font-mono font-semibold text-primary/50">
+                  ${t}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-[10px] text-white/15 uppercase tracking-wider font-bold">Focus</span>
+            <p className="text-[12px] text-white/30 font-medium">Wait for confirmation before entering.</p>
           </div>
         </div>
       </div>

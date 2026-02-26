@@ -28,7 +28,7 @@ export function CommunityTradeFloor() {
 
       {/* Cockpit Panel — 30%, fixed, no scroll */}
       {!isMobile && (
-        <div className="w-[320px] shrink-0 border-l border-[hsl(217,30%,14%)] hidden lg:flex flex-col bg-[hsl(215,26%,8%)]">
+        <div className="w-[280px] shrink-0 border-l border-[hsl(217,25%,12%)] hidden lg:flex flex-col bg-[hsl(215,26%,8%)]">
           <CockpitPanel />
         </div>
       )}
