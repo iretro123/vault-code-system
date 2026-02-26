@@ -110,16 +110,7 @@ export function useRoomMessages(roomSlug: string) {
     }
   }, [roomSlug, updateMessages]);
 
-  // Compute role string for current user
-  const computeRole = useCallback(() => {
-    if (userRole?.role === "operator") return "admin";
-    const exp = (profile as any)?.academy_experience;
-    if (exp === "veteran") return "advanced";
-    if (exp === "active") return "intermediate";
-    return "beginner";
-  }, [userRole, profile]);
-
-  // Send message
+  // Send message (with optimistic insert)
   const sendMessage = useCallback(
     async (body: string, attachments?: Attachment[]) => {
       if (!user || (!body.trim() && (!attachments || attachments.length === 0))) return;
@@ -134,22 +125,46 @@ export function useRoomMessages(roomSlug: string) {
 
       const roleStr = computeRole();
 
+      // Optimistic message — appears instantly in the UI
+      const optimisticId = `optimistic-${Date.now()}`;
+      const optimisticMsg: Message = {
+        id: optimisticId,
+        room_slug: roomSlug,
+        user_id: user.id,
+        user_name: userName,
+        user_role: roleStr,
+        body: body.trim() || (attachments?.length ? "📎 Attachment" : ""),
+        attachments: attachments ?? [],
+        created_at: new Date().toISOString(),
+        edited_at: null,
+        edit_count: 0,
+        is_deleted: false,
+        deleted_at: null,
+        deleted_by: null,
+        original_content: null,
+      };
+      updateMessages((prev) => [...prev, optimisticMsg]);
+
       const { error: err } = await supabase.from("academy_messages").insert({
         room_slug: roomSlug,
         user_id: user.id,
         user_name: userName,
-        body: body.trim() || (attachments?.length ? "📎 Attachment" : ""),
+        body: optimisticMsg.body,
         user_role: roleStr,
         attachments: attachments && attachments.length > 0 ? attachments : [],
       } as any);
 
       if (err) {
+        // Remove optimistic message on failure
+        updateMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         if (err.message.includes("Rate limit")) {
           toast.error("Please wait 3 seconds between messages.");
         } else {
           toast.error("Message failed to send. Try again.");
         }
       } else {
+        // The realtime subscription will replace the optimistic message with the real one.
+        // We remove the optimistic entry when realtime INSERT arrives (dedup by body+timestamp is handled there).
         supabase
           .from("profiles")
           .update({ intro_posted: true } as any)
@@ -158,7 +173,7 @@ export function useRoomMessages(roomSlug: string) {
       }
       setSending(false);
     },
-    [user, profile, roomSlug, computeRole]
+    [user, profile, roomSlug, computeRole, updateMessages]
   );
 
   // Edit message
