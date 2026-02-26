@@ -709,7 +709,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <div className="flex items-center gap-2 mb-1 min-h-[22px]">
                         <span className={cn(
                           "text-[15px] font-semibold tracking-[-0.01em]",
-                          isCeoOrAdmin ? "text-amber-300" : "text-white"
+                          isCeoOrAdmin ? "text-amber-700" : "text-[hsl(220,15%,15%)]"
                         )}>
                           {msg.user_name}
                         </span>
@@ -722,9 +722,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             )} />
                           </>
                         ) : (
-                          <div className="h-4 w-16 rounded bg-white/[0.06] animate-pulse" />
+                          <div className="h-4 w-16 rounded bg-[hsl(220,10%,88%)] animate-pulse" />
                         )}
-                        <span className="text-[11px] text-white/25">
+                        <span className="text-[11px] text-[hsl(220,10%,55%)]">
                           {formatDateTime(msg.created_at)}
                         </span>
                       </div>
