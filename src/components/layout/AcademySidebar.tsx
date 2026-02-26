@@ -184,7 +184,7 @@ export function AcademySidebar() {
                             color: "#fff",
                           }}
                         >
-                          <Icon className="h-4 w-4 shrink-0" style={{ strokeWidth: 2.2 }} />
+                          <Icon className="h-4 w-4 shrink-0 transition-[filter] duration-150" style={{ strokeWidth: 2.2, fill: "#FBBF24", color: "#FDE68A", filter: "drop-shadow(0 0 3px rgba(251,191,36,0.4))" }} />
                           {!collapsed && <span className="text-sm font-semibold tracking-[-0.01em]">{label}</span>}
                         </button>
                       </SidebarMenuButton>
