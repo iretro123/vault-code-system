@@ -14,6 +14,7 @@ import {
   Loader2, ClipboardList, Target, BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
@@ -404,12 +405,11 @@ const AcademyResources = () => {
 
   const browseContent = (
     <div className="space-y-8 max-w-5xl">
-      {/* 1) Calculators */}
+      {/* Vault Trade Planner (XP-style) */}
       <div>
-        <SectionLabel icon={Calculator} label="Calculators" />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <RiskCalcCard />
-          <PositionSizeCalcCard />
+        <SectionLabel icon={Calculator} label="Trade Planner" />
+        <div className="max-w-2xl">
+          <VaultTradePlanner />
         </div>
       </div>
 
