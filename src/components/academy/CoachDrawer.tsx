@@ -202,6 +202,8 @@ export function CoachDrawer() {
       toast({ title: "Got it.", description: "You'll see replies here." });
       setQuestion(""); setCategory(CATEGORIES[0]); setUrgency("standard"); setScreenshotFile(null); setTemplate("None");
       setCoachView("list"); fetchTickets();
+      // Request OS notification permission on successful coach submit (user gesture)
+      requestOSPermission();
     }
   };
 
