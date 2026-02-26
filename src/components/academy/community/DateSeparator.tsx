@@ -1,9 +1,9 @@
 export function DateSeparator({ date }: { date: string }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2">
-      <div className="flex-1 h-px bg-white/[0.06]" />
-      <span className="text-[11px] font-medium text-white/30 shrink-0">{date}</span>
-      <div className="flex-1 h-px bg-white/[0.06]" />
+    <div className="flex items-center gap-3 px-6 py-2">
+      <div className="flex-1 h-px bg-[hsl(217,20%,14%)]" />
+      <span className="text-[10px] font-semibold text-white/20 uppercase tracking-wider shrink-0">{date}</span>
+      <div className="flex-1 h-px bg-[hsl(217,20%,14%)]" />
     </div>
   );
 }
