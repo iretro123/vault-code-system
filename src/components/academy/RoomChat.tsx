@@ -214,7 +214,7 @@ function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
 
 /* ── main component ── */
 
-export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen }: RoomChatProps) {
+export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab }: RoomChatProps) {
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
     useRoomMessages(roomSlug);
   const { user, profile, userRole: authUserRole } = useAuth();
