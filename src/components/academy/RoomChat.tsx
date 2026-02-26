@@ -736,10 +736,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] overflow-hidden">
                           <div className="w-1 self-stretch bg-amber-500/50 shrink-0" />
                           <div className="px-3 py-2 flex-1">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 mb-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
                               <Megaphone className="h-3 w-3" /> Official Announcement
                             </span>
-                            <p className="text-sm text-white/90 leading-relaxed whitespace-pre-line">
+                            <p className="text-sm text-[hsl(220,15%,15%)] leading-relaxed whitespace-pre-line">
                               {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
                             </p>
                           </div>
