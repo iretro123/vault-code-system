@@ -23,9 +23,9 @@ export function CommunityAnnouncements() {
   if (announcements.length === 0) {
     return (
       <div className="text-center py-24 max-w-xs mx-auto">
-        <Megaphone className="h-8 w-8 text-white/10 mx-auto mb-3" />
-        <p className="text-sm text-white/40">No announcements yet.</p>
-        <p className="text-xs text-white/20 mt-1">Official updates from coaches and admins will appear here.</p>
+        <Megaphone className="h-8 w-8 text-[hsl(220,10%,70%)] mx-auto mb-3" />
+        <p className="text-sm text-[hsl(220,10%,40%)]">No announcements yet.</p>
+        <p className="text-xs text-[hsl(220,10%,55%)] mt-1">Official updates from coaches and admins will appear here.</p>
       </div>
     );
   }
