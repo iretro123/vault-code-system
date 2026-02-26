@@ -466,19 +466,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full w-full">
+      <div className="flex flex-col h-full w-full bg-[hsl(215,28%,7%)]">
         <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <div className="h-8 w-8 rounded-full bg-white/[0.06] shrink-0" />
+              <div className="h-8 w-8 rounded-full bg-white/[0.04] shrink-0" />
               <div className="space-y-1.5 flex-1">
-                <div className="h-3 w-24 rounded bg-white/[0.06]" />
-                <div className="h-3 rounded bg-white/[0.04]" style={{ width: `${40 + (i % 3) * 20}%` }} />
+                <div className="h-3 w-24 rounded bg-white/[0.04]" />
+                <div className="h-3 rounded bg-white/[0.03]" style={{ width: `${40 + (i % 3) * 20}%` }} />
               </div>
             </div>
           ))}
         </div>
-        <div className="h-14 border-t border-white/[0.06] bg-white/[0.02]" />
+        <div className="h-14 border-t border-[hsl(217,30%,14%)] bg-[hsl(215,25%,9%)]" />
       </div>
     );
   }
