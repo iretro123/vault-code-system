@@ -120,8 +120,8 @@ export function CommunityWins() {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                       {fields.map((f, i) => (
                         <div key={i} className={f.label.toLowerCase() === "lesson learned" ? "col-span-2" : ""}>
-                          <span className="text-[10px] text-white/25 uppercase tracking-wider font-medium">{f.label}</span>
-                          <p className="text-sm text-white/80 mt-0.5">{f.value}</p>
+                          <span className="text-[10px] text-[hsl(220,10%,50%)] uppercase tracking-wider font-medium">{f.label}</span>
+                          <p className="text-sm text-[hsl(220,15%,20%)] mt-0.5">{f.value}</p>
                         </div>
                       ))}
                     </div>
