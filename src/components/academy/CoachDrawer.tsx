@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateTime, formatDateShort } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 const CATEGORIES = ["Platform", "Options Basics", "Risk", "Mindset", "Trade Review"] as const;
 
