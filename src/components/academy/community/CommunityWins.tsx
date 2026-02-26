@@ -126,7 +126,7 @@ export function CommunityWins() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[15px] text-white/65 leading-[1.65] whitespace-pre-line line-clamp-4">{win.body}</p>
+                    <p className="text-[15px] text-[hsl(220,10%,35%)] leading-[1.65] whitespace-pre-line line-clamp-4">{win.body}</p>
                   )}
 
                   {/* Fire reaction */}
