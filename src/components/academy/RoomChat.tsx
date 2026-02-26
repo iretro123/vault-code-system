@@ -694,10 +694,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           size="h-11 w-11"
                         />
                       ) : (
-                        <div className="w-11 h-11 rounded-full bg-white/[0.06] animate-pulse" />
+                        <div className="w-11 h-11 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
                       )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-11 text-[10px] text-white/15 select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-11 text-[10px] text-[hsl(220,10%,60%)] select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
