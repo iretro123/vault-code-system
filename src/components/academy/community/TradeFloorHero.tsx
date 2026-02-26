@@ -9,7 +9,7 @@ export function TradeFloorHero() {
 
   return (
     <>
-      <div className="shrink-0 px-5 py-2 bg-white/60 border-b border-[hsl(220,10%,82%)]">
+      <div className="shrink-0 px-5 py-2 bg-[hsl(220,14%,97%)] border-b border-[hsl(220,12%,85%)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
         {/* Compact header bar */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">

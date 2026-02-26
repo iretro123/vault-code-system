@@ -466,25 +466,25 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full w-full bg-[hsl(220,10%,96%)]">
+      <div className="flex flex-col h-full w-full bg-[hsl(220,14%,94%)]">
         <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <div className="h-8 w-8 rounded-full bg-[hsl(220,10%,88%)] shrink-0" />
+              <div className="h-8 w-8 rounded-full bg-[hsl(220,12%,86%)] shrink-0" />
               <div className="space-y-1.5 flex-1">
-                <div className="h-3 w-24 rounded bg-[hsl(220,10%,88%)]" />
-                <div className="h-3 rounded bg-[hsl(220,10%,90%)]" style={{ width: `${40 + (i % 3) * 20}%` }} />
+                <div className="h-3 w-24 rounded bg-[hsl(220,12%,86%)]" />
+                <div className="h-3 rounded bg-[hsl(220,12%,88%)]" style={{ width: `${40 + (i % 3) * 20}%` }} />
               </div>
             </div>
           ))}
         </div>
-        <div className="h-14 border-t border-[hsl(220,10%,85%)] bg-white" />
+        <div className="h-14 border-t border-[hsl(220,12%,85%)] bg-white" />
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-col h-full w-full bg-[hsl(220,10%,96%)]">
+    <div className="relative flex flex-col h-full w-full bg-[hsl(220,14%,94%)]">
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
@@ -513,7 +513,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         {isAnnouncements && (
           <div className="mx-3 mt-2 mb-3 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2">
             <Megaphone className="h-4 w-4 text-amber-400 shrink-0" />
-            <p className="text-xs text-amber-300/80">
+            <p className="text-xs text-amber-600">
               Official updates only. Turn on notifications if you want alerts.
             </p>
           </div>
@@ -537,7 +537,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         {/* Moderator room controls */}
         {canModerate && !isRoomLocked && (
           <div className="mx-3 mt-2 mb-1 flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={lockRoom} className="h-6 gap-1 text-[11px] text-white/40 hover:text-white/70">
+            <Button variant="ghost" size="sm" onClick={lockRoom} className="h-6 gap-1 text-[11px] text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)]">
               <Lock className="h-3 w-3" /> Lock Room
             </Button>
           </div>
@@ -552,10 +552,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider mb-0.5">Pinned</p>
-                <p className="text-xs text-white/80 truncate">{pinned.body}</p>
+                <p className="text-xs text-[hsl(220,15%,25%)] truncate">{pinned.body}</p>
               </div>
               {canModerate && (
-                <button onClick={unpinMessage} className="p-1 text-white/30 hover:text-white/60">
+                <button onClick={unpinMessage} className="p-1 text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)]">
                   <X className="h-3 w-3" />
                 </button>
               )}
