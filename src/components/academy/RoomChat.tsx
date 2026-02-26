@@ -993,13 +993,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
       {/* Typing indicator */}
       {typingText && (
-        <div className="px-3 py-1 flex items-center gap-1.5">
+        <div className="px-5 py-1 flex items-center gap-1.5">
           <span className="flex gap-0.5">
-            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce [animation-delay:0ms]" />
-            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce [animation-delay:150ms]" />
-            <span className="w-1 h-1 rounded-full bg-white/40 animate-bounce [animation-delay:300ms]" />
+            <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:0ms]" />
+            <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:150ms]" />
+            <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:300ms]" />
           </span>
-          <span className="text-xs text-white/40">{typingText}…</span>
+          <span className="text-[11px] text-white/35">{typingText}…</span>
         </div>
       )}
 
