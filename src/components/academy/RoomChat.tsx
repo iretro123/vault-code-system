@@ -247,6 +247,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const [draft, setDraft] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
