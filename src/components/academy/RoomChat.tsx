@@ -677,8 +677,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "group relative flex gap-4 px-6 py-1.5 hover:bg-[hsl(220,10%,92%)] transition-colors duration-75",
-                    showHdr && "mt-4 pt-3",
+                    "group relative flex gap-4 px-6 py-1 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
+                    showHdr && "mt-3 pt-2.5",
                     isEditing && "bg-[hsl(220,10%,93%)]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-50"
