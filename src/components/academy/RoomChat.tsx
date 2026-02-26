@@ -1006,7 +1006,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:150ms]" />
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:300ms]" />
           </span>
-          <span className="text-[11px] text-white/35">{typingText}…</span>
+          <span className="text-[11px] text-[hsl(220,10%,45%)]">{typingText}…</span>
         </div>
       )}
 
