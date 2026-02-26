@@ -944,7 +944,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 key={emoji}
                                 type="button"
                                 onClick={() => toggleReaction(msg.id, emoji)}
-                                className="text-xs px-1 py-0.5 rounded hover:bg-white/[0.06] text-white/25 hover:text-white/50 transition-colors"
+                                className="text-xs px-1 py-0.5 rounded hover:bg-[hsl(220,10%,92%)] text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)] transition-colors"
                               >
                                 {emoji}
                               </button>
