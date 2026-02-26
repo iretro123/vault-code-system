@@ -110,6 +110,15 @@ export function useRoomMessages(roomSlug: string) {
     }
   }, [roomSlug, updateMessages]);
 
+  // Compute role string for current user
+  const computeRole = useCallback(() => {
+    if (userRole?.role === "operator") return "admin";
+    const exp = (profile as any)?.academy_experience;
+    if (exp === "veteran") return "advanced";
+    if (exp === "active") return "intermediate";
+    return "beginner";
+  }, [userRole, profile]);
+
   // Send message (with optimistic insert)
   const sendMessage = useCallback(
     async (body: string, attachments?: Attachment[]) => {
