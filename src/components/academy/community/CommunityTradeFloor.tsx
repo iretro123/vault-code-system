@@ -6,7 +6,11 @@ import { CockpitPanel } from "@/components/academy/community/CockpitPanel";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-export function CommunityTradeFloor() {
+interface CommunityTradeFloorProps {
+  onSwitchTab?: (tab: string) => void;
+}
+
+export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
   const isMobile = useIsMobile();
   const [threadMessage, setThreadMessage] = useState<any>(null);
 
