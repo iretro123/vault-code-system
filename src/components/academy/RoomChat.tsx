@@ -839,9 +839,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                                className="rounded-lg max-w-[260px] max-h-[200px] object-cover border border-white/[0.06] hover:border-white/20 transition-colors cursor-pointer"
+                                className="rounded-lg max-w-[260px] max-h-[200px] object-cover border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] transition-colors cursor-pointer"
                               />
-                              <span className="text-[10px] text-white/30 mt-0.5 block truncate max-w-[260px]">{att.filename}</span>
+                              <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-[260px]">{att.filename}</span>
                             </a>
                           ) : (
                             <a
@@ -850,17 +850,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               target="_blank"
                               rel="noopener noreferrer"
                               download={att.filename}
-                              className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 hover:bg-white/[0.06] transition-colors"
+                              className="flex items-center gap-2 rounded-lg border border-[hsl(220,10%,85%)] bg-white px-3 py-2 hover:bg-[hsl(220,10%,96%)] transition-colors shadow-sm"
                             >
                               <FileText className="h-4 w-4 text-primary shrink-0" />
                               <div className="min-w-0">
-                                <p className="text-xs text-white/80 truncate max-w-[200px]">{att.filename}</p>
-                                <p className="text-[10px] text-white/30">
+                                <p className="text-xs text-[hsl(220,15%,20%)] truncate max-w-[200px]">{att.filename}</p>
+                                <p className="text-[10px] text-[hsl(220,10%,50%)]">
                                   {att.size >= 1024 * 1024
                                     ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
                                     : `${(att.size / 1024).toFixed(0)} KB`}
                                   {" · "}
-                                  <span className="text-primary/70">Download</span>
+                                  <span className="text-primary">Download</span>
                                 </p>
                               </div>
                             </a>
