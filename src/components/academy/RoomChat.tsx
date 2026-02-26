@@ -1020,13 +1020,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </p>
         </div>
       ) : canPost ? (
-        <div className="px-5 pb-5 pt-3">
+        <div className="px-5 pb-4 pt-2">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
             <div className="space-y-2">
               {/* Template chips */}
-              <div className="flex items-center gap-1.5 px-1">
+              <div className="flex items-center gap-1 px-1">
                 {[
                   { label: "Post Setup", emoji: "📊" },
                   { label: "Log Trade", emoji: "📋" },
@@ -1036,69 +1036,71 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <button
                     key={chip.label}
                     type="button"
-                    className="text-[11px] text-white/25 hover:text-white/50 px-2.5 py-1 rounded-lg hover:bg-white/[0.03] transition-colors font-medium"
+                    className="text-[11px] text-white/25 hover:text-white/50 px-2 py-0.5 rounded-md hover:bg-white/[0.04] transition-colors font-medium"
                   >
                     {chip.emoji} {chip.label}
                   </button>
                 ))}
               </div>
 
-              {/* Composer bar */}
-              <div data-chat-composer className="flex items-end gap-3 rounded-2xl bg-white/[0.04] border border-white/[0.07] shadow-[0_2px_16px_rgba(0,0,0,0.15)] px-4 py-3.5 focus-within:border-primary/40 focus-within:shadow-[0_2px_16px_rgba(0,0,0,0.15),0_0_12px_2px_hsl(217_91%_60%/0.06)] transition-all duration-200">
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/gif,application/pdf,video/mp4"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
+              {/* Composer bar — obsidian shell + light input */}
+              <div data-chat-composer className="rounded-xl bg-[hsl(215,25%,10%)] border border-[hsl(217,35%,16%)] shadow-[0_2px_12px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.03)] focus-within:border-[hsl(217,60%,30%)] focus-within:shadow-[0_2px_12px_rgba(0,0,0,0.3),0_0_0_1px_hsl(217_60%_30%)] transition-all duration-100">
+                <div className="flex items-end gap-2 px-3 py-2">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/gif,application/pdf,video/mp4"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
 
-                {/* Left icon row */}
-                <div className="flex items-center gap-1 pb-0.5">
+                  {/* Left icon row */}
+                  <div className="flex items-center gap-0.5 pb-0.5">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="p-1.5 rounded-lg text-white/25 hover:text-white/55 hover:bg-white/[0.05] transition-colors"
+                      title="Attach file"
+                    >
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                    </button>
+                    <EmojiPicker onSelect={handleEmojiSelect} />
+                  </div>
+
+                  {/* Textarea — light input surface */}
+                  <textarea
+                    ref={textareaRef}
+                    value={draft}
+                    onChange={handleDraftChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message…"
+                    maxLength={1000}
+                    disabled={sending}
+                    rows={1}
+                    className="flex-1 bg-transparent text-[14px] text-white/90 placeholder:text-white/20 resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
+                  />
+
+                  {/* Send button — premium Vault blue */}
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="p-2 rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-colors"
-                    title="Attach file"
+                    onClick={() => handleSend()}
+                    disabled={(!draft.trim() && !uploading) || sending}
+                    className={cn(
+                      "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-100",
+                      draft.trim() && !sending
+                        ? "bg-gradient-to-b from-[hsl(217,91%,62%)] to-[hsl(217,91%,52%)] text-white shadow-[0_2px_8px_hsl(217_91%_60%/0.35),inset_0_1px_0_rgba(255,255,255,0.15)] hover:brightness-110 active:scale-95"
+                        : "text-white/15 cursor-not-allowed"
+                    )}
                   >
-                    {uploading ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Paperclip className="h-4.5 w-4.5" />}
+                    {sending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <SendHorizontal className="h-4 w-4" />
+                    )}
                   </button>
-                  <EmojiPicker onSelect={handleEmojiSelect} />
                 </div>
-
-                {/* Textarea */}
-                <textarea
-                  ref={textareaRef}
-                  value={draft}
-                  onChange={handleDraftChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Type a message…"
-                  maxLength={1000}
-                  disabled={sending}
-                  rows={1}
-                  className="flex-1 bg-transparent text-[15px] text-white/[0.90] placeholder:text-white/[0.25] resize-none outline-none min-h-[28px] max-h-[120px] leading-relaxed py-1 caret-primary"
-                />
-
-                {/* Send button — UNCHANGED LOGIC */}
-                <button
-                  type="button"
-                  onClick={() => handleSend()}
-                  disabled={(!draft.trim() && !uploading) || sending}
-                  className={cn(
-                    "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150",
-                    draft.trim() && !sending
-                      ? "bg-primary text-primary-foreground shadow-[0_2px_8px_hsl(217_91%_60%/0.3)] hover:brightness-110 active:scale-95"
-                      : "text-white/[0.20] cursor-not-allowed"
-                  )}
-                >
-                  {sending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <SendHorizontal className="h-5 w-5" />
-                  )}
-                </button>
               </div>
             </div>
           )}
