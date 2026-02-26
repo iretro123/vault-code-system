@@ -91,6 +91,15 @@ export function useAcademyNotifications() {
           setNotifications((prev) => [newNotif, ...prev]);
           setNewArrival(true);
           refetchNotifications();
+
+          // OS/browser notification when tab is hidden
+          notify({
+            id: n.id,
+            type: n.type,
+            title: n.title,
+            body: n.body || "",
+            linkPath: n.link_path,
+          });
         }
       )
       .subscribe();
