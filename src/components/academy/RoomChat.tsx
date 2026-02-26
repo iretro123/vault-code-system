@@ -764,7 +764,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           onKeyDown={handleEditKeyDown}
                           maxLength={1000}
                           rows={1}
-                          className="w-full bg-white/[0.06] border border-white/[0.12] rounded-lg px-3 py-1.5 text-sm text-white/90 resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
+                          className="w-full bg-white border border-[hsl(220,10%,82%)] rounded-lg px-3 py-1.5 text-sm text-[hsl(220,15%,15%)] resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
                         />
                         <div className="flex items-center gap-2 mt-1">
                           <button
