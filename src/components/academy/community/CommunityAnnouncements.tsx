@@ -36,7 +36,7 @@ export function CommunityAnnouncements() {
         {/* Pinned section */}
         {pinned.length > 0 && (
           <div className="space-y-4">
-            <p className="text-[10px] font-bold text-white/25 uppercase tracking-[0.15em] flex items-center gap-1.5">
+            <p className="text-[10px] font-bold text-[hsl(220,10%,50%)] uppercase tracking-[0.15em] flex items-center gap-1.5">
               <Pin className="h-3 w-3" /> Pinned
             </p>
             {pinned.map((a) => (
