@@ -990,7 +990,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10">
           <button
             onClick={jumpToLatest}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[hsl(215,25%,12%)] border border-[hsl(217,35%,18%)] text-white/80 text-xs font-medium shadow-[0_2px_12px_rgba(0,0,0,0.5)] hover:bg-[hsl(215,25%,15%)] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-[hsl(220,10%,82%)] text-[hsl(220,15%,20%)] text-xs font-medium shadow-md hover:bg-[hsl(220,10%,97%)] active:scale-95 transition-all"
           >
             <ArrowDown className="h-3.5 w-3.5 text-primary" />
             New messages
