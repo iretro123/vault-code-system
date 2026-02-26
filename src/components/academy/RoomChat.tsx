@@ -308,13 +308,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     bottomRef.current?.scrollIntoView();
   }, [loading]);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     shouldAutoScroll.current = atBottom;
     setShowJumpToLatest(!atBottom);
-  };
+  }, []);
 
   const jumpToLatest = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
