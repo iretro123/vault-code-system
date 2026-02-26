@@ -277,7 +277,11 @@ export function useRoomMessages(roomSlug: string) {
           const msg = castMessages([payload.new])[0];
           updateMessages((prev) => {
             if (prev.some((m) => m.id === msg.id)) return prev;
-            return [...prev, msg];
+            // Remove any optimistic message from the same user with same body (replaced by real)
+            const cleaned = prev.filter(
+              (m) => !(m.id.startsWith("optimistic-") && m.user_id === msg.user_id && m.body === msg.body)
+            );
+            return [...cleaned, msg];
           });
         }
       )
