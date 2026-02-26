@@ -94,7 +94,7 @@ function AnnouncementItem({ announcement: a, onNavigate }: { announcement: Annou
             <img
               src={a.image_url}
               alt=""
-              className="rounded-2xl max-w-full max-h-[300px] object-cover border border-white/[0.06]"
+              className="rounded-2xl max-w-full max-h-[300px] object-cover border border-[hsl(220,10%,85%)]"
               loading="lazy"
             />
           )}
