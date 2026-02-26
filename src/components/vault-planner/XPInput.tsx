@@ -6,21 +6,24 @@ interface XPInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   tooltip?: string;
+  tooltipWhite?: boolean;
+  tooltipTitle?: string;
 }
 
-export function XPInput({ label, error, tooltip, className = "", style, ...props }: XPInputProps) {
+export function XPInput({ label, error, tooltip, tooltipWhite, tooltipTitle, className = "", style, ...props }: XPInputProps) {
   return (
     <div className="space-y-0.5">
       {label && (
         <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider inline-flex items-center">
           {label}
-          {tooltip && <XPTooltip text={tooltip} />}
+          {tooltip && <XPTooltip text={tooltip} white={tooltipWhite} title={tooltipTitle} />}
         </label>
       )}
       <input
         className={`w-full px-2.5 py-1.5 text-sm font-mono text-foreground rounded-[2px] outline-none
           focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50
           ${error ? "ring-1 ring-red-500/50" : ""}
+          ${props.disabled ? "cursor-not-allowed" : ""}
           ${className}`}
         style={{
           background: xp.inputBg,

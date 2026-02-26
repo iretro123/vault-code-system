@@ -19,11 +19,34 @@ import { TradePlannerLoading } from "./TradePlannerLoading";
 import { TradePlannerResults } from "./TradePlannerResults";
 import { xp } from "./xp-styles";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock, Unlock } from "lucide-react";
 
 type UIState = "input" | "loading" | "results";
 
 const STORAGE_KEY = "vault_trade_planner_inputs";
+
+const DEBIT_CAP_TOOLTIP_TITLE = 'What is "Max % I Can Spend"?';
+const DEBIT_CAP_TOOLTIP_BODY = `This is your entry spending cap — not your stop loss.
+
+It tells the tool:
+"Don't let me spend more than this much of my account to enter one trade."
+
+Why this matters:
+An option can have a small planned loss (based on your stop), but still cost a lot to buy.
+
+Example (Small account):
+  Account Size = $2,000
+  Max % I Can Spend = 5%
+  Spending cap = $100
+
+If the option buy price is:
+  $0.80 → costs $80 per contract ✅ (allowed)
+  $1.50 → costs $150 per contract ❌ (too expensive)
+
+Reminder:
+You must pass BOTH checks:
+  ✓ Loss Check (risk to stop)
+  ✓ Spend Check (money needed to enter)`;
 
 function loadSaved(): Partial<PlannerInputs> {
   try {
@@ -68,6 +91,9 @@ export function VaultTradePlanner() {
   const [chartStop, setChartStop] = useState(saved.chartStopLevel?.toString() ?? "");
   const [underlyingEntry, setUnderlyingEntry] = useState(saved.underlyingEntry?.toString() ?? "");
 
+  // Simple Mode: lock risk/debit defaults
+  const [defaultsLocked, setDefaultsLocked] = useState(true);
+
   const [uiState, setUIState] = useState<UIState>("input");
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,6 +103,7 @@ export function VaultTradePlanner() {
     const d = TIER_DEFAULTS[t];
     setRiskPercent(d.riskPercent.toString());
     setDebitCapPercent(d.debitCapPercent.toString());
+    setDefaultsLocked(true);
   };
 
   const buildInputs = useCallback((): PlannerInputs => ({
@@ -101,12 +128,19 @@ export function VaultTradePlanner() {
     const errs = validateInputs(inputs);
     if (errs.length > 0) return null;
     const r = calculatePlan(inputs);
-    // Guard against broken values
     if (!isFinite(r.finalContracts) || isNaN(r.totalPlannedRisk)) return null;
     return r;
   })();
 
   const isValid = liveResult !== null;
+
+  // Live helper: max entry spend
+  const liveMaxSpend = (() => {
+    const acct = parseFloat(accountSize) || 0;
+    const cap = parseFloat(debitCapPercent) || 0;
+    if (acct > 0 && cap > 0) return acct * (cap / 100);
+    return null;
+  })();
 
   useEffect(() => {
     try {
@@ -147,6 +181,7 @@ export function VaultTradePlanner() {
     setErrors({});
     setResult(null);
     setUIState("input");
+    setDefaultsLocked(true);
   };
 
   const handleLoadExample = () => {
@@ -190,7 +225,16 @@ export function VaultTradePlanner() {
       {/* Header */}
       <div>
         <h2 className="text-base font-bold text-foreground">Vault Trade Planner</h2>
-        <p className="text-[11px] text-muted-foreground">Long Calls / Long Puts only • Super Easy Mode</p>
+        <p className="text-[11px] text-muted-foreground">Long Calls / Long Puts only • Simple Mode</p>
+      </div>
+
+      {/* Vault handles the math — reassuring banner */}
+      <div
+        className="rounded-[3px] px-3 py-2 text-[11px] text-center"
+        style={{ background: xp.heroBg, border: xp.heroBorder }}
+      >
+        <p className="font-semibold text-foreground">You enter the setup. VAULT builds the plan.</p>
+        <p className="text-muted-foreground mt-0.5">No guessing. No oversizing. No random targets.</p>
       </div>
 
       {/* Rule banner */}
@@ -214,10 +258,11 @@ export function VaultTradePlanner() {
           className="rounded-[3px] px-3 py-2 text-[11px] text-muted-foreground space-y-0.5"
           style={{ background: xp.heroBg, border: xp.heroBorder }}
         >
-          <p>1. Enter account size and risk settings</p>
+          <p>1. Enter account size</p>
           <p>2. Enter option buy price and option stop price</p>
           <p>3. Click <strong className="text-foreground">Generate</strong></p>
           <p>4. Follow the plan (contracts, cut loss, target)</p>
+          <p className="text-primary/70 pt-1">VAULT auto-sets risk %, spending cap, and targets for you.</p>
         </div>
       )}
 
@@ -228,21 +273,62 @@ export function VaultTradePlanner() {
             <XPButton key={t} active={tier === t} onClick={() => handleTierChange(t)}>{t}</XPButton>
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <XPInput label="Account Size" type="number" value={accountSize} onChange={(e) => setAccountSize(e.target.value)} error={errors.accountSize} placeholder="2000" />
-          <XPInput
-            label="% I Can Lose"
-            type="number" step="0.1" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)} error={errors.riskPercent}
-            tooltip="Percent of your account you are willing to lose on this trade."
-          />
-          <XPInput
-            label="Max % I Can Spend"
-            type="number" step="0.1" value={debitCapPercent} onChange={(e) => setDebitCapPercent(e.target.value)} error={errors.debitCapPercent}
-            tooltip="Max percent of account you allow yourself to spend to enter."
-          />
+
+        <XPInput label="Account Size" type="number" value={accountSize} onChange={(e) => setAccountSize(e.target.value)} error={errors.accountSize} placeholder="2000" />
+
+        {/* Risk + Debit Cap — locked by default in Simple Mode */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] text-muted-foreground">
+              {defaultsLocked
+                ? "We set these for you in Simple Mode."
+                : "Custom values — change at your own risk."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setDefaultsLocked(!defaultsLocked)}
+              className="inline-flex items-center gap-1 text-[10px] text-primary/70 hover:text-primary"
+            >
+              {defaultsLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+              {defaultsLocked ? "Unlock" : "Lock"}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <XPInput
+              label="% I Can Lose"
+              type="number" step="0.1"
+              value={riskPercent}
+              onChange={(e) => setRiskPercent(e.target.value)}
+              error={errors.riskPercent}
+              tooltip="Percent of your account you are willing to lose on this trade."
+              disabled={defaultsLocked}
+              style={defaultsLocked ? { opacity: 0.6 } : undefined}
+            />
+            <div>
+              <XPInput
+                label="Max % I Can Spend"
+                type="number" step="0.1"
+                value={debitCapPercent}
+                onChange={(e) => setDebitCapPercent(e.target.value)}
+                error={errors.debitCapPercent}
+                tooltipWhite
+                tooltipTitle={DEBIT_CAP_TOOLTIP_TITLE}
+                tooltip={DEBIT_CAP_TOOLTIP_BODY}
+                disabled={defaultsLocked}
+                style={defaultsLocked ? { opacity: 0.6 } : undefined}
+              />
+              {liveMaxSpend !== null && (
+                <p className="text-[10px] text-primary/70 mt-0.5 font-mono">
+                  Max entry spend = {formatCurrency(liveMaxSpend)}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
+
         <p className="text-[10px] text-muted-foreground">
-          Small: 1–2% risk • 5% spend cap | Medium: 1% risk • 5% spend cap | Large: 0.5–1% risk • 3–5% spend
+          Small: 2% risk • 5% spend cap | Medium: 1% risk • 5% spend cap | Large: 1% risk • 4% spend cap
         </p>
       </XPFieldset>
 
@@ -262,7 +348,7 @@ export function VaultTradePlanner() {
           />
         </div>
         <p className="text-[10px] text-muted-foreground">If option price hits your stop, cut the trade.</p>
-        <p className="text-[10px] text-primary/70 font-medium">Simple Mode uses a 1:2 main target. We auto-calculate your targets (1:2 + profit suggestions).</p>
+        <p className="text-[10px] text-primary/70 font-medium">Simple Mode uses a 1:2 main target. VAULT auto-calculates your target + profit suggestions.</p>
 
         <button
           onClick={() => setShowMore(!showMore)}
@@ -290,7 +376,7 @@ export function VaultTradePlanner() {
           className="rounded-[3px] p-3 space-y-1"
           style={{ background: xp.heroBg, border: xp.heroBorder }}
         >
-          {isValid ? (
+          {isValid && liveResult ? (
             <>
               <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1">Live Preview</p>
               <LivePreviewRow label="How Many Contracts" value={`${liveResult.finalContracts}`} />
@@ -300,6 +386,15 @@ export function VaultTradePlanner() {
               <LivePreviewRow label="Main Target (1:2)" value={safeCurrency(liveResult.rr1to2Target)} />
               <LivePreviewRow label="Quick Profit Idea (TP1)" value={safeCurrency(liveResult.tp1Premium)} />
               <LivePreviewRow label="Bigger Profit Idea (TP2)" value={safeCurrency(liveResult.tp2Premium)} />
+              {/* What To Do inline summary */}
+              <div className="pt-2 mt-2 space-y-0.5 text-[11px] text-foreground" style={{ borderTop: "1px solid hsl(213 18% 22%)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1">What To Do</p>
+                <p>• Buy <strong>{liveResult.finalContracts}</strong> {direction} at <strong>{safeCurrency(buildInputs().entryPremium)}</strong></p>
+                <p>• Cut the trade if the option hits <strong>{safeCurrency(buildInputs().stopPremium)}</strong></p>
+                <p>• Money needed: <strong>{safeCurrency(liveResult.totalPositionCost)}</strong></p>
+                <p>• Planned loss if stop hits: <strong>{safeCurrency(liveResult.totalPlannedRisk)}</strong></p>
+                <p>• Main target (1:2): <strong>{safeCurrency(liveResult.rr1to2Target)}</strong></p>
+              </div>
             </>
           ) : (
             <>
@@ -311,12 +406,17 @@ export function VaultTradePlanner() {
               <LivePreviewRow label="Main Target (1:2)" value="—" />
               <LivePreviewRow label="Quick Profit Idea (TP1)" value="—" />
               <LivePreviewRow label="Bigger Profit Idea (TP2)" value="—" />
-              <p className="text-[10px] text-muted-foreground/50 pt-1">
-                Enter Account Size, Option Buy Price, and Option Stop Price to generate your trade plan.
+              <p className="text-[10px] text-muted-foreground/50 pt-2">
+                Enter your account + option buy price + option stop price. VAULT will build your trade plan.
               </p>
             </>
           )}
         </div>
+
+        {/* Reassuring sub-copy */}
+        <p className="text-[10px] text-primary/60 font-medium text-center">
+          Don't stress — VAULT calculates your size, loss, and target.
+        </p>
 
         <div className="flex flex-wrap gap-2">
           <XPButton variant="primary" onClick={handleGenerate} disabled={!isValid}>Generate</XPButton>
