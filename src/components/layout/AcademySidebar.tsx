@@ -184,7 +184,25 @@ export function AcademySidebar() {
                             color: "#fff",
                           }}
                         >
-                          <Icon className="h-4 w-4 shrink-0 transition-[filter] duration-150" style={{ strokeWidth: 2.2, fill: "#FBBF24", color: "#FDE68A", filter: "drop-shadow(0 0 3px rgba(251,191,36,0.4))" }} />
+                          {/* SVG gradient def for sparkle icon */}
+                          <svg width="0" height="0" className="absolute">
+                            <defs>
+                              <linearGradient id="coach-sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#FDE68A" />
+                                <stop offset="50%" stopColor="#FBBF24" />
+                                <stop offset="100%" stopColor="#F472B6" />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                          <Icon
+                            className="h-4 w-4 shrink-0"
+                            style={{
+                              strokeWidth: 2.2,
+                              fill: "url(#coach-sparkle-grad)",
+                              stroke: "url(#coach-sparkle-grad)",
+                              filter: "drop-shadow(0 0 3px rgba(251,191,36,0.35)) drop-shadow(0 0 6px rgba(244,114,182,0.2))",
+                            }}
+                          />
                           {!collapsed && <span className="text-sm font-semibold tracking-[-0.01em]">{label}</span>}
                         </button>
                       </SidebarMenuButton>
