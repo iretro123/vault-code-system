@@ -513,7 +513,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         {isAnnouncements && (
           <div className="mx-3 mt-2 mb-3 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2">
             <Megaphone className="h-4 w-4 text-amber-400 shrink-0" />
-            <p className="text-xs text-amber-300/80">
+            <p className="text-xs text-amber-600">
               Official updates only. Turn on notifications if you want alerts.
             </p>
           </div>
