@@ -669,16 +669,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </div>
         )}
 
-        {messages.filter((msg) => {
-          // Hide soft-deleted messages older than 15 minutes
+        {useMemo(() => messages.filter((msg) => {
           if (msg.is_deleted && msg.deleted_at) {
             const deletedAgeMs = Date.now() - new Date(msg.deleted_at).getTime();
             if (deletedAgeMs >= 15 * 60 * 1000) return false;
           }
-          // Hide thread replies from main feed
           if ((msg as any).parent_message_id) return false;
           return true;
-        }).map((msg, i, filteredMsgs) => {
+        }), [messages]).map((msg, i, filteredMsgs) => {
           const prev = filteredMsgs[i - 1];
           const showHdr = shouldShowHeader(msg, prev);
           const showDate = shouldShowDateSeparator(msg.created_at, prev?.created_at);
