@@ -39,22 +39,22 @@ const AcademyCommunity = () => {
             ]}
           />
         </div>
-        <div className="shrink-0 flex justify-center pt-5 pb-3 px-4">
-          <div className="inline-flex items-center gap-0.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-1.5">
+        <div className="shrink-0 flex justify-center pt-4 pb-2 px-4">
+          <div className="inline-flex items-center gap-0.5 rounded-xl bg-[hsl(215,25%,8%)] border border-[hsl(217,40%,18%)] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_2px_8px_rgba(0,0,0,0.3)]">
             {TABS.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
                 className={cn(
-                  "relative px-8 py-3 text-[16px] font-semibold rounded-xl transition-all duration-100 tracking-[-0.01em]",
+                  "relative px-6 py-2 text-[13px] font-semibold rounded-lg transition-all duration-100 tracking-[-0.01em]",
                   activeTab === tab.key
-                    ? "text-foreground bg-white/[0.07] shadow-[0_2px_12px_rgba(0,0,0,0.25)]"
-                    : "text-white/25 hover:text-white/45"
+                    ? "text-white bg-[hsl(217,40%,16%)] shadow-[0_1px_4px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] border border-[hsl(217,50%,22%)]"
+                    : "text-white/30 hover:text-white/55 hover:bg-white/[0.03]"
                 )}
               >
                 {tab.label}
                 {activeTab === tab.key && (
-                  <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-10 h-[2px] rounded-full bg-primary/70 shadow-[0_0_10px_3px_hsl(217_91%_60%/0.25)]" />
+                  <span className="absolute -bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full bg-primary/60 shadow-[0_0_8px_2px_hsl(217_91%_60%/0.3)]" />
                 )}
               </button>
             ))}
