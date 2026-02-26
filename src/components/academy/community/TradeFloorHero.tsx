@@ -9,8 +9,8 @@ export function TradeFloorHero() {
 
   return (
     <>
-      <div className="shrink-0 px-5 pt-4 pb-2">
-        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] px-6 py-5">
+      <div className="shrink-0 px-5 pt-3 pb-1">
+        <div className="rounded-xl bg-[hsl(215,25%,9%)] border border-[hsl(217,35%,16%)] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <div className="flex items-start justify-between gap-6">
             {/* Left — Title */}
             <div>

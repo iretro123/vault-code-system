@@ -25,7 +25,7 @@ function YourWeekCard() {
   const reviewStatus = "Due";
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+    <div className="rounded-xl border border-[hsl(217,30%,14%)] bg-[hsl(215,25%,10%)] p-4 space-y-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
       <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Your Week</p>
       <div className="space-y-2">
         <MetricRow label="Trades Logged" value={String(tradesThisWeek)} accent={tradesThisWeek > 0} />
@@ -65,7 +65,7 @@ function QuickActionsCard() {
   ];
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+    <div className="rounded-xl border border-[hsl(217,30%,14%)] bg-[hsl(215,25%,10%)] p-4 space-y-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
       <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Quick Actions</p>
       <div className="space-y-0.5">
         {actions.map((a) => (
@@ -145,7 +145,7 @@ function CoachFeedCard() {
   if (visibleItems.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+    <div className="rounded-xl border border-[hsl(217,30%,14%)] bg-[hsl(215,25%,10%)] p-4 space-y-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
       <div className="flex items-center gap-1.5">
         <Flame className="h-3 w-3 text-amber-400/40" />
         <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Coach Feed</p>

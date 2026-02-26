@@ -121,7 +121,7 @@ export function EmojiPicker({ onSelect }: EmojiPickerProps) {
       <PopoverContent
         side="top"
         align="start"
-        className="w-[280px] p-0 bg-[#1a1a2e] border-white/10"
+        className="w-[280px] p-0 bg-[hsl(215,25%,10%)] border-[hsl(217,30%,18%)] shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
       >
         {/* Search */}
         <div className="flex items-center gap-2 px-2.5 py-2 border-b border-white/[0.06]">
