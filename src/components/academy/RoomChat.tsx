@@ -326,129 +326,206 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
     const body = text ?? draft;
-    if (!body.trim() && (!attachments || attachments.length === 0)) return;
-    if (sending) return;
+    if (!body.trim() && (!attachments || attachments.length === 0)) {
+      return { ok: false, error: "empty payload" };
+    }
+    if (sending) {
+      return { ok: false, error: "send in progress" };
+    }
     if (!text) setDraft("");
     shouldAutoScroll.current = true;
-    await sendMessage(body, attachments);
+    return await sendMessage(body, attachments);
   };
 
   const ALLOWED_MIME = [
     "image/png", "image/jpeg", "image/jpg", "image/gif",
     "application/pdf", "video/mp4",
   ];
-   const MAX_FILE_SIZE = 15 * 1024 * 1024;
+  const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
-   // Direct fetch upload helper (bypasses SDK JWT issue)
-   const uploadChatFile = useCallback(async (file: File, path: string): Promise<boolean> => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
-    if (!accessToken) {
-      toast.error("Session expired. Please sign out and sign back in.");
-      return false;
-    }
-    const formData = new FormData();
-    formData.append("", file);
-    formData.append("cacheControl", "3600");
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    const res = await fetch(`${supabaseUrl}/storage/v1/object/academy-chat-files/${path}`, {
-      method: "POST",
-      headers: {
-        apikey: supabaseKey,
-        authorization: `Bearer ${accessToken}`,
-        "x-upsert": "true",
-      },
-      body: formData,
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.error("[ChatUpload] failed:", err.message || res.statusText);
-      return false;
-    }
-    return true;
-   }, []);
+  type UploadSource = "attach" | "drag-drop";
+  type UploadResult = {
+    ok: boolean;
+    status: number;
+    body: unknown;
+    error?: string;
+  };
 
-   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    e.target.value = "";
+  const uploadChatFile = useCallback(
+    async (file: File, path: string, source: UploadSource): Promise<UploadResult> => {
+      console.debug(`[ChatUpload][${source}] helper called`, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        userId: user?.id,
+        path,
+      });
 
-    if (!ALLOWED_MIME.includes(file.type)) {
-      toast.error("Unsupported file type. Allowed: PNG, JPG, GIF, PDF, MP4");
-      return;
-    }
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error("File must be under 15 MB.");
-      return;
-    }
+      console.debug(`[ChatUpload][${source}] auth state`, {
+        hasSession: !!sessionData?.session,
+        hasToken: !!accessToken,
+        sessionUserId: sessionData?.session?.user?.id ?? null,
+      });
 
-    setUploading(true);
-    const path = `${roomSlug}/${user.id}/${Date.now()}_${file.name}`;
+      if (!accessToken) {
+        return {
+          ok: false,
+          status: 401,
+          body: { reason: "auth/session missing" },
+          error: "auth/session missing",
+        };
+      }
 
-    const ok = await uploadChatFile(file, path);
-    if (!ok) {
-      toast.error("Upload failed. Please try again.");
-      setUploading(false);
-      return;
-    }
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const encodedPath = path.split("/").map(encodeURIComponent).join("/");
 
-    const { data: urlData } = supabase.storage
-      .from("academy-chat-files")
-      .getPublicUrl(path);
+      const res = await fetch(`${supabaseUrl}/storage/v1/object/academy-chat-files/${encodedPath}`, {
+        method: "POST",
+        headers: {
+          apikey: supabaseKey,
+          authorization: `Bearer ${accessToken}`,
+          "content-type": file.type || "application/octet-stream",
+          "x-upsert": "false",
+        },
+        body: file,
+      });
 
-    const attachment: Attachment = {
-      type: file.type.startsWith("image/") ? "image" : "file",
-      url: urlData.publicUrl,
-      filename: file.name,
-      size: file.size,
-      mime: file.type,
-    };
+      const responseText = await res.text();
+      let responseBody: unknown = responseText;
+      try {
+        responseBody = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        responseBody = responseText || null;
+      }
 
-    await handleSend(draft, [attachment]);
-    setDraft("");
-    setUploading(false);
-  }, [user, roomSlug, draft, sending]);
+      console.debug(`[ChatUpload][${source}] storage response`, {
+        status: res.status,
+        ok: res.ok,
+        body: responseBody,
+      });
+
+      if (!res.ok) {
+        return {
+          ok: false,
+          status: res.status,
+          body: responseBody,
+          error:
+            typeof responseBody === "object" && responseBody && "message" in responseBody
+              ? String((responseBody as { message?: string }).message)
+              : `storage ${res.status}`,
+        };
+      }
+
+      return {
+        ok: true,
+        status: res.status,
+        body: responseBody,
+      };
+    },
+    [user?.id]
+  );
+
+  const handleUploadFile = useCallback(
+    async (file: File, source: UploadSource) => {
+      console.debug(`[ChatUpload][${source}] entry`, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        userId: user?.id ?? null,
+      });
+
+      if (!user) {
+        toast.error("Upload failed: auth/session missing");
+        return;
+      }
+
+      if (!ALLOWED_MIME.includes(file.type)) {
+        toast.error("Unsupported file type. Allowed: PNG, JPG, GIF, PDF, MP4");
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error("File must be under 15 MB.");
+        return;
+      }
+
+      setUploading(true);
+
+      try {
+        const safeFileName = file.name
+          .normalize("NFKD")
+          .replace(/[^a-zA-Z0-9._-]/g, "_")
+          .replace(/_+/g, "_");
+
+        const path = `${roomSlug}/${user.id}/${Date.now()}_${safeFileName}`;
+
+        const uploadResult = await uploadChatFile(file, path, source);
+        if (!uploadResult.ok) {
+          const reason =
+            uploadResult.status === 401
+              ? "auth/session missing"
+              : uploadResult.status === 403
+                ? "storage 403 policy denied"
+                : uploadResult.status === 400
+                  ? "storage 400 invalid request"
+                  : uploadResult.error || `storage ${uploadResult.status}`;
+
+          toast.error(`Upload failed: ${reason}`);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from("academy-chat-files")
+          .getPublicUrl(path);
+
+        const attachment: Attachment = {
+          type: file.type.startsWith("image/") ? "image" : "file",
+          url: urlData.publicUrl,
+          filename: file.name,
+          size: file.size,
+          mime: file.type,
+        };
+
+        const messageResult = await handleSend(draft, [attachment]);
+        console.debug(`[ChatUpload][${source}] message insert response`, messageResult);
+
+        if (!messageResult?.ok) {
+          toast.error(`Upload failed: attachment save failed (${messageResult?.error || "unknown"})`);
+          return;
+        }
+
+        setDraft("");
+      } catch (err) {
+        console.error(`[ChatUpload][${source}] unexpected error`, err);
+        toast.error("Upload failed: unexpected error");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [user, roomSlug, draft, uploadChatFile, handleSend]
+  );
+
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      await handleUploadFile(file, "attach");
+    },
+    [handleUploadFile]
+  );
 
   // Drag-and-drop file upload
-  const processDroppedFile = useCallback(async (file: File) => {
-    if (!user) return;
-    if (!ALLOWED_MIME.includes(file.type)) {
-      toast.error("Unsupported file type. Allowed: PNG, JPG, GIF, PDF, MP4");
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error("File must be under 15 MB.");
-      return;
-    }
-
-    setUploading(true);
-    const path = `${roomSlug}/${user.id}/${Date.now()}_${file.name}`;
-
-    const ok = await uploadChatFile(file, path);
-    if (!ok) {
-      toast.error("Upload failed. Please try again.");
-      setUploading(false);
-      return;
-    }
-
-    const { data: urlData } = supabase.storage
-      .from("academy-chat-files")
-      .getPublicUrl(path);
-
-    const attachment: Attachment = {
-      type: file.type.startsWith("image/") ? "image" : "file",
-      url: urlData.publicUrl,
-      filename: file.name,
-      size: file.size,
-      mime: file.type,
-    };
-
-    await handleSend(draft, [attachment]);
-    setDraft("");
-    setUploading(false);
-  }, [user, roomSlug, draft, sending]);
+  const processDroppedFile = useCallback(
+    async (file: File) => {
+      await handleUploadFile(file, "drag-drop");
+    },
+    [handleUploadFile]
+  );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
