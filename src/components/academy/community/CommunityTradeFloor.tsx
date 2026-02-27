@@ -19,11 +19,6 @@ export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
       {/* Primary Feed */}
       <div className="flex-1 flex flex-col min-w-0">
         <TradeFloorHero />
-        {/* Focus reminder — pinned at top of feed */}
-        <div className="shrink-0 flex items-center gap-2 px-5 py-1.5 bg-[hsl(220,16%,96%)] border-b border-[hsl(220,12%,88%)]">
-          <span className="text-[10px] text-[hsl(220,10%,48%)] uppercase tracking-wider font-bold bg-[hsl(220,14%,91%)] px-2 py-0.5 rounded">Focus</span>
-          <p className="text-[12px] text-[hsl(220,10%,44%)] font-medium">Wait for confirmation before entering.</p>
-        </div>
         <div className="flex-1 overflow-hidden">
           <RoomChat
             key="trade-floor"
