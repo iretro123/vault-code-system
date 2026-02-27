@@ -68,9 +68,11 @@ const Auth = () => {
     }
     setLoading(true);
 
-    const { error, data } = mode === "login"
+    const result = mode === "login"
       ? await signIn(email, password)
       : await signUp(email, password);
+
+    const error = result.error;
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
