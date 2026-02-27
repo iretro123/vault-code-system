@@ -53,14 +53,31 @@ function MetricRow({ label, value, accent, warn }: {
 }
 
 /* ── Quick Actions ── */
-function QuickActionsCard() {
+function QuickActionsCard({ onSwitchTab }: { onSwitchTab?: (tab: string) => void }) {
   const navigate = useNavigate();
 
+  const handleAction = (key: string) => {
+    switch (key) {
+      case "log-trade":
+        navigate("/academy/trade");
+        break;
+      case "ask-question":
+        window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
+        break;
+      case "share-win":
+        onSwitchTab?.("wins");
+        break;
+      case "weekly-review":
+        navigate("/academy/progress");
+        break;
+    }
+  };
+
   const actions = [
-    { label: "Log Trade", icon: FileText, path: "/academy/trade" },
-    { label: "Ask Question", icon: HelpCircle, path: null },
-    { label: "Weekly Review", icon: ClipboardCheck, path: "/academy/progress" },
-    { label: "Mentor Setups", icon: BookOpen, path: "/academy/learn" },
+    { key: "log-trade", label: "Log Trade", icon: FileText },
+    { key: "ask-question", label: "Ask Question", icon: HelpCircle },
+    { key: "share-win", label: "Share a Win", icon: Trophy },
+    { key: "weekly-review", label: "Weekly Review", icon: ClipboardCheck },
   ];
 
   return (
@@ -69,8 +86,8 @@ function QuickActionsCard() {
       <div className="space-y-0">
         {actions.map((a) => (
           <button
-            key={a.label}
-            onClick={() => a.path && navigate(a.path)}
+            key={a.key}
+            onClick={() => handleAction(a.key)}
             className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-[hsl(220,10%,95%)] transition-colors group"
           >
             <a.icon className="h-3.5 w-3.5 text-[hsl(220,10%,55%)] group-hover:text-[hsl(220,10%,35%)] shrink-0" />
