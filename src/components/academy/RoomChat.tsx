@@ -1239,8 +1239,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               {/* Template chips */}
               <div className="flex items-center gap-1 px-1">
               {[
-                  { label: "Log Trade", emoji: "📋", action: undefined },
-                  { label: "Ask Question", emoji: "❓", action: undefined },
+                  { label: "Log Trade", emoji: "📋", action: () => navigate("/academy/trade") },
+                  { label: "Ask Question", emoji: "❓", action: () => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")) },
                   { label: "Share Win", emoji: "🏆", action: () => onSwitchTab?.("wins") },
                 ].map((chip) => (
                   <button
