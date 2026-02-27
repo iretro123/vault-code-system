@@ -1351,6 +1351,149 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_webhook_events: {
+        Row: {
+          amount: number | null
+          checkout_session_id: string | null
+          currency: string | null
+          email: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload_json: Json
+          processed_at: string | null
+          received_at: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_event_id: string
+          stripe_subscription_id: string | null
+          trace_id: string
+        }
+        Insert: {
+          amount?: number | null
+          checkout_session_id?: string | null
+          currency?: string | null
+          email?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload_json?: Json
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_event_id: string
+          stripe_subscription_id?: string | null
+          trace_id: string
+        }
+        Update: {
+          amount?: number | null
+          checkout_session_id?: string | null
+          currency?: string | null
+          email?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload_json?: Json
+          processed_at?: string | null
+          received_at?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_event_id?: string
+          stripe_subscription_id?: string | null
+          trace_id?: string
+        }
+        Relationships: []
+      }
+      student_access: {
+        Row: {
+          access_ended_at: string | null
+          access_granted_at: string
+          id: string
+          last_synced_at: string
+          product_key: string
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_ended_at?: string | null
+          access_granted_at?: string
+          id?: string
+          last_synced_at?: string
+          product_key?: string
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_ended_at?: string | null
+          access_granted_at?: string
+          id?: string
+          last_synced_at?: string
+          product_key?: string
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          stripe_customer_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          stripe_customer_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          stripe_customer_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       toolkit_items: {
         Row: {
           category: string
