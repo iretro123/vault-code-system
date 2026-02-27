@@ -50,7 +50,25 @@ export function PlaybookCard() {
     setSnoozed(true);
   };
 
-  if (loading || totalCount === 0 || snoozed) return null;
+  // Hide completely only when we KNOW there's nothing to show (not during load)
+  if (totalCount === 0 && !loading) return null;
+  if (snoozed) return null;
+  // Show skeleton while loading to reserve layout space
+  if (loading) {
+    return (
+      <div className="vault-glass-card p-6 space-y-4 animate-pulse" style={{ minHeight: 160 }}>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-white/[0.06]" />
+          <div className="space-y-1.5">
+            <div className="h-4 w-32 rounded bg-white/[0.06]" />
+            <div className="h-3 w-48 rounded bg-white/[0.04]" />
+          </div>
+        </div>
+        <div className="h-2 w-full rounded bg-white/[0.04]" />
+        <div className="h-9 w-full rounded-lg bg-white/[0.04]" />
+      </div>
+    );
+  }
 
   const hasStarted = completedCount > 0 || Object.keys(progress).length > 0;
   const isComplete = completedCount === totalCount;

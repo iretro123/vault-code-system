@@ -94,13 +94,20 @@ export function ScoreboardCard() {
 
   if (loading && !stats) {
     return (
-      <div className="vault-glass-card p-6 space-y-5 animate-pulse">
-        <div className="h-5 w-32 rounded bg-white/[0.06]" />
-        <div className="grid grid-cols-2 gap-3">
-          {[1,2,3,4].map(i => <div key={i} className="h-16 rounded-xl bg-white/[0.03]" />)}
+      <div className="vault-glass-card p-6 space-y-5 animate-pulse" style={{ minHeight: 320 }}>
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-32 rounded bg-white/[0.06]" />
+          <div className="h-3 w-16 rounded bg-white/[0.04]" />
         </div>
-        <div className="flex gap-1.5">
-          {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-6 rounded-md bg-white/[0.03]" />)}
+        <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] h-10" />
+        <div className="grid grid-cols-2 gap-3">
+          {[1,2,3,4].map(i => <div key={i} className="h-[72px] rounded-xl bg-white/[0.03]" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />)}
+        </div>
+        <div className="space-y-1.5">
+          <div className="h-3 w-20 rounded bg-white/[0.04]" />
+          <div className="flex gap-1.5">
+            {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-6 rounded-md bg-white/[0.03]" />)}
+          </div>
         </div>
       </div>
     );
