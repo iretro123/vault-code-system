@@ -1325,5 +1325,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         </div>
       )}
     </div>
+    {lightboxImage && (
+      <ImageLightbox
+        src={lightboxImage.src}
+        alt={lightboxImage.alt}
+        filename={lightboxImage.filename}
+        onClose={() => setLightboxImage(null)}
+      />
+    )}
+    </>
   );
 }
