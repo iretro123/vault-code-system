@@ -23,6 +23,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
@@ -232,6 +233,7 @@ function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
 /* ── main component ── */
 
 export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab }: RoomChatProps) {
+  const navigate = useNavigate();
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
     useRoomMessages(roomSlug);
   const { user, profile, userRole: authUserRole } = useAuth();
@@ -1238,8 +1240,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               {/* Template chips */}
               <div className="flex items-center gap-1 px-1">
               {[
-                  { label: "Log Trade", emoji: "📋", action: undefined },
-                  { label: "Ask Question", emoji: "❓", action: undefined },
+                  { label: "Log Trade", emoji: "📋", action: () => navigate("/academy/trade") },
+                  { label: "Ask Question", emoji: "❓", action: () => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")) },
                   { label: "Share Win", emoji: "🏆", action: () => onSwitchTab?.("wins") },
                 ].map((chip) => (
                   <button
