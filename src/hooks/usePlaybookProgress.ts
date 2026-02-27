@@ -47,7 +47,7 @@ export function usePlaybookProgress() {
   }, [user]);
 
   async function fetchAll() {
-    setLoading(true);
+    if (chapters.length === 0) setLoading(true);
     const [chapRes, progRes, stateRes] = await Promise.all([
       supabase.from("playbook_chapters").select("*").order("order_index"),
       supabase.from("playbook_progress").select("*").eq("user_id", user!.id),
