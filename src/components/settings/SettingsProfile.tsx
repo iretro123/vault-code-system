@@ -55,43 +55,55 @@ function cropToSquare(file: File): Promise<Blob> {
   });
 }
 
+function parseAvatarUrl(av: string | null | undefined) {
+  if (!av) return { mode: "initials" as AvatarMode, color: AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: null as string | null };
+  if (av.startsWith("icon:")) {
+    const parts = av.replace("icon:", "").split("|");
+    return { mode: "icon" as AvatarMode, color: parts[1] || AVATAR_COLORS[0], icon: parts[0] || GEOMETRIC_ICONS[0].id, imageUrl: null };
+  }
+  if (av.startsWith("initials:")) {
+    return { mode: "initials" as AvatarMode, color: av.replace("initials:", "") || AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: null };
+  }
+  if (av.startsWith("http")) {
+    return { mode: "image" as AvatarMode, color: AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: av };
+  }
+  return { mode: "initials" as AvatarMode, color: AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: null };
+}
+
 export function SettingsProfile() {
   const { user, profile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
-  const [timezone, setTimezone] = useState("America/New_York");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [avatarMode, setAvatarMode] = useState<AvatarMode>("initials");
-  const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
-  const [avatarIcon, setAvatarIcon] = useState(GEOMETRIC_ICONS[0].id);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const initialAv = parseAvatarUrl((profile as any)?.avatar_url);
+
+  const [displayName, setDisplayName] = useState(profile?.display_name || "");
+  const [username, setUsername] = useState((profile as any)?.username || "");
+  const [timezone, setTimezone] = useState((profile as any)?.timezone || "America/New_York");
+  const [phoneNumber, setPhoneNumber] = useState((profile as any)?.phone_number || "");
+  const [avatarMode, setAvatarMode] = useState<AvatarMode>(initialAv.mode);
+  const [avatarColor, setAvatarColor] = useState(initialAv.color);
+  const [avatarIcon, setAvatarIcon] = useState(initialAv.icon);
+  const [imageUrl, setImageUrl] = useState<string | null>(initialAv.imageUrl);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [usernameError, setUsernameError] = useState("");
+  const [hydrated, setHydrated] = useState(!!profile);
 
+  // Sync from profile only once when it arrives (if component mounted before profile loaded)
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || hydrated) return;
+    setHydrated(true);
     setDisplayName(profile.display_name || "");
     setTimezone((profile as any).timezone || "America/New_York");
     setPhoneNumber((profile as any).phone_number || "");
     setUsername((profile as any).username || "");
-    const av = (profile as any).avatar_url || "";
-    if (av.startsWith("icon:")) {
-      const parts = av.replace("icon:", "").split("|");
-      setAvatarMode("icon");
-      setAvatarIcon(parts[0] || GEOMETRIC_ICONS[0].id);
-      setAvatarColor(parts[1] || AVATAR_COLORS[0]);
-    } else if (av.startsWith("initials:")) {
-      setAvatarMode("initials");
-      setAvatarColor(av.replace("initials:", "") || AVATAR_COLORS[0]);
-    } else if (av.startsWith("http")) {
-      setAvatarMode("image");
-      setImageUrl(av);
-    }
-  }, [profile]);
+    const parsed = parseAvatarUrl((profile as any).avatar_url);
+    setAvatarMode(parsed.mode);
+    setAvatarColor(parsed.color);
+    setAvatarIcon(parsed.icon);
+    setImageUrl(parsed.imageUrl);
+  }, [profile, hydrated]);
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/);
