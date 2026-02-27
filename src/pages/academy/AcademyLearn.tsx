@@ -22,6 +22,7 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { modules, loading: modsLoading, refetch: refetchModules } = useAcademyModules();
   const { lessons, loading: lessonsLoading } = useAcademyLessons();
   const { progress } = useLessonProgress();
