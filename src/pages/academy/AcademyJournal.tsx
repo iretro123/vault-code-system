@@ -28,6 +28,7 @@ const MISTAKES = [
 
 const AcademyJournal = () => {
   const { user } = useAuth();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const [date, setDate] = useState<Date>(new Date());
   const [ticker, setTicker] = useState("");
   const [whatHappened, setWhatHappened] = useState("");
