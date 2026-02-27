@@ -84,7 +84,7 @@ const AcademySettings = () => {
             ))}
           </div>
           <div className="px-4 pb-24">
-            <SettingsPanel section={section} />
+            <SettingsPanelAll section={section} />
           </div>
         </div>
 
@@ -97,7 +97,7 @@ const AcademySettings = () => {
             </p>
           </div>
           <div className="px-8 pb-12 max-w-2xl">
-            <SettingsPanel section={section} />
+            <SettingsPanelAll section={section} />
           </div>
         </div>
       </div>
