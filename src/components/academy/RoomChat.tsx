@@ -202,13 +202,26 @@ function renderPlainBody(body: string) {
 
 /* ── grouping logic ── */
 
-function shouldShowHeader(
-  msg: { user_id: string; created_at: string },
-  prev?: { user_id: string; created_at: string }
+const GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+function shouldGroupWithPrevious(
+  msg: { user_id: string; created_at: string; is_deleted?: boolean },
+  prev?: { user_id: string; created_at: string; is_deleted?: boolean }
 ) {
-  if (!prev) return true;
-  if (prev.user_id !== msg.user_id) return true;
-  return new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 5 * 60 * 1000;
+  if (!prev) return false;
+  if (prev.user_id !== msg.user_id) return false;
+  if (msg.is_deleted || prev.is_deleted) return false;
+  if (shouldShowDateSeparator(msg.created_at, prev.created_at)) return false;
+
+  const gapMs = new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime();
+  return gapMs >= 0 && gapMs <= GROUP_WINDOW_MS;
+}
+
+function shouldShowHeader(
+  msg: { user_id: string; created_at: string; is_deleted?: boolean },
+  prev?: { user_id: string; created_at: string; is_deleted?: boolean }
+) {
+  return !shouldGroupWithPrevious(msg, prev);
 }
 
 /* ── role label from profile data ── */
@@ -655,6 +668,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     return true;
   }), [messages]);
 
+
   if (loading) {
     return (
       <div className="flex flex-col h-full w-full bg-[hsl(220,15%,92%)]">
@@ -784,8 +798,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
         {filteredMessages.map((msg, i, filteredMsgs) => {
           const prev = filteredMsgs[i - 1];
-          const showHdr = shouldShowHeader(msg, prev);
+          const next = filteredMsgs[i + 1];
           const showDate = shouldShowDateSeparator(msg.created_at, prev?.created_at);
+          const isGroupedWithPrev = !showDate && shouldGroupWithPrevious(msg, prev);
+          const isGroupedWithNext = next ? shouldGroupWithPrevious(next, msg) : false;
+          const startsNewGroup = !isGroupedWithPrev;
+          const showHdr = shouldShowHeader(msg, prev);
           const isRecap = !msg.is_deleted && isRecapPost(msg.body);
           const isOwn = msg.user_id === user?.id;
           const ageMs = Date.now() - new Date(msg.created_at).getTime();
@@ -861,14 +879,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 <div
                   className={cn(
                     "group relative flex gap-4 px-6 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
-                    showHdr ? "mt-3 pt-2.5 py-1" : "py-0.5",
+                    startsNewGroup ? "mt-3 pt-2.5 pb-1" : (isGroupedWithNext ? "py-[2px]" : "pt-[2px] pb-0.5"),
                     isEditing && "bg-[hsl(220,10%,93%)]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-50"
                   )}
                 >
-                  {/* Avatar column — 44px for premium feel */}
-                  <div className="w-11 h-11 shrink-0">
+                  {/* Avatar column — compact on grouped follow-ups */}
+                  <div className={cn("w-11 shrink-0", startsNewGroup ? "h-11" : "h-5")}>
                     {showHdr ? (
                       msgProfile ? (
                         <ChatAvatar
@@ -880,7 +898,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="w-11 h-11 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
                       )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-11 text-[10px] text-[hsl(220,10%,60%)] select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-[hsl(220,10%,60%)] select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
@@ -990,7 +1008,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         {msg.body && msg.body !== "📎 Attachment" && (
                           <div className="inline-block max-w-[88%]">
                             <div className={cn(
-                              "rounded-xl px-3.5 py-2 mt-0.5",
+                              "rounded-xl px-3.5 py-2",
+                              startsNewGroup ? "mt-0.5" : "mt-0",
                               isCeoOrAdmin
                                 ? "bg-amber-50 border border-amber-200 shadow-sm"
                                 : isOwn
@@ -1104,6 +1123,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
                     {!isAnnouncements && !msg.is_deleted && (() => {
                       const reactions = getReactions(msg.id);
+                      if (reactions.length === 0) return null;
+
                       return (
                         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                           {reactions.map((r) => (
@@ -1123,7 +1144,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </button>
                           ))}
 
-                          {/* Hover add-reaction trigger — use opacity to avoid reflow */}
+                          {/* Hover add-reaction trigger — only when reactions row is visible */}
                           <span className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-75">
                             {ALLOWED_EMOJIS.filter(
                               (e) => !reactions.some((r) => r.emoji === e && r.reacted)
@@ -1141,21 +1162,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         </div>
                       );
                     })()}
-                    {/* Thread reply trigger — use opacity for hover items to prevent reflow */}
-                    {!msg.is_deleted && !isEditing && !isAnnouncements && onThreadOpen && (
+
+                    {/* Thread reply trigger */}
+                    {!msg.is_deleted && !isEditing && !isAnnouncements && onThreadOpen && replyCount > 0 && (
                       <button
                         onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
-                        className={cn(
-                          "flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75",
-                          replyCount > 0
-                            ? "text-primary hover:text-primary/80"
-                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-                        )}
+                        className="flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75 text-primary hover:text-primary/80"
                       >
                         <MessageSquare className="h-3 w-3" />
-                        {replyCount > 0
-                          ? `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`
-                          : "Reply in thread"}
+                        {replyCount} {replyCount === 1 ? "reply" : "replies"}
                       </button>
                     )}
                   </div>
