@@ -63,15 +63,18 @@ const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
   newbie:       { label: "Beginner",     cls: "bg-gray-100 text-gray-500 border-gray-200" },
 };
 
-function ExperienceBadge({ role }: { role?: string }) {
-  const cfg = ROLE_CONFIG[role?.toLowerCase() ?? ""];
-  if (!cfg) return null;
-  return (
-    <span className={cn("text-[10px] leading-none px-1.5 py-0.5 rounded font-medium border", cfg.cls)}>
-      {cfg.label}
-    </span>
-  );
-}
+const ExperienceBadge = React.forwardRef<HTMLSpanElement, { role?: string }>(
+  ({ role, ...props }, ref) => {
+    const cfg = ROLE_CONFIG[role?.toLowerCase() ?? ""];
+    if (!cfg) return null;
+    return (
+      <span ref={ref} {...props} className={cn("text-[10px] leading-none px-1.5 py-0.5 rounded font-medium border", cfg.cls)}>
+        {cfg.label}
+      </span>
+    );
+  }
+);
+ExperienceBadge.displayName = "ExperienceBadge";
 
 /* ── message body renderers ── */
 
