@@ -13,11 +13,21 @@ interface Stats {
   dailyStatuses: string[]; // 7 items: "green" | "yellow" | "red" | "none"
 }
 
+const SCOREBOARD_CACHE = "va_cache_scoreboard";
+
+function readScoreboardCache(): Stats | null {
+  try {
+    const raw = localStorage.getItem(SCOREBOARD_CACHE);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 export function ScoreboardCard() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("discipline");
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cached = readScoreboardCache();
+  const [stats, setStats] = useState<Stats | null>(cached);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
