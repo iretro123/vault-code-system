@@ -668,23 +668,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     return true;
   }), [messages]);
 
-  useEffect(() => {
-    if (!import.meta.env.DEV || filteredMessages.length === 0) return;
-
-    const debugSample = filteredMessages.slice(0, 10).map((msg, idx, arr) => {
-      const prev = arr[idx - 1];
-      const isGroupedWithPrev = shouldGroupWithPrevious(msg, prev);
-      return {
-        id: msg.id,
-        author: msg.user_id,
-        timestamp: msg.created_at,
-        isGroupedWithPrev,
-        startsNewGroup: !isGroupedWithPrev,
-      };
-    });
-
-    console.debug("[RoomChat grouping debug]", debugSample);
-  }, [filteredMessages]);
 
   if (loading) {
     return (
