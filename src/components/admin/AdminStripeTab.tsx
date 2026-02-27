@@ -68,6 +68,31 @@ export function AdminStripeTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleTestCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+        toast.success("Checkout session created — opening Stripe…");
+      } else {
+        throw new Error(data?.error || "No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("[TestCheckout]", err);
+      toast.error(err.message || "Failed to create checkout session");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const copyTestCard = () => {
+    navigator.clipboard.writeText("4242424242424242");
+    toast.success("Test card number copied");
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
