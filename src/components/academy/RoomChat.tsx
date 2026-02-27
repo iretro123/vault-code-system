@@ -486,7 +486,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           mime: file.type,
         };
 
-        const messageResult = await handleSend(draft, [attachment]);
+        shouldAutoScroll.current = true;
+        const messageResult = await sendMessage(draft, [attachment]);
         console.debug(`[ChatUpload][${source}] message insert response`, messageResult);
 
         if (!messageResult?.ok) {
@@ -502,7 +503,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         setUploading(false);
       }
     },
-    [user, roomSlug, draft, uploadChatFile, handleSend]
+    [user, roomSlug, draft, uploadChatFile, sendMessage]
   );
 
   const handleFileUpload = useCallback(
