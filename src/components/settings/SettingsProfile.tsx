@@ -87,7 +87,6 @@ export function SettingsProfile() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [usernameError, setUsernameError] = useState("");
   const [hydrated, setHydrated] = useState(!!profile);
 
   // Sync from profile only once when it arrives (if component mounted before profile loaded)
@@ -158,29 +157,11 @@ export function SettingsProfile() {
     if (!user) return;
     setSaving(true);
     setSaved(false);
-    setUsernameError("");
-
-    // Check username uniqueness
-    const trimmedUsername = username.trim().toLowerCase();
-    if (trimmedUsername) {
-      const { data: existing } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("username", trimmedUsername)
-        .neq("user_id", user.id)
-        .maybeSingle();
-      if (existing) {
-        setUsernameError("Username is already taken.");
-        setSaving(false);
-        return;
-      }
-    }
 
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: displayName.trim() || null,
-        username: trimmedUsername || null,
         timezone,
         phone_number: phoneNumber.trim() || null,
         avatar_url: avatarUrl,
@@ -276,9 +257,9 @@ export function SettingsProfile() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Username <span className="text-muted-foreground/50">(optional)</span></Label>
-          <Input value={username} onChange={(e) => { setUsername(e.target.value); setUsernameError(""); }} placeholder="trader_one" maxLength={30} className="vault-input" />
-          {usernameError && <p className="text-xs text-destructive">{usernameError}</p>}
+          <Label className="text-xs text-muted-foreground">Username</Label>
+          <Input value={username} disabled className="vault-input opacity-60 cursor-not-allowed" />
+          <p className="text-[10px] text-muted-foreground/60">Set during registration. Cannot be changed.</p>
         </div>
 
         <div className="space-y-1.5">

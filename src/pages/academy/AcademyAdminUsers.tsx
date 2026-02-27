@@ -51,9 +51,10 @@ const AcademyAdminUsers = () => {
   if (!isAdmin) return <Navigate to="/academy/home" replace />;
 
   const handleExport = () => {
-    const header = ["Display Name", "Email", "Phone", "Timezone", "Experience Level", "Joined At", "Last Active At"];
+    const header = ["Display Name", "Username", "Email", "Phone", "Timezone", "Experience Level", "Joined At", "Last Active At"];
     const rows = users.map((u) => [
       escapeCsv(u.display_name || ""),
+      escapeCsv(u.username || ""),
       escapeCsv(u.email || ""),
       escapeCsv(u.phone_number || ""),
       escapeCsv(u.timezone || ""),
