@@ -202,13 +202,26 @@ function renderPlainBody(body: string) {
 
 /* ── grouping logic ── */
 
-function shouldShowHeader(
-  msg: { user_id: string; created_at: string },
-  prev?: { user_id: string; created_at: string }
+const GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+function shouldGroupWithPrevious(
+  msg: { user_id: string; created_at: string; is_deleted?: boolean },
+  prev?: { user_id: string; created_at: string; is_deleted?: boolean }
 ) {
-  if (!prev) return true;
-  if (prev.user_id !== msg.user_id) return true;
-  return new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 5 * 60 * 1000;
+  if (!prev) return false;
+  if (prev.user_id !== msg.user_id) return false;
+  if (msg.is_deleted || prev.is_deleted) return false;
+  if (shouldShowDateSeparator(msg.created_at, prev.created_at)) return false;
+
+  const gapMs = new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime();
+  return gapMs >= 0 && gapMs <= GROUP_WINDOW_MS;
+}
+
+function shouldShowHeader(
+  msg: { user_id: string; created_at: string; is_deleted?: boolean },
+  prev?: { user_id: string; created_at: string; is_deleted?: boolean }
+) {
+  return !shouldGroupWithPrevious(msg, prev);
 }
 
 /* ── role label from profile data ── */
