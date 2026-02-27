@@ -815,8 +815,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
         {filteredMessages.map((msg, i, filteredMsgs) => {
           const prev = filteredMsgs[i - 1];
-          const showHdr = shouldShowHeader(msg, prev);
+          const next = filteredMsgs[i + 1];
           const showDate = shouldShowDateSeparator(msg.created_at, prev?.created_at);
+          const isGroupedWithPrev = !showDate && shouldGroupWithPrevious(msg, prev);
+          const isGroupedWithNext = next ? shouldGroupWithPrevious(next, msg) : false;
+          const startsNewGroup = !isGroupedWithPrev;
+          const showHdr = shouldShowHeader(msg, prev);
           const isRecap = !msg.is_deleted && isRecapPost(msg.body);
           const isOwn = msg.user_id === user?.id;
           const ageMs = Date.now() - new Date(msg.created_at).getTime();
