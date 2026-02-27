@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +68,31 @@ export function AdminStripeTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleTestCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout");
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, "_blank");
+        toast.success("Checkout session created — opening Stripe…");
+      } else {
+        throw new Error(data?.error || "No checkout URL returned");
+      }
+    } catch (err: any) {
+      console.error("[TestCheckout]", err);
+      toast.error(err.message || "Failed to create checkout session");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const copyTestCard = () => {
+    navigator.clipboard.writeText("4242424242424242");
+    toast.success("Test card number copied");
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -143,6 +168,24 @@ export function AdminStripeTab() {
             <p className="text-xs text-muted-foreground/70">
               Webhook endpoint: <code className="bg-white/5 px-1 rounded text-[10px]">https://oemylhcjqncovnmvvgxh.supabase.co/functions/v1/stripe-webhook</code>
             </p>
+            <div className="flex items-center gap-3 pt-2 border-t border-blue-500/10 mt-2">
+              <Button
+                onClick={handleTestCheckout}
+                disabled={checkoutLoading}
+                size="sm"
+                className="gap-1.5"
+              >
+                {checkoutLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+                Run Test Checkout
+              </Button>
+              <button
+                onClick={copyTestCard}
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-mono"
+              >
+                4242 4242 4242 4242 · any future date · any CVC
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         </div>
       </Card>
