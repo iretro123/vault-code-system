@@ -896,14 +896,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 <div
                   className={cn(
                     "group relative flex gap-4 px-6 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
-                    showHdr ? "mt-3 pt-2.5 py-1" : "py-0.5",
+                    startsNewGroup ? "mt-3 pt-2.5 pb-1" : "py-[2px]",
                     isEditing && "bg-[hsl(220,10%,93%)]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-50"
                   )}
                 >
-                  {/* Avatar column — 44px for premium feel */}
-                  <div className="w-11 h-11 shrink-0">
+                  {/* Avatar column — compact on grouped follow-ups */}
+                  <div className={cn("w-11 shrink-0", startsNewGroup ? "h-11" : "h-5")}>
                     {showHdr ? (
                       msgProfile ? (
                         <ChatAvatar
@@ -915,7 +915,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="w-11 h-11 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
                       )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-11 text-[10px] text-[hsl(220,10%,60%)] select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-[hsl(220,10%,60%)] select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
