@@ -197,11 +197,11 @@ function CoachFeedCard() {
 }
 
 /* ── Main Cockpit Panel ── */
-export function CockpitPanel() {
+export function CockpitPanel({ onSwitchTab }: { onSwitchTab?: (tab: string) => void }) {
   return (
     <div className="flex flex-col gap-3 p-3.5 h-full overflow-y-auto">
       <YourWeekCard />
-      <QuickActionsCard />
+      <QuickActionsCard onSwitchTab={onSwitchTab} />
       <CoachFeedCard />
     </div>
   );

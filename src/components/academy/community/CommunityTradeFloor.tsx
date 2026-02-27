@@ -34,7 +34,7 @@ export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
       {/* Cockpit Panel — structured right rail */}
       {!isMobile && (
         <div className="w-[280px] shrink-0 border-l border-[hsl(220,12%,84%)] hidden lg:flex flex-col bg-[hsl(220,14%,89%)]">
-          <CockpitPanel />
+          <CockpitPanel onSwitchTab={onSwitchTab} />
         </div>
       )}
 
