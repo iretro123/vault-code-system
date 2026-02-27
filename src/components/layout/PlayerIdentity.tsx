@@ -10,14 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Settings, LogOut, HelpCircle, LayoutGrid, ShieldCheck, Eye } from "lucide-react";
+import { Settings, LogOut, HelpCircle, LayoutGrid, ShieldCheck, Eye, PanelTop } from "lucide-react";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { Switch } from "@/components/ui/switch";
 import { Link, useNavigate } from "react-router-dom";
 
 export function PlayerIdentity() {
   const { user, profile, loading, signOut } = useAuth();
-  const { roleName } = useAcademyPermissions();
+  const { roleName, isOperator } = useAcademyPermissions();
   const { canToggle, adminModeOn, previewAsMember, toggleAdminMode, togglePreviewAsMember } = useAdminMode();
   const navigate = useNavigate();
 
@@ -41,12 +41,7 @@ export function PlayerIdentity() {
   const email = user.email || "";
   const username = (profile as any)?.username || email.split("@")[0];
   const avatarUrl = (profile as any)?.avatar_url || null;
-  const initials = displayName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const canOpenAdminPanel = roleName === "CEO" || isOperator;
 
   const handleSignOut = async () => {
     await signOut();
@@ -105,6 +100,14 @@ export function PlayerIdentity() {
           </>
         )}
         <DropdownMenuSeparator />
+        {canOpenAdminPanel && (
+          <DropdownMenuItem asChild>
+            <Link to="/academy/admin/panel?tab=stripe" className="flex items-center gap-2 cursor-pointer">
+              <PanelTop className="h-4 w-4" />
+              Admin Panel (temp)
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link to="/academy/settings" className="flex items-center gap-2 cursor-pointer">
             <Settings className="h-4 w-4" />
