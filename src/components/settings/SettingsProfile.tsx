@@ -258,9 +258,9 @@ export function SettingsProfile() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Username <span className="text-muted-foreground/50">(optional)</span></Label>
-          <Input value={username} onChange={(e) => { setUsername(e.target.value); setUsernameError(""); }} placeholder="trader_one" maxLength={30} className="vault-input" />
-          {usernameError && <p className="text-xs text-destructive">{usernameError}</p>}
+          <Label className="text-xs text-muted-foreground">Username</Label>
+          <Input value={username} disabled className="vault-input opacity-60 cursor-not-allowed" />
+          <p className="text-[10px] text-muted-foreground/60">Set during registration. Cannot be changed.</p>
         </div>
 
         <div className="space-y-1.5">

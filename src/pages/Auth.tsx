@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureProfile } from "@/lib/ensureProfile";
 
 const Auth = () => {
   const { toast } = useToast();
@@ -22,6 +23,11 @@ const Auth = () => {
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
 
+  // Signup-only fields
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
+
   // Persist ref code from URL
   const refCode = searchParams.get("ref");
   useEffect(() => {
@@ -30,34 +36,65 @@ const Auth = () => {
     }
   }, [refCode]);
 
+  // Debounced username uniqueness check
+  useEffect(() => {
+    if (mode !== "signup" || !username.trim()) {
+      setUsernameStatus("idle");
+      return;
+    }
+    const trimmed = username.trim().toLowerCase();
+    if (trimmed.length < 3) { setUsernameStatus("idle"); return; }
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("username", trimmed)
+        .maybeSingle();
+      setUsernameStatus(data ? "taken" : "available");
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [username, mode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup" && !phoneNumber.trim()) {
+      toast({ title: "Phone required", description: "Please enter your phone number.", variant: "destructive" });
+      return;
+    }
+    if (mode === "signup" && usernameStatus === "taken") {
+      toast({ title: "Username taken", description: "Please choose a different username.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
-    const { error } = mode === "login"
+    const { error, data } = mode === "login"
       ? await signIn(email, password)
       : await signUp(email, password);
 
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({
         title: mode === "signup" ? "Account created" : "Welcome back",
         description: mode === "signup" ? "Check your email to verify your account." : "You have been signed in.",
       });
 
-      // Record referral on signup
       if (mode === "signup") {
+        // Create profile with phone + username
+        const { data: sessionData } = await supabase.auth.getSession();
+        const newUserId = sessionData?.session?.user?.id;
+        if (newUserId) {
+          await ensureProfile(newUserId, email, {
+            phone_number: phoneNumber.trim(),
+            username: username.trim().toLowerCase() || undefined,
+          });
+        }
+
+        // Record referral
         const savedRef = sessionStorage.getItem("vault_ref");
         if (savedRef) {
           try {
-            // Get the newly created user
-            const { data: sessionData } = await supabase.auth.getSession();
-            const newUserId = sessionData?.session?.user?.id;
             await supabase.from("referrals" as any).insert({
               referrer_user_id: savedRef,
               referred_user_id: newUserId || null,
@@ -66,7 +103,6 @@ const Auth = () => {
             } as any);
             sessionStorage.removeItem("vault_ref");
           } catch (e) {
-            // Silently fail - don't block signup
             console.error("Referral tracking error:", e);
           }
         }
@@ -77,6 +113,7 @@ const Auth = () => {
 
     setLoading(false);
   };
+
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -96,9 +133,10 @@ const Auth = () => {
     }
   };
 
+  const signupFieldsValid = mode !== "signup" || (phoneNumber.trim().length > 0 && usernameStatus !== "taken");
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="px-4 py-4">
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-4 h-4" />
@@ -108,7 +146,6 @@ const Auth = () => {
 
       <main className="flex-1 flex items-center justify-center px-4 pb-8">
         <div className="w-full max-w-sm">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 mb-4">
               <Shield className="w-7 h-7 text-primary" />
@@ -119,23 +156,12 @@ const Auth = () => {
             </p>
           </div>
 
-          {/* Forgot Password Form */}
           {mode === "forgot" ? (
             <Card className="p-6">
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div>
-                  <Label htmlFor="reset-email" className="text-sm text-muted-foreground">
-                    Email
-                  </Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); setResetError(""); setResetSent(false); }}
-                    className="mt-1.5 h-12"
-                    required
-                  />
+                  <Label htmlFor="reset-email" className="text-sm text-muted-foreground">Email</Label>
+                  <Input id="reset-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => { setEmail(e.target.value); setResetError(""); setResetSent(false); }} className="mt-1.5 h-12" required />
                 </div>
                 {resetSent && (
                   <div className="flex items-start gap-1.5 text-xs text-emerald-500">
@@ -149,90 +175,69 @@ const Auth = () => {
                     <span>{resetError}</span>
                   </div>
                 )}
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base font-medium gap-2"
-                  disabled={loading || !email.trim()}
-                >
+                <Button type="submit" className="w-full h-12 text-base font-medium gap-2" disabled={loading || !email.trim()}>
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   Send Reset Link
                 </Button>
               </form>
               <p className="text-center text-sm text-muted-foreground mt-4">
-                <button
-                  type="button"
-                  onClick={() => { setMode("login"); setResetSent(false); setResetError(""); }}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Back to sign in
-                </button>
+                <button type="button" onClick={() => { setMode("login"); setResetSent(false); setResetError(""); }} className="text-primary hover:underline font-medium">Back to sign in</button>
               </p>
             </Card>
           ) : (
             <>
-              {/* Login / Signup Form */}
               <Card className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <Label htmlFor="email" className="text-sm text-muted-foreground">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="mt-1.5 h-12"
-                      required
-                    />
+                    <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
+                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-12" required />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-sm text-muted-foreground">
-                        Password
-                      </Label>
+                      <Label htmlFor="password" className="text-sm text-muted-foreground">Password</Label>
                       {mode === "login" && (
-                        <button
-                          type="button"
-                          onClick={() => setMode("forgot")}
-                          className="text-xs text-primary hover:underline"
-                        >
-                          Forgot password?
-                        </button>
+                        <button type="button" onClick={() => setMode("forgot")} className="text-xs text-primary hover:underline">Forgot password?</button>
                       )}
                     </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="mt-1.5 h-12"
-                      required
-                      minLength={8}
-                    />
+                    <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 h-12" required minLength={8} />
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-base font-medium"
-                    disabled={loading}
-                  >
+                  {mode === "signup" && (
+                    <>
+                      <div>
+                        <Label htmlFor="phone" className="text-sm text-muted-foreground">
+                          Phone Number <span className="text-destructive">*</span>
+                        </Label>
+                        <Input id="phone" type="tel" placeholder="+1 555 000 0000" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="mt-1.5 h-12" required maxLength={20} />
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">For important account alerts only.</p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="username" className="text-sm text-muted-foreground">
+                          Username <span className="text-muted-foreground/50">(optional)</span>
+                        </Label>
+                        <div className="relative">
+                          <Input id="username" placeholder="trader_one" value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))} className="mt-1.5 h-12 pr-8" maxLength={30} />
+                          {usernameStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 animate-spin text-muted-foreground" />}
+                          {usernameStatus === "available" && <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-emerald-500" />}
+                          {usernameStatus === "taken" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-destructive" />}
+                        </div>
+                        {usernameStatus === "taken" && <p className="text-xs text-destructive mt-1">Username is already taken.</p>}
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">Cannot be changed after registration.</p>
+                      </div>
+                    </>
+                  )}
+
+                  <Button type="submit" className="w-full h-12 text-base font-medium" disabled={loading || !signupFieldsValid}>
                     {loading ? "Loading..." : mode === "login" ? "Sign In" : "Create Account"}
                   </Button>
                 </form>
               </Card>
 
-              {/* Toggle Mode */}
               <p className="text-center text-sm text-muted-foreground mt-6">
                 {mode === "login" ? "Don't have an account?" : "Already have an account?"}
-                <button
-                  type="button"
-                  onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                  className="text-primary hover:underline ml-1 font-medium"
-                >
+                <button type="button" onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-primary hover:underline ml-1 font-medium">
                   {mode === "login" ? "Sign up" : "Sign in"}
                 </button>
               </p>

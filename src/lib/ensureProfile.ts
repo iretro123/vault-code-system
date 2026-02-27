@@ -23,9 +23,12 @@ function detectTimezone(): string {
  * Ensures a profile exists for the authenticated user.
  * Creates one with defaults if it doesn't exist.
  */
-export async function ensureProfile(userId: string, email?: string | null): Promise<void> {
+export async function ensureProfile(
+  userId: string,
+  email?: string | null,
+  opts?: { phone_number?: string; username?: string },
+): Promise<void> {
   try {
-    // Check if profile already exists
     const { data: existing, error: fetchError } = await supabase
       .from("profiles")
       .select("id")
@@ -37,30 +40,25 @@ export async function ensureProfile(userId: string, email?: string | null): Prom
       return;
     }
 
-    // Profile already exists, nothing to do
-    if (existing) {
-      return;
-    }
+    if (existing) return;
 
-    // Generate defaults
     const emailPrefix = email?.split("@")[0] || null;
     const defaultDisplayName = emailPrefix || "Trader";
-    const defaultUsername = `trader_${generateShortId()}`;
-
-    // Create profile with defaults
+    const chosenUsername = opts?.username || `trader_${generateShortId()}`;
     const detectedTz = detectTimezone();
+
     const { error: insertError } = await supabase.from("profiles").insert({
       user_id: userId,
       email: email || null,
       display_name: defaultDisplayName,
-      username: defaultUsername,
+      username: chosenUsername,
       discipline_status: "inactive",
       discipline_score: 0,
       timezone: detectedTz,
+      phone_number: opts?.phone_number || null,
     });
 
     if (insertError) {
-      // Handle unique constraint violation on username (retry with new shortid)
       if (insertError.code === "23505" && insertError.message.includes("username")) {
         const retryUsername = `trader_${generateShortId()}`;
         await supabase.from("profiles").insert({
@@ -71,6 +69,7 @@ export async function ensureProfile(userId: string, email?: string | null): Prom
           discipline_status: "inactive",
           discipline_score: 0,
           timezone: detectedTz,
+          phone_number: opts?.phone_number || null,
         });
       } else {
         console.error("Error creating profile:", insertError);
