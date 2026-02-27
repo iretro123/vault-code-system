@@ -1015,7 +1015,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <div className="flex flex-wrap gap-2 mt-1">
                         {msg.attachments.map((att: Attachment, idx: number) =>
                           att.type === "image" ? (
-                            <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block">
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setLightboxImage({ src: att.url, alt: att.filename, filename: att.filename })}
+                              className="block text-left"
+                            >
                               <img
                                 src={att.url}
                                 alt={att.filename}
@@ -1023,7 +1028,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 className="rounded-lg max-w-[260px] max-h-[200px] object-cover border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] transition-colors cursor-pointer"
                               />
                               <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-[260px]">{att.filename}</span>
-                            </a>
+                            </button>
                           ) : (
                             <a
                               key={idx}
