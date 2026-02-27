@@ -3,18 +3,20 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
-import { Users, Megaphone, Send, BookOpen, ScrollText } from "lucide-react";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminLogsTab } from "@/components/admin/AdminLogsTab";
+import { AdminStripeTab } from "@/components/admin/AdminStripeTab";
 
 const TAB_CONFIG = [
   { value: "members", label: "Members", icon: Users, perm: "manage_users" },
   { value: "announcements", label: "Announcements", icon: Megaphone, perm: "manage_notifications" },
   { value: "broadcast", label: "Broadcast", icon: Send, perm: "manage_notifications" },
   { value: "content", label: "Content", icon: BookOpen, perm: "manage_content" },
+  { value: "stripe", label: "Stripe", icon: CreditCard, perm: "view_admin_panel" },
   { value: "logs", label: "Logs", icon: ScrollText, perm: "view_admin_panel" },
 ] as const;
 
@@ -78,6 +80,11 @@ const AdminPanel = () => {
           {hasPermission("manage_content") && (
             <TabsContent value="content">
               <AdminContentTab />
+            </TabsContent>
+          )}
+          {hasPermission("view_admin_panel") && (
+            <TabsContent value="stripe">
+              <AdminStripeTab />
             </TabsContent>
           )}
           {hasPermission("view_admin_panel") && (
