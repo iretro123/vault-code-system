@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
+import { ImageLightbox } from "./community/ImageLightbox";
 import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./community/DateSeparator";
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
@@ -251,6 +252,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const [draft, setDraft] = useState("");
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt?: string; filename?: string } | null>(null);
   const dragDepthRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -673,6 +675,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }
 
   return (
+    <>
     <div className="relative flex flex-col h-full w-full bg-[hsl(220,15%,92%)]">
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
@@ -1014,7 +1017,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <div className="flex flex-wrap gap-2 mt-1">
                         {msg.attachments.map((att: Attachment, idx: number) =>
                           att.type === "image" ? (
-                            <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="block">
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setLightboxImage({ src: att.url, alt: att.filename, filename: att.filename })}
+                              className="block text-left"
+                            >
                               <img
                                 src={att.url}
                                 alt={att.filename}
@@ -1022,7 +1030,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 className="rounded-lg max-w-[260px] max-h-[200px] object-cover border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] transition-colors cursor-pointer"
                               />
                               <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-[260px]">{att.filename}</span>
-                            </a>
+                            </button>
                           ) : (
                             <a
                               key={idx}
@@ -1318,5 +1326,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         </div>
       )}
     </div>
+    {lightboxImage && (
+      <ImageLightbox
+        src={lightboxImage.src}
+        alt={lightboxImage.alt}
+        filename={lightboxImage.filename}
+        onClose={() => setLightboxImage(null)}
+      />
+    )}
+    </>
   );
 }
