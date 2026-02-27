@@ -186,6 +186,9 @@ export function AdminStripeTab() {
                 <Copy className="h-3 w-3" />
               </button>
             </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Webhook Event Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
