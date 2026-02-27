@@ -337,9 +337,39 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     "image/png", "image/jpeg", "image/jpg", "image/gif",
     "application/pdf", "video/mp4",
   ];
-  const MAX_FILE_SIZE = 15 * 1024 * 1024;
+   const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+   // Direct fetch upload helper (bypasses SDK JWT issue)
+   const uploadChatFile = useCallback(async (file: File, path: string): Promise<boolean> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) {
+      toast.error("Session expired. Please sign out and sign back in.");
+      return false;
+    }
+    const formData = new FormData();
+    formData.append("", file);
+    formData.append("cacheControl", "3600");
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/academy-chat-files/${path}`, {
+      method: "POST",
+      headers: {
+        apikey: supabaseKey,
+        authorization: `Bearer ${accessToken}`,
+        "x-upsert": "true",
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("[ChatUpload] failed:", err.message || res.statusText);
+      return false;
+    }
+    return true;
+   }, []);
+
+   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     e.target.value = "";
@@ -357,11 +387,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     setUploading(true);
     const path = `${roomSlug}/${user.id}/${Date.now()}_${file.name}`;
 
-    const { error: uploadErr } = await supabase.storage
-      .from("academy-chat-files")
-      .upload(path, file);
-
-    if (uploadErr) {
+    const ok = await uploadChatFile(file, path);
+    if (!ok) {
       toast.error("Upload failed. Please try again.");
       setUploading(false);
       return;
