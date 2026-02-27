@@ -208,7 +208,7 @@ function shouldShowHeader(
 ) {
   if (!prev) return true;
   if (prev.user_id !== msg.user_id) return true;
-  return new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 3 * 60 * 1000;
+  return new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 5 * 60 * 1000;
 }
 
 /* ── role label from profile data ── */
@@ -860,8 +860,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "group relative flex gap-4 px-6 py-1 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
-                    showHdr && "mt-3 pt-2.5",
+                    "group relative flex gap-4 px-6 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
+                    showHdr ? "mt-3 pt-2.5 py-1" : "py-0.5",
                     isEditing && "bg-[hsl(220,10%,93%)]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-50"
