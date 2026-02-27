@@ -158,29 +158,11 @@ export function SettingsProfile() {
     if (!user) return;
     setSaving(true);
     setSaved(false);
-    setUsernameError("");
-
-    // Check username uniqueness
-    const trimmedUsername = username.trim().toLowerCase();
-    if (trimmedUsername) {
-      const { data: existing } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("username", trimmedUsername)
-        .neq("user_id", user.id)
-        .maybeSingle();
-      if (existing) {
-        setUsernameError("Username is already taken.");
-        setSaving(false);
-        return;
-      }
-    }
 
     const { error } = await supabase
       .from("profiles")
       .update({
         display_name: displayName.trim() || null,
-        username: trimmedUsername || null,
         timezone,
         phone_number: phoneNumber.trim() || null,
         avatar_url: avatarUrl,
