@@ -16,6 +16,7 @@ import { PremiumGate } from "@/components/academy/PremiumGate";
 
 const AcademyPlaybook = () => {
   const [searchParams] = useSearchParams();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const {
     chapters,
     progress,
