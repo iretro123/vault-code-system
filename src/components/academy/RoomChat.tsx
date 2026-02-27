@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
+import { ImageLightbox } from "./community/ImageLightbox";
 import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./community/DateSeparator";
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
