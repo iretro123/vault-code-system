@@ -122,7 +122,10 @@ export function useRoomMessages(roomSlug: string) {
   // Send message (with optimistic insert)
   const sendMessage = useCallback(
     async (body: string, attachments?: Attachment[]) => {
-      if (!user || (!body.trim() && (!attachments || attachments.length === 0))) return;
+      if (!user || (!body.trim() && (!attachments || attachments.length === 0))) {
+        return { ok: false, status: 400, error: "invalid payload" };
+      }
+
       setSending(true);
       setError(null);
 
@@ -154,14 +157,18 @@ export function useRoomMessages(roomSlug: string) {
       };
       updateMessages((prev) => [...prev, optimisticMsg]);
 
-      const { error: err } = await supabase.from("academy_messages").insert({
-        room_slug: roomSlug,
-        user_id: user.id,
-        user_name: userName,
-        body: optimisticMsg.body,
-        user_role: roleStr,
-        attachments: attachments && attachments.length > 0 ? attachments : [],
-      } as any);
+      const { data: insertedMessage, error: err } = await supabase
+        .from("academy_messages")
+        .insert({
+          room_slug: roomSlug,
+          user_id: user.id,
+          user_name: userName,
+          body: optimisticMsg.body,
+          user_role: roleStr,
+          attachments: attachments && attachments.length > 0 ? attachments : [],
+        } as any)
+        .select("id, created_at, attachments")
+        .maybeSingle();
 
       if (err) {
         // Remove optimistic message on failure
@@ -171,16 +178,34 @@ export function useRoomMessages(roomSlug: string) {
         } else {
           toast.error("Message failed to send. Try again.");
         }
-      } else {
-        // The realtime subscription will replace the optimistic message with the real one.
-        // We remove the optimistic entry when realtime INSERT arrives (dedup by body+timestamp is handled there).
-        supabase
-          .from("profiles")
-          .update({ intro_posted: true } as any)
-          .eq("user_id", user.id)
-          .then(() => {});
+
+        setSending(false);
+        return {
+          ok: false,
+          status: err.code === "42501" ? 403 : 400,
+          error: err.message,
+          body: {
+            code: err.code,
+            details: err.details,
+            hint: err.hint,
+          },
+        };
       }
+
+      // The realtime subscription will replace the optimistic message with the real one.
+      // We remove the optimistic entry when realtime INSERT arrives (dedup by body+timestamp is handled there).
+      supabase
+        .from("profiles")
+        .update({ intro_posted: true } as any)
+        .eq("user_id", user.id)
+        .then(() => {});
+
       setSending(false);
+      return {
+        ok: true,
+        status: 201,
+        body: insertedMessage,
+      };
     },
     [user, profile, roomSlug, computeRole, updateMessages]
   );
