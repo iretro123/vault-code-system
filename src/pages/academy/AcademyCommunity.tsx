@@ -67,13 +67,13 @@ const AcademyCommunity = () => {
 
           {/* Tab Content — all tabs stay mounted, toggled via CSS to avoid remount/reload */}
           <div className="flex-1 overflow-hidden relative">
-            <div className={cn("absolute inset-0", activeTab === "trade-floor" ? "visible z-10" : "invisible z-0")}>
+            <div className={cn("absolute inset-0", activeTab === "trade-floor" ? "block" : "hidden")}>
               <CommunityTradeFloor onSwitchTab={handleTabChange} />
             </div>
-            <div className={cn("absolute inset-0", activeTab === "announcements" ? "visible z-10" : "invisible z-0")}>
+            <div className={cn("absolute inset-0", activeTab === "announcements" ? "block" : "hidden")}>
               <CommunityAnnouncements />
             </div>
-            <div className={cn("absolute inset-0", activeTab === "wins" ? "visible z-10" : "invisible z-0")}>
+            <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <CommunityWins />
             </div>
           </div>

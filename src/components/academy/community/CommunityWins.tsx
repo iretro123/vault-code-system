@@ -19,10 +19,19 @@ interface WinMessage {
   created_at: string;
 }
 
+const WINS_CACHE_KEY = "vault_wins_cache";
+
 export function CommunityWins() {
   const { user } = useAuth();
-  const [wins, setWins] = useState<WinMessage[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [wins, setWins] = useState<WinMessage[]>(() => {
+    try {
+      const cached = localStorage.getItem(WINS_CACHE_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [loading, setLoading] = useState(() => {
+    try { return !localStorage.getItem(WINS_CACHE_KEY); } catch { return true; }
+  });
   const { trackMessages, getReactions, toggleReaction } = useMessageReactions("wins-proof", user?.id);
   const { ensureProfiles, getProfile } = useChatProfiles();
 
@@ -39,6 +48,8 @@ export function CommunityWins() {
     const msgs = (data ?? []) as WinMessage[];
     setWins(msgs);
     setLoading(false);
+
+    try { localStorage.setItem(WINS_CACHE_KEY, JSON.stringify(msgs)); } catch {}
 
     if (msgs.length > 0) {
       trackMessages(msgs.map((m) => m.id));
