@@ -102,6 +102,10 @@ export function AdminStripeTab() {
       supabase.from("stripe_webhook_events").select("*").order("received_at", { ascending: false }).limit(100),
     ]);
 
+    console.info("[AdminStripeTab] students:", studentsRes.data?.length, studentsRes.error);
+    console.info("[AdminStripeTab] access:", accessRes.data?.length, accessRes.error);
+    console.info("[AdminStripeTab] events:", eventsRes.data?.length, eventsRes.error);
+
     setStudents((studentsRes.data as StudentRow[]) || []);
     setAccessRecords((accessRes.data as AccessRow[]) || []);
     setWebhookEvents((eventsRes.data as WebhookEventRow[]) || []);
