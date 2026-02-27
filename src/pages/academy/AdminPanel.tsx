@@ -3,12 +3,13 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
-import { Users, Megaphone, Send, BookOpen, ScrollText } from "lucide-react";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminLogsTab } from "@/components/admin/AdminLogsTab";
+import { AdminStripeTab } from "@/components/admin/AdminStripeTab";
 
 const TAB_CONFIG = [
   { value: "members", label: "Members", icon: Users, perm: "manage_users" },
