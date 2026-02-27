@@ -39,17 +39,28 @@ interface LiveSession {
 }
 
 /* ── Data hook ── */
+const LIVE_CACHE_KEY = "va_cache_live_sessions";
+
+function readLiveCache(): LiveSession[] {
+  try {
+    const raw = localStorage.getItem(LIVE_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 function useLiveSessions() {
-  const [sessions, setSessions] = useState<LiveSession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<LiveSession[]>(() => readLiveCache());
+  const [loading, setLoading] = useState(() => readLiveCache().length === 0);
 
   const fetch = useCallback(async () => {
-    setLoading(true);
+    if (sessions.length === 0) setLoading(true);
     const { data } = await supabase
       .from("live_sessions")
       .select("*")
       .order("session_date", { ascending: true });
-    setSessions((data as LiveSession[]) || []);
+    const result = (data as LiveSession[]) || [];
+    setSessions(result);
+    try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify(result)); } catch {}
     setLoading(false);
   }, []);
 
@@ -318,13 +329,17 @@ const AcademyLive = () => {
     toast.success("Link copied");
   };
 
-  if (loading) {
+  if (loading && sessions.length === 0) {
     return (
       <AcademyLayout>
         <div className="liveSessionsPage">
           <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="px-4 md:px-6 pb-8 space-y-4 animate-pulse">
+            <div className="h-32 rounded-2xl bg-muted/30" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="h-24 rounded-xl bg-muted/20" />
+              <div className="h-24 rounded-xl bg-muted/20" />
+            </div>
           </div>
         </div>
       </AcademyLayout>

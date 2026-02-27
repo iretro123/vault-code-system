@@ -12,12 +12,21 @@ export interface AcademyLesson {
   created_at: string;
 }
 
+const CACHE_KEY = "va_cache_lessons";
+
+function readCache(moduleSlug?: string): AcademyLesson[] {
+  try {
+    const raw = localStorage.getItem(moduleSlug ? `${CACHE_KEY}_${moduleSlug}` : CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 export function useAcademyLessons(moduleSlug?: string) {
-  const [lessons, setLessons] = useState<AcademyLesson[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [lessons, setLessons] = useState<AcademyLesson[]>(() => readCache(moduleSlug));
+  const [loading, setLoading] = useState(() => readCache(moduleSlug).length === 0);
 
   const fetchLessons = useCallback(async () => {
-    setLoading(true);
+    if (lessons.length === 0) setLoading(true);
     let query = supabase
       .from("academy_lessons")
       .select("*")
@@ -29,7 +38,10 @@ export function useAcademyLessons(moduleSlug?: string) {
     }
 
     const { data } = await query;
-    setLessons((data as AcademyLesson[]) || []);
+    const result = (data as AcademyLesson[]) || [];
+    setLessons(result);
+    const cacheKey = moduleSlug ? `${CACHE_KEY}_${moduleSlug}` : CACHE_KEY;
+    try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch {}
     setLoading(false);
   }, [moduleSlug]);
 

@@ -33,7 +33,20 @@ const AcademyHome = () => {
     return () => window.removeEventListener("open-checkin", handler);
   }, []);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <AcademyLayout>
+        <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl animate-pulse">
+          <div className="h-24 rounded-2xl bg-muted/40" />
+          <div className="h-40 rounded-2xl bg-muted/30" />
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            <div className="lg:col-span-3 h-48 rounded-2xl bg-muted/30" />
+            <div className="lg:col-span-2 h-48 rounded-2xl bg-muted/30" />
+          </div>
+        </div>
+      </AcademyLayout>
+    );
+  }
 
   const isFirstVisit =
     profile &&

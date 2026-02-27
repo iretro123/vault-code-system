@@ -11,17 +11,28 @@ export interface AcademyModule {
   updated_at: string;
 }
 
+const CACHE_KEY = "va_cache_modules";
+
+function readCache(): AcademyModule[] {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 export function useAcademyModules() {
-  const [modules, setModules] = useState<AcademyModule[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [modules, setModules] = useState<AcademyModule[]>(() => readCache());
+  const [loading, setLoading] = useState(() => readCache().length === 0);
 
   const fetchModules = useCallback(async () => {
-    setLoading(true);
+    if (modules.length === 0) setLoading(true);
     const { data } = await supabase
       .from("academy_modules")
       .select("*")
       .order("sort_order");
-    setModules((data as AcademyModule[]) || []);
+    const result = (data as AcademyModule[]) || [];
+    setModules(result);
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(result)); } catch {}
     setLoading(false);
   }, []);
 
