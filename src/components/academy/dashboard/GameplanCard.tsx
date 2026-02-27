@@ -122,11 +122,20 @@ export function GameplanCard({ onCheckIn }: Props) {
 
   if (loading && tasks.length === 0) {
     return (
-      <div className="vault-glass-card p-6 md:p-8 space-y-6 animate-pulse">
+      <div className="vault-glass-card p-6 md:p-8 space-y-6 animate-pulse" style={{ minHeight: 380 }}>
         <div className="h-5 w-40 rounded bg-white/[0.06]" />
-        <div className="h-2.5 w-full rounded bg-white/[0.04]" />
         <div className="space-y-2">
-          {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.03]" />)}
+          <div className="h-2.5 w-full rounded bg-white/[0.04]" />
+        </div>
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <div className="h-3 w-20 rounded bg-white/[0.04]" />
+            {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.03]" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />)}
+          </div>
+          <div className="space-y-2">
+            <div className="h-3 w-24 rounded bg-white/[0.04]" />
+            {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.03]" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />)}
+          </div>
         </div>
       </div>
     );
