@@ -11,10 +11,20 @@ interface LiveSession {
   session_type: string;
 }
 
+const LIVE_DASH_CACHE = "va_cache_live_dash";
+
+function readLiveDashCache(): LiveSession[] {
+  try {
+    const raw = localStorage.getItem(LIVE_DASH_CACHE);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 export function LiveCallsCard() {
   const navigate = useNavigate();
-  const [sessions, setSessions] = useState<LiveSession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = readLiveDashCache();
+  const [sessions, setSessions] = useState<LiveSession[]>(cached);
+  const [loading, setLoading] = useState(cached.length === 0);
 
   useEffect(() => {
     supabase
@@ -24,7 +34,9 @@ export function LiveCallsCard() {
       .order("session_date", { ascending: true })
       .limit(5)
       .then(({ data }) => {
-        setSessions(data ?? []);
+        const result = data ?? [];
+        setSessions(result);
+        try { localStorage.setItem(LIVE_DASH_CACHE, JSON.stringify(result)); } catch {}
         setLoading(false);
       });
   }, []);
