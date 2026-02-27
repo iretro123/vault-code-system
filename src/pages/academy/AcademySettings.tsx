@@ -84,7 +84,7 @@ const AcademySettings = () => {
             ))}
           </div>
           <div className="px-4 pb-24">
-            <SettingsPanel section={section} />
+            <SettingsPanelAll section={section} />
           </div>
         </div>
 
@@ -97,7 +97,7 @@ const AcademySettings = () => {
             </p>
           </div>
           <div className="px-8 pb-12 max-w-2xl">
-            <SettingsPanel section={section} />
+            <SettingsPanelAll section={section} />
           </div>
         </div>
       </div>
@@ -105,21 +105,25 @@ const AcademySettings = () => {
   );
 };
 
-function SettingsPanel({ section }: { section: SectionId }) {
-  switch (section) {
-    case "profile":
-      return <SettingsProfile />;
-    case "trading":
-      return <SettingsTradingPrefs />;
-    case "notifications":
-      return <SettingsNotifications />;
-    case "privacy":
-      return <SettingsPrivacy />;
-    case "security":
-      return <SettingsSecurity />;
-    case "help":
-      return <SettingsHelp />;
-  }
+const PANELS: { id: SectionId; Component: React.FC }[] = [
+  { id: "profile", Component: SettingsProfile },
+  { id: "trading", Component: SettingsTradingPrefs },
+  { id: "notifications", Component: SettingsNotifications },
+  { id: "privacy", Component: SettingsPrivacy },
+  { id: "security", Component: SettingsSecurity },
+  { id: "help", Component: SettingsHelp },
+];
+
+function SettingsPanelAll({ section }: { section: SectionId }) {
+  return (
+    <>
+      {PANELS.map(({ id, Component }) => (
+        <div key={id} className={section === id ? "block" : "hidden"}>
+          <Component />
+        </div>
+      ))}
+    </>
+  );
 }
 
 export default AcademySettings;
