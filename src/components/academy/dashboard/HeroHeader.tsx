@@ -27,6 +27,27 @@ const CREATE_ITEMS = [
 
 export function HeroHeader({ firstName, onCheckIn }: Props) {
   const navigate = useNavigate();
+  const { hasAccess, status, isAdminBypass } = useStudentAccess();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const showUpgrade = !hasAccess && !isAdminBypass;
+  const isPastDue = status === "past_due";
+  const isCanceled = status === "canceled";
+
+  const handleCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout");
+      if (error) throw error;
+      const url = data?.url;
+      if (!url) throw new Error("No checkout URL returned");
+      window.location.href = url;
+    } catch (err: any) {
+      console.error("[AccessGate] Checkout error:", err);
+      toast.error("Unable to start checkout. Please try again.");
+      setCheckoutLoading(false);
+    }
+  };
 
   const handleItem = (item: (typeof CREATE_ITEMS)[number]) => {
     if (item.action === "coach") {
