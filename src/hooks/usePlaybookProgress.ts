@@ -24,11 +24,21 @@ export interface ChapterProgress {
   completed_at: string | null;
 }
 
+const PB_CHAPTERS_CACHE = "va_cache_pb_chapters";
+const PB_PROGRESS_CACHE = "va_cache_pb_progress";
+
+function readPbCache<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+
 export function usePlaybookProgress() {
   const { user } = useAuth();
-  const [chapters, setChapters] = useState<PlaybookChapter[]>([]);
-  const [progress, setProgress] = useState<Record<string, ChapterProgress>>({});
-  const [loading, setLoading] = useState(true);
+  const [chapters, setChapters] = useState<PlaybookChapter[]>(() => readPbCache(PB_CHAPTERS_CACHE, []));
+  const [progress, setProgress] = useState<Record<string, ChapterProgress>>(() => readPbCache(PB_PROGRESS_CACHE, {}));
+  const [loading, setLoading] = useState(() => readPbCache(PB_CHAPTERS_CACHE, []).length === 0);
   const [lastChapterId, setLastChapterId] = useState<string | null>(null);
 
   useEffect(() => {
