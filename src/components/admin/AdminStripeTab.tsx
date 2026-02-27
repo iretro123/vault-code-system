@@ -102,6 +102,10 @@ export function AdminStripeTab() {
       supabase.from("stripe_webhook_events").select("*").order("received_at", { ascending: false }).limit(100),
     ]);
 
+    console.info("[AdminStripeTab] students:", studentsRes.data?.length, studentsRes.error);
+    console.info("[AdminStripeTab] access:", accessRes.data?.length, accessRes.error);
+    console.info("[AdminStripeTab] events:", eventsRes.data?.length, eventsRes.error);
+
     setStudents((studentsRes.data as StudentRow[]) || []);
     setAccessRecords((accessRes.data as AccessRow[]) || []);
     setWebhookEvents((eventsRes.data as WebhookEventRow[]) || []);
@@ -189,6 +193,16 @@ export function AdminStripeTab() {
           </div>
         </div>
       </Card>
+
+      {/* Warning: access exists but no events */}
+      {students.length > 0 && accessRecords.some(a => a.status === 'active') && webhookEvents.length === 0 && (
+        <Card className="p-3 border-amber-500/20 bg-amber-500/[0.04] flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+          <p className="text-xs text-amber-300">
+            Access was granted but no webhook events found — check webhook logging.
+          </p>
+        </Card>
+      )}
 
       {/* Webhook Event Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
