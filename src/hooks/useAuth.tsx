@@ -169,13 +169,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      setProfile(null);
      setUserRole(null);
      try {
-        localStorage.removeItem(PROFILE_CACHE_KEY);
-        localStorage.removeItem(ROLE_CACHE_KEY);
-        localStorage.removeItem("va_cache_inbox");
-        localStorage.removeItem("va_cache_referral");
-        localStorage.removeItem("va_cache_onboarding");
-        localStorage.removeItem("va_inbox_open");
-        localStorage.removeItem("va_cache_academy_rbac");
+         localStorage.removeItem(PROFILE_CACHE_KEY);
+         localStorage.removeItem(ROLE_CACHE_KEY);
+         localStorage.removeItem("va_cache_inbox");
+         localStorage.removeItem("va_cache_referral");
+         localStorage.removeItem("va_cache_onboarding");
+         localStorage.removeItem("va_inbox_open");
+         localStorage.removeItem("va_cache_academy_rbac");
+         localStorage.removeItem("va_cache_user_tasks");
+         localStorage.removeItem("va_cache_pb_chapters");
+         localStorage.removeItem("va_cache_pb_progress");
+         localStorage.removeItem("va_cache_scoreboard");
+         localStorage.removeItem("va_cache_live_dash");
+         localStorage.removeItem("va_cache_modules");
+         localStorage.removeItem("va_cache_lessons");
+         localStorage.removeItem("va_cache_live_sessions");
      } catch {}
    }
  

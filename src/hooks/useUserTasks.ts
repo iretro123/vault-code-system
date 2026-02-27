@@ -34,10 +34,20 @@ const DAILY_TASKS_ADVANCED = [
   { title: "Journal 1 trade (2 min)", description: "Log at least one trade today" },
 ];
 
+const TASKS_CACHE_KEY = "va_cache_user_tasks";
+
+function readTasksCache(): UserTask[] {
+  try {
+    const raw = localStorage.getItem(TASKS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 export function useUserTasks() {
   const { user, profile } = useAuth();
-  const [tasks, setTasks] = useState<UserTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = readTasksCache();
+  const [tasks, setTasks] = useState<UserTask[]>(cached);
+  const [loading, setLoading] = useState(cached.length === 0);
   const [seeded, setSeeded] = useState(false);
 
   useEffect(() => {
@@ -108,6 +118,7 @@ export function useUserTasks() {
       }
 
       setTasks(rows);
+      try { localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(rows)); } catch {}
       setLoading(false);
     }
 
