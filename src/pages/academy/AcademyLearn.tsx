@@ -148,9 +148,18 @@ const AcademyLearn = () => {
           </div>
         )}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+        {loading && modules.length === 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden animate-pulse">
+                <div className="aspect-[16/9] bg-muted/40" />
+                <div className="p-5 space-y-3">
+                  <div className="h-4 w-3/4 rounded bg-muted/40" />
+                  <div className="h-3 w-1/2 rounded bg-muted/30" />
+                  <div className="h-1.5 w-full rounded bg-muted/20 mt-4" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <>
