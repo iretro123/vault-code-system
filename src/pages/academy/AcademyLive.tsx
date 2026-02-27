@@ -332,6 +332,14 @@ const AcademyLive = () => {
     toast.success("Link copied");
   };
 
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Live Sessions" />
+      </AcademyLayout>
+    );
+  }
+
   if (loading && sessions.length === 0) {
     return (
       <AcademyLayout>
