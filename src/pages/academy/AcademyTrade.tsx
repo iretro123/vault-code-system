@@ -13,6 +13,8 @@ import { TrendingUp, PenLine, MessageSquare, BarChart3, Loader2, Check } from "l
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
 
 // Reuse Journal + Progress inline
 import AcademyJournalContent from "@/pages/academy/AcademyJournalContent";
