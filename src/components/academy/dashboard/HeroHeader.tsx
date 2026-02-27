@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ChevronDown, PenLine, TrendingUp, Sparkles, ClipboardCheck, BarChart3 } from "lucide-react";
+import { Plus, ChevronDown, PenLine, TrendingUp, Sparkles, ClipboardCheck, BarChart3, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,6 +8,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Props {
   firstName: string;
