@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import courseCoverDefault from "@/assets/course-cover-default.jpg";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
