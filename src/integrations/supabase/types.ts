@@ -2215,6 +2215,18 @@ export type Database = {
         }[]
       }
       get_micro_feedback: { Args: { _user_id: string }; Returns: string }
+      get_my_access_state: {
+        Args: never
+        Returns: {
+          has_access: boolean
+          product_key: string
+          status: string
+          stripe_customer_id: string
+          student_id: string
+          tier: string
+          updated_at: string
+        }[]
+      }
       get_or_create_vault_state: {
         Args: { _user_id: string }
         Returns: {
