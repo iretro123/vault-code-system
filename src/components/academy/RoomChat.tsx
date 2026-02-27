@@ -1020,7 +1020,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 "text-[14px] leading-[1.6] whitespace-pre-line",
                                 isOwn && !isCeoOrAdmin ? "text-white" : "text-[hsl(220,15%,15%)]"
                               )}>
-                                {renderPlainBody(msg.body)}
+                                {renderPlainBody(msg.body, isOwn && !isCeoOrAdmin)}
                               </p>
                               {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
                                 <span className={cn("text-[10px] mt-0.5 block", isOwn && !isCeoOrAdmin ? "text-white/60" : "text-[hsl(220,10%,55%)]")}>(edited)</span>
