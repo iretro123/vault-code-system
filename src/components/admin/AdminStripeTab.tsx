@@ -168,9 +168,24 @@ export function AdminStripeTab() {
             <p className="text-xs text-muted-foreground/70">
               Webhook endpoint: <code className="bg-white/5 px-1 rounded text-[10px]">https://oemylhcjqncovnmvvgxh.supabase.co/functions/v1/stripe-webhook</code>
             </p>
-          </div>
-        </div>
-      </Card>
+            <div className="flex items-center gap-3 pt-2 border-t border-blue-500/10 mt-2">
+              <Button
+                onClick={handleTestCheckout}
+                disabled={checkoutLoading}
+                size="sm"
+                className="gap-1.5"
+              >
+                {checkoutLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+                Run Test Checkout
+              </Button>
+              <button
+                onClick={copyTestCard}
+                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-mono"
+              >
+                4242 4242 4242 4242 · any future date · any CVC
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
 
       {/* Webhook Event Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
