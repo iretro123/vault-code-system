@@ -1139,6 +1139,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
                     {!isAnnouncements && !msg.is_deleted && (() => {
                       const reactions = getReactions(msg.id);
+                      if (reactions.length === 0) return null;
+
                       return (
                         <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                           {reactions.map((r) => (
@@ -1158,7 +1160,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </button>
                           ))}
 
-                          {/* Hover add-reaction trigger — use opacity to avoid reflow */}
+                          {/* Hover add-reaction trigger — only when reactions row is visible */}
                           <span className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-75">
                             {ALLOWED_EMOJIS.filter(
                               (e) => !reactions.some((r) => r.emoji === e && r.reacted)
@@ -1176,21 +1178,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         </div>
                       );
                     })()}
-                    {/* Thread reply trigger — use opacity for hover items to prevent reflow */}
-                    {!msg.is_deleted && !isEditing && !isAnnouncements && onThreadOpen && (
+
+                    {/* Thread reply trigger */}
+                    {!msg.is_deleted && !isEditing && !isAnnouncements && onThreadOpen && replyCount > 0 && (
                       <button
                         onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
-                        className={cn(
-                          "flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75",
-                          replyCount > 0
-                            ? "text-primary hover:text-primary/80"
-                            : "text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,35%)] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto"
-                        )}
+                        className="flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75 text-primary hover:text-primary/80"
                       >
                         <MessageSquare className="h-3 w-3" />
-                        {replyCount > 0
-                          ? `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`
-                          : "Reply in thread"}
+                        {replyCount} {replyCount === 1 ? "reply" : "replies"}
                       </button>
                     )}
                   </div>
