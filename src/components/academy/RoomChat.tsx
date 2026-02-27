@@ -426,11 +426,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     setUploading(true);
     const path = `${roomSlug}/${user.id}/${Date.now()}_${file.name}`;
 
-    const { error: uploadErr } = await supabase.storage
-      .from("academy-chat-files")
-      .upload(path, file);
-
-    if (uploadErr) {
+    const ok = await uploadChatFile(file, path);
+    if (!ok) {
       toast.error("Upload failed. Please try again.");
       setUploading(false);
       return;
