@@ -11,6 +11,8 @@ import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { PlaybookReader } from "@/components/playbook/PlaybookReader";
 import { PlaybookChapterList } from "@/components/playbook/PlaybookChapterList";
 import { PlaybookRightPanel } from "@/components/playbook/PlaybookRightPanel";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
 
 const AcademyPlaybook = () => {
   const [searchParams] = useSearchParams();
