@@ -32,6 +32,15 @@ const SETUP_TYPES = [
 
 const AcademyTrade = () => {
   const [tab, setTab] = useState("post");
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
+
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Trade" />
+      </AcademyLayout>
+    );
+  }
 
   return (
     <AcademyLayout>

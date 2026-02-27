@@ -74,6 +74,14 @@ const AcademyJournal = () => {
     setSaved(false);
   };
 
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Trade Journal" />
+      </AcademyLayout>
+    );
+  }
+
   return (
     <AcademyLayout>
       <PageHeader title="Trade Journal" subtitle="Log one trade. Stay honest." />

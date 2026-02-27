@@ -124,6 +124,14 @@ const AcademyPlaybook = () => {
     if (ch) handleSelectChapter(ch.id);
   }, [chapters, unlockedIndex, handleSelectChapter]);
 
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Vault Playbook" />
+      </AcademyLayout>
+    );
+  }
+
   if (loading) {
     return (
       <AcademyLayout>

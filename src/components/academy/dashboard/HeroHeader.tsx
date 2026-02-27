@@ -70,33 +70,42 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
         </p>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button className="gap-2 h-11 px-5 shrink-0">
-            <Plus className="h-4 w-4" />
-            Create
-            <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+      <div className="flex items-center gap-2 shrink-0">
+        {showUpgrade && (
+          <Button onClick={handleCheckout} disabled={checkoutLoading} className="gap-2 h-11 px-5" variant={isPastDue || isCanceled ? "outline" : "default"}>
+            {checkoutLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+            {isPastDue ? "Update Billing" : isCanceled ? "Rejoin" : "Join Vault Academy"}
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          className="w-56 bg-popover border border-border z-50"
-        >
-          {CREATE_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <DropdownMenuItem
-                key={item.label}
-                onClick={() => handleItem(item)}
-                className="gap-2.5 py-2.5 cursor-pointer"
-              >
-                <Icon className="h-4 w-4 text-primary/70" />
-                {item.label}
-              </DropdownMenuItem>
-            );
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        )}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant={showUpgrade ? "outline" : "default"} className="gap-2 h-11 px-5">
+              <Plus className="h-4 w-4" />
+              Create
+              <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-56 bg-popover border border-border z-50"
+          >
+            {CREATE_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <DropdownMenuItem
+                  key={item.label}
+                  onClick={() => handleItem(item)}
+                  className="gap-2.5 py-2.5 cursor-pointer"
+                >
+                  <Icon className="h-4 w-4 text-primary/70" />
+                  {item.label}
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }

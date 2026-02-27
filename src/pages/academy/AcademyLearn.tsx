@@ -88,6 +88,14 @@ const AcademyLearn = () => {
     return acc;
   }, {});
 
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Courses" />
+      </AcademyLayout>
+    );
+  }
+
   return (
     <AcademyLayout>
       <div className="px-4 md:px-8 pt-6 pb-10 max-w-5xl mx-auto">

@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
 import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
 import { ScoreboardCard } from "@/components/academy/dashboard/ScoreboardCard";
@@ -14,14 +15,66 @@ import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
 import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
 import { QuickAccessRow } from "@/components/academy/dashboard/QuickAccessRow";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
+import { toast } from "sonner";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
   const { onboarding } = useAcademyData();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { hasAccess, refetch: refetchAccess } = useStudentAccess();
   useLoginReminder();
 
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const handledRef = useRef(false);
+
+  // Checkout return handling
+  useEffect(() => {
+    if (handledRef.current) return;
+    const checkout = searchParams.get("checkout");
+    if (!checkout) return;
+    handledRef.current = true;
+
+    // Clear params
+    const newUrl = location.pathname;
+    navigate(newUrl, { replace: true });
+
+    if (checkout === "success") {
+      console.log("[AccessGate] Checkout success return — starting poll");
+      toast.info("Payment received. Finalizing access…", { duration: 8000 });
+
+      let elapsed = 0;
+      pollRef.current = setInterval(async () => {
+        elapsed += 3000;
+        console.log("[AccessGate] Polling access…", elapsed / 1000, "s");
+        await refetchAccess();
+        // We check hasAccess in the next render, but also re-read cache
+        try {
+          const cached = JSON.parse(localStorage.getItem("va_cache_student_access") || "{}");
+          if (cached.hasAccess) {
+            console.log("[AccessGate] Access confirmed via poll");
+            toast.success("Access granted! Welcome to Vault Academy.");
+            if (pollRef.current) clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+        } catch {}
+        if (elapsed >= 30000 && pollRef.current) {
+          console.log("[AccessGate] Poll timeout — stopping");
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+          toast.info("Access is granted by secure billing confirmation (usually a few seconds). If access doesn't update, click Refresh Access.", { duration: 10000 });
+        }
+      }, 3000);
+    } else if (checkout === "canceled") {
+      toast.info("Checkout canceled. You can try again anytime.");
+    }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [searchParams]);
 
   useEffect(() => {
     if (location.hash === "#checkin") setCheckInOpen(true);

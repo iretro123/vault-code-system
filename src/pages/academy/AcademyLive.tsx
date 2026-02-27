@@ -234,6 +234,7 @@ function getMockSessions(): LiveSession[] {
 /* ═══════════════ PAGE ═══════════════ */
 const AcademyLive = () => {
   const { sessions: realSessions, loading, refetch } = useLiveSessions();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
