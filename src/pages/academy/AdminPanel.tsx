@@ -83,6 +83,11 @@ const AdminPanel = () => {
             </TabsContent>
           )}
           {hasPermission("view_admin_panel") && (
+            <TabsContent value="stripe">
+              <AdminStripeTab />
+            </TabsContent>
+          )}
+          {hasPermission("view_admin_panel") && (
             <TabsContent value="logs">
               <AdminLogsTab />
             </TabsContent>
