@@ -24,7 +24,7 @@ export function LiveCallsCard() {
   const navigate = useNavigate();
   const cached = readLiveDashCache();
   const [sessions, setSessions] = useState<LiveSession[]>(cached);
-  const [loading, setLoading] = useState(cached.length === 0);
+  const [loading, setLoading] = useState(localStorage.getItem(LIVE_DASH_CACHE) === null);
 
   useEffect(() => {
     supabase
