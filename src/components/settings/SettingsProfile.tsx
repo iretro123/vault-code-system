@@ -87,7 +87,6 @@ export function SettingsProfile() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [usernameError, setUsernameError] = useState("");
   const [hydrated, setHydrated] = useState(!!profile);
 
   // Sync from profile only once when it arrives (if component mounted before profile loaded)
