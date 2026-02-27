@@ -3,7 +3,7 @@ import { useTradeLog } from "@/hooks/useTradeLog";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText, HelpCircle, ClipboardCheck, BookOpen,
+  FileText, HelpCircle, ClipboardCheck, Trophy,
   ChevronRight, X, Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
