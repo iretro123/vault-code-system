@@ -50,9 +50,9 @@ export function LiveCallsCard() {
         <h2 className="text-lg font-bold text-foreground">Upcoming LIVE Calls</h2>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-6">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      {loading && sessions.length === 0 ? (
+        <div className="space-y-2 animate-pulse">
+          {[1,2].map(i => <div key={i} className="h-14 rounded-xl bg-white/[0.03]" />)}
         </div>
       ) : sessions.length === 0 ? (
         <p className="text-sm text-muted-foreground py-4">

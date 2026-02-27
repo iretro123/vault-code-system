@@ -120,10 +120,14 @@ export function GameplanCard({ onCheckIn }: Props) {
     }
   };
 
-  if (loading) {
+  if (loading && tasks.length === 0) {
     return (
-      <div className="vault-glass-card p-8 flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="vault-glass-card p-6 md:p-8 space-y-6 animate-pulse">
+        <div className="h-5 w-40 rounded bg-white/[0.06]" />
+        <div className="h-2.5 w-full rounded bg-white/[0.04]" />
+        <div className="space-y-2">
+          {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.03]" />)}
+        </div>
       </div>
     );
   }

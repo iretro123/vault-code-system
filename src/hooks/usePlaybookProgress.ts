@@ -55,16 +55,19 @@ export function usePlaybookProgress() {
     ]);
 
     if (chapRes.data) {
-      setChapters(chapRes.data.map((c: any) => ({
+      const mapped = chapRes.data.map((c: any) => ({
         ...c,
         checkpoint_json: Array.isArray(c.checkpoint_json) ? c.checkpoint_json : [],
-      })));
+      }));
+      setChapters(mapped);
+      try { localStorage.setItem(PB_CHAPTERS_CACHE, JSON.stringify(mapped)); } catch {}
     }
 
     if (progRes.data) {
       const map: Record<string, ChapterProgress> = {};
       progRes.data.forEach((p: any) => { map[p.chapter_id] = p; });
       setProgress(map);
+      try { localStorage.setItem(PB_PROGRESS_CACHE, JSON.stringify(map)); } catch {}
     }
 
     if (stateRes.data?.last_chapter_id) {

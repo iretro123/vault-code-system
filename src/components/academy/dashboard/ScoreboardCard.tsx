@@ -92,10 +92,16 @@ export function ScoreboardCard() {
     });
   }, [user]);
 
-  if (loading) {
+  if (loading && !stats) {
     return (
-      <div className="vault-glass-card p-6 flex items-center justify-center min-h-[260px]">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div className="vault-glass-card p-6 space-y-5 animate-pulse">
+        <div className="h-5 w-32 rounded bg-white/[0.06]" />
+        <div className="grid grid-cols-2 gap-3">
+          {[1,2,3,4].map(i => <div key={i} className="h-16 rounded-xl bg-white/[0.03]" />)}
+        </div>
+        <div className="flex gap-1.5">
+          {[1,2,3,4,5,6,7].map(i => <div key={i} className="flex-1 h-6 rounded-md bg-white/[0.03]" />)}
+        </div>
       </div>
     );
   }

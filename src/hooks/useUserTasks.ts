@@ -118,6 +118,7 @@ export function useUserTasks() {
       }
 
       setTasks(rows);
+      try { localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(rows)); } catch {}
       setLoading(false);
     }
 
