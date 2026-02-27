@@ -208,7 +208,7 @@ function shouldShowHeader(
 ) {
   if (!prev) return true;
   if (prev.user_id !== msg.user_id) return true;
-  return new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 3 * 60 * 1000;
+  return new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime() > 5 * 60 * 1000;
 }
 
 /* ── role label from profile data ── */
