@@ -50,10 +50,10 @@ function readLiveCache(): LiveSession[] {
 
 function useLiveSessions() {
   const [sessions, setSessions] = useState<LiveSession[]>(() => readLiveCache());
-  const [loading, setLoading] = useState(() => readLiveCache().length === 0);
+  const [loading, setLoading] = useState(() => localStorage.getItem(LIVE_CACHE_KEY) === null);
 
   const fetch = useCallback(async () => {
-    if (sessions.length === 0) setLoading(true);
+    if (localStorage.getItem(LIVE_CACHE_KEY) === null) setLoading(true);
     const { data } = await supabase
       .from("live_sessions")
       .select("*")
