@@ -1025,8 +1025,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         {msg.body && msg.body !== "📎 Attachment" && (
                           <div className="inline-block max-w-[88%]">
                             <div className={cn(
-                              "rounded-xl px-3.5 py-2 mt-0.5",
-                              isCeoOrAdmin
+                              "rounded-xl px-3.5 py-2",
+                              startsNewGroup ? "mt-0.5" : "mt-0",
                                 ? "bg-amber-50 border border-amber-200 shadow-sm"
                                 : isOwn
                                   ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,54%)] text-white border border-primary/70 shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
