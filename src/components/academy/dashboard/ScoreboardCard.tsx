@@ -79,13 +79,15 @@ export function ScoreboardCard() {
         else statuses.push("yellow");
       }
 
-      setStats({
+      const result: Stats = {
         compliance,
         tradesLogged: tradesRes.count ?? 0,
         streakDays: completedCount,
         largestBreak: largestBreak.length > 50 ? largestBreak.slice(0, 50) + "…" : largestBreak,
         dailyStatuses: statuses,
-      });
+      };
+      setStats(result);
+      try { localStorage.setItem(SCOREBOARD_CACHE, JSON.stringify(result)); } catch {}
       setLoading(false);
     });
   }, [user]);
