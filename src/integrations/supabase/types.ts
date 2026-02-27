@@ -2400,6 +2400,7 @@ export type Database = {
         Returns: string
       }
       nightly_memory_aggregation: { Args: never; Returns: undefined }
+      promote_to_ceo: { Args: { target_user_id: string }; Returns: undefined }
       set_account_balance: {
         Args: { _balance: number; _user_id: string }
         Returns: {
