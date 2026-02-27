@@ -171,7 +171,7 @@ function renderRecapCard(body: string) {
   );
 }
 
-function renderPlainBody(body: string) {
+function renderPlainBody(body: string, isOwnBubble = false) {
   // Handle image markdown: ![alt](url)
   const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
   if (imageRegex.test(body)) {
@@ -183,7 +183,7 @@ function renderPlainBody(body: string) {
       }
       const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (linkMatch) {
-        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-primary underline">{linkMatch[1]}</a>;
+        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
       }
       if (!part) return null;
       return <span key={i}>{part}</span>;
@@ -194,7 +194,7 @@ function renderPlainBody(body: string) {
   const parts = body.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
-      return <span key={i} className="font-semibold text-[hsl(220,15%,15%)]">{part.slice(2, -2)}</span>;
+      return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-[hsl(220,15%,15%)]")}>{part.slice(2, -2)}</span>;
     }
     return <span key={i}>{part}</span>;
   });
