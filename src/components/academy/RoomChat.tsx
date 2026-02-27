@@ -326,15 +326,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
     const body = text ?? draft;
-    if (!body.trim() && (!attachments || attachments.length === 0)) {
-      return { ok: false, error: "empty payload" };
-    }
-    if (sending) {
-      return { ok: false, error: "send in progress" };
-    }
+    if (!body.trim() && (!attachments || attachments.length === 0)) return;
+    if (sending) return;
     if (!text) setDraft("");
     shouldAutoScroll.current = true;
-    return await sendMessage(body, attachments);
+    await sendMessage(body, attachments);
   };
 
   const ALLOWED_MIME = [
