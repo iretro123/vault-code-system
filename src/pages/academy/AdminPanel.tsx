@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
-import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, Loader2 } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
@@ -21,21 +23,80 @@ const TAB_CONFIG = [
 ] as const;
 
 const AdminPanel = () => {
-  const { hasPermission, loading } = useAcademyPermissions();
+  const { user } = useAuth();
+  const { hasPermission, roleName, isOperator, appRoles, loading, resolved } = useAcademyPermissions();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const canAccess =
-    hasPermission("view_admin_panel") ||
-    hasPermission("manage_users") ||
-    hasPermission("manage_notifications");
+  const hasViewAdminPanel = hasPermission("view_admin_panel");
+  const hasManageUsers = hasPermission("manage_users");
+  const hasManageNotifications = hasPermission("manage_notifications");
 
-  if (!loading && !canAccess) {
+  const hasAcademyAdminPermission =
+    hasViewAdminPanel || hasManageUsers || hasManageNotifications;
+
+  const canAccess = hasAcademyAdminPermission || roleName === "CEO" || isOperator;
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const reason = !resolved
+      ? "awaiting fresh role resolution"
+      : canAccess
+        ? hasAcademyAdminPermission
+          ? "academy permission granted"
+          : roleName === "CEO"
+            ? "academy CEO role granted"
+            : "operator app role granted"
+        : "missing academy admin permission and operator app role";
+
+    console.info("[AdminPanelGuard]", {
+      userId: user.id,
+      academyRole: roleName,
+      appRoles,
+      hasViewAdminPanel,
+      hasManageUsers,
+      hasManageNotifications,
+      allow: resolved && canAccess,
+      reason,
+    });
+  }, [
+    appRoles,
+    canAccess,
+    hasAcademyAdminPermission,
+    hasManageNotifications,
+    hasManageUsers,
+    hasViewAdminPanel,
+    resolved,
+    roleName,
+    user?.id,
+  ]);
+
+  if ((loading || !resolved) && user?.id) {
+    return (
+      <AcademyLayout>
+        <div className="px-4 md:px-6 py-12 flex items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      </AcademyLayout>
+    );
+  }
+
+  if (resolved && !canAccess) {
     return <Navigate to="/academy/home" replace />;
   }
 
-  // Filter tabs to only those the user has permission for
-  const visibleTabs = TAB_CONFIG.filter((t) => hasPermission(t.perm));
-  const activeTab = searchParams.get("tab") || visibleTabs[0]?.value || "members";
+  const visibleTabs = TAB_CONFIG.filter((t) => {
+    if (hasPermission(t.perm)) return true;
+    if (roleName === "CEO") return true;
+    if (isOperator && t.perm === "view_admin_panel") return true;
+    return false;
+  });
+
+  const requestedTab = searchParams.get("tab");
+  const fallbackTab = visibleTabs[0]?.value || "members";
+  const activeTab = visibleTabs.some((tab) => tab.value === requestedTab)
+    ? (requestedTab as string)
+    : fallbackTab;
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value }, { replace: true });
@@ -62,32 +123,32 @@ const AdminPanel = () => {
             ))}
           </TabsList>
 
-          {hasPermission("manage_users") && (
+          {visibleTabs.some((t) => t.value === "members") && (
             <TabsContent value="members">
               <AdminMembersTab />
             </TabsContent>
           )}
-          {hasPermission("manage_notifications") && (
+          {visibleTabs.some((t) => t.value === "announcements") && (
             <TabsContent value="announcements">
               <AdminAnnouncementsTab />
             </TabsContent>
           )}
-          {hasPermission("manage_notifications") && (
+          {visibleTabs.some((t) => t.value === "broadcast") && (
             <TabsContent value="broadcast">
               <AdminBroadcastTab />
             </TabsContent>
           )}
-          {hasPermission("manage_content") && (
+          {visibleTabs.some((t) => t.value === "content") && (
             <TabsContent value="content">
               <AdminContentTab />
             </TabsContent>
           )}
-          {hasPermission("view_admin_panel") && (
+          {visibleTabs.some((t) => t.value === "stripe") && (
             <TabsContent value="stripe">
               <AdminStripeTab />
             </TabsContent>
           )}
-          {hasPermission("view_admin_panel") && (
+          {visibleTabs.some((t) => t.value === "logs") && (
             <TabsContent value="logs">
               <AdminLogsTab />
             </TabsContent>

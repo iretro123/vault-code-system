@@ -7,12 +7,14 @@ export type AcademyRoleName = "CEO" | "Admin" | "Coach" | "Member";
 interface AcademyPermState {
   roleName: AcademyRoleName;
   permissions: Set<string>;
+  appRoles: Set<string>;
   loading: boolean;
+  resolved: boolean;
 }
 
 const CACHE_KEY = "va_cache_academy_rbac";
 
-function readCache(): { roleName: AcademyRoleName; permissions: string[] } | null {
+function readCache(): { roleName: AcademyRoleName; permissions: string[]; appRoles?: string[] } | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -28,48 +30,66 @@ export function useAcademyPermissions() {
   const [state, setState] = useState<AcademyPermState>({
     roleName: cached?.roleName ?? "Member",
     permissions: new Set(cached?.permissions ?? []),
-    loading: !cached,
+    appRoles: new Set(cached?.appRoles ?? []),
+    loading: Boolean(user?.id),
+    resolved: !user?.id,
   });
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!user?.id) {
-      setState({ roleName: "Member", permissions: new Set(), loading: false });
+      setState({ roleName: "Member", permissions: new Set(), appRoles: new Set(), loading: false, resolved: true });
       return;
     }
 
-    (async () => {
-      // Fetch user's academy role + permissions in one go
-      const { data: userRoleData } = await supabase
-        .from("academy_user_roles")
-        .select("role_id, academy_roles(name)")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    setState((prev) => ({ ...prev, loading: true, resolved: false }));
 
-      if (!userRoleData) {
-        setState({ roleName: "Member", permissions: new Set(), loading: false });
-        return;
+    (async () => {
+      const [userRoleRes, appRolesRes] = await Promise.all([
+        supabase
+          .from("academy_user_roles")
+          .select("role_id, assigned_at, academy_roles(name)")
+          .eq("user_id", user.id)
+          .order("assigned_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
+      ]);
+
+      const userRoleData = userRoleRes.data as any;
+      const roleName = (userRoleData?.academy_roles?.name ?? "Member") as AcademyRoleName;
+      const roleId = userRoleData?.role_id;
+
+      let permissions: string[] = [];
+      if (roleId) {
+        const { data: permsData } = await supabase
+          .from("academy_role_permissions")
+          .select("permission_key")
+          .eq("role_id", roleId);
+        permissions = (permsData ?? []).map((p: any) => p.permission_key);
       }
 
-      const roleName = ((userRoleData as any).academy_roles?.name ?? "Member") as AcademyRoleName;
-      const roleId = userRoleData.role_id;
+      const appRoles = new Set((appRolesRes.data ?? []).map((r: any) => String(r.role)));
 
-      const { data: permsData } = await supabase
-        .from("academy_role_permissions")
-        .select("permission_key")
-        .eq("role_id", roleId);
-
-      const permissions = (permsData ?? []).map((p: any) => p.permission_key);
+      if (cancelled) return;
 
       setState({
         roleName,
         permissions: new Set(permissions),
+        appRoles,
         loading: false,
+        resolved: true,
       });
 
       try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ roleName, permissions }));
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ roleName, permissions, appRoles: Array.from(appRoles) }));
       } catch {}
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const hasPermission = useCallback(
@@ -77,16 +97,27 @@ export function useAcademyPermissions() {
     [state.permissions]
   );
 
+  const hasAppRole = useCallback(
+    (role: string) => state.appRoles.has(role),
+    [state.appRoles]
+  );
+
   const isCEO = state.roleName === "CEO";
   const isAdmin = state.roleName === "Admin" || isCEO;
   const isCoach = state.roleName === "Coach" || isAdmin;
+  const isOperator = state.appRoles.has("operator");
 
   return {
     roleName: state.roleName,
     hasPermission,
+    hasAppRole,
     isCEO,
     isAdmin,
     isCoach,
+    isOperator,
+    appRoles: Array.from(state.appRoles),
     loading: state.loading,
+    resolved: state.resolved,
   };
 }
+
