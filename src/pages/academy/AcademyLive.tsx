@@ -16,6 +16,8 @@ import { useAdminMode } from "@/contexts/AdminModeContext";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -232,6 +234,7 @@ function getMockSessions(): LiveSession[] {
 /* ═══════════════ PAGE ═══════════════ */
 const AcademyLive = () => {
   const { sessions: realSessions, loading, refetch } = useLiveSessions();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
@@ -328,6 +331,14 @@ const AcademyLive = () => {
     navigator.clipboard.writeText(url);
     toast.success("Link copied");
   };
+
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Live Sessions" />
+      </AcademyLayout>
+    );
+  }
 
   if (loading && sessions.length === 0) {
     return (

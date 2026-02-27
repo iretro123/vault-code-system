@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
 
 const MISTAKES = [
   { value: "none", label: "None" },
@@ -26,6 +28,7 @@ const MISTAKES = [
 
 const AcademyJournal = () => {
   const { user } = useAuth();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const [date, setDate] = useState<Date>(new Date());
   const [ticker, setTicker] = useState("");
   const [whatHappened, setWhatHappened] = useState("");
@@ -70,6 +73,14 @@ const AcademyJournal = () => {
     setLesson("");
     setSaved(false);
   };
+
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Trade Journal" />
+      </AcademyLayout>
+    );
+  }
 
   return (
     <AcademyLayout>

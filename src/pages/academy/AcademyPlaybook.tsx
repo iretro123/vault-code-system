@@ -11,9 +11,12 @@ import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { PlaybookReader } from "@/components/playbook/PlaybookReader";
 import { PlaybookChapterList } from "@/components/playbook/PlaybookChapterList";
 import { PlaybookRightPanel } from "@/components/playbook/PlaybookRightPanel";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
 
 const AcademyPlaybook = () => {
   const [searchParams] = useSearchParams();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const {
     chapters,
     progress,
@@ -120,6 +123,14 @@ const AcademyPlaybook = () => {
     const ch = chapters.find((c) => c.order_index === unlockedIndex);
     if (ch) handleSelectChapter(ch.id);
   }, [chapters, unlockedIndex, handleSelectChapter]);
+
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Vault Playbook" />
+      </AcademyLayout>
+    );
+  }
 
   if (loading) {
     return (

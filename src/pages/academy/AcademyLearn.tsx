@@ -19,9 +19,12 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import courseCoverDefault from "@/assets/course-cover-default.jpg";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { modules, loading: modsLoading, refetch: refetchModules } = useAcademyModules();
   const { lessons, loading: lessonsLoading } = useAcademyLessons();
   const { progress } = useLessonProgress();
@@ -84,6 +87,14 @@ const AcademyLearn = () => {
     (acc[l.module_slug] ||= []).push(l);
     return acc;
   }, {});
+
+  if (!hasAccess && !accessLoading) {
+    return (
+      <AcademyLayout>
+        <PremiumGate status={status} pageName="Courses" />
+      </AcademyLayout>
+    );
+  }
 
   return (
     <AcademyLayout>
