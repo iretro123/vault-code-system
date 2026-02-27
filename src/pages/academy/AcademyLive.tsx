@@ -39,17 +39,28 @@ interface LiveSession {
 }
 
 /* ── Data hook ── */
+const LIVE_CACHE_KEY = "va_cache_live_sessions";
+
+function readLiveCache(): LiveSession[] {
+  try {
+    const raw = localStorage.getItem(LIVE_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 function useLiveSessions() {
-  const [sessions, setSessions] = useState<LiveSession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [sessions, setSessions] = useState<LiveSession[]>(() => readLiveCache());
+  const [loading, setLoading] = useState(() => readLiveCache().length === 0);
 
   const fetch = useCallback(async () => {
-    setLoading(true);
+    if (sessions.length === 0) setLoading(true);
     const { data } = await supabase
       .from("live_sessions")
       .select("*")
       .order("session_date", { ascending: true });
-    setSessions((data as LiveSession[]) || []);
+    const result = (data as LiveSession[]) || [];
+    setSessions(result);
+    try { localStorage.setItem(LIVE_CACHE_KEY, JSON.stringify(result)); } catch {}
     setLoading(false);
   }, []);
 
