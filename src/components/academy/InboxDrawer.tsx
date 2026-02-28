@@ -85,7 +85,7 @@ function ItemList({
             {/* Clickable content area */}
             <button
               onClick={() => onItemClick(item)}
-              className="flex items-start gap-2.5 min-w-0 flex-1 text-left"
+              className="flex items-start gap-2.5 min-w-0 flex-1 text-left overflow-hidden"
             >
               <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
               {!item.read_at && (
