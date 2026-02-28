@@ -78,15 +78,14 @@ function ItemList({
         {items.map((item) => (
           <div
             key={item.id}
-            className={`group flex items-start gap-2 w-full min-w-0 max-w-full rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] outline outline-1 outline-red-500/30 ${
+            className={`group flex items-start gap-2 w-full min-w-0 max-w-full rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
             }`}
           >
-            {/* Clickable content area */}
             <button
               onClick={() => onItemClick(item)}
-              className="min-w-0 flex-1 w-0 flex items-start gap-2.5 text-left outline outline-1 outline-green-500/30"
+              className="min-w-0 flex-1 w-0 flex items-start gap-2.5 text-left"
             >
               <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
               {!item.read_at && (
@@ -100,17 +99,139 @@ function ItemList({
                 </p>
               </div>
             </button>
-            {/* iOS-style dismiss */}
             <button
               aria-label="Dismiss"
               onClick={() => onDismiss(item.id)}
-              className="shrink-0 ml-1 flex items-center justify-center h-7 w-7 rounded-full bg-white/[0.06] hover:bg-white/[0.14] opacity-50 hover:opacity-100 transition-all outline outline-1 outline-blue-500/30"
+              className="shrink-0 ml-1 flex items-center justify-center h-7 w-7 rounded-full bg-white/[0.06] hover:bg-white/[0.14] opacity-50 hover:opacity-100 transition-all"
             >
               <X className="h-3.5 w-3.5 text-white" />
             </button>
           </div>
         ))}
       </div>
+      </div>
+    </ScrollArea>
+  );
+}
+
+/* ── What's New: premium vertical card ── */
+
+function whatsNewTypeLabel(type: string) {
+  switch (type) {
+    case "announcement": return "Announcement";
+    case "new_module": return "New Module";
+    case "live_scheduled": return "Live Session";
+    default: return "Update";
+  }
+}
+
+function WhatsNewCard({
+  item,
+  onItemClick,
+  onDismiss,
+}: {
+  item: InboxItem;
+  onItemClick: (item: InboxItem) => void;
+  onDismiss: (itemId: string) => void;
+}) {
+  const isUnread = !item.read_at;
+
+  return (
+    <button
+      onClick={() => onItemClick(item)}
+      className={`relative w-full text-left min-h-[120px] rounded-2xl p-4 transition-colors bg-white/[0.04] border hover:bg-white/[0.06] hover:border-white/[0.12] ${
+        isUnread ? "border-[hsl(45,90%,50%)]/20" : "border-white/[0.08]"
+      }`}
+    >
+      {/* Header row: icon + label … dismiss */}
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="shrink-0">{typeIcon(item.type)}</span>
+        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          {whatsNewTypeLabel(item.type)}
+        </span>
+        {isUnread && (
+          <span className="h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
+        )}
+      </div>
+
+      {/* Title */}
+      <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">{item.title}</p>
+
+      {/* Body */}
+      {item.body && (
+        <p className="text-xs text-muted-foreground line-clamp-3 mt-1.5 leading-relaxed">{item.body}</p>
+      )}
+
+      {/* Timestamp */}
+      <p className="text-[11px] text-muted-foreground/60 mt-3">
+        {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+      </p>
+
+      {/* Dismiss X — absolute top-right */}
+      <span
+        role="button"
+        aria-label="Dismiss"
+        onClick={(e) => { e.stopPropagation(); onDismiss(item.id); }}
+        className="absolute top-3 right-3 shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-white/[0.06] hover:bg-white/[0.14] opacity-0 group-hover:opacity-100 hover:!opacity-100 transition-all"
+      >
+        <X className="h-3.5 w-3.5 text-white" />
+      </span>
+    </button>
+  );
+}
+
+function WhatsNewList({
+  items,
+  onItemClick,
+  onDismiss,
+  loading,
+  onMarkAllRead,
+  unreadCount,
+}: {
+  items: InboxItem[];
+  onItemClick: (item: InboxItem) => void;
+  onDismiss: (itemId: string) => void;
+  loading: boolean;
+  onMarkAllRead: () => void;
+  unreadCount: number;
+}) {
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-center">
+        <div className="flex flex-col items-center gap-0">
+          <Sparkles className="h-[26px] w-[26px] text-white/[0.87] mb-4" strokeWidth={1.5} />
+          <p className="text-[18px] font-semibold text-white/90 leading-snug">No updates yet</p>
+          <p className="text-[14px] text-white/[0.57] mt-2">New modules, live sessions, and announcements will appear here.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ScrollArea className="flex-1">
+      <div style={{ width: "100%" }}>
+        {unreadCount > 0 && (
+          <div className="px-4 py-2 flex justify-end">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-7" onClick={onMarkAllRead}>
+              <Check className="h-3 w-3 mr-1" /> Mark all read
+            </Button>
+          </div>
+        )}
+        <div className="px-3 pb-4 space-y-3">
+          {items.map((item) => (
+            <div key={item.id} className="group">
+              <WhatsNewCard item={item} onItemClick={onItemClick} onDismiss={onDismiss} />
+            </div>
+          ))}
+        </div>
       </div>
     </ScrollArea>
   );
