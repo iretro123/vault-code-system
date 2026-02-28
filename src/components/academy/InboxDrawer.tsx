@@ -227,6 +227,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
           <ItemList
             items={whatsNewItems}
             onItemClick={handleClick}
+            onDismiss={dismissInboxItem}
             emptyMessage="No updates yet. New modules, live sessions, and announcements will appear here."
             loading={loading}
             onMarkAllRead={markAllRead}
