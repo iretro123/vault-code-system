@@ -281,6 +281,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; user_name: string; body: string } | null>(null);
 
   const isTradeRecaps = roomSlug === "trade-recaps";
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
