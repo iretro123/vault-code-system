@@ -832,7 +832,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 </ItemComponent>
               )}
               {!msg.is_deleted && !isAnnouncements && onThreadOpen && (
-                <ItemComponent onClick={() => onThreadOpen({ ...msg, reply_count: msg.reply_count ?? 0 })} className="gap-2 text-xs">
+                <ItemComponent onClick={() => onThreadOpen({ ...msg, reply_count: (msg as any).reply_count ?? 0 })} className="gap-2 text-xs">
                   <MessageSquare className="h-3 w-3" /> Reply
                 </ItemComponent>
               )}
