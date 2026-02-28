@@ -215,6 +215,7 @@ function WhatsNewList({
   onMarkAllRead: () => void;
   unreadCount: number;
 }) {
+  const { dismissingIds, triggerDismiss } = useDismissAnimation(onDismiss);
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
