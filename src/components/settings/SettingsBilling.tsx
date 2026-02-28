@@ -29,6 +29,7 @@ export function SettingsBilling() {
   const { status, tier, hasAccess, loading, isAdminBypass } = useStudentAccess();
   const [busy, setBusy] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { logActivity } = useActivityLog();
 
   // Handle ?billing=returned
   useEffect(() => {
