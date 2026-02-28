@@ -44,6 +44,7 @@ export function SettingsBilling() {
     setBusy(true);
     try {
       console.log("[BillingPortal] Opening portal…");
+      logActivity("billing_portal_opened", "settings");
       const { data, error } = await supabase.functions.invoke("create-billing-portal");
       if (error) throw error;
       if (data?.error === "no_stripe_customer") {
