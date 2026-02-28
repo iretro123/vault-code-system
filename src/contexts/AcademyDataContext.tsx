@@ -72,7 +72,7 @@ const AcademyDataContext = createContext<AcademyData>({
   refetchInbox: async () => {},
   markInboxRead: async () => {},
   markAllInboxRead: async () => {},
-  referralStats: defaultReferralStats,
+  dismissInboxItem: async () => {},
   referralLoading: true,
   refetchReferrals: async () => {},
 });
