@@ -29,6 +29,7 @@ function typeIcon(type: string) {
 function ItemList({
   items,
   onItemClick,
+  onDismiss,
   emptyMessage,
   loading,
   onMarkAllRead,
@@ -36,6 +37,7 @@ function ItemList({
 }: {
   items: InboxItem[];
   onItemClick: (item: InboxItem) => void;
+  onDismiss: (itemId: string) => void;
   emptyMessage: string;
   loading: boolean;
   onMarkAllRead: () => void;
