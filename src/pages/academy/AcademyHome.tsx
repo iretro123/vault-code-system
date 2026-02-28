@@ -28,9 +28,9 @@ const AcademyHome = () => {
   const { logActivity } = useActivityLog();
   useLoginReminder();
 
-  // Log login on mount
+  // Log dashboard view on mount
   useEffect(() => {
-    logActivity("login", "dashboard");
+    logActivity("academy_home_view", "dashboard");
   }, []);
 
   const [checkInOpen, setCheckInOpen] = useState(false);
