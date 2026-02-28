@@ -215,6 +215,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
           <ItemList
             items={inboxItems}
             onItemClick={handleClick}
+            onDismiss={dismissInboxItem}
             emptyMessage="No messages yet. Coach replies and reminders will appear here."
             loading={loading}
             onMarkAllRead={markAllRead}
