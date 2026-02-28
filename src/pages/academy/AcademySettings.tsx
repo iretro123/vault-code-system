@@ -119,6 +119,7 @@ const AcademySettings = () => {
 const PANELS: { id: SectionId; Component: React.FC }[] = [
   { id: "profile", Component: SettingsProfile },
   { id: "trading", Component: SettingsTradingPrefs },
+  { id: "billing", Component: SettingsBilling },
   { id: "notifications", Component: SettingsNotifications },
   { id: "privacy", Component: SettingsPrivacy },
   { id: "security", Component: SettingsSecurity },

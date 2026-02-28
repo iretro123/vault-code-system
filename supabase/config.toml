@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.reconcile-access]
 verify_jwt = false
+
+[functions.create-billing-portal]
+verify_jwt = false
