@@ -16,6 +16,7 @@ import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
 import { QuickAccessRow } from "@/components/academy/dashboard/QuickAccessRow";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
 import { toast } from "sonner";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
@@ -24,7 +25,13 @@ const AcademyHome = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { hasAccess, refetch: refetchAccess } = useStudentAccess();
+  const { logActivity } = useActivityLog();
   useLoginReminder();
+
+  // Log login on mount
+  useEffect(() => {
+    logActivity("login", "dashboard");
+  }, []);
 
   const [checkInOpen, setCheckInOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
