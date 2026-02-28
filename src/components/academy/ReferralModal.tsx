@@ -105,7 +105,7 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="flex flex-col overflow-hidden">
+    <div className="flex flex-col overflow-hidden max-h-[inherit]">
       {/* Banner */}
       <div className="relative">
         <HeroBanner />
@@ -120,7 +120,7 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
       {showGuidelines ? (
         <GuidelinesCard onBack={() => setShowGuidelines(false)} />
       ) : (
-        <div className="px-6 py-6 space-y-4">
+        <div className="px-6 py-6 space-y-4 overflow-y-auto">
           {/* Pill + headline */}
           <div className="space-y-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] px-3 py-1 text-[12px] font-medium text-white/70">
@@ -128,10 +128,10 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
               Invite Traders
             </span>
             <h2 className="text-[24px] font-semibold text-white/90 leading-[1.12] max-w-[420px]">
-              Invite traders. Grow the community.
+              Build the room.
             </h2>
             <p className="text-[14px] text-white/[0.55] leading-[1.4] max-w-[420px]">
-              Share Vault OS with other traders. Referral tracking is live — rewards coming soon.
+              Share Vault OS with traders you trust. Referral tracking is live — rewards are coming soon.
             </p>
           </div>
 
@@ -153,9 +153,9 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
           {/* Stats */}
           <div className="pt-3 space-y-1">
             <p className="text-[15px] font-semibold text-white/[0.85]">
-              {referralStats.total_signed_up} invited · {referralStats.total_paid} upgraded
+              {referralStats.total_signed_up} invited · {referralStats.total_paid} joined
             </p>
-            <p className="text-[12px] text-white/[0.40]">Rewards and credits expand in a future update.</p>
+            <p className="text-[12px] text-white/[0.40]">Founder rewards and credits unlock in a future update.</p>
           </div>
 
           {/* Copy link */}
@@ -173,13 +173,15 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
             </Button>
           </div>
 
+          <p className="text-[12px] text-white/[0.35] leading-[1.4]">Share this link with friends. We track signups automatically.</p>
+
           {/* Footer */}
           <div className="pt-4 flex justify-center">
             <button
               onClick={() => setShowGuidelines(true)}
               className="text-[13px] font-medium text-white/[0.55] hover:text-white/[0.80] hover:underline transition-all cursor-pointer"
             >
-              View Terms
+              Referral details
             </button>
           </div>
         </div>
@@ -194,7 +196,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] p-0 overflow-hidden">
+        <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] p-0 overflow-hidden max-h-[90vh]">
           <ReferralBody onClose={() => onOpenChange(false)} />
         </DrawerContent>
       </Drawer>
@@ -203,7 +205,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[680px] max-w-[92vw] p-0 bg-[hsl(220,18%,8%)] border border-white/[0.08] rounded-[22px] overflow-hidden [&>button:last-child]:hidden">
+      <DialogContent className="w-[600px] max-w-[92vw] max-h-[700px] p-0 bg-[hsl(220,18%,8%)] border border-white/[0.08] rounded-[22px] overflow-hidden [&>button:last-child]:hidden">
         <ReferralBody onClose={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
