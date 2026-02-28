@@ -128,10 +128,10 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
               Invite Traders
             </span>
             <h2 className="text-[24px] font-semibold text-white/90 leading-[1.12] max-w-[420px]">
-              Invite traders. Grow the community.
+              Build the room.
             </h2>
             <p className="text-[14px] text-white/[0.55] leading-[1.4] max-w-[420px]">
-              Share Vault OS with other traders. Referral tracking is live — rewards coming soon.
+              Share Vault OS with traders you trust. Referral tracking is live — rewards are coming soon.
             </p>
           </div>
 
