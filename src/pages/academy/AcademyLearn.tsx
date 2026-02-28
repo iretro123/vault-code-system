@@ -155,7 +155,7 @@ const AcademyLearn = () => {
                 <p className="text-[10px] text-white/20">{pbDone}/{pbTotal} chapters</p>
               </div>
               <Button size="sm" className="gap-1.5">
-                {pbDone > 0 ? "Continue" : "Start"}
+                {pbDone > 0 ? "Continue" : "Open"}
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </div>
