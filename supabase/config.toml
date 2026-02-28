@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.create-checkout]
 verify_jwt = false
+
+[functions.reconcile-access]
+verify_jwt = false
