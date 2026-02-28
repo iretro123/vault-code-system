@@ -196,7 +196,7 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] p-0 overflow-hidden">
+        <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] p-0 overflow-hidden max-h-[90vh]">
           <ReferralBody onClose={() => onOpenChange(false)} />
         </DrawerContent>
       </Drawer>
