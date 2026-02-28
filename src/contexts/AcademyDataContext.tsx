@@ -277,6 +277,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
         refetchInbox: fetchInbox,
         markInboxRead,
         markAllInboxRead,
+        dismissInboxItem,
         referralStats,
         referralLoading,
         refetchReferrals: fetchReferrals,
