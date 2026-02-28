@@ -55,6 +55,7 @@ function ItemList({
   onMarkAllRead: () => void;
   unreadCount: number;
 }) {
+  const { dismissingIds, triggerDismiss } = useDismissAnimation(onDismiss);
 
   if (loading) {
     return (
