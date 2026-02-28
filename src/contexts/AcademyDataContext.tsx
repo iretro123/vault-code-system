@@ -40,6 +40,7 @@ interface AcademyData {
   refetchInbox: () => Promise<void>;
   markInboxRead: (itemId: string) => Promise<void>;
   markAllInboxRead: () => Promise<void>;
+  dismissInboxItem: (itemId: string) => Promise<void>;
   // Referral
   referralStats: ReferralStats;
   referralLoading: boolean;
@@ -71,6 +72,7 @@ const AcademyDataContext = createContext<AcademyData>({
   refetchInbox: async () => {},
   markInboxRead: async () => {},
   markAllInboxRead: async () => {},
+  dismissInboxItem: async () => {},
   referralStats: defaultReferralStats,
   referralLoading: true,
   refetchReferrals: async () => {},
@@ -198,6 +200,19 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     setInboxItems((prev) => prev.map((i) => ({ ...i, read_at: i.read_at || new Date().toISOString() })));
   }, [user, inboxItems]);
 
+  const dismissInboxItem = useCallback(async (itemId: string) => {
+    if (!user) return;
+    await supabase
+      .from("inbox_items" as any)
+      .delete()
+      .eq("id", itemId);
+    setInboxItems((prev) => {
+      const next = prev.filter((i) => i.id !== itemId);
+      writeCache(CACHE_KEY_INBOX, next);
+      return next;
+    });
+  }, [user]);
+
   const fetchReferrals = useCallback(async () => {
     if (!user) {
       setReferralLoading(false);
@@ -262,6 +277,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
         refetchInbox: fetchInbox,
         markInboxRead,
         markAllInboxRead,
+        dismissInboxItem,
         referralStats,
         referralLoading,
         refetchReferrals: fetchReferrals,
