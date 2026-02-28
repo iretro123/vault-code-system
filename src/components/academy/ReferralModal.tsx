@@ -16,9 +16,9 @@ interface ReferralModalProps {
 }
 
 const STEPS = [
-  { icon: Send, text: "Share your referral link" },
-  { icon: UserPlus, text: "They sign up and receive a bonus" },
-  { icon: Star, text: "You earn rewards when they upgrade" },
+  { icon: Send, text: "Share your invite link" },
+  { icon: UserPlus, text: "They sign up and join Vault" },
+  { icon: Star, text: "We track every referral you bring in" },
 ];
 
 function HeroBanner() {
