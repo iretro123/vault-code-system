@@ -1,12 +1,31 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const TICKER_REGEX = /\$([A-Z]{1,5})\b/g;
+const CACHE_KEY = "va_cache_hot_tickers";
+
+function readCache(): string[] {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return [];
+    const { data, ts } = JSON.parse(raw);
+    // 5-minute TTL for initial render; background refresh always runs
+    if (Date.now() - ts > 5 * 60 * 1000) return [];
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+
+function writeCache(data: string[]) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch {}
+}
 
 export function useHotTickers() {
-  const [tickers, setTickers] = useState<string[]>([]);
+  const [tickers, setTickers] = useState<string[]>(() => readCache());
+  const inFlight = useRef(false);
 
   const fetchTickers = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     try {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data } = await supabase
@@ -33,9 +52,16 @@ export function useHotTickers() {
         .slice(0, 5)
         .map(([t]) => t);
 
-      setTickers(sorted);
+      // Only update if different
+      setTickers((prev) => {
+        if (prev.length === sorted.length && prev.every((t, i) => t === sorted[i])) return prev;
+        writeCache(sorted);
+        return sorted;
+      });
     } catch {
       // silent
+    } finally {
+      inFlight.current = false;
     }
   }, []);
 

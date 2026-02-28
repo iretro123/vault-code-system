@@ -324,9 +324,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     }
   }, [messages.length]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView();
-  }, [loading]);
+  // Removed: [loading] scroll effect — redundant with SWR cache and causes layout jump on mount
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;

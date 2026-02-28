@@ -63,7 +63,9 @@ export function useTradeLog() {
         .limit(50);
 
       if (error) throw error;
-      setEntries(data || []);
+      const result = data || [];
+      writeCache(result);
+      setEntries(result);
     } catch (error) {
       console.error("Error fetching trade entries:", error);
     } finally {
