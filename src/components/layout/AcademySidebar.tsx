@@ -239,7 +239,7 @@ export function AcademySidebar() {
         {!collapsed && (
           <button
             onClick={() => setReferralOpen(true)}
-            className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow"
+            className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow overflow-hidden"
             style={{ background: '#0F1319' }}
           >
             <div className="flex items-center justify-between">
