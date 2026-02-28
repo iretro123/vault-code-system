@@ -140,7 +140,10 @@ const AcademyLearn = () => {
                 <VaultPlaybookIcon className="h-6 w-6" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-base font-bold text-foreground">Vault Playbook</h3>
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  Vault Playbook
+                  <span className="text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary px-2 py-0.5 rounded-full">Start Here</span>
+                </h3>
                 <p className="text-xs text-white/30 truncate">
                   Finish the Operating System before you binge modules.
                 </p>
