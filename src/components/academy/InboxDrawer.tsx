@@ -119,7 +119,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const [tab, setTab] = useState("inbox");
   const panelRef = useRef<HTMLDivElement>(null);
   const hasFetchedRef = useRef(false);
-  const { inboxItems: items, inboxLoading: loading, inboxUnreadCount: unreadCount, refetchInbox: refetch, markInboxRead: markRead, markAllInboxRead: markAllRead } = useAcademyData();
+  const { inboxItems: items, inboxLoading: loading, inboxUnreadCount: unreadCount, refetchInbox: refetch, markInboxRead: markRead, markAllInboxRead: markAllRead, dismissInboxItem } = useAcademyData();
 
   const inboxItems = items.filter((i) => INBOX_TYPES.includes(i.type));
   const whatsNewItems = items.filter((i) => WHATS_NEW_TYPES.includes(i.type));
