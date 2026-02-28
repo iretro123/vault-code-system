@@ -2074,6 +2074,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_override_access: {
+        Args: { new_status: string; reason: string; target_student_id: string }
+        Returns: Json
+      }
       calculate_discipline_metrics: {
         Args: { _user_id: string }
         Returns: {
