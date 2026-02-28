@@ -602,7 +602,12 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
         reason: reason.trim(),
       });
       if (error) throw error;
-      toast.success(`Access overridden: ${(data as any)?.before_status || "none"} → ${(data as any)?.after_status}`);
+      const result = data as any;
+      if (result?.success === false) {
+        toast.error(result.error || "Override rejected by server");
+        return;
+      }
+      toast.success(`Access overridden: ${result?.before_status || "none"} → ${result?.after_status}`);
       setAction("");
       setReason("");
       setConfirmOpen(false);
@@ -629,7 +634,7 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
           </SelectContent>
         </Select>
         <Textarea
-          placeholder="Reason (required)… e.g. 'manual support correction'"
+          placeholder="Reason (min 8 chars)… e.g. 'manual support correction'"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           className="text-xs h-8 min-h-[32px] flex-1 min-w-[200px] resize-none"
@@ -637,7 +642,7 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
         />
         <Button
           onClick={() => setConfirmOpen(true)}
-          disabled={!action || reason.trim().length < 3}
+          disabled={!action || reason.trim().length < 8}
           variant="destructive"
           size="sm"
           className="text-xs"

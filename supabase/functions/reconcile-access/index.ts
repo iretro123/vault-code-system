@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
+// Shared PRICE_MAP — must match stripe-webhook/index.ts
 const PRICE_MAP: Record<string, { product_key: string; tier: string }> = {
   "price_1SB2aaAMsd1FtcvL44ONekRC": { product_key: "vault_academy", tier: "elite_v1" },
   "price_1SB2YsAMsd1FtcvLHfcvmDCr": { product_key: "vault_academy", tier: "elite_v1" },
@@ -86,14 +87,33 @@ serve(async (req) => {
     const subId = currentAccess?.stripe_subscription_id;
     const customerId = student.stripe_customer_id;
 
+    // No Stripe link — return structured "no_stripe_link" result (not generic error)
     if (!subId && !customerId) {
-      log("NO_STRIPE_IDS");
+      log("NO_STRIPE_LINK");
+
+      // Still log this reconcile attempt for audit completeness
+      await supabase.from("audit_logs").insert({
+        admin_id: user.id,
+        target_user_id: student_id,
+        action: "reconcile_access",
+        metadata: {
+          result: "no_stripe_link",
+          previous_status: previousStatus,
+          new_status: previousStatus,
+          changed: false,
+          target_email: student.email,
+          actor_user_id: user.id,
+          reason: "No Stripe subscription or customer ID on record",
+        },
+      });
+
       return new Response(
         JSON.stringify({
           changed: false,
           previous_status: previousStatus,
           new_status: previousStatus,
-          reason: "No Stripe subscription or customer ID on record",
+          result_type: "no_stripe_link",
+          reason: "No Stripe subscription or customer ID on record. Link this student to a Stripe customer first.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -127,18 +147,36 @@ serve(async (req) => {
 
     if (!subscription) {
       log("NO_SUBSCRIPTION_FOUND");
+
+      await supabase.from("audit_logs").insert({
+        admin_id: user.id,
+        target_user_id: student_id,
+        action: "reconcile_access",
+        metadata: {
+          result: "no_subscription_found",
+          previous_status: previousStatus,
+          new_status: previousStatus,
+          changed: false,
+          target_email: student.email,
+          actor_user_id: user.id,
+          stripe_customer_id: customerId,
+          reason: "Stripe customer exists but no subscription found",
+        },
+      });
+
       return new Response(
         JSON.stringify({
           changed: false,
           previous_status: previousStatus,
           new_status: previousStatus,
-          reason: "No Stripe subscription found for this customer",
+          result_type: "no_subscription_found",
+          reason: "Stripe customer exists but no subscription found for this customer",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Map status
+    // Map status — same logic as webhook
     const statusMap: Record<string, string> = {
       active: "active",
       trialing: "trialing",
@@ -150,6 +188,8 @@ serve(async (req) => {
       paused: "paused",
     };
     const newStatus = statusMap[subscription.status] || "active";
+
+    // Resolve plan from PRICE_MAP — same source as webhook
     const priceId = subscription.items?.data?.[0]?.price?.id || null;
     const plan = priceId && PRICE_MAP[priceId]
       ? PRICE_MAP[priceId]
@@ -181,7 +221,7 @@ serve(async (req) => {
       onConflict: "user_id,product_key",
     });
 
-    // Audit log
+    // Audit log — always log, even when no_change
     await supabase.from("audit_logs").insert({
       admin_id: user.id,
       target_user_id: student_id,
@@ -192,7 +232,21 @@ serve(async (req) => {
         changed,
         stripe_subscription_id: subscription.id,
         stripe_status: subscription.status,
-        reason: "Manual reconcile from Stripe",
+        target_email: student.email,
+        actor_user_id: user.id,
+        before_state: {
+          status: previousStatus,
+          tier: currentAccess?.tier || null,
+          product_key: currentAccess?.product_key || null,
+        },
+        after_state: {
+          status: newStatus,
+          tier: plan.tier,
+          product_key: plan.product_key,
+        },
+        reason: changed
+          ? `Reconciled from Stripe: ${previousStatus} → ${newStatus}`
+          : `No change — Stripe status matches (${newStatus})`,
       },
     });
 
@@ -203,6 +257,7 @@ serve(async (req) => {
         changed,
         previous_status: previousStatus,
         new_status: newStatus,
+        result_type: changed ? "updated" : "no_change",
         reason: changed
           ? `Status updated from ${previousStatus} to ${newStatus} based on Stripe subscription ${subscription.id}`
           : `No change — Stripe subscription status matches (${newStatus})`,
