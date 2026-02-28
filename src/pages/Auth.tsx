@@ -29,13 +29,7 @@ const Auth = () => {
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
 
-  // Persist ref code from URL
-  const refCode = searchParams.get("ref");
-  useEffect(() => {
-    if (refCode) {
-      sessionStorage.setItem("vault_ref", refCode);
-    }
-  }, [refCode]);
+  // Referral capture now handled globally in App.tsx via ReferralCapture component
 
   // Debounced username uniqueness check
   useEffect(() => {
