@@ -9,10 +9,32 @@ interface ProgressRecord {
   completed_at: string | null;
 }
 
+const CACHE_KEY = "va_cache_lesson_progress";
+const CACHE_TTL = 120_000; // 2 min
+
+function readCache(): Record<string, boolean> | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.ts > CACHE_TTL) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(data: Record<string, boolean>) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+  } catch {}
+}
+
 export function useLessonProgress() {
   const { user } = useAuth();
-  const [progress, setProgress] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  const cached = readCache();
+  const [progress, setProgress] = useState<Record<string, boolean>>(cached ?? {});
+  const [loading, setLoading] = useState(!cached);
 
   const fetchProgress = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -26,6 +48,7 @@ export function useLessonProgress() {
       if (r.completed) map[r.lesson_id] = true;
     });
     setProgress(map);
+    writeCache(map);
     setLoading(false);
   }, [user]);
 
@@ -44,7 +67,9 @@ export function useLessonProgress() {
       } as any,
       { onConflict: "user_id,lesson_id" }
     );
-    setProgress((prev) => ({ ...prev, [lessonId]: true }));
+    const updated = { ...progress, [lessonId]: true };
+    setProgress(updated);
+    writeCache(updated);
 
     // Also mark first_lesson_started on profile
     supabase
@@ -52,7 +77,7 @@ export function useLessonProgress() {
       .update({ first_lesson_started: true } as any)
       .eq("user_id", user.id)
       .then(() => {});
-  }, [user]);
+  }, [user, progress]);
 
   return { progress, loading, markComplete, refetch: fetchProgress };
 }

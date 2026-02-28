@@ -46,7 +46,7 @@ export function useStudentAccess() {
     tier: cached?.tier ?? null,
     productKey: cached?.productKey ?? null,
     hasAccess: cached?.hasAccess ?? false,
-    loading: true,
+    loading: !cached,
     error: null,
     lastUpdated: cached?.lastUpdated ?? null,
   });
