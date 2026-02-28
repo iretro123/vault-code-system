@@ -467,7 +467,7 @@ const AcademyLive = () => {
                         <Link2 className="h-3.5 w-3.5" /> Copy Link
                       </button>
                     )}
-                    <button className="live-btn-glass" onClick={(e) => e.stopPropagation()}>
+                    <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); window.open(buildGoogleCalendarUrl(nextSession), '_blank'); }}>
                       <CalendarPlus className="h-3.5 w-3.5" /> Add to Calendar
                     </button>
                   </div>
