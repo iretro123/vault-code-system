@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureProfile } from "@/lib/ensureProfile";
+import { getStoredReferral, clearStoredReferral } from "@/lib/referralCapture";
 
 const Auth = () => {
   const { toast } = useToast();
