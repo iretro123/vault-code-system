@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, ExternalLink, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio, X } from "lucide-react";
+import { Check, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio, X } from "lucide-react";
 import { useAcademyData, InboxItem } from "@/contexts/AcademyDataContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -43,6 +43,7 @@ function ItemList({
   onMarkAllRead: () => void;
   unreadCount: number;
 }) {
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -74,40 +75,39 @@ function ItemList({
       )}
       <div className="px-3 pb-4 space-y-1">
         {items.map((item) => (
-          <button
+          <div
             key={item.id}
-            onClick={() => onItemClick(item)}
-            className={`group w-full text-left rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.05] relative ${
+            className={`flex items-center gap-2 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
             }`}
           >
-            <div className="flex items-start gap-2.5">
+            {/* Clickable content area */}
+            <button
+              onClick={() => onItemClick(item)}
+              className="flex items-start gap-2.5 min-w-0 flex-1 text-left"
+            >
               <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
               {!item.read_at && (
                 <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground truncate pr-5">{item.title}</p>
+                <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
                 {item.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1">
                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
                 </p>
               </div>
-              {item.link && (
-                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0 mt-1" />
-              )}
-            </div>
-            {/* Dismiss X */}
-            <span
-              role="button"
+            </button>
+            {/* iOS-style dismiss */}
+            <button
               aria-label="Dismiss"
-              onClick={(e) => { e.stopPropagation(); onDismiss(item.id); }}
-              className="absolute top-2.5 right-2.5 p-1 rounded-md opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:bg-white/[0.08] transition-opacity cursor-pointer"
+              onClick={() => onDismiss(item.id)}
+              className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-white/[0.06] hover:bg-white/[0.14] opacity-50 hover:opacity-100 transition-all"
             >
               <X className="h-3.5 w-3.5 text-white" />
-            </span>
-          </button>
+            </button>
+          </div>
         ))}
       </div>
     </ScrollArea>
@@ -172,7 +172,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   return (
     <div
       ref={panelRef}
-      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[400px] max-w-[calc(100vw-var(--sidebar-width,16rem)-24px)] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl ${
+      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[340px] max-w-[90vw] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl overflow-hidden ${
         open ? "visible pointer-events-auto" : "invisible pointer-events-none"
       }`}
       style={{ marginLeft: "8px", transition: "none", animation: "none" }}
