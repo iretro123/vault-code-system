@@ -150,6 +150,11 @@ const AdminPanel = () => {
               <AdminStripeTab />
             </TabsContent>
           )}
+          {visibleTabs.some((t) => t.value === "referrals") && (
+            <TabsContent value="referrals">
+              <AdminReferralsTab />
+            </TabsContent>
+          )}
           {visibleTabs.some((t) => t.value === "logs") && (
             <TabsContent value="logs">
               <AdminLogsTab />
