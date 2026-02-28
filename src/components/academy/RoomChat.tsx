@@ -173,32 +173,66 @@ function renderRecapCard(body: string) {
 }
 
 function renderPlainBody(body: string, isOwnBubble = false) {
-  // Handle image markdown: ![alt](url)
-  const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  if (imageRegex.test(body)) {
-    const parts = body.split(/(!?\[[^\]]*\]\([^)]+\))/g);
-    return parts.map((part, i) => {
-      const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-      if (imgMatch) {
-        return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-[300px] max-h-[240px] mt-1 object-cover" />;
-      }
-      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-      if (linkMatch) {
-        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
-      }
-      if (!part) return null;
-      return <span key={i}>{part}</span>;
-    });
+  // Split quote block from rest of message
+  const lines = body.split("\n");
+  const quoteLines: string[] = [];
+  const restLines: string[] = [];
+  let pastQuote = false;
+  for (const line of lines) {
+    if (!pastQuote && line.startsWith("> ")) {
+      quoteLines.push(line.slice(2));
+    } else {
+      pastQuote = true;
+      restLines.push(line);
+    }
   }
 
-  // Bold markdown
-  const parts = body.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-[hsl(220,15%,15%)]")}>{part.slice(2, -2)}</span>;
+  const renderInline = (text: string) => {
+    // Handle image markdown: ![alt](url)
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    if (imageRegex.test(text)) {
+      const parts = text.split(/(!?\[[^\]]*\]\([^)]+\))/g);
+      return parts.map((part, i) => {
+        const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imgMatch) {
+          return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-[300px] max-h-[240px] mt-1 object-cover" />;
+        }
+        const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (linkMatch) {
+          return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
+        }
+        if (!part) return null;
+        return <span key={i}>{part}</span>;
+      });
     }
-    return <span key={i}>{part}</span>;
-  });
+
+    // Bold markdown
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-[hsl(220,15%,15%)]")}>{part.slice(2, -2)}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  const restText = restLines.join("\n").trim();
+
+  return (
+    <>
+      {quoteLines.length > 0 && (
+        <div className={cn(
+          "border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug",
+          isOwnBubble
+            ? "border-white/40 bg-white/10 text-white/70"
+            : "border-primary/40 bg-primary/[0.06] text-[hsl(220,10%,40%)]"
+        )}>
+          {renderInline(quoteLines.join(" "))}
+        </div>
+      )}
+      {restText && <span>{renderInline(restText)}</span>}
+    </>
+  );
 }
 
 /* ── grouping logic ── */
@@ -281,6 +315,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; user_name: string; body: string } | null>(null);
 
   const isTradeRecaps = roomSlug === "trade-recaps";
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
@@ -340,9 +375,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   };
 
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
-    const body = text ?? draft;
+    let body = text ?? draft;
     if (!body.trim() && (!attachments || attachments.length === 0)) return;
     if (sending) return;
+
+    // Prepend quote block if replying
+    if (replyingTo && !text) {
+      const truncated = replyingTo.body.length > 60 ? replyingTo.body.slice(0, 60) + "…" : replyingTo.body;
+      body = `> **@${replyingTo.user_name}:** ${truncated}\n\n${body}`;
+      setReplyingTo(null);
+    }
+
     if (!text) setDraft("");
     shouldAutoScroll.current = true;
     await sendMessage(body, attachments);
@@ -831,8 +874,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <Copy className="h-3 w-3" /> Copy
                 </ItemComponent>
               )}
-              {!msg.is_deleted && !isAnnouncements && onThreadOpen && (
-                <ItemComponent onClick={() => onThreadOpen({ ...msg, reply_count: (msg as any).reply_count ?? 0 })} className="gap-2 text-xs">
+              {!msg.is_deleted && !isAnnouncements && (
+                <ItemComponent onClick={() => {
+                  setReplyingTo({ id: msg.id, user_name: msg.user_name, body: msg.body });
+                  setTimeout(() => textareaRef.current?.focus(), 50);
+                }} className="gap-2 text-xs">
                   <MessageSquare className="h-3 w-3" /> Reply
                 </ItemComponent>
               )}
@@ -1257,6 +1303,23 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   </button>
                 ))}
               </div>
+
+              {/* Reply preview bar */}
+              {replyingTo && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[hsl(220,12%,90%)] border-l-2 border-l-primary">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-semibold text-primary">Replying to {replyingTo.user_name}</span>
+                    <p className="text-[11px] text-[hsl(220,10%,45%)] truncate">{replyingTo.body.slice(0, 80)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    className="shrink-0 p-1 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,20%)] hover:bg-[hsl(220,10%,85%)] transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Composer bar — with drag-and-drop support */}
               <div
