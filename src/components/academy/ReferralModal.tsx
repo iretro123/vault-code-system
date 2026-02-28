@@ -105,7 +105,7 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="flex flex-col overflow-hidden">
+    <div className="flex flex-col overflow-hidden max-h-[inherit]">
       {/* Banner */}
       <div className="relative">
         <HeroBanner />
