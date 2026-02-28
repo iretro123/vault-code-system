@@ -3,6 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 
+const CACHE_KEY = "va_cache_trade_entries";
+
+function readCache(): TradeEntry[] | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function writeCache(data: TradeEntry[]) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
+}
+
 export interface TradeEntry {
   id: string;
   user_id: string;
@@ -26,8 +40,9 @@ export interface NewTradeEntry {
 export function useTradeLog() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [entries, setEntries] = useState<TradeEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = readCache();
+  const [entries, setEntries] = useState<TradeEntry[]>(cached ?? []);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     if (user) {
