@@ -637,7 +637,7 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
         />
         <Button
           onClick={() => setConfirmOpen(true)}
-          disabled={!action || reason.trim().length < 3}
+          disabled={!action || reason.trim().length < 8}
           variant="destructive"
           size="sm"
           className="text-xs"
