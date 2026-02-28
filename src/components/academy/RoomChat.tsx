@@ -173,32 +173,66 @@ function renderRecapCard(body: string) {
 }
 
 function renderPlainBody(body: string, isOwnBubble = false) {
-  // Handle image markdown: ![alt](url)
-  const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  if (imageRegex.test(body)) {
-    const parts = body.split(/(!?\[[^\]]*\]\([^)]+\))/g);
-    return parts.map((part, i) => {
-      const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-      if (imgMatch) {
-        return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-[300px] max-h-[240px] mt-1 object-cover" />;
-      }
-      const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-      if (linkMatch) {
-        return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
-      }
-      if (!part) return null;
-      return <span key={i}>{part}</span>;
-    });
+  // Split quote block from rest of message
+  const lines = body.split("\n");
+  const quoteLines: string[] = [];
+  const restLines: string[] = [];
+  let pastQuote = false;
+  for (const line of lines) {
+    if (!pastQuote && line.startsWith("> ")) {
+      quoteLines.push(line.slice(2));
+    } else {
+      pastQuote = true;
+      restLines.push(line);
+    }
   }
 
-  // Bold markdown
-  const parts = body.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-[hsl(220,15%,15%)]")}>{part.slice(2, -2)}</span>;
+  const renderInline = (text: string) => {
+    // Handle image markdown: ![alt](url)
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    if (imageRegex.test(text)) {
+      const parts = text.split(/(!?\[[^\]]*\]\([^)]+\))/g);
+      return parts.map((part, i) => {
+        const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+        if (imgMatch) {
+          return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-[300px] max-h-[240px] mt-1 object-cover" />;
+        }
+        const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (linkMatch) {
+          return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
+        }
+        if (!part) return null;
+        return <span key={i}>{part}</span>;
+      });
     }
-    return <span key={i}>{part}</span>;
-  });
+
+    // Bold markdown
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-[hsl(220,15%,15%)]")}>{part.slice(2, -2)}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
+  const restText = restLines.join("\n").trim();
+
+  return (
+    <>
+      {quoteLines.length > 0 && (
+        <div className={cn(
+          "border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug",
+          isOwnBubble
+            ? "border-white/40 bg-white/10 text-white/70"
+            : "border-primary/40 bg-primary/[0.06] text-[hsl(220,10%,40%)]"
+        )}>
+          {renderInline(quoteLines.join(" "))}
+        </div>
+      )}
+      {restText && <span>{renderInline(restText)}</span>}
+    </>
+  );
 }
 
 /* ── grouping logic ── */
