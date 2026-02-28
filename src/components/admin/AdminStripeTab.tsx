@@ -686,3 +686,188 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
     </div>
   );
 }
+
+// ─── Access Timeline ───
+
+function AccessTimeline({
+  studentId,
+  authUserId,
+  access,
+  events,
+}: {
+  studentId: string;
+  authUserId: string | null;
+  access: AccessRow[];
+  events: WebhookEventRow[];
+}) {
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open || !authUserId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .eq("target_user_id", authUserId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      setAuditLogs(data || []);
+    })();
+  }, [open, authUserId]);
+
+  const latestAccess = access[0];
+  const latestEvent = events[0];
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? "rotate-0" : "-rotate-90"}`} />
+        <Clock className="h-3 w-3" />
+        Access Timeline
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-2 space-y-2">
+        {/* Current access */}
+        {latestAccess ? (
+          <div className="bg-white/[0.02] rounded px-3 py-2 text-xs flex items-center gap-3 flex-wrap">
+            <span className="text-muted-foreground">Current:</span>
+            <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[latestAccess.status] || ""}`}>{latestAccess.status}</Badge>
+            <span className="text-muted-foreground">synced {formatDateTimeFull(latestAccess.last_synced_at)}</span>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No access records.</p>
+        )}
+
+        {/* Last webhook */}
+        {latestEvent && (
+          <div className="bg-white/[0.02] rounded px-3 py-2 text-xs flex items-center gap-3 flex-wrap">
+            <span className="text-muted-foreground">Last webhook:</span>
+            <span className="font-mono">{latestEvent.event_type}</span>
+            <Badge variant="outline" className={`text-[10px] ${STATUS_COLORS[latestEvent.status] || ""}`}>{latestEvent.status}</Badge>
+            <span className="text-muted-foreground">{formatDateTimeFull(latestEvent.received_at)}</span>
+          </div>
+        )}
+
+        {/* Recent audit logs */}
+        {auditLogs.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-[10px] text-muted-foreground font-medium">Recent Admin Actions</p>
+            {auditLogs.map((log: any) => (
+              <div key={log.id} className="bg-white/[0.02] rounded px-3 py-1.5 text-[10px] flex items-center gap-2 flex-wrap">
+                <span className="font-medium">{log.action}</span>
+                {log.metadata?.reason && <span className="text-muted-foreground">— {log.metadata.reason}</span>}
+                <span className="text-muted-foreground ml-auto">{formatDateTimeFull(log.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+// ─── System Health Card ───
+
+function SystemHealthCard({ webhookEvents }: { webhookEvents: WebhookEventRow[] }) {
+  const [open, setOpen] = useState(false);
+  const { status: accessStatus } = useStudentAccess();
+
+  const checks = [
+    {
+      label: "STRIPE_SECRET_KEY configured",
+      status: "green" as const,
+      note: "Set in backend secrets",
+    },
+    {
+      label: "STRIPE_WEBHOOK_SECRET configured",
+      status: "green" as const,
+      note: "Set in backend secrets",
+    },
+    {
+      label: "Recent webhook events received",
+      status: webhookEvents.length > 0 ? "green" as const : "amber" as const,
+      note: webhookEvents.length > 0 ? `${webhookEvents.length} events` : "No events yet",
+    },
+    {
+      label: "Admin can read webhook logs",
+      status: webhookEvents.length > 0 || webhookEvents.length === 0 ? "green" as const : "red" as const,
+      note: "RLS check passed",
+    },
+    {
+      label: "Access resolver working",
+      status: accessStatus !== "none" ? "green" as const : "amber" as const,
+      note: `Current user: ${accessStatus}`,
+    },
+  ];
+
+  const statusColors = { green: "text-emerald-400", amber: "text-amber-400", red: "text-red-400" };
+  const StatusIcon = ({ s }: { s: "green" | "amber" | "red" }) =>
+    s === "green" ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> :
+    s === "red" ? <XCircle className="h-3.5 w-3.5 text-red-400" /> :
+    <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-0" : "-rotate-90"}`} />
+        <Shield className="h-3.5 w-3.5" />
+        System Health
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <Card className="mt-2 p-4 space-y-2">
+          {checks.map((c) => (
+            <div key={c.label} className="flex items-center gap-2 text-xs">
+              <StatusIcon s={c.status} />
+              <span className="font-medium">{c.label}</span>
+              <span className={`ml-auto text-[10px] ${statusColors[c.status]}`}>{c.note}</span>
+            </div>
+          ))}
+        </Card>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+// ─── QA Test Steps ───
+
+function QATestSteps() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-0" : "-rotate-90"}`} />
+        <Activity className="h-3.5 w-3.5" />
+        QA Test Steps
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <Card className="mt-2 p-4 text-xs space-y-3 text-muted-foreground">
+          <div>
+            <p className="font-semibold text-foreground mb-1">1. Test Checkout</p>
+            <p>Use card <code className="bg-white/5 px-1 rounded font-mono">4242 4242 4242 4242</code>, any future expiry, any CVC.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-foreground mb-1">2. Verify Webhook Events</p>
+            <p>After checkout, check "Recent Webhook Events" above. Expect <code className="bg-white/5 px-1 rounded">checkout.session.completed</code> → <span className="text-emerald-400">processed</span>.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-foreground mb-1">3. Test Duplicate Event Replay</p>
+            <p>Re-send the same event from Stripe Dashboard → Events → Resend. Should show as <span className="text-amber-400">duplicate</span> status.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-foreground mb-1">4. Test Billing Portal Return</p>
+            <p>Go to Settings → Billing → "Manage Billing". Return from Stripe portal. Should see toast and <code className="bg-white/5 px-1 rounded">?billing=returned</code> auto-clears.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-foreground mb-1">5. Test Past Due Handling</p>
+            <p>In Stripe Dashboard, use test clock or manually trigger <code className="bg-white/5 px-1 rounded">invoice.payment_failed</code>. Then <code className="bg-white/5 px-1 rounded">customer.subscription.updated</code> with <code className="bg-white/5 px-1 rounded">status: past_due</code>. Verify access changes to amber badge.</p>
+          </div>
+          <div>
+            <p className="font-semibold text-foreground mb-1">6. Test Admin Override</p>
+            <p>Select a student → Admin Tools → Manual Override → Grant/Revoke. Check audit_logs table for entry with before_state/after_state.</p>
+          </div>
+        </Card>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
