@@ -181,7 +181,7 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
               onClick={() => setShowGuidelines(true)}
               className="text-[13px] font-medium text-white/[0.55] hover:text-white/[0.80] hover:underline transition-all cursor-pointer"
             >
-              View Terms
+              Referral details
             </button>
           </div>
         </div>
