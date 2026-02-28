@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
-import { useAuth } from "@/hooks/useAuth";
-import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { cn } from "@/lib/utils";
 import {
   User,
@@ -10,6 +9,7 @@ import {
   Shield,
   HelpCircle,
   Database,
+  CreditCard,
 } from "lucide-react";
 
 import { SettingsProfile } from "@/components/settings/SettingsProfile";
@@ -18,6 +18,7 @@ import { SettingsNotifications } from "@/components/settings/SettingsNotificatio
 import { SettingsPrivacy } from "@/components/settings/SettingsPrivacy";
 import { SettingsSecurity } from "@/components/settings/SettingsSecurity";
 import { SettingsHelp } from "@/components/settings/SettingsHelp";
+import { SettingsBilling } from "@/components/settings/SettingsBilling";
 
 const NAV_ITEMS = [
   { id: "profile", label: "Profile", icon: User },
