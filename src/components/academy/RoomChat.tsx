@@ -341,9 +341,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   };
 
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
-    const body = text ?? draft;
+    let body = text ?? draft;
     if (!body.trim() && (!attachments || attachments.length === 0)) return;
     if (sending) return;
+
+    // Prepend quote block if replying
+    if (replyingTo && !text) {
+      const truncated = replyingTo.body.length > 60 ? replyingTo.body.slice(0, 60) + "…" : replyingTo.body;
+      body = `> **@${replyingTo.user_name}:** ${truncated}\n\n${body}`;
+      setReplyingTo(null);
+    }
+
     if (!text) setDraft("");
     shouldAutoScroll.current = true;
     await sendMessage(body, attachments);
