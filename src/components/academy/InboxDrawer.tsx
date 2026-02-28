@@ -111,6 +111,7 @@ function ItemList({
           </div>
         ))}
       </div>
+      </div>
     </ScrollArea>
   );
 }
