@@ -435,7 +435,7 @@ const AcademyLive = () => {
                   <h2 className="text-2xl font-bold text-white mt-2">{nextSession.title}</h2>
                   {nextSession.description && <p className="text-sm text-white/50 mt-1">{nextSession.description}</p>}
                   <p className="text-sm text-white/45 mt-1">
-                    {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)}
+                    {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST
                     {nextSession.duration_minutes > 0 && <span className="ml-2 text-white/30">· {nextSession.duration_minutes} min</span>}
                   </p>
 
@@ -494,7 +494,7 @@ const AcademyLive = () => {
                         <span className="text-xs text-white/40 w-10 shrink-0">{format(new Date(s.session_date), "EEE d")}</span>
                         <span className="text-sm font-medium text-white/85 flex-1 truncate">{s.title}</span>
                         <span className="text-xs text-white/30 shrink-0">{s.duration_minutes} min</span>
-                        <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)}</span>
+                        <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)} EST</span>
                         {canManage && (
                           <>
                             <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/row:opacity-100"><Pencil className="h-3 w-3" /></button>
@@ -567,7 +567,7 @@ const AcademyLive = () => {
                         <div key={s.id} className="live-glass-card p-4">
                           <div className="flex items-baseline justify-between mb-2">
                             <span className="text-sm font-bold text-white/90">{format(d, "EEEE")}<span className="text-white/40 font-normal">. {format(d, "MMM d")}</span></span>
-                            <span className="text-xs text-white/45">{formatTime(d)}</span>
+                            <span className="text-xs text-white/45">{formatTime(d)} EST</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center shrink-0">

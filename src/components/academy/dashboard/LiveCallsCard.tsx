@@ -81,7 +81,7 @@ export function LiveCallsCard() {
                     day: "numeric",
                     hour: "numeric",
                     minute: "2-digit",
-                  })}
+                  })}{" "}EST
                 </p>
               </div>
               <span className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground/60 shrink-0">
