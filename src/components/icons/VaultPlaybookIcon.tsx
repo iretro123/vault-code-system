@@ -13,17 +13,21 @@ export function VaultPlaybookIcon({ className }: Props) {
       className={cn("shrink-0", className)}
     >
       {/* Tablet body */}
-      <rect x="3" y="1" width="18" height="22" rx="2" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="2.4" y="0" width="19.2" height="24" rx="1.6" fill="#33313F" />
       {/* Screen */}
-      <rect x="5.5" y="3.5" width="13" height="15" rx="0.5" fill="currentColor" opacity="0.08" />
-      {/* Text lines */}
-      <line x1="7" y1="9.5" x2="17" y2="9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
-      <line x1="7" y1="12.5" x2="17" y2="12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
-      <line x1="7" y1="15.5" x2="13" y2="15.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
-      {/* Title block on screen */}
-      <rect x="7" y="5" width="5" height="2.5" rx="0.5" fill="currentColor" opacity="0.5" />
-      {/* Bottom bar / home indicator */}
-      <line x1="10" y1="21" x2="14" y2="21" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
+      <rect x="4.3" y="1.9" width="15.4" height="19.4" fill="#B9D2ED" />
+      {/* E-BOOK title area — simplified as text lines at small size */}
+      <line x1="5.8" y1="6.2" x2="8.2" y2="6.2" stroke="#33313F" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="9" y1="6.2" x2="11.4" y2="6.2" stroke="#33313F" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="12.2" y1="6.2" x2="14.6" y2="6.2" stroke="#33313F" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="15.4" y1="6.2" x2="17.8" y2="6.2" stroke="#33313F" strokeWidth="1.2" strokeLinecap="round" />
+      {/* Content lines */}
+      <line x1="5.8" y1="10.2" x2="18.2" y2="10.2" stroke="#33313F" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="5.8" y1="12.9" x2="18.2" y2="12.9" stroke="#33313F" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="5.8" y1="15.6" x2="18.2" y2="15.6" stroke="#33313F" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="5.8" y1="18.4" x2="9.7" y2="18.4" stroke="#33313F" strokeWidth="0.8" strokeLinecap="round" />
+      {/* Home indicator */}
+      <line x1="10.1" y1="22.5" x2="13.9" y2="22.5" stroke="#62627C" strokeWidth="0.8" strokeLinecap="round" />
     </svg>
   );
 }
