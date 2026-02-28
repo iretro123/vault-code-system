@@ -40,9 +40,19 @@ import Hub from "./pages/Hub";
 
 const queryClient = new QueryClient();
 
+function ReferralCapture() {
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) captureReferral(ref);
+  }, [searchParams]);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
+      <ReferralCapture />
       <AuthProvider>
         <VaultStateProvider>
         <AcademyDataProvider>

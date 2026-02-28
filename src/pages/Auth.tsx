@@ -88,8 +88,9 @@ const Auth = () => {
           });
         }
 
-        // Record referral
-        const savedRef = sessionStorage.getItem("vault_ref");
+        // Record referral attribution
+        const savedRef = getStoredReferral();
+        console.log("[Referral] signup attribution check:", savedRef ? savedRef : "none");
         if (savedRef) {
           try {
             await supabase.from("referrals" as any).insert({
@@ -98,9 +99,10 @@ const Auth = () => {
               referred_email: email,
               status: "signed_up",
             } as any);
-            sessionStorage.removeItem("vault_ref");
+            console.log("[Referral] signup attributed to:", savedRef);
+            clearStoredReferral();
           } catch (e) {
-            console.error("Referral tracking error:", e);
+            console.error("[Referral] signup attribution error:", e);
           }
         }
       }
