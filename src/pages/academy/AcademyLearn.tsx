@@ -202,7 +202,7 @@ const AcademyLearn = () => {
                       <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
                       <Input value={editSubtitle} onChange={(e) => setEditSubtitle(e.target.value)} placeholder="Subtitle" />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleUpdateModule(mod.id)} disabled={saving}>
+                        <Button size="sm" onClick={() => handleUpdateModule(mod.id, mod.slug)} disabled={saving}>
                           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
