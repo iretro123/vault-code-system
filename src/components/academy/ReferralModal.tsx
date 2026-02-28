@@ -120,7 +120,7 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
       {showGuidelines ? (
         <GuidelinesCard onBack={() => setShowGuidelines(false)} />
       ) : (
-        <div className="px-6 py-6 space-y-4">
+        <div className="px-6 py-6 space-y-4 overflow-y-auto">
           {/* Pill + headline */}
           <div className="space-y-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] px-3 py-1 text-[12px] font-medium text-white/70">
