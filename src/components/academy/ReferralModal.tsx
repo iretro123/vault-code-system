@@ -151,10 +151,11 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Stats */}
-          <div className="pt-3">
+          <div className="pt-3 space-y-1">
             <p className="text-[15px] font-semibold text-white/[0.85]">
               {referralStats.total_signed_up} invited · {referralStats.total_paid} upgraded
             </p>
+            <p className="text-[12px] text-white/[0.40]">Rewards and credits expand in a future update.</p>
           </div>
 
           {/* Copy link */}
