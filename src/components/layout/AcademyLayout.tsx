@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { ReactNode, useEffect, useRef } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
@@ -9,6 +9,7 @@ import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
