@@ -66,6 +66,7 @@ function ItemList({
 
   return (
     <ScrollArea className="flex-1">
+      <div style={{ width: "100%" }}>
       {unreadCount > 0 && (
         <div className="px-4 py-2 flex justify-end">
           <Button variant="ghost" size="sm" className="text-xs text-muted-foreground h-7" onClick={onMarkAllRead}>
@@ -73,11 +74,11 @@ function ItemList({
           </Button>
         </div>
       )}
-      <div className="px-3 pb-4 space-y-1">
+      <div className="px-3 pb-4 space-y-1 w-full box-border">
         {items.map((item) => (
           <div
             key={item.id}
-            className={`flex items-center gap-2 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] overflow-hidden ${
+            className={`flex items-center gap-2 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
             }`}
