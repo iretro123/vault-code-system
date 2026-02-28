@@ -40,6 +40,7 @@ interface AcademyData {
   refetchInbox: () => Promise<void>;
   markInboxRead: (itemId: string) => Promise<void>;
   markAllInboxRead: () => Promise<void>;
+  dismissInboxItem: (itemId: string) => Promise<void>;
   // Referral
   referralStats: ReferralStats;
   referralLoading: boolean;
