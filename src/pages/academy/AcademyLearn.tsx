@@ -205,7 +205,7 @@ const AcademyLearn = () => {
                   <Card
                     key={mod.id}
                     className={cn(
-                      "vault-card overflow-hidden group transition-all duration-200",
+                      "vault-card overflow-hidden group transition-colors transition-shadow duration-200",
                       isLocked ? "opacity-70" : "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer"
                     )}
                     onClick={() => !isLocked && navigate(`/academy/learn/${mod.slug}`)}
