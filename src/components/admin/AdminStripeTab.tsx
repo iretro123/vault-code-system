@@ -602,7 +602,12 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
         reason: reason.trim(),
       });
       if (error) throw error;
-      toast.success(`Access overridden: ${(data as any)?.before_status || "none"} → ${(data as any)?.after_status}`);
+      const result = data as any;
+      if (result?.success === false) {
+        toast.error(result.error || "Override rejected by server");
+        return;
+      }
+      toast.success(`Access overridden: ${result?.before_status || "none"} → ${result?.after_status}`);
       setAction("");
       setReason("");
       setConfirmOpen(false);
