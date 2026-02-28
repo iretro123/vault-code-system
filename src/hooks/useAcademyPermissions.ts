@@ -45,7 +45,9 @@ export function useAcademyPermissions() {
       return;
     }
 
-    setState((prev) => ({ ...prev, loading: true, resolved: false }));
+    if (!hadCache) {
+      setState((prev) => ({ ...prev, loading: true, resolved: false }));
+    }
 
     (async () => {
       const [userRoleRes, appRolesRes] = await Promise.all([
