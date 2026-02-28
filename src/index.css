@@ -414,7 +414,7 @@ html {
     background: rgba(255,255,255,0.06);
   }
 
-  /* Share Vault — animated breathing glow border on hover */
+  /* Share Vault — RGB border sweep on hover */
   .share-vault-glow {
     position: relative;
     border: 1px solid rgba(255,255,255,0.04);
@@ -424,14 +424,16 @@ html {
   .share-vault-glow::before {
     content: "";
     position: absolute;
-    inset: -1px;
+    inset: -2px;
     border-radius: inherit;
-    padding: 1px;
+    padding: 2px;
     background: conic-gradient(
       from 0deg,
       transparent 0%,
-      rgba(59,130,246,0.5) 10%,
-      transparent 40%,
+      #3B82F6 8%,
+      #8B5CF6 18%,
+      #06B6D4 28%,
+      transparent 38%,
       transparent 100%
     );
     -webkit-mask: 
@@ -446,12 +448,12 @@ html {
 
   .share-vault-glow:hover::before {
     opacity: 1;
-    animation: glow-rotate 4s linear infinite;
+    animation: glow-rotate 3s linear infinite;
   }
 
   .share-vault-glow:hover {
     border-color: transparent;
-    box-shadow: 0 0 18px 3px rgba(59,130,246,0.12);
+    box-shadow: 0 0 20px 4px rgba(99,102,241,0.15), 0 0 8px 2px rgba(59,130,246,0.1);
     animation: glow-breathe-shadow 3s ease-in-out infinite;
   }
 
@@ -461,8 +463,8 @@ html {
   }
 
   @keyframes glow-breathe-shadow {
-    0%, 100% { box-shadow: 0 0 12px 2px rgba(59,130,246,0.1); }
-    50% { box-shadow: 0 0 22px 4px rgba(59,130,246,0.2); }
+    0%, 100% { box-shadow: 0 0 16px 3px rgba(99,102,241,0.12); }
+    50% { box-shadow: 0 0 28px 6px rgba(99,102,241,0.22); }
   }
 
   @media (prefers-reduced-motion: reduce) {
