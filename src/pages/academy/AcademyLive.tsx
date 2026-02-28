@@ -494,7 +494,7 @@ const AcademyLive = () => {
                         <span className="text-xs text-white/40 w-10 shrink-0">{format(new Date(s.session_date), "EEE d")}</span>
                         <span className="text-sm font-medium text-white/85 flex-1 truncate">{s.title}</span>
                         <span className="text-xs text-white/30 shrink-0">{s.duration_minutes} min</span>
-                        <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)}</span>
+                        <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)} EST</span>
                         {canManage && (
                           <>
                             <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/row:opacity-100"><Pencil className="h-3 w-3" /></button>
