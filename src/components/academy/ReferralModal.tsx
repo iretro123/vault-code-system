@@ -53,12 +53,12 @@ function HeroBanner() {
 }
 
 const GUIDELINES_TEXT = [
-  "This referral program is available to new Vault OS users who sign up through your unique referral link. The goal is to grow the Vault trading community with serious traders.",
-  "Rewards are earned only after your referral creates a new account and subscribes to a paid plan. No rewards will be granted for inactive, duplicate, or incomplete registrations.",
-  "We do not grant rewards for disposable, temporary, or high-risk email accounts. All referrals may be reviewed to prevent fraud and ensure legitimate participation.",
-  "Each new user may generate only one (1) reward. Self-referrals, multiple accounts, or attempts to manipulate the system will result in disqualification.",
-  "Please do not spam, mass-message, or misuse your referral link. Referrals must be genuine traders who voluntarily join Vault OS. We actively monitor referral activity for unusual behavior.",
-  "If suspicious or non-compliant activity is detected, we reserve the right to withhold rewards, suspend referral privileges, or deactivate your referral link.",
+  "This referral program tracks signups made through your unique invite link. The goal is to grow the Vault trading community with serious traders.",
+  "Referral tracking is live — we record every signup that comes through your link. Reward and credit features will be added in a future update.",
+  "We do not track referrals from disposable, temporary, or high-risk email accounts. All referrals may be reviewed to ensure legitimate participation.",
+  "Each new user generates one (1) tracked referral. Self-referrals, multiple accounts, or attempts to manipulate the system will result in disqualification.",
+  "Please do not spam, mass-message, or misuse your referral link. Referrals must be genuine traders who voluntarily join Vault OS.",
+  "If suspicious or non-compliant activity is detected, we reserve the right to suspend referral privileges or deactivate your referral link.",
   "Vault OS may update, modify, pause, or discontinue this referral program at any time.",
   "For complete platform rules and policies, please refer to the Vault OS Terms of Service.",
 ];
