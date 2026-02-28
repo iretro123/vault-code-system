@@ -77,7 +77,7 @@ function ItemList({
           <button
             key={item.id}
             onClick={() => onItemClick(item)}
-            className={`w-full text-left rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.05] ${
+            className={`group w-full text-left rounded-lg px-3 py-3 transition-colors hover:bg-white/[0.05] relative ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
             }`}
@@ -88,7 +88,7 @@ function ItemList({
                 <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                <p className="text-sm font-medium text-foreground truncate pr-5">{item.title}</p>
                 {item.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1">
                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
@@ -98,6 +98,15 @@ function ItemList({
                 <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0 mt-1" />
               )}
             </div>
+            {/* Dismiss X */}
+            <span
+              role="button"
+              aria-label="Dismiss"
+              onClick={(e) => { e.stopPropagation(); onDismiss(item.id); }}
+              className="absolute top-2.5 right-2.5 p-1 rounded-md opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:bg-white/[0.08] transition-opacity cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5 text-white" />
+            </span>
           </button>
         ))}
       </div>
