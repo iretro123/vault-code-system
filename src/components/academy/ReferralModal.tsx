@@ -173,6 +173,8 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
             </Button>
           </div>
 
+          <p className="text-[12px] text-white/[0.35] leading-[1.4]">Share this link with friends. We track signups automatically.</p>
+
           {/* Footer */}
           <div className="pt-4 flex justify-center">
             <button
