@@ -33,7 +33,16 @@ const NAV_ITEMS = [
 type SectionId = (typeof NAV_ITEMS)[number]["id"];
 
 const AcademySettings = () => {
-  const [section, setSection] = useState<SectionId>("profile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const billingReturn = searchParams.get("billing") === "returned";
+  const [section, setSection] = useState<SectionId>(billingReturn ? "billing" : "profile");
+
+  useEffect(() => {
+    if (billingReturn) {
+      searchParams.delete("billing");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   return (
     <AcademyLayout>
