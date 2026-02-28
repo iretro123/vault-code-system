@@ -60,14 +60,21 @@ const AcademyLearn = () => {
     refetchModules();
   };
 
-  const handleUpdateModule = async (id: string) => {
+  const handleUpdateModule = async (id: string, oldSlug: string) => {
     if (!editTitle.trim()) return;
     setSaving(true);
+    const newSlug = editTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const { error } = await supabase.from("academy_modules")
-      .update({ title: editTitle.trim(), subtitle: editSubtitle.trim() } as any)
+      .update({ title: editTitle.trim(), subtitle: editSubtitle.trim(), slug: newSlug } as any)
       .eq("id", id);
+    if (error) { setSaving(false); toast.error(error.message); return; }
+    // Cascade: re-link lessons to new slug
+    if (newSlug !== oldSlug) {
+      await supabase.from("academy_lessons")
+        .update({ module_slug: newSlug, module_title: editTitle.trim() } as any)
+        .eq("module_slug", oldSlug);
+    }
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
     toast.success("Module updated");
     setEditingId(null);
     refetchModules();
@@ -195,7 +202,7 @@ const AcademyLearn = () => {
                       <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
                       <Input value={editSubtitle} onChange={(e) => setEditSubtitle(e.target.value)} placeholder="Subtitle" />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleUpdateModule(mod.id)} disabled={saving}>
+                        <Button size="sm" onClick={() => handleUpdateModule(mod.id, mod.slug)} disabled={saving}>
                           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
