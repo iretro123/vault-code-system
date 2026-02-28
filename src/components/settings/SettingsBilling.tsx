@@ -65,6 +65,7 @@ export function SettingsBilling() {
     setBusy(true);
     try {
       console.log("[CheckoutReturn] Starting checkout…");
+      logActivity("checkout_started", "settings");
       const { data, error } = await supabase.functions.invoke("create-checkout");
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

@@ -77,6 +77,7 @@ const AcademyHome = () => {
       }, 3000);
     } else if (checkout === "canceled") {
       toast.info("Checkout canceled. You can try again anytime.");
+      logActivity("checkout_return_canceled", "dashboard");
     }
 
     return () => {

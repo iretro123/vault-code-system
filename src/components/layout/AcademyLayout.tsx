@@ -20,7 +20,19 @@ interface AcademyLayoutProps {
 export function AcademyLayout({ children }: AcademyLayoutProps) {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
+  const location = useLocation();
+  const { logActivity } = useActivityLog();
+  const lastPageRef = useRef("");
   useSmartNotifications();
+
+  // Page view logging
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === lastPageRef.current) return;
+    lastPageRef.current = path;
+    const segment = path.split("/").filter(Boolean)[1] || "home";
+    logActivity("page_view", segment);
+  }, [location.pathname]);
 
   if (loading || !hydrated) {
     return (
