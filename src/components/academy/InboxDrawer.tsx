@@ -347,11 +347,10 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
         </TabsContent>
 
         <TabsContent value="whats-new" className="flex-1 min-h-0 mt-0 px-0 data-[state=active]:flex data-[state=active]:flex-col">
-          <ItemList
+          <WhatsNewList
             items={whatsNewItems}
             onItemClick={handleClick}
             onDismiss={dismissInboxItem}
-            emptyMessage="No updates yet. New modules, live sessions, and announcements will appear here."
             loading={loading}
             onMarkAllRead={markAllRead}
             unreadCount={whatsNewUnread}
