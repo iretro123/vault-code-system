@@ -358,6 +358,12 @@ export function AdminStripeTab() {
       {selectedEvent && (
         <WebhookEventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
       )}
+
+      {/* System Health Checklist */}
+      <SystemHealthCard webhookEvents={webhookEvents} />
+
+      {/* QA Test Steps */}
+      <QATestSteps />
     </div>
   );
 }
