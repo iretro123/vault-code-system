@@ -1665,6 +1665,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_logs: {
+        Row: {
+          created_at: string
+          event_name: string
+          id: string
+          metadata_json: Json | null
+          page_key: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_name: string
+          id?: string
+          metadata_json?: Json | null
+          page_key?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_name?: string
+          id?: string
+          metadata_json?: Json | null
+          page_key?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_nudges_dismissed: {
         Row: {
           dismissed_until: string

@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { ReactNode, useEffect, useRef } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
@@ -9,6 +9,7 @@ import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -19,7 +20,19 @@ interface AcademyLayoutProps {
 export function AcademyLayout({ children }: AcademyLayoutProps) {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
+  const location = useLocation();
+  const { logActivity } = useActivityLog();
+  const lastPageRef = useRef("");
   useSmartNotifications();
+
+  // Page view logging
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === lastPageRef.current) return;
+    lastPageRef.current = path;
+    const segment = path.split("/").filter(Boolean)[1] || "home";
+    logActivity("page_view", segment);
+  }, [location.pathname]);
 
   if (loading || !hydrated) {
     return (

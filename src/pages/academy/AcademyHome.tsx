@@ -16,6 +16,7 @@ import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
 import { QuickAccessRow } from "@/components/academy/dashboard/QuickAccessRow";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
 import { toast } from "sonner";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
@@ -24,7 +25,13 @@ const AcademyHome = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { hasAccess, refetch: refetchAccess } = useStudentAccess();
+  const { logActivity } = useActivityLog();
   useLoginReminder();
+
+  // Log login on mount
+  useEffect(() => {
+    logActivity("login", "dashboard");
+  }, []);
 
   const [checkInOpen, setCheckInOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -44,6 +51,7 @@ const AcademyHome = () => {
     if (checkout === "success") {
       console.log("[AccessGate] Checkout success return — starting poll");
       toast.info("Payment received. Finalizing access…", { duration: 8000 });
+      logActivity("checkout_return_success", "dashboard");
 
       let elapsed = 0;
       pollRef.current = setInterval(async () => {
@@ -69,6 +77,7 @@ const AcademyHome = () => {
       }, 3000);
     } else if (checkout === "canceled") {
       toast.info("Checkout canceled. You can try again anytime.");
+      logActivity("checkout_return_canceled", "dashboard");
     }
 
     return () => {

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: { label: "Active", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
@@ -29,6 +30,7 @@ export function SettingsBilling() {
   const { status, tier, hasAccess, loading, isAdminBypass } = useStudentAccess();
   const [busy, setBusy] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { logActivity } = useActivityLog();
 
   // Handle ?billing=returned
   useEffect(() => {
@@ -43,6 +45,7 @@ export function SettingsBilling() {
     setBusy(true);
     try {
       console.log("[BillingPortal] Opening portal…");
+      logActivity("billing_portal_opened", "settings");
       const { data, error } = await supabase.functions.invoke("create-billing-portal");
       if (error) throw error;
       if (data?.error === "no_stripe_customer") {
@@ -63,6 +66,7 @@ export function SettingsBilling() {
     setBusy(true);
     try {
       console.log("[CheckoutReturn] Starting checkout…");
+      logActivity("checkout_started", "settings");
       const { data, error } = await supabase.functions.invoke("create-checkout");
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
