@@ -1304,6 +1304,23 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 ))}
               </div>
 
+              {/* Reply preview bar */}
+              {replyingTo && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[hsl(220,12%,90%)] border-l-2 border-l-primary">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-semibold text-primary">Replying to {replyingTo.user_name}</span>
+                    <p className="text-[11px] text-[hsl(220,10%,45%)] truncate">{replyingTo.body.slice(0, 80)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    className="shrink-0 p-1 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,20%)] hover:bg-[hsl(220,10%,85%)] transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+
               {/* Composer bar — with drag-and-drop support */}
               <div
                 data-chat-composer
