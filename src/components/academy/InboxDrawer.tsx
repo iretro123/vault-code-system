@@ -74,11 +74,11 @@ function ItemList({
           </Button>
         </div>
       )}
-      <div className="px-3 pb-4 space-y-1 w-full box-border">
+      <div className="w-full min-w-0 max-w-full pr-1 px-3 pb-4 space-y-1 box-border">
         {items.map((item) => (
           <div
             key={item.id}
-            className={`flex items-start gap-2 w-full max-w-full rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
+            className={`group flex items-start gap-2 w-full min-w-0 max-w-full rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] outline outline-1 outline-red-500/30 ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
             }`}
@@ -86,16 +86,16 @@ function ItemList({
             {/* Clickable content area */}
             <button
               onClick={() => onItemClick(item)}
-              className="flex items-start gap-2.5 min-w-0 flex-1 text-left overflow-hidden"
+              className="min-w-0 flex-1 w-0 flex items-start gap-2.5 text-left outline outline-1 outline-green-500/30"
             >
               <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
               {!item.read_at && (
                 <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
               )}
-              <div className="min-w-0 flex-1 overflow-hidden">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                {item.body && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.body}</p>}
-                <p className="text-xs text-muted-foreground/70 mt-1">
+                {item.body && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.body}</p>}
+                <p className="text-xs text-muted-foreground/70 mt-1 truncate">
                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
                 </p>
               </div>
@@ -104,7 +104,7 @@ function ItemList({
             <button
               aria-label="Dismiss"
               onClick={() => onDismiss(item.id)}
-              className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-white/[0.06] hover:bg-white/[0.14] opacity-50 hover:opacity-100 transition-all"
+              className="shrink-0 ml-1 flex items-center justify-center h-7 w-7 rounded-full bg-white/[0.06] hover:bg-white/[0.14] opacity-50 hover:opacity-100 transition-all outline outline-1 outline-blue-500/30"
             >
               <X className="h-3.5 w-3.5 text-white" />
             </button>
