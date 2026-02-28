@@ -413,6 +413,19 @@ html {
     color: rgba(255,255,255,0.7);
     background: rgba(255,255,255,0.06);
   }
+
+  /* Share Vault — premium blue glow on hover */
+  .share-vault-glow {
+    border: 1px solid rgba(255,255,255,0.04);
+    transition: border-color 300ms ease, box-shadow 300ms ease;
+  }
+  .share-vault-glow:hover {
+    border-color: rgba(59,130,246,0.4);
+    box-shadow: 0 0 12px 2px rgba(59,130,246,0.15), 0 0 4px 1px rgba(59,130,246,0.1) inset;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .share-vault-glow { transition: none; }
+  }
 }
 
 /* ─── XP Window premium scrollbar ─── */
