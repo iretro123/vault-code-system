@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureProfile } from "@/lib/ensureProfile";
+import { getStoredReferral, clearStoredReferral } from "@/lib/referralCapture";
 
 const Auth = () => {
   const { toast } = useToast();
@@ -28,13 +29,7 @@ const Auth = () => {
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
 
-  // Persist ref code from URL
-  const refCode = searchParams.get("ref");
-  useEffect(() => {
-    if (refCode) {
-      sessionStorage.setItem("vault_ref", refCode);
-    }
-  }, [refCode]);
+  // Referral capture now handled globally in App.tsx via ReferralCapture component
 
   // Debounced username uniqueness check
   useEffect(() => {
@@ -93,8 +88,9 @@ const Auth = () => {
           });
         }
 
-        // Record referral
-        const savedRef = sessionStorage.getItem("vault_ref");
+        // Record referral attribution
+        const savedRef = getStoredReferral();
+        console.log("[Referral] signup attribution check:", savedRef ? savedRef : "none");
         if (savedRef) {
           try {
             await supabase.from("referrals" as any).insert({
@@ -103,9 +99,10 @@ const Auth = () => {
               referred_email: email,
               status: "signed_up",
             } as any);
-            sessionStorage.removeItem("vault_ref");
+            console.log("[Referral] signup attributed to:", savedRef);
+            clearStoredReferral();
           } catch (e) {
-            console.error("Referral tracking error:", e);
+            console.error("[Referral] signup attribution error:", e);
           }
         }
       }

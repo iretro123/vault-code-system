@@ -16,9 +16,9 @@ interface ReferralModalProps {
 }
 
 const STEPS = [
-  { icon: Send, text: "Share your referral link" },
-  { icon: UserPlus, text: "They sign up and receive a bonus" },
-  { icon: Star, text: "You earn rewards when they upgrade" },
+  { icon: Send, text: "Share your invite link" },
+  { icon: UserPlus, text: "They sign up and join Vault" },
+  { icon: Star, text: "We track every referral you bring in" },
 ];
 
 function HeroBanner() {
@@ -53,12 +53,12 @@ function HeroBanner() {
 }
 
 const GUIDELINES_TEXT = [
-  "This referral program is available to new Vault OS users who sign up through your unique referral link. The goal is to grow the Vault trading community with serious traders.",
-  "Rewards are earned only after your referral creates a new account and subscribes to a paid plan. No rewards will be granted for inactive, duplicate, or incomplete registrations.",
-  "We do not grant rewards for disposable, temporary, or high-risk email accounts. All referrals may be reviewed to prevent fraud and ensure legitimate participation.",
-  "Each new user may generate only one (1) reward. Self-referrals, multiple accounts, or attempts to manipulate the system will result in disqualification.",
-  "Please do not spam, mass-message, or misuse your referral link. Referrals must be genuine traders who voluntarily join Vault OS. We actively monitor referral activity for unusual behavior.",
-  "If suspicious or non-compliant activity is detected, we reserve the right to withhold rewards, suspend referral privileges, or deactivate your referral link.",
+  "This referral program tracks signups made through your unique invite link. The goal is to grow the Vault trading community with serious traders.",
+  "Referral tracking is live — we record every signup that comes through your link. Reward and credit features will be added in a future update.",
+  "We do not track referrals from disposable, temporary, or high-risk email accounts. All referrals may be reviewed to ensure legitimate participation.",
+  "Each new user generates one (1) tracked referral. Self-referrals, multiple accounts, or attempts to manipulate the system will result in disqualification.",
+  "Please do not spam, mass-message, or misuse your referral link. Referrals must be genuine traders who voluntarily join Vault OS.",
+  "If suspicious or non-compliant activity is detected, we reserve the right to suspend referral privileges or deactivate your referral link.",
   "Vault OS may update, modify, pause, or discontinue this referral program at any time.",
   "For complete platform rules and policies, please refer to the Vault OS Terms of Service.",
 ];
@@ -125,13 +125,13 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
           <div className="space-y-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] px-3 py-1 text-[12px] font-medium text-white/70">
               <Gift className="h-3 w-3" />
-              Affiliate Program
+              Invite Traders
             </span>
             <h2 className="text-[24px] font-semibold text-white/90 leading-[1.12] max-w-[420px]">
-              Invite traders. Earn rewards.
+              Invite traders. Grow the community.
             </h2>
             <p className="text-[14px] text-white/[0.55] leading-[1.4] max-w-[420px]">
-              Share Vault OS with other traders and earn credits when they join and upgrade.
+              Share Vault OS with other traders. Referral tracking is live — rewards coming soon.
             </p>
           </div>
 
@@ -151,10 +151,11 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Stats */}
-          <div className="pt-3">
+          <div className="pt-3 space-y-1">
             <p className="text-[15px] font-semibold text-white/[0.85]">
               {referralStats.total_signed_up} invited · {referralStats.total_paid} upgraded
             </p>
+            <p className="text-[12px] text-white/[0.40]">Rewards and credits expand in a future update.</p>
           </div>
 
           {/* Copy link */}

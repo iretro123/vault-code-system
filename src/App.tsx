@@ -1,12 +1,14 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { VaultStateProvider } from "@/contexts/VaultStateContext";
 import { AcademyDataProvider } from "@/contexts/AcademyDataContext";
 import { AdminModeProvider } from "@/contexts/AdminModeContext";
+import { captureReferral } from "@/lib/referralCapture";
 import NotFound from "./pages/NotFound";
 import TradeLog from "./pages/TradeLog";
 import Auth from "./pages/Auth";
@@ -38,9 +40,19 @@ import Hub from "./pages/Hub";
 
 const queryClient = new QueryClient();
 
+function ReferralCapture() {
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) captureReferral(ref);
+  }, [searchParams]);
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
+      <ReferralCapture />
       <AuthProvider>
         <VaultStateProvider>
         <AcademyDataProvider>
