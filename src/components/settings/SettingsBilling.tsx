@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useActivityLog } from "@/hooks/useActivityLog";
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: { label: "Active", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
