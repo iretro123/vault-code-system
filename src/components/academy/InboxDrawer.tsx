@@ -77,7 +77,7 @@ function ItemList({
         {items.map((item) => (
           <div
             key={item.id}
-            className={`flex items-center gap-2 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
+            className={`flex items-center gap-2 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] overflow-hidden ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
             }`}
@@ -85,15 +85,15 @@ function ItemList({
             {/* Clickable content area */}
             <button
               onClick={() => onItemClick(item)}
-              className="flex items-start gap-2.5 min-w-0 flex-1 text-left"
+              className="flex items-start gap-2.5 min-w-0 flex-1 text-left overflow-hidden"
             >
               <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
               {!item.read_at && (
                 <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
               )}
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                {item.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.body}</p>}
+                {item.body && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1">
                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
                 </p>
