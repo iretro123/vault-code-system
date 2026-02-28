@@ -239,11 +239,8 @@ export function AcademySidebar() {
         {!collapsed && (
           <button
             onClick={() => setReferralOpen(true)}
-            className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 transition-colors duration-150 hover:bg-[#131922] active:scale-[0.98]"
-            style={{
-              background: '#0F1319',
-              border: '1px solid rgba(255,255,255,0.04)',
-            }}
+            className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow"
+            style={{ background: '#0F1319' }}
           >
             <div className="flex items-center justify-between">
               <div className="min-w-0">
