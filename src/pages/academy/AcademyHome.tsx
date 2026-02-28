@@ -51,6 +51,7 @@ const AcademyHome = () => {
     if (checkout === "success") {
       console.log("[AccessGate] Checkout success return — starting poll");
       toast.info("Payment received. Finalizing access…", { duration: 8000 });
+      logActivity("checkout_return_success", "dashboard");
 
       let elapsed = 0;
       pollRef.current = setInterval(async () => {
