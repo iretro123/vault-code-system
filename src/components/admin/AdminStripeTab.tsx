@@ -634,7 +634,7 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
           </SelectContent>
         </Select>
         <Textarea
-          placeholder="Reason (required)… e.g. 'manual support correction'"
+          placeholder="Reason (min 8 chars)… e.g. 'manual support correction'"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           className="text-xs h-8 min-h-[32px] flex-1 min-w-[200px] resize-none"
