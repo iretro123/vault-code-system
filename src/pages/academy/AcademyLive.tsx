@@ -25,6 +25,21 @@ import { format, isPast, isThisWeek } from "date-fns";
 import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 
+/* ── Google Calendar helper ── */
+function buildGoogleCalendarUrl(s: { title: string; session_date: string; duration_minutes: number; description: string; join_url: string }) {
+  const start = new Date(s.session_date);
+  const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60_000);
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: s.title,
+    dates: `${fmt(start)}/${fmt(end)}`,
+    details: `${s.description}\n\nJoin: ${s.join_url || "TBD"}`,
+    ctz: "America/New_York",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 /* ── Types ── */
 interface LiveSession {
   id: string;
@@ -452,7 +467,7 @@ const AcademyLive = () => {
                         <Link2 className="h-3.5 w-3.5" /> Copy Link
                       </button>
                     )}
-                    <button className="live-btn-glass" onClick={(e) => e.stopPropagation()}>
+                    <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); window.open(buildGoogleCalendarUrl(nextSession), '_blank'); }}>
                       <CalendarPlus className="h-3.5 w-3.5" /> Add to Calendar
                     </button>
                   </div>
