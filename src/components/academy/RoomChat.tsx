@@ -832,8 +832,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <Copy className="h-3 w-3" /> Copy
                 </ItemComponent>
               )}
-              {!msg.is_deleted && !isAnnouncements && onThreadOpen && (
-                <ItemComponent onClick={() => onThreadOpen({ ...msg, reply_count: (msg as any).reply_count ?? 0 })} className="gap-2 text-xs">
+              {!msg.is_deleted && !isAnnouncements && (
+                <ItemComponent onClick={() => {
+                  setReplyingTo({ id: msg.id, user_name: msg.user_name, body: msg.body });
+                  setTimeout(() => textareaRef.current?.focus(), 50);
+                }} className="gap-2 text-xs">
                   <MessageSquare className="h-3 w-3" /> Reply
                 </ItemComponent>
               )}
