@@ -93,13 +93,28 @@ const Auth = () => {
         console.log("[Referral] signup attribution check:", savedRef ? savedRef : "none");
         if (savedRef) {
           try {
-            await supabase.from("referrals" as any).insert({
-              referrer_user_id: savedRef,
-              referred_user_id: newUserId || null,
-              referred_email: email,
-              status: "signed_up",
-            } as any);
-            console.log("[Referral] signup attributed to:", savedRef);
+            // Try upgrading an existing "clicked" row first
+            const { data: updated } = await supabase
+              .from("referrals" as any)
+              .update({ referred_user_id: newUserId || null, referred_email: email, status: "signed_up" } as any)
+              .eq("referrer_user_id", savedRef)
+              .eq("status", "clicked")
+              .is("referred_user_id", null)
+              .select("id")
+              .limit(1);
+
+            if (updated && (updated as any[]).length > 0) {
+              console.log("[Referral] upgraded clicked -> signed_up for:", savedRef);
+            } else {
+              // No clicked row found — insert fresh
+              await supabase.from("referrals" as any).insert({
+                referrer_user_id: savedRef,
+                referred_user_id: newUserId || null,
+                referred_email: email,
+                status: "signed_up",
+              } as any);
+              console.log("[Referral] inserted new signed_up row for:", savedRef);
+            }
             clearStoredReferral();
           } catch (e) {
             console.error("[Referral] signup attribution error:", e);
