@@ -567,7 +567,7 @@ const AcademyLive = () => {
                         <div key={s.id} className="live-glass-card p-4">
                           <div className="flex items-baseline justify-between mb-2">
                             <span className="text-sm font-bold text-white/90">{format(d, "EEEE")}<span className="text-white/40 font-normal">. {format(d, "MMM d")}</span></span>
-                            <span className="text-xs text-white/45">{formatTime(d)}</span>
+                            <span className="text-xs text-white/45">{formatTime(d)} EST</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center shrink-0">
