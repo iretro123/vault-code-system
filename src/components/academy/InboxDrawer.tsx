@@ -1,16 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-
-function useDismissAnimation(onDismiss: (id: string) => void) {
-  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
-  const triggerDismiss = useCallback((id: string) => {
-    setDismissingIds((prev) => new Set(prev).add(id));
-    setTimeout(() => {
-      onDismiss(id);
-      setDismissingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
-    }, 220);
-  }, [onDismiss]);
-  return { dismissingIds, triggerDismiss };
-}
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio, X } from "lucide-react";
 import { useAcademyData, InboxItem } from "@/contexts/AcademyDataContext";
@@ -55,8 +43,6 @@ function ItemList({
   onMarkAllRead: () => void;
   unreadCount: number;
 }) {
-  const { dismissingIds, triggerDismiss } = useDismissAnimation(onDismiss);
-
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -88,14 +74,9 @@ function ItemList({
         </div>
       )}
       <div className="w-full min-w-0 max-w-full pr-1 px-3 pb-4 space-y-1 box-border">
-        {items.map((item) => {
-          const isDismissing = dismissingIds.has(item.id);
-          return (
+        {items.map((item) => (
           <div
             key={item.id}
-            className={`overflow-hidden transition-all duration-200 ease-out ${isDismissing ? "opacity-0 -translate-x-4 scale-95 max-h-0 py-0 my-0" : "max-h-40"}`}
-          >
-          <div
             className={`group flex items-start gap-2 w-full min-w-0 max-w-full rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
@@ -119,15 +100,13 @@ function ItemList({
             </button>
             <button
               aria-label="Dismiss"
-              onClick={() => triggerDismiss(item.id)}
+              onClick={() => onDismiss(item.id)}
               className="shrink-0 ml-1 flex items-center justify-center h-7 w-7 rounded-full bg-white/[0.06] hover:bg-white/[0.14] opacity-50 hover:opacity-100 transition-all"
             >
               <X className="h-3.5 w-3.5 text-white" />
             </button>
           </div>
-          </div>
-          );
-        })}
+        ))}
       </div>
       </div>
     </ScrollArea>
@@ -215,7 +194,6 @@ function WhatsNewList({
   onMarkAllRead: () => void;
   unreadCount: number;
 }) {
-  const { dismissingIds, triggerDismiss } = useDismissAnimation(onDismiss);
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -247,14 +225,9 @@ function WhatsNewList({
           </div>
         )}
         <div className="px-3 pb-4 space-y-3">
-          {items.map((item) => {
-            const isDismissing = dismissingIds.has(item.id);
-            return (
-            <div key={item.id} className={`group overflow-hidden transition-all duration-200 ease-out ${isDismissing ? "opacity-0 -translate-x-4 scale-95 max-h-0 py-0 my-0" : "max-h-[300px]"}`}>
-              <WhatsNewCard item={item} onItemClick={onItemClick} onDismiss={triggerDismiss} />
-            </div>
-            );
-          })}
+          {items.map((item) => (
+            <WhatsNewCard key={item.id} item={item} onItemClick={onItemClick} onDismiss={onDismiss} />
+          ))}
         </div>
       </div>
     </ScrollArea>
