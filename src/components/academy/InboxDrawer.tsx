@@ -93,7 +93,7 @@ function ItemList({
               )}
               <div className="min-w-0 flex-1 overflow-hidden">
                 <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                {item.body && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.body}</p>}
+                {item.body && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1">
                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
                 </p>
