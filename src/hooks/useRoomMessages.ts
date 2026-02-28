@@ -83,7 +83,13 @@ export function useRoomMessages(roomSlug: string) {
     }
 
     const sorted = castMessages(data ?? []).reverse();
-    updateMessages(sorted);
+    // Diff by IDs — skip update if identical to prevent unnecessary re-render
+    setMessages((prev) => {
+      const same = prev.length === sorted.length && prev.every((m, i) => m.id === sorted[i].id && m.edit_count === sorted[i].edit_count && m.is_deleted === sorted[i].is_deleted);
+      if (same) return prev;
+      roomMessageCache.set(roomSlug, sorted);
+      return sorted;
+    });
     setHasMore((data?.length ?? 0) >= PAGE_SIZE);
     oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
     setLoading(false);
