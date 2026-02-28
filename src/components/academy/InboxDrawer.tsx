@@ -1,16 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-
-function useDismissAnimation(onDismiss: (id: string) => void) {
-  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
-  const triggerDismiss = useCallback((id: string) => {
-    setDismissingIds((prev) => new Set(prev).add(id));
-    setTimeout(() => {
-      onDismiss(id);
-      setDismissingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
-    }, 220);
-  }, [onDismiss]);
-  return { dismissingIds, triggerDismiss };
-}
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio, X } from "lucide-react";
 import { useAcademyData, InboxItem } from "@/contexts/AcademyDataContext";
