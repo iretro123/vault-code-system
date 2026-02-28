@@ -12,31 +12,18 @@ export function VaultPlaybookIcon({ className }: Props) {
       xmlns="http://www.w3.org/2000/svg"
       className={cn("shrink-0", className)}
     >
-      {/* Left page */}
-      <path
-        d="M2 4.5C2 4.5 5 3 8.5 3C10.5 3 11.5 3.5 12 4C12 4 12 18 12 19C11.5 18.5 10.5 18 8.5 18C5 18 2 19.5 2 19.5V4.5Z"
-        stroke="#3B82F6"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Right page */}
-      <path
-        d="M22 4.5C22 4.5 19 3 15.5 3C13.5 3 12.5 3.5 12 4C12 4 12 18 12 19C12.5 18.5 13.5 18 15.5 18C19 18 22 19.5 22 19.5V4.5Z"
-        stroke="#3B82F6"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Bottom curve */}
-      <path
-        d="M2 19.5C5 18 8.5 18 12 19C15.5 18 19 18 22 19.5"
-        stroke="#3B82F6"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.5"
-      />
+      {/* Tablet body */}
+      <rect x="3" y="1" width="18" height="22" rx="2" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1.5" />
+      {/* Screen */}
+      <rect x="5.5" y="3.5" width="13" height="15" rx="0.5" fill="currentColor" opacity="0.08" />
+      {/* Text lines */}
+      <line x1="7" y1="9.5" x2="17" y2="9.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
+      <line x1="7" y1="12.5" x2="17" y2="12.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
+      <line x1="7" y1="15.5" x2="13" y2="15.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.7" />
+      {/* Title block on screen */}
+      <rect x="7" y="5" width="5" height="2.5" rx="0.5" fill="currentColor" opacity="0.5" />
+      {/* Bottom bar / home indicator */}
+      <line x1="10" y1="21" x2="14" y2="21" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
     </svg>
   );
 }
