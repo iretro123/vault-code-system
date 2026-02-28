@@ -172,7 +172,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   return (
     <div
       ref={panelRef}
-      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[400px] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl ${
+      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[400px] max-w-[calc(100vw-var(--sidebar-width,16rem)-24px)] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl ${
         open ? "visible pointer-events-auto" : "invisible pointer-events-none"
       }`}
       style={{ marginLeft: "8px", transition: "none", animation: "none" }}
