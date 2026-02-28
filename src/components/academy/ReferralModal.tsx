@@ -125,13 +125,13 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
           <div className="space-y-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] px-3 py-1 text-[12px] font-medium text-white/70">
               <Gift className="h-3 w-3" />
-              Affiliate Program
+              Invite Traders
             </span>
             <h2 className="text-[24px] font-semibold text-white/90 leading-[1.12] max-w-[420px]">
-              Invite traders. Earn rewards.
+              Invite traders. Grow the community.
             </h2>
             <p className="text-[14px] text-white/[0.55] leading-[1.4] max-w-[420px]">
-              Share Vault OS with other traders and earn credits when they join and upgrade.
+              Share Vault OS with other traders. Referral tracking is live — rewards coming soon.
             </p>
           </div>
 
