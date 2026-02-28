@@ -195,19 +195,23 @@ export function ReferralModal({ open, onOpenChange }: ReferralModalProps) {
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] p-0 overflow-hidden max-h-[90vh]">
-          <ReferralBody onClose={() => onOpenChange(false)} />
-        </DrawerContent>
-      </Drawer>
+      <div className="referral-modal-backdrop">
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent className="bg-[hsl(220,18%,8%)] border-t border-white/[0.08] p-0 overflow-hidden max-h-[90vh] shadow-[0_8px_60px_-12px_rgba(59,130,246,0.18),0_0_0_1px_rgba(255,255,255,0.04)]">
+            <ReferralBody onClose={() => onOpenChange(false)} />
+          </DrawerContent>
+        </Drawer>
+      </div>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[600px] max-w-[92vw] max-h-[700px] p-0 bg-[hsl(220,18%,8%)] border border-white/[0.08] rounded-[22px] overflow-hidden [&>button:last-child]:hidden">
-        <ReferralBody onClose={() => onOpenChange(false)} />
-      </DialogContent>
-    </Dialog>
+    <div className="referral-modal-backdrop">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[600px] max-w-[92vw] max-h-[700px] p-0 bg-[hsl(220,18%,8%)] border border-white/[0.08] rounded-[22px] overflow-hidden [&>button:last-child]:hidden shadow-[0_8px_60px_-12px_rgba(59,130,246,0.18),0_0_0_1px_rgba(255,255,255,0.04)]">
+          <ReferralBody onClose={() => onOpenChange(false)} />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
