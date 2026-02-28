@@ -536,6 +536,9 @@ function StudentDetail({
         )}
       </div>
 
+      {/* Access Timeline */}
+      <AccessTimeline studentId={student.id} authUserId={student.auth_user_id} access={access} events={events} />
+
       {/* Admin Tools */}
       {canOverride && (
         <div className="border-t border-white/[0.06] pt-4 space-y-4">
