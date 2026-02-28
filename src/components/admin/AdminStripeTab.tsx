@@ -20,11 +20,13 @@ import {
 import {
   Loader2, Search, RefreshCw, CreditCard, AlertTriangle,
   CheckCircle2, XCircle, Copy, Eye, ChevronDown, ShieldAlert,
+  Clock, Activity, Shield,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTimeFull } from "@/lib/formatTime";
 import { toast } from "sonner";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
 
 // ─── Types ───
 
