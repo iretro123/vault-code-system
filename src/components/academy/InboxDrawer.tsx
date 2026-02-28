@@ -247,11 +247,14 @@ function WhatsNewList({
           </div>
         )}
         <div className="px-3 pb-4 space-y-3">
-          {items.map((item) => (
-            <div key={item.id} className="group">
-              <WhatsNewCard item={item} onItemClick={onItemClick} onDismiss={onDismiss} />
+          {items.map((item) => {
+            const isDismissing = dismissingIds.has(item.id);
+            return (
+            <div key={item.id} className={`group overflow-hidden transition-all duration-200 ease-out ${isDismissing ? "opacity-0 -translate-x-4 scale-95 max-h-0 py-0 my-0" : "max-h-[300px]"}`}>
+              <WhatsNewCard item={item} onItemClick={onItemClick} onDismiss={triggerDismiss} />
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </ScrollArea>
