@@ -43,6 +43,7 @@ function ItemList({
   onMarkAllRead: () => void;
   unreadCount: number;
 }) {
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
