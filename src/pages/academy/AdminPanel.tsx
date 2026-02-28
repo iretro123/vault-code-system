@@ -5,13 +5,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, Loader2 } from "lucide-react";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, Loader2 } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminLogsTab } from "@/components/admin/AdminLogsTab";
 import { AdminStripeTab } from "@/components/admin/AdminStripeTab";
+import { AdminReferralsTab } from "@/components/admin/AdminReferralsTab";
 
 const TAB_CONFIG = [
   { value: "members", label: "Members", icon: Users, perm: "manage_users" },
