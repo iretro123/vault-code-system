@@ -23,6 +23,7 @@ import { SettingsBilling } from "@/components/settings/SettingsBilling";
 const NAV_ITEMS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "trading", label: "Trading Preferences", icon: BarChart3 },
+  { id: "billing", label: "Billing", icon: CreditCard },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy & Data", icon: Database },
   { id: "security", label: "Security", icon: Shield },
