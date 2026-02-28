@@ -27,12 +27,14 @@ export function useAcademyPermissions() {
   const { user } = useAuth();
   const cached = readCache();
 
+  const hadCache = Boolean(cached);
+
   const [state, setState] = useState<AcademyPermState>({
     roleName: cached?.roleName ?? "Member",
     permissions: new Set(cached?.permissions ?? []),
     appRoles: new Set(cached?.appRoles ?? []),
-    loading: Boolean(user?.id),
-    resolved: !user?.id,
+    loading: hadCache ? false : Boolean(user?.id),
+    resolved: hadCache ? true : !user?.id,
   });
 
   useEffect(() => {
@@ -43,7 +45,9 @@ export function useAcademyPermissions() {
       return;
     }
 
-    setState((prev) => ({ ...prev, loading: true, resolved: false }));
+    if (!hadCache) {
+      setState((prev) => ({ ...prev, loading: true, resolved: false }));
+    }
 
     (async () => {
       const [userRoleRes, appRolesRes] = await Promise.all([
