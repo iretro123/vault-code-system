@@ -78,7 +78,7 @@ function ItemList({
         {items.map((item) => (
           <div
             key={item.id}
-            className={`flex items-center gap-2 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
+            className={`flex items-start gap-2 w-full max-w-full rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/[0.05] ${
               item.pinned ? "border border-primary/20 bg-primary/[0.03]" :
               !item.read_at ? "bg-white/[0.04] border border-[hsl(45,90%,50%)]/20" : ""
             }`}
