@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
-import { useAuth } from "@/hooks/useAuth";
-import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { cn } from "@/lib/utils";
 import {
   User,
@@ -10,6 +9,7 @@ import {
   Shield,
   HelpCircle,
   Database,
+  CreditCard,
 } from "lucide-react";
 
 import { SettingsProfile } from "@/components/settings/SettingsProfile";
@@ -18,10 +18,12 @@ import { SettingsNotifications } from "@/components/settings/SettingsNotificatio
 import { SettingsPrivacy } from "@/components/settings/SettingsPrivacy";
 import { SettingsSecurity } from "@/components/settings/SettingsSecurity";
 import { SettingsHelp } from "@/components/settings/SettingsHelp";
+import { SettingsBilling } from "@/components/settings/SettingsBilling";
 
 const NAV_ITEMS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "trading", label: "Trading Preferences", icon: BarChart3 },
+  { id: "billing", label: "Billing", icon: CreditCard },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy & Data", icon: Database },
   { id: "security", label: "Security", icon: Shield },
@@ -31,7 +33,16 @@ const NAV_ITEMS = [
 type SectionId = (typeof NAV_ITEMS)[number]["id"];
 
 const AcademySettings = () => {
-  const [section, setSection] = useState<SectionId>("profile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const billingReturn = searchParams.get("billing") === "returned";
+  const [section, setSection] = useState<SectionId>(billingReturn ? "billing" : "profile");
+
+  useEffect(() => {
+    if (billingReturn) {
+      searchParams.delete("billing");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   return (
     <AcademyLayout>
@@ -108,6 +119,7 @@ const AcademySettings = () => {
 const PANELS: { id: SectionId; Component: React.FC }[] = [
   { id: "profile", Component: SettingsProfile },
   { id: "trading", Component: SettingsTradingPrefs },
+  { id: "billing", Component: SettingsBilling },
   { id: "notifications", Component: SettingsNotifications },
   { id: "privacy", Component: SettingsPrivacy },
   { id: "security", Component: SettingsSecurity },
