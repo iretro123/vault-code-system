@@ -223,7 +223,7 @@ const AcademyLearn = () => {
                     {/* Cover image */}
                     <div className="relative aspect-[16/9] overflow-hidden bg-muted">
                       <img
-                        src={courseCoverDefault}
+                        src={(mod as any).cover_image_url || courseCoverDefault}
                         alt={mod.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />

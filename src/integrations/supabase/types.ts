@@ -162,6 +162,7 @@ export type Database = {
       }
       academy_modules: {
         Row: {
+          cover_image_url: string | null
           created_at: string
           id: string
           slug: string
@@ -171,6 +172,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           slug: string
@@ -180,6 +182,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           slug?: string
