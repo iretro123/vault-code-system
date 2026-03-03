@@ -919,6 +919,14 @@ export function CoachDrawer() {
           )}
         </div>
       </div>
+      </div>
+      {lightboxSrc && (
+        <ImageLightbox
+          src={lightboxSrc}
+          alt="AI generated chart"
+          onClose={() => setLightboxSrc(null)}
+        />
+      )}
     </div>
   );
 }
