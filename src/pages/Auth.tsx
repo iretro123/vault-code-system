@@ -111,7 +111,7 @@ const Auth = () => {
     } else {
       toast({
         title: mode === "signup" ? "Account created" : "Welcome back",
-        description: mode === "signup" ? "Check your email to verify your account." : "You have been signed in.",
+        description: mode === "signup" ? "Welcome to Vault Academy." : "You have been signed in.",
       });
 
       if (mode === "signup") {
