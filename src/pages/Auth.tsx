@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ensureProfile } from "@/lib/ensureProfile";
 import { getStoredReferral, clearStoredReferral } from "@/lib/referralCapture";
 
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
 const Auth = () => {
   const { toast } = useToast();
   const { signIn, signUp } = useAuth();
