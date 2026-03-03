@@ -70,6 +70,7 @@ const App = () => (
             <Route path="/reports" element={<VaultOSGate><Reports /></VaultOSGate>} />
             <Route path="/settings" element={<VaultOSGate><Settings /></VaultOSGate>} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/academy" element={<Navigate to="/academy/home" replace />} />
             <Route path="/academy/home" element={<AcademyHome />} />
             <Route path="/academy/start" element={<AcademyStart />} />
