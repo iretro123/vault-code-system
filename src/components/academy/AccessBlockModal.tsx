@@ -68,12 +68,7 @@ export function AccessBlockModal({ status, refetch }: Props) {
 
   return (
     <AlertDialog open>
-      <AlertDialogContent
-        className="max-w-md border-border/50 bg-card"
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <AlertDialogContent className="max-w-md border-border/50 bg-card">
         <AlertDialogHeader className="items-center text-center">
           <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10">
             {isPastDue ? (
