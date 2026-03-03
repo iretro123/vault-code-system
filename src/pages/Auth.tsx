@@ -160,6 +160,7 @@ const Auth = () => {
       }
 
       if (mode === "login") navigate("/hub");
+      if (mode === "signup") navigate("/hub");
     }
 
     setLoading(false);
