@@ -137,6 +137,10 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
           <MobileNav />
           <CoachDrawer />
         </div>
+
+        {showBlockModal && (
+          <AccessBlockModal status={accessStatus2} refetch={refetchAccess} />
+        )}
       </div>
     </SidebarProvider>
   );
