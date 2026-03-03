@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.create-billing-portal]
 verify_jwt = false
+
+[functions.check-stripe-customer]
+verify_jwt = false
