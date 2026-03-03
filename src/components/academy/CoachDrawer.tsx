@@ -329,13 +329,22 @@ export function CoachDrawer() {
         } as any);
       }
 
-      // Auto-trigger image generation if AI offered to create a visual
+      // Auto-insert static chart examples if AI mentions the trigger phrase
       const lowerReply = assistantSoFar.toLowerCase();
-      const imageOfferPhrases = ["generate an image", "i can generate", "one sec", "create a visual", "draw you", "show you a diagram", "show you an image"];
-      const shouldAutoImage = imageOfferPhrases.some((p) => lowerReply.includes(p));
-      if (shouldAutoImage && !imageLoading) {
-        // Small delay so the text renders first, then auto-trigger
-        setTimeout(() => handleGenerateImage(), 400);
+      const chartTriggerPhrases = ["real chart examples", "show you what that looks like", "chart examples to show"];
+      const shouldShowCharts = chartTriggerPhrases.some((p) => lowerReply.includes(p));
+      if (shouldShowCharts) {
+        setTimeout(() => {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "",
+              images: CHART_EXAMPLES.map((c) => ({ type: "image_url", image_url: { url: c.src } })),
+              isStreaming: false,
+            },
+          ]);
+        }, 400);
       }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
