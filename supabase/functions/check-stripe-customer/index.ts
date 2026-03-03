@@ -20,39 +20,70 @@ Deno.serve(async (req) => {
       });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // --- 1. Check Stripe ---
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      console.error("STRIPE_SECRET_KEY not set");
-      return new Response(JSON.stringify({ error: "server config error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (stripeKey) {
+      const stripeUrl = `https://api.stripe.com/v1/customers?email=${encodeURIComponent(normalizedEmail)}&limit=1`;
+      const stripeRes = await fetch(stripeUrl, {
+        headers: { Authorization: `Bearer ${stripeKey}` },
       });
+
+      if (stripeRes.ok) {
+        const stripeData = await stripeRes.json();
+        if (stripeData.data && stripeData.data.length > 0) {
+          console.log("[check-membership] Found in Stripe:", normalizedEmail);
+          return new Response(
+            JSON.stringify({ found: true, source: "stripe" }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } else {
+        console.error("[check-membership] Stripe API error:", stripeRes.status);
+      }
+    } else {
+      console.warn("[check-membership] STRIPE_SECRET_KEY not set, skipping Stripe check");
     }
 
-    const url = `https://api.stripe.com/v1/customers?email=${encodeURIComponent(email.trim().toLowerCase())}&limit=1`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${stripeKey}`,
-      },
-    });
+    // --- 2. Fallback: Check Whop ---
+    const whopKey = Deno.env.get("WHOP_API_KEY");
+    if (whopKey) {
+      try {
+        const whopUrl = `https://api.whop.com/api/v2/memberships?email=${encodeURIComponent(normalizedEmail)}`;
+        const whopRes = await fetch(whopUrl, {
+          headers: { Authorization: `Bearer ${whopKey}` },
+        });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Stripe API error:", res.status, text);
-      return new Response(JSON.stringify({ error: "stripe lookup failed" }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        if (whopRes.ok) {
+          const whopData = await whopRes.json();
+          const memberships = whopData.data ?? whopData.pagination?.data ?? [];
+          if (Array.isArray(memberships) && memberships.length > 0) {
+            console.log("[check-membership] Found in Whop:", normalizedEmail);
+            return new Response(
+              JSON.stringify({ found: true, source: "whop" }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        } else {
+          const text = await whopRes.text();
+          console.error("[check-membership] Whop API error:", whopRes.status, text);
+        }
+      } catch (whopErr) {
+        console.error("[check-membership] Whop fetch error:", whopErr);
+      }
+    } else {
+      console.warn("[check-membership] WHOP_API_KEY not set, skipping Whop check");
     }
 
-    const data = await res.json();
-    const found = data.data && data.data.length > 0;
-
-    return new Response(JSON.stringify({ found }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // --- 3. Not found anywhere ---
+    console.log("[check-membership] Not found in Stripe or Whop:", normalizedEmail);
+    return new Response(
+      JSON.stringify({ found: false, source: null }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
-    console.error("check-stripe-customer error:", e);
+    console.error("[check-membership] error:", e);
     return new Response(JSON.stringify({ error: "internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
