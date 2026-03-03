@@ -24,8 +24,11 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
   const { hydrated } = useAcademyData();
   const location = useLocation();
   const { logActivity } = useActivityLog();
+  const { status: accessStatus2, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
   const lastPageRef = useRef("");
   useSmartNotifications();
+
+  const showBlockModal = !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled");
 
   // Page view logging
   useEffect(() => {
