@@ -132,8 +132,22 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-7 relative overflow-hidden">
-      {/* Subtle bottom gradient */}
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-primary/[0.04] to-transparent pointer-events-none" />
+      {/* Animated gradient background */}
+      <div
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 80% 60% at 20% 50%, hsl(var(--primary) / 0.35), transparent), radial-gradient(ellipse 60% 80% at 80% 30%, hsl(217 91% 60% / 0.2), transparent), radial-gradient(ellipse 50% 50% at 50% 80%, hsl(199 89% 48% / 0.15), transparent)",
+          animation: "heroGradientShift 8s ease-in-out infinite alternate",
+        }}
+      />
+      <style>{`
+        @keyframes heroGradientShift {
+          0% { transform: scale(1) translate(0, 0); opacity: 0.25; }
+          33% { transform: scale(1.05) translate(2%, -1%); opacity: 0.35; }
+          66% { transform: scale(0.98) translate(-1%, 2%); opacity: 0.3; }
+          100% { transform: scale(1.03) translate(1%, -2%); opacity: 0.4; }
+        }
+      `}</style>
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 relative z-10">
         <div className="space-y-2">
