@@ -17,6 +17,7 @@ import { formatDateTime, formatDateShort } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
+import { ImageLightbox } from "@/components/academy/community/ImageLightbox";
 
 const CATEGORIES = ["Platform", "Options Basics", "Risk", "Mindset", "Trade Review"] as const;
 
@@ -139,6 +140,7 @@ export function CoachDrawer() {
   const [chatLoading, setChatLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [pastAnswers, setPastAnswers] = useState<InstantAnswer[]>([]);
   const [pastLoading, setPastLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -634,12 +636,14 @@ export function CoachDrawer() {
                             {msg.images && msg.images.length > 0 && (
                               <div className="pt-2 space-y-2">
                                 {msg.images.map((img, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={img.image_url.url}
-                                    alt="AI generated educational diagram"
-                                    className="rounded-lg border border-white/[0.08] max-w-full"
-                                  />
+                                  <div key={idx} className="relative rounded-lg overflow-hidden border border-white/[0.08] bg-black/20">
+                                    <img
+                                      src={img.image_url.url}
+                                      alt="AI generated educational diagram"
+                                      className="w-full max-h-[45vh] sm:max-h-[40vh] md:max-h-[38vh] object-contain cursor-pointer rounded-lg transition-opacity hover:opacity-90"
+                                      onClick={() => setLightboxSrc(img.image_url.url)}
+                                    />
+                                  </div>
                                 ))}
                               </div>
                             )}
@@ -915,6 +919,13 @@ export function CoachDrawer() {
           )}
         </div>
       </div>
+      {lightboxSrc && (
+        <ImageLightbox
+          src={lightboxSrc}
+          alt="AI generated chart"
+          onClose={() => setLightboxSrc(null)}
+        />
+      )}
     </div>
   );
 }

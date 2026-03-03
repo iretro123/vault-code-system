@@ -54,7 +54,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-2.5-flash-image",
           messages: [
-            { role: "system", content: "You are a visual teaching assistant for traders. Create realistic-looking candlestick chart diagrams with properly labeled zones. Use proper chart styling: green candles for bullish, red candles for bearish, a clean price axis on the right, and clearly labeled supply/demand zones highlighted with colored rectangular boxes. Make it look like a real trading chart screenshot, not clip art or cartoon. Include price labels and annotations that a beginner can follow." },
+            { role: "system", content: "You are a visual teaching assistant for traders. Generate clean, realistic candlestick chart diagrams. Style rules: green candles for bullish moves, red candles for bearish moves, clean price axis on the right side, clearly labeled supply and demand zones using colored rectangular overlay boxes (blue/purple for supply zones, green/orange for demand zones). Add arrows showing expected price movement direction. Include clear text annotations a beginner can follow. Use a clean white or light background. Make it look like a real trading chart screenshot — not clip art, not cartoon. Keep it simple and educational." },
             ...messages.slice(-3), // Only last 3 messages for image context
           ],
           modalities: ["image", "text"],
