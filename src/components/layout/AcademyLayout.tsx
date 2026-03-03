@@ -6,10 +6,12 @@ import { MobileNav } from "./MobileNav";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
+import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,8 +24,11 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
   const { hydrated } = useAcademyData();
   const location = useLocation();
   const { logActivity } = useActivityLog();
+  const { status: accessStatus2, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
   const lastPageRef = useRef("");
   useSmartNotifications();
+
+  const showBlockModal = !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled");
 
   // Page view logging
   useEffect(() => {
@@ -132,6 +137,10 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
           <MobileNav />
           <CoachDrawer />
         </div>
+
+        {showBlockModal && (
+          <AccessBlockModal status={accessStatus2} refetch={refetchAccess} />
+        )}
       </div>
     </SidebarProvider>
   );
