@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
         if (stripeData.data && stripeData.data.length > 0) {
           console.log("[check-membership] Found in Stripe:", normalizedEmail);
           return new Response(
-            JSON.stringify({ found: true, source: "stripe" }),
+            JSON.stringify({ found: true, source: "stripe", status: "active" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -46,29 +46,62 @@ Deno.serve(async (req) => {
       console.warn("[check-membership] STRIPE_SECRET_KEY not set, skipping Stripe check");
     }
 
-    // --- 2. Fallback: Check Whop ---
+    // --- 2. Fallback: Check Whop (paginated, server-side email match) ---
     const whopKey = Deno.env.get("WHOP_API_KEY");
     if (whopKey) {
       try {
-        const whopUrl = `https://api.whop.com/api/v2/memberships?email=${encodeURIComponent(normalizedEmail)}`;
-        const whopRes = await fetch(whopUrl, {
-          headers: { Authorization: `Bearer ${whopKey}` },
-        });
+        const MAX_PAGES = 10; // 50 per page × 10 = 500 max
+        let page = 1;
+        let hasMore = true;
 
-        if (whopRes.ok) {
+        while (hasMore && page <= MAX_PAGES) {
+          const whopUrl = `https://api.whop.com/api/v2/memberships?per=50&page=${page}`;
+          const whopRes = await fetch(whopUrl, {
+            headers: { Authorization: `Bearer ${whopKey}` },
+          });
+
+          if (!whopRes.ok) {
+            const text = await whopRes.text();
+            console.error("[check-membership] Whop API error:", whopRes.status, text);
+            break;
+          }
+
           const whopData = await whopRes.json();
           const memberships = whopData.data ?? whopData.pagination?.data ?? [];
-          if (Array.isArray(memberships) && memberships.length > 0) {
-            console.log("[check-membership] Found in Whop:", normalizedEmail);
-            return new Response(
-              JSON.stringify({ found: true, source: "whop" }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+
+          if (!Array.isArray(memberships) || memberships.length === 0) {
+            break;
           }
-        } else {
-          const text = await whopRes.text();
-          console.error("[check-membership] Whop API error:", whopRes.status, text);
+
+          // Server-side email match
+          for (const m of memberships) {
+            const mEmail = (m.email ?? "").trim().toLowerCase();
+            const mUserEmail = (m.user?.email ?? "").trim().toLowerCase();
+
+            if (mEmail === normalizedEmail || mUserEmail === normalizedEmail) {
+              // Found a match — check status
+              const isActive = m.valid === true && ["active", "trialing", "completed"].includes(m.status);
+              const status = isActive ? "active" : "canceled";
+              console.log(`[check-membership] Whop match: ${normalizedEmail} → ${status} (valid=${m.valid}, status=${m.status})`);
+              return new Response(
+                JSON.stringify({ found: true, source: "whop", status }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+          }
+
+          // Check if there are more pages
+          const pagination = whopData.pagination;
+          if (pagination && pagination.current_page < pagination.last_page) {
+            page++;
+          } else if (memberships.length < 50) {
+            hasMore = false;
+          } else {
+            page++;
+          }
         }
+
+        console.log("[check-membership] No Whop match after scanning", (page - 1) * 50, "memberships for:", normalizedEmail);
       } catch (whopErr) {
         console.error("[check-membership] Whop fetch error:", whopErr);
       }
@@ -77,7 +110,7 @@ Deno.serve(async (req) => {
     }
 
     // --- 3. Not found anywhere ---
-    console.log("[check-membership] Not found in Stripe or Whop:", normalizedEmail);
+    console.log("[check-membership] Not found:", normalizedEmail);
     return new Response(
       JSON.stringify({ found: false, source: null }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
