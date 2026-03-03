@@ -36,6 +36,38 @@ const Auth = () => {
 
   // Referral capture now handled globally in App.tsx via ReferralCapture component
 
+  // Debounced Stripe customer check for signup
+  useEffect(() => {
+    if (mode !== "signup" || !email.trim()) {
+      setStripeStatus("idle");
+      return;
+    }
+    const trimmed = email.trim().toLowerCase();
+    // Basic email format check
+    if (!trimmed.includes("@") || !trimmed.includes(".")) {
+      setStripeStatus("idle");
+      return;
+    }
+    setStripeStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-stripe-customer`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: trimmed }),
+          }
+        );
+        const data = await res.json();
+        setStripeStatus(data.found ? "found" : "not_found");
+      } catch {
+        setStripeStatus("idle"); // fail open on network error
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [email, mode]);
+
   // Debounced username uniqueness check
   useEffect(() => {
     if (mode !== "signup" || !username.trim()) {
