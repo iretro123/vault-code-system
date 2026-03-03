@@ -124,14 +124,15 @@ const AcademyHome = () => {
   return (
     <AcademyLayout>
       <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl">
-        {/* 1) Hero Header */}
-        <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
+        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
+          <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
+        </div>
 
-        {/* Playbook Card */}
-        <PlaybookCard />
+        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "forwards" }}>
+          <PlaybookCard />
+        </div>
 
-        {/* 2 + 3) Gameplan + Scoreboard */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 opacity-0 animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "forwards" }}>
           <div className="lg:col-span-3">
             <GameplanCard onCheckIn={() => setCheckInOpen(true)} />
           </div>
@@ -140,17 +141,18 @@ const AcademyHome = () => {
           </div>
         </div>
 
-        {/* 4) Coach Card */}
-        <CoachCard />
+        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "240ms", animationFillMode: "forwards" }}>
+          <CoachCard />
+        </div>
 
-        {/* 5 + 6) Live Calls + Toolkit */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 opacity-0 animate-fade-in" style={{ animationDelay: "320ms", animationFillMode: "forwards" }}>
           <LiveCallsCard />
           <ToolkitCard />
         </div>
 
-        {/* 7) Quick Access */}
-        <QuickAccessRow />
+        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "400ms", animationFillMode: "forwards" }}>
+          <QuickAccessRow />
+        </div>
       </div>
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
