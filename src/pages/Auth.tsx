@@ -185,7 +185,7 @@ const Auth = () => {
     }
   };
 
-  const signupFieldsValid = mode !== "signup" || (phoneNumber.trim().length > 0 && usernameStatus !== "taken");
+  const signupFieldsValid = mode !== "signup" || (phoneNumber.trim().length > 0 && usernameStatus !== "taken" && stripeStatus === "found");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
