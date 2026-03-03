@@ -636,12 +636,14 @@ export function CoachDrawer() {
                             {msg.images && msg.images.length > 0 && (
                               <div className="pt-2 space-y-2">
                                 {msg.images.map((img, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={img.image_url.url}
-                                    alt="AI generated educational diagram"
-                                    className="rounded-lg border border-white/[0.08] max-w-full"
-                                  />
+                                  <div key={idx} className="relative rounded-lg overflow-hidden border border-white/[0.08] bg-black/20">
+                                    <img
+                                      src={img.image_url.url}
+                                      alt="AI generated educational diagram"
+                                      className="w-full max-h-[45vh] sm:max-h-[40vh] md:max-h-[38vh] object-contain cursor-pointer rounded-lg transition-opacity hover:opacity-90"
+                                      onClick={() => setLightboxSrc(img.image_url.url)}
+                                    />
+                                  </div>
                                 ))}
                               </div>
                             )}
