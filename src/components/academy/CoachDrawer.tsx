@@ -147,7 +147,7 @@ export function CoachDrawer() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [imageLoading, setImageLoading] = useState(false);
+  
   const [showHistory, setShowHistory] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [pastAnswers, setPastAnswers] = useState<InstantAnswer[]>([]);
