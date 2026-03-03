@@ -12,6 +12,7 @@ import { captureReferral } from "@/lib/referralCapture";
 import NotFound from "./pages/NotFound";
 import TradeLog from "./pages/TradeLog";
 import Auth from "./pages/Auth";
+import Signup from "./pages/Signup";
 import TraderCockpit from "./pages/TraderCockpit";
 import { VaultOSGate } from "./components/VaultOSGate";
 import Settings from "./pages/Settings";
