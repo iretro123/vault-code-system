@@ -27,7 +27,7 @@ const Auth = () => {
   const [resetError, setResetError] = useState("");
 
   // Stripe customer verification for signup gating
-  const [stripeStatus, setStripeStatus] = useState<"idle" | "checking" | "found" | "not_found">("idle");
+  const [stripeStatus, setStripeStatus] = useState<"idle" | "checking" | "found" | "not_found" | "canceled">("idle");
 
   // Signup-only fields
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -60,7 +60,7 @@ const Auth = () => {
           }
         );
         const data = await res.json();
-        setStripeStatus(data.found ? "found" : "not_found");
+        setStripeStatus(data.found ? (data.status === "canceled" ? "canceled" : "found") : "not_found");
       } catch {
         setStripeStatus("idle"); // fail open on network error
       }
@@ -247,9 +247,13 @@ const Auth = () => {
                       {mode === "signup" && stripeStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 animate-spin text-muted-foreground" />}
                       {mode === "signup" && stripeStatus === "found" && <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-emerald-500" />}
                       {mode === "signup" && stripeStatus === "not_found" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-destructive" />}
+                      {mode === "signup" && stripeStatus === "canceled" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-amber-500" />}
                     </div>
                     {mode === "signup" && stripeStatus === "found" && (
-                      <p className="text-xs text-emerald-500 mt-1">User found</p>
+                      <p className="text-xs text-emerald-500 mt-1">Membership verified</p>
+                    )}
+                    {mode === "signup" && stripeStatus === "canceled" && (
+                      <p className="text-xs text-amber-500 mt-1">Your membership is canceled or expired. Please renew to create an account.</p>
                     )}
                     {mode === "signup" && stripeStatus === "not_found" && (
                       <p className="text-xs text-destructive mt-1">This email is not registered with Vault Academy. Contact support.</p>
