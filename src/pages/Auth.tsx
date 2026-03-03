@@ -242,7 +242,18 @@ const Auth = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
-                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-12" required />
+                    <div className="relative">
+                      <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-12 pr-8" required />
+                      {mode === "signup" && stripeStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 animate-spin text-muted-foreground" />}
+                      {mode === "signup" && stripeStatus === "found" && <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-emerald-500" />}
+                      {mode === "signup" && stripeStatus === "not_found" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-destructive" />}
+                    </div>
+                    {mode === "signup" && stripeStatus === "found" && (
+                      <p className="text-xs text-emerald-500 mt-1">User found</p>
+                    )}
+                    {mode === "signup" && stripeStatus === "not_found" && (
+                      <p className="text-xs text-destructive mt-1">This email is not registered with Vault Academy. Contact support.</p>
+                    )}
                   </div>
 
                   <div>
