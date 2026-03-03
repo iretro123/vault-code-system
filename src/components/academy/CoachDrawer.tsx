@@ -317,6 +317,15 @@ export function CoachDrawer() {
           answer: assistantSoFar,
         } as any);
       }
+
+      // Auto-trigger image generation if AI offered to create a visual
+      const lowerReply = assistantSoFar.toLowerCase();
+      const imageOfferPhrases = ["generate an image", "i can generate", "one sec", "create a visual", "draw you", "show you a diagram", "show you an image"];
+      const shouldAutoImage = imageOfferPhrases.some((p) => lowerReply.includes(p));
+      if (shouldAutoImage && !imageLoading) {
+        // Small delay so the text renders first, then auto-trigger
+        setTimeout(() => handleGenerateImage(), 400);
+      }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
       setChatMessages((prev) => prev.slice(0, -1)); // Remove the empty assistant message
