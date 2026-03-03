@@ -635,15 +635,7 @@ export function CoachDrawer() {
               {/* ── Composer (bottom-pinned) ── */}
               <div className="shrink-0 border-t border-white/[0.06] px-4 py-3" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <div className="flex items-end gap-2">
-                  {/* Image button */}
-                  <button
-                    onClick={handleGenerateImage}
-                    disabled={chatMessages.length === 0 || imageLoading || chatLoading}
-                    className="shrink-0 h-10 w-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                    title="Generate a picture"
-                  >
-                    {imageLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-                  </button>
+                  {/* Removed AI image gen button — static chart examples are auto-inserted */}
 
                   <textarea
                     ref={chatInputRef}
