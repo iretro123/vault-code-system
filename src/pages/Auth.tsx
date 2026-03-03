@@ -26,6 +26,9 @@ const Auth = () => {
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
 
+  // Stripe customer verification for signup gating
+  const [stripeStatus, setStripeStatus] = useState<"idle" | "checking" | "found" | "not_found">("idle");
+
   // Signup-only fields
   const [phoneNumber, setPhoneNumber] = useState("");
   const [username, setUsername] = useState("");
