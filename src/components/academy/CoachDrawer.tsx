@@ -919,7 +919,6 @@ export function CoachDrawer() {
           )}
         </div>
       </div>
-      </div>
       {lightboxSrc && (
         <ImageLightbox
           src={lightboxSrc}
