@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ensureProfile } from "@/lib/ensureProfile";
 import { getStoredReferral, clearStoredReferral } from "@/lib/referralCapture";
 
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
 const Auth = () => {
   const { toast } = useToast();
   const { signIn, signUp } = useAuth();
@@ -24,12 +26,47 @@ const Auth = () => {
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
 
+  // Stripe customer verification for signup gating
+  const [stripeStatus, setStripeStatus] = useState<"idle" | "checking" | "found" | "not_found">("idle");
+
   // Signup-only fields
   const [phoneNumber, setPhoneNumber] = useState("");
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
 
   // Referral capture now handled globally in App.tsx via ReferralCapture component
+
+  // Debounced Stripe customer check for signup
+  useEffect(() => {
+    if (mode !== "signup" || !email.trim()) {
+      setStripeStatus("idle");
+      return;
+    }
+    const trimmed = email.trim().toLowerCase();
+    // Basic email format check
+    if (!trimmed.includes("@") || !trimmed.includes(".")) {
+      setStripeStatus("idle");
+      return;
+    }
+    setStripeStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-stripe-customer`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: trimmed }),
+          }
+        );
+        const data = await res.json();
+        setStripeStatus(data.found ? "found" : "not_found");
+      } catch {
+        setStripeStatus("idle"); // fail open on network error
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [email, mode]);
 
   // Debounced username uniqueness check
   useEffect(() => {
@@ -74,7 +111,7 @@ const Auth = () => {
     } else {
       toast({
         title: mode === "signup" ? "Account created" : "Welcome back",
-        description: mode === "signup" ? "Check your email to verify your account." : "You have been signed in.",
+        description: mode === "signup" ? "Welcome to Vault Academy." : "You have been signed in.",
       });
 
       if (mode === "signup") {
@@ -123,6 +160,7 @@ const Auth = () => {
       }
 
       if (mode === "login") navigate("/hub");
+      if (mode === "signup") navigate("/hub");
     }
 
     setLoading(false);
@@ -147,7 +185,7 @@ const Auth = () => {
     }
   };
 
-  const signupFieldsValid = mode !== "signup" || (phoneNumber.trim().length > 0 && usernameStatus !== "taken");
+  const signupFieldsValid = mode !== "signup" || (phoneNumber.trim().length > 0 && usernameStatus !== "taken" && stripeStatus === "found");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -204,7 +242,18 @@ const Auth = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
-                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-12" required />
+                    <div className="relative">
+                      <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-12 pr-8" required />
+                      {mode === "signup" && stripeStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 animate-spin text-muted-foreground" />}
+                      {mode === "signup" && stripeStatus === "found" && <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-emerald-500" />}
+                      {mode === "signup" && stripeStatus === "not_found" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-destructive" />}
+                    </div>
+                    {mode === "signup" && stripeStatus === "found" && (
+                      <p className="text-xs text-emerald-500 mt-1">User found</p>
+                    )}
+                    {mode === "signup" && stripeStatus === "not_found" && (
+                      <p className="text-xs text-destructive mt-1">This email is not registered with Vault Academy. Contact support.</p>
+                    )}
                   </div>
 
                   <div>
