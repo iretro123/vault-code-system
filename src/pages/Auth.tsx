@@ -60,7 +60,7 @@ const Auth = () => {
           }
         );
         const data = await res.json();
-        setStripeStatus(data.found ? "found" : "not_found");
+        setStripeStatus(data.found ? (data.status === "canceled" ? "canceled" : "found") : "not_found");
       } catch {
         setStripeStatus("idle"); // fail open on network error
       }
