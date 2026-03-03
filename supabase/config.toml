@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.check-stripe-customer]
 verify_jwt = false
+
+[functions.list-whop-members]
+verify_jwt = false
