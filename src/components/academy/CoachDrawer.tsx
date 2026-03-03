@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   MessageSquare, X, Loader2, Send, ChevronLeft, Image,
   Clock, CheckCircle2, AlertCircle, Zap, History, Copy, Check,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Sparkles, ImagePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,7 +27,12 @@ const QUESTION_TEMPLATES: Record<string, string> = {
   "Platform Help": `Broker / Platform: \nWhat I clicked: \nWhat happened: \n(Attach a screenshot if possible)`,
 };
 
-const INSTANT_CHIPS = ["Setup Review", "Risk Question", "Options Basics", "Trade Management"] as const;
+const STARTER_CHIPS = [
+  "What is a stop loss?",
+  "How do I size my trades?",
+  "Explain options like I'm 10",
+  "What does risk/reward mean?",
+] as const;
 
 interface Ticket {
   id: string;
@@ -56,6 +61,13 @@ interface InstantAnswer {
   created_at: string;
 }
 
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  images?: { type: string; image_url: { url: string } }[];
+  isStreaming?: boolean;
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -71,9 +83,10 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
+
 type Tab = "instant" | "coach";
 type CoachView = "new" | "list" | "detail";
-type InstantView = "ask" | "history";
 
 export function CoachDrawer() {
   const { user, profile } = useAuth();
@@ -82,7 +95,7 @@ export function CoachDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
 
-  // Listen for sidebar toggle event — supports optional detail.tab to open specific tab
+  // Listen for sidebar toggle event
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent)?.detail;
@@ -120,13 +133,26 @@ export function CoachDrawer() {
   const [replyText, setReplyText] = useState("");
   const [replySending, setReplySending] = useState(false);
 
-  // Instant answer state
-  const [instantQ, setInstantQ] = useState("");
-  const [instantLoading, setInstantLoading] = useState(false);
-  const [instantResult, setInstantResult] = useState<{ question: string; answer: string } | null>(null);
-  const [instantView, setInstantView] = useState<InstantView>("ask");
+  // Chat state (replaces old instant answer)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [pastAnswers, setPastAnswers] = useState<InstantAnswer[]>([]);
   const [pastLoading, setPastLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, scrollToBottom]);
 
   const fetchTickets = useCallback(async () => {
     if (!user) return;
@@ -174,11 +200,214 @@ export function CoachDrawer() {
   }, [activeTicket, fetchReplies]);
 
   useEffect(() => {
-    if (open && tab === "instant" && instantView === "history") fetchPastAnswers();
-  }, [open, tab, instantView, fetchPastAnswers]);
+    if (showHistory) fetchPastAnswers();
+  }, [showHistory, fetchPastAnswers]);
 
   if (!user) return null;
 
+  // ── Chat send (streaming) ──
+  const handleChatSend = async (overrideText?: string) => {
+    const text = overrideText || chatInput.trim();
+    if (!text || chatLoading) return;
+    setChatInput("");
+
+    const userMsg: ChatMessage = { role: "user", content: text };
+    const allMessages = [...chatMessages, userMsg];
+    setChatMessages([...allMessages, { role: "assistant", content: "", isStreaming: true }]);
+    setChatLoading(true);
+
+    let assistantSoFar = "";
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Error ${resp.status}`);
+      }
+
+      if (!resp.body) throw new Error("No response body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let streamDone = false;
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantSoFar += content;
+              setChatMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  role: "assistant",
+                  content: assistantSoFar,
+                  isStreaming: true,
+                };
+                return updated;
+              });
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split("\n")) {
+          if (!raw) continue;
+          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+          if (raw.startsWith(":") || raw.trim() === "") continue;
+          if (!raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) assistantSoFar += content;
+          } catch { /* ignore */ }
+        }
+      }
+
+      // Finalize message
+      setChatMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: assistantSoFar || "I couldn't generate a response. Try asking again.",
+          isStreaming: false,
+        };
+        return updated;
+      });
+
+      // Save to instant_answers for history
+      if (assistantSoFar) {
+        await supabase.from("instant_answers").insert({
+          user_id: user.id,
+          question: text,
+          answer: assistantSoFar,
+        } as any);
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
+      setChatMessages((prev) => prev.slice(0, -1)); // Remove the empty assistant message
+    }
+
+    setChatLoading(false);
+    requestOSPermission();
+  };
+
+  // ── Image generation ──
+  const handleGenerateImage = async () => {
+    if (chatMessages.length === 0 || imageLoading) return;
+    setImageLoading(true);
+
+    // Ask the AI to generate an image based on the last conversation context
+    const lastUserMsg = [...chatMessages].reverse().find((m) => m.role === "user");
+    const imgPrompt = lastUserMsg
+      ? `Create a simple, clear educational diagram that helps explain this trading concept: ${lastUserMsg.content}`
+      : "Create a simple educational diagram about trading risk management";
+
+    setChatMessages((prev) => [
+      ...prev,
+      { role: "user", content: "🎨 Draw me a picture to help explain this" },
+      { role: "assistant", content: "Creating a visual for you...", isStreaming: true },
+    ]);
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: imgPrompt }],
+          generateImage: true,
+        }),
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || `Error ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      const images = data.images || [];
+      const content = data.content || "Here's a visual to help explain:";
+
+      setChatMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content,
+          images: images.length > 0 ? images : undefined,
+          isStreaming: false,
+        };
+        return updated;
+      });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message || "Failed to generate image", variant: "destructive" });
+      setChatMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: "Sorry, I couldn't create an image right now. Try again in a moment.",
+          isStreaming: false,
+        };
+        return updated;
+      });
+    }
+
+    setImageLoading(false);
+  };
+
+  // ── Coach handoff ──
+  const handleHandoffToCoach = () => {
+    const lastUserMsg = [...chatMessages].reverse().find((m) => m.role === "user");
+    const lastAiMsg = [...chatMessages].reverse().find((m) => m.role === "assistant");
+    let prefill = "";
+    if (lastUserMsg && lastAiMsg) {
+      const excerpt = lastAiMsg.content.length > 200
+        ? lastAiMsg.content.slice(0, 200).trim() + "…"
+        : lastAiMsg.content;
+      prefill = `What I asked:\n${lastUserMsg.content}\n\nWhat the AI said:\n${excerpt}\n\nWhat I still need help with:\n`;
+    }
+    setQuestion(prefill);
+    setTab("coach");
+    setCoachView("new");
+  };
+
+  // ── Coach submit ──
   const handleSubmit = async () => {
     if (!question.trim()) return;
     setSending(true);
@@ -202,7 +431,6 @@ export function CoachDrawer() {
       toast({ title: "Got it.", description: "You'll see replies here." });
       setQuestion(""); setCategory(CATEGORIES[0]); setUrgency("standard"); setScreenshotFile(null); setTemplate("None");
       setCoachView("list"); fetchTickets();
-      // Request OS notification permission on successful coach submit (user gesture)
       requestOSPermission();
     }
   };
@@ -215,49 +443,6 @@ export function CoachDrawer() {
       ticket_id: activeTicket.id, user_id: user.id, user_name: userName, body: replyText.trim(), is_admin: false,
     } as any);
     setReplyText(""); setReplySending(false); fetchReplies(activeTicket.id);
-  };
-
-  const handleInstantAsk = async () => {
-    if (!instantQ.trim()) return;
-    setInstantLoading(true);
-    setInstantResult(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("instant-answer", {
-        body: { question: instantQ.trim() },
-      });
-      if (error) throw error;
-      if (data?.error) {
-        toast({ title: "Error", description: data.error, variant: "destructive" });
-        setInstantLoading(false);
-        return;
-      }
-      const answer = data?.answer || "No answer generated.";
-      setInstantResult({ question: instantQ.trim(), answer });
-      await supabase.from("instant_answers").insert({
-        user_id: user.id, question: instantQ.trim(), answer,
-      } as any);
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to get answer", variant: "destructive" });
-    }
-    setInstantLoading(false);
-    // Request OS notification permission after instant answer action (user gesture)
-    requestOSPermission();
-  };
-
-  const handleHandoffToCoach = () => {
-    let prefill: string;
-    if (instantResult) {
-      // Truncate AI answer to first ~200 chars for summary
-      const excerpt = instantResult.answer.length > 200
-        ? instantResult.answer.slice(0, 200).trim() + "…"
-        : instantResult.answer;
-      prefill = `What I asked:\n${instantResult.question}\n\nWhat the instant answer said:\n${excerpt}\n\nWhat I still need help with:\nI want a deeper review and exact next steps for my situation.`;
-    } else {
-      prefill = instantQ || "";
-    }
-    setQuestion(prefill);
-    setTab("coach");
-    setCoachView("new");
   };
 
   const statusIcon = (status: string) => {
@@ -284,7 +469,7 @@ export function CoachDrawer() {
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-lg font-bold text-foreground">Ask a Coach</h2>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Fast AI help first. Coach review when you need deeper guidance.</p>
+              <p className="text-[13px] text-muted-foreground mt-0.5">Chat with AI first. Coach review when you need deeper guidance.</p>
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -298,7 +483,7 @@ export function CoachDrawer() {
         {/* ── Segmented tabs ── */}
         <div className="flex shrink-0 mx-6 rounded-lg bg-white/[0.04] border border-white/[0.06] p-0.5">
           <button
-            onClick={() => { setTab("instant"); setInstantView("ask"); setInstantResult(null); }}
+            onClick={() => { setTab("instant"); setShowHistory(false); }}
             className={cn(
               "flex-1 py-2.5 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5",
               tab === "instant"
@@ -306,9 +491,9 @@ export function CoachDrawer() {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Zap className="h-3.5 w-3.5" style={{ color: tab === "instant" ? "#FACC15" : undefined }} />
-            Instant Answer
-            <span className="text-[10px] font-normal text-muted-foreground/60 hidden sm:inline ml-0.5">AI</span>
+            <Sparkles className="h-3.5 w-3.5" style={{ color: tab === "instant" ? "#FACC15" : undefined }} />
+            AI Chat
+            <span className="text-[10px] font-normal text-muted-foreground/60 hidden sm:inline ml-0.5">Instant</span>
           </button>
           <button
             onClick={() => { setTab("coach"); setCoachView("new"); }}
@@ -325,7 +510,7 @@ export function CoachDrawer() {
           </button>
         </div>
 
-        {/* ── Sub-header ── */}
+        {/* ── Sub-header for coach tab ── */}
         {tab === "coach" && (
           <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.06] shrink-0">
             <div className="flex items-center gap-2">
@@ -348,123 +533,196 @@ export function CoachDrawer() {
           </div>
         )}
 
+        {/* ── Sub-header for instant tab ── */}
         {tab === "instant" && (
           <div className="flex items-center justify-between px-6 py-3 border-b border-white/[0.06] shrink-0">
             <div className="flex items-center gap-2">
-              {instantView === "history" && (
-                <button onClick={() => setInstantView("ask")} className="text-muted-foreground hover:text-foreground">
+              {showHistory && (
+                <button onClick={() => setShowHistory(false)} className="text-muted-foreground hover:text-foreground">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
-              <h3 className="font-semibold text-foreground text-base flex items-center gap-2">
-                {instantView === "ask" ? "Ask a Trading Question" : "Past Answers"}
+              <h3 className="font-semibold text-foreground text-base">
+                {showHistory ? "Past Conversations" : "AI Trading Coach"}
               </h3>
             </div>
-            {instantView === "ask" && (
-              <button onClick={() => setInstantView("history")} className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06]" title="Past Answers">
-                <History className="h-4 w-4" />
-              </button>
-            )}
+            <div className="flex items-center gap-1">
+              {!showHistory && (
+                <>
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06]"
+                    title="Past Answers"
+                  >
+                    <History className="h-4 w-4" />
+                  </button>
+                  {chatMessages.length > 0 && (
+                    <button
+                      onClick={() => setChatMessages([])}
+                      className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06] text-xs"
+                      title="New Chat"
+                    >
+                      New
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
 
         {/* ── Body ── */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto flex flex-col">
 
-          {/* ========== INSTANT ANSWER TAB ========== */}
-          {tab === "instant" && instantView === "ask" && (
-            <div className="space-y-4">
-              <p className="text-[13px] text-muted-foreground">Instant Answer is for trading questions only — options, risk, setups, entries, exits, psychology, execution.</p>
+          {/* ========== INSTANT / AI CHAT TAB ========== */}
+          {tab === "instant" && !showHistory && (
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Chat messages area */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+                {chatMessages.length === 0 ? (
+                  /* Empty state with starter chips */
+                  <div className="flex flex-col items-center justify-center h-full py-12 space-y-6">
+                    <div className="text-center space-y-2">
+                      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                        <Sparkles className="h-6 w-6 text-primary" />
+                      </div>
+                      <h3 className="text-base font-semibold text-foreground">Ask me anything about trading</h3>
+                      <p className="text-sm text-muted-foreground max-w-sm">
+                        I explain everything in simple words — no confusing jargon. I can even draw pictures to help you understand.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 justify-center max-w-md">
+                      {STARTER_CHIPS.map((chip) => (
+                        <button
+                          key={chip}
+                          onClick={() => handleChatSend(chip)}
+                          className="text-sm px-4 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* Message bubbles */
+                  chatMessages.map((msg, i) => (
+                    <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+                      <div className={cn(
+                        "rounded-2xl px-4 py-3 max-w-[85%] space-y-2",
+                        msg.role === "user"
+                          ? "rounded-tr-sm bg-primary/15 border border-primary/20"
+                          : "rounded-tl-sm bg-white/[0.04] border border-white/[0.08]"
+                      )}>
+                        {msg.role === "assistant" ? (
+                          <>
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90 [&_p]:mb-2 [&_ul]:mb-2">
+                              <ReactMarkdown>{msg.content || (msg.isStreaming ? "Thinking..." : "")}</ReactMarkdown>
+                              {msg.isStreaming && msg.content && (
+                                <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom" />
+                              )}
+                            </div>
+                            {/* Inline images */}
+                            {msg.images && msg.images.length > 0 && (
+                              <div className="pt-2 space-y-2">
+                                {msg.images.map((img, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={img.image_url.url}
+                                    alt="AI generated educational diagram"
+                                    className="rounded-lg border border-white/[0.08] max-w-full"
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            {/* Actions row (only on completed messages) */}
+                            {!msg.isStreaming && msg.content && (
+                              <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
+                                <CopyButton text={msg.content} />
+                                <span className="text-[10px] text-muted-foreground/40">Education only</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-sm text-foreground leading-relaxed">{msg.content}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
 
-              {/* Quick category chips */}
-              <div className="flex flex-wrap gap-1.5">
-                {INSTANT_CHIPS.map((chip) => (
-                  <button
-                    key={chip}
-                    onClick={() => setInstantQ((prev) => prev ? prev : `[${chip}] `)}
-                    className="text-xs px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
-                  >
-                    {chip}
-                  </button>
-                ))}
+                {/* Coach handoff after AI messages */}
+                {chatMessages.length > 1 && !chatLoading && chatMessages[chatMessages.length - 1]?.role === "assistant" && !chatMessages[chatMessages.length - 1]?.isStreaming && (
+                  <div className="flex justify-start">
+                    <button
+                      onClick={handleHandoffToCoach}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1.5 py-1"
+                    >
+                      <MessageSquare className="h-3 w-3" />
+                      Still stuck? Ask Coach RZ (human)
+                    </button>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
               </div>
 
-              <Textarea
-                value={instantQ}
-                onChange={(e) => setInstantQ(e.target.value)}
-                placeholder="Type your trading question here…"
-                className="resize-none text-base min-h-[120px] leading-[1.5] placeholder:text-[15px] py-3.5 px-4 bg-white/[0.03] border-white/[0.08]"
-                rows={5}
-                maxLength={500}
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleInstantAsk(); } }}
-              />
+              {/* ── Composer (bottom-pinned) ── */}
+              <div className="shrink-0 border-t border-white/[0.06] px-4 py-3" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
+                <div className="flex items-end gap-2">
+                  {/* Image button */}
+                  <button
+                    onClick={handleGenerateImage}
+                    disabled={chatMessages.length === 0 || imageLoading || chatLoading}
+                    className="shrink-0 h-10 w-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    title="Generate a picture"
+                  >
+                    {imageLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                  </button>
 
-              <Button
-                onClick={handleInstantAsk}
-                disabled={!instantQ.trim() || instantLoading}
-                className="w-full gap-2 h-12 text-base font-semibold"
-              >
-                {instantLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" style={{ color: "#FACC15" }} />}
-                {instantLoading ? "Thinking…" : "Get Instant Answer"}
-              </Button>
+                  <textarea
+                    ref={chatInputRef}
+                    value={chatInput}
+                    onChange={(e) => {
+                      setChatInput(e.target.value);
+                      // Auto-resize
+                      e.target.style.height = "auto";
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleChatSend();
+                      }
+                    }}
+                    placeholder="Ask a trading question..."
+                    className="flex-1 resize-none text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 min-h-[40px] max-h-[120px]"
+                    rows={1}
+                    maxLength={1000}
+                    disabled={chatLoading}
+                  />
 
-              {instantResult && (
-                <div className="space-y-4 pt-2">
-                  {/* User question */}
-                  <div className="flex justify-end">
-                    <div className="rounded-xl rounded-tr-sm bg-primary/10 border border-primary/15 px-4 py-3 max-w-[85%]">
-                      <p className="text-sm text-foreground leading-relaxed">{instantResult.question}</p>
-                    </div>
-                  </div>
-
-                  {/* AI answer */}
-                  <div className="flex justify-start">
-                    <div className="rounded-xl rounded-tl-sm bg-white/[0.03] border border-white/[0.08] px-4 py-4 max-w-[95%] space-y-3">
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90">
-                        <ReactMarkdown>{instantResult.answer}</ReactMarkdown>
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-                        <CopyButton text={instantResult.answer} />
-                        <p className="text-[10px] text-muted-foreground/50">Education only · No signals</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Coach handoff CTA ── */}
-                  <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4 space-y-3">
-                    <p className="text-sm font-semibold text-foreground">Need more help?</p>
-                    <p className="text-[13px] text-muted-foreground">Get human feedback with clear next steps — usually within 2–4 hours.</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        className="gap-2"
-                        onClick={handleHandoffToCoach}
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        Ask Coach RZ
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="gap-2 border-primary/20 hover:bg-primary/10 text-foreground"
-                        onClick={handleHandoffToCoach}
-                      >
-                        <Send className="h-3.5 w-3.5" />
-                        Send this to Coach
-                      </Button>
-                    </div>
-                  </div>
+                  <Button
+                    onClick={() => handleChatSend()}
+                    disabled={!chatInput.trim() || chatLoading}
+                    size="icon"
+                    className="shrink-0 h-10 w-10 rounded-xl"
+                  >
+                    {chatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
-          {tab === "instant" && instantView === "history" && (
-            <div className="space-y-3">
+          {/* ── Past answers history ── */}
+          {tab === "instant" && showHistory && (
+            <div className="px-6 py-5 space-y-3 overflow-y-auto">
               {pastLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
               ) : pastAnswers.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-sm text-muted-foreground">No past answers yet.</p>
-                  <Button variant="ghost" size="sm" className="mt-2 text-sm" onClick={() => setInstantView("ask")}>Ask your first question</Button>
+                  <Button variant="ghost" size="sm" className="mt-2 text-sm" onClick={() => setShowHistory(false)}>Start chatting</Button>
                 </div>
               ) : pastAnswers.map((a) => (
                 <div key={a.id} className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-2">
@@ -482,7 +740,7 @@ export function CoachDrawer() {
 
           {/* ========== COACH TAB ========== */}
           {tab === "coach" && coachView === "new" && (
-            <div className="space-y-4">
+            <div className="px-6 py-5 space-y-4 overflow-y-auto">
               {/* Urgency */}
               <div className="space-y-2">
                 <label className="text-[13px] font-semibold text-foreground/80">Urgency</label>
@@ -529,7 +787,7 @@ export function CoachDrawer() {
                 )}
               </div>
 
-              {/* Show More (category + template) */}
+              {/* Show More */}
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -574,7 +832,7 @@ export function CoachDrawer() {
           )}
 
           {tab === "coach" && coachView === "list" && (
-            <div className="space-y-3">
+            <div className="px-6 py-5 space-y-3 overflow-y-auto">
               {ticketsLoading ? (
                 <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
               ) : tickets.length === 0 ? (
@@ -601,7 +859,7 @@ export function CoachDrawer() {
           )}
 
           {tab === "coach" && coachView === "detail" && activeTicket && (
-            <div className="space-y-4">
+            <div className="px-6 py-5 space-y-4 overflow-y-auto">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {statusIcon(activeTicket.status)}
