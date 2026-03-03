@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   MessageSquare, X, Loader2, Send, ChevronLeft, Image,
   Clock, CheckCircle2, AlertCircle, Zap, History, Copy, Check,
-  ChevronDown, ChevronUp, Sparkles, ImagePlus,
+  ChevronDown, ChevronUp, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,15 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
 import { ImageLightbox } from "@/components/academy/community/ImageLightbox";
+import supplyZoneImg from "@/assets/supply-zone-example.png";
+import demandZoneImg from "@/assets/demand-zone-example.png";
+import supplyDemandImg from "@/assets/supply-demand-zones.png";
+
+const CHART_EXAMPLES = [
+  { src: supplyZoneImg, alt: "Supply zone example — large body candles pushing away from zone" },
+  { src: demandZoneImg, alt: "Demand zone example — price bouncing off demand area" },
+  { src: supplyDemandImg, alt: "Supply and demand zones on a real chart" },
+];
 
 const CATEGORIES = ["Platform", "Options Basics", "Risk", "Mindset", "Trade Review"] as const;
 
@@ -138,7 +147,7 @@ export function CoachDrawer() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [imageLoading, setImageLoading] = useState(false);
+  
   const [showHistory, setShowHistory] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [pastAnswers, setPastAnswers] = useState<InstantAnswer[]>([]);
@@ -320,13 +329,22 @@ export function CoachDrawer() {
         } as any);
       }
 
-      // Auto-trigger image generation if AI offered to create a visual
+      // Auto-insert static chart examples if AI mentions the trigger phrase
       const lowerReply = assistantSoFar.toLowerCase();
-      const imageOfferPhrases = ["generate an image", "i can generate", "one sec", "create a visual", "draw you", "show you a diagram", "show you an image"];
-      const shouldAutoImage = imageOfferPhrases.some((p) => lowerReply.includes(p));
-      if (shouldAutoImage && !imageLoading) {
-        // Small delay so the text renders first, then auto-trigger
-        setTimeout(() => handleGenerateImage(), 400);
+      const chartTriggerPhrases = ["real chart examples", "show you what that looks like", "chart examples to show"];
+      const shouldShowCharts = chartTriggerPhrases.some((p) => lowerReply.includes(p));
+      if (shouldShowCharts) {
+        setTimeout(() => {
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "",
+              images: CHART_EXAMPLES.map((c) => ({ type: "image_url", image_url: { url: c.src } })),
+              isStreaming: false,
+            },
+          ]);
+        }, 400);
       }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
@@ -335,71 +353,6 @@ export function CoachDrawer() {
 
     setChatLoading(false);
     requestOSPermission();
-  };
-
-  // ── Image generation ──
-  const handleGenerateImage = async () => {
-    if (chatMessages.length === 0 || imageLoading) return;
-    setImageLoading(true);
-
-    // Ask the AI to generate an image based on the last conversation context
-    const lastUserMsg = [...chatMessages].reverse().find((m) => m.role === "user");
-    const imgPrompt = lastUserMsg
-      ? `Create a simple, clear educational diagram that helps explain this trading concept: ${lastUserMsg.content}`
-      : "Create a simple educational diagram about trading risk management";
-
-    setChatMessages((prev) => [
-      ...prev,
-      { role: "user", content: "🎨 Draw me a picture to help explain this" },
-      { role: "assistant", content: "Creating a visual for you...", isStreaming: true },
-    ]);
-
-    try {
-      const resp = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: imgPrompt }],
-          generateImage: true,
-        }),
-      });
-
-      if (!resp.ok) {
-        const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error || `Error ${resp.status}`);
-      }
-
-      const data = await resp.json();
-      const images = data.images || [];
-      const content = data.content || "Here's a visual to help explain:";
-
-      setChatMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content,
-          images: images.length > 0 ? images : undefined,
-          isStreaming: false,
-        };
-        return updated;
-      });
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to generate image", variant: "destructive" });
-      setChatMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: "Sorry, I couldn't create an image right now. Try again in a moment.",
-          isStreaming: false,
-        };
-        return updated;
-      });
-    }
-
-    setImageLoading(false);
   };
 
   // ── Coach handoff ──
@@ -682,15 +635,7 @@ export function CoachDrawer() {
               {/* ── Composer (bottom-pinned) ── */}
               <div className="shrink-0 border-t border-white/[0.06] px-4 py-3" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <div className="flex items-end gap-2">
-                  {/* Image button */}
-                  <button
-                    onClick={handleGenerateImage}
-                    disabled={chatMessages.length === 0 || imageLoading || chatLoading}
-                    className="shrink-0 h-10 w-10 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                    title="Generate a picture"
-                  >
-                    {imageLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-                  </button>
+                  {/* Removed AI image gen button — static chart examples are auto-inserted */}
 
                   <textarea
                     ref={chatInputRef}
