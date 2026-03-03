@@ -18,6 +18,15 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
 import { ImageLightbox } from "@/components/academy/community/ImageLightbox";
+import supplyZoneImg from "@/assets/supply-zone-example.png";
+import demandZoneImg from "@/assets/demand-zone-example.png";
+import supplyDemandImg from "@/assets/supply-demand-zones.png";
+
+const CHART_EXAMPLES = [
+  { src: supplyZoneImg, alt: "Supply zone example — large body candles pushing away from zone" },
+  { src: demandZoneImg, alt: "Demand zone example — price bouncing off demand area" },
+  { src: supplyDemandImg, alt: "Supply and demand zones on a real chart" },
+];
 
 const CATEGORIES = ["Platform", "Options Basics", "Risk", "Mindset", "Trade Review"] as const;
 
