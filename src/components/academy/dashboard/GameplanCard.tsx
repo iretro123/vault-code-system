@@ -257,7 +257,7 @@ function TaskGroupSection({ group, onToggle }: { group: TaskGroup; onToggle: (id
           <button
             key={task.id}
             onClick={() => onToggle(task.id)}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-100 hover:bg-white/[0.06]"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-colors duration-100 hover:bg-white/[0.06]"
             style={{
               background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.06)",
