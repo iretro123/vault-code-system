@@ -69,7 +69,7 @@ export function ChatAvatar({
         {!imgLoaded && (
           <div
             className={`absolute inset-0 rounded-full flex items-center justify-center text-xs font-semibold`}
-            style={{ backgroundColor: DEFAULT_COLOR + "33", color: DEFAULT_COLOR }}
+            style={{ backgroundColor: withAlpha(DEFAULT_COLOR, 0.2), color: DEFAULT_COLOR }}
           >
             {getInitials(userName)}
           </div>
