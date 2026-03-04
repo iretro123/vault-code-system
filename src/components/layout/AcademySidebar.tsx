@@ -43,12 +43,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const coreNav = [
-  { icon: Home, label: "Dashboard", path: "/academy/home" },
-  { icon: BookOpen, label: "Learn", path: "/academy/learn" },
-  { icon: TrendingUp, label: "Trade", path: "/academy/trade" },
-  { icon: Users, label: "Community", path: "/academy/community" },
-  { icon: Radio, label: "Live", path: "/academy/live", isLive: true },
-  { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources" },
+  { icon: Home, label: "Dashboard", path: "/academy/home", pageKey: "dashboard" },
+  { icon: BookOpen, label: "Learn", path: "/academy/learn", pageKey: "learn" },
+  { icon: TrendingUp, label: "Trade", path: "/academy/trade", pageKey: "trade" },
+  { icon: Users, label: "Community", path: "/academy/community", pageKey: "community" },
+  { icon: Radio, label: "Live", path: "/academy/live", isLive: true, pageKey: "live" },
+  { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources", pageKey: "resources" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
   { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];
