@@ -21,13 +21,40 @@ interface TaskGroup {
 }
 
 const LS_KEY = "va_gameplan_completed";
+const LS_RESET_KEY = "va_gameplan_last_reset";
+const RESET_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function loadCompleted(): Record<string, string> {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const map: Record<string, string> = raw ? JSON.parse(raw) : {};
+
+    // Check weekly reset
+    const lastReset = localStorage.getItem(LS_RESET_KEY);
+    const now = Date.now();
+    if (!lastReset || now - new Date(lastReset).getTime() >= RESET_INTERVAL_MS) {
+      // Remove tw-* and consistency-* keys, keep foundation-*
+      const filtered = Object.fromEntries(
+        Object.entries(map).filter(([id]) => id.startsWith("foundation-"))
+      );
+      localStorage.setItem(LS_KEY, JSON.stringify(filtered));
+      localStorage.setItem(LS_RESET_KEY, new Date().toISOString());
+      return filtered;
+    }
+    return map;
   } catch {
     return {};
+  }
+}
+
+function getDaysUntilReset(): number {
+  try {
+    const lastReset = localStorage.getItem(LS_RESET_KEY);
+    if (!lastReset) return 7;
+    const daysSince = Math.floor((Date.now() - new Date(lastReset).getTime()) / 86400000);
+    return Math.max(7 - daysSince, 0);
+  } catch {
+    return 7;
   }
 }
 
