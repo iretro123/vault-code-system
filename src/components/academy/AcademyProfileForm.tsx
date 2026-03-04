@@ -85,7 +85,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       if (av.startsWith("icon:")) {
         const parts = av.replace("icon:", "").split("|");
         setAvatarMode("icon");
-        setAvatarIcon(parts[0] || GEOMETRIC_ICONS[0].id);
+        setAvatarIcon(parts[0] || AVATAR_ICONS[0].id);
         setAvatarColor(parts[1] || AVATAR_COLORS[0]);
       } else if (av.startsWith("initials:")) {
         setAvatarMode("initials");
