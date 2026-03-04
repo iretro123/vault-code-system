@@ -26,6 +26,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { InboxDrawer } from "@/components/academy/InboxDrawer";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import {
