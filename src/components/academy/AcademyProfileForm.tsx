@@ -227,7 +227,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       );
     }
     if (avatarMode === "icon") {
-      const icon = GEOMETRIC_ICONS.find((i) => i.id === avatarIcon) || GEOMETRIC_ICONS[0];
+      const icon = AVATAR_ICONS.find((i) => i.id === avatarIcon) || AVATAR_ICONS[0];
       return (
         <div className={`${size} rounded-2xl flex items-center justify-center`} style={{ backgroundColor: avatarColor + "22", color: avatarColor }}>
           {icon.svg}
