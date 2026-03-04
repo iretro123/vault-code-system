@@ -70,6 +70,9 @@ export function AcademySidebar() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { inboxUnreadCount, onboarding } = useAcademyData();
+  const { isPageEnabled } = useFeatureFlags();
+  const { roleName, isOperator } = useAcademyPermissions();
+  const isAdmin = roleName === "CEO" || isOperator;
 
   const displayName = profile?.display_name || "Trader";
   const avatarUrl = (profile as any)?.avatar_url || null;
