@@ -79,7 +79,7 @@ const AcademyCommunity = () => {
               <CommunityDailySetups />
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
-              <CommunityWins />
+              <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} />
             </div>
           </div>
         </div>
