@@ -3,6 +3,10 @@ import { AVATAR_ICONS_MAP } from "@/lib/avatarIcons";
 
 const DEFAULT_COLOR = "hsl(220, 15%, 45%)";
 
+function withAlpha(hsl: string, alpha: number): string {
+  return hsl.replace("hsl(", "hsla(").replace(")", `, ${alpha})`);
+}
+
 // Simple in-memory cache for loaded image URLs
 const loadedImages = new Set<string>();
 
