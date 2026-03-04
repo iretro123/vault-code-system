@@ -49,18 +49,18 @@ function cropToSquare(file: File): Promise<Blob> {
 }
 
 function parseAvatarUrl(av: string | null | undefined) {
-  if (!av) return { mode: "initials" as AvatarMode, color: AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: null as string | null };
+  if (!av) return { mode: "initials" as AvatarMode, color: AVATAR_COLORS[0], icon: AVATAR_ICONS[0].id, imageUrl: null as string | null };
   if (av.startsWith("icon:")) {
     const parts = av.replace("icon:", "").split("|");
-    return { mode: "icon" as AvatarMode, color: parts[1] || AVATAR_COLORS[0], icon: parts[0] || GEOMETRIC_ICONS[0].id, imageUrl: null };
+    return { mode: "icon" as AvatarMode, color: parts[1] || AVATAR_COLORS[0], icon: parts[0] || AVATAR_ICONS[0].id, imageUrl: null };
   }
   if (av.startsWith("initials:")) {
-    return { mode: "initials" as AvatarMode, color: av.replace("initials:", "") || AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: null };
+    return { mode: "initials" as AvatarMode, color: av.replace("initials:", "") || AVATAR_COLORS[0], icon: AVATAR_ICONS[0].id, imageUrl: null };
   }
   if (av.startsWith("http")) {
-    return { mode: "image" as AvatarMode, color: AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: av };
+    return { mode: "image" as AvatarMode, color: AVATAR_COLORS[0], icon: AVATAR_ICONS[0].id, imageUrl: av };
   }
-  return { mode: "initials" as AvatarMode, color: AVATAR_COLORS[0], icon: GEOMETRIC_ICONS[0].id, imageUrl: null };
+  return { mode: "initials" as AvatarMode, color: AVATAR_COLORS[0], icon: AVATAR_ICONS[0].id, imageUrl: null };
 }
 
 export function SettingsProfile() {
