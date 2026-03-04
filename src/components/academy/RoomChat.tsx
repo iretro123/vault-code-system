@@ -1097,9 +1097,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                                className="rounded-xl max-w-[520px] max-h-[400px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
+                                className="rounded-xl max-w-full max-h-[400px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
                               />
-                              <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-[520px]">{att.filename}</span>
+                              <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-full">{att.filename}</span>
                             </button>
                           ) : (
                             <a
