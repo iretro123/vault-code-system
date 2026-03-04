@@ -10,6 +10,8 @@ import {
   HelpCircle,
   Database,
   CreditCard,
+  ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
 
 import { SettingsProfile } from "@/components/settings/SettingsProfile";
@@ -36,6 +38,7 @@ const AcademySettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const billingReturn = searchParams.get("billing") === "returned";
   const [section, setSection] = useState<SectionId>(billingReturn ? "billing" : "profile");
+  const [mobileOpen, setMobileOpen] = useState<SectionId | null>(billingReturn ? "billing" : null);
 
   useEffect(() => {
     if (billingReturn) {
@@ -71,32 +74,40 @@ const AcademySettings = () => {
 
         {/* Mobile section picker */}
         <div className="md:hidden w-full">
-          <div className="px-4 pt-4 pb-2">
-            <h1 className="text-lg font-bold text-foreground">Vault Settings</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Control your profile, trading preferences, and alerts.
-            </p>
-          </div>
-          <div className="flex gap-1.5 px-4 pb-3 overflow-x-auto scrollbar-none">
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+          {mobileOpen === null ? (
+            <>
+              <div className="px-4 pt-4 pb-3">
+                <h1 className="text-lg font-bold text-foreground">Vault Settings</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Control your profile, trading preferences, and alerts.
+                </p>
+              </div>
+              <div className="flex flex-col gap-0.5 px-3 pb-24">
+                {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => { setSection(id); setMobileOpen(id); }}
+                    className="flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted/30 transition-colors w-full text-left"
+                  >
+                    <Icon className="h-4.5 w-4.5 text-muted-foreground shrink-0" />
+                    <span className="flex-1">{label}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="px-4 pb-24">
               <button
-                key={id}
-                onClick={() => setSection(id)}
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
-                  section === id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted/30 text-muted-foreground"
-                )}
+                onClick={() => setMobileOpen(null)}
+                className="flex items-center gap-1.5 text-sm text-primary font-medium py-3 -ml-0.5"
               >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
+                <ArrowLeft className="h-4 w-4" />
+                Settings
               </button>
-            ))}
-          </div>
-          <div className="px-4 pb-24">
-            <SettingsPanelAll section={section} />
-          </div>
+              <SettingsPanelAll section={section} />
+            </div>
+          )}
         </div>
 
         {/* Main panel — desktop */}
