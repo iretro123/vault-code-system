@@ -229,43 +229,45 @@ export function VaultTradePlanner() {
         <p className="text-[11px] text-muted-foreground">Long Calls / Long Puts only • Simple Mode</p>
       </div>
 
-      {/* Vault handles the math — reassuring banner */}
+      {/* Vault handles the math — reassuring banner (hidden on mobile) */}
       <div
-        className="rounded-[3px] px-3 py-2 text-[11px] text-center"
+        className="hidden md:block rounded-[3px] px-3 py-2 text-[11px] text-center"
         style={{ background: xp.heroBg, border: xp.heroBorder }}
       >
         <p className="font-semibold text-foreground">You enter the setup. VAULT builds the plan.</p>
         <p className="text-muted-foreground mt-0.5">No guessing. No oversizing. No random targets.</p>
       </div>
 
-      {/* Rule banner */}
+      {/* Rule banner (hidden on mobile) */}
       <div
-        className="rounded-[3px] px-3 py-2 text-[11px] font-medium"
+        className="hidden md:block rounded-[3px] px-3 py-2 text-[11px] font-medium"
         style={{ background: xp.warningBg, border: xp.warningBorder, color: xp.warningText }}
       >
         Risk to stop is NOT the same as money needed to enter. Pass BOTH checks.
       </div>
 
-      {/* How to use — collapsible */}
-      <button
-        onClick={() => setShowHelp(!showHelp)}
-        className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/80 hover:text-primary w-full text-left"
-      >
-        {showHelp ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        How to use (20 sec)
-      </button>
-      {showHelp && (
-        <div
-          className="rounded-[3px] px-3 py-2 text-[11px] text-muted-foreground space-y-0.5"
-          style={{ background: xp.heroBg, border: xp.heroBorder }}
+      {/* How to use — collapsible (hidden on mobile) */}
+      <div className="hidden md:block">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/80 hover:text-primary w-full text-left"
         >
-          <p>1. Enter account size</p>
-          <p>2. Enter option buy price and option stop price</p>
-          <p>3. Click <strong className="text-foreground">Generate</strong></p>
-          <p>4. Follow the plan (contracts, cut loss, target)</p>
-          <p className="text-primary/70 pt-1">VAULT auto-sets risk %, spending cap, and targets for you.</p>
-        </div>
-      )}
+          {showHelp ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          How to use (20 sec)
+        </button>
+        {showHelp && (
+          <div
+            className="rounded-[3px] px-3 py-2 text-[11px] text-muted-foreground space-y-0.5 mt-2"
+            style={{ background: xp.heroBg, border: xp.heroBorder }}
+          >
+            <p>1. Enter account size</p>
+            <p>2. Enter option buy price and option stop price</p>
+            <p>3. Click <strong className="text-foreground">Generate</strong></p>
+            <p>4. Follow the plan (contracts, cut loss, target)</p>
+            <p className="text-primary/70 pt-1">VAULT auto-sets risk %, spending cap, and targets for you.</p>
+          </div>
+        )}
+      </div>
 
       {/* Section 1: Account */}
       <XPFieldset legend="1) Account">
