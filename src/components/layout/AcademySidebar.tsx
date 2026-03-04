@@ -23,6 +23,7 @@ import { ReferralModal } from "@/components/academy/ReferralModal";
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { InboxDrawer } from "@/components/academy/InboxDrawer";
