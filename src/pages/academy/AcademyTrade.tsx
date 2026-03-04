@@ -1,266 +1,269 @@
-import { useState, useEffect } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TrendingUp, PenLine, MessageSquare, BarChart3, Loader2, Check } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Plus, CircleDot, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye } from "lucide-react";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 
-// Reuse Journal + Progress inline
-import AcademyJournalContent from "@/pages/academy/AcademyJournalContent";
-import AcademyProgressContent from "@/pages/academy/AcademyProgressContent";
-
-const SETUP_TYPES = [
-  "Breakout",
-  "Pullback",
-  "Reversal",
-  "Momentum",
-  "Scalp",
-  "Swing",
-  "Other",
+/* ── Mock data ── */
+const MOCK_TRADES = [
+  {
+    ticker: "SPY", date: "Mar 4, 10:42 AM", direction: "Calls", outcome: "win" as const,
+    pnl: "+$124", chips: [
+      { label: "Target Hit", passed: true },
+      { label: "Plan Followed", passed: true },
+      { label: "Stop Respected", passed: true },
+    ],
+  },
+  {
+    ticker: "TSLA", date: "Mar 4, 1:18 PM", direction: "Puts", outcome: "loss" as const,
+    pnl: "-$86", chips: [
+      { label: "Target Hit", passed: false },
+      { label: "Plan Followed", passed: false },
+      { label: "Stop Respected", passed: true },
+    ],
+  },
+  {
+    ticker: "NVDA", date: "Mar 3, 11:05 AM", direction: "Calls", outcome: "breakeven" as const,
+    pnl: "$0", chips: [
+      { label: "Partial Target", passed: "partial" as const },
+      { label: "Plan Followed", passed: true },
+      { label: "Stop Respected", passed: true },
+    ],
+  },
 ];
 
+const OUTCOME_STYLES = {
+  win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+  loss: { label: "Loss", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20" },
+  breakeven: { label: "Breakeven", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+};
+
+/* ── Page ── */
 const AcademyTrade = () => {
-  const [tab, setTab] = useState("post");
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
 
   if (!hasAccess && !accessLoading) {
     return (
       <AcademyLayout>
-        <PremiumGate status={status} pageName="Trade" />
+        <PremiumGate status={status} pageName="My Trades" />
       </AcademyLayout>
     );
   }
 
   return (
     <AcademyLayout>
-      <PageHeader title="Trade" subtitle="Post, journal, and review your trades" />
-      <div className="px-4 md:px-6 pb-6">
-        <Tabs value={tab} onValueChange={setTab} className="space-y-4 max-w-3xl">
-          <TabsList className="bg-white/[0.03] border border-white/[0.06] p-1 h-auto flex-wrap">
-            <TabsTrigger value="post" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
-              <TrendingUp className="h-3.5 w-3.5" />
-              Post a Trade
-            </TabsTrigger>
-            <TabsTrigger value="journal" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
-              <PenLine className="h-3.5 w-3.5" />
-              My Journal
-            </TabsTrigger>
-            <TabsTrigger value="feedback" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
-              <MessageSquare className="h-3.5 w-3.5" />
-              Coach Feedback
-            </TabsTrigger>
-            <TabsTrigger value="review" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
-              <BarChart3 className="h-3.5 w-3.5" />
-              Weekly Review
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="post">
-            <PostTradeForm />
-          </TabsContent>
-
-          <TabsContent value="journal">
-            <AcademyJournalContent />
-          </TabsContent>
-
-          <TabsContent value="feedback">
-            <CoachFeedbackQueue />
-          </TabsContent>
-
-          <TabsContent value="review">
-            <AcademyProgressContent />
-          </TabsContent>
-        </Tabs>
+      <PageHeader
+        title="My Trades"
+        subtitle="Log trades, track performance, and improve execution with AI review."
+        action={
+          <Button size="sm" className="gap-1.5">
+            <Plus className="h-3.5 w-3.5" /> Log Trade
+          </Button>
+        }
+      />
+      <div className="px-4 md:px-6 pb-10 space-y-5 max-w-3xl">
+        <TodayTradeCheckCard />
+        <WeeklyProgressCard />
+        <TrackedBalanceCard />
+        <AIFocusCard />
+        <RecentTradesSection />
+        <WeeklyReviewCard />
+        <WeeklyBalanceCheckCard />
       </div>
     </AcademyLayout>
   );
 };
 
-function PostTradeForm() {
-  const { user, profile } = useAuth();
-  const [ticker, setTicker] = useState("");
-  const [setupType, setSetupType] = useState("");
-  const [entryExit, setEntryExit] = useState("");
-  const [risk, setRisk] = useState("");
-  const [thesis, setThesis] = useState("");
-  const [requestCoach, setRequestCoach] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const canSubmit = ticker.trim() && setupType && entryExit.trim() && risk.trim() && thesis.trim();
-
-  const handleSubmit = async () => {
-    if (!user || !canSubmit) return;
-    setSending(true);
-
-    const userName = profile?.display_name || user.email?.split("@")[0] || "Trader";
-    const formattedBody = `**${ticker.toUpperCase()}** — ${setupType}\nEntry/Exit: ${entryExit}\nRisk: ${risk}\nThesis: ${thesis}`;
-
-    // 1) Create journal entry
-    const { error: journalErr } = await supabase.from("journal_entries").insert({
-      user_id: user.id,
-      ticker: ticker.toUpperCase(),
-      what_happened: `${setupType} — Entry/Exit: ${entryExit}, Risk: ${risk}`,
-      biggest_mistake: "none",
-      lesson: thesis,
-      followed_rules: true,
-    });
-
-    if (journalErr) {
-      toast.error("Failed to create journal entry");
-      setSending(false);
-      return;
-    }
-
-    // 2) Post to Community Trade Floor
-    const { error: msgError } = await supabase.from("academy_messages").insert({
-      room_slug: "trade-recaps",
-      user_id: user.id,
-      user_name: userName,
-      body: formattedBody,
-    });
-
-    if (msgError) {
-      toast.error("Failed to post to Trade Floor");
-      setSending(false);
-      return;
-    }
-
-    // 3) Optionally request coach feedback
-    if (requestCoach) {
-      await supabase.from("coach_tickets").insert({
-        user_id: user.id,
-        category: "Trade Review",
-        urgency: "standard",
-        question: `Trade Recap: ${ticker.toUpperCase()} — ${setupType}\nEntry/Exit: ${entryExit}\nRisk: ${risk}\nThesis: ${thesis}`,
-      });
-    }
-
-    setSending(false);
-    toast.success(
-      requestCoach
-        ? "Trade posted to Trade Floor, journaled, and sent to Coach"
-        : "Trade posted to Trade Floor and journaled"
-    );
-    setSent(true);
-  };
-
-  const handleReset = () => {
-    setTicker(""); setSetupType(""); setEntryExit(""); setRisk(""); setThesis(""); setRequestCoach(false); setSent(false);
-  };
-
-  if (sent) {
-    return (
-      <Card className="p-6 max-w-lg space-y-4 text-center">
-        <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Check className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Trade Posted</h3>
-          <p className="text-xs text-muted-foreground mt-1">Logged in your journal and visible on Trade Floor.{requestCoach ? " Sent to Coach for review." : ""}</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleReset}>Post Another</Button>
-      </Card>
-    );
-  }
-
+/* ── 1. Today's Trade Check ── */
+function TodayTradeCheckCard() {
   return (
-    <Card className="p-6 max-w-lg space-y-4">
-      <div className="space-y-1.5">
-        <Label className="text-xs">Ticker</Label>
-        <Input placeholder="e.g. SPY, AAPL, ES" value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} className="uppercase" />
+    <div className="vault-glass-card p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <CalendarCheck className="h-4 w-4 text-amber-400" />
+        <h3 className="text-sm font-semibold text-foreground">Today's Trade Check</h3>
+        <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          Incomplete
+        </span>
       </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Setup Type</Label>
-        <Select value={setupType} onValueChange={setSetupType}>
-          <SelectTrigger><SelectValue placeholder="Select setup" /></SelectTrigger>
-          <SelectContent>
-            {SETUP_TYPES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <StatMini label="Status" value="Incomplete" />
+        <StatMini label="Trades logged" value="0" />
+        <StatMini label="Check-in" value="Not started" />
+        <StatMini label="AI review" value="Waiting" />
       </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Entry / Exit</Label>
-        <Input placeholder="e.g. Entry $450, Exit $455" value={entryExit} onChange={(e) => setEntryExit(e.target.value)} />
+      <p className="text-xs text-muted-foreground">
+        Complete today's trade check to keep your progress tracking accurate.
+      </p>
+      <div className="flex gap-2">
+        <Button size="sm" className="gap-1.5">
+          <Plus className="h-3.5 w-3.5" /> Log today's trade
+        </Button>
+        <Button size="sm" variant="outline">Mark no-trade day</Button>
       </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Risk ($ or %)</Label>
-        <Input placeholder="e.g. $200 or 1%" value={risk} onChange={(e) => setRisk(e.target.value)} />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs">Thesis (1 sentence)</Label>
-        <Textarea placeholder="Why did you take this trade?" value={thesis} onChange={(e) => setThesis(e.target.value)} rows={2} />
-      </div>
-      <div className="flex items-center gap-2 pt-1">
-        <Checkbox id="coach-feedback" checked={requestCoach} onCheckedChange={(v) => setRequestCoach(v === true)} />
-        <Label htmlFor="coach-feedback" className="text-xs text-muted-foreground cursor-pointer">Request Coach Feedback</Label>
-      </div>
-      <Button onClick={handleSubmit} disabled={!canSubmit || sending} className="w-full gap-2">
-        {sending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        Post Trade
-      </Button>
-    </Card>
+    </div>
   );
 }
 
-function CoachFeedbackQueue() {
-  const { user } = useAuth();
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("coach_tickets")
-      .select("id, question, status, created_at, category")
-      .eq("user_id", user.id)
-      .eq("category", "Trade Review")
-      .order("created_at", { ascending: false })
-      .limit(20)
-      .then(({ data }) => {
-        setTickets(data || []);
-        setLoading(false);
-      });
-  }, [user]);
-
-  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
-
-  if (tickets.length === 0) {
-    return (
-      <Card className="p-6 text-center max-w-lg">
-        <MessageSquare className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-        <p className="text-sm text-muted-foreground">No trades submitted for review yet.</p>
-        <p className="text-xs text-muted-foreground/60 mt-1">Post a trade to get coach feedback.</p>
-      </Card>
-    );
-  }
-
+/* ── 2. Weekly Progress ── */
+function WeeklyProgressCard() {
   return (
-    <div className="space-y-2 max-w-lg">
-      {tickets.map((t) => (
-        <Card key={t.id} className="p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-foreground line-clamp-1">{t.question}</p>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${t.status === "answered" || t.status === "closed" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-              {t.status === "answered" || t.status === "closed" ? "Reviewed" : "Pending"}
-            </span>
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            {new Date(t.created_at).toLocaleDateString()}
-          </p>
-        </Card>
-      ))}
+    <div className="vault-glass-card p-6 space-y-4">
+      <h3 className="text-sm font-semibold text-foreground">Weekly Progress</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <StatBlock label="Trades Logged" value="8" />
+        <StatBlock label="Win Rate" value="62%" accent />
+        <StatBlock label="P/L" value="+$438" accent />
+        <StatBlock label="Plan Follow Rate" value="78%" />
+      </div>
+      <p className="text-xs text-muted-foreground">Updated automatically when you log trades.</p>
+    </div>
+  );
+}
+
+/* ── 3. Tracked Balance ── */
+function TrackedBalanceCard() {
+  return (
+    <div className="vault-glass-card p-6 space-y-3">
+      <div className="flex items-center gap-2">
+        <Wallet className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Tracked Balance</h3>
+      </div>
+      <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">$3,142</p>
+      <div className="flex gap-4">
+        <span className="text-xs text-emerald-400 font-medium">Today: +$86</span>
+        <span className="text-xs text-emerald-400 font-medium">This Week: +$438</span>
+      </div>
+      <p className="text-xs text-muted-foreground">Based on your starting balance + logged trades.</p>
+    </div>
+  );
+}
+
+/* ── 4. AI Focus ── */
+function AIFocusCard() {
+  return (
+    <div className="vault-glass-card p-6 space-y-3">
+      <div className="flex items-center gap-2">
+        <Brain className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">AI Focus for Next Trade</h3>
+      </div>
+      <div className="space-y-2">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Top Mistake</p>
+          <p className="text-sm text-foreground mt-0.5">Entering before confirmation candle</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Focus Rule</p>
+          <p className="text-sm text-foreground mt-0.5">Wait for candle close before entry on A+ setups.</p>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">Seen in 3 of your last 7 trades</p>
+      <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-primary px-0 h-auto hover:bg-transparent">
+        <Eye className="h-3 w-3" /> View reviewed trades
+      </Button>
+    </div>
+  );
+}
+
+/* ── 5. Recent Trades ── */
+function RecentTradesSection() {
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-foreground">Recent Trades</h3>
+      <div className="space-y-2">
+        {MOCK_TRADES.map((t) => {
+          const s = OUTCOME_STYLES[t.outcome];
+          return (
+            <div
+              key={t.ticker + t.date}
+              className="vault-glass-card p-4 space-y-2 cursor-pointer hover:border-white/10 transition-colors duration-100"
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  {t.outcome === "win" && <TrendingUp className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                  {t.outcome === "loss" && <TrendingDown className="h-3.5 w-3.5 text-red-400 shrink-0" />}
+                  {t.outcome === "breakeven" && <Minus className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+                  <span className="text-sm font-semibold text-foreground">{t.ticker}</span>
+                  <span className="text-xs text-muted-foreground">· {t.date}</span>
+                  <span className="text-xs text-muted-foreground">— {t.direction}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color}`}>
+                    {s.label}
+                  </span>
+                  <span className={`text-sm font-semibold tabular-nums ${s.color}`}>{t.pnl}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {t.chips.map((c) => (
+                  <span
+                    key={c.label}
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground"
+                  >
+                    {c.passed === true ? "✅" : c.passed === false ? "❌" : "◐"} {c.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <Button variant="ghost" size="sm" className="w-full text-xs text-primary">
+        View all trades
+      </Button>
+    </div>
+  );
+}
+
+/* ── 6. Weekly Review ── */
+function WeeklyReviewCard() {
+  return (
+    <div className="vault-glass-card p-6 space-y-3">
+      <div className="flex items-center gap-2">
+        <BarChart3 className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Weekly Review</h3>
+        <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          Ready
+        </span>
+      </div>
+      <p className="text-sm text-muted-foreground">Your weekly review is ready to generate.</p>
+      <Button size="sm">Generate Weekly Review</Button>
+    </div>
+  );
+}
+
+/* ── 7. Weekly Balance Check ── */
+function WeeklyBalanceCheckCard() {
+  return (
+    <div className="vault-glass-card p-6 space-y-3">
+      <h3 className="text-sm font-semibold text-foreground">Weekly Balance Check</h3>
+      <p className="text-sm text-muted-foreground">What does your broker balance show right now?</p>
+      <Input type="number" placeholder="$____" className="max-w-[200px]" />
+      <p className="text-xs text-muted-foreground">Optional — helps keep your tracked balance accurate.</p>
+      <div className="flex gap-2">
+        <Button size="sm">Save Balance</Button>
+        <Button size="sm" variant="outline">Skip for now</Button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Shared micro-components ── */
+function StatMini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold text-foreground mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function StatBlock({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">{label}</p>
+      <p className={`text-2xl font-bold mt-1 tabular-nums ${accent ? "text-primary" : "text-foreground"}`}>{value}</p>
     </div>
   );
 }
