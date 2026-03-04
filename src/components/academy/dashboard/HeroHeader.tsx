@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ChevronDown, PenLine, TrendingUp, Sparkles, ClipboardCheck, BarChart3, Loader2, Zap } from "lucide-react";
+import { Plus, ChevronDown, TrendingUp, MessageSquare, Sparkles, BookOpen, Video, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
