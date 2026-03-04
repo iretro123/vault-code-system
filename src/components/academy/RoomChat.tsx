@@ -103,10 +103,10 @@ function renderTradeCard(body: string, attachments?: any[]) {
   const imageAtt = attachments?.find((a: any) => a.type === "image");
 
   return (
-    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white mt-2 overflow-hidden max-w-[560px] shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors">
+    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white mt-2 overflow-hidden max-w-full sm:max-w-[560px] shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors">
       <div className="flex">
         {/* Left — Fields */}
-        <div className="flex-1 p-5 space-y-3">
+        <div className="flex-1 min-w-0 p-5 space-y-3">
           <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Setup</p>
           <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
             {fields.map((f, i) => (
@@ -122,7 +122,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
 
         {/* Right — Chart image */}
         {imageAtt && (
-          <div className="w-[200px] shrink-0 bg-[hsl(220,10%,96%)] border-l border-[hsl(220,10%,88%)]">
+          <div className="hidden sm:block w-[200px] shrink-0 bg-[hsl(220,10%,96%)] border-l border-[hsl(220,10%,88%)]">
             <img
               src={(imageAtt as any).url}
               alt="Chart"
