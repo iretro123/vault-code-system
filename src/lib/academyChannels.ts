@@ -51,6 +51,13 @@ export const CHANNELS: Channel[] = [
     readOnly: false,
   },
   {
+    slug: "daily-setups",
+    name: "daily-setups",
+    description: "Daily market setups shared by coaches — read-only for members",
+    icon: TrendingUp,
+    readOnly: true,
+  },
+  {
     slug: "off-topic",
     name: "off-topic",
     description: "Non-trading chat — keep it friendly",
