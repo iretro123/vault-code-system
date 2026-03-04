@@ -181,7 +181,7 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
             <DropdownMenuTrigger asChild>
               <Button variant={showUpgrade ? "outline" : "default"} className="gap-2 h-11 px-5">
                 <Plus className="h-4 w-4" />
-                Create
+                Quick
                 <ChevronDown className="h-3.5 w-3.5 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
