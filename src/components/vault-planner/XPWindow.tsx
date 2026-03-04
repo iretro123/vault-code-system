@@ -28,14 +28,20 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
 
   const toggleMaximize = () => setMaximized((p) => !p);
 
-  // Viewport-aware styles
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
+  // Viewport-aware styles — no maxHeight on mobile to prevent scroll trapping
   const containerStyle: React.CSSProperties = fitViewport
     ? {
         border: `1px solid ${xp.windowBorder}`,
         background: xp.windowBg,
-        maxHeight: maximized ? "calc(100vh - 80px)" : "calc(100vh - 140px)",
-        display: "flex",
-        flexDirection: "column",
+        ...(isMobile
+          ? {}
+          : {
+              maxHeight: maximized ? "calc(100vh - 80px)" : "calc(100vh - 140px)",
+              display: "flex",
+              flexDirection: "column" as const,
+            }),
       }
     : {
         border: `1px solid ${xp.windowBorder}`,
@@ -93,10 +99,10 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
         </div>
       </div>
 
-      {/* Menu bar */}
+      {/* Menu bar — hidden on mobile */}
       {menuBar && (
         <div
-          className="flex items-center gap-3 px-3 py-1 text-[11px] text-muted-foreground shrink-0"
+          className="hidden md:flex items-center gap-3 px-3 py-1 text-[11px] text-muted-foreground shrink-0"
           style={{ background: xp.menuBg, borderBottom: xp.menuBorder }}
         >
           <span className="hover:text-foreground cursor-default">File</span>
@@ -106,21 +112,21 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
         </div>
       )}
 
-      {/* Body — scrollable fallback when fitViewport is active */}
+      {/* Body — scrollable on desktop, natural flow on mobile */}
       <div
         className={
           fitViewport
-            ? "p-3 md:p-4 space-y-3 overflow-y-auto flex-1 min-h-0 xp-scroll"
+            ? "p-3 md:p-4 space-y-3 md:overflow-y-auto md:flex-1 md:min-h-0 xp-scroll"
             : "p-4 md:p-5 space-y-4"
         }
       >
         {children}
       </div>
 
-      {/* Footer */}
+      {/* Footer — hidden on mobile */}
       {footer && (
         <div
-          className="px-4 py-2 text-[10px] text-muted-foreground shrink-0"
+          className="hidden md:block px-4 py-2 text-[10px] text-muted-foreground shrink-0"
           style={{ borderTop: xp.menuBorder, background: xp.menuBg }}
         >
           {footer}

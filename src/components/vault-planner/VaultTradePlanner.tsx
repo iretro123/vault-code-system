@@ -229,43 +229,45 @@ export function VaultTradePlanner() {
         <p className="text-[11px] text-muted-foreground">Long Calls / Long Puts only • Simple Mode</p>
       </div>
 
-      {/* Vault handles the math — reassuring banner */}
+      {/* Vault handles the math — reassuring banner (hidden on mobile) */}
       <div
-        className="rounded-[3px] px-3 py-2 text-[11px] text-center"
+        className="hidden md:block rounded-[3px] px-3 py-2 text-[11px] text-center"
         style={{ background: xp.heroBg, border: xp.heroBorder }}
       >
         <p className="font-semibold text-foreground">You enter the setup. VAULT builds the plan.</p>
         <p className="text-muted-foreground mt-0.5">No guessing. No oversizing. No random targets.</p>
       </div>
 
-      {/* Rule banner */}
+      {/* Rule banner (hidden on mobile) */}
       <div
-        className="rounded-[3px] px-3 py-2 text-[11px] font-medium"
+        className="hidden md:block rounded-[3px] px-3 py-2 text-[11px] font-medium"
         style={{ background: xp.warningBg, border: xp.warningBorder, color: xp.warningText }}
       >
         Risk to stop is NOT the same as money needed to enter. Pass BOTH checks.
       </div>
 
-      {/* How to use — collapsible */}
-      <button
-        onClick={() => setShowHelp(!showHelp)}
-        className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/80 hover:text-primary w-full text-left"
-      >
-        {showHelp ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        How to use (20 sec)
-      </button>
-      {showHelp && (
-        <div
-          className="rounded-[3px] px-3 py-2 text-[11px] text-muted-foreground space-y-0.5"
-          style={{ background: xp.heroBg, border: xp.heroBorder }}
+      {/* How to use — collapsible (hidden on mobile) */}
+      <div className="hidden md:block">
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/80 hover:text-primary w-full text-left"
         >
-          <p>1. Enter account size</p>
-          <p>2. Enter option buy price and option stop price</p>
-          <p>3. Click <strong className="text-foreground">Generate</strong></p>
-          <p>4. Follow the plan (contracts, cut loss, target)</p>
-          <p className="text-primary/70 pt-1">VAULT auto-sets risk %, spending cap, and targets for you.</p>
-        </div>
-      )}
+          {showHelp ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          How to use (20 sec)
+        </button>
+        {showHelp && (
+          <div
+            className="rounded-[3px] px-3 py-2 text-[11px] text-muted-foreground space-y-0.5 mt-2"
+            style={{ background: xp.heroBg, border: xp.heroBorder }}
+          >
+            <p>1. Enter account size</p>
+            <p>2. Enter option buy price and option stop price</p>
+            <p>3. Click <strong className="text-foreground">Generate</strong></p>
+            <p>4. Follow the plan (contracts, cut loss, target)</p>
+            <p className="text-primary/70 pt-1">VAULT auto-sets risk %, spending cap, and targets for you.</p>
+          </div>
+        )}
+      </div>
 
       {/* Section 1: Account */}
       <XPFieldset legend="1) Account">
@@ -328,7 +330,7 @@ export function VaultTradePlanner() {
           </div>
         </div>
 
-        <p className="text-[10px] text-muted-foreground">
+        <p className="hidden md:block text-[10px] text-muted-foreground">
           Small: 2% risk • 5% spend cap | Medium: 1% risk • 5% spend cap | Large: 1% risk • 4% spend cap
         </p>
       </XPFieldset>
@@ -348,8 +350,8 @@ export function VaultTradePlanner() {
             tooltip="If option price hits this, cut the trade."
           />
         </div>
-        <p className="text-[10px] text-muted-foreground">If option price hits your stop, cut the trade.</p>
-        <p className="text-[10px] text-primary/70 font-medium">Simple Mode uses a 1:2 main target. VAULT auto-calculates your target + profit suggestions.</p>
+        <p className="hidden md:block text-[10px] text-muted-foreground">If option price hits your stop, cut the trade.</p>
+        <p className="hidden md:block text-[10px] text-primary/70 font-medium">Simple Mode uses a 1:2 main target. VAULT auto-calculates your target + profit suggestions.</p>
 
         <button
           onClick={() => setShowMore(!showMore)}
@@ -414,8 +416,8 @@ export function VaultTradePlanner() {
           )}
         </div>
 
-        {/* Reassuring sub-copy */}
-        <p className="text-[10px] text-primary/60 font-medium text-center">
+        {/* Reassuring sub-copy (hidden on mobile) */}
+        <p className="hidden md:block text-[10px] text-primary/60 font-medium text-center">
           Don't stress — VAULT calculates your size, loss, and target.
         </p>
 
@@ -431,10 +433,10 @@ export function VaultTradePlanner() {
           <XPStatusBadge label="Debit Check" pass={liveResult?.debitCheckPass ?? false} />
         </div>
 
-        <p className="text-[10px] text-muted-foreground/70">
+        <p className="hidden md:block text-[10px] text-muted-foreground/70">
           ⚠ Cut at your stop. Planned loss is not a guarantee.
         </p>
-        <p className="text-[10px] text-muted-foreground/50">
+        <p className="hidden md:block text-[10px] text-muted-foreground/50">
           How many contracts? = based on BOTH your risk limit and your spend cap.<br />
           This keeps students from oversizing and blowing up trades.
         </p>
