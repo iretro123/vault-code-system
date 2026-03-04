@@ -2,15 +2,6 @@ import { X, AlertTriangle, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const TRADE_FORMAT = `**Ticker:** 
-**Direction:** Long / Short
-**Setup:** 
-**Entry:** 
-**Stop:** 
-**Target:** 
-**Risk:** 
-**Thesis:** `;
-
 const RULES = [
   "All trade posts must use the structured format — no freestyle.",
   "Be respectful. Personal attacks or spam = instant timeout.",
