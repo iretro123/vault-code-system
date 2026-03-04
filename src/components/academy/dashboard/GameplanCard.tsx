@@ -150,6 +150,14 @@ export function GameplanCard({ onCheckIn }: Props) {
     });
   }, []);
 
+  const nextTask = useMemo(() => {
+    for (const group of groups) {
+      const incomplete = group.tasks.find((t) => !t.done);
+      if (incomplete) return incomplete;
+    }
+    return null;
+  }, [groups]);
+
   const showAll = expanded || !isMobile;
 
   return (
@@ -167,6 +175,25 @@ export function GameplanCard({ onCheckIn }: Props) {
           </span>
         )}
       </div>
+
+      {/* Next Step */}
+      {nextTask ? (
+        <div className="flex items-center gap-3 rounded-xl px-4 py-3"
+          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}>
+          <span className="text-[10px] uppercase tracking-widest font-semibold text-blue-400/70">Next Step</span>
+          <span className="flex-1 text-sm font-medium text-foreground/90 truncate">{nextTask.title}</span>
+          <button onClick={() => handleToggle(nextTask.id)}
+            className="text-xs font-semibold text-blue-400 hover:text-blue-300 shrink-0 transition-colors duration-100">
+            Complete
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 rounded-xl px-4 py-3"
+          style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.1)" }}>
+          <Check className="h-4 w-4 text-emerald-400" />
+          <span className="text-sm font-medium text-emerald-400/90">You're on track</span>
+        </div>
+      )}
 
       {/* Progress — weekly only */}
       <div className="space-y-2">
