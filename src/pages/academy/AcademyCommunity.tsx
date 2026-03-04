@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { CommunityAnnouncements } from "@/components/academy/community/CommunityAnnouncements";
 import { CommunityDailySetups } from "@/components/academy/community/CommunityDailySetups";
-import { CommunityWins } from "@/components/academy/community/CommunityWins";
+import { RoomChat } from "@/components/academy/RoomChat";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 
 const TABS = [
