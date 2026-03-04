@@ -3,12 +3,14 @@ import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { CommunityAnnouncements } from "@/components/academy/community/CommunityAnnouncements";
+import { CommunityDailySetups } from "@/components/academy/community/CommunityDailySetups";
 import { CommunityWins } from "@/components/academy/community/CommunityWins";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 
 const TABS = [
   { key: "trade-floor", label: "Trade Floor" },
   { key: "announcements", label: "Announcements" },
+  { key: "daily-setups", label: "Daily Setups" },
   { key: "wins", label: "Wins & Proof" },
 ] as const;
 
@@ -72,6 +74,9 @@ const AcademyCommunity = () => {
             </div>
             <div className={cn("absolute inset-0", activeTab === "announcements" ? "block" : "hidden")}>
               <CommunityAnnouncements />
+            </div>
+            <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
+              <CommunityDailySetups />
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <CommunityWins />
