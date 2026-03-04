@@ -37,6 +37,7 @@ import AcademyProgress from "./pages/academy/AcademyProgress";
 import AcademyMyQuestions from "./pages/academy/AcademyMyQuestions";
 import AcademyPlaybook from "./pages/academy/AcademyPlaybook";
 import AcademyQA from "./pages/academy/AcademyQA";
+import AcademyVaultOS from "./pages/academy/AcademyVaultOS";
 import Hub from "./pages/Hub";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,7 @@ const App = () => (
             <Route path="/academy/journal" element={<AcademyJournal />} />
             <Route path="/academy/progress" element={<AcademyProgress />} />
             <Route path="/academy/playbook" element={<AcademyPlaybook />} />
+            <Route path="/academy/vault-os" element={<AcademyVaultOS />} />
             <Route path="/academy/admin" element={<AcademyAdmin />} />
             <Route path="/academy/admin/users" element={<AcademyAdminUsers />} />
             <Route path="/academy/admin/panel" element={<AdminPanel />} />

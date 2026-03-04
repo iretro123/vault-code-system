@@ -50,6 +50,7 @@ const coreNav = [
   { icon: Users, label: "Community", path: "/academy/community", pageKey: "community" },
   { icon: Radio, label: "Live", path: "/academy/live", isLive: true, pageKey: "live" },
   { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources", pageKey: "resources" },
+  { icon: LayoutGrid, label: "Vault OS", path: "/academy/vault-os", pageKey: "vault-os" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
   { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];
