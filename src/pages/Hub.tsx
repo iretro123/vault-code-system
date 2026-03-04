@@ -68,26 +68,48 @@ const Hub = () => {
               </span>
             </button>
 
-            {/* Vault OS Beta — Disabled */}
-            <div className="relative flex flex-col items-center gap-4 rounded-xl border border-border bg-muted/5 p-8 opacity-50 cursor-not-allowed select-none">
-              {/* Coming Soon badge */}
-              <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <Lock className="h-3 w-3" />
-                Coming Soon
-              </span>
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20">
-                <Shield className="h-8 w-8 text-muted-foreground" />
+            {canAccessVaultOS ? (
+              <button
+                onClick={() => navigate("/cockpit")}
+                className="group relative flex flex-col items-center gap-4 rounded-xl border border-border bg-muted/5 p-8 text-left transition-all hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <Shield className="h-3 w-3" />
+                  Admin Preview
+                </span>
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20">
+                  <Shield className="h-8 w-8 text-foreground" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold text-foreground">Vault OS</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Real-time risk operating system
+                  </p>
+                </div>
+                <span className="mt-2 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  Enter Vault OS →
+                </span>
+              </button>
+            ) : (
+              <div className="relative flex flex-col items-center gap-4 rounded-xl border border-border bg-muted/5 p-8 opacity-50 cursor-not-allowed select-none">
+                <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Lock className="h-3 w-3" />
+                  Coming Soon
+                </span>
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/20">
+                  <Shield className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="text-center">
+                  <h2 className="text-lg font-semibold text-muted-foreground">Vault OS</h2>
+                  <p className="mt-1 text-sm text-muted-foreground/70">
+                    Real-time risk operating system
+                  </p>
+                </div>
+                <span className="mt-2 inline-flex items-center rounded-full bg-muted/20 px-3 py-1 text-xs font-medium text-muted-foreground">
+                  Beta
+                </span>
               </div>
-              <div className="text-center">
-                <h2 className="text-lg font-semibold text-muted-foreground">Vault OS</h2>
-                <p className="mt-1 text-sm text-muted-foreground/70">
-                  Real-time risk operating system
-                </p>
-              </div>
-              <span className="mt-2 inline-flex items-center rounded-full bg-muted/20 px-3 py-1 text-xs font-medium text-muted-foreground">
-                Beta
-              </span>
-            </div>
+            )}
           </div>
         </div>
       </main>
