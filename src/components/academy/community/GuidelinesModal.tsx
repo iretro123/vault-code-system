@@ -63,25 +63,6 @@ export function GuidelinesModal({ open, onClose }: GuidelinesModalProps) {
               </div>
             </div>
 
-            {/* Copy format */}
-            <div>
-              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] mb-3">
-                Trade Format Template
-              </p>
-              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-                <pre className="text-[13px] text-white/50 font-mono leading-relaxed whitespace-pre-wrap">
-                  {TRADE_FORMAT}
-                </pre>
-              </div>
-              <button
-                onClick={copyTemplate}
-                className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                Copy Trade Format
-              </button>
-            </div>
-
             {/* Disclaimer */}
             <div className="rounded-xl bg-amber-500/[0.04] border border-amber-500/[0.08] p-4">
               <div className="flex items-start gap-2.5">
