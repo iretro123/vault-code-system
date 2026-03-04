@@ -1,9 +1,13 @@
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 
 export function VaultOSGate({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
+  const { isCEO, isOperator } = useAcademyPermissions();
+
+  if (isCEO || isOperator) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
