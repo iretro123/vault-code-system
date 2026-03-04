@@ -3,10 +3,13 @@ import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye, CheckCircle2 } from "lucide-react";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { LogTradeSheet, type TradeFormData } from "@/components/academy/LogTradeSheet";
+import { SetStartingBalanceModal } from "@/components/academy/SetStartingBalanceModal";
+import { QuickCheckInSheet } from "@/components/academy/QuickCheckInSheet";
+import { NoTradeDaySheet } from "@/components/academy/NoTradeDaySheet";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -17,14 +20,17 @@ interface MockTrade {
   direction: string;
   outcome: "win" | "loss" | "breakeven";
   pnl: string;
+  pnlNum: number;
   chips: { label: string; passed: boolean | "partial" }[];
 }
+
+type TodayStatus = "incomplete" | "in_progress" | "complete";
 
 /* ── Initial mock data ── */
 const INITIAL_TRADES: MockTrade[] = [
   {
     ticker: "SPY", date: "Mar 4, 10:42 AM", direction: "Calls", outcome: "win",
-    pnl: "+$124", chips: [
+    pnl: "+$124", pnlNum: 124, chips: [
       { label: "Target Hit", passed: true },
       { label: "Plan Followed", passed: true },
       { label: "Stop Respected", passed: true },
@@ -32,7 +38,7 @@ const INITIAL_TRADES: MockTrade[] = [
   },
   {
     ticker: "TSLA", date: "Mar 4, 1:18 PM", direction: "Puts", outcome: "loss",
-    pnl: "-$86", chips: [
+    pnl: "-$86", pnlNum: -86, chips: [
       { label: "Target Hit", passed: false },
       { label: "Plan Followed", passed: false },
       { label: "Stop Respected", passed: true },
@@ -40,7 +46,7 @@ const INITIAL_TRADES: MockTrade[] = [
   },
   {
     ticker: "NVDA", date: "Mar 3, 11:05 AM", direction: "Calls", outcome: "breakeven",
-    pnl: "$0", chips: [
+    pnl: "$0", pnlNum: 0, chips: [
       { label: "Partial Target", passed: "partial" },
       { label: "Plan Followed", passed: true },
       { label: "Stop Respected", passed: true },
@@ -57,13 +63,35 @@ const OUTCOME_STYLES = {
 /* ── Page ── */
 const AcademyTrade = () => {
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
-  const [showLogTrade, setShowLogTrade] = useState(false);
+
+  // Core state
   const [trades, setTrades] = useState<MockTrade[]>(INITIAL_TRADES);
+  const [showLogTrade, setShowLogTrade] = useState(false);
+
+  // Accountability state
+  const [startingBalance, setStartingBalance] = useState<number | null>(null);
+  const [trackedBalance, setTrackedBalance] = useState(0);
+  const [todayStatus, setTodayStatus] = useState<TodayStatus>("incomplete");
+  const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showNoTradeDay, setShowNoTradeDay] = useState(false);
+  const [noTradeDay, setNoTradeDay] = useState(false);
+
+  // Weekly balance check
+  const [brokerBalance, setBrokerBalance] = useState("");
+  const [balanceSaved, setBalanceSaved] = useState(false);
+  const [balanceCheckDismissed, setBalanceCheckDismissed] = useState(false);
 
   const todayTradeCount = useMemo(() => {
     const todayStr = format(new Date(), "MMM d");
     return trades.filter((t) => t.date.startsWith(todayStr)).length;
   }, [trades]);
+
+  /* ── Handlers ── */
+  const handleStartingBalanceSave = (balance: number) => {
+    setStartingBalance(balance);
+    setTrackedBalance(balance);
+    toast({ title: "Starting balance set", description: `Tracking from $${balance.toLocaleString()}.` });
+  };
 
   const handleTradeSubmit = (data: TradeFormData) => {
     const resultMap: Record<string, "win" | "loss" | "breakeven"> = {
@@ -78,6 +106,7 @@ const AcademyTrade = () => {
       direction: data.direction,
       outcome: resultMap[data.resultType] || "breakeven",
       pnl: pnlStr,
+      pnlNum,
       chips: [
         { label: "Target Hit", passed: data.targetHit === "Yes" ? true : data.targetHit === "Partial" ? "partial" : false },
         { label: "Plan Followed", passed: data.planFollowed === "Yes" },
@@ -86,11 +115,33 @@ const AcademyTrade = () => {
     };
 
     setTrades((prev) => [newTrade, ...prev]);
+    setTrackedBalance((prev) => prev + pnlNum);
     setShowLogTrade(false);
-    toast({
-      title: "Trade logged ✅",
-      description: "Vault updated your stats and generated your AI review.",
-    });
+    setTodayStatus("in_progress");
+
+    // Open check-in after short delay
+    setTimeout(() => setShowCheckIn(true), 400);
+  };
+
+  const handleCheckInComplete = () => {
+    setShowCheckIn(false);
+    setTodayStatus("complete");
+    toast({ title: "Check-in complete ✅", description: "AI review is ready for this session." });
+  };
+
+  const handleNoTradeDayComplete = () => {
+    setShowNoTradeDay(false);
+    setNoTradeDay(true);
+    setTodayStatus("complete");
+    toast({ title: "No-trade day logged", description: "Consistency tracked. Smart rest is part of the edge." });
+  };
+
+  const handleBalanceSave = () => {
+    const val = parseFloat(brokerBalance);
+    if (!val || val <= 0) return;
+    setBalanceSaved(true);
+    setTrackedBalance(val);
+    toast({ title: "Balance updated ✅", description: "Vault is now aligned with your account for this week." });
   };
 
   if (!hasAccess && !accessLoading) {
@@ -113,47 +164,118 @@ const AcademyTrade = () => {
         }
       />
       <div className="px-4 md:px-6 pb-10 space-y-5 max-w-3xl">
-        <TodayTradeCheckCard count={todayTradeCount} onLogTrade={() => setShowLogTrade(true)} />
+        <TodayTradeCheckCard
+          count={todayTradeCount}
+          status={todayStatus}
+          noTradeDay={noTradeDay}
+          onLogTrade={() => setShowLogTrade(true)}
+          onNoTradeDay={() => setShowNoTradeDay(true)}
+          onCompleteCheckIn={() => setShowCheckIn(true)}
+        />
         <WeeklyProgressCard />
-        <TrackedBalanceCard />
+        <TrackedBalanceCard balance={startingBalance !== null ? trackedBalance : null} />
         <AIFocusCard />
         <RecentTradesSection trades={trades} />
         <WeeklyReviewCard />
-        <WeeklyBalanceCheckCard />
+        {!balanceCheckDismissed && (
+          <WeeklyBalanceCheckCard
+            value={brokerBalance}
+            onChange={setBrokerBalance}
+            onSave={handleBalanceSave}
+            onSkip={() => setBalanceCheckDismissed(true)}
+            saved={balanceSaved}
+          />
+        )}
       </div>
 
+      {/* Modals/Sheets */}
+      <SetStartingBalanceModal open={startingBalance === null} onSave={handleStartingBalanceSave} />
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} />
+      <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
+      <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
     </AcademyLayout>
   );
 };
 
 /* ── 1. Today's Trade Check ── */
-function TodayTradeCheckCard({ count, onLogTrade }: { count: number; onLogTrade: () => void }) {
-  const isIncomplete = count === 0;
+function TodayTradeCheckCard({
+  count,
+  status,
+  noTradeDay,
+  onLogTrade,
+  onNoTradeDay,
+  onCompleteCheckIn,
+}: {
+  count: number;
+  status: TodayStatus;
+  noTradeDay: boolean;
+  onLogTrade: () => void;
+  onNoTradeDay: () => void;
+  onCompleteCheckIn: () => void;
+}) {
+  const badgeMap = {
+    incomplete: { text: "Incomplete", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+    in_progress: { text: "In progress", cls: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    complete: { text: "Complete ✅", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  };
+  const badge = badgeMap[status];
+
   return (
     <div className="vault-glass-card p-6 space-y-4">
       <div className="flex items-center gap-2">
         <CalendarCheck className="h-4 w-4 text-amber-400" />
         <h3 className="text-sm font-semibold text-foreground">Today's Trade Check</h3>
-        <span className={`ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border ${isIncomplete ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>
-          {isIncomplete ? "Incomplete" : "In progress"}
+        <span className={`ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border ${badge.cls}`}>
+          {badge.text}
         </span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-        <StatMini label="Status" value={isIncomplete ? "Incomplete" : "In progress"} />
-        <StatMini label="Trades logged" value={String(count)} />
-        <StatMini label="Check-in" value="Not started" />
-        <StatMini label="AI review" value={count > 0 ? "Generated" : "Waiting"} />
+        <StatMini label="Status" value={badge.text} />
+        <StatMini label="Trades logged" value={noTradeDay ? "No-trade day" : String(count)} />
+        <StatMini label="Check-in" value={status === "complete" ? "Done" : status === "in_progress" ? "Pending" : "Not started"} />
+        <StatMini label="AI review" value={status === "complete" ? "Ready" : "Waiting"} />
       </div>
-      <p className="text-xs text-muted-foreground">
-        Complete today's trade check to keep your progress tracking accurate.
-      </p>
-      <div className="flex gap-2">
-        <Button size="sm" className="gap-1.5" onClick={onLogTrade}>
-          <Plus className="h-3.5 w-3.5" /> Log today's trade
-        </Button>
-        <Button size="sm" variant="outline">Mark no-trade day</Button>
-      </div>
+
+      {status === "incomplete" && (
+        <>
+          <p className="text-xs text-muted-foreground">
+            Complete today's trade check to keep your progress tracking accurate.
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" className="gap-1.5" onClick={onLogTrade}>
+              <Plus className="h-3.5 w-3.5" /> Log today's trade
+            </Button>
+            <Button size="sm" variant="outline" onClick={onNoTradeDay}>Mark no-trade day</Button>
+          </div>
+        </>
+      )}
+
+      {status === "in_progress" && (
+        <>
+          <p className="text-xs text-muted-foreground">
+            Trade logged. Complete your check-in to finish today's accountability.
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" className="gap-1.5" onClick={onCompleteCheckIn}>
+              <CheckCircle2 className="h-3.5 w-3.5" /> Complete check-in
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={onLogTrade}>
+              <Plus className="h-3.5 w-3.5" /> Log another trade
+            </Button>
+          </div>
+        </>
+      )}
+
+      {status === "complete" && (
+        <>
+          <p className="text-xs text-emerald-400/80">
+            {noTradeDay ? "No-trade day tracked. Consistency maintained." : "Today's accountability is complete. Review your feedback below."}
+          </p>
+          <Button size="sm" variant="outline" className="gap-1.5">
+            <Eye className="h-3.5 w-3.5" /> Review today's feedback
+          </Button>
+        </>
+      )}
     </div>
   );
 }
@@ -175,18 +297,28 @@ function WeeklyProgressCard() {
 }
 
 /* ── 3. Tracked Balance ── */
-function TrackedBalanceCard() {
+function TrackedBalanceCard({ balance }: { balance: number | null }) {
+  if (balance === null) {
+    return (
+      <div className="vault-glass-card p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <Wallet className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Tracked Balance</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">Set your starting balance to begin tracking.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="vault-glass-card p-6 space-y-3">
       <div className="flex items-center gap-2">
         <Wallet className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground">Tracked Balance</h3>
       </div>
-      <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">$3,142</p>
-      <div className="flex gap-4">
-        <span className="text-xs text-emerald-400 font-medium">Today: +$86</span>
-        <span className="text-xs text-emerald-400 font-medium">This Week: +$438</span>
-      </div>
+      <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums">
+        ${balance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+      </p>
       <p className="text-xs text-muted-foreground">Based on your starting balance + logged trades.</p>
     </div>
   );
@@ -286,16 +418,43 @@ function WeeklyReviewCard() {
 }
 
 /* ── 7. Weekly Balance Check ── */
-function WeeklyBalanceCheckCard() {
+function WeeklyBalanceCheckCard({
+  value,
+  onChange,
+  onSave,
+  onSkip,
+  saved,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSave: () => void;
+  onSkip: () => void;
+  saved: boolean;
+}) {
+  if (saved) {
+    return (
+      <div className="vault-glass-card p-6 space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">Weekly Balance Check</h3>
+        <p className="text-sm text-emerald-400">Balance updated ✅ Vault is now aligned with your account for this week.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="vault-glass-card p-6 space-y-3">
       <h3 className="text-sm font-semibold text-foreground">Weekly Balance Check</h3>
       <p className="text-sm text-muted-foreground">What does your broker balance show right now?</p>
-      <Input type="number" placeholder="$____" className="max-w-[200px]" />
+      <Input
+        type="number"
+        placeholder="$____"
+        className="max-w-[200px]"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
       <p className="text-xs text-muted-foreground">Optional — helps keep your tracked balance accurate.</p>
       <div className="flex gap-2">
-        <Button size="sm">Save Balance</Button>
-        <Button size="sm" variant="outline">Skip for now</Button>
+        <Button size="sm" onClick={onSave} disabled={!value || parseFloat(value) <= 0}>Save Balance</Button>
+        <Button size="sm" variant="outline" onClick={onSkip}>Skip for now</Button>
       </div>
     </div>
   );
