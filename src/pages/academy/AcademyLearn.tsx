@@ -139,7 +139,7 @@ const AcademyLearn = () => {
         {/* Playbook Hero Strip */}
         {pbTotal > 0 && pbDone < pbTotal && (
           <div
-            className="vault-glass-card p-6 mb-6 flex items-center justify-between gap-4 cursor-pointer hover:border-primary/20 transition-colors"
+            className="vault-glass-card p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer hover:border-primary/20 transition-colors"
             onClick={() => navigate(`/academy/playbook${pbNext ? `?chapter=${pbNext.id}` : ""}`)}
           >
             <div className="flex items-center gap-4 min-w-0">
@@ -156,8 +156,8 @@ const AcademyLearn = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4 shrink-0">
-              <div className="text-right hidden sm:block">
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 shrink-0">
+              <div className="text-right">
                 <span className="text-sm font-bold text-foreground">{pbPct}%</span>
                 <p className="text-[10px] text-white/20">{pbDone}/{pbTotal} chapters</p>
               </div>
