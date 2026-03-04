@@ -189,15 +189,28 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
               align="end"
               className="w-56 bg-popover border border-border z-50"
             >
+              <svg className="h-0 w-0 absolute">
+                <defs>
+                  <linearGradient id="hero-coach-sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FDE68A" />
+                    <stop offset="50%" stopColor="#FBBF24" />
+                    <stop offset="100%" stopColor="#F472B6" />
+                  </linearGradient>
+                </defs>
+              </svg>
               {CREATE_ITEMS.map((item) => {
                 const Icon = item.icon;
+                const isCoach = item.action === "coach";
                 return (
                   <DropdownMenuItem
                     key={item.label}
                     onClick={() => handleItem(item)}
                     className="gap-2.5 py-2.5 cursor-pointer"
                   >
-                    <Icon className="h-4 w-4 text-primary/70" />
+                    <Icon
+                      className={isCoach ? "h-4 w-4 drop-shadow-[0_0_3px_rgba(244,114,182,0.4)]" : "h-4 w-4 text-primary/70"}
+                      style={isCoach ? { stroke: "url(#hero-coach-sparkle-grad)" } : undefined}
+                    />
                     {item.label}
                   </DropdownMenuItem>
                 );
