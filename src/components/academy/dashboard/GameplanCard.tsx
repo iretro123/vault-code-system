@@ -89,7 +89,8 @@ const MOCK_RECENT = [
 export function GameplanCard({ onCheckIn }: Props) {
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
-  const [expanded, setExpanded] = useState(!isMobile);
+  const [expanded, setExpanded] = useState(false);
+  const [showTasks, setShowTasks] = useState(false);
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
 
   // Persist to localStorage
@@ -161,7 +162,7 @@ export function GameplanCard({ onCheckIn }: Props) {
   const showAll = expanded || !isMobile;
 
   return (
-    <div className="vault-glass-card p-6 md:p-8 space-y-6">
+    <div className="vault-glass-card p-5 md:p-6 space-y-4">
       {/* Header */}
       <div className="w-full flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold text-foreground">
@@ -207,44 +208,39 @@ export function GameplanCard({ onCheckIn }: Props) {
         </span>
       </div>
 
-      {/* First task group — always visible */}
-      {groups.length > 0 && (
-        <TaskGroupSection group={groups[0]} onToggle={handleToggle} />
-      )}
-
-      {/* Remaining groups */}
-      {showAll && groups.slice(1).map((group) => (
-        <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} />
-      ))}
-
-      {/* Recently Completed */}
-      {showAll && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-            Recently Completed
-          </p>
-          {recentItems.map((item) => (
-            <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Check className="h-3 w-3 text-emerald-400/60" />
-              <span className="flex-1 truncate">{item.title}</span>
-              <span className="text-[10px] tabular-nums">{item.date}</span>
-            </div>
+      {/* Collapsible task groups */}
+      {showTasks && (
+        <>
+          {groups.map((group) => (
+            <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} />
           ))}
-        </div>
+
+          {/* Recently Completed */}
+          <div className="pt-2 border-t border-white/[0.06] space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+              Recently Completed
+            </p>
+            {recentItems.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Check className="h-3 w-3 text-emerald-400/60" />
+                <span className="flex-1 truncate">{item.title}</span>
+                <span className="text-[10px] tabular-nums">{item.date}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
-      {/* Show More / Show Less — mobile only */}
-      {isMobile && groups.length > 1 && (
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
-        >
-          {expanded ? "Show Less" : "Show More"}
-          <ChevronDown
-            className={`h-3.5 w-3.5 transition-transform duration-150 ${expanded ? "rotate-180" : ""}`}
-          />
-        </button>
-      )}
+      {/* Toggle tasks visibility */}
+      <button
+        onClick={() => setShowTasks((v) => !v)}
+        className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
+      >
+        {showTasks ? "Hide Tasks" : "Show Tasks"}
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform duration-150 ${showTasks ? "rotate-180" : ""}`}
+        />
+      </button>
     </div>
   );
 }
@@ -261,7 +257,7 @@ function TaskGroupSection({ group, onToggle }: { group: TaskGroup; onToggle: (id
           <button
             key={task.id}
             onClick={() => onToggle(task.id)}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-100 hover:bg-white/[0.06]"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-colors duration-100 hover:bg-white/[0.06]"
             style={{
               background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.06)",

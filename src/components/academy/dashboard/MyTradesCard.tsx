@@ -13,7 +13,7 @@ export function MyTradesCard() {
   const todayTrades = 0;
 
   return (
-    <div className="vault-glass-card p-6 space-y-5 h-full flex flex-col">
+    <div className="vault-glass-card p-5 space-y-3 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -93,7 +93,7 @@ export function MyTradesCard() {
 function MetricMini({ label, value }: { label: string; value: string }) {
   return (
     <div
-      className="rounded-xl px-3 py-2.5 text-center"
+      className="rounded-xl px-3 py-2 text-center"
       style={{
         background: "rgba(255,255,255,0.03)",
         border: "1px solid rgba(255,255,255,0.06)",
