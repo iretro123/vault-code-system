@@ -1,15 +1,5 @@
-import { X, Copy, AlertTriangle, Shield } from "lucide-react";
-import { toast } from "sonner";
+import { X, AlertTriangle, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const TRADE_FORMAT = `**Ticker:** 
-**Direction:** Long / Short
-**Setup:** 
-**Entry:** 
-**Stop:** 
-**Target:** 
-**Risk:** 
-**Thesis:** `;
 
 const RULES = [
   "All trade posts must use the structured format — no freestyle.",
@@ -26,13 +16,6 @@ interface GuidelinesModalProps {
 
 export function GuidelinesModal({ open, onClose }: GuidelinesModalProps) {
   if (!open) return null;
-
-  const copyTemplate = () => {
-    navigator.clipboard.writeText(TRADE_FORMAT).then(
-      () => toast.success("Trade format copied to clipboard"),
-      () => toast.error("Failed to copy")
-    );
-  };
 
   return (
     <>
@@ -77,25 +60,6 @@ export function GuidelinesModal({ open, onClose }: GuidelinesModalProps) {
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Copy format */}
-            <div>
-              <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.15em] mb-3">
-                Trade Format Template
-              </p>
-              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-                <pre className="text-[13px] text-white/50 font-mono leading-relaxed whitespace-pre-wrap">
-                  {TRADE_FORMAT}
-                </pre>
-              </div>
-              <button
-                onClick={copyTemplate}
-                className="mt-3 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-semibold hover:bg-primary/15 transition-colors"
-              >
-                <Copy className="h-3.5 w-3.5" />
-                Copy Trade Format
-              </button>
             </div>
 
             {/* Disclaimer */}
