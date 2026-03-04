@@ -1,16 +1,18 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Check, Plus, ChevronRight, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
-import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   onCheckIn: () => void;
+}
+
+interface TaskItem {
+  id: string;
+  title: string;
+  done: boolean;
 }
 
 interface TaskGroup {
@@ -18,156 +20,108 @@ interface TaskGroup {
   tasks: TaskItem[];
 }
 
-interface TaskItem {
-  id: string;
-  title: string;
-  done: boolean;
-  route?: string;
-  action?: string;
+const LS_KEY = "va_gameplan_completed";
+
+function loadCompleted(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
 }
 
-// Static foundation tasks derived from profile state
-function buildFoundationTasks(profile: any): TaskItem[] {
-  return [
-    {
-      id: "foundation-claim-role",
-      title: "Claim your role",
-      done: !!profile?.onboarding_completed,
-      route: "/academy/start",
-    },
-    {
-      id: "foundation-introduce",
-      title: "Introduce yourself in Trading Floor",
-      done: !!profile?.onboarding_completed,
-      route: "/academy/community",
-    },
-    {
-      id: "foundation-first-lesson",
-      title: "Watch first lesson",
-      done: !!profile?.onboarding_completed,
-      route: "/academy/learn",
-    },
-    {
-      id: "foundation-risk-rules",
-      title: "Set your risk rules",
-      done: !!profile?.onboarding_completed,
-      route: "/academy/resources",
-    },
-    {
-      id: "foundation-starting-balance",
-      title: "Set your starting balance",
-      done: !!profile?.onboarding_completed,
-      route: "/academy/trade",
-    },
-  ];
-}
+const FOUNDATION_TASKS: Omit<TaskItem, "done">[] = [
+  { id: "foundation-claim-role", title: "Claim your role" },
+  { id: "foundation-introduce", title: "Introduce yourself in Trading Floor" },
+  { id: "foundation-first-lesson", title: "Watch first lesson" },
+  { id: "foundation-risk-rules", title: "Set your risk rules" },
+  { id: "foundation-starting-balance", title: "Set your starting balance" },
+];
+
+const THIS_WEEK_TASKS: Omit<TaskItem, "done">[] = [
+  { id: "tw-lesson", title: "Complete 1 lesson" },
+  { id: "tw-trades", title: "Log 3 trades this week (or mark no-trade days)" },
+  { id: "tw-review", title: "Complete weekly review" },
+  { id: "tw-live", title: "Join 1 live or watch 1 replay" },
+];
+
+const CONSISTENCY_TASKS: Omit<TaskItem, "done">[] = [
+  { id: "consistency-track-trades", title: "Track your trades today" },
+  { id: "consistency-eod-check", title: "Complete end-of-day trade check" },
+  { id: "consistency-study", title: "Study 30 minutes today" },
+  { id: "consistency-no-trade", title: "Mark no-trade day (if no setup)" },
+];
+
+const MOCK_RECENT = [
+  { id: "mock-1", title: "Claim your role", date: "Mar 1" },
+  { id: "mock-2", title: "Watch first lesson", date: "Mar 2" },
+  { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
+];
 
 export function GameplanCard({ onCheckIn }: Props) {
-  const navigate = useNavigate();
-  const { user, profile } = useAuth();
-  const { tasks, loading } = useUserTasks();
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
   const [expanded, setExpanded] = useState(!isMobile);
+  const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
 
-  // Build task groups
+  // Persist to localStorage
+  useEffect(() => {
+    localStorage.setItem(LS_KEY, JSON.stringify(completedMap));
+  }, [completedMap]);
+
+  // Build groups with done derived from completedMap
   const groups = useMemo<TaskGroup[]>(() => {
-    const foundation = buildFoundationTasks(profile);
-
-    const weeklyTasks: TaskItem[] = tasks
-      .filter((t) => t.type === "onboarding" || t.type === "daily")
-      .slice(0, 3)
-      .map((t) => ({
-        id: t.id,
-        title: t.title,
-        done: t.status === "done",
-        route:
-          t.title.toLowerCase().includes("lesson") ? "/academy/learn" :
-          t.title.toLowerCase().includes("trade") ? "/academy/trade" :
-          t.title.toLowerCase().includes("journal") ? "/academy/journal" :
-          t.title.toLowerCase().includes("review") ? "/academy/journal" :
-          t.title.toLowerCase().includes("check") ? undefined : "/academy/learn",
-        action: t.title.toLowerCase().includes("check") ? "checkin" : undefined,
-      }));
-
-    const consistency: TaskItem[] = [
-      {
-        id: "consistency-track-trades",
-        title: "Track your trades today",
-        done: false,
-        route: "/academy/trade",
-      },
-      {
-        id: "consistency-eod-check",
-        title: "Complete end-of-day trade check",
-        done: false,
-        action: "checkin",
-      },
-      {
-        id: "consistency-study",
-        title: "Study 30 minutes today",
-        done: false,
-        route: "/academy/learn",
-      },
-      {
-        id: "consistency-no-trade",
-        title: "Mark no-trade day (if no setup)",
-        done: false,
-        route: "/academy/trade",
-      },
-    ];
+    const hydrate = (items: Omit<TaskItem, "done">[]): TaskItem[] =>
+      items.map((t) => ({ ...t, done: !!completedMap[t.id] }));
 
     return [
-      { title: "Foundation", tasks: foundation },
-      { title: "This Week", tasks: weeklyTasks.length > 0 ? weeklyTasks : [
-        { id: "tw-lesson", title: "Complete 1 lesson", done: false, route: "/academy/learn" },
-        { id: "tw-trades", title: "Log 3 trades this week (or mark no-trade days)", done: false, route: "/academy/trade" },
-        { id: "tw-review", title: "Complete weekly review", done: false, route: "/academy/journal" },
-        { id: "tw-live", title: "Join 1 live or watch 1 replay", done: false, route: "/academy/live" },
-      ] },
-      { title: "Consistency", tasks: consistency },
+      { title: "Foundation", tasks: hydrate(FOUNDATION_TASKS) },
+      { title: "This Week", tasks: hydrate(THIS_WEEK_TASKS) },
+      { title: "Consistency", tasks: hydrate(CONSISTENCY_TASKS) },
     ];
-  }, [tasks, profile]);
+  }, [completedMap]);
 
-  const allTasks = groups.flatMap((g) => g.tasks);
-  const doneCount = allTasks.filter((t) => t.done).length;
-  const totalCount = allTasks.length;
+  // Weekly progress = This Week + Consistency only
+  const weeklyTasks = groups.filter((g) => g.title !== "Foundation").flatMap((g) => g.tasks);
+  const doneCount = weeklyTasks.filter((t) => t.done).length;
+  const totalCount = weeklyTasks.length;
   const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
-  // Recently completed
-  const recentDone = tasks
-    .filter((t) => t.status === "done" && t.completed_at)
-    .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime())
-    .slice(0, 3);
+  // All tasks lookup for recently completed
+  const allTasksLookup = useMemo(() => {
+    const map: Record<string, string> = {};
+    [...FOUNDATION_TASKS, ...THIS_WEEK_TASKS, ...CONSISTENCY_TASKS].forEach((t) => {
+      map[t.id] = t.title;
+    });
+    return map;
+  }, []);
 
-  const handleTaskClick = (task: TaskItem) => {
-    if (task.action === "checkin") {
-      onCheckIn();
-    } else if (task.route) {
-      navigate(task.route);
-    }
-  };
+  // Recently completed from local state
+  const recentItems = useMemo(() => {
+    const entries = Object.entries(completedMap)
+      .filter(([id]) => allTasksLookup[id])
+      .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime())
+      .slice(0, 5)
+      .map(([id, ts]) => ({
+        id,
+        title: allTasksLookup[id],
+        date: new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      }));
+    return entries.length > 0 ? entries : MOCK_RECENT;
+  }, [completedMap, allTasksLookup]);
 
-  if (loading && tasks.length === 0) {
-    return (
-      <div className="vault-glass-card p-6 md:p-8 space-y-6 animate-pulse" style={{ minHeight: 380 }}>
-        <div className="h-5 w-40 rounded bg-white/[0.06]" />
-        <div className="space-y-2">
-          <div className="h-2.5 w-full rounded bg-white/[0.04]" />
-        </div>
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <div className="h-3 w-20 rounded bg-white/[0.04]" />
-            {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.03]" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />)}
-          </div>
-          <div className="space-y-2">
-            <div className="h-3 w-24 rounded bg-white/[0.04]" />
-            {[1,2,3].map(i => <div key={i} className="h-12 rounded-xl bg-white/[0.03]" style={{ border: "1px solid rgba(255,255,255,0.06)" }} />)}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleToggle = useCallback((taskId: string) => {
+    setCompletedMap((prev) => {
+      const next = { ...prev };
+      if (next[taskId]) {
+        delete next[taskId];
+      } else {
+        next[taskId] = new Date().toISOString();
+      }
+      return next;
+    });
+  }, []);
 
   const showAll = expanded || !isMobile;
 
@@ -187,128 +141,40 @@ export function GameplanCard({ onCheckIn }: Props) {
         )}
       </div>
 
-      {/* Progress — always visible */}
+      {/* Progress — weekly only */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">This week</span>
-          <span className="text-xs font-bold text-foreground">{pct}% complete</span>
+          <span className="text-xs font-bold text-foreground">{doneCount}/{totalCount} complete</span>
         </div>
         <Progress value={pct} className="h-2.5 bg-white/[0.06]" />
       </div>
 
       {/* First task group — always visible */}
       {groups.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-            {groups[0].title}
-          </p>
-          <div className="space-y-1">
-            {groups[0].tasks.map((task) => (
-              <button
-                key={task.id}
-                onClick={() => handleTaskClick(task)}
-                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-100 hover:bg-white/[0.06]"
-                style={{
-                  background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
-                <div
-                  className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                    task.done
-                      ? "bg-emerald-500/20 border-emerald-500/40"
-                      : "border-white/20"
-                  }`}
-                >
-                  {task.done && <Check className="h-3 w-3 text-emerald-400" />}
-                </div>
-                <span
-                  className={`flex-1 text-sm font-medium ${
-                    task.done ? "text-muted-foreground line-through" : "text-foreground/90"
-                  }`}
-                >
-                  {task.title}
-                </span>
-                {!task.done && (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+        <TaskGroupSection group={groups[0]} onToggle={handleToggle} />
       )}
 
-      {/* Remaining groups — shown when expanded or on desktop */}
+      {/* Remaining groups */}
       {showAll && groups.slice(1).map((group) => (
-        <div key={group.title} className="space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-            {group.title}
-          </p>
-          <div className="space-y-1">
-            {group.tasks.map((task) => (
-              <button
-                key={task.id}
-                onClick={() => handleTaskClick(task)}
-                className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-100 hover:bg-white/[0.06]"
-                style={{
-                  background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}
-              >
-                <div
-                  className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                    task.done
-                      ? "bg-emerald-500/20 border-emerald-500/40"
-                      : "border-white/20"
-                  }`}
-                >
-                  {task.done && <Check className="h-3 w-3 text-emerald-400" />}
-                </div>
-                <span
-                  className={`flex-1 text-sm font-medium ${
-                    task.done ? "text-muted-foreground line-through" : "text-foreground/90"
-                  }`}
-                >
-                  {task.title}
-                </span>
-                {!task.done && (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+        <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} />
       ))}
 
-      {/* Recently Completed — shown when expanded or on desktop */}
-      {showAll && (() => {
-        const MOCK_RECENT = [
-          { id: "mock-1", title: "Claim your role", date: "Mar 1" },
-          { id: "mock-2", title: "Watch first lesson", date: "Mar 2" },
-          { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
-        ];
-        const items = recentDone.length > 0
-          ? recentDone.map((t) => ({
-              id: t.id,
-              title: t.title,
-              date: new Date(t.completed_at!).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-            }))
-          : MOCK_RECENT;
-        return (
-          <div className="pt-2 border-t border-white/[0.06] space-y-2">
-            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-              Recently Completed
-            </p>
-            {items.map((item) => (
-              <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Check className="h-3 w-3 text-emerald-400/60" />
-                <span className="flex-1 truncate">{item.title}</span>
-                <span className="text-[10px] tabular-nums">{item.date}</span>
-              </div>
-            ))}
-          </div>
-        );
-      })()}
+      {/* Recently Completed */}
+      {showAll && (
+        <div className="pt-2 border-t border-white/[0.06] space-y-2">
+          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+            Recently Completed
+          </p>
+          {recentItems.map((item) => (
+            <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-emerald-400/60" />
+              <span className="flex-1 truncate">{item.title}</span>
+              <span className="text-[10px] tabular-nums">{item.date}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Show More / Show Less — mobile only */}
       {isMobile && groups.length > 1 && (
@@ -322,6 +188,50 @@ export function GameplanCard({ onCheckIn }: Props) {
           />
         </button>
       )}
+    </div>
+  );
+}
+
+/* ── Task Group Section ── */
+function TaskGroupSection({ group, onToggle }: { group: TaskGroup; onToggle: (id: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+        {group.title}
+      </p>
+      <div className="space-y-1">
+        {group.tasks.map((task) => (
+          <button
+            key={task.id}
+            onClick={() => onToggle(task.id)}
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-100 hover:bg-white/[0.06]"
+            style={{
+              background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div
+              className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                task.done
+                  ? "bg-emerald-500/20 border-emerald-500/40"
+                  : "border-white/20"
+              }`}
+            >
+              {task.done && <Check className="h-3 w-3 text-emerald-400" />}
+            </div>
+            <span
+              className={`flex-1 text-sm font-medium ${
+                task.done ? "text-muted-foreground line-through" : "text-foreground/90"
+              }`}
+            >
+              {task.title}
+            </span>
+            {!task.done && (
+              <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
