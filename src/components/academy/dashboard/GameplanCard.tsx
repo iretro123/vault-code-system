@@ -162,7 +162,7 @@ export function GameplanCard({ onCheckIn }: Props) {
   const showAll = expanded || !isMobile;
 
   return (
-    <div className="vault-glass-card p-6 md:p-8 space-y-6">
+    <div className="vault-glass-card p-5 md:p-6 space-y-4">
       {/* Header */}
       <div className="w-full flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold text-foreground">
