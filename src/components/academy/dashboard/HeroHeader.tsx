@@ -20,10 +20,10 @@ interface Props {
 
 const CREATE_ITEMS = [
   { icon: TrendingUp, label: "Log Trade", route: "/academy/trade" },
-  { icon: PenLine, label: "Post in Trade Floor", route: "/academy/community" },
+  { icon: MessageSquare, label: "Trade Floor", route: "/academy/community" },
   { icon: Sparkles, label: "Ask Coach", action: "coach" },
-  { icon: ClipboardCheck, label: "Start Daily Check-In", action: "checkin" },
-  { icon: BarChart3, label: "Run Weekly Review", route: "/academy/journal" },
+  { icon: BookOpen, label: "Lessons", route: "/academy/learn" },
+  { icon: Video, label: "Live", route: "/academy/live" },
 ];
 
 function getGreeting(): string {
