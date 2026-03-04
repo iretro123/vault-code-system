@@ -13,7 +13,7 @@ export function MyTradesCard() {
   const todayTrades = 0;
 
   return (
-    <div className="vault-glass-card p-6 space-y-5 h-full flex flex-col">
+    <div className="vault-glass-card p-5 space-y-3 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
