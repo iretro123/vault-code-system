@@ -24,7 +24,7 @@ export function MyTradesCard() {
           onClick={() => navigate("/academy/trade")}
           className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
         >
-          View All <ArrowRight className="h-3 w-3" />
+          Open <ArrowRight className="h-3 w-3" />
         </button>
       </div>
 
