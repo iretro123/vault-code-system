@@ -139,27 +139,27 @@ const AcademyLearn = () => {
         {/* Playbook Hero Strip */}
         {pbTotal > 0 && pbDone < pbTotal && (
           <div
-            className="vault-glass-card p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer hover:border-primary/20 transition-colors"
+            className="vault-glass-card p-6 mb-6 flex items-center gap-4 flex-wrap cursor-pointer hover:border-primary/20 transition-colors"
             onClick={() => navigate(`/academy/playbook${pbNext ? `?chapter=${pbNext.id}` : ""}`)}
           >
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
               <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <VaultPlaybookIcon className="h-6 w-6" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground truncate">
                   Vault Playbook
-                  <span className="text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary px-2 py-0.5 rounded-full">Start Here</span>
                 </h3>
-                <p className="text-xs text-white/30 truncate">
-                  Finish the Operating System before you binge modules.
+                <p className="text-xs text-muted-foreground truncate">
+                  Finish the OS before you binge modules.
                 </p>
               </div>
             </div>
-            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0 ml-auto">
+              <span className="text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">Start Here</span>
               <div className="text-right">
                 <span className="text-sm font-bold text-foreground">{pbPct}%</span>
-                <p className="text-[10px] text-white/20">{pbDone}/{pbTotal} chapters</p>
+                <p className="text-[10px] text-muted-foreground">{pbDone}/{pbTotal}</p>
               </div>
               <Button size="sm" className="gap-1.5">
                 {pbDone > 0 ? "Continue" : "Open"}
