@@ -99,10 +99,10 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
         </div>
       </div>
 
-      {/* Menu bar */}
+      {/* Menu bar — hidden on mobile */}
       {menuBar && (
         <div
-          className="flex items-center gap-3 px-3 py-1 text-[11px] text-muted-foreground shrink-0"
+          className="hidden md:flex items-center gap-3 px-3 py-1 text-[11px] text-muted-foreground shrink-0"
           style={{ background: xp.menuBg, borderBottom: xp.menuBorder }}
         >
           <span className="hover:text-foreground cursor-default">File</span>
