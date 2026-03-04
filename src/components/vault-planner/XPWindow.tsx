@@ -112,11 +112,11 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
         </div>
       )}
 
-      {/* Body — scrollable fallback when fitViewport is active */}
+      {/* Body — scrollable on desktop, natural flow on mobile */}
       <div
         className={
           fitViewport
-            ? "p-3 md:p-4 space-y-3 overflow-y-auto flex-1 min-h-0 xp-scroll"
+            ? "p-3 md:p-4 space-y-3 md:overflow-y-auto md:flex-1 md:min-h-0 xp-scroll"
             : "p-4 md:p-5 space-y-4"
         }
       >
