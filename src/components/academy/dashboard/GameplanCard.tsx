@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Plus, ChevronRight, Loader2 } from "lucide-react";
+import { Check, Plus, ChevronRight, ChevronDown } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
