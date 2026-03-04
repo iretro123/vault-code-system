@@ -100,7 +100,7 @@ style={{ backgroundColor: withAlpha(parsed.color, 0.2), color: parsed.color }}
   return (
     <div
       className={`${size} rounded-full flex items-center justify-center text-xs font-semibold shrink-0`}
-      style={{ backgroundColor: parsed.color + "33", color: parsed.color }}
+style={{ backgroundColor: withAlpha(parsed.color, 0.2), color: parsed.color }}
     >
       {getInitials(userName)}
     </div>
