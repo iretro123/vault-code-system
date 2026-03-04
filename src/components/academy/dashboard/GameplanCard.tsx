@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Plus, ChevronRight, Loader2 } from "lucide-react";
+import { Check, Plus, ChevronRight, ChevronDown } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useUserTasks, UserTask } from "@/hooks/useUserTasks";
@@ -54,6 +56,8 @@ export function GameplanCard({ onCheckIn }: Props) {
   const { user, profile } = useAuth();
   const { tasks, loading } = useUserTasks();
   const { isAdmin } = useAcademyRole();
+  const isMobile = useIsMobile();
+  const [isOpen, setIsOpen] = useState(true);
 
   // Build task groups
   const groups = useMemo<TaskGroup[]>(() => {
@@ -142,91 +146,106 @@ export function GameplanCard({ onCheckIn }: Props) {
   }
 
   return (
-    <div className="vault-glass-card p-6 md:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg md:text-xl font-bold text-foreground">
-          Your Gameplan
-        </h2>
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
-              <Plus className="h-3.5 w-3.5" /> Add Task
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">This week</span>
-          <span className="text-xs font-bold text-foreground">{pct}% complete</span>
-        </div>
-        <Progress value={pct} className="h-2.5 bg-white/[0.06]" />
-      </div>
-
-      {/* Task groups */}
-      <div className="space-y-5">
-        {groups.map((group) => (
-          <div key={group.title} className="space-y-2">
-            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-              {group.title}
-            </p>
-            <div className="space-y-1">
-              {group.tasks.map((task) => (
-                <button
-                  key={task.id}
-                  onClick={() => handleTaskClick(task)}
-                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-100 hover:bg-white/[0.06]"
-                  style={{
-                    background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                  }}
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <div className="vault-glass-card p-6 md:p-8 space-y-6">
+        {/* Header — acts as trigger on mobile */}
+        <CollapsibleTrigger asChild>
+          <button className="w-full text-left flex items-center justify-between md:cursor-default">
+            <h2 className="text-lg md:text-xl font-bold text-foreground">
+              Your Gameplan
+            </h2>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <span
+                  onClick={(e) => e.stopPropagation()}
+                  className="hidden md:inline-flex"
                 >
-                  <div
-                    className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      task.done
-                        ? "bg-emerald-500/20 border-emerald-500/40"
-                        : "border-white/20"
-                    }`}
-                  >
-                    {task.done && <Check className="h-3 w-3 text-emerald-400" />}
-                  </div>
-                  <span
-                    className={`flex-1 text-sm font-medium ${
-                      task.done ? "text-muted-foreground line-through" : "text-foreground/90"
-                    }`}
-                  >
-                    {task.title}
-                  </span>
-                  {!task.done && (
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                  )}
-                </button>
-              ))}
+                  <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
+                    <Plus className="h-3.5 w-3.5" /> Add Task
+                  </Button>
+                </span>
+              )}
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-150 md:hidden ${
+                  isOpen ? "rotate-180" : ""
+                }`}
+              />
             </div>
-          </div>
-        ))}
-      </div>
+          </button>
+        </CollapsibleTrigger>
 
-      {/* Recently Completed */}
-      {recentDone.length > 0 && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-            Recently Completed
-          </p>
-          {recentDone.map((t) => (
-            <div key={t.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Check className="h-3 w-3 text-emerald-400/60" />
-              <span className="flex-1 truncate">{t.title}</span>
-              <span className="text-[10px] tabular-nums">
-                {new Date(t.completed_at!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
+        {/* Progress — always visible */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">This week</span>
+            <span className="text-xs font-bold text-foreground">{pct}% complete</span>
+          </div>
+          <Progress value={pct} className="h-2.5 bg-white/[0.06]" />
+        </div>
+
+        {/* Collapsible content */}
+        <CollapsibleContent className="space-y-5">
+          {/* Task groups */}
+          {groups.map((group) => (
+            <div key={group.title} className="space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+                {group.title}
+              </p>
+              <div className="space-y-1">
+                {group.tasks.map((task) => (
+                  <button
+                    key={task.id}
+                    onClick={() => handleTaskClick(task)}
+                    className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors duration-100 hover:bg-white/[0.06]"
+                    style={{
+                      background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    <div
+                      className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        task.done
+                          ? "bg-emerald-500/20 border-emerald-500/40"
+                          : "border-white/20"
+                      }`}
+                    >
+                      {task.done && <Check className="h-3 w-3 text-emerald-400" />}
+                    </div>
+                    <span
+                      className={`flex-1 text-sm font-medium ${
+                        task.done ? "text-muted-foreground line-through" : "text-foreground/90"
+                      }`}
+                    >
+                      {task.title}
+                    </span>
+                    {!task.done && (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
-        </div>
-      )}
-    </div>
+
+          {/* Recently Completed */}
+          {recentDone.length > 0 && (
+            <div className="pt-2 border-t border-white/[0.06] space-y-2">
+              <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+                Recently Completed
+              </p>
+              {recentDone.map((t) => (
+                <div key={t.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Check className="h-3 w-3 text-emerald-400/60" />
+                  <span className="flex-1 truncate">{t.title}</span>
+                  <span className="text-[10px] tabular-nums">
+                    {new Date(t.completed_at!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }
