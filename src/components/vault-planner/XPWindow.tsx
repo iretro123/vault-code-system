@@ -28,14 +28,20 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
 
   const toggleMaximize = () => setMaximized((p) => !p);
 
-  // Viewport-aware styles
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
+  // Viewport-aware styles — no maxHeight on mobile to prevent scroll trapping
   const containerStyle: React.CSSProperties = fitViewport
     ? {
         border: `1px solid ${xp.windowBorder}`,
         background: xp.windowBg,
-        maxHeight: maximized ? "calc(100vh - 80px)" : "calc(100vh - 140px)",
-        display: "flex",
-        flexDirection: "column",
+        ...(isMobile
+          ? {}
+          : {
+              maxHeight: maximized ? "calc(100vh - 80px)" : "calc(100vh - 140px)",
+              display: "flex",
+              flexDirection: "column" as const,
+            }),
       }
     : {
         border: `1px solid ${xp.windowBorder}`,
