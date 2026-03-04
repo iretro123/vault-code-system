@@ -56,6 +56,8 @@ export function GameplanCard({ onCheckIn }: Props) {
   const { user, profile } = useAuth();
   const { tasks, loading } = useUserTasks();
   const { isAdmin } = useAcademyRole();
+  const isMobile = useIsMobile();
+  const [isOpen, setIsOpen] = useState(true);
 
   // Build task groups
   const groups = useMemo<TaskGroup[]>(() => {
