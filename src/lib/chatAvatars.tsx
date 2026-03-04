@@ -81,13 +81,13 @@ export function ChatAvatar({
     );
   }
 
-  if (parsed.mode === "icon" && parsed.iconId && GEOMETRIC_ICONS[parsed.iconId]) {
+  if (parsed.mode === "icon" && parsed.iconId && AVATAR_ICONS_MAP[parsed.iconId]) {
     return (
       <div
         className={`${size} rounded-full flex items-center justify-center p-1.5 shrink-0`}
         style={{ backgroundColor: parsed.color + "33", color: parsed.color }}
       >
-        {GEOMETRIC_ICONS[parsed.iconId]}
+        {AVATAR_ICONS_MAP[parsed.iconId]}
       </div>
     );
   }
