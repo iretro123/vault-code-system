@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { PlayerIdentity } from "@/components/layout/PlayerIdentity";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { Shield, Lock, Loader2 } from "lucide-react";
 import vaultAcademyLogo from "@/assets/vault-academy-logo.png";
 import { Link } from "react-router-dom";
