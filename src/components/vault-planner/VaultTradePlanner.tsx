@@ -433,10 +433,10 @@ export function VaultTradePlanner() {
           <XPStatusBadge label="Debit Check" pass={liveResult?.debitCheckPass ?? false} />
         </div>
 
-        <p className="text-[10px] text-muted-foreground/70">
+        <p className="hidden md:block text-[10px] text-muted-foreground/70">
           ⚠ Cut at your stop. Planned loss is not a guarantee.
         </p>
-        <p className="text-[10px] text-muted-foreground/50">
+        <p className="hidden md:block text-[10px] text-muted-foreground/50">
           How many contracts? = based on BOTH your risk limit and your spend cap.<br />
           This keeps students from oversizing and blowing up trades.
         </p>

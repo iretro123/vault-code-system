@@ -123,10 +123,10 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
         {children}
       </div>
 
-      {/* Footer */}
+      {/* Footer — hidden on mobile */}
       {footer && (
         <div
-          className="px-4 py-2 text-[10px] text-muted-foreground shrink-0"
+          className="hidden md:block px-4 py-2 text-[10px] text-muted-foreground shrink-0"
           style={{ borderTop: xp.menuBorder, background: xp.menuBg }}
         >
           {footer}
