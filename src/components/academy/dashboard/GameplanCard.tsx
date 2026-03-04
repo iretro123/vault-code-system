@@ -208,44 +208,39 @@ export function GameplanCard({ onCheckIn }: Props) {
         </span>
       </div>
 
-      {/* First task group — always visible */}
-      {groups.length > 0 && (
-        <TaskGroupSection group={groups[0]} onToggle={handleToggle} />
-      )}
-
-      {/* Remaining groups */}
-      {showAll && groups.slice(1).map((group) => (
-        <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} />
-      ))}
-
-      {/* Recently Completed */}
-      {showAll && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-            Recently Completed
-          </p>
-          {recentItems.map((item) => (
-            <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Check className="h-3 w-3 text-emerald-400/60" />
-              <span className="flex-1 truncate">{item.title}</span>
-              <span className="text-[10px] tabular-nums">{item.date}</span>
-            </div>
+      {/* Collapsible task groups */}
+      {showTasks && (
+        <>
+          {groups.map((group) => (
+            <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} />
           ))}
-        </div>
+
+          {/* Recently Completed */}
+          <div className="pt-2 border-t border-white/[0.06] space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+              Recently Completed
+            </p>
+            {recentItems.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Check className="h-3 w-3 text-emerald-400/60" />
+                <span className="flex-1 truncate">{item.title}</span>
+                <span className="text-[10px] tabular-nums">{item.date}</span>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
-      {/* Show More / Show Less — mobile only */}
-      {isMobile && groups.length > 1 && (
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
-        >
-          {expanded ? "Show Less" : "Show More"}
-          <ChevronDown
-            className={`h-3.5 w-3.5 transition-transform duration-150 ${expanded ? "rotate-180" : ""}`}
-          />
-        </button>
-      )}
+      {/* Toggle tasks visibility */}
+      <button
+        onClick={() => setShowTasks((v) => !v)}
+        className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
+      >
+        {showTasks ? "Hide Tasks" : "Show Tasks"}
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform duration-150 ${showTasks ? "rotate-180" : ""}`}
+        />
+      </button>
     </div>
   );
 }
