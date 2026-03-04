@@ -330,7 +330,7 @@ export function VaultTradePlanner() {
           </div>
         </div>
 
-        <p className="text-[10px] text-muted-foreground">
+        <p className="hidden md:block text-[10px] text-muted-foreground">
           Small: 2% risk • 5% spend cap | Medium: 1% risk • 5% spend cap | Large: 1% risk • 4% spend cap
         </p>
       </XPFieldset>
