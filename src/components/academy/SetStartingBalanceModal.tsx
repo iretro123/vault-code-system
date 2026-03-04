@@ -22,9 +22,10 @@ import {
 interface Props {
   open: boolean;
   onSave: (balance: number) => void;
+  onDismiss?: () => void;
 }
 
-export function SetStartingBalanceModal({ open, onSave }: Props) {
+export function SetStartingBalanceModal({ open, onSave, onDismiss }: Props) {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState<Date>(new Date());
 
@@ -35,8 +36,8 @@ export function SetStartingBalanceModal({ open, onSave }: Props) {
   };
 
   return (
-    <Dialog open={open}>
-      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v && onDismiss) onDismiss(); }}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <Wallet className="h-5 w-5 text-primary" />
@@ -88,6 +89,16 @@ export function SetStartingBalanceModal({ open, onSave }: Props) {
           <Button className="w-full" onClick={handleSave} disabled={!amount || parseFloat(amount) <= 0}>
             Save Starting Balance
           </Button>
+
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              Skip for now — I'll set it later
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
