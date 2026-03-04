@@ -103,10 +103,10 @@ function renderTradeCard(body: string, attachments?: any[]) {
   const imageAtt = attachments?.find((a: any) => a.type === "image");
 
   return (
-    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white mt-2 overflow-hidden max-w-[560px] shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors">
+    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white mt-2 overflow-hidden max-w-full sm:max-w-[560px] shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors">
       <div className="flex">
         {/* Left — Fields */}
-        <div className="flex-1 p-5 space-y-3">
+        <div className="flex-1 min-w-0 p-5 space-y-3">
           <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Setup</p>
           <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
             {fields.map((f, i) => (
@@ -122,7 +122,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
 
         {/* Right — Chart image */}
         {imageAtt && (
-          <div className="w-[200px] shrink-0 bg-[hsl(220,10%,96%)] border-l border-[hsl(220,10%,88%)]">
+          <div className="hidden sm:block w-[200px] shrink-0 bg-[hsl(220,10%,96%)] border-l border-[hsl(220,10%,88%)]">
             <img
               src={(imageAtt as any).url}
               alt="Chart"
@@ -158,7 +158,7 @@ function renderRecapCard(body: string) {
   }
 
   return (
-    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white p-5 space-y-3 mt-2 shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors max-w-[560px]">
+    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white p-5 space-y-3 mt-2 shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors max-w-full sm:max-w-[560px]">
       <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Post</p>
       <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
         {fields.map((f, i) => (
@@ -195,7 +195,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
       return parts.map((part, i) => {
         const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
         if (imgMatch) {
-          return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-[300px] max-h-[240px] mt-1 object-cover" />;
+          return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-full sm:max-w-[300px] max-h-[240px] mt-1 object-cover" />;
         }
         const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (linkMatch) {
@@ -756,7 +756,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto overflow-x-hidden"
       >
         {/* Announcements pinned banner */}
         {isAnnouncements && (
@@ -1097,9 +1097,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                                className="rounded-xl max-w-[520px] max-h-[400px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
+                                className="rounded-xl max-w-full max-h-[400px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
                               />
-                              <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-[520px]">{att.filename}</span>
+                              <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-full">{att.filename}</span>
                             </button>
                           ) : (
                             <a
