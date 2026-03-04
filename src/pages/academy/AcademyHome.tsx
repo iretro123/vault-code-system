@@ -8,7 +8,7 @@ import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
 import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
-import { ScoreboardCard } from "@/components/academy/dashboard/ScoreboardCard";
+import { MyTradesCard } from "@/components/academy/dashboard/MyTradesCard";
 import { PlaybookCard } from "@/components/academy/dashboard/PlaybookCard";
 import { CoachCard } from "@/components/academy/dashboard/CoachCard";
 import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
@@ -137,7 +137,7 @@ const AcademyHome = () => {
             <GameplanCard onCheckIn={() => setCheckInOpen(true)} />
           </div>
           <div className="lg:col-span-2">
-            <ScoreboardCard />
+            <MyTradesCard />
           </div>
         </div>
 
