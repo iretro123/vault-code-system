@@ -172,7 +172,7 @@ export function SettingsProfile() {
       return <img src={imageUrl} alt="Avatar" className="h-20 w-20 rounded-2xl object-cover" />;
     }
     if (avatarMode === "icon") {
-      const icon = GEOMETRIC_ICONS.find((i) => i.id === avatarIcon) || GEOMETRIC_ICONS[0];
+      const icon = AVATAR_ICONS.find((i) => i.id === avatarIcon) || AVATAR_ICONS[0];
       return (
         <div className="h-20 w-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: avatarColor + "22", color: avatarColor }}>
           {icon.svg}
