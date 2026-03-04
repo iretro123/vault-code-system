@@ -187,7 +187,14 @@ export function AcademySidebar() {
                       <div className="mx-2 my-3 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
                       <SidebarMenuButton asChild>
                         <button
-                          onClick={() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))}
+                          onClick={() => {
+                            if (window.innerWidth < 768) {
+                              toggleSidebar();
+                              setTimeout(() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")), 150);
+                            } else {
+                              window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
+                            }
+                          }}
                           className="ask-coach-btn flex items-center gap-2 px-3 py-2 w-full rounded-xl text-left transition-colors duration-150 hover:brightness-110 active:scale-[0.98]"
                           style={{
                             background: "#3B82F6",
