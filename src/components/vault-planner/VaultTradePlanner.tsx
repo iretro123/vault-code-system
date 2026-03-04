@@ -350,8 +350,8 @@ export function VaultTradePlanner() {
             tooltip="If option price hits this, cut the trade."
           />
         </div>
-        <p className="text-[10px] text-muted-foreground">If option price hits your stop, cut the trade.</p>
-        <p className="text-[10px] text-primary/70 font-medium">Simple Mode uses a 1:2 main target. VAULT auto-calculates your target + profit suggestions.</p>
+        <p className="hidden md:block text-[10px] text-muted-foreground">If option price hits your stop, cut the trade.</p>
+        <p className="hidden md:block text-[10px] text-primary/70 font-medium">Simple Mode uses a 1:2 main target. VAULT auto-calculates your target + profit suggestions.</p>
 
         <button
           onClick={() => setShowMore(!showMore)}
