@@ -137,7 +137,7 @@ const AcademyHome = () => {
             <GameplanCard onCheckIn={() => setCheckInOpen(true)} />
           </div>
           <div className="lg:col-span-2">
-            <ScoreboardCard />
+            <MyTradesCard />
           </div>
         </div>
 
