@@ -123,8 +123,6 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
   const handleItem = (item: (typeof CREATE_ITEMS)[number]) => {
     if (item.action === "coach") {
       window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
-    } else if (item.action === "checkin") {
-      onCheckIn();
     } else if (item.route) {
       navigate(item.route);
     }
