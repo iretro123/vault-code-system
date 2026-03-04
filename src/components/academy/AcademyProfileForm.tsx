@@ -229,7 +229,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     if (avatarMode === "icon") {
       const icon = AVATAR_ICONS.find((i) => i.id === avatarIcon) || AVATAR_ICONS[0];
       return (
-        <div className={`${size} rounded-2xl flex items-center justify-center`} style={{ backgroundColor: avatarColor + "22", color: avatarColor }}>
+        <div className={`${size} rounded-2xl flex items-center justify-center`} style={{ backgroundColor: avatarColor.replace("hsl(", "hsla(").replace(")", ", 0.13)"), color: avatarColor }}>
           <div className="h-3/5 w-3/5">{icon.svg}</div>
         </div>
       );

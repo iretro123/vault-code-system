@@ -174,7 +174,7 @@ export function SettingsProfile() {
     if (avatarMode === "icon") {
       const icon = AVATAR_ICONS.find((i) => i.id === avatarIcon) || AVATAR_ICONS[0];
       return (
-        <div className="h-20 w-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: avatarColor + "22", color: avatarColor }}>
+        <div className="h-20 w-20 rounded-2xl flex items-center justify-center" style={{ backgroundColor: avatarColor.replace("hsl(", "hsla(").replace(")", ", 0.13)"), color: avatarColor }}>
           <div className="h-12 w-12">{icon.svg}</div>
         </div>
       );

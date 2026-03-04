@@ -3,6 +3,10 @@ import { AVATAR_ICONS_MAP } from "@/lib/avatarIcons";
 
 const DEFAULT_COLOR = "hsl(220, 15%, 45%)";
 
+function withAlpha(hsl: string, alpha: number): string {
+  return hsl.replace("hsl(", "hsla(").replace(")", `, ${alpha})`);
+}
+
 // Simple in-memory cache for loaded image URLs
 const loadedImages = new Set<string>();
 
@@ -65,7 +69,7 @@ export function ChatAvatar({
         {!imgLoaded && (
           <div
             className={`absolute inset-0 rounded-full flex items-center justify-center text-xs font-semibold`}
-            style={{ backgroundColor: DEFAULT_COLOR + "33", color: DEFAULT_COLOR }}
+            style={{ backgroundColor: withAlpha(DEFAULT_COLOR, 0.2), color: DEFAULT_COLOR }}
           >
             {getInitials(userName)}
           </div>
@@ -85,7 +89,7 @@ export function ChatAvatar({
     return (
       <div
         className={`${size} rounded-full flex items-center justify-center p-1.5 shrink-0`}
-        style={{ backgroundColor: parsed.color + "33", color: parsed.color }}
+style={{ backgroundColor: withAlpha(parsed.color, 0.2), color: parsed.color }}
       >
         {AVATAR_ICONS_MAP[parsed.iconId]}
       </div>
@@ -96,7 +100,7 @@ export function ChatAvatar({
   return (
     <div
       className={`${size} rounded-full flex items-center justify-center text-xs font-semibold shrink-0`}
-      style={{ backgroundColor: parsed.color + "33", color: parsed.color }}
+style={{ backgroundColor: withAlpha(parsed.color, 0.2), color: parsed.color }}
     >
       {getInitials(userName)}
     </div>
