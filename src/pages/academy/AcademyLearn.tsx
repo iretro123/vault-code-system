@@ -139,7 +139,7 @@ const AcademyLearn = () => {
         {/* Playbook Hero Strip */}
         {pbTotal > 0 && pbDone < pbTotal && (
           <div
-            className="vault-glass-card p-6 mb-6 flex items-center gap-4 flex-wrap cursor-pointer hover:border-primary/20 transition-colors"
+            className="vault-glass-card p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 cursor-pointer hover:border-primary/20 transition-colors"
             onClick={() => navigate(`/academy/playbook${pbNext ? `?chapter=${pbNext.id}` : ""}`)}
           >
             <div className="flex items-center gap-4 min-w-0 flex-1">
@@ -147,15 +147,15 @@ const AcademyLearn = () => {
                 <VaultPlaybookIcon className="h-6 w-6" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-base font-bold text-foreground truncate">
+                <h3 className="text-base font-bold text-foreground">
                   Vault Playbook
                 </h3>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground">
                   Finish the OS before you binge modules.
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 shrink-0 ml-auto">
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2.5">
               <span className="text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">Start Here</span>
               <div className="text-right">
                 <span className="text-sm font-bold text-foreground">{pbPct}%</span>
