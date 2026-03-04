@@ -23,14 +23,7 @@ const AVATAR_COLORS = [
   "hsl(30, 80%, 50%)", "hsl(50, 75%, 45%)", "hsl(150, 55%, 40%)", "hsl(180, 55%, 42%)",
 ];
 
-const GEOMETRIC_ICONS = [
-  { id: "diamond", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><rect x="8" y="8" width="24" height="24" rx="4" transform="rotate(45 20 20)" fill="currentColor" opacity="0.9" /><rect x="14" y="14" width="12" height="12" rx="2" transform="rotate(45 20 20)" fill="currentColor" opacity="0.4" /></svg> },
-  { id: "circles", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><circle cx="20" cy="16" r="8" fill="currentColor" opacity="0.8" /><circle cx="14" cy="26" r="5" fill="currentColor" opacity="0.5" /><circle cx="26" cy="26" r="5" fill="currentColor" opacity="0.5" /></svg> },
-  { id: "hexagon", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><polygon points="20,4 34,12 34,28 20,36 6,28 6,12" fill="currentColor" opacity="0.8" /><polygon points="20,12 27,16 27,24 20,28 13,24 13,16" fill="currentColor" opacity="0.3" /></svg> },
-  { id: "triangle", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><polygon points="20,6 36,34 4,34" fill="currentColor" opacity="0.8" /><polygon points="20,16 28,30 12,30" fill="currentColor" opacity="0.3" /></svg> },
-  { id: "bars", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><rect x="6" y="8" width="8" height="24" rx="3" fill="currentColor" opacity="0.9" /><rect x="16" y="14" width="8" height="18" rx="3" fill="currentColor" opacity="0.6" /><rect x="26" y="10" width="8" height="22" rx="3" fill="currentColor" opacity="0.75" /></svg> },
-  { id: "cross", svg: <svg viewBox="0 0 40 40" className="h-full w-full"><rect x="15" y="6" width="10" height="28" rx="3" fill="currentColor" opacity="0.8" /><rect x="6" y="15" width="28" height="10" rx="3" fill="currentColor" opacity="0.8" /></svg> },
-];
+import { AVATAR_ICONS } from "@/lib/avatarIcons";
 
 type AvatarMode = "initials" | "icon" | "image";
 
@@ -79,7 +72,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [avatarMode, setAvatarMode] = useState<AvatarMode>("initials");
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
-  const [avatarIcon, setAvatarIcon] = useState(GEOMETRIC_ICONS[0].id);
+  const [avatarIcon, setAvatarIcon] = useState(AVATAR_ICONS[0].id);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -92,7 +85,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       if (av.startsWith("icon:")) {
         const parts = av.replace("icon:", "").split("|");
         setAvatarMode("icon");
-        setAvatarIcon(parts[0] || GEOMETRIC_ICONS[0].id);
+        setAvatarIcon(parts[0] || AVATAR_ICONS[0].id);
         setAvatarColor(parts[1] || AVATAR_COLORS[0]);
       } else if (av.startsWith("initials:")) {
         setAvatarMode("initials");
@@ -234,7 +227,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       );
     }
     if (avatarMode === "icon") {
-      const icon = GEOMETRIC_ICONS.find((i) => i.id === avatarIcon) || GEOMETRIC_ICONS[0];
+      const icon = AVATAR_ICONS.find((i) => i.id === avatarIcon) || AVATAR_ICONS[0];
       return (
         <div className={`${size} rounded-2xl flex items-center justify-center`} style={{ backgroundColor: avatarColor + "22", color: avatarColor }}>
           {icon.svg}
@@ -299,10 +292,10 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
 
             {/* Icon picker */}
             {avatarMode === "icon" && (
-              <div className="flex gap-1.5 flex-wrap">
-                {GEOMETRIC_ICONS.map((icon) => (
+              <div className="grid grid-cols-7 gap-1.5">
+                {AVATAR_ICONS.map((icon) => (
                   <button type="button" key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
-                    <span className="pointer-events-none">{icon.svg}</span>
+                    {icon.svg}
                   </button>
                 ))}
               </div>
