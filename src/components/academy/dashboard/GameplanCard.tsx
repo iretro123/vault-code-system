@@ -89,7 +89,8 @@ const MOCK_RECENT = [
 export function GameplanCard({ onCheckIn }: Props) {
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
-  const [expanded, setExpanded] = useState(!isMobile);
+  const [expanded, setExpanded] = useState(false);
+  const [showTasks, setShowTasks] = useState(false);
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
 
   // Persist to localStorage
