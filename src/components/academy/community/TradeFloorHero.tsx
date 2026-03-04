@@ -32,13 +32,6 @@ export function TradeFloorHero() {
               Guidelines
             </button>
 
-            {/* Reply / React badges */}
-            <span className="flex items-center gap-1.5 text-[11px] text-[hsl(220,10%,50%)] border border-[hsl(220,10%,82%)] rounded-lg px-2.5 py-1.5">
-              ↩ Reply
-            </span>
-            <span className="flex items-center gap-1.5 text-[11px] text-[hsl(220,10%,50%)] border border-[hsl(220,10%,82%)] rounded-lg px-2.5 py-1.5">
-              😀 React
-            </span>
 
             {/* Active Now */}
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[hsl(220,10%,82%)]">
