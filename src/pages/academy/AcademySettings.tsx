@@ -10,6 +10,8 @@ import {
   HelpCircle,
   Database,
   CreditCard,
+  ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
 
 import { SettingsProfile } from "@/components/settings/SettingsProfile";
