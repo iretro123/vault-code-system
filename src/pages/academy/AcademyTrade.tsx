@@ -1,15 +1,29 @@
+import { useState, useMemo } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, CircleDot, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye } from "lucide-react";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
+import { LogTradeSheet, type TradeFormData } from "@/components/academy/LogTradeSheet";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
-/* ── Mock data ── */
-const MOCK_TRADES = [
+/* ── Types ── */
+interface MockTrade {
+  ticker: string;
+  date: string;
+  direction: string;
+  outcome: "win" | "loss" | "breakeven";
+  pnl: string;
+  chips: { label: string; passed: boolean | "partial" }[];
+}
+
+/* ── Initial mock data ── */
+const INITIAL_TRADES: MockTrade[] = [
   {
-    ticker: "SPY", date: "Mar 4, 10:42 AM", direction: "Calls", outcome: "win" as const,
+    ticker: "SPY", date: "Mar 4, 10:42 AM", direction: "Calls", outcome: "win",
     pnl: "+$124", chips: [
       { label: "Target Hit", passed: true },
       { label: "Plan Followed", passed: true },
@@ -17,7 +31,7 @@ const MOCK_TRADES = [
     ],
   },
   {
-    ticker: "TSLA", date: "Mar 4, 1:18 PM", direction: "Puts", outcome: "loss" as const,
+    ticker: "TSLA", date: "Mar 4, 1:18 PM", direction: "Puts", outcome: "loss",
     pnl: "-$86", chips: [
       { label: "Target Hit", passed: false },
       { label: "Plan Followed", passed: false },
@@ -25,9 +39,9 @@ const MOCK_TRADES = [
     ],
   },
   {
-    ticker: "NVDA", date: "Mar 3, 11:05 AM", direction: "Calls", outcome: "breakeven" as const,
+    ticker: "NVDA", date: "Mar 3, 11:05 AM", direction: "Calls", outcome: "breakeven",
     pnl: "$0", chips: [
-      { label: "Partial Target", passed: "partial" as const },
+      { label: "Partial Target", passed: "partial" },
       { label: "Plan Followed", passed: true },
       { label: "Stop Respected", passed: true },
     ],
@@ -43,6 +57,41 @@ const OUTCOME_STYLES = {
 /* ── Page ── */
 const AcademyTrade = () => {
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
+  const [showLogTrade, setShowLogTrade] = useState(false);
+  const [trades, setTrades] = useState<MockTrade[]>(INITIAL_TRADES);
+
+  const todayTradeCount = useMemo(() => {
+    const todayStr = format(new Date(), "MMM d");
+    return trades.filter((t) => t.date.startsWith(todayStr)).length;
+  }, [trades]);
+
+  const handleTradeSubmit = (data: TradeFormData) => {
+    const resultMap: Record<string, "win" | "loss" | "breakeven"> = {
+      Win: "win", Loss: "loss", Breakeven: "breakeven",
+    };
+    const pnlNum = parseFloat(data.pnl) || 0;
+    const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
+
+    const newTrade: MockTrade = {
+      ticker: data.symbol,
+      date: format(data.date, "MMM d, h:mm a"),
+      direction: data.direction,
+      outcome: resultMap[data.resultType] || "breakeven",
+      pnl: pnlStr,
+      chips: [
+        { label: "Target Hit", passed: data.targetHit === "Yes" ? true : data.targetHit === "Partial" ? "partial" : false },
+        { label: "Plan Followed", passed: data.planFollowed === "Yes" },
+        { label: "Stop Respected", passed: data.stopRespected === "Yes" },
+      ],
+    };
+
+    setTrades((prev) => [newTrade, ...prev]);
+    setShowLogTrade(false);
+    toast({
+      title: "Trade logged ✅",
+      description: "Vault updated your stats and generated your AI review.",
+    });
+  };
 
   if (!hasAccess && !accessLoading) {
     return (
@@ -58,46 +107,49 @@ const AcademyTrade = () => {
         title="My Trades"
         subtitle="Log trades, track performance, and improve execution with AI review."
         action={
-          <Button size="sm" className="gap-1.5">
+          <Button size="sm" className="gap-1.5" onClick={() => setShowLogTrade(true)}>
             <Plus className="h-3.5 w-3.5" /> Log Trade
           </Button>
         }
       />
       <div className="px-4 md:px-6 pb-10 space-y-5 max-w-3xl">
-        <TodayTradeCheckCard />
+        <TodayTradeCheckCard count={todayTradeCount} onLogTrade={() => setShowLogTrade(true)} />
         <WeeklyProgressCard />
         <TrackedBalanceCard />
         <AIFocusCard />
-        <RecentTradesSection />
+        <RecentTradesSection trades={trades} />
         <WeeklyReviewCard />
         <WeeklyBalanceCheckCard />
       </div>
+
+      <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} />
     </AcademyLayout>
   );
 };
 
 /* ── 1. Today's Trade Check ── */
-function TodayTradeCheckCard() {
+function TodayTradeCheckCard({ count, onLogTrade }: { count: number; onLogTrade: () => void }) {
+  const isIncomplete = count === 0;
   return (
     <div className="vault-glass-card p-6 space-y-4">
       <div className="flex items-center gap-2">
         <CalendarCheck className="h-4 w-4 text-amber-400" />
         <h3 className="text-sm font-semibold text-foreground">Today's Trade Check</h3>
-        <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-          Incomplete
+        <span className={`ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border ${isIncomplete ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"}`}>
+          {isIncomplete ? "Incomplete" : "In progress"}
         </span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-        <StatMini label="Status" value="Incomplete" />
-        <StatMini label="Trades logged" value="0" />
+        <StatMini label="Status" value={isIncomplete ? "Incomplete" : "In progress"} />
+        <StatMini label="Trades logged" value={String(count)} />
         <StatMini label="Check-in" value="Not started" />
-        <StatMini label="AI review" value="Waiting" />
+        <StatMini label="AI review" value={count > 0 ? "Generated" : "Waiting"} />
       </div>
       <p className="text-xs text-muted-foreground">
         Complete today's trade check to keep your progress tracking accurate.
       </p>
       <div className="flex gap-2">
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="gap-1.5" onClick={onLogTrade}>
           <Plus className="h-3.5 w-3.5" /> Log today's trade
         </Button>
         <Button size="sm" variant="outline">Mark no-trade day</Button>
@@ -167,16 +219,16 @@ function AIFocusCard() {
 }
 
 /* ── 5. Recent Trades ── */
-function RecentTradesSection() {
+function RecentTradesSection({ trades }: { trades: MockTrade[] }) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-foreground">Recent Trades</h3>
       <div className="space-y-2">
-        {MOCK_TRADES.map((t) => {
+        {trades.map((t, i) => {
           const s = OUTCOME_STYLES[t.outcome];
           return (
             <div
-              key={t.ticker + t.date}
+              key={t.ticker + t.date + i}
               className="vault-glass-card p-4 space-y-2 cursor-pointer hover:border-white/10 transition-colors duration-100"
             >
               <div className="flex items-center justify-between gap-2 flex-wrap">
