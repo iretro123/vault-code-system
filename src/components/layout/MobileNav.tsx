@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { icon: LayoutGrid, label: "Mode", path: "/hub" },
   { icon: BookOpen, label: "Academy", path: "/academy" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: Settings, label: "Settings", path: "/academy/settings" },
 ];
 
 export function MobileNav() {
