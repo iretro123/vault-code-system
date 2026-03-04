@@ -30,22 +30,34 @@ interface TaskItem {
 function buildFoundationTasks(profile: any): TaskItem[] {
   return [
     {
-      id: "foundation-rules",
-      title: "Install Risk Rules",
+      id: "foundation-claim-role",
+      title: "Claim your role",
+      done: !!profile?.onboarding_completed,
+      route: "/academy/start",
+    },
+    {
+      id: "foundation-introduce",
+      title: "Introduce yourself in Trading Floor",
+      done: !!profile?.onboarding_completed,
+      route: "/academy/community",
+    },
+    {
+      id: "foundation-first-lesson",
+      title: "Watch first lesson",
+      done: !!profile?.onboarding_completed,
+      route: "/academy/learn",
+    },
+    {
+      id: "foundation-risk-rules",
+      title: "Set your risk rules",
       done: !!profile?.onboarding_completed,
       route: "/academy/resources",
     },
     {
-      id: "foundation-loss-lock",
-      title: "Set Daily Loss Lock",
+      id: "foundation-starting-balance",
+      title: "Set your starting balance",
       done: !!profile?.onboarding_completed,
-      route: "/academy/resources",
-    },
-    {
-      id: "foundation-max-trades",
-      title: "Set Max Trades/Day",
-      done: !!profile?.onboarding_completed,
-      route: "/academy/resources",
+      route: "/academy/trade",
     },
   ];
 }
@@ -80,25 +92,38 @@ export function GameplanCard({ onCheckIn }: Props) {
 
     const consistency: TaskItem[] = [
       {
-        id: "consistency-checkins",
-        title: "3 Daily Check-Ins this week",
+        id: "consistency-track-trades",
+        title: "Track your trades today",
+        done: false,
+        route: "/academy/trade",
+      },
+      {
+        id: "consistency-eod-check",
+        title: "Complete end-of-day trade check",
         done: false,
         action: "checkin",
       },
       {
-        id: "consistency-journal",
-        title: "2 Journal Entries this week",
+        id: "consistency-study",
+        title: "Study 30 minutes today",
         done: false,
-        route: "/academy/journal",
+        route: "/academy/learn",
+      },
+      {
+        id: "consistency-no-trade",
+        title: "Mark no-trade day (if no setup)",
+        done: false,
+        route: "/academy/trade",
       },
     ];
 
     return [
       { title: "Foundation", tasks: foundation },
       { title: "This Week", tasks: weeklyTasks.length > 0 ? weeklyTasks : [
-        { id: "tw-lesson", title: "Watch Lesson 1", done: false, route: "/academy/learn" },
-        { id: "tw-trade", title: "Log 1 Trade", done: false, route: "/academy/trade" },
-        { id: "tw-review", title: "Run Weekly Review", done: false, route: "/academy/journal" },
+        { id: "tw-lesson", title: "Complete 1 lesson", done: false, route: "/academy/learn" },
+        { id: "tw-trades", title: "Log 3 trades this week (or mark no-trade days)", done: false, route: "/academy/trade" },
+        { id: "tw-review", title: "Complete weekly review", done: false, route: "/academy/journal" },
+        { id: "tw-live", title: "Join 1 live or watch 1 replay", done: false, route: "/academy/live" },
       ] },
       { title: "Consistency", tasks: consistency },
     ];
@@ -256,22 +281,34 @@ export function GameplanCard({ onCheckIn }: Props) {
       ))}
 
       {/* Recently Completed — shown when expanded or on desktop */}
-      {showAll && recentDone.length > 0 && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-            Recently Completed
-          </p>
-          {recentDone.map((t) => (
-            <div key={t.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Check className="h-3 w-3 text-emerald-400/60" />
-              <span className="flex-1 truncate">{t.title}</span>
-              <span className="text-[10px] tabular-nums">
-                {new Date(t.completed_at!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {showAll && (() => {
+        const MOCK_RECENT = [
+          { id: "mock-1", title: "Claim your role", date: "Mar 1" },
+          { id: "mock-2", title: "Watch first lesson", date: "Mar 2" },
+          { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
+        ];
+        const items = recentDone.length > 0
+          ? recentDone.map((t) => ({
+              id: t.id,
+              title: t.title,
+              date: new Date(t.completed_at!).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            }))
+          : MOCK_RECENT;
+        return (
+          <div className="pt-2 border-t border-white/[0.06] space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+              Recently Completed
+            </p>
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Check className="h-3 w-3 text-emerald-400/60" />
+                <span className="flex-1 truncate">{item.title}</span>
+                <span className="text-[10px] tabular-nums">{item.date}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Show More / Show Less — mobile only */}
       {isMobile && groups.length > 1 && (
