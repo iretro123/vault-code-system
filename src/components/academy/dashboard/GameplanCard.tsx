@@ -30,22 +30,34 @@ interface TaskItem {
 function buildFoundationTasks(profile: any): TaskItem[] {
   return [
     {
-      id: "foundation-rules",
-      title: "Install Risk Rules",
+      id: "foundation-claim-role",
+      title: "Claim your role",
+      done: !!profile?.onboarding_completed,
+      route: "/academy/start",
+    },
+    {
+      id: "foundation-introduce",
+      title: "Introduce yourself in Trading Floor",
+      done: !!profile?.onboarding_completed,
+      route: "/academy/community",
+    },
+    {
+      id: "foundation-first-lesson",
+      title: "Watch first lesson",
+      done: !!profile?.onboarding_completed,
+      route: "/academy/learn",
+    },
+    {
+      id: "foundation-risk-rules",
+      title: "Set your risk rules",
       done: !!profile?.onboarding_completed,
       route: "/academy/resources",
     },
     {
-      id: "foundation-loss-lock",
-      title: "Set Daily Loss Lock",
+      id: "foundation-starting-balance",
+      title: "Set your starting balance",
       done: !!profile?.onboarding_completed,
-      route: "/academy/resources",
-    },
-    {
-      id: "foundation-max-trades",
-      title: "Set Max Trades/Day",
-      done: !!profile?.onboarding_completed,
-      route: "/academy/resources",
+      route: "/academy/trade",
     },
   ];
 }
