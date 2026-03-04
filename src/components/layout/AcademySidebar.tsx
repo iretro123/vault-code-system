@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import vaultVLogo from "@/assets/vault-v-logo.png";
 import { useLocation } from "react-router-dom";
 import {
@@ -17,14 +17,17 @@ import {
   Sparkles,
   Wrench,
   PanelLeft,
+  EyeOff,
 } from "lucide-react";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { InboxDrawer } from "@/components/academy/InboxDrawer";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
 import {
@@ -41,12 +44,12 @@ import {
 } from "@/components/ui/sidebar";
 
 const coreNav = [
-  { icon: Home, label: "Dashboard", path: "/academy/home" },
-  { icon: BookOpen, label: "Learn", path: "/academy/learn" },
-  { icon: TrendingUp, label: "Trade", path: "/academy/trade" },
-  { icon: Users, label: "Community", path: "/academy/community" },
-  { icon: Radio, label: "Live", path: "/academy/live", isLive: true },
-  { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources" },
+  { icon: Home, label: "Dashboard", path: "/academy/home", pageKey: "dashboard" },
+  { icon: BookOpen, label: "Learn", path: "/academy/learn", pageKey: "learn" },
+  { icon: TrendingUp, label: "Trade", path: "/academy/trade", pageKey: "trade" },
+  { icon: Users, label: "Community", path: "/academy/community", pageKey: "community" },
+  { icon: Radio, label: "Live", path: "/academy/live", isLive: true, pageKey: "live" },
+  { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources", pageKey: "resources" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
   { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];
@@ -68,6 +71,9 @@ export function AcademySidebar() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { inboxUnreadCount, onboarding } = useAcademyData();
+  const { isPageEnabled } = useFeatureFlags();
+  const { roleName, isOperator } = useAcademyPermissions();
+  const isAdmin = roleName === "CEO" || isOperator;
 
   const displayName = profile?.display_name || "Trader";
   const avatarUrl = (profile as any)?.avatar_url || null;
@@ -170,7 +176,10 @@ export function AcademySidebar() {
                 </SidebarMenuItem>
               )}
 
-              {coreNav.map(({ icon: Icon, label, path, isLive, isCoach }) => {
+              {coreNav.map(({ icon: Icon, label, path, isLive, isCoach, pageKey }) => {
+                // Hide disabled pages from non-admin users
+                if (pageKey && !isPageEnabled(pageKey) && !isAdmin) return null;
+                const hiddenForMembers = pageKey && !isPageEnabled(pageKey) && isAdmin;
                 if (isCoach) {
                   return (
                     <SidebarMenuItem key={path} className="mt-0">
@@ -222,6 +231,9 @@ export function AcademySidebar() {
                         <span className="relative flex items-center gap-2.5">
                           <Icon className={`h-4 w-4 shrink-0${isLive ? ' text-[hsl(217,92%,68%)]' : ''}`} style={{ strokeWidth: active ? 2.2 : 1.8 }} />
                           {!collapsed && <span className="text-sm">{label}</span>}
+                          {!collapsed && hiddenForMembers && (
+                            <EyeOff className="h-3 w-3 text-muted-foreground/40 ml-auto" />
+                          )}
                         </span>
                       </NavLink>
                     </SidebarMenuButton>

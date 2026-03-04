@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, Loader2 } from "lucide-react";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, ToggleLeft, Loader2 } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
@@ -13,6 +13,7 @@ import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminLogsTab } from "@/components/admin/AdminLogsTab";
 import { AdminStripeTab } from "@/components/admin/AdminStripeTab";
 import { AdminReferralsTab } from "@/components/admin/AdminReferralsTab";
+import { AdminFeatureFlagsTab } from "@/components/admin/AdminFeatureFlagsTab";
 
 const TAB_CONFIG = [
   { value: "members", label: "Members", icon: Users, perm: "manage_users" },
@@ -21,6 +22,7 @@ const TAB_CONFIG = [
   { value: "content", label: "Content", icon: BookOpen, perm: "manage_content" },
   { value: "stripe", label: "Stripe", icon: CreditCard, perm: "view_admin_panel" },
   { value: "referrals", label: "Referrals", icon: UserPlus, perm: "view_admin_panel" },
+  { value: "flags", label: "Feature Flags", icon: ToggleLeft, perm: "view_admin_panel" },
   { value: "logs", label: "Logs", icon: ScrollText, perm: "view_admin_panel" },
 ] as const;
 
@@ -153,6 +155,11 @@ const AdminPanel = () => {
           {visibleTabs.some((t) => t.value === "referrals") && (
             <TabsContent value="referrals">
               <AdminReferralsTab />
+            </TabsContent>
+          )}
+          {visibleTabs.some((t) => t.value === "flags") && (
+            <TabsContent value="flags">
+              <AdminFeatureFlagsTab />
             </TabsContent>
           )}
           {visibleTabs.some((t) => t.value === "logs") && (

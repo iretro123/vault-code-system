@@ -669,6 +669,30 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          enabled: boolean
+          id: string
+          label: string
+          page_key: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          id?: string
+          label: string
+          page_key: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          label?: string
+          page_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inbox_items: {
         Row: {
           body: string
