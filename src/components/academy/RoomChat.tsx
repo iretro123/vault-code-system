@@ -195,7 +195,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
       return parts.map((part, i) => {
         const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
         if (imgMatch) {
-          return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-[300px] max-h-[240px] mt-1 object-cover" />;
+          return <img key={i} src={imgMatch[2]} alt={imgMatch[1]} className="rounded-lg max-w-full sm:max-w-[300px] max-h-[240px] mt-1 object-cover" />;
         }
         const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (linkMatch) {
