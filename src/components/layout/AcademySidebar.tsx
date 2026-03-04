@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import vaultVLogo from "@/assets/vault-v-logo.png";
 import { useLocation } from "react-router-dom";
 import {
