@@ -120,9 +120,10 @@ export function GameplanCard({ onCheckIn }: Props) {
     return [
       { title: "Foundation", tasks: foundation },
       { title: "This Week", tasks: weeklyTasks.length > 0 ? weeklyTasks : [
-        { id: "tw-lesson", title: "Watch Lesson 1", done: false, route: "/academy/learn" },
-        { id: "tw-trade", title: "Log 1 Trade", done: false, route: "/academy/trade" },
-        { id: "tw-review", title: "Run Weekly Review", done: false, route: "/academy/journal" },
+        { id: "tw-lesson", title: "Complete 1 lesson", done: false, route: "/academy/learn" },
+        { id: "tw-trades", title: "Log 3 trades this week (or mark no-trade days)", done: false, route: "/academy/trade" },
+        { id: "tw-review", title: "Complete weekly review", done: false, route: "/academy/journal" },
+        { id: "tw-live", title: "Join 1 live or watch 1 replay", done: false, route: "/academy/live" },
       ] },
       { title: "Consistency", tasks: consistency },
     ];
