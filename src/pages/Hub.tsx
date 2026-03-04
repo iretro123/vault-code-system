@@ -9,6 +9,8 @@ import { Link } from "react-router-dom";
 const Hub = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { isCEO, isOperator } = useAcademyPermissions();
+  const canAccessVaultOS = isCEO || isOperator;
 
   if (loading) {
     return (
