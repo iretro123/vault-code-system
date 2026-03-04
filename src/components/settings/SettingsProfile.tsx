@@ -225,10 +225,10 @@ export function SettingsProfile() {
             )}
 
             {avatarMode === "icon" && (
-              <div className="flex gap-1.5 flex-wrap">
-                {GEOMETRIC_ICONS.map((icon) => (
-                  <button key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
-                    <span className="pointer-events-none">{icon.svg}</span>
+              <div className="grid grid-cols-7 gap-1.5">
+                {AVATAR_ICONS.map((icon) => (
+                  <button type="button" key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
+                    {icon.svg}
                   </button>
                 ))}
               </div>
