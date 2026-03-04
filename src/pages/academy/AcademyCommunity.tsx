@@ -47,13 +47,13 @@ const AcademyCommunity = () => {
 
           {/* Compact tab navigation */}
           <div className="shrink-0 flex justify-center pt-2.5 pb-1.5 px-4">
-            <div className="inline-flex items-center gap-0.5 rounded-lg bg-[hsl(220,14%,90%)] border border-[hsl(220,12%,84%)] p-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="flex w-full md:inline-flex md:w-auto items-center gap-0.5 rounded-lg bg-[hsl(220,14%,90%)] border border-[hsl(220,12%,84%)] p-0.5 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]">
               {TABS.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => handleTabChange(tab.key)}
                   className={cn(
-                    "relative px-5 py-1.5 text-[12px] font-semibold rounded-md transition-all duration-100",
+                    "relative flex-1 md:flex-none px-2 md:px-5 py-1.5 text-[11px] md:text-[12px] font-semibold rounded-md transition-all duration-100",
                     activeTab === tab.key
                       ? "text-[hsl(220,15%,18%)] bg-white border border-[hsl(220,10%,80%)] shadow-[0_1px_4px_rgba(0,0,0,0.08),0_0_8px_rgba(59,130,246,0.1)]"
                       : "text-[hsl(220,10%,48%)] hover:text-[hsl(220,10%,28%)] hover:bg-[hsl(220,12%,94%)] border border-transparent"
