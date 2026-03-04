@@ -416,8 +416,8 @@ export function VaultTradePlanner() {
           )}
         </div>
 
-        {/* Reassuring sub-copy */}
-        <p className="text-[10px] text-primary/60 font-medium text-center">
+        {/* Reassuring sub-copy (hidden on mobile) */}
+        <p className="hidden md:block text-[10px] text-primary/60 font-medium text-center">
           Don't stress — VAULT calculates your size, loss, and target.
         </p>
 
