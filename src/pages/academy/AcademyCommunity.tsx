@@ -2,10 +2,9 @@ import { useState } from "react";
 import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
-import { CommunityAnnouncements } from "@/components/academy/community/CommunityAnnouncements";
-import { CommunityDailySetups } from "@/components/academy/community/CommunityDailySetups";
 import { RoomChat } from "@/components/academy/RoomChat";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 
 const TABS = [
   { key: "trade-floor", label: "Trade Floor" },
@@ -21,6 +20,8 @@ const AcademyCommunity = () => {
     const saved = localStorage.getItem("vault_community_tab");
     return (saved as TabKey) || "trade-floor";
   });
+  const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
+  const canPostRestricted = isCEO || isAdmin || isOperator;
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
@@ -73,10 +74,10 @@ const AcademyCommunity = () => {
               <CommunityTradeFloor onSwitchTab={handleTabChange} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "announcements" ? "block" : "hidden")}>
-              <CommunityAnnouncements />
+              <RoomChat roomSlug="announcements" canPost={canPostRestricted} isAnnouncements={true} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
-              <CommunityDailySetups />
+              <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} />
