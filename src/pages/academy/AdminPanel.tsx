@@ -22,6 +22,7 @@ const TAB_CONFIG = [
   { value: "content", label: "Content", icon: BookOpen, perm: "manage_content" },
   { value: "stripe", label: "Stripe", icon: CreditCard, perm: "view_admin_panel" },
   { value: "referrals", label: "Referrals", icon: UserPlus, perm: "view_admin_panel" },
+  { value: "flags", label: "Feature Flags", icon: ToggleLeft, perm: "view_admin_panel" },
   { value: "logs", label: "Logs", icon: ScrollText, perm: "view_admin_panel" },
 ] as const;
 
