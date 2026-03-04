@@ -281,22 +281,34 @@ export function GameplanCard({ onCheckIn }: Props) {
       ))}
 
       {/* Recently Completed — shown when expanded or on desktop */}
-      {showAll && recentDone.length > 0 && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-            Recently Completed
-          </p>
-          {recentDone.map((t) => (
-            <div key={t.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Check className="h-3 w-3 text-emerald-400/60" />
-              <span className="flex-1 truncate">{t.title}</span>
-              <span className="text-[10px] tabular-nums">
-                {new Date(t.completed_at!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {showAll && (() => {
+        const MOCK_RECENT = [
+          { id: "mock-1", title: "Claim your role", date: "Mar 1" },
+          { id: "mock-2", title: "Watch first lesson", date: "Mar 2" },
+          { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
+        ];
+        const items = recentDone.length > 0
+          ? recentDone.map((t) => ({
+              id: t.id,
+              title: t.title,
+              date: new Date(t.completed_at!).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            }))
+          : MOCK_RECENT;
+        return (
+          <div className="pt-2 border-t border-white/[0.06] space-y-2">
+            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+              Recently Completed
+            </p>
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Check className="h-3 w-3 text-emerald-400/60" />
+                <span className="flex-1 truncate">{item.title}</span>
+                <span className="text-[10px] tabular-nums">{item.date}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Show More / Show Less — mobile only */}
       {isMobile && groups.length > 1 && (
