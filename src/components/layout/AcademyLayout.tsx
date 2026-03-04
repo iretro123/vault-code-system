@@ -105,10 +105,8 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
           }}
         />
 
-        {/* Desktop sidebar — contained column, z-10 via sidebar.tsx */}
-        <div className="hidden md:block relative z-10">
-          <AcademySidebar />
-        </div>
+        {/* Sidebar — offcanvas overlay on mobile, static column on desktop */}
+        <AcademySidebar />
 
         {/* Main content — flex:1, isolated from sidebar */}
         <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
