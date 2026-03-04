@@ -231,6 +231,9 @@ export function AcademySidebar() {
                         <span className="relative flex items-center gap-2.5">
                           <Icon className={`h-4 w-4 shrink-0${isLive ? ' text-[hsl(217,92%,68%)]' : ''}`} style={{ strokeWidth: active ? 2.2 : 1.8 }} />
                           {!collapsed && <span className="text-sm">{label}</span>}
+                          {!collapsed && hiddenForMembers && (
+                            <EyeOff className="h-3 w-3 text-muted-foreground/40 ml-auto" />
+                          )}
                         </span>
                       </NavLink>
                     </SidebarMenuButton>
