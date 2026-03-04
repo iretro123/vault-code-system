@@ -175,6 +175,9 @@ export function GameplanCard({ onCheckIn }: Props) {
           <span className="text-xs font-bold text-foreground">{doneCount}/{totalCount} complete</span>
         </div>
         <Progress value={pct} className="h-2.5 bg-white/[0.06]" />
+        <span className="text-[10px] text-muted-foreground/40">
+          Resets in {getDaysUntilReset()} day{getDaysUntilReset() !== 1 ? "s" : ""}
+        </span>
       </div>
 
       {/* First task group — always visible */}
