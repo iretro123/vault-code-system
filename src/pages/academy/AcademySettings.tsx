@@ -36,6 +36,7 @@ const AcademySettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const billingReturn = searchParams.get("billing") === "returned";
   const [section, setSection] = useState<SectionId>(billingReturn ? "billing" : "profile");
+  const [mobileOpen, setMobileOpen] = useState<SectionId | null>(billingReturn ? "billing" : null);
 
   useEffect(() => {
     if (billingReturn) {
