@@ -18,13 +18,6 @@ interface GuidelinesModalProps {
 export function GuidelinesModal({ open, onClose }: GuidelinesModalProps) {
   if (!open) return null;
 
-  const copyTemplate = () => {
-    navigator.clipboard.writeText(TRADE_FORMAT).then(
-      () => toast.success("Trade format copied to clipboard"),
-      () => toast.error("Failed to copy")
-    );
-  };
-
   return (
     <>
       {/* Backdrop */}
