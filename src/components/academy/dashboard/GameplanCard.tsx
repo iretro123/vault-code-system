@@ -92,16 +92,28 @@ export function GameplanCard({ onCheckIn }: Props) {
 
     const consistency: TaskItem[] = [
       {
-        id: "consistency-checkins",
-        title: "3 Daily Check-Ins this week",
+        id: "consistency-track-trades",
+        title: "Track your trades today",
+        done: false,
+        route: "/academy/trade",
+      },
+      {
+        id: "consistency-eod-check",
+        title: "Complete end-of-day trade check",
         done: false,
         action: "checkin",
       },
       {
-        id: "consistency-journal",
-        title: "2 Journal Entries this week",
+        id: "consistency-study",
+        title: "Study 30 minutes today",
         done: false,
-        route: "/academy/journal",
+        route: "/academy/learn",
+      },
+      {
+        id: "consistency-no-trade",
+        title: "Mark no-trade day (if no setup)",
+        done: false,
+        route: "/academy/trade",
       },
     ];
 
