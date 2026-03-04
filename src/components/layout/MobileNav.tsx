@@ -1,9 +1,9 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { BookOpen, Settings, LayoutGrid } from "lucide-react";
+import { BookOpen, Settings, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const navItems = [
-  { icon: LayoutGrid, label: "Mode", path: "/hub" },
   { icon: BookOpen, label: "Academy", path: "/academy" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
 ];
