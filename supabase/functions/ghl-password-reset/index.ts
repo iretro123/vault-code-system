@@ -67,12 +67,11 @@ Deno.serve(async (req) => {
     const displayName = profile?.display_name || "";
 
     // 2. Generate password reset link via admin API
+    const redirectTo = origin ? `${origin}/reset-password` : `${supabaseUrl}/reset-password`;
     const { data: linkData, error: linkError } = await sb.auth.admin.generateLink({
       type: "recovery",
       email: normalizedEmail,
-      options: {
-        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "")}/reset-password`,
-      },
+      options: { redirectTo },
     });
 
     if (linkError || !linkData?.properties?.action_link) {

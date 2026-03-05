@@ -62,28 +62,24 @@ const Auth = () => {
     setResetError("");
     setResetSent(false);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
-      setLoading(false);
-      setResetError(error.message);
-      return;
-    }
-
-    // Also send reset link via GoHighLevel SMS + Email
     try {
-      await supabase.functions.invoke("ghl-password-reset", {
-        body: { email: email.trim() },
+      const { data, error } = await supabase.functions.invoke("ghl-password-reset", {
+        body: { email: email.trim(), origin: window.location.origin },
       });
-    } catch (ghlErr) {
-      console.warn("[GHL] Password reset notification failed:", ghlErr);
-      // Non-blocking — standard email still sent
-    }
 
-    setLoading(false);
-    setResetSent(true);
+      if (error) {
+        setLoading(false);
+        setResetError("Failed to send reset link. Please try again.");
+        return;
+      }
+
+      setLoading(false);
+      setResetSent(true);
+    } catch (err) {
+      console.error("[Reset] Password reset failed:", err);
+      setLoading(false);
+      setResetError("Something went wrong. Please try again.");
+    }
   };
 
   return (
