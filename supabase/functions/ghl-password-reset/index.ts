@@ -134,12 +134,19 @@ Deno.serve(async (req) => {
       <p><a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Reset Password</a></p>
       <p style="font-size:12px;color:#888;">If you didn't request this, you can safely ignore this email.</p>
     </div>`;
-    const { ok: emailOk } = await ghlFetch("/conversations/messages", GHL_API_KEY, {
+    const emailPayload: Record<string, unknown> = {
       type: "Email",
       contactId,
       html: emailHtml,
+      message: emailHtml,
       subject: "Reset Your Vault Academy Password",
-    });
+    };
+    // Add emailFrom if configured
+    const GHL_EMAIL_FROM = Deno.env.get("GHL_EMAIL_FROM");
+    if (GHL_EMAIL_FROM) {
+      emailPayload.emailFrom = GHL_EMAIL_FROM;
+    }
+    const { ok: emailOk } = await ghlFetch("/conversations/messages", GHL_API_KEY, emailPayload);
     results.email = emailOk;
     console.log("[GHL] Email sent:", emailOk);
 
