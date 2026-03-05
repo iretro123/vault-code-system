@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.coach-chat]
 verify_jwt = false
+
+[functions.search-stripe-customers]
+verify_jwt = false
