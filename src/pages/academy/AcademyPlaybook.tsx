@@ -60,9 +60,15 @@ const AcademyPlaybook = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [isExpanded, mobileReaderOpen]);
 
-  // Fetch signed URL once user is authenticated
+  // Fetch signed URL with module-level cache
   useEffect(() => {
     if (!user) return;
+    const now = Date.now();
+    if (cachedPdfUrl && now - cachedAt < URL_TTL) {
+      setPdfUrl(cachedPdfUrl);
+      setPdfLoading(false);
+      return;
+    }
     async function getUrl() {
       setPdfLoading(true);
       setPdfError(null);
@@ -77,6 +83,8 @@ const AcademyPlaybook = () => {
           console.error("Signed URL error:", data.error, data.details);
           setPdfError("Unable to load Playbook PDF. Check storage path.");
         } else if (data?.signedUrl) {
+          cachedPdfUrl = data.signedUrl;
+          cachedAt = Date.now();
           setPdfUrl(data.signedUrl);
         } else {
           setPdfError("Unable to load Playbook PDF. Check storage path.");
