@@ -33,6 +33,7 @@ function PlaybookReaderInner({
   onPageChange,
   onReachedEnd,
   isAdmin,
+  isMobile,
 }: Props) {
   const totalPages = chapter.pdf_page_end - chapter.pdf_page_start + 1;
 
@@ -48,7 +49,16 @@ function PlaybookReaderInner({
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [docLoaded, setDocLoaded] = useState(false);
   const [zoom, setZoom] = useState(100);
+  const [pdfWidth, setPdfWidth] = useState(isMobile ? window.innerWidth - 32 : 680);
   const notifiedEnd = useRef(false);
+
+  // Responsive width on mobile
+  useEffect(() => {
+    if (!isMobile) return;
+    const handleResize = () => setPdfWidth(window.innerWidth - 32);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isMobile]);
 
   // Reset page when chapter changes
   useEffect(() => {
