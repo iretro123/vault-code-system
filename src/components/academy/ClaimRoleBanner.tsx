@@ -2,9 +2,8 @@ import { Rocket, ArrowRight } from "lucide-react";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 
 interface Props {
-  onClaimRole: () => void;
+  onClaimRole?: () => void;
 }
-
 export function ClaimRoleBanner({ onClaimRole }: Props) {
   const { onboarding, hydrated } = useAcademyData();
 
