@@ -29,11 +29,29 @@ const Auth = () => {
 
     if (result.error) {
       toast({ title: "Error", description: result.error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Welcome back", description: "You have been signed in." });
-      navigate("/hub");
+      setLoading(false);
+      return;
     }
 
+    // Check if user is revoked/banned before allowing navigation
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("access_status, is_banned")
+        .eq("user_id", authUser.id)
+        .maybeSingle();
+
+      if (profileData?.access_status === "revoked" || profileData?.is_banned) {
+        await supabase.auth.signOut();
+        toast({ title: "Access Revoked", description: "Your account access has been revoked. Contact support for assistance.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+    }
+
+    toast({ title: "Welcome back", description: "You have been signed in." });
+    navigate("/hub");
     setLoading(false);
   };
 
