@@ -17,7 +17,7 @@ function computeLevel(lessonsCompleted: number): string {
 }
 
 export function useRoleEvolution() {
-  const { user, profile, refetchProfile } = useAuth();
+  const { user, profile } = useAuth();
   const { progress, loading } = useLessonProgress();
   const checked = useRef(false);
 
