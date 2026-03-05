@@ -237,18 +237,34 @@ function PlaybookReaderInner({
       </div>
 
       {/* Nav controls */}
-      <div className="px-6 py-3 border-t border-white/[0.06] flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={goPrev}
-          disabled={currentPage <= chapter.pdf_page_start}
-          className="gap-1.5 text-white/50 hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" /> Prev
-        </Button>
+      <div className="px-6 py-3 border-t border-white/[0.06] flex flex-col gap-2 shrink-0">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goPrev}
+            disabled={currentPage <= chapter.pdf_page_start}
+            className="gap-1.5 text-white/50 hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Prev
+          </Button>
 
-        <div className="flex items-center gap-1">
+          <span className="text-xs font-semibold text-foreground/70">
+            Page {localPage} of {totalPages}
+          </span>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goNext}
+            disabled={currentPage >= chapter.pdf_page_end}
+            className="gap-1.5 text-white/50 hover:text-foreground"
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-center gap-1">
           {Array.from({ length: Math.min(totalPages, 12) }, (_, i) => {
             const pg = chapter.pdf_page_start + i;
             return (
@@ -267,16 +283,6 @@ function PlaybookReaderInner({
           })}
           {totalPages > 12 && <span className="text-[10px] text-white/20 ml-1">+{totalPages - 12}</span>}
         </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={goNext}
-          disabled={currentPage >= chapter.pdf_page_end}
-          className="gap-1.5 text-white/50 hover:text-foreground"
-        >
-          Next <ChevronRight className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Admin debug */}

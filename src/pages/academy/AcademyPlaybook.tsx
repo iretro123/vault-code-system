@@ -189,7 +189,7 @@ const AcademyPlaybook = () => {
           )}
 
           {/* Full-screen reader */}
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <PlaybookReader
               key={activeChapter.id}
               chapter={activeChapter}
