@@ -65,11 +65,12 @@ function PlaybookReaderInner({
     return () => window.removeEventListener("resize", handleResize);
   }, [isMobile]);
 
-  // Reset page when chapter changes
+  // Reset state when chapter changes (without remounting)
   useEffect(() => {
+    if (prevChapterId.current === chapter.id) return;
+    prevChapterId.current = chapter.id;
     const page = getInitialPage();
     setCurrentPage(page);
-    setDocLoaded(false);
     notifiedEnd.current = false;
   }, [chapter.id]);
 
