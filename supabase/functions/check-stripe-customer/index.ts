@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     // --- 3. Not found anywhere ---
     console.log("[check-membership] Not found:", normalizedEmail);
     return new Response(
-      JSON.stringify({ found: false, source: null }),
+      JSON.stringify({ found: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
