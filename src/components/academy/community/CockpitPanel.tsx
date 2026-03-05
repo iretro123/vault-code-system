@@ -3,9 +3,10 @@ import { useTradeLog } from "@/hooks/useTradeLog";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText, HelpCircle, ClipboardCheck, Trophy,
-  ChevronRight, X, Flame
+  FileText, HelpCircle, Trophy,
+  ChevronRight, X, Flame, Radio
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 /* ── Your Week ── */
