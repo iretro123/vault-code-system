@@ -1,31 +1,15 @@
 
 
-## Test GHL Password Reset SMS
+## Re-test GHL SMS Delivery
 
-### Problem
-The `test@vault.dev` profile has **no phone number stored** (`phone_number: null`). The GHL function only sends SMS when a phone number exists. We need to fix that first, then test.
+Now that you've added credits to GHL, I'll re-invoke the `ghl-password-reset` function for `test@vault.dev` to send the SMS to +17273327136 again. I'll also fix the email payload (use `html` instead of `message`) in the same pass.
 
-### Steps
+### Changes
 
-**1. Update profile phone number**
-Run a migration to set the phone number on the test account:
-```sql
-UPDATE profiles SET phone_number = '+17273327136' SET WHERE email = 'test@vault.dev';
-```
-Phone must be in E.164 format (`+1` prefix) for GHL to accept it.
+**1. Fix `supabase/functions/ghl-password-reset/index.ts`**
+- Change the email send call from `message` to `html` field (fixes the 422 error)
+- Keep SMS logic as-is (it was accepted before, just no credits)
 
-**2. Test the edge function**
-Call `ghl-password-reset` with `{ "email": "test@vault.dev" }` to trigger:
-- GHL contact upsert with phone + email
-- SMS to +17273327136 with password reset link
-- Email to test@vault.dev with the same link
-
-**3. Verify via edge function logs**
-Check logs for `[GHL] SMS sent: true` and `[GHL] Email sent: true` confirmations.
-
-### What This Proves
-- The GHL API key and location ID are configured correctly
-- Contact upsert works
-- SMS delivery works to your phone
-- Email delivery works through GHL conversations API
+**2. Re-invoke the function**
+- Call `ghl-password-reset` with `{ "email": "test@vault.dev" }` to trigger both SMS and email
 
