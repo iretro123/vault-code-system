@@ -53,7 +53,7 @@ const ROLES = [
 ] as const;
 
 export function ClaimRoleModal({ open, onOpenChange }: Props) {
-  const { user, refetchProfile } = useAuth();
+  const { user } = useAuth();
   const { refetchOnboarding } = useAcademyData();
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
