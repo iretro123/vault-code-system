@@ -158,6 +158,8 @@ export function AdminMembersTab() {
     setConfirmAction(null);
 
     const { error } = await supabase.from("profiles").update({ access_status: "revoked" }).eq("user_id", userId);
+    // Also revoke student_access
+    await supabase.from("student_access").update({ status: "canceled" } as any).eq("user_id", userId);
     if (error) {
       toast.error("Failed to kick user");
     } else {
