@@ -55,6 +55,7 @@ function PlaybookReaderInner({
   const [zoom, setZoom] = useState(100);
   const [pdfWidth, setPdfWidth] = useState(isMobile ? window.innerWidth - 32 : 680);
   const notifiedEnd = useRef(false);
+  const prevChapterId = useRef(chapter.id);
 
   // Responsive width on mobile
   useEffect(() => {
@@ -64,11 +65,12 @@ function PlaybookReaderInner({
     return () => window.removeEventListener("resize", handleResize);
   }, [isMobile]);
 
-  // Reset page when chapter changes
+  // Reset state when chapter changes (without remounting)
   useEffect(() => {
+    if (prevChapterId.current === chapter.id) return;
+    prevChapterId.current = chapter.id;
     const page = getInitialPage();
     setCurrentPage(page);
-    setDocLoaded(false);
     notifiedEnd.current = false;
   }, [chapter.id]);
 

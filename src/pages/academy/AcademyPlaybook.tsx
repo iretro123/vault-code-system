@@ -16,6 +16,11 @@ import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 
+// Module-level signed URL cache
+let cachedPdfUrl: string | null = null;
+let cachedAt = 0;
+const URL_TTL = 50 * 60 * 1000; // 50 min (refresh before 1hr expiry)
+
 const AcademyPlaybook = () => {
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
@@ -55,9 +60,15 @@ const AcademyPlaybook = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [isExpanded, mobileReaderOpen]);
 
-  // Fetch signed URL once user is authenticated
+  // Fetch signed URL with module-level cache
   useEffect(() => {
     if (!user) return;
+    const now = Date.now();
+    if (cachedPdfUrl && now - cachedAt < URL_TTL) {
+      setPdfUrl(cachedPdfUrl);
+      setPdfLoading(false);
+      return;
+    }
     async function getUrl() {
       setPdfLoading(true);
       setPdfError(null);
@@ -72,6 +83,8 @@ const AcademyPlaybook = () => {
           console.error("Signed URL error:", data.error, data.details);
           setPdfError("Unable to load Playbook PDF. Check storage path.");
         } else if (data?.signedUrl) {
+          cachedPdfUrl = data.signedUrl;
+          cachedAt = Date.now();
           setPdfUrl(data.signedUrl);
         } else {
           setPdfError("Unable to load Playbook PDF. Check storage path.");
@@ -191,7 +204,6 @@ const AcademyPlaybook = () => {
           {/* Full-screen reader */}
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <PlaybookReader
-              key={activeChapter.id}
               chapter={activeChapter}
               progress={progress[activeChapter.id]}
               pdfUrl={pdfUrl}
@@ -311,7 +323,6 @@ const AcademyPlaybook = () => {
 
             {activeChapter ? (
               <PlaybookReader
-                key={activeChapter.id}
                 chapter={activeChapter}
                 progress={progress[activeChapter.id]}
                 pdfUrl={pdfUrl}
