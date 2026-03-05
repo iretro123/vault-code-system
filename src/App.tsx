@@ -73,6 +73,7 @@ const App = () => (
             <Route path="/reports" element={<VaultOSGate><Reports /></VaultOSGate>} />
             <Route path="/settings" element={<VaultOSGate><Settings /></VaultOSGate>} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />
             <Route path="/academy" element={<Navigate to="/academy/home" replace />} />
