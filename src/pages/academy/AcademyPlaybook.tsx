@@ -205,7 +205,6 @@ const AcademyPlaybook = () => {
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <PlaybookReader
               chapter={activeChapter}
-              chapter={activeChapter}
               progress={progress[activeChapter.id]}
               pdfUrl={pdfUrl}
               pdfLoading={pdfLoading}
