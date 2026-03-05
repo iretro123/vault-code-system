@@ -929,24 +929,24 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "group relative flex gap-4 px-6 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
-                    startsNewGroup ? "mt-3 pt-2.5 pb-1" : (isGroupedWithNext ? "py-[2px]" : "pt-[2px] pb-0.5"),
+                    "group relative flex gap-3 px-4 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
+                    startsNewGroup ? "mt-2 pt-2 pb-1" : (isGroupedWithNext ? "py-[2px]" : "pt-[2px] pb-0.5"),
                     isEditing && "bg-[hsl(220,10%,93%)]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-50"
                   )}
                 >
                   {/* Avatar column — compact on grouped follow-ups */}
-                  <div className={cn("w-11 shrink-0", startsNewGroup ? "h-11" : "h-5")}>
+                  <div className={cn("w-9 shrink-0", startsNewGroup ? "h-9" : "h-5")}>
                     {showHdr ? (
                       msgProfile ? (
                         <ChatAvatar
                           avatarUrl={msgProfile.avatar_url}
                           userName={msg.user_name}
-                          size="h-11 w-11"
+                          size="h-9 w-9"
                         />
                       ) : (
-                        <div className="w-11 h-11 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
+                        <div className="w-9 h-9 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
                       )
                     ) : (
                       <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-[hsl(220,10%,60%)] select-none">
@@ -960,7 +960,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     {showHdr && (
                       <div className="flex items-center gap-2 mb-0.5 min-h-[22px]">
                         <span className={cn(
-                          "text-[14px] font-semibold tracking-[-0.01em]",
+                          "text-[13px] font-semibold tracking-[-0.01em]",
                           isCeoOrAdmin ? "text-amber-700" : "text-[hsl(220,15%,12%)]"
                         )}>
                           {msg.user_name}
@@ -1070,7 +1070,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                   : "bg-white border border-[hsl(220,10%,83%)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                             )}>
                               <p className={cn(
-                                "text-[14px] leading-[1.6] whitespace-pre-line",
+                                "text-[13px] leading-[1.6] whitespace-pre-line",
                                 isOwn && !isCeoOrAdmin ? "text-white" : "text-[hsl(220,15%,15%)]"
                               )}>
                                 {renderPlainBody(msg.body, isOwn && !isCeoOrAdmin)}
@@ -1099,7 +1099,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                                className="rounded-xl max-w-full max-h-[400px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
+                                className="rounded-xl max-w-[360px] max-h-[280px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
                               />
                               <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-full">{att.filename}</span>
                             </button>
