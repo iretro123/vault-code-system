@@ -258,7 +258,16 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       )}
 
       <button
-        onClick={() => setShowTasks((v) => !v)}
+        onClick={() => {
+          setShowTasks((v) => {
+            if (v) {
+              requestAnimationFrame(() => {
+                cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              });
+            }
+            return !v;
+          });
+        }}
         className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
       >
         {showTasks ? "Hide Tasks" : "Show Tasks"}
