@@ -29,6 +29,7 @@ const AcademyHome = () => {
   const { hasAccess, refetch: refetchAccess } = useStudentAccess();
   const { logActivity } = useActivityLog();
   useLoginReminder();
+  useRoleEvolution();
 
   // Log dashboard view on mount
   useEffect(() => {
@@ -36,6 +37,7 @@ const AcademyHome = () => {
   }, []);
 
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [claimRoleOpen, setClaimRoleOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const handledRef = useRef(false);
 
