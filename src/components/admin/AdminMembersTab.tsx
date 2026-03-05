@@ -459,9 +459,10 @@ export function AdminMembersTab() {
               e.preventDefault();
               if (!addEmail.trim() || !user?.id) return;
               setAddingUser(true);
+              const stripeId = selectedStripeCustomer?.id || addStripeId.trim() || null;
               const { error } = await supabase.from("allowed_signups" as any).insert({
                 email: addEmail.trim().toLowerCase(),
-                stripe_customer_id: addStripeId.trim() || null,
+                stripe_customer_id: stripeId,
                 added_by: user.id,
               } as any);
               if (error) {
@@ -472,9 +473,12 @@ export function AdminMembersTab() {
                 }
               } else {
                 toast.success(`${addEmail.trim()} added to whitelist.`);
-                await logAuditAction("whitelist_add", user.id, { email: addEmail.trim().toLowerCase(), stripe_customer_id: addStripeId.trim() || null });
+                await logAuditAction("whitelist_add", user.id, { email: addEmail.trim().toLowerCase(), stripe_customer_id: stripeId });
                 setAddEmail("");
                 setAddStripeId("");
+                setStripeQuery("");
+                setStripeResults([]);
+                setSelectedStripeCustomer(null);
                 setAddUserOpen(false);
               }
               setAddingUser(false);
@@ -494,20 +498,83 @@ export function AdminMembersTab() {
               />
             </div>
             <div>
-              <Label htmlFor="add-stripe" className="text-sm">
-                Stripe Customer ID <span className="text-muted-foreground/50">(optional)</span>
+              <Label className="text-sm">
+                Stripe Customer <span className="text-muted-foreground/50">(optional)</span>
               </Label>
-              <Input
-                id="add-stripe"
-                placeholder="cus_xxxxxxxxxx"
-                value={addStripeId}
-                onChange={(e) => setAddStripeId(e.target.value)}
-                className="mt-1.5"
-              />
+              {selectedStripeCustomer ? (
+                <div className="mt-1.5 flex items-center gap-2 rounded-md border border-input bg-muted/30 px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium truncate block">{selectedStripeCustomer.name || selectedStripeCustomer.email}</span>
+                    <span className="text-xs text-muted-foreground truncate block">{selectedStripeCustomer.id}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => {
+                      setSelectedStripeCustomer(null);
+                      setAddStripeId("");
+                      setStripeQuery("");
+                      setStripeResults([]);
+                    }}
+                  >
+                    <UserX className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="relative mt-1.5">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or email…"
+                    value={stripeQuery}
+                    onChange={(e) => handleStripeQueryChange(e.target.value)}
+                    className="pl-9"
+                  />
+                  {stripeSearching && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  )}
+                  {stripeResults.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-md max-h-48 overflow-y-auto">
+                      {stripeResults.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-accent/50 transition-colors"
+                          onClick={() => {
+                            setSelectedStripeCustomer(c);
+                            setAddStripeId(c.id);
+                            setStripeQuery("");
+                            setStripeResults([]);
+                          }}
+                        >
+                          <span className="text-sm font-medium block truncate">{c.name || "No name"}</span>
+                          <span className="text-xs text-muted-foreground block truncate">{c.email} · {c.id}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {stripeQuery.trim().length >= 3 && !stripeSearching && stripeResults.length === 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">No Stripe customers found.</p>
+                  )}
+                </div>
+              )}
               <p className="text-[10px] text-muted-foreground/60 mt-1">
-                Paste from Stripe dashboard to link billing for this user.
+                Search for an existing Stripe customer to link billing.
               </p>
             </div>
+            <DialogFooter>
+              <Button type="submit" disabled={addingUser || !addEmail.trim()} className="gap-1.5">
+                {addingUser ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                Add User
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
             <DialogFooter>
               <Button type="submit" disabled={addingUser || !addEmail.trim()} className="gap-1.5">
                 {addingUser ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
