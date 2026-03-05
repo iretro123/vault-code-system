@@ -163,9 +163,13 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   }, []);
 
   const handleNavigate = useCallback((taskId: string) => {
+    if (taskId === "foundation-claim-role" && onClaimRole) {
+      onClaimRole();
+      return;
+    }
     const route = TASK_ROUTES[taskId];
     if (route) navigate(route);
-  }, [navigate]);
+  }, [navigate, onClaimRole]);
 
   const nextTask = useMemo(() => {
     for (const group of groups) {

@@ -1,9 +1,11 @@
-import { useNavigate } from "react-router-dom";
 import { Rocket, ArrowRight } from "lucide-react";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 
-export function ClaimRoleBanner() {
-  const navigate = useNavigate();
+interface Props {
+  onClaimRole: () => void;
+}
+
+export function ClaimRoleBanner({ onClaimRole }: Props) {
   const { onboarding, hydrated } = useAcademyData();
 
   if (!hydrated || !onboarding || onboarding.claimed_role) return null;
@@ -19,7 +21,7 @@ export function ClaimRoleBanner() {
         </p>
       </div>
       <button
-        onClick={() => navigate("/academy/start")}
+        onClick={onClaimRole}
         className="shrink-0 flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
       >
         Claim Role
