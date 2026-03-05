@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
       type: "recovery",
       email: normalizedEmail,
       options: {
-        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "")}/auth`,
+        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "")}/reset-password`,
       },
     });
 
