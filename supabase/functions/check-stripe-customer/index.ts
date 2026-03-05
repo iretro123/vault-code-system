@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
               const status = isActive ? "active" : "canceled";
               console.log(`[check-membership] Whop match: ${normalizedEmail} → ${status} (valid=${m.valid}, status=${m.status})`);
               return new Response(
-                JSON.stringify({ found: true, source: "whop", status }),
+                JSON.stringify({ found: true, status }),
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }
               );
             }
