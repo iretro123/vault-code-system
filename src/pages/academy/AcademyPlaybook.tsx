@@ -39,6 +39,7 @@ const AcademyPlaybook = () => {
   const [reachedEnd, setReachedEnd] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [mobileReaderOpen, setMobileReaderOpen] = useState(false);
+  const [mobileFullscreen, setMobileFullscreen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // ESC to exit expanded mode
