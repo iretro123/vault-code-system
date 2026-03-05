@@ -1,37 +1,31 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: ResetPassword.tsx stuck on "Verifying" spinner
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+**Root cause confirmed**: The `PASSWORD_RECOVERY` event fires before the component mounts (caught by `AuthProvider` instead). The URL hash is cleared by Supabase after token exchange. So both the event listener and hash fallback fail.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+**Single-file fix in `src/pages/ResetPassword.tsx`**:
 
-### Solution
+Remove the hash-dependent checks and replace with a simple session check — if the user has an active session on `/reset-password`, they got here via a recovery link, so show the form immediately.
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+```tsx
+useEffect(() => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") {
+      setReady(true);
+    }
+  });
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+  // Fallback: session already exists (token consumed during redirect)
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) setReady(true);
+  });
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+  return () => subscription.unsubscribe();
+}, []);
+```
+
+This removes the unreliable `hash.includes("type=recovery")` checks and treats any active session on this page as a valid recovery redirect.
+
+No other files need changes — the edge function and Auth.tsx are already correct from the previous fix.
 
