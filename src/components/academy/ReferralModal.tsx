@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import handGiftImg from "@/assets/hand-gift.png";
 import vaultVLogo from "@/assets/vault-v-logo.png";
 import { Button } from "@/components/ui/button";
 import { Copy, Gift, Link, Send, UserPlus, Star, X, ArrowLeft } from "lucide-react";
