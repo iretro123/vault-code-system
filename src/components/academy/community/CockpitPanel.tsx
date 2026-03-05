@@ -53,9 +53,37 @@ function MetricRow({ label, value, accent, warn }: {
   );
 }
 
+/* ── Live Indicator ── */
+function LiveDot({ isLive }: { isLive: boolean }) {
+  if (!isLive) {
+    return <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30 shrink-0" />;
+  }
+  return (
+    <span className="relative flex h-2.5 w-2.5 shrink-0">
+      <span
+        className="absolute inset-0 rounded-full bg-destructive"
+        style={{ animation: "breathe 2s ease-in-out infinite" }}
+      />
+      <span className="relative h-2.5 w-2.5 rounded-full bg-destructive" />
+    </span>
+  );
+}
+
 /* ── Quick Actions ── */
 function QuickActionsCard({ onSwitchTab }: { onSwitchTab?: (tab: string) => void }) {
   const navigate = useNavigate();
+  const [isLive, setIsLive] = useState(false);
+
+  useEffect(() => {
+    const now = new Date();
+    supabase
+      .from("live_sessions")
+      .select("id, session_date, duration_minutes")
+      .lte("session_date", new Date(now.getTime() + 15 * 60 * 1000).toISOString())
+      .gte("session_date", new Date(now.getTime() - 120 * 60 * 1000).toISOString())
+      .limit(1)
+      .then(({ data }) => setIsLive((data?.length ?? 0) > 0));
+  }, []);
 
   const handleAction = (key: string) => {
     switch (key) {
@@ -68,8 +96,8 @@ function QuickActionsCard({ onSwitchTab }: { onSwitchTab?: (tab: string) => void
       case "share-win":
         onSwitchTab?.("wins");
         break;
-      case "weekly-review":
-        navigate("/academy/progress");
+      case "live":
+        navigate("/academy/live");
         break;
     }
   };
@@ -78,7 +106,6 @@ function QuickActionsCard({ onSwitchTab }: { onSwitchTab?: (tab: string) => void
     { key: "log-trade", label: "Log Trade", icon: FileText },
     { key: "ask-question", label: "Ask Question", icon: HelpCircle },
     { key: "share-win", label: "Share a Win", icon: Trophy },
-    { key: "weekly-review", label: "Weekly Review", icon: ClipboardCheck },
   ];
 
   return (
@@ -96,6 +123,22 @@ function QuickActionsCard({ onSwitchTab }: { onSwitchTab?: (tab: string) => void
             <ChevronRight className="h-3 w-3 text-[hsl(220,10%,70%)] group-hover:text-[hsl(220,10%,45%)]" />
           </button>
         ))}
+        {/* LIVE row */}
+        <button
+          onClick={() => handleAction("live")}
+          className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-[hsl(220,10%,95%)] transition-colors group"
+        >
+          <LiveDot isLive={isLive} />
+          <span className={cn(
+            "text-[13px] font-semibold flex-1 transition-colors",
+            isLive
+              ? "text-destructive"
+              : "text-[hsl(220,10%,40%)] group-hover:text-[hsl(220,10%,20%)]"
+          )}>
+            {isLive ? "LIVE" : "Live Sessions"}
+          </span>
+          <ChevronRight className="h-3 w-3 text-[hsl(220,10%,70%)] group-hover:text-[hsl(220,10%,45%)]" />
+        </button>
       </div>
     </div>
   );
