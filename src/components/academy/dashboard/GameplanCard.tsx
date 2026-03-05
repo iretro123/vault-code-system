@@ -102,7 +102,7 @@ const MOCK_RECENT = [
   { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
 ];
 
-export function GameplanCard({ onCheckIn }: Props) {
+export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
