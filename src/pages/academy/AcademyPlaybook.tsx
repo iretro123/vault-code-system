@@ -324,7 +324,6 @@ const AcademyPlaybook = () => {
             {activeChapter ? (
               <PlaybookReader
                 chapter={activeChapter}
-                chapter={activeChapter}
                 progress={progress[activeChapter.id]}
                 pdfUrl={pdfUrl}
                 pdfLoading={pdfLoading}
