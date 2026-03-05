@@ -225,6 +225,18 @@ html {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   }
 
+  /* Premium elevated card — deeper base + inner radial glow */
+  .vault-premium-card {
+    background:
+      radial-gradient(ellipse 70% 40% at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 70%),
+      hsl(214, 24%, 11%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.125rem;
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
   /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .flow-dot-active,
