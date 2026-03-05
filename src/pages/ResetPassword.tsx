@@ -17,25 +17,15 @@ const ResetPassword = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Listen for the PASSWORD_RECOVERY event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setReady(true);
       }
     });
 
-    // Fallback: if the session was already established during redirect
-    // (the event fired before the component mounted), detect it from the URL hash
-    const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
-      setReady(true);
-    }
-
-    // Also check if there's already an active session (token was consumed on redirect)
+    // Fallback: session already exists (token consumed during redirect)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && hash.includes("type=recovery")) {
-        setReady(true);
-      }
+      if (session) setReady(true);
     });
 
     return () => subscription.unsubscribe();
