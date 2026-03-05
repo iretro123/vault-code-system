@@ -8,6 +8,7 @@ import { useAcademyRole } from "@/hooks/useAcademyRole";
 
 interface Props {
   onCheckIn: () => void;
+  onClaimRole?: () => void;
 }
 
 interface TaskItem {
