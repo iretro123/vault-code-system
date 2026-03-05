@@ -21,6 +21,8 @@ interface Props {
   onReachedEnd: () => void;
   isAdmin?: boolean;
   isMobile?: boolean;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 function PlaybookReaderInner({
