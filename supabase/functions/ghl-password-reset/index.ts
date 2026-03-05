@@ -126,12 +126,18 @@ Deno.serve(async (req) => {
       console.log("[GHL] SMS sent:", smsOk);
     }
 
-    // 5. Send Email
-    const emailBody = `Hi${displayName ? ` ${displayName}` : ""},\n\nYou requested a password reset for your Vault Academy account.\n\nClick here to reset your password:\n${resetLink}\n\nIf you didn't request this, you can safely ignore this message.\n\n— Vault Academy`;
+    // 5. Send Email (GHL requires "html" field for Email type, not "message")
+    const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+      <h2 style="margin:0 0 16px;">Vault Academy — Password Reset</h2>
+      <p>Hi${displayName ? ` ${displayName}` : ""},</p>
+      <p>You requested a password reset for your Vault Academy account.</p>
+      <p><a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Reset Password</a></p>
+      <p style="font-size:12px;color:#888;">If you didn't request this, you can safely ignore this email.</p>
+    </div>`;
     const { ok: emailOk } = await ghlFetch("/conversations/messages", GHL_API_KEY, {
       type: "Email",
       contactId,
-      message: emailBody,
+      html: emailHtml,
       subject: "Reset Your Vault Academy Password",
     });
     results.email = emailOk;
