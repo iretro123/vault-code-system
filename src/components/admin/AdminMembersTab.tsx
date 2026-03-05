@@ -472,7 +472,7 @@ export function AdminMembersTab() {
               if (!addEmail.trim() || !user?.id) return;
               setAddingUser(true);
               const stripeId = selectedStripeCustomer?.id || addStripeId.trim() || null;
-              const { error } = await supabase.from("allowed_signups" as any).insert({
+              const { error } = await supabase.from("allowed_signups" as any).upsert({
                 email: addEmail.trim().toLowerCase(),
                 stripe_customer_id: stripeId,
                 added_by: user.id,
