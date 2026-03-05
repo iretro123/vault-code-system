@@ -40,6 +40,7 @@ import AcademyQA from "./pages/academy/AcademyQA";
 import AcademyVaultOS from "./pages/academy/AcademyVaultOS";
 import Hub from "./pages/Hub";
 import ReferralRedirect from "./pages/ReferralRedirect";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
