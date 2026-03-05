@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
-const GHL_VERSION = "2021-07-28";
+const GHL_VERSION = "2021-04-15";
 
 async function ghlFetch(path: string, apiKey: string, body: Record<string, unknown>) {
   const res = await fetch(`${GHL_BASE}${path}`, {
