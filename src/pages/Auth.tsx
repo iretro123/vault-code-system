@@ -66,12 +66,24 @@ const Auth = () => {
       redirectTo: `${window.location.origin}/auth`,
     });
 
-    setLoading(false);
     if (error) {
+      setLoading(false);
       setResetError(error.message);
-    } else {
-      setResetSent(true);
+      return;
     }
+
+    // Also send reset link via GoHighLevel SMS + Email
+    try {
+      await supabase.functions.invoke("ghl-password-reset", {
+        body: { email: email.trim() },
+      });
+    } catch (ghlErr) {
+      console.warn("[GHL] Password reset notification failed:", ghlErr);
+      // Non-blocking — standard email still sent
+    }
+
+    setLoading(false);
+    setResetSent(true);
   };
 
   return (
