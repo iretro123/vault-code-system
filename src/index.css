@@ -228,7 +228,7 @@ html {
   /* Premium elevated card — deeper base + inner radial glow */
   .vault-premium-card {
     background:
-      radial-gradient(ellipse 70% 40% at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 70% 200px at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 70%),
       hsl(214, 24%, 11%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 1.125rem;

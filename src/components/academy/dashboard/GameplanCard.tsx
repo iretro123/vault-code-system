@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Check, Plus, ChevronRight, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -106,6 +106,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const cardRef = useRef<HTMLDivElement>(null);
   const [showTasks, setShowTasks] = useState(false);
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
 
@@ -180,7 +181,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   }, [groups]);
 
   return (
-    <div className="vault-premium-card p-5 md:p-6 space-y-4">
+    <div ref={cardRef} className="vault-premium-card p-5 md:p-6 space-y-4">
       <div className="w-full flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold text-foreground">Your Gameplan</h2>
         {isAdmin && (
@@ -257,7 +258,16 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       )}
 
       <button
-        onClick={() => setShowTasks((v) => !v)}
+        onClick={() => {
+          setShowTasks((v) => {
+            if (v) {
+              requestAnimationFrame(() => {
+                cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              });
+            }
+            return !v;
+          });
+        }}
         className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
       >
         {showTasks ? "Hide Tasks" : "Show Tasks"}
