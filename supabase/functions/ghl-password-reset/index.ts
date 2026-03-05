@@ -66,23 +66,8 @@ Deno.serve(async (req) => {
     const phone = profile?.phone_number || null;
     const displayName = profile?.display_name || "";
 
-    // 2. Send standard Supabase recovery email (this is the primary delivery)
+    // 2. Generate a single recovery link (one token only — no competing tokens)
     const redirectTo = origin ? `${origin}/reset-password` : "https://vault-code-system.lovable.app/reset-password";
-    const { error: recoverError } = await sb.auth.admin.generateLink({
-      type: "recovery",
-      email: normalizedEmail,
-      options: { redirectTo },
-    });
-
-    if (recoverError) {
-      console.error("[GHL] Failed to generate recovery link:", recoverError.message);
-      return new Response(JSON.stringify({ error: "Failed to generate reset link" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Also generate a separate link for GHL SMS/Email delivery
     const { data: linkData, error: linkError } = await sb.auth.admin.generateLink({
       type: "recovery",
       email: normalizedEmail,
@@ -90,9 +75,9 @@ Deno.serve(async (req) => {
     });
 
     if (linkError || !linkData?.properties?.action_link) {
-      console.warn("[GHL] Could not generate GHL link, standard email already sent:", linkError?.message);
-      // Non-fatal — standard email was already sent above
-      return new Response(JSON.stringify({ success: true, results: { sms: false, email: false, standard_email: true } }), {
+      console.error("[GHL] Failed to generate reset link:", linkError?.message);
+      return new Response(JSON.stringify({ error: "Failed to generate reset link" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
