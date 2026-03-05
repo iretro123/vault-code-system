@@ -43,7 +43,7 @@ export function useRoleEvolution() {
       .eq("user_id", user.id)
       .then(({ error }) => {
         if (!error) {
-          refetchProfile();
+          try { localStorage.removeItem("va_cache_profile"); } catch {}
           toast.success(`You've leveled up to ${LEVEL_LABELS[computed]}!`, { duration: 4000 });
         }
       });

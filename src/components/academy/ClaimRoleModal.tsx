@@ -78,7 +78,9 @@ export function ClaimRoleModal({ open, onOpenChange }: Props) {
     }
 
     setSuccess(true);
-    await Promise.all([refetchProfile(), refetchOnboarding()]);
+    // Invalidate profile cache so next auth check picks up the new role
+    try { localStorage.removeItem(PROFILE_CACHE_KEY); } catch {}
+    await refetchOnboarding();
 
     setTimeout(() => {
       onOpenChange(false);
