@@ -108,24 +108,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          .eq("user_id", userId)
          .maybeSingle();
  
-         if (profileData) {
-           setProfile(profileData as Profile);
-           try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch {}
-           
-           // Backfill timezone only if truly empty
-           const tz = (profileData as any).timezone;
-           if (!tz) {
-             try {
-               const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-               if (detected) {
-                 await supabase
-                   .from("profiles")
-                   .update({ timezone: detected })
-                   .eq("user_id", userId);
-               }
-             } catch {}
-           }
-         }
+          if (profileData) {
+            // Block revoked/banned users immediately
+            if (profileData.access_status === "revoked" || profileData.is_banned) {
+              console.warn("[Auth] User is revoked/banned — signing out");
+              await supabase.auth.signOut();
+              setSession(null);
+              setUser(null);
+              setProfile(null);
+              setUserRole(null);
+              try {
+                localStorage.removeItem(PROFILE_CACHE_KEY);
+                localStorage.removeItem(ROLE_CACHE_KEY);
+              } catch {}
+              setLoading(false);
+              return;
+            }
+
+            setProfile(profileData as Profile);
+            try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch {}
+            
+            // Backfill timezone only if truly empty
+            const tz = (profileData as any).timezone;
+            if (!tz) {
+              try {
+                const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (detected) {
+                  await supabase
+                    .from("profiles")
+                    .update({ timezone: detected })
+                    .eq("user_id", userId);
+                }
+              } catch {}
+            }
+          }
  
        // Fetch user role
        const { data: roleData } = await supabase
