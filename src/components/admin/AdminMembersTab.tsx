@@ -161,7 +161,7 @@ export function AdminMembersTab() {
     if (error) {
       toast.error("Failed to kick user");
     } else {
-      setUsers((prev) => prev.map((u) => u.user_id === userId ? { ...u, access_status: "revoked" } : u));
+      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
       toast.success(`${displayName || "User"} removed from Academy`);
       await logAuditAction("kick", userId, { display_name: displayName });
     }
