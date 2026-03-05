@@ -96,8 +96,8 @@ Deno.serve(async (req) => {
 
     // 3. allowed_signups — reset claimed so email can be re-added
     if (email) {
-      await sb.from("allowed_signups").update({ claimed: false }).eq("email", email);
-      console.log("[admin-delete-user] Reset allowed_signups for:", email);
+      await sb.from("allowed_signups").delete().eq("email", email);
+      console.log("[admin-delete-user] Deleted allowed_signups for:", email);
     }
 
     // 4. academy_user_roles
