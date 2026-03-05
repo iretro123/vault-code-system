@@ -160,6 +160,7 @@ const AcademyHome = () => {
       </div>
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
+      <ClaimRoleModal open={claimRoleOpen} onOpenChange={setClaimRoleOpen} />
     </AcademyLayout>
   );
 };
