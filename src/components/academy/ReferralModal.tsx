@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import handGiftImg from "@/assets/hand-gift.png";
 import vaultVLogo from "@/assets/vault-v-logo.png";
 import { Button } from "@/components/ui/button";
 import { Copy, Gift, Link, Send, UserPlus, Star, X, ArrowLeft } from "lucide-react";
@@ -33,15 +32,6 @@ function HeroBanner() {
           backgroundSize: "16px 16px",
         }}
       />
-      {/* Hand + Gift illustration — LEFT */}
-      <div className="absolute left-3 bottom-0 h-[140px] flex items-end">
-        <img
-          src={handGiftImg}
-          alt=""
-          className="h-[120px] w-auto object-contain drop-shadow-[0_0_40px_rgba(59,130,246,0.25)]"
-          style={{ mixBlendMode: "screen" }}
-        />
-      </div>
       {/* Vault "V" logo — FAR RIGHT */}
       <img
         src={vaultVLogo}
