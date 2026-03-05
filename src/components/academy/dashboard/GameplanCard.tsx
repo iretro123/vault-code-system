@@ -106,6 +106,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const cardRef = useRef<HTMLDivElement>(null);
   const [showTasks, setShowTasks] = useState(false);
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
 
