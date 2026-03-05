@@ -12,16 +12,6 @@ interface AcademyPermState {
   resolved: boolean;
 }
 
-const CACHE_KEY = "va_cache_academy_rbac";
-
-function readCache(): { roleName: AcademyRoleName; permissions: string[]; appRoles?: string[] } | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
 
 export function useAcademyPermissions() {
   const { user } = useAuth();
