@@ -64,6 +64,11 @@ export function AdminMembersTab() {
   const [addEmail, setAddEmail] = useState("");
   const [addStripeId, setAddStripeId] = useState("");
   const [addingUser, setAddingUser] = useState(false);
+  const [stripeQuery, setStripeQuery] = useState("");
+  const [stripeResults, setStripeResults] = useState<{ id: string; name: string | null; email: string | null }[]>([]);
+  const [stripeSearching, setStripeSearching] = useState(false);
+  const [selectedStripeCustomer, setSelectedStripeCustomer] = useState<{ id: string; name: string | null; email: string | null } | null>(null);
+  const stripeDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchData = useCallback(async () => {
     const [{ data: usersData }, { data: rolesData }, { data: userRolesData }] = await Promise.all([
