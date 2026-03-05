@@ -237,7 +237,7 @@ function PlaybookReaderInner({
       </div>
 
       {/* Nav controls */}
-      <div className="px-6 py-3 border-t border-white/[0.06] flex flex-col gap-2 shrink-0">
+      <div className="px-6 py-3 border-t border-white/[0.06] flex flex-col gap-2 shrink-0" style={isMobile ? { touchAction: "manipulation" } : undefined}>
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
