@@ -272,6 +272,9 @@ export function AdminMembersTab() {
             className="pl-9 h-9 text-sm"
           />
         </div>
+        <Button onClick={() => setAddUserOpen(true)} variant="default" size="sm" className="gap-1.5">
+          <UserPlus className="h-3.5 w-3.5" /> Add User
+        </Button>
         <Button onClick={handleExport} variant="outline" size="sm" className="gap-1.5">
           <Download className="h-3.5 w-3.5" /> Export CSV
         </Button>
