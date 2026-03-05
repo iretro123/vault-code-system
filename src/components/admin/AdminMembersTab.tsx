@@ -158,8 +158,15 @@ export function AdminMembersTab() {
     setConfirmAction(null);
 
     const { error } = await supabase.from("profiles").update({ access_status: "revoked" }).eq("user_id", userId);
-    // Also revoke student_access
-    await supabase.from("student_access").update({ status: "canceled" } as any).eq("user_id", userId);
+    // Resolve internal student ID then revoke student_access
+    const { data: student } = await supabase
+      .from("students")
+      .select("id")
+      .eq("auth_user_id", userId)
+      .maybeSingle();
+    if (student) {
+      await supabase.from("student_access").update({ status: "canceled" } as any).eq("user_id", student.id);
+    }
     if (error) {
       toast.error("Failed to kick user");
     } else {
@@ -180,8 +187,15 @@ export function AdminMembersTab() {
       access_status: "revoked",
       is_banned: true,
     } as any).eq("user_id", userId);
-    // Also revoke student_access
-    await supabase.from("student_access").update({ status: "canceled" } as any).eq("user_id", userId);
+    // Resolve internal student ID then revoke student_access
+    const { data: student } = await supabase
+      .from("students")
+      .select("id")
+      .eq("auth_user_id", userId)
+      .maybeSingle();
+    if (student) {
+      await supabase.from("student_access").update({ status: "canceled" } as any).eq("user_id", student.id);
+    }
 
     if (error) {
       toast.error("Failed to ban user");
