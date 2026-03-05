@@ -12,29 +12,15 @@ interface AcademyPermState {
   resolved: boolean;
 }
 
-const CACHE_KEY = "va_cache_academy_rbac";
-
-function readCache(): { roleName: AcademyRoleName; permissions: string[]; appRoles?: string[] } | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
 
 export function useAcademyPermissions() {
   const { user } = useAuth();
-  const cached = readCache();
-
-  const hadCache = Boolean(cached);
-
   const [state, setState] = useState<AcademyPermState>({
-    roleName: cached?.roleName ?? "Member",
-    permissions: new Set(cached?.permissions ?? []),
-    appRoles: new Set(cached?.appRoles ?? []),
-    loading: hadCache ? false : Boolean(user?.id),
-    resolved: hadCache ? true : !user?.id,
+    roleName: "Member",
+    permissions: new Set(),
+    appRoles: new Set(),
+    loading: Boolean(user?.id),
+    resolved: !user?.id,
   });
 
   useEffect(() => {
@@ -45,9 +31,7 @@ export function useAcademyPermissions() {
       return;
     }
 
-    if (!hadCache) {
-      setState((prev) => ({ ...prev, loading: true, resolved: false }));
-    }
+    setState((prev) => ({ ...prev, loading: true, resolved: false }));
 
     (async () => {
       const [userRoleRes, appRolesRes] = await Promise.all([
@@ -86,9 +70,6 @@ export function useAcademyPermissions() {
         resolved: true,
       });
 
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ roleName, permissions, appRoles: Array.from(appRoles) }));
-      } catch {}
     })();
 
     return () => {

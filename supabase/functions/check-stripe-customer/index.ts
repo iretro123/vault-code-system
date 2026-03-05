@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
         if (stripeData.data && stripeData.data.length > 0) {
           console.log("[check-membership] Found in Stripe:", normalizedEmail);
           return new Response(
-            JSON.stringify({ found: true, source: "stripe", status: "active" }),
+            JSON.stringify({ found: true, status: "active" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
               const status = isActive ? "active" : "canceled";
               console.log(`[check-membership] Whop match: ${normalizedEmail} → ${status} (valid=${m.valid}, status=${m.status})`);
               return new Response(
-                JSON.stringify({ found: true, source: "whop", status }),
+                JSON.stringify({ found: true, status }),
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }
               );
             }
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     // --- 3. Not found anywhere ---
     console.log("[check-membership] Not found:", normalizedEmail);
     return new Response(
-      JSON.stringify({ found: false, source: null }),
+      JSON.stringify({ found: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
