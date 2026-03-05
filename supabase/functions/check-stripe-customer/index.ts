@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
         if (stripeData.data && stripeData.data.length > 0) {
           console.log("[check-membership] Found in Stripe:", normalizedEmail);
           return new Response(
-            JSON.stringify({ found: true, source: "stripe", status: "active" }),
+            JSON.stringify({ found: true, status: "active" }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
