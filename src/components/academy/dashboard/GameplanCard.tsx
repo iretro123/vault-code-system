@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Check, Plus, ChevronRight, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -13,6 +14,7 @@ interface TaskItem {
   id: string;
   title: string;
   done: boolean;
+  route?: string;
 }
 
 interface TaskGroup {
@@ -28,12 +30,9 @@ function loadCompleted(): Record<string, string> {
   try {
     const raw = localStorage.getItem(LS_KEY);
     const map: Record<string, string> = raw ? JSON.parse(raw) : {};
-
-    // Check weekly reset
     const lastReset = localStorage.getItem(LS_RESET_KEY);
     const now = Date.now();
     if (!lastReset || now - new Date(lastReset).getTime() >= RESET_INTERVAL_MS) {
-      // Remove tw-* and consistency-* keys, keep foundation-*
       const filtered = Object.fromEntries(
         Object.entries(map).filter(([id]) => id.startsWith("foundation-"))
       );
@@ -57,6 +56,22 @@ function getDaysUntilReset(): number {
     return 7;
   }
 }
+
+const TASK_ROUTES: Record<string, string> = {
+  "foundation-claim-role": "/academy/start",
+  "foundation-introduce": "/academy/community",
+  "foundation-first-lesson": "/academy/learn",
+  "foundation-risk-rules": "/academy/settings",
+  "foundation-starting-balance": "/academy/settings",
+  "tw-lesson": "/academy/learn",
+  "tw-trades": "/academy/trade",
+  "tw-review": "/academy/progress",
+  "tw-live": "/academy/live",
+  "consistency-track-trades": "/academy/trade",
+  "consistency-eod-check": "/academy/journal",
+  "consistency-study": "/academy/learn",
+  "consistency-no-trade": "/academy/trade",
+};
 
 const FOUNDATION_TASKS: Omit<TaskItem, "done">[] = [
   { id: "foundation-claim-role", title: "Claim your role" },
@@ -89,19 +104,17 @@ const MOCK_RECENT = [
 export function GameplanCard({ onCheckIn }: Props) {
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
-  const [expanded, setExpanded] = useState(false);
+  const navigate = useNavigate();
   const [showTasks, setShowTasks] = useState(false);
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
 
-  // Persist to localStorage
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(completedMap));
   }, [completedMap]);
 
-  // Build groups with done derived from completedMap
   const groups = useMemo<TaskGroup[]>(() => {
     const hydrate = (items: Omit<TaskItem, "done">[]): TaskItem[] =>
-      items.map((t) => ({ ...t, done: !!completedMap[t.id] }));
+      items.map((t) => ({ ...t, done: !!completedMap[t.id], route: TASK_ROUTES[t.id] }));
 
     return [
       { title: "Foundation", tasks: hydrate(FOUNDATION_TASKS) },
@@ -110,13 +123,11 @@ export function GameplanCard({ onCheckIn }: Props) {
     ];
   }, [completedMap]);
 
-  // Weekly progress = This Week + Consistency only
   const weeklyTasks = groups.filter((g) => g.title !== "Foundation").flatMap((g) => g.tasks);
   const doneCount = weeklyTasks.filter((t) => t.done).length;
   const totalCount = weeklyTasks.length;
   const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
-  // All tasks lookup for recently completed
   const allTasksLookup = useMemo(() => {
     const map: Record<string, string> = {};
     [...FOUNDATION_TASKS, ...THIS_WEEK_TASKS, ...CONSISTENCY_TASKS].forEach((t) => {
@@ -125,7 +136,6 @@ export function GameplanCard({ onCheckIn }: Props) {
     return map;
   }, []);
 
-  // Recently completed from local state
   const recentItems = useMemo(() => {
     const entries = Object.entries(completedMap)
       .filter(([id]) => allTasksLookup[id])
@@ -151,6 +161,11 @@ export function GameplanCard({ onCheckIn }: Props) {
     });
   }, []);
 
+  const handleNavigate = useCallback((taskId: string) => {
+    const route = TASK_ROUTES[taskId];
+    if (route) navigate(route);
+  }, [navigate]);
+
   const nextTask = useMemo(() => {
     for (const group of groups) {
       const incomplete = group.tasks.find((t) => !t.done);
@@ -159,15 +174,10 @@ export function GameplanCard({ onCheckIn }: Props) {
     return null;
   }, [groups]);
 
-  const showAll = expanded || !isMobile;
-
   return (
     <div className="vault-glass-card p-5 md:p-6 space-y-4">
-      {/* Header */}
       <div className="w-full flex items-center justify-between">
-        <h2 className="text-lg md:text-xl font-bold text-foreground">
-          Your Gameplan
-        </h2>
+        <h2 className="text-lg md:text-xl font-bold text-foreground">Your Gameplan</h2>
         {isAdmin && (
           <span className="hidden md:inline-flex">
             <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
@@ -179,24 +189,35 @@ export function GameplanCard({ onCheckIn }: Props) {
 
       {/* Next Step */}
       {nextTask ? (
-        <div className="flex items-center gap-3 rounded-xl px-4 py-3"
-          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}>
+        <div
+          className="flex items-center gap-3 rounded-xl px-4 py-3"
+          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}
+        >
           <span className="text-[10px] uppercase tracking-widest font-semibold text-blue-400/70">Next Step</span>
-          <span className="flex-1 text-sm font-medium text-foreground/90 truncate">{nextTask.title}</span>
-          <button onClick={() => handleToggle(nextTask.id)}
-            className="text-xs font-semibold text-blue-400 hover:text-blue-300 shrink-0 transition-colors duration-100">
+          <button
+            onClick={() => handleNavigate(nextTask.id)}
+            className="flex-1 text-sm font-medium text-foreground/90 truncate text-left hover:text-primary transition-colors duration-100"
+          >
+            {nextTask.title}
+          </button>
+          <button
+            onClick={() => handleToggle(nextTask.id)}
+            className="text-xs font-semibold text-blue-400 hover:text-blue-300 shrink-0 transition-colors duration-100"
+          >
             Complete
           </button>
         </div>
       ) : (
-        <div className="flex items-center gap-2 rounded-xl px-4 py-3"
-          style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.1)" }}>
+        <div
+          className="flex items-center gap-2 rounded-xl px-4 py-3"
+          style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.1)" }}
+        >
           <Check className="h-4 w-4 text-emerald-400" />
           <span className="text-sm font-medium text-emerald-400/90">You're on track</span>
         </div>
       )}
 
-      {/* Progress — weekly only */}
+      {/* Progress */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-muted-foreground">This week</span>
@@ -208,14 +229,13 @@ export function GameplanCard({ onCheckIn }: Props) {
         </span>
       </div>
 
-      {/* Collapsible task groups */}
+      {/* Task groups */}
       {showTasks && (
         <>
           {groups.map((group) => (
-            <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} />
+            <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} onNavigate={handleNavigate} />
           ))}
 
-          {/* Recently Completed */}
           <div className="pt-2 border-t border-white/[0.06] space-y-2">
             <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
               Recently Completed
@@ -231,22 +251,27 @@ export function GameplanCard({ onCheckIn }: Props) {
         </>
       )}
 
-      {/* Toggle tasks visibility */}
       <button
         onClick={() => setShowTasks((v) => !v)}
         className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
       >
         {showTasks ? "Hide Tasks" : "Show Tasks"}
-        <ChevronDown
-          className={`h-3.5 w-3.5 transition-transform duration-150 ${showTasks ? "rotate-180" : ""}`}
-        />
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-150 ${showTasks ? "rotate-180" : ""}`} />
       </button>
     </div>
   );
 }
 
 /* ── Task Group Section ── */
-function TaskGroupSection({ group, onToggle }: { group: TaskGroup; onToggle: (id: string) => void }) {
+function TaskGroupSection({
+  group,
+  onToggle,
+  onNavigate,
+}: {
+  group: TaskGroup;
+  onToggle: (id: string) => void;
+  onNavigate: (id: string) => void;
+}) {
   return (
     <div className="space-y-2">
       <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
@@ -254,35 +279,49 @@ function TaskGroupSection({ group, onToggle }: { group: TaskGroup; onToggle: (id
       </p>
       <div className="space-y-1">
         {group.tasks.map((task) => (
-          <button
+          <div
             key={task.id}
-            onClick={() => onToggle(task.id)}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-colors duration-100 hover:bg-white/[0.06]"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 transition-colors duration-100 hover:bg-white/[0.06]"
             style={{
               background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <div
-              className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                task.done
-                  ? "bg-emerald-500/20 border-emerald-500/40"
-                  : "border-white/20"
-              }`}
+            {/* Checkbox area — toggles completion */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
+              className="h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors duration-100"
+              style={{
+                backgroundColor: task.done ? "rgba(16,185,129,0.2)" : "transparent",
+                borderColor: task.done ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.2)",
+              }}
+              aria-label={task.done ? `Uncheck ${task.title}` : `Mark ${task.title} done`}
             >
               {task.done && <Check className="h-3 w-3 text-emerald-400" />}
-            </div>
-            <span
-              className={`flex-1 text-sm font-medium ${
-                task.done ? "text-muted-foreground line-through" : "text-foreground/90"
-              }`}
-            >
-              {task.title}
-            </span>
-            {!task.done && (
+            </button>
+
+            {/* Title area — navigates if incomplete */}
+            {!task.done && task.route ? (
+              <button
+                onClick={() => onNavigate(task.id)}
+                className="flex-1 text-sm font-medium text-foreground/90 text-left hover:text-primary transition-colors duration-100 truncate"
+              >
+                {task.title}
+              </button>
+            ) : (
+              <span
+                className={`flex-1 text-sm font-medium truncate ${
+                  task.done ? "text-muted-foreground line-through" : "text-foreground/90"
+                }`}
+              >
+                {task.title}
+              </span>
+            )}
+
+            {!task.done && task.route && (
               <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
             )}
-          </button>
+          </div>
         ))}
       </div>
     </div>
