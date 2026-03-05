@@ -15,8 +15,10 @@ import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
 import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
 import { QuickAccessRow } from "@/components/academy/dashboard/QuickAccessRow";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
+import { ClaimRoleModal } from "@/components/academy/ClaimRoleModal";
 import { toast } from "sonner";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useRoleEvolution } from "@/hooks/useRoleEvolution";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
@@ -27,6 +29,7 @@ const AcademyHome = () => {
   const { hasAccess, refetch: refetchAccess } = useStudentAccess();
   const { logActivity } = useActivityLog();
   useLoginReminder();
+  useRoleEvolution();
 
   // Log dashboard view on mount
   useEffect(() => {
@@ -34,6 +37,7 @@ const AcademyHome = () => {
   }, []);
 
   const [checkInOpen, setCheckInOpen] = useState(false);
+  const [claimRoleOpen, setClaimRoleOpen] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const handledRef = useRef(false);
 
@@ -134,7 +138,7 @@ const AcademyHome = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 opacity-0 animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "forwards" }}>
           <div className="lg:col-span-3">
-            <GameplanCard onCheckIn={() => setCheckInOpen(true)} />
+            <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
           </div>
           <div className="lg:col-span-2">
             <MyTradesCard />
@@ -156,6 +160,7 @@ const AcademyHome = () => {
       </div>
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
+      <ClaimRoleModal open={claimRoleOpen} onOpenChange={setClaimRoleOpen} />
     </AcademyLayout>
   );
 };

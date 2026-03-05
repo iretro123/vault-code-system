@@ -8,6 +8,7 @@ import { useAcademyRole } from "@/hooks/useAcademyRole";
 
 interface Props {
   onCheckIn: () => void;
+  onClaimRole?: () => void;
 }
 
 interface TaskItem {
@@ -101,7 +102,7 @@ const MOCK_RECENT = [
   { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
 ];
 
-export function GameplanCard({ onCheckIn }: Props) {
+export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -162,9 +163,13 @@ export function GameplanCard({ onCheckIn }: Props) {
   }, []);
 
   const handleNavigate = useCallback((taskId: string) => {
+    if (taskId === "foundation-claim-role" && onClaimRole) {
+      onClaimRole();
+      return;
+    }
     const route = TASK_ROUTES[taskId];
     if (route) navigate(route);
-  }, [navigate]);
+  }, [navigate, onClaimRole]);
 
   const nextTask = useMemo(() => {
     for (const group of groups) {
