@@ -94,7 +94,115 @@ async function resolveStatus(userId: string): Promise<string> {
   return "Your trading discipline journey continues";
 }
 
-export function HeroHeader({ firstName, onCheckIn }: Props) {
+const PARTICLE_COUNT = 30;
+const CONNECT_DIST = 80;
+
+function ParticleCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    let opacity = 0;
+    const startTime = performance.now();
+
+    const resize = () => {
+      const rect = canvas.parentElement?.getBoundingClientRect();
+      if (!rect) return;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+
+    const w = () => (canvas.parentElement?.getBoundingClientRect().width ?? 300);
+    const h = () => (canvas.parentElement?.getBoundingClientRect().height ?? 150);
+
+    const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+      x: Math.random() * w(),
+      y: Math.random() * h(),
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.2 + 0.8,
+    }));
+
+    const draw = (now: number) => {
+      const cw = w(), ch = h();
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Entrance fade
+      opacity = Math.min(1, (now - startTime) / 600);
+
+      if (!prefersReduced) {
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0 || p.x > cw) p.vx *= -1;
+          if (p.y < 0 || p.y > ch) p.vy *= -1;
+        });
+      }
+
+      // Lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECT_DIST) {
+            const lineAlpha = (1 - dist / CONNECT_DIST) * 0.15 * opacity;
+            ctx.strokeStyle = `rgba(255,255,255,${lineAlpha})`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Dots
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${0.25 * opacity})`;
+        ctx.fill();
+      });
+
+      if (!prefersReduced) {
+        animId = requestAnimationFrame(draw);
+      }
+    };
+
+    animId = requestAnimationFrame(draw);
+
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none z-0"
+      aria-hidden="true"
+    />
+  );
+}
+
+
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasAccess, status, isAdminBypass } = useStudentAccess();
