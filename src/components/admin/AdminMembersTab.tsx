@@ -575,15 +575,3 @@ export function AdminMembersTab() {
     </div>
   );
 }
-            <DialogFooter>
-              <Button type="submit" disabled={addingUser || !addEmail.trim()} className="gap-1.5">
-                {addingUser ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
-                Add User
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
