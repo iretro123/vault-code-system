@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email } = await req.json();
+    const { email, origin } = await req.json();
     if (!email) {
       return new Response(JSON.stringify({ error: "email required" }), {
         status: 400,
@@ -66,13 +66,12 @@ Deno.serve(async (req) => {
     const phone = profile?.phone_number || null;
     const displayName = profile?.display_name || "";
 
-    // 2. Generate password reset link via admin API
+    // 2. Generate a single recovery link (one token only — no competing tokens)
+    const redirectTo = origin ? `${origin}/reset-password` : "https://vault-code-system.lovable.app/reset-password";
     const { data: linkData, error: linkError } = await sb.auth.admin.generateLink({
       type: "recovery",
       email: normalizedEmail,
-      options: {
-        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", "")}/reset-password`,
-      },
+      options: { redirectTo },
     });
 
     if (linkError || !linkData?.properties?.action_link) {
