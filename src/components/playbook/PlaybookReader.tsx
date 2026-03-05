@@ -134,7 +134,7 @@ function PlaybookReaderInner({
   return (
     <div className="vault-glass-card overflow-hidden flex flex-col h-full">
       {/* Chapter header */}
-      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between" style={isMobile ? { touchAction: "manipulation" } : undefined}>
         <div>
           <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-bold mb-0.5">
             {isLocked ? "Preview Mode" : "Reading"}
@@ -208,7 +208,7 @@ function PlaybookReaderInner({
         )}
 
         {/* Scrollable + zoomable content */}
-        <div className="overflow-auto h-full flex items-start justify-center bg-black/20 py-4">
+        <div className="overflow-auto h-full flex items-start justify-center bg-black/20 py-4" style={isMobile ? { touchAction: "pinch-zoom", overscrollBehavior: "contain" } : undefined}>
           <div
             style={isMobile ? undefined : {
               transform: `scale(${zoom / 100})`,
@@ -237,7 +237,7 @@ function PlaybookReaderInner({
       </div>
 
       {/* Nav controls */}
-      <div className="px-6 py-3 border-t border-white/[0.06] flex flex-col gap-2 shrink-0">
+      <div className="px-6 py-3 border-t border-white/[0.06] flex flex-col gap-2 shrink-0" style={isMobile ? { touchAction: "manipulation" } : undefined}>
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
