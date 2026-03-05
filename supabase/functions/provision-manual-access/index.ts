@@ -26,22 +26,30 @@ Deno.serve(async (req) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Check if this email was in allowed_signups
+    // 1. Check if this email is in allowed_signups and NOT yet claimed
     const { data: whitelist } = await sb
       .from("allowed_signups")
       .select("id, stripe_customer_id")
       .eq("email", normalizedEmail)
-      .eq("claimed", true)
+      .eq("claimed", false)
       .maybeSingle();
 
     if (!whitelist) {
-      console.log("[provision] No claimed whitelist entry for:", normalizedEmail);
+      console.log("[provision] No unclaimed whitelist entry for:", normalizedEmail);
       return new Response(JSON.stringify({ provisioned: false, reason: "not_whitelisted" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 2. Check if students row already exists
+    // 2. Mark whitelist entry as claimed (service role bypasses RLS)
+    await sb
+      .from("allowed_signups")
+      .update({ claimed: true })
+      .eq("id", whitelist.id);
+
+    console.log("[provision] Marked whitelist entry as claimed:", whitelist.id);
+
+    // 3. Check if students row already exists
     const { data: existingStudent } = await sb
       .from("students")
       .select("id")
@@ -55,7 +63,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Create students row
+    // 4. Create students row
     const { data: newStudent, error: studentErr } = await sb
       .from("students")
       .insert({
@@ -74,7 +82,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4. Create student_access row
+    // 5. Create student_access row
     const { error: accessErr } = await sb
       .from("student_access")
       .insert({
@@ -91,6 +99,17 @@ Deno.serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // 6. Update profiles.access_status to 'active' (service role bypasses RLS)
+    const { error: profileErr } = await sb
+      .from("profiles")
+      .update({ access_status: "active" })
+      .eq("user_id", auth_user_id);
+
+    if (profileErr) {
+      console.warn("[provision] Failed to update profiles.access_status:", profileErr.message);
+      // Non-fatal — student_access is the source of truth
     }
 
     console.log("[provision] Successfully provisioned access for:", normalizedEmail, "student_id:", newStudent.id);

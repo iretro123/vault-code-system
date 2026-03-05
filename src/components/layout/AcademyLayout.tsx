@@ -28,7 +28,7 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
   const lastPageRef = useRef("");
   useSmartNotifications();
 
-  const showBlockModal = !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled");
+  const showBlockModal = !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
 
   // Page view logging
   useEffect(() => {

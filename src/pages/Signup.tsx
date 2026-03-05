@@ -123,32 +123,29 @@ const Signup = () => {
         }
       }
 
-      // Mark allowed_signups whitelist entry as claimed
-      try {
-        await supabase
-          .from("allowed_signups" as any)
-          .update({ claimed: true } as any)
-          .eq("email", email.trim().toLowerCase());
-      } catch (e) {
-        console.error("[Signup] allowed_signups claim error:", e);
-      }
-
-      // Auto-provision access for whitelisted users
+      // Auto-provision access for whitelisted users (also marks claimed=true server-side)
       if (newUserId) {
         try {
-          const SUPABASE_PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-          await fetch(
-            `https://${SUPABASE_PROJECT}.supabase.co/functions/v1/provision-manual-access`,
+          const provRes = await fetch(
+            `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-manual-access`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email: email.trim().toLowerCase(), auth_user_id: newUserId }),
             }
           );
+          const provData = await provRes.json();
+          if (provData.error) {
+            console.error("[Signup] provision error:", provData.error);
+            toast({ title: "Access setup issue", description: "Your account was created but access provisioning failed. Please contact support.", variant: "destructive" });
+          }
         } catch (e) {
           console.error("[Signup] provision-manual-access error:", e);
         }
       }
+
+      // Clear stale access cache so fresh state is fetched
+      localStorage.removeItem("va_cache_student_access");
 
       navigate("/hub");
     }
