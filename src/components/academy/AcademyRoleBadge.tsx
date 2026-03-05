@@ -11,8 +11,8 @@ const ROLE_BADGE_CONFIG: Record<string, {
   CEO: {
     label: "CEO",
     icon: Crown,
-    cls: "bg-purple-500/20 text-purple-600 border-purple-500/30",
-    iconCls: "text-yellow-500",
+    cls: "bg-purple-600 text-white border-purple-700",
+    iconCls: "text-yellow-400",
   },
   Admin: {
     label: "Admin",
