@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,11 +47,35 @@ Deno.serve(async (req) => {
       console.warn("[check-membership] STRIPE_SECRET_KEY not set, skipping Stripe check");
     }
 
-    // --- 2. Fallback: Check Whop (paginated, server-side email match) ---
+    // --- 2. Check allowed_signups whitelist ---
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data: allowedRow } = await sb
+        .from("allowed_signups")
+        .select("id, claimed, stripe_customer_id")
+        .eq("email", normalizedEmail)
+        .eq("claimed", false)
+        .maybeSingle();
+
+      if (allowedRow) {
+        console.log("[check-membership] Found in allowed_signups whitelist:", normalizedEmail);
+        return new Response(
+          JSON.stringify({ found: true, status: "active" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (e) {
+      console.error("[check-membership] allowed_signups check error:", e);
+    }
+
+    // --- 3. Fallback: Check Whop (paginated, server-side email match) ---
     const whopKey = Deno.env.get("WHOP_API_KEY");
     if (whopKey) {
       try {
-        const MAX_PAGES = 10; // 50 per page × 10 = 500 max
+        const MAX_PAGES = 10;
         let page = 1;
         let hasMore = true;
 
@@ -73,13 +98,11 @@ Deno.serve(async (req) => {
             break;
           }
 
-          // Server-side email match
           for (const m of memberships) {
             const mEmail = (m.email ?? "").trim().toLowerCase();
             const mUserEmail = (m.user?.email ?? "").trim().toLowerCase();
 
             if (mEmail === normalizedEmail || mUserEmail === normalizedEmail) {
-              // Found a match — check status
               const isActive = m.valid === true && ["active", "trialing", "completed"].includes(m.status);
               const status = isActive ? "active" : "canceled";
               console.log(`[check-membership] Whop match: ${normalizedEmail} → ${status} (valid=${m.valid}, status=${m.status})`);
@@ -90,7 +113,6 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Check if there are more pages
           const pagination = whopData.pagination;
           if (pagination && pagination.current_page < pagination.last_page) {
             page++;
@@ -109,7 +131,7 @@ Deno.serve(async (req) => {
       console.warn("[check-membership] WHOP_API_KEY not set, skipping Whop check");
     }
 
-    // --- 3. Not found anywhere ---
+    // --- 4. Not found anywhere ---
     console.log("[check-membership] Not found:", normalizedEmail);
     return new Response(
       JSON.stringify({ found: false }),
