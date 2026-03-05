@@ -1070,7 +1070,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                   : "bg-white border border-[hsl(220,10%,83%)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                             )}>
                               <p className={cn(
-                                "text-[14px] leading-[1.6] whitespace-pre-line",
+                                "text-[13px] leading-[1.6] whitespace-pre-line",
                                 isOwn && !isCeoOrAdmin ? "text-white" : "text-[hsl(220,15%,15%)]"
                               )}>
                                 {renderPlainBody(msg.body, isOwn && !isCeoOrAdmin)}
