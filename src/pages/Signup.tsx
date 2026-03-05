@@ -133,6 +133,23 @@ const Signup = () => {
         console.error("[Signup] allowed_signups claim error:", e);
       }
 
+      // Auto-provision access for whitelisted users
+      if (newUserId) {
+        try {
+          const SUPABASE_PROJECT = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          await fetch(
+            `https://${SUPABASE_PROJECT}.supabase.co/functions/v1/provision-manual-access`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: email.trim().toLowerCase(), auth_user_id: newUserId }),
+            }
+          );
+        } catch (e) {
+          console.error("[Signup] provision-manual-access error:", e);
+        }
+      }
+
       navigate("/hub");
     }
 

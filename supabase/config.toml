@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.search-stripe-customers]
 verify_jwt = false
+
+[functions.provision-manual-access]
+verify_jwt = false
