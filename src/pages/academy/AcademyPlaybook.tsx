@@ -170,7 +170,7 @@ const AcademyPlaybook = () => {
   if (isMobile && mobileReaderOpen && activeChapter) {
     return (
       <AcademyLayout>
-        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        <div className={`fixed inset-0 bg-background flex flex-col ${mobileFullscreen ? "z-[60]" : "z-50 pb-16"}`}>
           {/* Mobile reader header — hidden in fullscreen */}
           {!mobileFullscreen && (
             <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
