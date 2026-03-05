@@ -937,16 +937,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   )}
                 >
                   {/* Avatar column — compact on grouped follow-ups */}
-                  <div className={cn("w-11 shrink-0", startsNewGroup ? "h-11" : "h-5")}>
+                  <div className={cn("w-9 shrink-0", startsNewGroup ? "h-9" : "h-5")}>
                     {showHdr ? (
                       msgProfile ? (
                         <ChatAvatar
                           avatarUrl={msgProfile.avatar_url}
                           userName={msg.user_name}
-                          size="h-11 w-11"
+                          size="h-9 w-9"
                         />
                       ) : (
-                        <div className="w-11 h-11 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
+                        <div className="w-9 h-9 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
                       )
                     ) : (
                       <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-[hsl(220,10%,60%)] select-none">
