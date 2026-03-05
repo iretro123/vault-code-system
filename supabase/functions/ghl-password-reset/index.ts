@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email } = await req.json();
+    const { email, origin } = await req.json();
     if (!email) {
       return new Response(JSON.stringify({ error: "email required" }), {
         status: 400,
