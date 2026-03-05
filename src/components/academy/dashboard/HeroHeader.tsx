@@ -261,7 +261,7 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
           {statusLine === null ? (
             <div className="h-4 w-48 bg-muted/40 rounded animate-pulse mt-1" />
           ) : (
-            <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-lg">
+            <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-lg animate-fade-in">
               {statusLine}
             </p>
           )}
