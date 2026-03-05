@@ -6,6 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { toast } from "sonner";
 
+const PROFILE_CACHE_KEY = "va_cache_profile";
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
