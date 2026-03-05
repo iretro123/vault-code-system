@@ -6,11 +6,13 @@ const ROLE_BADGE_CONFIG: Record<string, {
   label: string;
   icon: React.ElementType;
   cls: string;
+  iconCls?: string;
 }> = {
   CEO: {
     label: "CEO",
     icon: Crown,
-    cls: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    cls: "bg-purple-500/20 text-purple-600 border-purple-500/30",
+    iconCls: "text-yellow-500",
   },
   Admin: {
     label: "Admin",
@@ -43,7 +45,7 @@ export function AcademyRoleBadge({ roleName, className }: AcademyRoleBadgeProps)
         className
       )}
     >
-      <Icon className="h-2.5 w-2.5" />
+      <Icon className={cn("h-2.5 w-2.5", cfg.iconCls)} />
       {cfg.label}
     </span>
   );
