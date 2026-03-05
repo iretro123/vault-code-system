@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { ChevronLeft, ChevronRight, BookOpen, Loader2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, Loader2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PlaybookChapter, ChapterProgress } from "@/hooks/usePlaybookProgress";
