@@ -15,8 +15,10 @@ import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
 import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
 import { QuickAccessRow } from "@/components/academy/dashboard/QuickAccessRow";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
+import { ClaimRoleModal } from "@/components/academy/ClaimRoleModal";
 import { toast } from "sonner";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useRoleEvolution } from "@/hooks/useRoleEvolution";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
