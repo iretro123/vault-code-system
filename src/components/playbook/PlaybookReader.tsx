@@ -208,7 +208,7 @@ function PlaybookReaderInner({
         )}
 
         {/* Scrollable + zoomable content */}
-        <div className="overflow-auto h-full flex items-start justify-center bg-black/20 py-4">
+        <div className="overflow-auto h-full flex items-start justify-center bg-black/20 py-4" style={isMobile ? { touchAction: "pinch-zoom", overscrollBehavior: "contain" } : undefined}>
           <div
             style={isMobile ? undefined : {
               transform: `scale(${zoom / 100})`,
