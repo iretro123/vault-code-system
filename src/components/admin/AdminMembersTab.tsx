@@ -157,22 +157,16 @@ export function AdminMembersTab() {
     setUpdatingUser(userId);
     setConfirmAction(null);
 
-    const { error } = await supabase.from("profiles").update({ access_status: "revoked" }).eq("user_id", userId);
-    // Resolve internal student ID then revoke student_access
-    const { data: student } = await supabase
-      .from("students")
-      .select("id")
-      .eq("auth_user_id", userId)
-      .maybeSingle();
-    if (student) {
-      await supabase.from("student_access").update({ status: "canceled" } as any).eq("user_id", student.id);
-    }
-    if (error) {
-      toast.error("Failed to kick user");
+    const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+      body: { target_user_id: userId },
+    });
+
+    if (error || data?.error) {
+      toast.error("Failed to delete user: " + (data?.error || error?.message));
     } else {
       setUsers((prev) => prev.filter((u) => u.user_id !== userId));
-      toast.success(`${displayName || "User"} removed from Academy`);
-      await logAuditAction("kick", userId, { display_name: displayName });
+      toast.success(`${displayName || "User"} permanently deleted`);
+      await logAuditAction("hard_delete", userId, { display_name: displayName });
     }
     setUpdatingUser(null);
   };
@@ -282,9 +276,9 @@ export function AdminMembersTab() {
 
   const confirmMessages: Record<string, { title: string; description: string; actionLabel: string }> = {
     kick: {
-      title: "Remove from Academy",
-      description: `This will revoke access for "${confirmAction?.displayName || "this user"}". They won't be able to access Academy routes until reinstated.`,
-      actionLabel: "Remove",
+      title: "Permanently Delete User",
+      description: `This will permanently delete all data for "${confirmAction?.displayName || "this user"}" — profile, access, progress, and whitelist claim. They can be re-added afterwards. This cannot be undone.`,
+      actionLabel: "Delete Permanently",
     },
     ban: {
       title: "Ban User",
