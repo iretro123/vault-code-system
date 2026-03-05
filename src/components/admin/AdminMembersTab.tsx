@@ -60,6 +60,10 @@ export function AdminMembersTab() {
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
+  const [addStripeId, setAddStripeId] = useState("");
+  const [addingUser, setAddingUser] = useState(false);
 
   const fetchData = useCallback(async () => {
     const [{ data: usersData }, { data: rolesData }, { data: userRolesData }] = await Promise.all([
