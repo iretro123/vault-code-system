@@ -39,6 +39,7 @@ const AcademyPlaybook = () => {
   const [reachedEnd, setReachedEnd] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [mobileReaderOpen, setMobileReaderOpen] = useState(false);
+  const [mobileFullscreen, setMobileFullscreen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // ESC to exit expanded mode
@@ -170,20 +171,22 @@ const AcademyPlaybook = () => {
     return (
       <AcademyLayout>
         <div className="fixed inset-0 z-50 bg-background flex flex-col">
-          {/* Mobile reader header */}
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileReaderOpen(false)}
-              className="gap-1.5 text-muted-foreground"
-            >
-              <ChevronLeft className="h-4 w-4" /> Chapters
-            </Button>
-            <span className="text-xs font-medium text-muted-foreground truncate max-w-[50%]">
-              {activeChapter.title}
-            </span>
-          </div>
+          {/* Mobile reader header — hidden in fullscreen */}
+          {!mobileFullscreen && (
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileReaderOpen(false)}
+                className="gap-1.5 text-muted-foreground"
+              >
+                <ChevronLeft className="h-4 w-4" /> Chapters
+              </Button>
+              <span className="text-xs font-medium text-muted-foreground truncate max-w-[50%]">
+                {activeChapter.title}
+              </span>
+            </div>
+          )}
 
           {/* Full-screen reader */}
           <div className="flex-1 min-h-0">
@@ -199,21 +202,8 @@ const AcademyPlaybook = () => {
               onReachedEnd={handleReachedEnd}
               isAdmin={isAdmin}
               isMobile
-            />
-          </div>
-
-          {/* Mobile: progress/checkpoint below reader */}
-          <div className="shrink-0 border-t border-border overflow-y-auto max-h-[30vh] p-4">
-            <PlaybookRightPanel
-              chapter={activeChapter}
-              chProgress={progress[activeChapter.id]}
-              chapters={chapters}
-              progress={progress}
-              onUpdateProgress={updateProgress}
-              isLocked={isLocked}
-              unlockedIndex={unlockedIndex}
-              reachedEnd={reachedEnd}
-              onGoToUnlocked={handleGoToUnlocked}
+              isFullscreen={mobileFullscreen}
+              onToggleFullscreen={() => setMobileFullscreen((v) => !v)}
             />
           </div>
         </div>

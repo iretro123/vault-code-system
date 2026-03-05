@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
-import { ChevronLeft, ChevronRight, BookOpen, Loader2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, Loader2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PlaybookChapter, ChapterProgress } from "@/hooks/usePlaybookProgress";
@@ -21,6 +21,8 @@ interface Props {
   onReachedEnd: () => void;
   isAdmin?: boolean;
   isMobile?: boolean;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 function PlaybookReaderInner({
@@ -34,6 +36,8 @@ function PlaybookReaderInner({
   onReachedEnd,
   isAdmin,
   isMobile,
+  isFullscreen,
+  onToggleFullscreen,
 }: Props) {
   const totalPages = chapter.pdf_page_end - chapter.pdf_page_start + 1;
 
@@ -137,11 +141,22 @@ function PlaybookReaderInner({
           </p>
           <h2 className="text-lg font-bold text-foreground leading-tight">{chapter.title}</h2>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-semibold text-foreground/80">
-            Page {localPage} / {totalPages}
-          </p>
-          <p className="text-[10px] text-white/25">~{chapter.minutes_estimate} min</p>
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <p className="text-sm font-semibold text-foreground/80">
+              Page {localPage} / {totalPages}
+            </p>
+            <p className="text-[10px] text-white/25">~{chapter.minutes_estimate} min</p>
+          </div>
+          {onToggleFullscreen && (
+            <button
+              onClick={onToggleFullscreen}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              className="h-8 w-8 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+          )}
         </div>
       </div>
 
