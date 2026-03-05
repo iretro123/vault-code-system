@@ -70,9 +70,6 @@ export function useAcademyPermissions() {
         resolved: true,
       });
 
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ roleName, permissions, appRoles: Array.from(appRoles) }));
-      } catch {}
     })();
 
     return () => {
