@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
-const GHL_VERSION = "2021-07-28";
+const GHL_VERSION = "2021-04-15";
 
 async function ghlFetch(path: string, apiKey: string, body: Record<string, unknown>) {
   const res = await fetch(`${GHL_BASE}${path}`, {
@@ -126,14 +126,27 @@ Deno.serve(async (req) => {
       console.log("[GHL] SMS sent:", smsOk);
     }
 
-    // 5. Send Email
-    const emailBody = `Hi${displayName ? ` ${displayName}` : ""},\n\nYou requested a password reset for your Vault Academy account.\n\nClick here to reset your password:\n${resetLink}\n\nIf you didn't request this, you can safely ignore this message.\n\n— Vault Academy`;
-    const { ok: emailOk } = await ghlFetch("/conversations/messages", GHL_API_KEY, {
+    // 5. Send Email (GHL requires "html" field for Email type, not "message")
+    const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+      <h2 style="margin:0 0 16px;">Vault Academy — Password Reset</h2>
+      <p>Hi${displayName ? ` ${displayName}` : ""},</p>
+      <p>You requested a password reset for your Vault Academy account.</p>
+      <p><a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Reset Password</a></p>
+      <p style="font-size:12px;color:#888;">If you didn't request this, you can safely ignore this email.</p>
+    </div>`;
+    const emailPayload: Record<string, unknown> = {
       type: "Email",
       contactId,
-      message: emailBody,
+      html: emailHtml,
+      message: emailHtml,
       subject: "Reset Your Vault Academy Password",
-    });
+    };
+    // Add emailFrom if configured
+    const GHL_EMAIL_FROM = Deno.env.get("GHL_EMAIL_FROM");
+    if (GHL_EMAIL_FROM) {
+      emailPayload.emailFrom = GHL_EMAIL_FROM;
+    }
+    const { ok: emailOk } = await ghlFetch("/conversations/messages", GHL_API_KEY, emailPayload);
     results.email = emailOk;
     console.log("[GHL] Email sent:", emailOk);
 
