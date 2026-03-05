@@ -39,6 +39,7 @@ import AcademyPlaybook from "./pages/academy/AcademyPlaybook";
 import AcademyQA from "./pages/academy/AcademyQA";
 import AcademyVaultOS from "./pages/academy/AcademyVaultOS";
 import Hub from "./pages/Hub";
+import ReferralRedirect from "./pages/ReferralRedirect";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/settings" element={<VaultOSGate><Settings /></VaultOSGate>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/ref/:userId" element={<ReferralRedirect />} />
             <Route path="/academy" element={<Navigate to="/academy/home" replace />} />
             <Route path="/academy/home" element={<AcademyHome />} />
             <Route path="/academy/start" element={<AcademyStart />} />

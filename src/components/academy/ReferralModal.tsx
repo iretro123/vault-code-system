@@ -87,7 +87,7 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const { referralStats } = useAcademyData();
   const [showGuidelines, setShowGuidelines] = useState(false);
-  const refLink = `${window.location.origin}/auth?ref=${user?.id || ""}`;
+  const refLink = `${window.location.origin}/ref/${user?.id || ""}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(refLink);
