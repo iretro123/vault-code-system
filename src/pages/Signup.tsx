@@ -123,6 +123,16 @@ const Signup = () => {
         }
       }
 
+      // Mark allowed_signups whitelist entry as claimed
+      try {
+        await supabase
+          .from("allowed_signups" as any)
+          .update({ claimed: true } as any)
+          .eq("email", email.trim().toLowerCase());
+      } catch (e) {
+        console.error("[Signup] allowed_signups claim error:", e);
+      }
+
       navigate("/hub");
     }
 

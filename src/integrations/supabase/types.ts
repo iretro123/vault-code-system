@@ -350,6 +350,33 @@ export type Database = {
           },
         ]
       }
+      allowed_signups: {
+        Row: {
+          added_by: string
+          claimed: boolean
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+        }
+        Insert: {
+          added_by: string
+          claimed?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+        }
+        Update: {
+          added_by?: string
+          claimed?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string

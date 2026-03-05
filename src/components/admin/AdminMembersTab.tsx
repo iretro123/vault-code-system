@@ -10,9 +10,13 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, Loader2, Search, UserX, Ban, RotateCcw } from "lucide-react";
+import { Download, Loader2, Search, UserX, Ban, RotateCcw, UserPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDateWithYear, formatDateTimeFull } from "@/lib/formatTime";
@@ -56,6 +60,10 @@ export function AdminMembersTab() {
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState("");
+  const [addStripeId, setAddStripeId] = useState("");
+  const [addingUser, setAddingUser] = useState(false);
 
   const fetchData = useCallback(async () => {
     const [{ data: usersData }, { data: rolesData }, { data: userRolesData }] = await Promise.all([
@@ -264,6 +272,9 @@ export function AdminMembersTab() {
             className="pl-9 h-9 text-sm"
           />
         </div>
+        <Button onClick={() => setAddUserOpen(true)} variant="default" size="sm" className="gap-1.5">
+          <UserPlus className="h-3.5 w-3.5" /> Add User
+        </Button>
         <Button onClick={handleExport} variant="outline" size="sm" className="gap-1.5">
           <Download className="h-3.5 w-3.5" /> Export CSV
         </Button>
@@ -403,6 +414,79 @@ export function AdminMembersTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add User to Whitelist</DialogTitle>
+            <DialogDescription>
+              Pre-authorize an email so they can create an account — even without an existing membership.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!addEmail.trim() || !user?.id) return;
+              setAddingUser(true);
+              const { error } = await supabase.from("allowed_signups" as any).insert({
+                email: addEmail.trim().toLowerCase(),
+                stripe_customer_id: addStripeId.trim() || null,
+                added_by: user.id,
+              } as any);
+              if (error) {
+                if (error.code === "23505") {
+                  toast.error("This email is already on the whitelist.");
+                } else {
+                  toast.error("Failed to add user: " + error.message);
+                }
+              } else {
+                toast.success(`${addEmail.trim()} added to whitelist.`);
+                await logAuditAction("whitelist_add", user.id, { email: addEmail.trim().toLowerCase(), stripe_customer_id: addStripeId.trim() || null });
+                setAddEmail("");
+                setAddStripeId("");
+                setAddUserOpen(false);
+              }
+              setAddingUser(false);
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <Label htmlFor="add-email" className="text-sm">Email <span className="text-destructive">*</span></Label>
+              <Input
+                id="add-email"
+                type="email"
+                placeholder="user@example.com"
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                required
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="add-stripe" className="text-sm">
+                Stripe Customer ID <span className="text-muted-foreground/50">(optional)</span>
+              </Label>
+              <Input
+                id="add-stripe"
+                placeholder="cus_xxxxxxxxxx"
+                value={addStripeId}
+                onChange={(e) => setAddStripeId(e.target.value)}
+                className="mt-1.5"
+              />
+              <p className="text-[10px] text-muted-foreground/60 mt-1">
+                Paste from Stripe dashboard to link billing for this user.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={addingUser || !addEmail.trim()} className="gap-1.5">
+                {addingUser ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                Add User
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
