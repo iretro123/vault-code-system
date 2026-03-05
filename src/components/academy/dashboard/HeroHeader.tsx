@@ -34,7 +34,7 @@ function getGreeting(): string {
 }
 
 function useStatusLine(userId: string | undefined) {
-  const [message, setMessage] = useState<string>("Your trading discipline journey continues");
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -258,9 +258,13 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
           </h1>
 
           {/* Dynamic status line */}
-          <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-lg">
-            {statusLine}
-          </p>
+          {statusLine === null ? (
+            <div className="h-4 w-48 bg-muted/40 rounded animate-pulse mt-1" />
+          ) : (
+            <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-lg">
+              {statusLine}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
