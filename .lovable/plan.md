@@ -1,44 +1,56 @@
 
 
-## Trade Floor Chat QA Report
+## Playbook Loading Speed: Root Cause Analysis and Fix Plan
 
-### What I Tested
-1. **Page load** -- Chat loaded with skeleton placeholders, then populated. No blank flash.
-2. **Sending a message** -- Typed and sent "Test message for QA check." Optimistic insert appeared instantly, then confirmed by realtime.
-3. **CEO badge** -- Purple solid fill with gold crown icon displays correctly. No "Beginner" label on CEO messages.
-4. **Member badge** -- m0348418 correctly shows "Beginner" badge.
-5. **Context menu** -- Right-click on message shows Copy, Reply, Edit, Delete, Pin message options. All render correctly.
-6. **Delete flow** -- Confirmation dialog appeared, message soft-deleted with "This message was deleted." placeholder and toast.
-7. **Image attachments** -- Chart screenshot renders inline at proper size.
-8. **Quote replies** -- The `> **@m0348418:** hey` block renders as a styled quote.
+### Root Cause (Not an internet issue -- it's an architecture bug)
 
-### Results: No Bugs Found
-All core chat features work correctly with zero errors in the console (only a harmless React ref warning on `ChatAvatar` inside `AcademySidebar`).
+The slow loading when selecting a chapter is caused by two problems:
 
-### Performance Metrics
-- **JS Heap**: 32MB used (healthy)
-- **DOM Nodes**: ~1,181 elements, depth 23 (manageable)
-- **CLS**: 0.15 (needs improvement -- caused by chat feed shifting on load)
-- **RoomChat.tsx**: 58KB -- largest app component, but loads fine
+**Problem 1: PDF re-downloads on every chapter switch**
+The `PlaybookReader` uses `key={activeChapter.id}` which fully unmounts and remounts the component on each chapter change. This causes the `<Document>` component from `react-pdf` to re-download and re-parse the entire PDF file (~4 seconds) every single time, even though all chapters use the same PDF file -- just different page ranges.
 
-### Scalability Assessment for Many Students
+Network proof from profiling:
+- Edge function (signed URL): **1,688ms**
+- PDF file download: **4,097ms**
+- Total delay per chapter switch: **~5.8 seconds**
 
-**What's already good:**
-- Rate limiting on messages (3-second cooldown) prevents spam
-- Optimistic rendering eliminates perceived send latency
-- Global message cache (`roomMessageCache`) prevents re-fetching on tab switches
-- ID-based diffing avoids unnecessary re-renders on background refresh
-- Realtime deduplication handles optimistic-to-real message replacement
-- Typing indicator throttled to 1 broadcast/second with 3.5s auto-remove
-- Pagination (40 messages per page) with lazy-load-more
+**Problem 2: Redundant API calls**
+The page makes 6-8 duplicate calls each for `academy_role_permissions`, `user_roles`, and `academy_user_roles` on every navigation. This wastes bandwidth and adds latency.
 
-**Potential issues at scale (50+ concurrent users):**
-1. **CLS on initial load** -- The chat feed shifts when messages load, causing a layout shift of 0.15. At scale with more content, this could feel jarring. Fix: set a min-height on the skeleton or use `scrollTo` after load.
-2. **Realtime channel per room** -- Each user subscribes to `room-{slug}` + `typing-{slug}` channels. Supabase handles this well up to hundreds of concurrent connections per channel.
-3. **Profile fetching** -- `useChatProfiles` fetches profiles in batches via `user_id=in.(...)`. With many unique users, this could hit URL length limits. Currently uses a global cache so this is mitigated for repeat visitors.
-4. **Reaction queries** -- `message_reactions` are fetched with all visible message IDs in one `IN(...)` query. With 40 messages this is fine; the URL could get long but stays within limits.
-5. **No virtualization** -- All 40 loaded messages render in the DOM. For the current PAGE_SIZE of 40 this is fine. If users scroll back and load 200+ messages, DOM could grow. Consider virtualizing if load-more is used heavily.
+### Fix Plan
 
-### Verdict
-The Trade Floor chat is production-ready for the current scale. No bugs, fast send/receive, proper optimistic updates, clean delete flow, and correct badge rendering. The architecture (caching, pagination, throttling, realtime dedup) is well-suited for dozens of concurrent users without issues.
+**1. `src/pages/academy/AcademyPlaybook.tsx`** -- Remove `key={activeChapter.id}` from PlaybookReader
+
+Stop remounting the reader on chapter change. Instead, let the reader handle chapter changes internally by reacting to prop changes. This preserves the loaded PDF `<Document>` across chapter switches, making chapter navigation instant.
+
+```text
+Before: <PlaybookReader key={activeChapter.id} chapter={activeChapter} ... />
+After:  <PlaybookReader chapter={activeChapter} ... />
+```
+
+**2. `src/components/playbook/PlaybookReader.tsx`** -- Handle chapter changes via props instead of remount
+
+- Remove the `key`-based reset pattern. Instead, use a `useEffect` on `chapter.id` to reset `currentPage`, `docLoaded` state, and `notifiedEnd` ref when the chapter changes (already partially there at line 68).
+- Crucially, the `<Document>` component stays mounted and the PDF stays in memory. Only the `<Page pageNumber={...}>` re-renders with new page numbers -- this is near-instant.
+
+**3. Cache the signed URL** -- `src/pages/academy/AcademyPlaybook.tsx`
+
+The signed URL is valid for 1 hour but currently re-fetches on every page mount. Store it in a module-level variable so navigating away and back doesn't trigger another 1.7s edge function call.
+
+```text
+// Module-level cache
+let cachedPdfUrl: string | null = null;
+let cachedAt = 0;
+const URL_TTL = 50 * 60 * 1000; // 50 min (refresh before 1hr expiry)
+```
+
+### Expected Result
+
+- **First load**: ~5.8s (unchanged -- PDF must download once)
+- **Chapter switching after first load**: **< 200ms** (instant page flip, no re-download)
+- **Returning to playbook within 50 min**: **< 500ms** (cached signed URL, PDF in browser cache)
+
+### Files Modified
+- `src/pages/academy/AcademyPlaybook.tsx` -- remove `key` prop, add signed URL caching
+- `src/components/playbook/PlaybookReader.tsx` -- handle chapter changes via useEffect instead of remount
 
