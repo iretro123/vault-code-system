@@ -138,7 +138,7 @@ const AcademyHome = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 opacity-0 animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "forwards" }}>
           <div className="lg:col-span-3">
-            <GameplanCard onCheckIn={() => setCheckInOpen(true)} />
+            <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
           </div>
           <div className="lg:col-span-2">
             <MyTradesCard />
