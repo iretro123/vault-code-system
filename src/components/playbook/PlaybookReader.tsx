@@ -145,56 +145,57 @@ function PlaybookReaderInner({
         </div>
       </div>
 
-      {/* PDF single page */}
+      {/* Zoom controls — hidden on mobile (use pinch-to-zoom) */}
       <div className="flex-1 min-h-0 relative">
-        {/* Zoom controls */}
-        <div className="absolute top-3 right-3 z-20 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/[0.08] px-1.5 py-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                aria-label="Zoom out"
-                onClick={() => setZoom((z) => Math.max(80, z - 10))}
-                disabled={zoom <= 80}
-                className="h-7 w-7 flex items-center justify-center rounded-full text-white/50 hover:text-foreground hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <ZoomOut className="h-[15px] w-[15px]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Zoom out</TooltipContent>
-          </Tooltip>
+        {!isMobile && (
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm border border-border px-1.5 py-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  aria-label="Zoom out"
+                  onClick={() => setZoom((z) => Math.max(80, z - 10))}
+                  disabled={zoom <= 80}
+                  className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ZoomOut className="h-[15px] w-[15px]" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Zoom out</TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                aria-label="Reset zoom"
-                onClick={() => setZoom(100)}
-                className="h-7 min-w-[40px] flex items-center justify-center rounded-full text-[11px] font-semibold text-white/60 hover:text-foreground hover:bg-white/[0.08] transition-colors font-mono"
-              >
-                {zoom}%
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Reset zoom</TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  aria-label="Reset zoom"
+                  onClick={() => setZoom(100)}
+                  className="h-7 min-w-[40px] flex items-center justify-center rounded-full text-[11px] font-semibold text-muted-foreground hover:text-foreground hover:bg-accent transition-colors font-mono"
+                >
+                  {zoom}%
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Reset zoom</TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                aria-label="Zoom in"
-                onClick={() => setZoom((z) => Math.min(180, z + 10))}
-                disabled={zoom >= 180}
-                className="h-7 w-7 flex items-center justify-center rounded-full text-white/50 hover:text-foreground hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <ZoomIn className="h-[15px] w-[15px]" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">Zoom in</TooltipContent>
-          </Tooltip>
-        </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  aria-label="Zoom in"
+                  onClick={() => setZoom((z) => Math.min(180, z + 10))}
+                  disabled={zoom >= 180}
+                  className="h-7 w-7 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ZoomIn className="h-[15px] w-[15px]" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">Zoom in</TooltipContent>
+            </Tooltip>
+          </div>
+        )}
 
         {/* Scrollable + zoomable content */}
         <div className="overflow-auto h-full flex items-start justify-center bg-black/20 py-4">
           <div
-            style={{
+            style={isMobile ? undefined : {
               transform: `scale(${zoom / 100})`,
               transformOrigin: "top center",
             }}
@@ -211,7 +212,7 @@ function PlaybookReaderInner({
             >
               <Page
                 pageNumber={currentPage}
-                width={680}
+                width={isMobile ? pdfWidth : 680}
                 renderTextLayer={true}
                 renderAnnotationLayer={true}
               />
