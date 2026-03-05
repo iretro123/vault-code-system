@@ -96,6 +96,31 @@ export function AdminMembersTab() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const searchStripeCustomers = useCallback(async (q: string) => {
+    if (q.trim().length < 3) {
+      setStripeResults([]);
+      return;
+    }
+    setStripeSearching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-stripe-customers", {
+        body: { query: q.trim() },
+      });
+      if (error) throw error;
+      setStripeResults(data?.customers || []);
+    } catch {
+      setStripeResults([]);
+    } finally {
+      setStripeSearching(false);
+    }
+  }, []);
+
+  const handleStripeQueryChange = (value: string) => {
+    setStripeQuery(value);
+    if (stripeDebounceRef.current) clearTimeout(stripeDebounceRef.current);
+    stripeDebounceRef.current = setTimeout(() => searchStripeCustomers(value), 400);
+  };
+
   const logAuditAction = async (action: string, targetUserId: string, metadata: Record<string, unknown> = {}) => {
     if (!user?.id) return;
     await supabase.from("audit_logs" as any).insert({
