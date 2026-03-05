@@ -25,16 +25,12 @@ function readCache(): { roleName: AcademyRoleName; permissions: string[]; appRol
 
 export function useAcademyPermissions() {
   const { user } = useAuth();
-  const cached = readCache();
-
-  const hadCache = Boolean(cached);
-
   const [state, setState] = useState<AcademyPermState>({
-    roleName: cached?.roleName ?? "Member",
-    permissions: new Set(cached?.permissions ?? []),
-    appRoles: new Set(cached?.appRoles ?? []),
-    loading: hadCache ? false : Boolean(user?.id),
-    resolved: hadCache ? true : !user?.id,
+    roleName: "Member",
+    permissions: new Set(),
+    appRoles: new Set(),
+    loading: Boolean(user?.id),
+    resolved: !user?.id,
   });
 
   useEffect(() => {
