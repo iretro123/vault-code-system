@@ -182,7 +182,7 @@ export function AdminMembersTab() {
     if (error) {
       toast.error("Failed to ban user");
     } else {
-      setUsers((prev) => prev.map((u) => u.user_id === userId ? { ...u, access_status: "revoked", is_banned: true } : u));
+      setUsers((prev) => prev.filter((u) => u.user_id !== userId));
       toast.success(`${displayName || "User"} banned`);
       await logAuditAction("ban", userId, { display_name: displayName });
     }
