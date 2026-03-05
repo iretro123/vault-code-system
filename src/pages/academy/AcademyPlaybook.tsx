@@ -16,6 +16,11 @@ import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 
+// Module-level signed URL cache
+let cachedPdfUrl: string | null = null;
+let cachedAt = 0;
+const URL_TTL = 50 * 60 * 1000; // 50 min (refresh before 1hr expiry)
+
 const AcademyPlaybook = () => {
   const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
