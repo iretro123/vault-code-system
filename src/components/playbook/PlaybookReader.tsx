@@ -36,6 +36,8 @@ function PlaybookReaderInner({
   onReachedEnd,
   isAdmin,
   isMobile,
+  isFullscreen,
+  onToggleFullscreen,
 }: Props) {
   const totalPages = chapter.pdf_page_end - chapter.pdf_page_start + 1;
 
