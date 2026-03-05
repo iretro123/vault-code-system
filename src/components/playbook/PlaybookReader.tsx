@@ -20,6 +20,7 @@ interface Props {
   onPageChange: (page: number) => void;
   onReachedEnd: () => void;
   isAdmin?: boolean;
+  isMobile?: boolean;
 }
 
 function PlaybookReaderInner({

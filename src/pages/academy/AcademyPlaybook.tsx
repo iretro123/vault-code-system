@@ -5,7 +5,7 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, Maximize2, Minimize2, ChevronLeft } from "lucide-react";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { PlaybookReader } from "@/components/playbook/PlaybookReader";
@@ -13,9 +13,12 @@ import { PlaybookChapterList } from "@/components/playbook/PlaybookChapterList";
 import { PlaybookRightPanel } from "@/components/playbook/PlaybookRightPanel";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 const AcademyPlaybook = () => {
   const [searchParams] = useSearchParams();
+  const isMobile = useIsMobile();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const {
     chapters,
@@ -35,17 +38,21 @@ const AcademyPlaybook = () => {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [reachedEnd, setReachedEnd] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [mobileReaderOpen, setMobileReaderOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // ESC to exit expanded mode
   useEffect(() => {
-    if (!isExpanded) return;
+    if (!isExpanded && !mobileReaderOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsExpanded(false);
+      if (e.key === "Escape") {
+        setIsExpanded(false);
+        setMobileReaderOpen(false);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isExpanded]);
+  }, [isExpanded, mobileReaderOpen]);
 
   // Fetch signed URL once user is authenticated
   useEffect(() => {
@@ -83,6 +90,7 @@ const AcademyPlaybook = () => {
     const urlChapter = searchParams.get("chapter");
     if (urlChapter && chapters.find((c) => c.id === urlChapter)) {
       setActiveChapterId(urlChapter);
+      if (isMobile) setMobileReaderOpen(true);
     } else if (lastChapterId && chapters.find((c) => c.id === lastChapterId)) {
       setActiveChapterId(lastChapterId);
     } else {
@@ -100,8 +108,9 @@ const AcademyPlaybook = () => {
     (id: string) => {
       setActiveChapterId(id);
       setReachedEnd(false);
+      if (isMobile) setMobileReaderOpen(true);
     },
-    []
+    [isMobile]
   );
 
   const handlePageChange = useCallback(
@@ -148,7 +157,7 @@ const AcademyPlaybook = () => {
         <div className="flex flex-col items-center justify-center h-[60vh] text-center px-8">
           <VaultPlaybookIcon className="h-16 w-16 opacity-10 mb-6" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Vault Playbook</h2>
-          <p className="text-sm text-white/40 max-w-md">
+          <p className="text-sm text-muted-foreground max-w-md">
             The Trading OS playbook is being prepared. Chapters will appear here once configured.
           </p>
         </div>
@@ -156,11 +165,107 @@ const AcademyPlaybook = () => {
     );
   }
 
+  // ── Mobile: Full-screen reader overlay ──
+  if (isMobile && mobileReaderOpen && activeChapter) {
+    return (
+      <AcademyLayout>
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          {/* Mobile reader header */}
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileReaderOpen(false)}
+              className="gap-1.5 text-muted-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" /> Chapters
+            </Button>
+            <span className="text-xs font-medium text-muted-foreground truncate max-w-[50%]">
+              {activeChapter.title}
+            </span>
+          </div>
+
+          {/* Full-screen reader */}
+          <div className="flex-1 min-h-0">
+            <PlaybookReader
+              key={activeChapter.id}
+              chapter={activeChapter}
+              progress={progress[activeChapter.id]}
+              pdfUrl={pdfUrl}
+              pdfLoading={pdfLoading}
+              pdfError={pdfError}
+              isLocked={isLocked}
+              onPageChange={handlePageChange}
+              onReachedEnd={handleReachedEnd}
+              isAdmin={isAdmin}
+              isMobile
+            />
+          </div>
+
+          {/* Mobile: progress/checkpoint below reader */}
+          <div className="shrink-0 border-t border-border overflow-y-auto max-h-[30vh] p-4">
+            <PlaybookRightPanel
+              chapter={activeChapter}
+              chProgress={progress[activeChapter.id]}
+              chapters={chapters}
+              progress={progress}
+              onUpdateProgress={updateProgress}
+              isLocked={isLocked}
+              unlockedIndex={unlockedIndex}
+              reachedEnd={reachedEnd}
+              onGoToUnlocked={handleGoToUnlocked}
+            />
+          </div>
+        </div>
+      </AcademyLayout>
+    );
+  }
+
+  // ── Mobile: Chapter list view ──
+  if (isMobile) {
+    return (
+      <AcademyLayout>
+        <div className="flex flex-col h-[calc(100vh-64px)]">
+          <div className="px-4 py-5 border-b border-border space-y-3">
+            <AdminActionBar
+              title="Playbook Admin"
+              permission="manage_content"
+              actions={[
+                { label: "Replace PDF", disabled: true },
+                { label: "Edit Chapters", disabled: true },
+              ]}
+            />
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <VaultPlaybookIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Vault Playbook</h1>
+                <p className="text-xs text-muted-foreground">Your Trading Operating System</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            <PlaybookChapterList
+              chapters={chapters}
+              progress={progress}
+              activeId={activeChapterId}
+              unlockedIndex={unlockedIndex}
+              onSelect={handleSelectChapter}
+              nextChapter={nextChapter}
+            />
+          </div>
+        </div>
+      </AcademyLayout>
+    );
+  }
+
+  // ── Desktop: 3-column layout ──
   return (
     <AcademyLayout>
       <div className="h-[calc(100vh-64px)] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-white/[0.06] space-y-3">
+        <div className="px-6 py-5 border-b border-border space-y-3">
           <AdminActionBar
             title="Playbook Admin"
             permission="manage_content"
@@ -175,7 +280,7 @@ const AcademyPlaybook = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Vault Playbook</h1>
-              <p className="text-xs text-white/30">Your Trading Operating System</p>
+              <p className="text-xs text-muted-foreground">Your Trading Operating System</p>
             </div>
           </div>
         </div>
@@ -183,7 +288,7 @@ const AcademyPlaybook = () => {
         {/* 3-Column Layout */}
         <div className="flex-1 min-h-0 flex">
           {/* Left: Chapter list */}
-          <div className="w-[260px] shrink-0 border-r border-white/[0.06] overflow-y-auto p-4">
+          <div className="w-[260px] shrink-0 border-r border-border overflow-y-auto p-4">
             <PlaybookChapterList
               chapters={chapters}
               progress={progress}
@@ -198,7 +303,7 @@ const AcademyPlaybook = () => {
           <div
             className="min-w-0 p-4 relative transition-all duration-200 ease-in-out"
             style={{
-              flex: isExpanded ? "1 1 0%" : "1 1 0%",
+              flex: "1 1 0%",
               maxWidth: isExpanded ? "1300px" : undefined,
               margin: isExpanded ? "0 auto" : undefined,
               width: isExpanded ? "95%" : undefined,
@@ -208,7 +313,7 @@ const AcademyPlaybook = () => {
             <button
               onClick={() => setIsExpanded((v) => !v)}
               aria-label={isExpanded ? "Exit expanded view" : "Expand reader"}
-              className="absolute top-6 right-6 z-30 h-8 w-8 flex items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm border border-white/[0.08] text-white/40 hover:text-foreground hover:bg-white/[0.08] transition-colors"
+              className="absolute top-6 right-6 z-30 h-8 w-8 flex items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               title={isExpanded ? "Exit expanded view (Esc)" : "Expand reader"}
             >
               {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -228,7 +333,7 @@ const AcademyPlaybook = () => {
                 isAdmin={isAdmin}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-white/20">
+              <div className="flex items-center justify-center h-full text-muted-foreground">
                 Select a chapter
               </div>
             )}
@@ -236,7 +341,7 @@ const AcademyPlaybook = () => {
 
           {/* Right: Notes + Checkpoint + Progress */}
           <div
-            className={`shrink-0 border-l border-white/[0.06] overflow-y-auto p-4 transition-all duration-200 ease-in-out ${
+            className={`shrink-0 border-l border-border overflow-y-auto p-4 transition-all duration-200 ease-in-out ${
               isExpanded ? "w-0 opacity-0 overflow-hidden p-0 border-l-0" : "w-[300px] opacity-100"
             }`}
           >
