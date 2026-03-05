@@ -34,7 +34,7 @@ function getGreeting(): string {
 }
 
 function useStatusLine(userId: string | undefined) {
-  const [message, setMessage] = useState<string>("Your trading discipline journey continues");
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
