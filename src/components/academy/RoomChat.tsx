@@ -965,14 +965,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         )}>
                           {msg.user_name}
                         </span>
-                        {msgProfile ? (
-                          <>
-                            <AcademyRoleBadge roleName={msgAcademyRole} />
-                            <ExperienceBadge role={getRoleBadgeKey(
-                              (msg as any).user_role,
-                              msgProfile?.role_level
-                            )} />
-                          </>
+                         {msgProfile ? (
+                           <>
+                             <AcademyRoleBadge roleName={msgAcademyRole} />
+                             {!isCeoOrAdmin && (
+                               <ExperienceBadge role={getRoleBadgeKey(
+                                 (msg as any).user_role,
+                                 msgProfile?.role_level
+                               )} />
+                             )}
+                           </>
                         ) : (
                           <div className="h-4 w-16 rounded bg-[hsl(220,10%,88%)] animate-pulse" />
                         )}
