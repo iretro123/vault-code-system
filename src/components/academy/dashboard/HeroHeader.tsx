@@ -202,7 +202,7 @@ function ParticleCanvas() {
   );
 }
 
-
+export function HeroHeader({ firstName, onCheckIn }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasAccess, status, isAdminBypass } = useStudentAccess();
