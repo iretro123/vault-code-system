@@ -32,15 +32,6 @@ function HeroBanner() {
           backgroundSize: "16px 16px",
         }}
       />
-      {/* Hand + Gift illustration — LEFT */}
-      <div className="absolute left-3 bottom-0 h-[140px] flex items-end">
-        <img
-          src={handGiftImg}
-          alt=""
-          className="h-[120px] w-auto object-contain drop-shadow-[0_0_40px_rgba(59,130,246,0.25)]"
-          style={{ mixBlendMode: "screen" }}
-        />
-      </div>
       {/* Vault "V" logo — FAR RIGHT */}
       <img
         src={vaultVLogo}
