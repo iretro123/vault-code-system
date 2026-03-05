@@ -1,61 +1,37 @@
 
 
-## Plan: Integrate GoHighLevel for Password Reset SMS + Email
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### How It Works
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-When a user clicks "Forgot Password," the app will:
-1. Look up their phone number and email from the `profiles` table
-2. Generate the standard auth reset link (via the existing auth flow)
-3. Call a new edge function that sends the reset link via GHL SMS and/or email using their Conversations API
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Prerequisites — API Secrets
+### Solution
 
-You'll need two secrets stored:
-- **GHL_API_KEY** — Your GoHighLevel Private Integration API key
-- **GHL_LOCATION_ID** — The Location ID for "Vault Trade Academy" (found in GHL Settings → Business Profile or the URL)
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-I'll use the `add_secret` tool to prompt you for these before writing code.
-
-### Changes
-
-**1. New edge function: `supabase/functions/ghl-password-reset/index.ts`**
-- Accepts `{ email }` in the request body
-- Uses service role to look up the user's `phone_number` from `profiles`
-- Generates a password reset link via Supabase Admin Auth (`generateLink`)
-- Calls GHL API v2 to:
-  - Find or create the contact by email (`POST /contacts/upsert`)
-  - Send an SMS via Conversations API (`POST /conversations/messages`) with the reset link
-  - Send an email via Conversations API with the reset link
-- Returns success/failure status
-
-**2. Update `src/pages/Auth.tsx` — `handleForgotPassword`**
-- After the existing `resetPasswordForEmail` call succeeds, also call the `ghl-password-reset` edge function to send the SMS + email via GHL
-- The standard auth email still sends as a fallback; GHL is additive
-
-**3. Update `supabase/config.toml`** — add `[functions.ghl-password-reset]` with `verify_jwt = false` (public endpoint, no auth needed since it only accepts an email and rate-limits internally)
-
-### GHL API Calls Used
-
-```text
-POST /contacts/upsert          → Find/create contact by email
-POST /conversations/messages   → Send SMS (type: "SMS") with reset link
-POST /conversations/messages   → Send email (type: "Email") with reset link
-```
-
-All calls go to `https://services.leadconnectorhq.com` with headers:
-- `Authorization: Bearer {GHL_API_KEY}`
-- `Version: 2021-07-28`
-
-### Scopes Required (confirmed from your screenshot)
-- `conversations/message.write` — send messages
-- `contacts.write` — upsert contact
-- `contacts.readonly` — look up contact
-
-These match what you've already configured.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
 ### Files
-1. `supabase/functions/ghl-password-reset/index.ts` — new edge function
-2. `src/pages/Auth.tsx` — call the new function after reset email sends
-3. `supabase/config.toml` — register the function (no JWT)
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
