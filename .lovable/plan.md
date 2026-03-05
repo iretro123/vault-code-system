@@ -1,37 +1,21 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Plan: Fix re-adding deleted users — `allowed_signups` row blocks re-insert
 
 ### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+When `admin-delete-user` runs, it resets `allowed_signups.claimed = false` but **keeps the row**. When the admin tries to re-add the same email, the INSERT hits a **unique constraint** (error 23505) and shows "This email is already on the whitelist."
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+The user was deleted from every other table, but the `allowed_signups` row persists — blocking re-registration.
 
-### Solution
+### Solution (two changes)
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**1. `supabase/functions/admin-delete-user/index.ts`**
+Change the `allowed_signups` handling from `update({ claimed: false })` to a full `DELETE` of the row. This ensures the email is completely gone after a user deletion.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**2. `src/components/admin/AdminMembersTab.tsx`**
+As a safety net, change the "Add User" form from a plain `.insert()` to an **upsert** (`.upsert()` with `onConflict: 'email'`). If a stale row somehow remains, it gets overwritten instead of throwing a duplicate error.
 
 ### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+1. `supabase/functions/admin-delete-user/index.ts` — change `update` to `delete` for `allowed_signups`
+2. `src/components/admin/AdminMembersTab.tsx` — change `.insert()` to `.upsert()` on the add-user form
 
