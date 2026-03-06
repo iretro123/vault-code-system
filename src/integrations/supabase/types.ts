@@ -70,6 +70,7 @@ export type Database = {
           sort_order: number
           updated_at: string
           video_url: string
+          visible: boolean
         }
         Insert: {
           created_at?: string
@@ -81,6 +82,7 @@ export type Database = {
           sort_order?: number
           updated_at?: string
           video_url: string
+          visible?: boolean
         }
         Update: {
           created_at?: string
@@ -92,6 +94,7 @@ export type Database = {
           sort_order?: number
           updated_at?: string
           video_url?: string
+          visible?: boolean
         }
         Relationships: []
       }
@@ -170,6 +173,7 @@ export type Database = {
           subtitle: string
           title: string
           updated_at: string
+          visible: boolean
         }
         Insert: {
           cover_image_url?: string | null
@@ -180,6 +184,7 @@ export type Database = {
           subtitle?: string
           title: string
           updated_at?: string
+          visible?: boolean
         }
         Update: {
           cover_image_url?: string | null
@@ -190,6 +195,7 @@ export type Database = {
           subtitle?: string
           title?: string
           updated_at?: string
+          visible?: boolean
         }
         Relationships: []
       }

@@ -1,44 +1,37 @@
 
 
-## Admin Edit Panel for Learn Modules
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### What we're building
-A clean admin-only edit panel that appears when an admin/coach/operator clicks the edit (pencil) icon on a module card or lesson. Instead of the current scattered inline editing, we'll add:
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-1. **A `visible` column** on both `academy_modules` and `academy_lessons` tables (default `true`)
-2. **An improved inline edit card** on the module grid (AcademyLearn.tsx) that lets admins edit title, subtitle, and toggle visibility
-3. **An improved edit panel** on the lesson view (AcademyModule.tsx) that lets admins edit lesson title, YouTube link, study notes, and toggle visibility
-4. **Hidden modules/lessons** are shown to admins with a visual indicator but completely hidden from members
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Database migration
-Add `visible boolean NOT NULL DEFAULT true` to both `academy_modules` and `academy_lessons`.
+### Solution
 
-### File changes
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**1. `src/hooks/useAcademyModules.ts`**
-- Add `visible` to the `AcademyModule` interface
-- For non-admins, filter out `visible = false` modules in the query (pass an `isAdmin` flag or filter client-side)
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**2. `src/hooks/useAcademyLessons.ts`**
-- Add `visible` to the `AcademyLesson` interface (already not in types but cast with `as any`)
-
-**3. `src/pages/academy/AcademyLearn.tsx`**
-- Expand the inline edit card to include a visibility toggle (Switch component)
-- Filter `visible = false` modules for non-admins
-- Show a "Hidden" badge on hidden modules for admins
-- Update `handleUpdateModule` to include `visible` field
-
-**4. `src/pages/academy/AcademyModule.tsx`**
-- Expand the edit lesson panel to include: lesson title, video URL, study notes, and a visibility toggle
-- Filter hidden lessons for non-admins
-- Show a "Hidden" indicator on hidden lessons in sidebar for admins
-- Update `handleUpdateLesson` to include `visible` field
-
-### Visibility rules
-- `isAdmin` (from `useAcademyRole`) gates all edit UI — this already covers CEO, Admin, Coach roles
-- Members see only `visible = true` modules and lessons
-- Admins see everything with a subtle "Hidden" badge on invisible items
-
-### No new components needed
-The edit forms already exist inline; we're just enhancing them with the visibility toggle and ensuring clean, fast UX.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

@@ -2,8 +2,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
-import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight } from "lucide-react";
+import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight, EyeOff } from "lucide-react";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
@@ -13,7 +14,7 @@ import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { supabase } from "@/integrations/supabase/client";
 import { SendNotificationModal } from "@/components/academy/SendNotificationModal";
 import { ClaimRoleBanner } from "@/components/academy/ClaimRoleBanner";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import courseCoverDefault from "@/assets/course-cover-default.jpg";
@@ -24,11 +25,21 @@ import { PremiumGate } from "@/components/academy/PremiumGate";
 const AcademyLearn = () => {
   const navigate = useNavigate();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
-  const { modules, loading: modsLoading, refetch: refetchModules } = useAcademyModules();
-  const { lessons, loading: lessonsLoading } = useAcademyLessons();
+  const { modules: allModules, loading: modsLoading, refetch: refetchModules } = useAcademyModules();
+  const { lessons: allLessons, loading: lessonsLoading } = useAcademyLessons();
   const { progress } = useLessonProgress();
   const { isAdmin } = useAcademyRole();
   const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
+
+  // Filter hidden modules for non-admins
+  const modules = useMemo(() =>
+    isAdmin ? allModules : allModules.filter(m => m.visible !== false),
+    [allModules, isAdmin]
+  );
+  const lessons = useMemo(() =>
+    isAdmin ? allLessons : allLessons.filter(l => l.visible !== false),
+    [allLessons, isAdmin]
+  );
 
   // Admin state
   const [showAdd, setShowAdd] = useState(false);
@@ -38,6 +49,7 @@ const AcademyLearn = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editSubtitle, setEditSubtitle] = useState("");
+  const [editVisible, setEditVisible] = useState(true);
   const [notifyOpen, setNotifyOpen] = useState(false);
 
   const handleAddModule = async () => {
@@ -64,10 +76,9 @@ const AcademyLearn = () => {
     setSaving(true);
     const newSlug = editTitle.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const { error } = await supabase.from("academy_modules")
-      .update({ title: editTitle.trim(), subtitle: editSubtitle.trim(), slug: newSlug } as any)
+      .update({ title: editTitle.trim(), subtitle: editSubtitle.trim(), slug: newSlug, visible: editVisible } as any)
       .eq("id", id);
     if (error) { setSaving(false); toast.error(error.message); return; }
-    // Cascade: re-link lessons to new slug
     if (newSlug !== oldSlug) {
       await supabase.from("academy_lessons")
         .update({ module_slug: newSlug, module_title: editTitle.trim() } as any)
@@ -95,11 +106,7 @@ const AcademyLearn = () => {
   }, {});
 
   if (!hasAccess && !accessLoading) {
-    return (
-      <>
-        <PremiumGate status={status} pageName="Courses" />
-      </>
-    );
+    return <PremiumGate status={status} pageName="Courses" />;
   }
 
   return (
@@ -146,12 +153,8 @@ const AcademyLearn = () => {
                 <VaultPlaybookIcon className="h-6 w-6" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-base font-bold text-foreground">
-                  Vault Playbook
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  Finish the OS before you binge modules.
-                </p>
+                <h3 className="text-base font-bold text-foreground">Vault Playbook</h3>
+                <p className="text-xs text-muted-foreground">Finish the OS before you binge modules.</p>
               </div>
             </div>
             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2.5">
@@ -193,13 +196,19 @@ const AcademyLearn = () => {
                 const isStarted = completedCount > 0;
                 const isComplete = totalLessons > 0 && completedCount === totalLessons;
                 const isEditing = editingId === mod.id;
-                const isLocked = false; // Future: support locked courses
+                const isLocked = false;
+                const isHidden = mod.visible === false;
 
                 if (isEditing && isAdmin) {
                   return (
                     <Card key={mod.id} className="vault-card p-5 space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground">Edit Module</h3>
                       <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
                       <Input value={editSubtitle} onChange={(e) => setEditSubtitle(e.target.value)} placeholder="Subtitle" />
+                      <div className="flex items-center justify-between py-1">
+                        <label className="text-sm text-muted-foreground">Visible to members</label>
+                        <Switch checked={editVisible} onCheckedChange={setEditVisible} />
+                      </div>
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => handleUpdateModule(mod.id, mod.slug)} disabled={saving}>
                           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
@@ -215,7 +224,8 @@ const AcademyLearn = () => {
                     key={mod.id}
                     className={cn(
                       "vault-card overflow-hidden group transition-colors transition-shadow duration-200",
-                      isLocked ? "opacity-70" : "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer"
+                      isLocked ? "opacity-70" : "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer",
+                      isHidden && isAdmin && "opacity-60 border-dashed"
                     )}
                     onClick={() => !isLocked && navigate(`/academy/learn/${mod.slug}`)}
                   >
@@ -226,14 +236,18 @@ const AcademyLearn = () => {
                         alt={mod.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                      {/* Overlay gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
                       {/* Module number badge */}
-                      <div className="absolute top-3 left-3">
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm text-[11px] font-mono text-white/70">
                           Module {String(i + 1).padStart(2, "0")}
                         </span>
+                        {isHidden && isAdmin && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/80 backdrop-blur-sm text-[10px] font-semibold text-black">
+                            <EyeOff className="h-3 w-3" /> Hidden
+                          </span>
+                        )}
                       </div>
 
                       {/* Lock overlay */}
@@ -256,13 +270,9 @@ const AcademyLearn = () => {
 
                     {/* Content */}
                     <div className="p-5">
-                      <h3 className="font-semibold text-foreground text-base leading-snug mb-1">
-                        {mod.title}
-                      </h3>
+                      <h3 className="font-semibold text-foreground text-base leading-snug mb-1">{mod.title}</h3>
                       {mod.subtitle && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                          {mod.subtitle}
-                        </p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{mod.subtitle}</p>
                       )}
 
                       {/* Progress */}
@@ -285,18 +295,15 @@ const AcademyLearn = () => {
                       <div className="flex items-center gap-2">
                         {isLocked ? (
                           <Button disabled variant="secondary" className="w-full gap-2">
-                            <Lock className="h-4 w-4" />
-                            Locked
+                            <Lock className="h-4 w-4" /> Locked
                           </Button>
                         ) : isComplete ? (
                           <Button variant="secondary" className="w-full gap-2">
-                            Review
-                            <ArrowRight className="h-4 w-4" />
+                            Review <ArrowRight className="h-4 w-4" />
                           </Button>
                         ) : (
                           <Button className="w-full gap-2">
-                            {isStarted ? "Continue" : "Start"}
-                            <ArrowRight className="h-4 w-4" />
+                            {isStarted ? "Continue" : "Start"} <ArrowRight className="h-4 w-4" />
                           </Button>
                         )}
 
@@ -312,6 +319,7 @@ const AcademyLearn = () => {
                                 setEditingId(mod.id);
                                 setEditTitle(mod.title);
                                 setEditSubtitle(mod.subtitle);
+                                setEditVisible(mod.visible !== false);
                               }}
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -353,12 +361,10 @@ const AcademyLearn = () => {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
-                      <Plus className="h-3.5 w-3.5" />
-                      Add Module
+                      <Plus className="h-3.5 w-3.5" /> Add Module
                     </Button>
                     <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setNotifyOpen(true)}>
-                      <Bell className="h-3.5 w-3.5" />
-                      Notify: New Module
+                      <Bell className="h-3.5 w-3.5" /> Notify: New Module
                     </Button>
                     <SendNotificationModal
                       open={notifyOpen}

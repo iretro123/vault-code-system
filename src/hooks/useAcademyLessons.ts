@@ -9,6 +9,7 @@ export interface AcademyLesson {
   video_url: string;
   notes: string;
   sort_order: number;
+  visible: boolean;
   created_at: string;
 }
 

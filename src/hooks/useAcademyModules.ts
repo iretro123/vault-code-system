@@ -8,6 +8,7 @@ export interface AcademyModule {
   subtitle: string;
   sort_order: number;
   cover_image_url: string | null;
+  visible: boolean;
   created_at: string;
   updated_at: string;
 }
