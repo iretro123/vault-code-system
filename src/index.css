@@ -488,6 +488,30 @@ html {
     .share-vault-glow:hover::before { animation: none; opacity: 0; }
     .share-vault-glow:hover { animation: none; }
   }
+
+  /* Luxury blue halo scrollbar for chat */
+  .vault-chat-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.35) rgba(59, 130, 246, 0.04);
+  }
+  .vault-chat-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .vault-chat-scroll::-webkit-scrollbar-track {
+    background: rgba(59, 130, 246, 0.04);
+    border-radius: 20px;
+    margin: 6px 0;
+  }
+  .vault-chat-scroll::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.35);
+    border-radius: 20px;
+  }
+  .vault-chat-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.50);
+  }
+  .vault-chat-scroll::-webkit-scrollbar-thumb:active {
+    background: rgba(59, 130, 246, 0.60);
+  }
 }
 
 /* ─── Referral modal backdrop override ─── */

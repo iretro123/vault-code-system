@@ -756,7 +756,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overflow-x-hidden"
+        className="flex-1 overflow-y-auto overflow-x-hidden vault-chat-scroll"
       >
         {/* Announcements pinned banner */}
         {isAnnouncements && (
