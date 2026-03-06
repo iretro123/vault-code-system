@@ -46,7 +46,7 @@ import {
 const coreNav = [
   { icon: Home, label: "Dashboard", path: "/academy/home", pageKey: "dashboard" },
   { icon: BookOpen, label: "Learn", path: "/academy/learn", pageKey: "learn" },
-  { icon: TrendingUp, label: "Trade", path: "/academy/trade", pageKey: "trade" },
+  { icon: TrendingUp, label: "My Trades", path: "/academy/trade", pageKey: "trade" },
   { icon: Users, label: "Community", path: "/academy/community", pageKey: "community" },
   { icon: Radio, label: "Live", path: "/academy/live", isLive: true, pageKey: "live" },
   { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources", pageKey: "resources" },
