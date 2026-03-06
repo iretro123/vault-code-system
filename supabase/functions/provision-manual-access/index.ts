@@ -35,25 +35,27 @@ Deno.serve(async (req) => {
     let isSelfProvision = false;
 
     if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
       const anonClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
       });
-      const { data: { user }, error: authError } = await anonClient.auth.getUser();
+      const { data: claimsData, error: claimsErr } = await anonClient.auth.getClaims(token);
 
-      if (!authError && user) {
+      if (!claimsErr && claimsData?.claims?.sub) {
+        const callerId = claimsData.claims.sub as string;
         // Check if operator
         const { data: isOp } = await sb.rpc("has_role", {
-          _user_id: user.id,
+          _user_id: callerId,
           _role: "operator",
         });
         if (isOp) {
           isOperatorCall = true;
-          console.log("[provision] Operator call by:", user.id);
+          console.log("[provision] Operator call by:", callerId);
         }
         // Check if self-provisioning (caller's uid matches the target auth_user_id)
-        else if (user.id === auth_user_id) {
+        else if (callerId === auth_user_id) {
           isSelfProvision = true;
-          console.log("[provision] Self-provision call by:", user.id);
+          console.log("[provision] Self-provision call by:", callerId);
         }
       }
     }
