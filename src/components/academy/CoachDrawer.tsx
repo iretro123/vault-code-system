@@ -703,21 +703,9 @@ export function CoachDrawer() {
           {/* ========== COACH TAB ========== */}
           {tab === "coach" && coachView === "new" && (
             <div className="px-6 py-5 space-y-4 overflow-y-auto">
-              {/* Urgency */}
-              <div className="space-y-2">
-                <label className="text-[13px] font-semibold text-foreground/80">Urgency</label>
-                <div className="flex gap-2">
-                  {["standard", "priority"].map((u) => (
-                    <button key={u} onClick={() => setUrgency(u)} className={cn(
-                      "px-4 py-2.5 rounded-lg text-sm font-medium transition-colors capitalize",
-                      urgency === u ? "bg-primary text-primary-foreground" : "bg-white/[0.04] text-muted-foreground hover:text-foreground border border-white/[0.08]"
-                    )}>{u}</button>
-                  ))}
-                </div>
-                <p className="text-[12px] text-muted-foreground">
-                  {urgency === "priority" ? "Priority: faster response" : "Standard: usually within 2–4 hours"}
-                </p>
-              </div>
+              <p className="text-[13px] text-muted-foreground">
+                Standard: usually within 1–2 hours
+              </p>
 
               {/* Main question */}
               <div className="space-y-2">
