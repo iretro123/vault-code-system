@@ -1407,7 +1407,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
-            <div className="space-y-2">
+            <div className="relative space-y-2">
               {/* Template chips */}
               <div className="flex items-center gap-1 px-1">
               {[
