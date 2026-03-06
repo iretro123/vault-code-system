@@ -125,11 +125,11 @@ const AcademyModule = () => {
 
   if (loading) {
     return (
-      <AcademyLayout>
+      <>
         <div className="flex justify-center py-20">
           <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
