@@ -1,37 +1,58 @@
 
+## Upgrade Vault Trade Planner into Pre-Trade Command Center
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+Keep the existing 3-panel layout, formulas, and dark premium UI. Add intelligence layers and polish on top.
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### 1. Calculation Engine (`src/lib/tradePlannerCalc.ts`)
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+**Add auto-tier detection function:**
+```typescript
+export function detectTier(accountSize: number): AccountTierLabel {
+  if (accountSize >= 50000) return "Large";
+  if (accountSize >= 15000) return "Medium";
+  return "Small";
+}
+```
 
-### Solution
+**Add verdict system to `PlannerResult`:**
+- New field `verdict: "PASS" | "CAUTION" | "NO_TRADE"`
+- New field `verdictReason: string`
+- New field `sizingExplanation: string` (the "Why This Size" text)
+- Logic: NO_TRADE if finalContracts === 0; CAUTION if either check barely passes (e.g. accountRiskPercent > riskPercent * 0.8 or finalContracts === 1 and contractsByRisk !== contractsByDebit); PASS otherwise
+- `sizingExplanation`: dynamic text explaining whether risk or debit was the binding constraint
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### 2. UI Component (`src/components/vault-planner/VaultTradePlanner.tsx`)
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**Account Panel upgrades:**
+- On accountSize change, auto-call `detectTier()` and update tier + risk/debitCap (unless user has unlocked custom)
+- Show a "Detected: Small Account" badge line below the tier toggle
+- Add two live dollar readouts below the % fields: "Max risk this trade: $200" and "Max spend this trade: $500"
+
+**Trade Panel:**
+- Add optional Ticker field at top (small, inline)
+- Keep existing direction toggle, entry/stop inputs, theta warning, action buttons
+
+**Results Panel upgrades:**
+- 3-state verdict banner: PASS (green), CAUTION (amber), NO TRADE (red) with one-line reason
+- Hero hierarchy: verdict → contracts → planned loss → money needed (visually largest to smallest)
+- **What To Do** card: structured instruction list (enter at, stop at, partial near TP1, main target, max contracts)
+- **Why This Size** collapsed section: explains which constraint limited sizing
+- **Outcome Snapshot** compact card: "If stopped: -$X / If TP1: +$X / If TP2: +$X / Capital: $X"
+- Move targets (1:2, TP1, TP2) below the snapshot as secondary data
+- Keep Risk Check / Debit Check badges at bottom
+
+**Education tooltips:**
+- Add small `?` icons next to "Option Buy Price", "Option Stop Price", "% I Can Lose", "Max % I Can Spend"
+- Each opens a tooltip with 1-2 sentence explanation
+- Add a collapsed "How to choose a contract" section at bottom of Trade panel
+
+**Polish:**
+- Tighten spacing, improve focus ring styling
+- Ensure all numeric outputs use consistent `safeCurrency` formatting
+- Mobile: panels stack cleanly with consistent gaps
 
 ### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+- `src/lib/tradePlannerCalc.ts` — add `detectTier()`, verdict/sizingExplanation fields to result
+- `src/components/vault-planner/VaultTradePlanner.tsx` — all UI upgrades above
 
+No database changes. All existing formulas preserved.
