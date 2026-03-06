@@ -1,32 +1,37 @@
 
 
-## Bug: "useSidebar must be used within a SidebarProvider"
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The error is in `MobileNav.tsx` (line 13): it calls `useSidebar()` which requires a `SidebarProvider` ancestor. Here are the 5 reasons this crash can occur:
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### 5 Reasons This Is Happening
+### Solution
 
-1. **`AppLayout` has no `SidebarProvider`** — `AppLayout.tsx` renders `<MobileNav />` but never wraps anything in `<SidebarProvider>`. Non-academy routes (`/cockpit`, `/log`, `/vault-log`, `/reports`, `/settings`) all use `AppLayout`, so visiting any of them crashes instantly.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-2. **`MobileNav` unconditionally calls `useSidebar()`** — Line 13 calls `const { toggleSidebar } = useSidebar()` with no guard or fallback. If no provider exists in the tree, React throws immediately.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-3. **Direct URL access to non-academy routes** — If a user bookmarks or navigates directly to `/cockpit`, `/log`, `/settings`, or `/reports`, they hit `AppLayout` → `MobileNav` → crash. These routes bypass `AcademyLayout` entirely.
-
-4. **The Index/Hub redirect may briefly render AppLayout** — Routes like `/` and `/hub` redirect to `/academy`, but if any intermediate render touches `AppLayout` components before the redirect completes, the same crash can occur.
-
-5. **`AcademyLayout` works fine** — The academy routes are NOT affected because `AcademyLayout` wraps everything in `<SidebarProvider>` (line 144-148). The bug is isolated to the non-academy layout path.
-
-### Fix
-
-**One change to `MobileNav.tsx`**: Remove the `useSidebar()` dependency. Since `MobileNav` is used both inside and outside `SidebarProvider`, it should not rely on sidebar context. Replace the Menu button's `toggleSidebar` call with a simple navigation link to `/academy/home`, or wrap the `useSidebar` call in a try-catch/optional hook pattern.
-
-Alternatively, wrap `AppLayout` in a `SidebarProvider` — but since `AppLayout` doesn't use a sidebar, the cleaner fix is to remove the sidebar dependency from `MobileNav`.
-
-### Files to change
-
-| File | Change |
-|------|--------|
-| `src/components/layout/MobileNav.tsx` | Remove `useSidebar()` import/call. Replace Menu button with a direct link to `/academy/home` or remove it entirely since non-academy pages don't have a sidebar to toggle. |
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
