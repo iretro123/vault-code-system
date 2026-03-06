@@ -176,159 +176,165 @@ const Signup = () => {
     password.length >= 8 &&
     password === confirmPassword;
 
-  const inputClass = "h-12 rounded-lg bg-white/5 border-white/10 text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40";
-  const labelClass = "text-sm font-medium text-white/80 block mb-1.5";
+  const inputClass = "h-10 rounded-lg bg-white/5 border-white/[0.08] text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40 transition-colors";
+  const labelClass = "text-xs font-medium text-white/70 block mb-1";
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 mb-4">
-            <Shield className="w-7 h-7 text-primary" />
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 mb-3">
+            <Shield className="w-5 h-5 text-primary" />
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">VAULT OS</h1>
-          <p className="text-muted-foreground text-sm mt-1">Join Vault Academy today</p>
+          <h1 className="text-xl font-semibold text-foreground tracking-[0.2em]">VAULT OS</h1>
+          <p className="text-muted-foreground text-xs mt-1">Join Vault Academy today</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* First Name / Last Name */}
-          <div className="grid grid-cols-2 gap-3">
+        {/* Card container */}
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            {/* First Name / Last Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>
+                  First Name <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  placeholder="John"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={inputClass}
+                  required
+                  maxLength={50}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>
+                  Last Name <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  placeholder="Doe"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={inputClass}
+                  required
+                  maxLength={50}
+                />
+              </div>
+            </div>
+
+            {/* Username */}
             <div>
               <label className={labelClass}>
-                First Name <span className="text-destructive">*</span>
+                Username <span className="text-destructive">*</span>
               </label>
-              <Input
-                placeholder="John"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className={inputClass}
-                required
-                maxLength={50}
-              />
+              <div className="relative">
+                <Input
+                  placeholder="trader_one"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+                  className={`${inputClass} pr-9`}
+                  required
+                  maxLength={30}
+                />
+                {usernameStatus === "checking" && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                {usernameStatus === "available" && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-500" />}
+                {usernameStatus === "taken" && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
+              </div>
+              {usernameStatus === "taken" && <p className="text-[11px] text-destructive mt-0.5">Username is already taken.</p>}
             </div>
+
+            {/* Email */}
             <div>
               <label className={labelClass}>
-                Last Name <span className="text-destructive">*</span>
+                Email <span className="text-destructive">*</span>
+              </label>
+              <div className="relative">
+                <Input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`${inputClass} pr-9`}
+                  required
+                />
+                {stripeStatus === "checking" && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                {stripeStatus === "found" && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-emerald-500" />}
+                {stripeStatus === "not_found" && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
+              </div>
+              {stripeStatus === "found" && <p className="text-[11px] text-emerald-500 mt-0.5">Membership verified</p>}
+              {stripeStatus === "not_found" && <p className="text-[11px] text-destructive mt-0.5">No membership found. Contact support.</p>}
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label className={labelClass}>
+                Phone Number <span className="text-destructive">*</span>
               </label>
               <Input
-                placeholder="Doe"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                type="tel"
+                placeholder="+1 555 000 0000"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 className={inputClass}
                 required
-                maxLength={50}
+                maxLength={20}
               />
             </div>
-          </div>
 
-          {/* Username */}
-          <div>
-            <label className={labelClass}>
-              Username <span className="text-destructive">*</span>
-            </label>
-            <div className="relative">
-              <Input
-                placeholder="trader_one"
-                value={username}
-                onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
-                className={`${inputClass} pr-9`}
-                required
-                maxLength={30}
-              />
-              {usernameStatus === "checking" && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
-              {usernameStatus === "available" && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />}
-              {usernameStatus === "taken" && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
+            {/* Password row — side by side */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>
+                  Password <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={inputClass}
+                  required
+                  minLength={8}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>
+                  Confirm <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={inputClass}
+                  required
+                  minLength={8}
+                />
+              </div>
             </div>
-            {usernameStatus === "taken" && <p className="text-xs text-destructive mt-1">Username is already taken.</p>}
-            <p className="text-[10px] text-muted-foreground/50 mt-1">Cannot be changed after registration.</p>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className={labelClass}>
-              Email <span className="text-destructive">*</span>
-            </label>
-            <div className="relative">
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={`${inputClass} pr-9`}
-                required
-              />
-              {stripeStatus === "checking" && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
-              {stripeStatus === "found" && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />}
-              {stripeStatus === "not_found" && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
-            </div>
-            {stripeStatus === "found" && <p className="text-xs text-emerald-500 mt-1">Membership verified</p>}
-            {stripeStatus === "not_found" && <p className="text-xs text-destructive mt-1">This email is not registered with Vault Academy. Contact support.</p>}
-          </div>
-
-          {/* Phone Number */}
-          <div>
-            <label className={labelClass}>
-              Phone Number <span className="text-destructive">*</span>
-            </label>
-            <Input
-              type="tel"
-              placeholder="+1 555 000 0000"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className={inputClass}
-              required
-              maxLength={20}
-            />
-            <p className="text-[10px] text-muted-foreground/50 mt-1">For important account alerts only.</p>
-          </div>
-
-          {/* Password */}
-          <div>
-            <label className={labelClass}>
-              Password <span className="text-destructive">*</span>
-            </label>
-            <Input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-              required
-              minLength={8}
-            />
-          </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label className={labelClass}>
-              Confirm Password <span className="text-destructive">*</span>
-            </label>
-            <Input
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className={inputClass}
-              required
-              minLength={8}
-            />
             {confirmPassword && password !== confirmPassword && (
-              <p className="text-xs text-destructive mt-1">Passwords do not match.</p>
+              <p className="text-[11px] text-destructive -mt-2">Passwords do not match.</p>
             )}
-          </div>
 
-          {/* Submit */}
-          <Button type="submit" className="w-full h-12 text-base font-medium rounded-lg" disabled={loading || !fieldsValid}>
-            {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Creating...</> : "Create Account"}
-          </Button>
-        </form>
+            {/* Divider */}
+            <div className="border-t border-white/[0.06] pt-3.5">
+              <Button
+                type="submit"
+                className="w-full h-10 text-sm font-medium rounded-lg hover:shadow-[0_0_20px_4px_hsl(217_91%_60%/0.15)]"
+                disabled={loading || !fieldsValid}
+              >
+                {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Creating...</> : "Create Account"}
+              </Button>
+            </div>
+          </form>
 
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          Already have an account?
-          <Link to="/auth" className="text-primary hover:underline ml-1 font-medium">Sign in</Link>
-        </p>
+          <p className="text-center text-xs text-muted-foreground mt-5">
+            Already have an account?
+            <Link to="/auth" className="text-primary hover:underline ml-1 font-medium">Sign in</Link>
+          </p>
+        </div>
       </div>
     </div>
   );

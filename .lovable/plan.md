@@ -1,28 +1,37 @@
 
 
-## Compact + Luxury Signup Redesign
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-Pure visual pass on `src/pages/Signup.tsx`. No logic changes.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Compacting strategy (no scroll on 1080p)
-- Reduce header: smaller icon (w-10 h-10), smaller title (text-xl), tighter margins (mb-6 instead of mb-10)
-- Reduce spacing between fields: `space-y-3.5` instead of `space-y-5`
-- Shrink inputs: `h-10` instead of `h-12`
-- Remove helper text under Username and Phone (keeps the form tight)
-- Labels: `text-xs` instead of `text-sm`, `mb-1` instead of `mb-1.5`
-- Password row: side-by-side (2-col grid) like the name row
-- Reduce bottom padding: `py-6` instead of `py-12`
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Luxury feel
-- Subtle card container: `bg-white/[0.02] border border-white/[0.06] rounded-2xl p-8` with soft shadow
-- Inputs: slightly more refined border `border-white/[0.08]`, add `transition-colors` on focus
-- Button: add subtle glow shadow on hover
-- Header: add letter-spacing to "VAULT OS" (`tracking-[0.2em]`)
-- "Already have an account?" inside the card at bottom
-- Subtle divider line above button
+### Solution
 
-### File: `src/pages/Signup.tsx`
-- All changes are className/layout only
-- Password + Confirm Password become a 2-col row
-- No logic, validation, or data flow changes
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
+
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
