@@ -66,7 +66,7 @@ export function AcademySidebar() {
     setInboxOpen(open);
     try { localStorage.setItem("va_inbox_open", String(open)); } catch {}
   };
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -139,7 +139,7 @@ export function AcademySidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  onClick={() => setSearchOpen(true)}
+                  onClick={() => { setSearchOpen(true); if (isMobile) setOpenMobile(false); }}
                   className="group/search flex items-center gap-2 w-full rounded-[10px] bg-white/[0.03] border border-white/[0.04] px-2.5 py-2 h-10 transition-colors duration-[120ms] ease-out hover:bg-[#131922] focus-visible:bg-[#131922] focus-visible:border-primary/40 focus-visible:outline-none"
                 >
                   <Search className="h-4 w-4 shrink-0 text-[#8B949E] group-focus-visible/search:text-[#E6EDF3] transition-opacity duration-[120ms]" />
@@ -167,6 +167,7 @@ export function AcademySidebar() {
                     <NavLink
                       to="/academy/start"
                       end
+                      onClick={() => { if (isMobile) setOpenMobile(false); }}
                       className="flex items-center gap-2 px-2 py-1.5 text-primary/80 hover:text-primary"
                       activeClassName="bg-[#151C26] text-primary font-medium border-l-[3px] border-l-primary"
                     >
@@ -233,6 +234,7 @@ export function AcademySidebar() {
                       <NavLink
                         to={path}
                         end
+                        onClick={() => { if (isMobile) setOpenMobile(false); }}
                         className={`group/nav relative flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors duration-150 text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[#131922]`}
                         activeClassName="!text-[#E6EDF3] !bg-[#151C26] font-medium border-l-[3px] border-l-[#3B82F6]"
                       >
