@@ -17,7 +17,24 @@ const ResetPassword = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Check URL hash for recovery token (most reliable — handles race condition)
+    // Primary: read token_hash from query params (direct link, bypasses Supabase redirect)
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get("token_hash");
+    const type = params.get("type");
+
+    if (tokenHash && type === "recovery") {
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
+        .then(({ error: otpError }) => {
+          if (otpError) {
+            setError("Reset link is invalid or expired. Please request a new one.");
+          } else {
+            setReady(true);
+          }
+        });
+      return; // no cleanup needed
+    }
+
+    // Fallback: check hash fragment (legacy links)
     const hash = window.location.hash;
     if (hash.includes("type=recovery")) {
       setReady(true);
@@ -29,7 +46,7 @@ const ResetPassword = () => {
       }
     });
 
-    // Fallback: session already exists (token consumed during redirect)
+    // Fallback: session already exists
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setReady(true);
     });

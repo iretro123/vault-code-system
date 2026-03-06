@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       options: { redirectTo },
     });
 
-    if (linkError || !linkData?.properties?.action_link) {
+    if (linkError || !linkData?.properties?.hashed_token) {
       console.error("[GHL] Failed to generate reset link:", linkError?.message);
       return new Response(JSON.stringify({ error: "Failed to generate reset link" }), {
         status: 500,
@@ -90,7 +90,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const resetLink = linkData.properties.action_link;
+    // Build a direct link to our reset page with the hashed token.
+    // This bypasses Supabase's /verify redirect which fails when the
+    // custom domain isn't in the allowed redirect URLs list.
+    const hashedToken = linkData.properties.hashed_token;
+    const resetLink = `${redirectTo}?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
 
     // Upsert contact in GHL
     const upsertBody: Record<string, unknown> = {
