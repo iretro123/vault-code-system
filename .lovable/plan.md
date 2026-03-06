@@ -1,61 +1,37 @@
 
 
-## Beginner Clarity Pass — Plain-English Guidance
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-Surgical changes to `src/components/vault-planner/VaultTradePlanner.tsx` only. No new files, no layout changes, no logic changes.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
----
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### 1. Account Plan Card (below Account Size input, lines ~348-349)
+### Solution
 
-Add a compact guidance strip that only appears when `acctSize > 0`. Uses existing computed values (`riskBudget`, `idealPrem`, `aggressivePrem`):
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-```
-YOUR ACCOUNT PLAN
-For a $1,000 account:
-  You can risk       $20.00
-  Best premium zone  ~$0.50
-  Stretch zone       up to $1.00
-  Best for: 1-contract setups
-```
-
-Styled as a tiny card inside the Account panel — same `inputBg` background, compact `text-[10px]` lines, no extra height. Also fix the tier toggle to show all 4 tiers (Micro, Small, Medium, Large) — currently only shows 3.
-
-### 2. Trade Panel — Buy Price helper (lines ~397-406)
-
-Replace current technical labels with beginner wording. After the input, show a dynamic zone label:
-
-- If `entryVal <= idealPrem`: "This premium is in your **Best zone**" (green)
-- If `entryVal <= aggressivePrem`: "This premium is in your **Stretch zone**" (amber)  
-- If `entryVal > aggressivePrem`: "This premium is **Too expensive** for your account" (red)
-
-Keep the "Use Ideal" / "Use Max" quick-fill chips.
-
-### 3. Trade Panel — Stop Price helper (lines ~420-427)
-
-Replace "Max stop width" / "Lowest stop" with beginner wording:
-
-```
-For 1 contract:
-  Max risk room: $0.20 · Suggested stop: $0.30 or higher
-```
-
-### 4. Results Panel — Label + Verdict Explanation (lines ~448-475)
-
-- Change "How Many Contracts" → "Contracts to Buy"
-- Add a one-line human explanation below the verdict banner:
-  - SAFE: "This trade fits comfortably inside your account rules."
-  - AGGRESSIVE: "This trade works, but it is at the top end of your size range."
-  - NO_TRADE: "This trade is too large for your account. Lower the premium or widen your stop."
-
-### 5. Footer cleanup (lines ~489-490)
-
-Simplify: "Contract size is based on both your risk limit and spend cap." — shorter, no bold spans.
-
----
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
 ### Files
-- `src/components/vault-planner/VaultTradePlanner.tsx` — all changes above
-
-No new components. No calc engine changes. No new scrolling.
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

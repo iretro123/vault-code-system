@@ -133,17 +133,15 @@ function ResultRow({ label, value, large, accent }: { label: string; value: stri
 
 function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: string }) {
   const config = {
-    SAFE: { bg: "hsl(142 71% 45% / 0.15)", border: "hsl(142 71% 45% / 0.4)", color: "hsl(142 71% 45%)", label: "PASS" },
-    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.12)", border: "hsl(38 92% 50% / 0.4)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE" },
-    NO_TRADE: { bg: "hsl(0 72% 51% / 0.12)", border: "hsl(0 72% 51% / 0.4)", color: "hsl(0 72% 51%)", label: "NO TRADE" },
+    SAFE: { bg: "hsl(142 71% 45% / 0.15)", border: "hsl(142 71% 45% / 0.4)", color: "hsl(142 71% 45%)", label: "PASS", explanation: "This trade fits comfortably inside your account rules." },
+    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.12)", border: "hsl(38 92% 50% / 0.4)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE", explanation: "This trade works, but it is at the top end of your size range." },
+    NO_TRADE: { bg: "hsl(0 72% 51% / 0.12)", border: "hsl(0 72% 51% / 0.4)", color: "hsl(0 72% 51%)", label: "NO TRADE", explanation: "This trade is too large for your account. Lower the premium or widen your stop." },
   }[verdict];
 
   return (
     <div className="rounded-lg px-4 py-3 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
       <p className="text-xl font-black tracking-widest uppercase" style={{ color: config.color }}>{config.label}</p>
-      <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-        Trade size is within your <span className="font-semibold text-foreground/80">risk</span> and <span className="font-semibold text-foreground/80">spend rules</span>.
-      </p>
+      <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{config.explanation}</p>
     </div>
   );
 }
@@ -347,8 +345,24 @@ export function VaultTradePlanner() {
             />
           </FieldRow>
 
+          {acctSize > 0 && (
+            <div className="rounded-lg px-3 py-2.5 space-y-1.5" style={{ background: inputBg, border: inputBorder }}>
+              <p className="text-[9px] font-bold text-primary/80 tracking-widest uppercase">Your Account Plan</p>
+              <p className="text-[10px] text-muted-foreground">For a <span className="font-semibold text-foreground">{safeCurrency(acctSize)}</span> account:</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
+                <span className="text-muted-foreground">You can risk</span>
+                <span className="text-foreground font-mono font-semibold text-right">{safeCurrency(riskBudget)}</span>
+                <span className="text-muted-foreground">Best premium zone</span>
+                <span className="text-foreground font-mono font-semibold text-right">~{safeCurrency(idealPrem)}</span>
+                <span className="text-muted-foreground">Stretch zone</span>
+                <span className="text-foreground font-mono font-semibold text-right">up to {safeCurrency(aggressivePrem)}</span>
+              </div>
+              <p className="text-[9px] text-muted-foreground/50 italic">Best for: 1-contract setups</p>
+            </div>
+          )}
+
           <SegmentedToggle
-            options={["Small", "Medium", "Large"] as AccountTierLabel[]}
+            options={["Micro", "Small", "Medium", "Large"] as AccountTierLabel[]}
             value={tier}
             onChange={handleTierChange}
           />
@@ -396,10 +410,13 @@ export function VaultTradePlanner() {
           {/* Buy Price guidance */}
           {acctSize > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap -mt-1.5">
-              <span className="text-[9px] text-muted-foreground/50">
-                Ideal: ≤ <span className="font-mono font-semibold text-primary/70">${idealPrem.toFixed(2)}</span>
-                {" · "}Max: <span className="font-mono font-semibold text-foreground/60">${aggressivePrem.toFixed(2)}</span>
-              </span>
+              {entryVal > 0 && (
+                <span className={`text-[9px] font-semibold ${
+                  entryVal <= idealPrem ? "text-green-400" : entryVal <= aggressivePrem ? "text-amber-400" : "text-red-400"
+                }`}>
+                  {entryVal <= idealPrem ? "✓ Best zone" : entryVal <= aggressivePrem ? "⚠ Stretch zone" : "✗ Too expensive for your account"}
+                </span>
+              )}
               <GuidanceChip label="Use Ideal" onClick={() => setEntryPremium(idealPrem.toFixed(2))} />
               <GuidanceChip label="Use Max" onClick={() => setEntryPremium(aggressivePrem.toFixed(2))} />
             </div>
@@ -419,8 +436,8 @@ export function VaultTradePlanner() {
           {/* Stop guidance */}
           {acctSize > 0 && entryVal > 0 ? (
             <p className="text-[9px] text-muted-foreground/50 -mt-1.5">
-              Max stop width: <span className="font-mono font-semibold text-foreground/60">${maxStopW.toFixed(2)}</span>
-              {" · "}Lowest stop: <span className="font-mono font-semibold text-foreground/60">${lowestStop.toFixed(2)}</span>
+              For 1 contract — Max risk room: <span className="font-mono font-semibold text-foreground/60">${maxStopW.toFixed(2)}</span>
+              {" · "}Suggested stop: <span className="font-mono font-semibold text-foreground/60">${lowestStop.toFixed(2)} or higher</span>
             </p>
           ) : (
             <p className="text-[10px] text-muted-foreground/40 -mt-1">Cut trade if option hits your stop.</p>
@@ -446,7 +463,7 @@ export function VaultTradePlanner() {
               {/* Core metrics */}
               <div className="rounded-lg overflow-hidden" style={{ border: panelBorder }}>
                 <ResultRow
-                  label="How Many Contracts"
+                  label="Contracts to Buy"
                   value={`${liveResult.finalContracts}`}
                   large
                   accent
@@ -487,7 +504,7 @@ export function VaultTradePlanner() {
       {/* Footer */}
       <div className="text-center space-y-1 pb-2">
         <p className="text-[10px] text-muted-foreground/50 font-semibold">
-          "How many contracts" is based on <span className="text-foreground/70">BOTH</span> your risk limit <span className="text-foreground/70">and</span> your spend cap. <span className="italic text-muted-foreground/40">This helps prevent oversizing.</span>
+          Contract size is based on both your risk limit and spend cap.
         </p>
         <p className="text-[10px] text-muted-foreground/30 italic">
           Cut at your stop. Planned loss is not a guarantee.
