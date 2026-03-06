@@ -255,7 +255,7 @@ const AcademyAdmin = () => {
   const resolvedTickets = tickets.filter((t) => t.status === "resolved");
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="Admin Panel" subtitle="Manage Academy content, tickets, and users" />
       <div className="px-4 md:px-6 pb-6 space-y-8">
 
