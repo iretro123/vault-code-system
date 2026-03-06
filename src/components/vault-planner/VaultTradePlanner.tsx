@@ -426,8 +426,14 @@ export function VaultTradePlanner() {
                   {entryVal <= idealPrem ? "✓ Best zone" : entryVal <= aggressivePrem ? "⚠ Stretch zone" : "✗ Too expensive for your account"}
                 </span>
               )}
-              <GuidanceChip label="Use Ideal" onClick={() => setEntryPremium(idealPrem.toFixed(2))} />
-              <GuidanceChip label="Use Max" onClick={() => setEntryPremium(aggressivePrem.toFixed(2))} />
+              <GuidanceChip label="Use Ideal" onClick={() => {
+                setEntryPremium(idealPrem.toFixed(2));
+                setStopPremium(Math.max(0.01, idealPrem - maxStopW).toFixed(2));
+              }} />
+              <GuidanceChip label="Use Max" onClick={() => {
+                setEntryPremium(aggressivePrem.toFixed(2));
+                setStopPremium(Math.max(0.01, aggressivePrem - maxStopW).toFixed(2));
+              }} />
             </div>
           )}
 
