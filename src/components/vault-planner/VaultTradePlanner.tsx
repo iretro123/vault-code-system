@@ -281,7 +281,7 @@ export function VaultTradePlanner() {
   };
 
   const handleLoadExample = () => {
-    setAutoTierEnabled(true);
+    
     setAccountSize("10000");
     setDirection("Long Call");
     setEntryPremium("1.20");
