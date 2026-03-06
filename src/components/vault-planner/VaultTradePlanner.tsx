@@ -19,7 +19,7 @@ import { TradePlannerLoading } from "./TradePlannerLoading";
 import { TradePlannerResults } from "./TradePlannerResults";
 import { xp } from "./xp-styles";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Lock, Unlock } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock, Unlock, AlertTriangle } from "lucide-react";
 
 type UIState = "input" | "loading" | "results";
 
@@ -85,6 +85,7 @@ export function VaultTradePlanner() {
   const [tp2] = useState("50");
   const [showMore, setShowMore] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [ticker, setTicker] = useState(saved.ticker ?? "");
   const [dte, setDte] = useState(saved.dte?.toString() ?? "");
   const [delta, setDelta] = useState(saved.delta?.toString() ?? "");
   const [strike, setStrike] = useState(saved.strike?.toString() ?? "");
@@ -115,12 +116,13 @@ export function VaultTradePlanner() {
     stopPremium: parseFloat(stopPremium) || 0,
     tp1Percent: parseFloat(tp1) || 30,
     tp2Percent: parseFloat(tp2) || 50,
+    ticker: ticker || undefined,
     dte: dte ? parseFloat(dte) : undefined,
     delta: delta ? parseFloat(delta) : undefined,
     strike: strike ? parseFloat(strike) : undefined,
     chartStopLevel: chartStop ? parseFloat(chartStop) : undefined,
     underlyingEntry: underlyingEntry ? parseFloat(underlyingEntry) : undefined,
-  }), [accountSize, riskPercent, debitCapPercent, direction, entryPremium, stopPremium, tp1, tp2, dte, delta, strike, chartStop, underlyingEntry]);
+  }), [accountSize, riskPercent, debitCapPercent, direction, entryPremium, stopPremium, tp1, tp2, ticker, dte, delta, strike, chartStop, underlyingEntry]);
 
   // Live result — only valid when all required fields pass validation
   const liveResult: PlannerResult | null = (() => {
@@ -141,6 +143,10 @@ export function VaultTradePlanner() {
     if (acct > 0 && cap > 0) return acct * (cap / 100);
     return null;
   })();
+
+  // Theta warning for live preview
+  const liveDte = dte ? parseFloat(dte) : null;
+  const liveThetaWarning = liveResult?.thetaWarning ?? null;
 
   useEffect(() => {
     try {
@@ -173,6 +179,7 @@ export function VaultTradePlanner() {
     setDirection("Long Call");
     setEntryPremium("");
     setStopPremium("");
+    setTicker("");
     setDte("");
     setDelta("");
     setStrike("");
@@ -190,9 +197,10 @@ export function VaultTradePlanner() {
     setDirection("Long Call");
     setEntryPremium("0.80");
     setStopPremium("0.40");
+    setTicker("SPY");
     setDte("30");
     setDelta("0.40");
-    setStrike("");
+    setStrike("450");
     setChartStop("");
     setUnderlyingEntry("");
     setErrors({});
@@ -337,6 +345,16 @@ export function VaultTradePlanner() {
 
       {/* Section 2: Trade */}
       <XPFieldset legend="2) Trade">
+        {/* Ticker */}
+        <XPInput
+          label="Ticker (optional)"
+          type="text"
+          value={ticker}
+          onChange={(e) => setTicker(e.target.value.toUpperCase())}
+          placeholder="SPY"
+          style={{ textTransform: "uppercase" }}
+        />
+
         <div className="flex gap-1.5">
           {(["Long Call", "Long Put"] as TradeDirection[]).map((d) => (
             <XPButton key={d} active={direction === d} onClick={() => setDirection(d)}>{d}</XPButton>
@@ -362,14 +380,26 @@ export function VaultTradePlanner() {
 
         {showMore && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-            <XPInput label="Days Left" type="number" value={dte} onChange={(e) => setDte(e.target.value)} placeholder="30" tooltip="How many days until the option expires." />
-            <XPInput label="Option Speed" type="number" step="0.01" value={delta} onChange={(e) => setDelta(e.target.value)} placeholder="0.40" tooltip="How fast the option may move when the stock moves." />
-            <XPInput label="Strike" type="number" step="0.5" value={strike} onChange={(e) => setStrike(e.target.value)} />
+            <XPInput label="Days Left (DTE)" type="number" value={dte} onChange={(e) => setDte(e.target.value)} placeholder="30" tooltip="How many days until the option expires." error={errors.dte} />
+            <XPInput label="Option Speed (Delta)" type="number" step="0.01" value={delta} onChange={(e) => setDelta(e.target.value)} placeholder="0.40" tooltip="How fast the option may move when the stock moves." error={errors.delta} />
+            <XPInput label="Strike" type="number" step="0.5" value={strike} onChange={(e) => setStrike(e.target.value)} placeholder="450" />
             <XPInput label="Chart Stop Level" type="number" step="0.01" value={chartStop} onChange={(e) => setChartStop(e.target.value)} />
             <XPInput label="Underlying Entry" type="number" step="0.01" value={underlyingEntry} onChange={(e) => setUnderlyingEntry(e.target.value)} />
           </div>
         )}
-        <p className="text-[10px] text-muted-foreground">Optional: Days Left • Option Speed • Strike • Chart stop level</p>
+
+        {/* Theta warning banner */}
+        {liveThetaWarning && (
+          <div
+            className="rounded-[3px] px-3 py-2 text-[11px] font-medium flex items-center gap-1.5"
+            style={{ background: xp.warningBg, border: xp.warningBorder, color: xp.warningText }}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+            {liveThetaWarning}
+          </div>
+        )}
+
+        <p className="text-[10px] text-muted-foreground">Optional: Ticker • Days Left • Option Speed • Strike • Chart stop level</p>
       </XPFieldset>
 
       {/* Section 3: Generate */}
@@ -385,18 +415,27 @@ export function VaultTradePlanner() {
               <LivePreviewRow label="How Many Contracts" value={`${liveResult.finalContracts}`} />
               <LivePreviewRow label="Option Stop Price" value={safeCurrency(buildInputs().stopPremium)} />
               <LivePreviewRow label="Planned Loss If Stop Hits" value={safeCurrency(liveResult.totalPlannedRisk)} />
+              <LivePreviewRow label="Max Possible Loss (Premium)" value={safeCurrency(liveResult.maxPossibleLoss)} />
               <LivePreviewRow label="Money Needed to Enter" value={safeCurrency(liveResult.totalPositionCost)} />
               <LivePreviewRow label="Main Target (1:2)" value={safeCurrency(liveResult.rr1to2Target)} />
+              <LivePreviewRow label="Profit if 1:2 Hits" value={`+${safeCurrency(liveResult.profitAtRR2)}`} />
               <LivePreviewRow label="Quick Profit Idea (TP1)" value={safeCurrency(liveResult.tp1Premium)} />
               <LivePreviewRow label="Bigger Profit Idea (TP2)" value={safeCurrency(liveResult.tp2Premium)} />
+              <LivePreviewRow label="Account Risk" value={`${liveResult.accountRiskPercent.toFixed(1)}%`} />
+              <LivePreviewRow label="Account Exposure" value={`${liveResult.accountExposurePercent.toFixed(1)}%`} />
+              {liveResult.breakEvenAtExpiry != null && (
+                <LivePreviewRow label="Break-Even at Expiry" value={safeCurrency(liveResult.breakEvenAtExpiry)} />
+              )}
               {/* What To Do inline summary */}
               <div className="pt-2 mt-2 space-y-0.5 text-[11px] text-foreground" style={{ borderTop: "1px solid hsl(213 18% 22%)" }}>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80 mb-1">What To Do</p>
+                {ticker && <p>• Ticker: <strong>{ticker}</strong></p>}
                 <p>• Buy <strong>{liveResult.finalContracts}</strong> {direction} at <strong>{safeCurrency(buildInputs().entryPremium)}</strong></p>
                 <p>• Cut the trade if the option hits <strong>{safeCurrency(buildInputs().stopPremium)}</strong></p>
                 <p>• Money needed: <strong>{safeCurrency(liveResult.totalPositionCost)}</strong></p>
                 <p>• Planned loss if stop hits: <strong>{safeCurrency(liveResult.totalPlannedRisk)}</strong></p>
-                <p>• Main target (1:2): <strong>{safeCurrency(liveResult.rr1to2Target)}</strong></p>
+                <p>• Max you can lose: <strong>{safeCurrency(liveResult.maxPossibleLoss)}</strong> (premium paid)</p>
+                <p>• Main target (1:2): <strong>{safeCurrency(liveResult.rr1to2Target)}</strong> → profit <strong>+{safeCurrency(liveResult.profitAtRR2)}</strong></p>
               </div>
             </>
           ) : (
@@ -405,10 +444,11 @@ export function VaultTradePlanner() {
               <LivePreviewRow label="How Many Contracts" value="—" />
               <LivePreviewRow label="Option Stop Price" value="—" />
               <LivePreviewRow label="Planned Loss If Stop Hits" value="—" />
+              <LivePreviewRow label="Max Possible Loss (Premium)" value="—" />
               <LivePreviewRow label="Money Needed to Enter" value="—" />
               <LivePreviewRow label="Main Target (1:2)" value="—" />
-              <LivePreviewRow label="Quick Profit Idea (TP1)" value="—" />
-              <LivePreviewRow label="Bigger Profit Idea (TP2)" value="—" />
+              <LivePreviewRow label="Profit if 1:2 Hits" value="—" />
+              <LivePreviewRow label="Account Risk / Exposure" value="—" />
               <p className="text-[10px] text-muted-foreground/50 pt-2">
                 Enter your account + option buy price + option stop price. VAULT will build your trade plan.
               </p>
