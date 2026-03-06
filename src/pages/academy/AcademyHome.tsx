@@ -109,7 +109,7 @@ const AcademyHome = () => {
             <div className="lg:col-span-2 h-48 rounded-2xl bg-muted/30" />
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
