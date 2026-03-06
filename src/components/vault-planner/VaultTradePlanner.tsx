@@ -361,7 +361,15 @@ export function VaultTradePlanner() {
           <SegmentedToggle
             options={["Micro", "Small", "Medium", "Large"] as AccountTierLabel[]}
             value={tier}
-            onChange={handleTierChange}
+            onChange={(t) => {
+              setTier(t);
+              const d = TIER_DEFAULTS[t];
+              setRiskPercent(d.riskPercent.toString());
+              setPreferredSpendPercent(d.preferredSpendPercent.toString());
+              setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
+              setDefaultsLocked(true);
+            }}
+            disabled={acctSize > 0}
           />
 
           {/* Custom overrides */}
