@@ -122,7 +122,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
 
         {/* Right — Chart image */}
         {imageAtt && (
-          <div className="hidden sm:block shrink-0 bg-[hsl(220,10%,96%)] border-l border-[hsl(220,10%,88%)] max-w-[280px]">
+          <div className="shrink-0 bg-[hsl(220,10%,96%)] border-t sm:border-t-0 sm:border-l border-[hsl(220,10%,88%)] w-full sm:max-w-[280px]">
             <img
               src={(imageAtt as any).url}
               alt="Chart"
@@ -1099,7 +1099,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                                className="rounded-xl max-w-[360px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
+                                className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
                               />
                               <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-full">{att.filename}</span>
                             </button>
