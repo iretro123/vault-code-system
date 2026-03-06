@@ -1443,6 +1443,58 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 </div>
               )}
 
+              {/* Mention autocomplete dropdown */}
+              {suggestions.length > 0 && (
+                <div className="absolute bottom-full left-0 right-0 mb-1 z-20">
+                  <div className="mx-0 rounded-xl border border-white/[0.08] bg-card shadow-xl overflow-hidden max-h-[200px] overflow-y-auto">
+                    {suggestions.map((item, idx) => {
+                      const isEveryone = 'type' in item && item.type === "everyone";
+                      const mentionUser = !isEveryone ? item as MentionUser : null;
+                      return (
+                        <button
+                          key={isEveryone ? "everyone" : mentionUser!.user_id}
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); selectMention(item); }}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors",
+                            idx === selectedIndex
+                              ? "bg-primary/10 text-foreground"
+                              : "text-foreground/80 hover:bg-white/[0.04]"
+                          )}
+                        >
+                          {isEveryone ? (
+                            <>
+                              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                <AtSign className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <div>
+                                <span className="text-sm font-semibold text-primary">@everyone</span>
+                                <span className="text-[11px] text-muted-foreground ml-2">Notify all members</span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <ChatAvatar
+                                avatarUrl={mentionUser!.avatar_url}
+                                userName={getMentionLabel(mentionUser!)}
+                                size="h-7 w-7"
+                              />
+                              <div className="min-w-0">
+                                <span className="text-sm font-medium truncate block">{getMentionLabel(mentionUser!)}</span>
+                                {mentionUser!.username && (
+                                  <span className="text-[11px] text-muted-foreground">@{mentionUser!.username}</span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Composer bar — with drag-and-drop support */}
               <div
                 data-chat-composer
