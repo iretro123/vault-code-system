@@ -1,37 +1,45 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Performance Audit: Tab Switching + Layout Stability
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Findings
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+**1. HeroHeader Particle Canvas (193ms self-time)**
+The canvas particle animation runs continuously via `requestAnimationFrame` even when the dashboard is not visible (navigated to another tab). Since React Router unmounts/remounts pages on navigation, this re-initializes 30 particles + connection lines every time you return to Dashboard — causing a visible paint burst.
 
-### Solution
+**2. Dashboard CLS = 0.21 (needs improvement)**
+The staggered `animate-fade-in` with `opacity-0` initial state + `animationDelay` up to 400ms causes layout shifts. Elements start invisible at `opacity-0` with `translateY(10px)`, then pop in with delays — the browser reports this as cumulative layout shift.
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**3. Community tabs already use CSS-toggle mounting (good)**
+`AcademyCommunity.tsx` keeps all 4 tabs mounted and toggles `hidden/block` — this is correct. But `RoomChat` still does work on mount (fetching messages, setting up realtime subscriptions) for ALL 4 rooms simultaneously, even the hidden ones.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**4. Page transitions cause full remount**
+Each sidebar nav click unmounts the old page and mounts a new one (standard React Router). The `AcademyLearn` page fires 3 hooks on mount (`useAcademyModules`, `useAcademyLessons`, `useLessonProgress`), `AcademyTrade` fires `useTradeLog` + balance fetch. Each mount shows a loading skeleton briefly.
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+### Plan
+
+**File: `src/components/academy/dashboard/HeroHeader.tsx`**
+- Reduce `PARTICLE_COUNT` from 30 to 18 and `CONNECT_DIST` from 80 to 60 — fewer particles = fewer O(n²) distance checks per frame
+- Add `document.hidden` check inside the draw loop — skip frames when tab/page isn't visible
+- Use `visibilitychange` listener to pause/resume the animation
+
+**File: `src/pages/academy/AcademyHome.tsx`**
+- Remove staggered `animationDelay` and `opacity-0` initial states — render all cards immediately visible
+- Keep a single subtle `animate-fade-in` on the outer container only (one 200ms fade, no stagger) to avoid CLS
+- This eliminates the 0.21 CLS score from 6 shifting elements
+
+**File: `tailwind.config.ts`**
+- Remove the `translateY(10px)` from `fade-in` keyframes — use opacity-only fade to prevent layout shifts
+- Reduce duration from 0.3s to 0.15s
+
+**File: `src/pages/academy/AcademyCommunity.tsx`**
+- No structural changes needed (CSS-toggle pattern is correct)
+- The existing pattern already prevents remounts
+
+**File: `src/components/academy/RoomChat.tsx`**
+- Add an `active` prop (default `true`) — when `false`, skip the initial data fetch and realtime subscription setup
+- In `AcademyCommunity.tsx`, pass `active={activeTab === "trade-floor"}` etc. so only the visible tab fetches data on mount; others defer until first shown
+- Use a `hasBeenActive` ref so once a tab has been activated, it stays subscribed
+
+These changes target the three main lag sources: particle canvas overhead, staggered animation CLS, and unnecessary concurrent data fetching for hidden community tabs.
 
