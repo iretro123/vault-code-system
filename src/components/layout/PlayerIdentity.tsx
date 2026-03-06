@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
+import { ExperienceLevelBadge } from "@/components/academy/ExperienceLevelBadge";
 import { Button } from "@/components/ui/button";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import {
