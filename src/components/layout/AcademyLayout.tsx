@@ -117,7 +117,7 @@ export function AcademyLayout() {
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
                 {isMobile && isCommunity && (
-                  <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => navigate("/academy/home")}>
+                  <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setOpenMobile(true)}>
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
                 )}
