@@ -1,37 +1,52 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix Password Reset: Add SMS + Fix Redirect Issue
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+Two problems identified:
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Problem 1: No SMS on password reset
+`SettingsSecurity.tsx` calls `supabase.auth.resetPasswordForEmail()` directly, bypassing the `ghl-password-reset` edge function that sends both SMS and email.
 
-### Solution
+**Fix in `src/components/settings/SettingsSecurity.tsx`:**
+Replace the `handleResetPassword` function to call the `ghl-password-reset` edge function instead:
+```ts
+const handleResetPassword = async () => {
+  if (!user?.email) return;
+  const { error } = await supabase.functions.invoke("ghl-password-reset", {
+    body: { email: user.email, origin: window.location.origin },
+  });
+  if (error) { toast.error("Failed to send reset link."); return; }
+  toast.success("Password reset link sent via email and text.");
+};
+```
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Problem 2: Reset page redirects to login instead of showing the form
+The `ResetPassword.tsx` page relies on the `PASSWORD_RECOVERY` auth state event, but this event can fire before the component mounts (race condition). The fallback `getSession()` check works, but the page doesn't detect the recovery context from the URL hash.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**Fix in `src/pages/ResetPassword.tsx`:**
+Add URL hash parsing to detect `type=recovery` directly from the redirect URL fragments. This handles the case where the auth state event fires before the listener is attached:
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+```ts
+useEffect(() => {
+  // Check URL hash for recovery token (most reliable)
+  const hash = window.location.hash;
+  if (hash.includes("type=recovery")) {
+    setReady(true);
+  }
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") setReady(true);
+  });
+
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) setReady(true);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+```
+
+### Files to change
+1. `src/components/settings/SettingsSecurity.tsx` — use GHL edge function
+2. `src/pages/ResetPassword.tsx` — add URL hash detection
 
