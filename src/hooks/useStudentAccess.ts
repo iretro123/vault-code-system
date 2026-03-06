@@ -104,7 +104,7 @@ export function useStudentAccess() {
   }, [fetchAccess]);
 
   // Admin/operator bypass
-  const adminBypass = permResolved && (isCEO || isOperator);
+  const adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator);
 
   return {
     status: state.status,
