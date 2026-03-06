@@ -5,6 +5,13 @@
 
 export type AccountTierLabel = "Small" | "Medium" | "Large";
 export type TradeDirection = "Long Call" | "Long Put";
+export type TradeVerdict = "PASS" | "CAUTION" | "NO_TRADE";
+
+export function detectTier(accountSize: number): AccountTierLabel {
+  if (accountSize >= 50000) return "Large";
+  if (accountSize >= 15000) return "Medium";
+  return "Small";
+}
 
 export interface TierDefaults {
   riskPercent: number;
@@ -63,6 +70,9 @@ export interface PlannerResult {
   accountExposurePercent: number;
   breakEvenAtExpiry: number | null;
   thetaWarning: string | null;
+  verdict: TradeVerdict;
+  verdictReason: string;
+  sizingExplanation: string;
 }
 
 export interface ValidationError {
@@ -147,6 +157,41 @@ export function calculatePlan(inputs: PlannerInputs): PlannerResult {
     }
   }
 
+  // Verdict system
+  let verdict: TradeVerdict;
+  let verdictReason: string;
+  if (finalContracts === 0) {
+    verdict = "NO_TRADE";
+    verdictReason = "This setup does not fit your account rules. The contract cost or stop risk is too high.";
+  } else if (
+    !riskCheckPass || !debitCheckPass ||
+    accountRiskPercent > inputs.riskPercent * 0.85 ||
+    (finalContracts === 1 && contractsByRisk !== contractsByDebit) ||
+    (inputs.dte != null && inputs.dte <= 3)
+  ) {
+    verdict = "CAUTION";
+    verdictReason = finalContracts === 1
+      ? "Trade fits but is tight — only 1 contract allowed."
+      : accountRiskPercent > inputs.riskPercent * 0.85
+        ? "Trade is near your risk limit. Watch sizing carefully."
+        : (inputs.dte != null && inputs.dte <= 3)
+          ? "Extreme theta decay — this trade needs fast execution."
+          : "Trade technically fits but is aggressive for your account.";
+  } else {
+    verdict = "PASS";
+    verdictReason = "Trade size fits within your risk and spend rules.";
+  }
+
+  // Sizing explanation
+  let sizingExplanation: string;
+  if (finalContracts === 0) {
+    sizingExplanation = "This trade does not fit because the contract cost or stop risk is too high for your account rules.";
+  } else if (contractsByRisk <= contractsByDebit) {
+    sizingExplanation = `VAULT checked both your risk limit and your spend cap, then used the smaller allowed size. Your risk limit (${inputs.riskPercent}%) was the binding constraint — that is why this trade allows ${finalContracts} contract${finalContracts > 1 ? "s" : ""}.`;
+  } else {
+    sizingExplanation = `VAULT checked both your risk limit and your spend cap, then used the smaller allowed size. Your spend cap (${inputs.debitCapPercent}%) was the binding constraint — that is why this trade allows ${finalContracts} contract${finalContracts > 1 ? "s" : ""}.`;
+  }
+
   return {
     riskBudget,
     debitCapDollars,
@@ -174,6 +219,9 @@ export function calculatePlan(inputs: PlannerInputs): PlannerResult {
     accountExposurePercent,
     breakEvenAtExpiry,
     thetaWarning,
+    verdict,
+    verdictReason,
+    sizingExplanation,
   };
 }
 
