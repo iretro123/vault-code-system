@@ -410,10 +410,13 @@ export function VaultTradePlanner() {
           {/* Buy Price guidance */}
           {acctSize > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap -mt-1.5">
-              <span className="text-[9px] text-muted-foreground/50">
-                Ideal: ≤ <span className="font-mono font-semibold text-primary/70">${idealPrem.toFixed(2)}</span>
-                {" · "}Max: <span className="font-mono font-semibold text-foreground/60">${aggressivePrem.toFixed(2)}</span>
-              </span>
+              {entryVal > 0 && (
+                <span className={`text-[9px] font-semibold ${
+                  entryVal <= idealPrem ? "text-green-400" : entryVal <= aggressivePrem ? "text-amber-400" : "text-red-400"
+                }`}>
+                  {entryVal <= idealPrem ? "✓ Best zone" : entryVal <= aggressivePrem ? "⚠ Stretch zone" : "✗ Too expensive for your account"}
+                </span>
+              )}
               <GuidanceChip label="Use Ideal" onClick={() => setEntryPremium(idealPrem.toFixed(2))} />
               <GuidanceChip label="Use Max" onClick={() => setEntryPremium(aggressivePrem.toFixed(2))} />
             </div>
