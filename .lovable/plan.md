@@ -1,37 +1,48 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Redesign Signup Page — Reference Style + Required Username + Name Fields
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+Pure visual redesign of `src/pages/Signup.tsx`. All existing logic (Stripe check, username check, referral, provisioning, ensureProfile) stays untouched.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Changes to `src/pages/Signup.tsx`
 
-### Solution
+**New state:**
+- `firstName`, `lastName`, `confirmPassword` strings
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**Field order (matching approved plan):**
+1. First Name / Last Name (side-by-side row, both required)
+2. Username (required, remove "(optional)", add red asterisk)
+3. Email (keep Stripe membership check as-is)
+4. Phone Number (required, keep as-is)
+5. Password
+6. Confirm Password (client-side match check)
+7. Create Account button
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**Style changes:**
+- Remove `<Card>` wrapper — form floats on dark background
+- Remove back arrow header
+- Keep Shield icon + "VAULT OS" title, subtitle "Join Vault Academy today"
+- Widen to `max-w-md`
+- Input styling: `bg-white/5 border-white/10 h-12 rounded-lg` (dark transparent look from reference)
+- Labels: `text-sm font-medium text-white/80`
+- Button: keep existing blue gradient style
+- "Already have an account?" link stays at bottom
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**Validation update:**
+- `fieldsValid` adds: `firstName.trim() !== "" && lastName.trim() !== "" && username.trim().length >= 3 && password === confirmPassword`
+- `handleSubmit` adds: confirm password mismatch toast, username required toast
+- Pass `display_name: \`${firstName.trim()} ${lastName.trim()}\`` to `ensureProfile`
+
+**ensureProfile call update:**
+```ts
+await ensureProfile(newUserId, email, {
+  phone_number: phoneNumber.trim(),
+  username: username.trim().toLowerCase(),
+  display_name: `${firstName.trim()} ${lastName.trim()}`,
+});
+```
+
+**`src/lib/ensureProfile.ts`** — add `display_name` to opts type and use it instead of email prefix default when provided.
+
+**Files:** `src/pages/Signup.tsx`, `src/lib/ensureProfile.ts` (minor opts addition). No database changes.
 
