@@ -14,10 +14,13 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 export function AcademyLayout() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
   const { logActivity } = useActivityLog();
@@ -112,6 +115,11 @@ export function AcademyLayout() {
           <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
+                {isMobile && isCommunity && (
+                  <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => navigate("/academy/home")}>
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                )}
                 <Link to="/academy/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <span className="text-lg font-bold tracking-tight text-foreground">
                     Vault<span className="text-primary">Academy</span>
