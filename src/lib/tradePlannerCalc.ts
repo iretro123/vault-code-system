@@ -5,6 +5,13 @@
 
 export type AccountTierLabel = "Small" | "Medium" | "Large";
 export type TradeDirection = "Long Call" | "Long Put";
+export type TradeVerdict = "PASS" | "CAUTION" | "NO_TRADE";
+
+export function detectTier(accountSize: number): AccountTierLabel {
+  if (accountSize >= 50000) return "Large";
+  if (accountSize >= 15000) return "Medium";
+  return "Small";
+}
 
 export interface TierDefaults {
   riskPercent: number;
