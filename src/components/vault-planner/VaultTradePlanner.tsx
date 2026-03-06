@@ -537,6 +537,21 @@ export function VaultTradePlanner() {
         </PanelCard>
       </div>
 
+      {/* Reset Button */}
+      <div className="flex justify-center md:justify-end">
+        <button
+          onClick={handleReset}
+          className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold
+            text-muted-foreground border border-border/40 bg-transparent
+            hover:text-destructive hover:border-destructive/30 hover:bg-destructive/5
+            active:scale-[0.97] transition-all duration-100
+            w-full md:w-auto justify-center"
+        >
+          <RotateCcw className="w-3.5 h-3.5 group-hover:rotate-[-90deg] transition-transform duration-200" />
+          Reset All
+        </button>
+      </div>
+
       {/* Footer */}
       <div className="text-center space-y-1 pb-2">
         <p className="text-[10px] text-muted-foreground/50 font-semibold">
