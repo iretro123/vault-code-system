@@ -258,6 +258,16 @@ export function VaultTradePlanner() {
   const isValid = liveResult !== null;
   const acctSize = parseFloat(accountSize) || 0;
 
+  // Guidance values for Trade panel
+  const riskBudget = acctSize * (parseFloat(riskPercent) / 100);
+  const prefBudget = acctSize * (parseFloat(preferredSpendPercent) / 100);
+  const hardBudget = acctSize * (parseFloat(hardMaxSpendPercent) / 100);
+  const idealPrem = prefBudget / 100;
+  const aggressivePrem = hardBudget / 100;
+  const maxStopW = riskBudget / 100;
+  const entryVal = parseFloat(entryPremium) || 0;
+  const lowestStop = entryVal > 0 ? Math.max(0.01, entryVal - maxStopW) : 0;
+
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(buildInputs())); } catch {}
   }, [buildInputs]);
@@ -432,6 +442,30 @@ export function VaultTradePlanner() {
             tooltip="Premium you pay per share (× 100 = contract cost)."
           />
 
+          {/* Buy Price guidance + chips */}
+          {acctSize > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap -mt-1">
+              <span className="text-[9px] text-muted-foreground/60">
+                Ideal: up to <span className="font-mono font-semibold text-primary/80">${idealPrem.toFixed(2)}</span>
+                {" · "}Aggressive max: <span className="font-mono font-semibold text-foreground/70">${aggressivePrem.toFixed(2)}</span>
+              </span>
+              <button
+                onClick={() => setEntryPremium(idealPrem.toFixed(2))}
+                className="px-2 py-0.5 text-[9px] font-semibold rounded-full text-primary/80 hover:text-primary transition-colors"
+                style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.15)" }}
+              >
+                Use Ideal
+              </button>
+              <button
+                onClick={() => setEntryPremium(aggressivePrem.toFixed(2))}
+                className="px-2 py-0.5 text-[9px] font-semibold rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                style={{ background: "hsl(214 22% 16%)", border: "1px solid hsl(213 18% 22%)" }}
+              >
+                Use Aggressive
+              </button>
+            </div>
+          )}
+
           <PlannerInput
             label="Stop Price"
             type="number"
@@ -443,7 +477,15 @@ export function VaultTradePlanner() {
             tooltip="If the option drops to this price, cut the trade."
           />
 
-          <p className="text-[10px] text-muted-foreground/50 -mt-1">Cut trade if option hits your stop.</p>
+          {/* Stop guidance */}
+          {acctSize > 0 && entryVal > 0 ? (
+            <p className="text-[9px] text-muted-foreground/60 -mt-1">
+              Max stop width: <span className="font-mono font-semibold text-foreground/70">${maxStopW.toFixed(2)}</span>
+              {" · "}Lowest stop: <span className="font-mono font-semibold text-foreground/70">${lowestStop.toFixed(2)}</span>
+            </p>
+          ) : (
+            <p className="text-[10px] text-muted-foreground/50 -mt-1">Cut trade if option hits your stop.</p>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-2 pt-1">
