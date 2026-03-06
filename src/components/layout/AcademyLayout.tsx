@@ -1,5 +1,5 @@
-import { ReactNode, useEffect, useRef } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
