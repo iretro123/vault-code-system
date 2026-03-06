@@ -1,16 +1,65 @@
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp, Plus, ArrowRight, Wallet, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useTradeLog } from "@/hooks/useTradeLog";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 export function MyTradesCard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { entries } = useTradeLog();
 
-  // For now, empty-state defaults — will connect to real data later
-  const tradesThisWeek = 0;
-  const winRate = "—";
-  const pnl = "—";
-  const balanceSet = false;
-  const todayTrades = 0;
+  const [accountBalance, setAccountBalance] = useState<number>(0);
+
+  // Fetch real balance from profiles
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("account_balance")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setAccountBalance(data.account_balance);
+      });
+  }, [user]);
+
+  const balanceSet = accountBalance > 0;
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const todayTrades = useMemo(
+    () => entries.filter((e) => e.trade_date === todayStr).length,
+    [entries, todayStr]
+  );
+
+  const startOfWeek = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const weekEntries = useMemo(
+    () => entries.filter((e) => new Date(e.trade_date) >= startOfWeek),
+    [entries, startOfWeek]
+  );
+
+  const tradesThisWeek = weekEntries.length;
+
+  const winRate = useMemo(() => {
+    if (weekEntries.length === 0) return "—";
+    const wins = weekEntries.filter((e) => e.risk_reward > 0).length;
+    return `${Math.round((wins / weekEntries.length) * 100)}%`;
+  }, [weekEntries]);
+
+  const pnl = useMemo(() => {
+    if (weekEntries.length === 0) return "—";
+    const total = weekEntries.reduce((s, e) => s + e.risk_reward * e.risk_used, 0);
+    return total >= 0 ? `+$${total.toFixed(0)}` : `-$${Math.abs(total).toFixed(0)}`;
+  }, [weekEntries]);
 
   return (
     <div className="vault-premium-card p-5 space-y-3 h-full flex flex-col">
@@ -50,7 +99,9 @@ export function MyTradesCard() {
           </span>
         </div>
         {balanceSet ? (
-          <span className="text-sm font-semibold text-foreground">$0.00</span>
+          <span className="text-sm font-semibold text-foreground">
+            ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </span>
         ) : (
           <button
             onClick={() => navigate("/academy/trade")}
