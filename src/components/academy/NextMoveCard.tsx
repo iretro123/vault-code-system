@@ -15,7 +15,7 @@ export function NextMoveCard() {
 
   if (onboarding && !onboarding.claimed_role) {
     label = "Continue Setup";
-    route = "/academy/start";
+    route = "/academy/home";
   } else if (onboarding && !onboarding.first_lesson_completed) {
     label = "Watch Lesson 1";
     route = "/academy/learn";

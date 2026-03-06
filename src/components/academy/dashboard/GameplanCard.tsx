@@ -59,7 +59,7 @@ function getDaysUntilReset(): number {
 }
 
 const TASK_ROUTES: Record<string, string> = {
-  "foundation-claim-role": "/academy/start",
+  "foundation-claim-role": "/academy/home",
   "foundation-introduce": "/academy/community",
   "foundation-first-lesson": "/academy/learn",
   "foundation-risk-rules": "/academy/settings",

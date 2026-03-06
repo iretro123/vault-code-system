@@ -12,7 +12,7 @@ interface OnboardingStep {
 }
 
 const STEPS: OnboardingStep[] = [
-  { label: "Claim Role", key: "claimed_role", route: "/academy/start", icon: Rocket },
+  { label: "Claim Role", key: "claimed_role", route: "/academy/home", icon: Rocket },
   { label: "Watch First Lesson", key: "first_lesson_completed", route: "/academy/learn", icon: BookOpen },
   { label: "Introduce Yourself", key: "intro_posted", route: "/academy/room/options-lounge", icon: MessageSquare },
 ];

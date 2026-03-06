@@ -80,7 +80,7 @@ const App = () => (
             <Route path="/academy" element={<AcademyLayout />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<AcademyHome />} />
-              <Route path="start" element={<AcademyStart />} />
+              <Route path="start" element={<Navigate to="/academy/home" replace />} />
               <Route path="learn" element={<AcademyLearn />} />
               <Route path="learn/:moduleSlug" element={<AcademyModule />} />
               <Route path="community" element={<AcademyCommunity />} />

@@ -19,9 +19,9 @@ export function SettingsHelp() {
           Open Ask Coach
         </Button>
 
-        <Button variant="outline" onClick={() => navigate("/academy/start")} className="w-full gap-2 justify-start">
+        <Button variant="outline" onClick={() => navigate("/academy/home")} className="w-full gap-2 justify-start">
           <Rocket className="h-4 w-4" />
-          How to Start (Start Here)
+          How to Start
         </Button>
 
         <Button variant="outline" asChild className="w-full gap-2 justify-start">

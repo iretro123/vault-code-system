@@ -113,14 +113,6 @@ const AcademyHome = () => {
     );
   }
 
-  const isFirstVisit =
-    profile &&
-    (profile as any).academy_experience === "newbie" &&
-    !profile.onboarding_completed;
-
-  if (isFirstVisit) {
-    return <Navigate to="/academy/start" replace />;
-  }
 
   const firstName = profile?.display_name?.split(" ")[0] || profile?.email?.split("@")[0] || "Trader";
 
