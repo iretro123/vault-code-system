@@ -71,10 +71,10 @@ export function AcademyLayout() {
             Your Academy access has been revoked. Please contact support for assistance.
           </p>
           <Link
-            to="/hub"
+            to="/auth"
             className="inline-block text-sm text-primary hover:underline mt-2"
           >
-            ← Back to Hub
+            ← Sign in with another account
           </Link>
         </div>
       </div>
