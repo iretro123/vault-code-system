@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
@@ -12,13 +12,14 @@ import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function AcademyLayout() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
   const location = useLocation();
+  const navigate = useNavigate();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
   const lastPageRef = useRef("");
@@ -110,6 +111,13 @@ export function AcademyLayout() {
           <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate("/hub")}
+                  className="md:hidden p-1.5 -ml-1 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Back to Hub"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
                 <Link to="/academy/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <span className="text-lg font-bold tracking-tight text-foreground">
                     Vault<span className="text-primary">Academy</span>
