@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { BookOpen, PenLine, BarChart3, AlertTriangle, Loader2 } from "lucide-react";
@@ -102,7 +101,7 @@ const AcademyProgress = () => {
   const weekLabel = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="Weekly Progress" subtitle={weekLabel} />
       <div className="px-4 md:px-6 pb-6">
         {loading ? (
@@ -130,7 +129,7 @@ const AcademyProgress = () => {
           </div>
         ) : null}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

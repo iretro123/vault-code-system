@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Navigate, useParams } from "react-router-dom";
 import { getRoomBySlug } from "@/lib/academyRooms";
@@ -35,7 +34,7 @@ const AcademyRoom = () => {
   const isAnnouncements = room.slug === "announcements";
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title={`#${room.name}`} subtitle={room.description} />
       <div className="px-4 md:px-6 pb-6">
         {isAnnouncements ? (
@@ -78,7 +77,7 @@ const AcademyRoom = () => {
           <RoomChat roomSlug={room.slug} canPost={canPost} isAnnouncements={false} />
         )}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

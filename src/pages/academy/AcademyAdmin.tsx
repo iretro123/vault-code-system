@@ -1,4 +1,3 @@
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -256,7 +255,7 @@ const AcademyAdmin = () => {
   const resolvedTickets = tickets.filter((t) => t.status === "resolved");
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="Admin Panel" subtitle="Manage Academy content, tickets, and users" />
       <div className="px-4 md:px-6 pb-6 space-y-8">
 
@@ -568,7 +567,7 @@ const AcademyAdmin = () => {
           )}
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

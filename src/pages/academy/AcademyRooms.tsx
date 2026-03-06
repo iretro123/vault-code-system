@@ -1,4 +1,3 @@
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
@@ -17,7 +16,7 @@ const AcademyRooms = () => {
   }
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Community Rooms"
         subtitle="Curated discussion spaces for traders"
@@ -52,7 +51,7 @@ const AcademyRooms = () => {
           ))}
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

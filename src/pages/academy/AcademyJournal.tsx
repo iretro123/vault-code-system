@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,14 +75,14 @@ const AcademyJournal = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Trade Journal" />
-      </AcademyLayout>
+      </>
     );
   }
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="Trade Journal" subtitle="Log one trade. Stay honest." />
       <div className="px-4 md:px-6 pb-6">
         <Card className="p-6 max-w-lg space-y-5">
@@ -206,7 +205,7 @@ const AcademyJournal = () => {
           )}
         </Card>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

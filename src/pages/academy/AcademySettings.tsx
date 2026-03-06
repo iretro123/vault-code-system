@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { cn } from "@/lib/utils";
 import {
   User,
@@ -48,7 +47,7 @@ const AcademySettings = () => {
   }, []);
 
   return (
-    <AcademyLayout>
+    <>
       <div className="flex flex-1 min-h-0">
         {/* Left nav — desktop */}
         <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-border/40 py-6 px-3 gap-1">
@@ -123,7 +122,7 @@ const AcademySettings = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

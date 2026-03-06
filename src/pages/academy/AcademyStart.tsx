@@ -1,4 +1,3 @@
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,7 +75,7 @@ const AcademyStart = () => {
   const nextStep = selected ? NEXT_STEPS[selected] : null;
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Start Here"
         subtitle="Pick your level and get a tailored starting point"
@@ -146,7 +145,7 @@ const AcademyStart = () => {
           )}
         </Card>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

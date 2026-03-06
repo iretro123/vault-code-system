@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +144,7 @@ const AcademyMyQuestions = () => {
   // Thread view
   if (selected) {
     return (
-      <AcademyLayout>
+      <>
         <div className="px-4 md:px-6 pb-6">
           <button
             onClick={() => setSelected(null)}
@@ -209,13 +208,13 @@ const AcademyMyQuestions = () => {
             )}
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
   // List view
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="My Questions" subtitle="Your coach support history" />
       <div className="px-4 md:px-6 pb-6 max-w-2xl space-y-3">
         {/* Filter chips */}
@@ -275,7 +274,7 @@ const AcademyMyQuestions = () => {
           ))
         )}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

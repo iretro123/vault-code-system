@@ -1,4 +1,3 @@
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,7 +72,7 @@ const AcademyAdminUsers = () => {
   };
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="User Export"
         subtitle="View and export Academy user data"
@@ -137,7 +136,7 @@ const AcademyAdminUsers = () => {
           </Card>
         )}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

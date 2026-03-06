@@ -1,5 +1,5 @@
-import { ReactNode, useEffect, useRef } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
@@ -15,11 +15,7 @@ import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface AcademyLayoutProps {
-  children: ReactNode;
-}
-
-export function AcademyLayout({ children }: AcademyLayoutProps) {
+export function AcademyLayout() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
   const location = useLocation();
@@ -129,7 +125,7 @@ export function AcademyLayout({ children }: AcademyLayoutProps) {
 
           {/* Content — scrollable area */}
           <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
-            {children}
+            <Outlet />
           </main>
 
           <MobileNav />

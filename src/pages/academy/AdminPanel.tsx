@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
@@ -77,11 +76,11 @@ const AdminPanel = () => {
 
   if ((loading || !resolved) && user?.id) {
     return (
-      <AcademyLayout>
+      <>
         <div className="px-4 md:px-6 py-12 flex items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
@@ -107,7 +106,7 @@ const AdminPanel = () => {
   };
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Admin Panel"
         subtitle="Manage members, content, and communications"
@@ -169,7 +168,7 @@ const AdminPanel = () => {
           )}
         </Tabs>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

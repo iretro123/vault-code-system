@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
@@ -101,7 +100,7 @@ const AcademyHome = () => {
 
   if (loading) {
     return (
-      <AcademyLayout>
+      <>
         <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl animate-pulse">
           <div className="h-24 rounded-2xl bg-muted/40" />
           <div className="h-40 rounded-2xl bg-muted/30" />
@@ -110,7 +109,7 @@ const AcademyHome = () => {
             <div className="lg:col-span-2 h-48 rounded-2xl bg-muted/30" />
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
@@ -126,7 +125,7 @@ const AcademyHome = () => {
   const firstName = profile?.display_name?.split(" ")[0] || profile?.email?.split("@")[0] || "Trader";
 
   return (
-    <AcademyLayout>
+    <>
       <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl">
         <div className="opacity-0 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
           <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
@@ -161,7 +160,7 @@ const AcademyHome = () => {
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
       <ClaimRoleModal open={claimRoleOpen} onOpenChange={setClaimRoleOpen} />
-    </AcademyLayout>
+    </>
   );
 };
 

@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { Navigate } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAuth } from "@/hooks/useAuth";
@@ -527,7 +526,7 @@ const AcademyQA = () => {
   }));
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Launch QA"
         subtitle="Automated launch checklist — admin only"
@@ -625,7 +624,7 @@ const AcademyQA = () => {
           </p>
         </Card>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
@@ -149,25 +148,25 @@ const AcademyPlaybook = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Vault Playbook" />
-      </AcademyLayout>
+      </>
     );
   }
 
   if (loading) {
     return (
-      <AcademyLayout>
+      <>
         <div className="flex items-center justify-center h-[60vh]">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
   if (chapters.length === 0) {
     return (
-      <AcademyLayout>
+      <>
         <div className="flex flex-col items-center justify-center h-[60vh] text-center px-8">
           <VaultPlaybookIcon className="h-16 w-16 opacity-10 mb-6" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Vault Playbook</h2>
@@ -175,14 +174,14 @@ const AcademyPlaybook = () => {
             The Trading OS playbook is being prepared. Chapters will appear here once configured.
           </p>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
   // ── Mobile: Full-screen reader overlay ──
   if (isMobile && mobileReaderOpen && activeChapter) {
     return (
-      <AcademyLayout>
+      <>
         <div className={`fixed inset-0 bg-background flex flex-col ${mobileFullscreen ? "z-[60]" : "z-50 pb-16"}`}>
           {/* Mobile reader header — hidden in fullscreen */}
           {!mobileFullscreen && (
@@ -219,14 +218,14 @@ const AcademyPlaybook = () => {
             />
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
   // ── Mobile: Chapter list view ──
   if (isMobile) {
     return (
-      <AcademyLayout>
+      <>
         <div className="flex flex-col h-[calc(100vh-64px)]">
           <div className="px-4 py-5 border-b border-border space-y-3">
             <AdminActionBar
@@ -258,13 +257,13 @@ const AcademyPlaybook = () => {
             />
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
   // ── Desktop: 3-column layout ──
   return (
-    <AcademyLayout>
+    <>
       <div className="h-[calc(100vh-64px)] flex flex-col">
         {/* Header */}
         <div className="px-6 py-5 border-b border-border space-y-3">
@@ -362,7 +361,7 @@ const AcademyPlaybook = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

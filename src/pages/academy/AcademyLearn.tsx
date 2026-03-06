@@ -1,4 +1,3 @@
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,14 +96,14 @@ const AcademyLearn = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Courses" />
-      </AcademyLayout>
+      </>
     );
   }
 
   return (
-    <AcademyLayout>
+    <>
       <div className="px-4 md:px-8 pt-6 pb-10 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -375,7 +374,7 @@ const AcademyLearn = () => {
           </>
         )}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

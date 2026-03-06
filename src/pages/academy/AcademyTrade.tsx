@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,14 +126,14 @@ const AcademyTrade = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="My Trades" />
-      </AcademyLayout>
+      </>
     );
   }
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="My Trades"
         subtitle="Log trades, track performance, and improve execution with AI review."
@@ -207,7 +206,7 @@ const AcademyTrade = () => {
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
       <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
-    </AcademyLayout>
+    </>
   );
 };
 

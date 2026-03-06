@@ -1,4 +1,3 @@
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -349,15 +348,15 @@ const AcademyLive = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Live Sessions" />
-      </AcademyLayout>
+      </>
     );
   }
 
   if (loading && sessions.length === 0) {
     return (
-      <AcademyLayout>
+      <>
         <div className="liveSessionsPage">
           <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
           <div className="px-4 md:px-6 pb-8 space-y-4 animate-pulse">
@@ -368,12 +367,12 @@ const AcademyLive = () => {
             </div>
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
   return (
-    <AcademyLayout>
+    <>
       <div className="liveSessionsPage">
         <div className="flex items-center justify-between px-4 md:px-6">
           <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
@@ -625,7 +624,7 @@ const AcademyLive = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

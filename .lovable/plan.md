@@ -1,81 +1,37 @@
 
 
-## Diagnosis: Tab-to-tab glitch (sidebar + header flicker)
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-**AcademyLayout remounts on every route change.** Each academy page (AcademyHome, AcademyTrade, AcademyLive, etc.) wraps itself with `<AcademyLayout>` individually. When you click a sidebar tab, React unmounts the old page's `<AcademyLayout>` and mounts a new one. This causes:
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-1. The sidebar, header, and PlayerIdentity all unmount and remount — visible as a brief flicker/glitch
-2. `useStudentAccess` and `useAcademyPermissions` (plain hooks, not shared context) re-initialize fresh state on each mount, triggering new DB queries
-3. The `loading` state briefly becomes `true` during remount, causing the header/sidebar to re-render with loading states
-4. Console logs confirm: dozens of duplicate `[AccessGate] Fetching access` calls on every navigation
+### Solution
 
-The "Vault OS" tab glitches more noticeably because `TraderCockpit` is a heavier component that takes longer to mount.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### Solution: Layout Route pattern
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-Convert `AcademyLayout` from a per-page wrapper into a **single persistent layout route** using React Router's `<Outlet>`. This means the sidebar, header, and all shared hooks mount **once** and persist across tab changes — only the inner content swaps.
-
-### Changes
-
-**1. `src/components/layout/AcademyLayout.tsx`**
-- Replace `children` prop with React Router `<Outlet>`
-- Layout stays mounted across all `/academy/*` routes
-
-```tsx
-import { Outlet } from "react-router-dom";
-// Remove children prop, use <Outlet /> in place of {children}
-```
-
-**2. `src/App.tsx`**
-- Restructure academy routes to use a parent layout route with nested child routes
-- Each academy page becomes a child `<Route>` under the layout
-
-```tsx
-<Route path="/academy" element={<AcademyLayout />}>
-  <Route index element={<Navigate to="home" replace />} />
-  <Route path="home" element={<AcademyHome />} />
-  <Route path="trade" element={<AcademyTrade />} />
-  <Route path="community" element={<AcademyCommunity />} />
-  {/* ... all other academy routes */}
-</Route>
-```
-
-**3. All ~20 academy page files** (AcademyHome, AcademyTrade, AcademyLearn, etc.)
-- Remove the `<AcademyLayout>` wrapper from each page's return statement
-- Pages just render their own content directly
-
-For example, `AcademyVaultOS.tsx` changes from:
-```tsx
-return (
-  <AcademyLayout>
-    <FeatureFlagGate pageKey="vault-os">
-      <TraderCockpit />
-    </FeatureFlagGate>
-  </AcademyLayout>
-);
-```
-To:
-```tsx
-return (
-  <FeatureFlagGate pageKey="vault-os">
-    <TraderCockpit />
-  </FeatureFlagGate>
-);
-```
-
-### What this fixes
-- Sidebar no longer unmounts/remounts on tab change — zero flicker
-- PlayerIdentity (top-right name + badge) stays mounted — no glitch
-- `useStudentAccess` and `useAcademyPermissions` run once, not on every navigation
-- Eliminates the dozens of duplicate `[AccessGate] Fetching` calls in console
-- Faster tab transitions since only the content area swaps
-
-### Files to modify
-| File | Change |
-|------|--------|
-| `src/components/layout/AcademyLayout.tsx` | Replace `children` with `<Outlet>` |
-| `src/App.tsx` | Nest academy routes under layout route |
-| ~20 academy page files | Remove `<AcademyLayout>` wrapper |
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

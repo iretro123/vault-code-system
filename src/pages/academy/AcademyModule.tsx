@@ -1,4 +1,3 @@
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,16 +125,16 @@ const AcademyModule = () => {
 
   if (loading) {
     return (
-      <AcademyLayout>
+      <>
         <div className="flex justify-center py-20">
           <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
   return (
-    <AcademyLayout>
+    <>
       <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
         {/* Top bar */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
@@ -427,7 +426,7 @@ const AcademyModule = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 
