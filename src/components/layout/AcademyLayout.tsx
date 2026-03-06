@@ -15,11 +15,7 @@ import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface AcademyLayoutProps {
-  children: ReactNode;
-}
-
-export function AcademyLayout({ children }: AcademyLayoutProps) {
+export function AcademyLayout() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
   const location = useLocation();
