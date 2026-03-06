@@ -73,7 +73,7 @@ const AcademyCommunity = () => {
               <RoomChat roomSlug="announcements" canPost={canPostRestricted} isAnnouncements={true} active={activeTab === "announcements"} compact />
             </div>
             <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
-              <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} />
+              <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} compact />
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} />
