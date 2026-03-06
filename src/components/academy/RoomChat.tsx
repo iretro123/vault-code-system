@@ -1161,7 +1161,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <DropdownMenuTrigger asChild>
                               <button
                                 type="button"
-                                className="p-1.5 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.08] transition-colors"
                               >
                                 <MoreHorizontal className="h-3.5 w-3.5" />
                               </button>
