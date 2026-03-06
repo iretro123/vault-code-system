@@ -1,54 +1,37 @@
 
 
-## Luxury Dark Theme for Community Chat
+## Plan: Full user deletion (hard delete, not soft revoke)
 
 ### Problem
-The community section uses a light grey workspace (`hsl(220,16%,96%)`) that clashes with the rest of the dark premium UI. The tab bar, chat backgrounds, message bubbles, input area, and cockpit panel all use light greys that feel out of place.
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Approach
-Convert the entire community section to match the existing dark "neutral ash" design system. Premium, calm, dark surfaces with subtle borders — consistent with Dashboard, Learn, and other pages.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Files & Changes
+### Solution
 
-**1. `src/pages/academy/AcademyCommunity.tsx`**
-- Outer panel: Remove the light grey `bg-[hsl(220,16%,96%)]` floating workspace. Use `bg-card` (dark card surface) with dark border `border-white/[0.05]`.
-- Tab bar: Dark pill-style tabs — background `bg-white/[0.04]`, active tab `bg-white/[0.1]` with light text, inactive `text-muted-foreground`.
-- Remove the blue underline indicator on active tab.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**2. `src/components/academy/community/CommunityTradeFloor.tsx`**
-- Main container: `bg-background` instead of light grey.
-- Cockpit panel border/bg: dark theme (`bg-card`, `border-white/[0.05]`).
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**3. `src/components/academy/community/TradeFloorHero.tsx`**
-- Strip bg: dark surface `bg-white/[0.03]` with `border-white/[0.05]`.
-- Ticker text: keep blue accent, but on dark surface.
-
-**4. `src/components/academy/RoomChat.tsx` (bulk of changes)**
-- Main feed bg: `bg-background` (dark workspace).
-- Loading skeletons: dark shimmers (`bg-white/[0.06]`).
-- Message row hover: `hover:bg-white/[0.03]`.
-- Other-user bubbles: `bg-white/[0.06] border-white/[0.06]` with light text.
-- Own-user bubbles: keep blue gradient (already premium).
-- Admin/CEO bubbles: `bg-amber-500/[0.08] border-amber-500/20` with light amber text.
-- Deleted message: dark muted surface.
-- Timestamps/meta text: `text-muted-foreground`.
-- File attachment links: dark surface style.
-- Reaction/thread buttons: dark hover states.
-- Composer bar: dark input surface (`bg-card border-white/[0.08]`), textarea text white, placeholder muted.
-- Send button: keep blue gradient.
-- Reply preview: dark surface.
-- Quick-action chips: dark hover.
-- Read-only notice: dark text.
-- Date separator: dark tones.
-
-**5. `src/components/academy/community/CockpitPanel.tsx`**
-- Cards: dark surfaces (`bg-card`, `border-white/[0.05]`).
-- Text colors: light foreground instead of dark grey HSL values.
-- Metric rows: light text with accent colors preserved.
-
-### Design Principles
-- All `hsl(220,xx%,9x%)` light greys → dark equivalents using CSS vars or `white/[0.xx]` opacity patterns.
-- Message readability preserved: other-user bubbles get subtle frosted dark surface, own bubbles stay blue.
-- Borders: `white/[0.05]` to `white/[0.08]` range.
-- No backdrop-blur on large areas (performance rule).
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

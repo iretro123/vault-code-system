@@ -56,13 +56,13 @@ function getInitials(name: string) {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  advanced:     { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
-  professional: { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
-  veteran:      { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
-  intermediate: { label: "Intermediate", cls: "bg-blue-100 text-blue-700 border-blue-200" },
-  active:       { label: "Intermediate", cls: "bg-blue-100 text-blue-700 border-blue-200" },
-  beginner:     { label: "Beginner",     cls: "bg-gray-100 text-gray-500 border-gray-200" },
-  newbie:       { label: "Beginner",     cls: "bg-gray-100 text-gray-500 border-gray-200" },
+  advanced:     { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
+  professional: { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
+  veteran:      { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
+  intermediate: { label: "Intermediate", cls: "bg-blue-500/15 text-blue-300 border-blue-500/20" },
+  active:       { label: "Intermediate", cls: "bg-blue-500/15 text-blue-300 border-blue-500/20" },
+  beginner:     { label: "Beginner",     cls: "bg-white/[0.06] text-muted-foreground border-white/[0.08]" },
+  newbie:       { label: "Beginner",     cls: "bg-white/[0.06] text-muted-foreground border-white/[0.08]" },
 };
 
 const ExperienceBadge = React.forwardRef<HTMLSpanElement, { role?: string }>(
@@ -103,7 +103,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
   const imageAtt = attachments?.find((a: any) => a.type === "image");
 
   return (
-    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white mt-2 overflow-hidden max-w-full sm:max-w-[560px] shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors">
+    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] mt-2 overflow-hidden max-w-full sm:max-w-[560px] hover:border-white/[0.12] transition-colors">
       <div className="flex">
         {/* Left — Fields */}
         <div className="flex-1 min-w-0 p-5 space-y-3">
@@ -113,8 +113,8 @@ function renderTradeCard(body: string, attachments?: any[]) {
               <div key={i} className={
                 ["thesis", "lesson", "lesson learned", "notes"].includes(f.label.toLowerCase()) ? "col-span-2" : ""
               }>
-                <span className="text-[10px] text-[hsl(220,10%,50%)] uppercase tracking-wider font-medium">{f.label}</span>
-                <p className="text-[15px] text-[hsl(220,15%,15%)] font-medium mt-0.5">{f.value}</p>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{f.label}</span>
+                <p className="text-[15px] text-foreground font-medium mt-0.5">{f.value}</p>
               </div>
             ))}
           </div>
@@ -122,7 +122,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
 
         {/* Right — Chart image */}
         {imageAtt && (
-          <div className="shrink-0 bg-[hsl(220,10%,96%)] border-t sm:border-t-0 sm:border-l border-[hsl(220,10%,88%)] w-full sm:max-w-[280px]">
+          <div className="shrink-0 bg-white/[0.03] border-t sm:border-t-0 sm:border-l border-white/[0.06] w-full sm:max-w-[280px]">
             <img
               src={(imageAtt as any).url}
               alt="Chart"
@@ -134,14 +134,14 @@ function renderTradeCard(body: string, attachments?: any[]) {
       </div>
 
       {/* Bottom actions */}
-      <div className="flex items-center gap-1 px-5 py-3 border-t border-[hsl(220,10%,90%)] bg-[hsl(220,10%,97%)]">
-        <button className="text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)] transition-colors px-3.5 py-2 rounded-xl hover:bg-[hsl(220,10%,92%)] font-medium">
+      <div className="flex items-center gap-1 px-5 py-3 border-t border-white/[0.06] bg-white/[0.02]">
+        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
           Ask Coach
         </button>
-        <button className="text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)] transition-colors px-3.5 py-2 rounded-xl hover:bg-[hsl(220,10%,92%)] font-medium">
+        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
           Log Trade
         </button>
-        <button className="text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)] transition-colors px-3.5 py-2 rounded-xl hover:bg-[hsl(220,10%,92%)] font-medium">
+        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
           Request Feedback
         </button>
       </div>
@@ -158,13 +158,13 @@ function renderRecapCard(body: string) {
   }
 
   return (
-    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white p-5 space-y-3 mt-2 shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors max-w-full sm:max-w-[560px]">
+    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] p-5 space-y-3 mt-2 hover:border-white/[0.12] transition-colors max-w-full sm:max-w-[560px]">
       <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Post</p>
       <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
         {fields.map((f, i) => (
           <div key={i} className={f.label === "Lesson" ? "col-span-2" : ""}>
-            <span className="text-[10px] text-[hsl(220,10%,50%)] uppercase tracking-wider font-medium">{f.label}</span>
-            <p className="text-[15px] text-[hsl(220,15%,15%)] font-medium mt-0.5">{f.value}</p>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{f.label}</span>
+            <p className="text-[15px] text-foreground font-medium mt-0.5">{f.value}</p>
           </div>
         ))}
       </div>
@@ -210,7 +210,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
-        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-[hsl(220,15%,15%)]")}>{part.slice(2, -2)}</span>;
+        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
       }
       return <span key={i}>{part}</span>;
     });
@@ -714,26 +714,26 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full w-full bg-[hsl(220,15%,92%)]">
+      <div className="flex flex-col h-full w-full bg-background">
       <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
-              <div className="h-8 w-8 rounded-full bg-[hsl(220,12%,84%)] shrink-0" />
+              <div className="h-8 w-8 rounded-full bg-white/[0.06] shrink-0" />
               <div className="space-y-1.5 flex-1">
-                <div className="h-3 w-24 rounded bg-[hsl(220,12%,84%)]" />
-                <div className="h-3 rounded bg-[hsl(220,12%,86%)]" style={{ width: `${40 + (i % 3) * 20}%` }} />
+                <div className="h-3 w-24 rounded bg-white/[0.06]" />
+                <div className="h-3 rounded bg-white/[0.08]" style={{ width: `${40 + (i % 3) * 20}%` }} />
               </div>
             </div>
           ))}
         </div>
-        <div className="h-14 border-t border-[hsl(220,12%,84%)] bg-white" />
+        <div className="h-14 border-t border-white/[0.06] bg-card" />
       </div>
     );
   }
 
   return (
     <>
-    <div className="relative flex flex-col h-full w-full bg-[hsl(220,15%,92%)]">
+    <div className="relative flex flex-col h-full w-full bg-background">
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
@@ -786,7 +786,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         {/* Moderator room controls */}
         {canModerate && !isRoomLocked && (
           <div className="mx-3 mt-2 mb-1 flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={lockRoom} className="h-6 gap-1 text-[11px] text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)]">
+            <Button variant="ghost" size="sm" onClick={lockRoom} className="h-6 gap-1 text-[11px] text-muted-foreground hover:text-foreground">
               <Lock className="h-3 w-3" /> Lock Room
             </Button>
           </div>
@@ -801,10 +801,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <Pin className="h-3.5 w-3.5 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider mb-0.5">Pinned</p>
-                <p className="text-xs text-[hsl(220,15%,25%)] truncate">{pinned.body}</p>
+                <p className="text-xs text-foreground/70 truncate">{pinned.body}</p>
               </div>
-              {canModerate && (
-                <button onClick={unpinMessage} className="p-1 text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)]">
+               {canModerate && (
+                <button onClick={unpinMessage} className="p-1 text-muted-foreground hover:text-foreground">
                   <X className="h-3 w-3" />
                 </button>
               )}
@@ -814,7 +814,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
         {hasMore && (
           <div className="flex justify-center py-2">
-            <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,20%)]">
+            <Button variant="ghost" size="sm" onClick={loadMore} className="gap-1 text-xs text-muted-foreground hover:text-foreground">
               <ChevronUp className="h-3 w-3" />
               Load older
             </Button>
@@ -822,19 +822,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         )}
 
         {messages.length === 0 && (
-          <div className="text-center py-16 max-w-xs mx-auto space-y-2">
+           <div className="text-center py-16 max-w-xs mx-auto space-y-2">
             {roomSlug === "options-lounge" ? (
               <>
-                <p className="text-sm font-medium text-[hsl(220,10%,35%)]">No posts yet.</p>
-                <p className="text-xs text-[hsl(220,10%,50%)]">Serious traders post 1 trade/week. Use Trade → Post a Trade.</p>
+                <p className="text-sm font-medium text-foreground/70">No posts yet.</p>
+                <p className="text-xs text-muted-foreground">Serious traders post 1 trade/week. Use Trade → Post a Trade.</p>
               </>
             ) : roomSlug === "trade-recaps" ? (
               <>
-                <p className="text-sm font-medium text-[hsl(220,10%,35%)]">Proof is earned.</p>
-                <p className="text-xs text-[hsl(220,10%,50%)]">Post screenshot + ticker + entry/exit + risk.</p>
+                <p className="text-sm font-medium text-foreground/70">Proof is earned.</p>
+                <p className="text-xs text-muted-foreground">Post screenshot + ticker + entry/exit + risk.</p>
               </>
             ) : (
-              <p className="text-sm text-[hsl(220,10%,45%)]">No messages yet.</p>
+              <p className="text-sm text-muted-foreground">No messages yet.</p>
             )}
           </div>
         )}
@@ -927,13 +927,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               {showDate && <DateSeparator date={getDateLabel(msg.created_at)} />}
             <ContextMenu>
               <ContextMenuTrigger asChild>
-                <div
+                 <div
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
+                    "group relative flex gap-3 px-4 hover:bg-white/[0.03] transition-colors duration-75",
                     startsNewGroup ? "mt-2 pt-2 pb-1" : (isGroupedWithNext ? "py-[2px]" : "pt-[2px] pb-0.5"),
-                    isEditing && "bg-[hsl(220,10%,93%)]",
+                    isEditing && "bg-white/[0.04]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
-                    isOfficialAnnouncement && "bg-amber-50"
+                    isOfficialAnnouncement && "bg-amber-500/[0.04]"
                   )}
                 >
                   {/* Avatar column — compact on grouped follow-ups */}
@@ -946,10 +946,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           size="h-9 w-9"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-[hsl(220,10%,88%)] animate-pulse" />
+                        <div className="w-9 h-9 rounded-full bg-white/[0.06] animate-pulse" />
                       )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-[hsl(220,10%,60%)] select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-muted-foreground select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
@@ -961,7 +961,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <div className="flex items-center gap-2 mb-0.5 min-h-[22px]">
                         <span className={cn(
                           "text-[13px] font-semibold tracking-[-0.01em]",
-                          isCeoOrAdmin ? "text-amber-700" : "text-[hsl(220,15%,12%)]"
+                          isCeoOrAdmin ? "text-amber-400" : "text-foreground"
                         )}>
                           {msg.user_name}
                         </span>
@@ -975,10 +975,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                )} />
                              )}
                            </>
-                        ) : (
-                          <div className="h-4 w-16 rounded bg-[hsl(220,10%,88%)] animate-pulse" />
-                        )}
-                        <span className="text-[11px] text-[hsl(220,10%,52%)]">
+                         ) : (
+                          <div className="h-4 w-16 rounded bg-white/[0.06] animate-pulse" />
+                         )}
+                         <span className="text-[11px] text-muted-foreground">
                           {formatDateTime(msg.created_at)}
                         </span>
                       </div>
@@ -993,19 +993,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
                               <Megaphone className="h-3 w-3" /> Official Announcement
                             </span>
-                            <p className="text-sm text-[hsl(220,15%,15%)] leading-relaxed whitespace-pre-line">
-                              {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
-                            </p>
+                             <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                               {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
+                             </p>
                           </div>
                         </div>
                       </div>
                     ) : null}
 
                     {/* Soft-deleted message */}
-                    {msg.is_deleted ? (
+                     {msg.is_deleted ? (
                       <div className="inline-block max-w-[85%]">
-                        <div className="bg-[hsl(220,10%,93%)] rounded-xl px-3.5 py-2 border border-[hsl(220,10%,88%)]">
-                          <p className="text-[13px] text-[hsl(220,10%,55%)] italic">This message was deleted.</p>
+                        <div className="bg-white/[0.04] rounded-xl px-3.5 py-2 border border-white/[0.06]">
+                          <p className="text-[13px] text-muted-foreground italic">This message was deleted.</p>
                         </div>
                       </div>
                     ) : isEditing ? (
@@ -1018,7 +1018,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           onKeyDown={handleEditKeyDown}
                           maxLength={1000}
                           rows={1}
-                          className="w-full bg-white border border-[hsl(220,10%,82%)] rounded-lg px-3 py-1.5 text-sm text-[hsl(220,15%,15%)] resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
+                          className="w-full bg-card border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-foreground resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
                         />
                         <div className="flex items-center gap-2 mt-1">
                           <button
@@ -1031,11 +1031,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           <button
                             type="button"
                             onClick={cancelEdit}
-                            className="flex items-center gap-1 text-[11px] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] transition-colors"
+                            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <X className="h-3 w-3" /> Cancel
                           </button>
-                          <span className="text-[10px] text-[hsl(220,10%,60%)]">esc to cancel · enter to save</span>
+                          <span className="text-[10px] text-muted-foreground">esc to cancel · enter to save</span>
                         </div>
                       </div>
                     ) : isRecap ? (
@@ -1050,33 +1050,33 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
                               <Megaphone className="h-3 w-3" /> Official
                             </span>
-                            <p className="text-[15px] text-[hsl(220,15%,15%)] leading-relaxed whitespace-pre-line">
-                              {renderPlainBody(msg.body)}
-                            </p>
+                             <p className="text-[15px] text-foreground/90 leading-relaxed whitespace-pre-line">
+                               {renderPlainBody(msg.body)}
+                             </p>
                           </div>
                         </div>
                       </div>
                     ) : (
                       <>
                         {msg.body && msg.body !== "📎 Attachment" && (
-                          <div className="inline-block max-w-[88%]">
+                           <div className="inline-block max-w-[88%]">
                             <div className={cn(
                               "rounded-xl px-3.5 py-2",
                               startsNewGroup ? "mt-0.5" : "mt-0",
                               isCeoOrAdmin
-                                ? "bg-amber-50 border border-amber-200 shadow-sm"
+                                ? "bg-amber-500/[0.08] border border-amber-500/20"
                                 : isOwn
                                   ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,54%)] text-white border border-primary/70 shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
-                                  : "bg-white border border-[hsl(220,10%,83%)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                                  : "bg-white/[0.06] border border-white/[0.06]"
                             )}>
                               <p className={cn(
                                 "text-[13px] leading-[1.6] whitespace-pre-line",
-                                isOwn && !isCeoOrAdmin ? "text-white" : "text-[hsl(220,15%,15%)]"
+                                isOwn && !isCeoOrAdmin ? "text-white" : "text-foreground"
                               )}>
                                 {renderPlainBody(msg.body, isOwn && !isCeoOrAdmin)}
                               </p>
                               {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
-                                <span className={cn("text-[10px] mt-0.5 block", isOwn && !isCeoOrAdmin ? "text-white/60" : "text-[hsl(220,10%,55%)]")}>(edited)</span>
+                                <span className={cn("text-[10px] mt-0.5 block", isOwn && !isCeoOrAdmin ? "text-white/60" : "text-muted-foreground")}>(edited)</span>
                               )}
                             </div>
                           </div>
@@ -1099,9 +1099,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                                className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-[hsl(220,10%,85%)] hover:border-[hsl(220,10%,70%)] hover:shadow-md transition-all cursor-pointer"
-                              />
-                              <span className="text-[10px] text-[hsl(220,10%,50%)] mt-0.5 block truncate max-w-full">{att.filename}</span>
+                              className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md transition-all cursor-pointer"
+                            />
+                              <span className="text-[10px] text-muted-foreground mt-0.5 block truncate max-w-full">{att.filename}</span>
                             </button>
                           ) : (
                             <a
@@ -1110,12 +1110,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               target="_blank"
                               rel="noopener noreferrer"
                               download={att.filename}
-                              className="flex items-center gap-2 rounded-lg border border-[hsl(220,10%,85%)] bg-white px-3 py-2 hover:bg-[hsl(220,10%,96%)] transition-colors shadow-sm"
+                              className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 hover:bg-white/[0.08] transition-colors"
                             >
                               <FileText className="h-4 w-4 text-primary shrink-0" />
                               <div className="min-w-0">
-                                <p className="text-xs text-[hsl(220,15%,20%)] truncate max-w-[200px]">{att.filename}</p>
-                                <p className="text-[10px] text-[hsl(220,10%,50%)]">
+                                <p className="text-xs text-foreground truncate max-w-[200px]">{att.filename}</p>
+                                <p className="text-[10px] text-muted-foreground">
                                   {att.size >= 1024 * 1024
                                     ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
                                     : `${(att.size / 1024).toFixed(0)} KB`}
@@ -1132,14 +1132,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     {/* Hover action bar — Discord-style floating toolbar, absolutely positioned to avoid reflow */}
                     {!msg.is_deleted && !isEditing && (
                       <div className="absolute -top-4 right-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-10">
-                        <div className="flex items-center gap-0.5 rounded-lg bg-white border border-[hsl(220,10%,82%)] shadow-md px-1 py-0.5">
+                        <div className="flex items-center gap-0.5 rounded-lg bg-card border border-white/[0.08] shadow-md px-1 py-0.5">
                           {/* Quick reactions */}
                           {!isAnnouncements && ALLOWED_EMOJIS.map((emoji) => (
                             <button
                               key={emoji}
                               type="button"
                               onClick={() => toggleReaction(msg.id, emoji)}
-                              className="text-sm px-1.5 py-1 rounded-md hover:bg-[hsl(220,10%,94%)] transition-colors"
+                              className="text-sm px-1.5 py-1 rounded-md hover:bg-white/[0.08] transition-colors"
                               title={`React ${emoji}`}
                             >
                               {emoji}
@@ -1150,7 +1150,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <button
                               type="button"
                               onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
-                              className="p-1.5 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.08] transition-colors"
                               title="Reply in thread"
                             >
                               <MessageSquare className="h-3.5 w-3.5" />
@@ -1161,7 +1161,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <DropdownMenuTrigger asChild>
                               <button
                                 type="button"
-                                className="p-1.5 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
+                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.08] transition-colors"
                               >
                                 <MoreHorizontal className="h-3.5 w-3.5" />
                               </button>
@@ -1189,7 +1189,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
                                 r.reacted
                                   ? "bg-primary/15 border-primary/30 text-primary"
-                                  : "bg-[hsl(220,10%,94%)] border-[hsl(220,10%,85%)] text-[hsl(220,10%,40%)] hover:bg-[hsl(220,10%,90%)]"
+                                  : "bg-white/[0.06] border-white/[0.08] text-muted-foreground hover:bg-white/[0.1]"
                               )}
                             >
                               <span>{r.emoji}</span>
@@ -1206,7 +1206,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 key={emoji}
                                 type="button"
                                 onClick={() => toggleReaction(msg.id, emoji)}
-                                className="text-xs px-1 py-0.5 rounded hover:bg-[hsl(220,10%,92%)] text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)] transition-colors"
+                                className="text-xs px-1 py-0.5 rounded hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
                               >
                                 {emoji}
                               </button>
@@ -1246,7 +1246,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10">
           <button
             onClick={jumpToLatest}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-[hsl(220,10%,80%)] text-[hsl(220,15%,18%)] text-xs font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,0.08)] hover:bg-[hsl(220,10%,97%)] active:scale-95 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-card border border-white/[0.08] text-foreground text-xs font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:bg-white/[0.08] active:scale-95 transition-all"
           >
             <ArrowDown className="h-3.5 w-3.5 text-primary" />
             New messages
@@ -1262,28 +1262,28 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:150ms]" />
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:300ms]" />
           </span>
-          <span className="text-[11px] text-[hsl(220,10%,45%)]">{typingText}…</span>
+          <span className="text-[11px] text-muted-foreground">{typingText}…</span>
         </div>
       )}
 
       {/* Composer */}
       {isMuted ? (
-        <div className="pt-3 border-t border-[hsl(220,10%,85%)] mt-2 px-4">
-          <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <Clock className="h-4 w-4 text-amber-600 shrink-0" />
-            <p className="text-[13px] text-amber-700">
+         <div className="pt-3 border-t border-white/[0.06] mt-2 px-4">
+          <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
+            <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+            <p className="text-[13px] text-amber-400">
               You are timed out until {muteExpiresAt ? new Date(muteExpiresAt).toLocaleString() : "later"}.
             </p>
           </div>
         </div>
       ) : isRoomLocked && !canModerate ? (
-        <div className="pt-3 border-t border-[hsl(220,10%,85%)] mt-2">
-          <p className="text-[13px] text-[hsl(220,10%,45%)] text-center py-2">
+        <div className="pt-3 border-t border-white/[0.06] mt-2">
+          <p className="text-[13px] text-muted-foreground text-center py-2">
             This room is locked by a moderator.
           </p>
         </div>
       ) : canPost ? (
-        <div className="px-5 pb-4 pt-2 bg-[hsl(220,14%,94%)] border-t border-[hsl(220,12%,88%)]">
+        <div className="px-5 pb-4 pt-2 bg-card border-t border-white/[0.06]">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
@@ -1299,7 +1299,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     key={chip.label}
                     type="button"
                     onClick={chip.action}
-                    className="text-[11px] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] px-2 py-0.5 rounded-md hover:bg-[hsl(220,10%,92%)] transition-colors font-medium"
+                    className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors font-medium"
                   >
                     {chip.emoji} {chip.label}
                   </button>
@@ -1308,15 +1308,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
               {/* Reply preview bar */}
               {replyingTo && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[hsl(220,12%,90%)] border-l-2 border-l-primary">
+                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border-l-2 border-l-primary">
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-semibold text-primary">Replying to {replyingTo.user_name}</span>
-                    <p className="text-[11px] text-[hsl(220,10%,45%)] truncate">{replyingTo.body.slice(0, 80)}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{replyingTo.body.slice(0, 80)}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setReplyingTo(null)}
-                    className="shrink-0 p-1 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,20%)] hover:bg-[hsl(220,10%,85%)] transition-colors"
+                    className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -1330,11 +1330,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 onDragLeave={handleDragLeave}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-                className={cn(
-                  "relative rounded-xl bg-white border shadow-[0_1px_4px_rgba(0,0,0,0.06)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-100",
+                 className={cn(
+                  "relative rounded-xl bg-card border shadow-[0_1px_4px_rgba(0,0,0,0.15)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.15)] transition-all duration-100",
                   dragOver
-                    ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.06)]"
-                    : "border-[hsl(220,10%,80%)]"
+                    ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.15)]"
+                    : "border-white/[0.08]"
                 )}
               >
                 {/* Drop overlay */}
@@ -1359,7 +1359,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="p-1.5 rounded-lg text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
                       title="Attach file"
                     >
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
@@ -1377,7 +1377,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     maxLength={1000}
                     disabled={sending}
                     rows={1}
-                    className="flex-1 bg-transparent text-[14px] text-[hsl(220,15%,15%)] placeholder:text-[hsl(220,10%,60%)] resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
+                    className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
                   />
 
                   {/* Send button — premium Vault blue */}
@@ -1389,7 +1389,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-100",
                       draft.trim() && !sending
                         ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,50%)] text-white shadow-[0_2px_10px_hsl(217_91%_60%/0.4),inset_0_1px_0_rgba(255,255,255,0.2)] hover:brightness-110 active:scale-95"
-                        : "text-[hsl(220,10%,78%)] cursor-not-allowed"
+                        : "text-muted-foreground/50 cursor-not-allowed"
                     )}
                   >
                     {sending ? (
@@ -1404,8 +1404,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           )}
         </div>
       ) : (
-        <div className="pt-3 border-t border-[hsl(220,10%,85%)] mt-2">
-          <p className="text-[13px] text-[hsl(220,10%,45%)] text-center py-2">
+         <div className="pt-3 border-t border-white/[0.06] mt-2">
+          <p className="text-[13px] text-muted-foreground text-center py-2">
             This room is read-only for students.
           </p>
         </div>
