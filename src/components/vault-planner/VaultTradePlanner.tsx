@@ -398,7 +398,7 @@ export function VaultTradePlanner() {
         </PanelCard>
 
         {/* ═══ Trade ═══ */}
-        <PanelCard title="Trade">
+        <PanelCard title="Trade" help={"Buy Price — the option premium you plan to enter at\nStop Price — where you plan to exit if wrong\nBest zone — this premium fits your account comfortably\nStretch zone — this premium is more aggressive\nSuggested stop — keeps risk inside your rules"}>
           <SegmentedToggle
             options={["Long Call", "Long Put"] as TradeDirection[]}
             value={direction}
