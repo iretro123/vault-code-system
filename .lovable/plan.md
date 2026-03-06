@@ -1,37 +1,26 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Remove Hub / "Select Mode" screen — go straight to Academy
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Change
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+**File: `src/App.tsx`**
 
-### Solution
+1. Remove the `/hub` route and the `Hub` import
+2. Change the `/` redirect from `/hub` to `/academy`
+3. Update any other references that navigate to `/hub` to go to `/academy` instead
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**File: `src/components/layout/PlayerIdentity.tsx`**
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+- Change the "Mode Select" dropdown link from `/hub` to `/academy/home`
+- Optionally remove the "Mode Select" item entirely since there's only one mode
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**File: `src/components/layout/AcademyLayout.tsx`**
+
+- Change the "Back to Hub" mobile button to navigate to `/academy/home` (or remove it)
+- Change the revoked-access "Back to Hub" link to `/auth`
+
+**File: `src/components/academy/RoomChat.tsx` or any other files** referencing `/hub` — update to `/academy`.
+
+No database changes needed. ~5 files, small edits each.
 
