@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const TradeLog = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { entries, loading: entriesLoading, addEntry, deleteEntry } = useTradeLog();
+  const { entries, loading: entriesLoading, addEntry } = useTradeLog();
   const { state: vaultState, loading: vaultLoading } = useVaultState();
   const navigate = useNavigate();
   
