@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw } from "lucide-react";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { LogTradeSheet, type TradeFormData } from "@/components/academy/LogTradeSheet";
@@ -11,18 +11,11 @@ import { QuickCheckInSheet } from "@/components/academy/QuickCheckInSheet";
 import { NoTradeDaySheet } from "@/components/academy/NoTradeDaySheet";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
+import { useTradeLog } from "@/hooks/useTradeLog";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ── Types ── */
-interface MockTrade {
-  ticker: string;
-  date: string;
-  direction: string;
-  outcome: "win" | "loss" | "breakeven";
-  pnl: string;
-  pnlNum: number;
-  chips: { label: string; passed: boolean | "partial" }[];
-}
-
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
 const OUTCOME_STYLES = {
@@ -34,16 +27,22 @@ const OUTCOME_STYLES = {
 /* ── Page ── */
 const AcademyTrade = () => {
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
+  const { user } = useAuth();
+  const { entries, loading: tradesLoading, addEntry, refetch: refetchTrades } = useTradeLog();
 
-  // Core state
-  const [trades, setTrades] = useState<MockTrade[]>([]);
-  const [showLogTrade, setShowLogTrade] = useState(false);
-
-  // Accountability state
+  // Balance state — loaded from DB
   const [startingBalance, setStartingBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceSkipped, setBalanceSkipped] = useState(false);
-  const [showBalanceModal, setShowBalanceModal] = useState(true);
-  const [trackedBalance, setTrackedBalance] = useState(0);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+
+  // Reset gate
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetInput, setResetInput] = useState("");
+  const [resetting, setResetting] = useState(false);
+
+  // UI state
+  const [showLogTrade, setShowLogTrade] = useState(false);
   const [todayStatus, setTodayStatus] = useState<TodayStatus>("incomplete");
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
@@ -54,20 +53,93 @@ const AcademyTrade = () => {
   const [balanceSaved, setBalanceSaved] = useState(false);
   const [balanceCheckDismissed, setBalanceCheckDismissed] = useState(false);
 
-  const todayTradeCount = useMemo(() => {
-    const todayStr = format(new Date(), "MMM d");
-    return trades.filter((t) => t.date.startsWith(todayStr)).length;
-  }, [trades]);
+  // Load balance from profiles on mount
+  useEffect(() => {
+    if (!user) {
+      setBalanceLoading(false);
+      return;
+    }
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("account_balance")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (data && data.account_balance > 0) {
+          setStartingBalance(data.account_balance);
+        } else {
+          // No balance set — show modal
+          setShowBalanceModal(true);
+        }
+      } catch (e) {
+        console.error("Error loading balance:", e);
+        setShowBalanceModal(true);
+      } finally {
+        setBalanceLoading(false);
+      }
+    })();
+  }, [user]);
 
-  const hasData = trades.length > 0;
+  // Derived metrics from DB entries
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const todayTradeCount = useMemo(
+    () => entries.filter((e) => e.trade_date === todayStr).length,
+    [entries, todayStr]
+  );
+
+  const startOfWeek = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  const weekEntries = useMemo(
+    () => entries.filter((e) => new Date(e.trade_date) >= startOfWeek),
+    [entries, startOfWeek]
+  );
+
+  const trackedBalance = useMemo(() => {
+    if (startingBalance === null) return null;
+    const totalPnl = entries.reduce((sum, e) => {
+      const pnl = e.risk_reward * e.risk_used * (e.followed_rules ? 1 : -1);
+      return sum + pnl;
+    }, 0);
+    return startingBalance + totalPnl;
+  }, [startingBalance, entries]);
+
+  const weeklyWinRate = useMemo(() => {
+    if (weekEntries.length === 0) return "--";
+    const wins = weekEntries.filter((e) => e.risk_reward > 0).length;
+    return `${Math.round((wins / weekEntries.length) * 100)}%`;
+  }, [weekEntries]);
+
+  const weeklyPnl = useMemo(() => {
+    if (weekEntries.length === 0) return "--";
+    const total = weekEntries.reduce((s, e) => s + e.risk_reward * e.risk_used * (e.followed_rules ? 1 : -1), 0);
+    return total >= 0 ? `+$${total.toFixed(0)}` : `-$${Math.abs(total).toFixed(0)}`;
+  }, [weekEntries]);
+
+  const hasData = entries.length > 0;
 
   /* ── Handlers ── */
-  const handleStartingBalanceSave = (balance: number) => {
-    setStartingBalance(balance);
-    setTrackedBalance(balance);
-    setShowBalanceModal(false);
-    setBalanceSkipped(false);
-    toast({ title: "Starting balance set", description: `Tracking from $${balance.toLocaleString()}.` });
+  const handleStartingBalanceSave = async (balance: number) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ account_balance: balance })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setStartingBalance(balance);
+      setShowBalanceModal(false);
+      setBalanceSkipped(false);
+      toast({ title: "Starting balance set", description: `Tracking from $${balance.toLocaleString()}.` });
+    } catch (e) {
+      console.error("Error saving balance:", e);
+      toast({ title: "Error saving balance", description: "Please try again.", variant: "destructive" });
+    }
   };
 
   const handleBalanceDismiss = () => {
@@ -75,32 +147,52 @@ const AcademyTrade = () => {
     setBalanceSkipped(true);
   };
 
-  const handleTradeSubmit = (data: TradeFormData) => {
-    const resultMap: Record<string, "win" | "loss" | "breakeven"> = {
-      Win: "win", Loss: "loss", Breakeven: "breakeven",
-    };
+  const handleResetBalance = async () => {
+    if (resetInput !== "RESET" || !user) return;
+    setResetting(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ account_balance: 0 })
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setStartingBalance(null);
+      setShowResetConfirm(false);
+      setResetInput("");
+      setShowBalanceModal(true);
+      toast({ title: "Balance reset", description: "Set a new starting balance to continue tracking." });
+    } catch (e) {
+      console.error("Error resetting balance:", e);
+      toast({ title: "Error resetting balance", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleTradeSubmit = async (data: TradeFormData) => {
     const pnlNum = parseFloat(data.pnl) || 0;
-    const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
+    const isWin = data.resultType === "Win";
+    const isLoss = data.resultType === "Loss";
 
-    const newTrade: MockTrade = {
-      ticker: data.symbol,
-      date: format(data.date, "MMM d, h:mm a"),
-      direction: data.direction,
-      outcome: resultMap[data.resultType] || "breakeven",
-      pnl: pnlStr,
-      pnlNum,
-      chips: [
-        { label: "Target Hit", passed: data.targetHit === "Yes" ? true : data.targetHit === "Partial" ? "partial" : false },
-        { label: "Plan Followed", passed: data.planFollowed === "Yes" },
-        { label: "Stop Respected", passed: data.stopRespected === "Yes" },
-      ],
+    const newEntry = {
+      risk_used: Math.abs(pnlNum),
+      risk_reward: isWin ? 1 : isLoss ? -1 : 0,
+      followed_rules: data.planFollowed === "Yes",
+      emotional_state: 5,
+      notes: `${data.symbol} ${data.direction} | Target: ${data.targetHit} | Stop: ${data.stopRespected}`,
     };
 
-    setTrades((prev) => [newTrade, ...prev]);
-    setTrackedBalance((prev) => prev + pnlNum);
-    setShowLogTrade(false);
-    setTodayStatus("in_progress");
-    setTimeout(() => setShowCheckIn(true), 400);
+    const { error } = await addEntry(newEntry);
+    if (!error) {
+      // Update the profile balance with the new P/L
+      if (startingBalance !== null && user) {
+        const newBalance = (trackedBalance ?? startingBalance) + (isWin ? Math.abs(pnlNum) : isLoss ? -Math.abs(pnlNum) : 0);
+        await supabase.from("profiles").update({ account_balance: newBalance }).eq("user_id", user.id);
+      }
+      setShowLogTrade(false);
+      setTodayStatus("in_progress");
+      setTimeout(() => setShowCheckIn(true), 400);
+    }
   };
 
   const handleCheckInComplete = () => {
@@ -116,18 +208,32 @@ const AcademyTrade = () => {
     toast({ title: "No-trade day logged", description: "Consistency tracked. Smart rest is part of the edge." });
   };
 
-  const handleBalanceSave = () => {
+  const handleBalanceSave = async () => {
     const val = parseFloat(brokerBalance);
-    if (!val || val <= 0) return;
-    setBalanceSaved(true);
-    setTrackedBalance(val);
-    toast({ title: "Balance updated", description: "Vault is now aligned with your account for this week." });
+    if (!val || val <= 0 || !user) return;
+    try {
+      await supabase.from("profiles").update({ account_balance: val }).eq("user_id", user.id);
+      setBalanceSaved(true);
+      setStartingBalance(val);
+      toast({ title: "Balance updated", description: "Vault is now aligned with your account for this week." });
+    } catch {
+      toast({ title: "Error updating balance", variant: "destructive" });
+    }
   };
 
   if (!hasAccess && !accessLoading) {
+    return <PremiumGate status={status} pageName="My Trades" />;
+  }
+
+  if (balanceLoading || tradesLoading) {
     return (
       <>
-        <PremiumGate status={status} pageName="My Trades" />
+        <PageHeader title="My Trades" subtitle="Loading your trade data..." />
+        <div className="px-4 md:px-6 pb-10 max-w-3xl">
+          <div className="vault-glass-card p-8 text-center">
+            <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+          </div>
+        </div>
       </>
     );
   }
@@ -181,10 +287,23 @@ const AcademyTrade = () => {
           onNoTradeDay={() => setShowNoTradeDay(true)}
           onCompleteCheckIn={() => setShowCheckIn(true)}
         />
-        <WeeklyProgressCard hasData={hasData} />
-        <TrackedBalanceCard balance={startingBalance !== null ? trackedBalance : null} />
+        <WeeklyProgressCard
+          tradesLogged={weekEntries.length}
+          winRate={weeklyWinRate}
+          pnl={weeklyPnl}
+          hasData={hasData}
+        />
+        <TrackedBalanceCard
+          balance={trackedBalance}
+          showResetConfirm={showResetConfirm}
+          resetInput={resetInput}
+          resetting={resetting}
+          onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); }}
+          onResetInputChange={setResetInput}
+          onConfirmReset={handleResetBalance}
+        />
         <AIFocusCard hasData={hasData} />
-        <RecentTradesSection trades={trades} />
+        <RecentTradesSection entries={entries} />
         <WeeklyReviewCard hasData={hasData} />
         {!balanceCheckDismissed && hasData && (
           <WeeklyBalanceCheckCard
@@ -337,37 +456,41 @@ function TodayTradeCheckCard({
 }
 
 /* ── 2. Weekly Progress ── */
-function WeeklyProgressCard({ hasData }: { hasData: boolean }) {
+function WeeklyProgressCard({ tradesLogged, winRate, pnl, hasData }: { tradesLogged: number; winRate: string; pnl: string; hasData: boolean }) {
   return (
     <div className="vault-glass-card p-6 space-y-4">
       <h3 className="text-sm font-semibold text-foreground">Weekly Progress</h3>
-      {hasData ? (
-        <>
-          <div className="grid grid-cols-2 gap-4">
-            <StatBlock label="Trades Logged" value="0" />
-            <StatBlock label="Win Rate" value="--" />
-            <StatBlock label="P/L" value="--" />
-            <StatBlock label="Plan Follow Rate" value="--" />
-          </div>
-          <p className="text-xs text-muted-foreground">Updated automatically when you log trades.</p>
-        </>
-      ) : (
-        <div className="py-2">
-          <div className="grid grid-cols-2 gap-4">
-            <StatBlock label="Trades Logged" value="0" />
-            <StatBlock label="Win Rate" value="--" />
-            <StatBlock label="P/L" value="--" />
-            <StatBlock label="Plan Follow Rate" value="--" />
-          </div>
-          <p className="text-xs text-muted-foreground mt-4">Log your first trade to see stats here.</p>
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-4">
+        <StatBlock label="Trades Logged" value={String(tradesLogged)} />
+        <StatBlock label="Win Rate" value={winRate} />
+        <StatBlock label="P/L" value={pnl} />
+        <StatBlock label="Plan Follow Rate" value="--" />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {hasData ? "Updated automatically when you log trades." : "Log your first trade to see stats here."}
+      </p>
     </div>
   );
 }
 
-/* ── 3. Tracked Balance ── */
-function TrackedBalanceCard({ balance }: { balance: number | null }) {
+/* ── 3. Tracked Balance with RESET gate ── */
+function TrackedBalanceCard({
+  balance,
+  showResetConfirm,
+  resetInput,
+  resetting,
+  onToggleReset,
+  onResetInputChange,
+  onConfirmReset,
+}: {
+  balance: number | null;
+  showResetConfirm: boolean;
+  resetInput: string;
+  resetting: boolean;
+  onToggleReset: () => void;
+  onResetInputChange: (v: string) => void;
+  onConfirmReset: () => void;
+}) {
   if (balance === null) {
     return (
       <div className="vault-glass-card p-6 space-y-3">
@@ -390,6 +513,39 @@ function TrackedBalanceCard({ balance }: { balance: number | null }) {
         ${balance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
       </p>
       <p className="text-xs text-muted-foreground">Based on your starting balance + logged trades.</p>
+
+      {/* Reset gate */}
+      {!showResetConfirm ? (
+        <button
+          onClick={onToggleReset}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors mt-2"
+        >
+          <RotateCcw className="h-3 w-3" /> Reset Balance
+        </button>
+      ) : (
+        <div className="mt-3 p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2">
+          <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">RESET</span> to confirm</p>
+          <p className="text-[11px] text-muted-foreground">This will clear your starting balance. You'll need to set a new one.</p>
+          <div className="flex gap-2 items-center">
+            <Input
+              className="max-w-[120px] h-8 text-sm font-mono"
+              placeholder="RESET"
+              value={resetInput}
+              onChange={(e) => onResetInputChange(e.target.value.toUpperCase())}
+            />
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={resetInput !== "RESET" || resetting}
+              onClick={onConfirmReset}
+              className="h-8"
+            >
+              {resetting ? "Resetting..." : "Confirm"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleReset}>Cancel</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -426,9 +582,9 @@ function AIFocusCard({ hasData }: { hasData: boolean }) {
   );
 }
 
-/* ── 5. Recent Trades ── */
-function RecentTradesSection({ trades }: { trades: MockTrade[] }) {
-  if (trades.length === 0) {
+/* ── 5. Recent Trades (from DB) ── */
+function RecentTradesSection({ entries }: { entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string }[] }) {
+  if (entries.length === 0) {
     return (
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Recent Trades</h3>
@@ -443,36 +599,40 @@ function RecentTradesSection({ trades }: { trades: MockTrade[] }) {
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-foreground">Recent Trades</h3>
       <div className="space-y-2">
-        {trades.map((t, i) => {
-          const s = OUTCOME_STYLES[t.outcome];
+        {entries.slice(0, 10).map((e) => {
+          const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
+          const s = OUTCOME_STYLES[outcome];
+          const pnlNum = e.risk_reward * e.risk_used;
+          const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
+          const ticker = e.notes?.split(" ")[0] || "Trade";
+
           return (
-            <div key={t.ticker + t.date + i} className="vault-glass-card p-4 space-y-2 cursor-pointer hover:border-white/10 transition-colors duration-100">
+            <div key={e.id} className="vault-glass-card p-4 space-y-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 min-w-0">
-                  {t.outcome === "win" && <TrendingUp className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
-                  {t.outcome === "loss" && <TrendingDown className="h-3.5 w-3.5 text-red-400 shrink-0" />}
-                  {t.outcome === "breakeven" && <Minus className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
-                  <span className="text-sm font-semibold text-foreground">{t.ticker}</span>
-                  <span className="text-xs text-muted-foreground">· {t.date}</span>
-                  <span className="text-xs text-muted-foreground">— {t.direction}</span>
+                  {outcome === "win" && <TrendingUp className="h-3.5 w-3.5 text-emerald-400 shrink-0" />}
+                  {outcome === "loss" && <TrendingDown className="h-3.5 w-3.5 text-red-400 shrink-0" />}
+                  {outcome === "breakeven" && <Minus className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
+                  <span className="text-sm font-semibold text-foreground">{ticker}</span>
+                  <span className="text-xs text-muted-foreground">· {format(new Date(e.trade_date), "MMM d")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color}`}>{s.label}</span>
-                  <span className={`text-sm font-semibold tabular-nums ${s.color}`}>{t.pnl}</span>
+                  <span className={`text-sm font-semibold tabular-nums ${s.color}`}>{pnlStr}</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {t.chips.map((c) => (
-                  <span key={c.label} className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
-                    {c.passed === true ? "✅" : c.passed === false ? "❌" : "◐"} {c.label}
-                  </span>
-                ))}
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
+                  {e.followed_rules ? "✅" : "❌"} Plan Followed
+                </span>
               </div>
             </div>
           );
         })}
       </div>
-      <Button variant="ghost" size="sm" className="w-full text-xs text-primary">View all trades</Button>
+      {entries.length > 10 && (
+        <Button variant="ghost" size="sm" className="w-full text-xs text-primary">View all trades</Button>
+      )}
     </div>
   );
 }
