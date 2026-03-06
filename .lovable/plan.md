@@ -1,37 +1,37 @@
 
 
-## Make Trade Log Fully Persistent + Mobile-Optimized History
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### What this plan does
-- Ensures every trade logged is saved permanently (no fetch limits, no individual delete)
-- Shows 15 most recent trades on mobile, full expandable history on desktop
-- Adds CSV export for all trades
-- Adds "Delete Journal & Progress" option in Settings > Privacy
-- Does NOT change any existing My Trades logic, metrics, or UI cards
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Changes
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. `src/hooks/useTradeLog.ts`**
-- Remove `.limit(50)` from the fetch query so all trades load
-- Remove the `deleteEntry` function entirely (trades are immutable)
-- Add an `exportCSV()` helper that downloads all entries as a `.csv` file
+### Solution
 
-**2. `src/pages/academy/AcademyTrade.tsx` — RecentTradesSection only**
-- Default display: 15 trades (works well on mobile without destroying layout)
-- Add "Show all trades" toggle that expands the full list (desktop users)
-- Add small "Export CSV" button at the bottom of the trades list
-- No changes to any other cards, metrics, handlers, or logic
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**3. `src/components/settings/SettingsPrivacy.tsx`**
-- Add a "Delete Journal & Progress" destructive action
-- Protected by a type-"DELETE" confirmation gate (same pattern as balance RESET)
-- Deletes all `trade_entries` and `journal_entries` for the user, resets `account_balance` to 0
-- Clear warning copy about permanence
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### What stays the same (untouched)
-- All dashboard cards, metrics, balance tracking, check-in flow
-- LogTradeSheet form and submission handler
-- Weekly progress, AI focus, weekly review cards
-- All existing computed metrics (winRate, P/L, trackedBalance)
-- MyTradesCard on dashboard
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

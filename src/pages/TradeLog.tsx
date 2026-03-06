@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 const TradeLog = () => {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { entries, loading: entriesLoading, addEntry, deleteEntry } = useTradeLog();
+  const { entries, loading: entriesLoading, addEntry } = useTradeLog();
   const { state: vaultState, loading: vaultLoading } = useVaultState();
   const navigate = useNavigate();
   
@@ -226,12 +226,7 @@ const TradeLog = () => {
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => deleteEntry(entry.id)}
-                      className="p-2 text-muted-foreground hover:text-rose-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {/* Trades are immutable — no delete */}
                   </div>
                 </Card>
               ))}
