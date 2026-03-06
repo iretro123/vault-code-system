@@ -117,7 +117,6 @@ export function AcademyLayout() {
                 </Link>
               </div>
               <div className="flex items-center gap-1">
-                <NotificationsPanel />
                 <PlayerIdentity />
               </div>
             </div>
