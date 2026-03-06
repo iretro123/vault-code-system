@@ -226,6 +226,12 @@ export function calculatePlan(inputs: PlannerInputs): PlannerResult {
     verdict,
     verdictReason,
     sizingExplanation,
+    maxOneContractStopWidth: riskBudget / 100,
+    premiumFit: inputs.entryPremium <= idealPremiumMax
+      ? "IDEAL"
+      : inputs.entryPremium <= aggressivePremiumMax
+        ? "AGGRESSIVE"
+        : "TOO_EXPENSIVE",
   };
 }
 

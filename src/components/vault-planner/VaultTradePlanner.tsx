@@ -443,15 +443,22 @@ export function VaultTradePlanner() {
             <div className="space-y-2.5">
               <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
 
+              {/* Premium Fit badge */}
+              <PremiumFitBadge fit={liveResult.premiumFit} />
+
               {/* Hero metrics */}
               <div className="rounded-lg overflow-hidden" style={{ border: "1px solid hsl(213 18% 16%)" }}>
-                {liveResult.safeContracts !== liveResult.maxContracts && liveResult.maxContracts > 0 ? (
+                {liveResult.verdict === "SAFE" ? (
                   <>
-                    <ResultRow label="Safe Contracts" value={`${liveResult.safeContracts}`} bold accent />
-                    <ResultRow label="Max Contracts" value={`${liveResult.maxContracts}`} />
+                    <ResultRow label="Recommended Size" value={`${liveResult.safeContracts}`} bold accent />
+                    {liveResult.maxContracts > liveResult.safeContracts && (
+                      <ResultRow label="Max Allowed" value={`${liveResult.maxContracts}`} />
+                    )}
                   </>
+                ) : liveResult.verdict === "AGGRESSIVE" ? (
+                  <ResultRow label="Recommended Size (Aggressive)" value={`${liveResult.maxContracts}`} bold accent />
                 ) : (
-                  <ResultRow label="Contracts" value={`${liveResult.finalContracts}`} bold accent />
+                  <ResultRow label="Recommended Size" value="0" bold />
                 )}
                 <ResultRow label="Planned Loss" value={liveResult.finalContracts > 0 ? `-${safeCurrency(liveResult.totalPlannedRisk)}` : "—"} bold />
                 <ResultRow label="Entry Cost" value={safeCurrency(liveResult.totalPositionCost)} />
