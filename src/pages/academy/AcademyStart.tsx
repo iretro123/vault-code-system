@@ -75,7 +75,7 @@ const AcademyStart = () => {
   const nextStep = selected ? NEXT_STEPS[selected] : null;
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Start Here"
         subtitle="Pick your level and get a tailored starting point"
