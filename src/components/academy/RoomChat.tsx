@@ -1150,7 +1150,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <button
                               type="button"
                               onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
-                              className="p-1.5 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.08] transition-colors"
                               title="Reply in thread"
                             >
                               <MessageSquare className="h-3.5 w-3.5" />
