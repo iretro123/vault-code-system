@@ -1031,7 +1031,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           <button
                             type="button"
                             onClick={cancelEdit}
-                            className="flex items-center gap-1 text-[11px] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] transition-colors"
+                            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <X className="h-3 w-3" /> Cancel
                           </button>
