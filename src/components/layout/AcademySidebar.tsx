@@ -139,7 +139,7 @@ export function AcademySidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  onClick={() => setSearchOpen(true)}
+                  onClick={() => { setSearchOpen(true); if (isMobile) setOpenMobile(false); }}
                   className="group/search flex items-center gap-2 w-full rounded-[10px] bg-white/[0.03] border border-white/[0.04] px-2.5 py-2 h-10 transition-colors duration-[120ms] ease-out hover:bg-[#131922] focus-visible:bg-[#131922] focus-visible:border-primary/40 focus-visible:outline-none"
                 >
                   <Search className="h-4 w-4 shrink-0 text-[#8B949E] group-focus-visible/search:text-[#E6EDF3] transition-opacity duration-[120ms]" />
