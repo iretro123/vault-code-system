@@ -446,13 +446,14 @@ export function VaultTradePlanner() {
           <p className="text-[10px] text-muted-foreground/50 -mt-1">Cut trade if option hits your stop.</p>
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex items-center gap-2 pt-1">
             <ActionButton variant="primary" onClick={handleGenerate} disabled={!isValid}>Generate</ActionButton>
-            <ActionButton onClick={handleLoadExample}>Example</ActionButton>
-            <ActionButton onClick={handleReset}>Reset</ActionButton>
             <ActionButton onClick={handleCopyPlan} disabled={!isValid}>
               <span className="flex items-center gap-1"><Copy className="w-2.5 h-2.5" />Copy</span>
             </ActionButton>
+            <div className="flex-1" />
+            <ActionButton onClick={handleLoadExample}>Example</ActionButton>
+            <ActionButton onClick={handleReset}>Reset</ActionButton>
           </div>
         </PanelCard>
 
