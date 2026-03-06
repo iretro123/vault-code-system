@@ -280,7 +280,15 @@ export function VaultTradePlanner() {
   const liveThetaWarning = liveResult?.thetaWarning ?? null;
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto space-y-6">
+    <div
+      className="w-full max-w-[1400px] mx-auto rounded-2xl p-5 md:p-8 space-y-6"
+      style={{
+        background: "hsl(214 24% 11%)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 24px 48px hsl(0 0% 0% / 0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
+        backgroundImage: "radial-gradient(ellipse 60% 200px at 50% 0%, hsl(217 60% 28% / 0.18), transparent)",
+      }}
+    >
       {/* ─── Header ─── */}
       <div className="text-center space-y-2 pt-2">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
