@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
+import { Navigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginReminder } from "@/hooks/useLoginReminder";

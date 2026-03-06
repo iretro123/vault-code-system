@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Navigate, useParams } from "react-router-dom";
 import { getRoomBySlug } from "@/lib/academyRooms";

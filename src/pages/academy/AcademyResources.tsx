@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

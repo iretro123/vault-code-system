@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
+import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
