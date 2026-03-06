@@ -135,7 +135,7 @@ export function AcademyLayout() {
             <Outlet />
           </main>
 
-          <MobileNav />
+          
           <CoachDrawer />
         </div>
 
