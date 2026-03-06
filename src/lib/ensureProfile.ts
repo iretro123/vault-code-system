@@ -40,7 +40,16 @@ export async function ensureProfile(
       return;
     }
 
-    if (existing) return;
+    if (existing) {
+      if (opts?.display_name || opts?.username || opts?.phone_number) {
+        const updates: Record<string, any> = {};
+        if (opts.display_name) updates.display_name = opts.display_name;
+        if (opts.username) updates.username = opts.username;
+        if (opts.phone_number) updates.phone_number = opts.phone_number;
+        await supabase.from("profiles").update(updates).eq("user_id", userId);
+      }
+      return;
+    }
 
     const emailPrefix = email?.split("@")[0] || null;
     const defaultDisplayName = opts?.display_name || emailPrefix || "Trader";
