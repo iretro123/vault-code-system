@@ -298,11 +298,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const isOperator = authUserRole?.role === "operator";
 
   const { isCEO, isAdmin, isOperator: isAcademyOperator } = useAcademyPermissions();
-  const canMention = isCEO || isAdmin || isAcademyOperator || isOperator;
+  const canMention = !!user;
+  const canPingEveryone = isCEO || isAdmin || isAcademyOperator || isOperator;
   const {
     suggestions, mentionStart, selectedIndex, setSelectedIndex,
     updateMentionState, clearSuggestions,
-  } = useMentionAutocomplete(canMention);
+  } = useMentionAutocomplete({ enabled: canMention, canPingEveryone });
 
   const displayName =
     (profile as any)?.display_name ||

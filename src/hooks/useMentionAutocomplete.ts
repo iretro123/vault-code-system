@@ -81,8 +81,8 @@ export function useMentionAutocomplete({ enabled, canPingEveryone = true }: { en
 
       const results: (MentionUser | { type: "everyone" })[] = [];
 
-      // @everyone always first
-      if ("everyone".startsWith(query)) {
+      // @everyone — only if allowed
+      if (canPingEveryone && "everyone".startsWith(query)) {
         results.push({ type: "everyone" });
       }
 
