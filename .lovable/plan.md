@@ -1,37 +1,34 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Auto-Fill Stop Price When Using "Use Ideal" / "Use Max" Chips
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+**Problem**: When a user clicks "Use Ideal" or "Use Max", only the Buy Price is filled. The Stop Price stays empty, forcing the user to manually calculate/enter it.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+**Solution**: When either chip is clicked, also auto-fill the Stop Price with the suggested stop value (`lowestStop = entryVal - maxStopW`, floored at 0.01). This uses the same "Suggested stop" value already shown in the guidance text.
 
-### Solution
+### Changes in `src/components/vault-planner/VaultTradePlanner.tsx`
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**Lines 429-430** — Update the two `GuidanceChip` onClick handlers:
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+Currently:
+```typescript
+<GuidanceChip label="Use Ideal" onClick={() => setEntryPremium(idealPrem.toFixed(2))} />
+<GuidanceChip label="Use Max" onClick={() => setEntryPremium(aggressivePrem.toFixed(2))} />
+```
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+Change to calculate the corresponding stop and set both values:
+```typescript
+<GuidanceChip label="Use Ideal" onClick={() => {
+  setEntryPremium(idealPrem.toFixed(2));
+  setStopPremium(Math.max(0.01, idealPrem - maxStopW).toFixed(2));
+}} />
+<GuidanceChip label="Use Max" onClick={() => {
+  setEntryPremium(aggressivePrem.toFixed(2));
+  setStopPremium(Math.max(0.01, aggressivePrem - maxStopW).toFixed(2));
+}} />
+```
+
+This uses the entry price being set (not the current `entryVal`) to compute the correct stop for that specific premium. The formula is the same `lowestStop` logic already in the code.
+
+**One file, ~4 lines changed. No logic/formula changes.**
 
