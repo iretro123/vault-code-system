@@ -230,7 +230,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
       if (part.startsWith("**") && part.endsWith("**")) {
         return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
       }
-      return <span key={i}>{renderMentions(part)}</span>;
+      return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
     });
   };
 
