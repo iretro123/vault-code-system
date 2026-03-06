@@ -158,13 +158,13 @@ function renderRecapCard(body: string) {
   }
 
   return (
-    <div className="rounded-[20px] border border-[hsl(220,10%,85%)] bg-white p-5 space-y-3 mt-2 shadow-sm hover:border-[hsl(220,10%,75%)] transition-colors max-w-full sm:max-w-[560px]">
+    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] p-5 space-y-3 mt-2 hover:border-white/[0.12] transition-colors max-w-full sm:max-w-[560px]">
       <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Post</p>
       <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
         {fields.map((f, i) => (
           <div key={i} className={f.label === "Lesson" ? "col-span-2" : ""}>
-            <span className="text-[10px] text-[hsl(220,10%,50%)] uppercase tracking-wider font-medium">{f.label}</span>
-            <p className="text-[15px] text-[hsl(220,15%,15%)] font-medium mt-0.5">{f.value}</p>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">{f.label}</span>
+            <p className="text-[15px] text-foreground font-medium mt-0.5">{f.value}</p>
           </div>
         ))}
       </div>
