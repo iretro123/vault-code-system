@@ -126,9 +126,9 @@ const AcademyTrade = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="My Trades" />
-      </AcademyLayout>
+      </>
     );
   }
 
