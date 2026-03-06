@@ -1132,7 +1132,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     {/* Hover action bar — Discord-style floating toolbar, absolutely positioned to avoid reflow */}
                     {!msg.is_deleted && !isEditing && (
                       <div className="absolute -top-4 right-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-10">
-                        <div className="flex items-center gap-0.5 rounded-lg bg-white border border-[hsl(220,10%,82%)] shadow-md px-1 py-0.5">
+                        <div className="flex items-center gap-0.5 rounded-lg bg-card border border-white/[0.08] shadow-md px-1 py-0.5">
                           {/* Quick reactions */}
                           {!isAnnouncements && ALLOWED_EMOJIS.map((emoji) => (
                             <button
