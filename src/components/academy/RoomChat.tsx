@@ -347,10 +347,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setDraft(e.target.value);
+      const val = e.target.value;
+      setDraft(val);
       broadcastTyping();
+      // Update mention autocomplete
+      const cursor = e.target.selectionStart ?? val.length;
+      updateMentionState(val, cursor);
     },
-    [broadcastTyping]
+    [broadcastTyping, updateMentionState]
   );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
