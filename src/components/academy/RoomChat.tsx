@@ -210,7 +210,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
-        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-[hsl(220,15%,15%)]")}>{part.slice(2, -2)}</span>;
+        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
       }
       return <span key={i}>{part}</span>;
     });
