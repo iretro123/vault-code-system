@@ -38,7 +38,7 @@ function writeCache(state: AccessState) {
 
 export function useStudentAccess() {
   const { user } = useAuth();
-  const { isCEO, isOperator, resolved: permResolved } = useAcademyPermissions();
+  const { isCEO, isAdmin, isCoach, isOperator, resolved: permResolved } = useAcademyPermissions();
 
   const cached = readCache();
   const [state, setState] = useState<AccessState>({
