@@ -65,7 +65,7 @@ const AcademyCommunity = () => {
           </div>
 
           {/* Tab Content — all tabs stay mounted, toggled via CSS to avoid remount/reload */}
-          <div className="flex-1 overflow-hidden relative">
+          <div className="flex-1 overflow-hidden relative pb-3">
             <div className={cn("absolute inset-0", activeTab === "trade-floor" ? "block" : "hidden")}>
               <CommunityTradeFloor onSwitchTab={handleTabChange} />
             </div>
