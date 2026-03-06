@@ -961,7 +961,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <div className="flex items-center gap-2 mb-0.5 min-h-[22px]">
                         <span className={cn(
                           "text-[13px] font-semibold tracking-[-0.01em]",
-                          isCeoOrAdmin ? "text-amber-700" : "text-[hsl(220,15%,12%)]"
+                          isCeoOrAdmin ? "text-amber-400" : "text-foreground"
                         )}>
                           {msg.user_name}
                         </span>
