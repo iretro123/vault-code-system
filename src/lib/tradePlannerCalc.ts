@@ -77,6 +77,8 @@ export interface PlannerResult {
   verdict: TradeVerdict;
   verdictReason: string;
   sizingExplanation: string;
+  maxOneContractStopWidth: number;
+  premiumFit: PremiumFit;
 }
 
 export interface ValidationError {
