@@ -187,7 +187,7 @@ export function VaultTradePlanner() {
   const [stopPremium, setStopPremium] = useState(saved.stopPremium?.toString() ?? "");
   const [ticker, setTicker] = useState(saved.ticker ?? "");
   const [defaultsLocked, setDefaultsLocked] = useState(true);
-  const [autoTierEnabled, setAutoTierEnabled] = useState(true);
+  
 
   const [uiState, setUIState] = useState<UIState>("input");
   const [result, setResult] = useState<PlannerResult | null>(null);
