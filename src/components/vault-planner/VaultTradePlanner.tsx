@@ -463,7 +463,7 @@ export function VaultTradePlanner() {
               {/* Core metrics */}
               <div className="rounded-lg overflow-hidden" style={{ border: panelBorder }}>
                 <ResultRow
-                  label="How Many Contracts"
+                  label="Contracts to Buy"
                   value={`${liveResult.finalContracts}`}
                   large
                   accent
