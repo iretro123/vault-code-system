@@ -43,7 +43,7 @@ export async function ensureProfile(
     if (existing) return;
 
     const emailPrefix = email?.split("@")[0] || null;
-    const defaultDisplayName = emailPrefix || "Trader";
+    const defaultDisplayName = opts?.display_name || emailPrefix || "Trader";
     const chosenUsername = opts?.username || `trader_${generateShortId()}`;
     const detectedTz = detectTimezone();
 
