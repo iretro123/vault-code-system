@@ -1308,10 +1308,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
               {/* Reply preview bar */}
               {replyingTo && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[hsl(220,12%,90%)] border-l-2 border-l-primary">
+                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border-l-2 border-l-primary">
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-semibold text-primary">Replying to {replyingTo.user_name}</span>
-                    <p className="text-[11px] text-[hsl(220,10%,45%)] truncate">{replyingTo.body.slice(0, 80)}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{replyingTo.body.slice(0, 80)}</p>
                   </div>
                   <button
                     type="button"
