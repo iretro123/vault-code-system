@@ -7,9 +7,11 @@ import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { useChatModeration } from "@/hooks/useChatModeration";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
+import { useMentionAutocomplete, parseMentions, getMentionLabel, getMentionInsertText, type MentionUser } from "@/hooks/useMentionAutocomplete";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
