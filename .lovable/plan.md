@@ -1,37 +1,26 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: Auto-close sidebar on mobile when tapping a nav item
 
 ### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
-
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+On mobile, tapping a sidebar nav link navigates to the page but the sidebar stays open as an overlay, requiring a manual close. This feels broken — iOS-style navigation should dismiss the menu instantly on selection.
 
 ### Solution
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+Add an `onClick` handler to each `NavLink` in `AcademySidebar.tsx` that calls `setOpenMobile(false)` when on mobile. The sidebar context already exposes `setOpenMobile` and `isMobile` via `useSidebar()`.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**`src/components/layout/AcademySidebar.tsx`** — two changes:
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+1. **Destructure `setOpenMobile` and `isMobile`** from `useSidebar()` (line ~80, already using `state` and `toggleSidebar`)
+
+2. **Add `onClick` to every `NavLink`** (the regular nav items around line 233, and the Start link around line 167):
+   ```tsx
+   onClick={() => { if (isMobile) setOpenMobile(false); }}
+   ```
+
+3. **Also close on Search button tap** (line 142) — same pattern.
+
+This is the same approach already used for the "Ask Coach" button (which calls `toggleSidebar()` on mobile). Using `setOpenMobile(false)` is more precise since it only affects the mobile sheet.
+
+No other files need changes.
 
