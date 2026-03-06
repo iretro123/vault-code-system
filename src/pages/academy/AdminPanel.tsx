@@ -76,11 +76,11 @@ const AdminPanel = () => {
 
   if ((loading || !resolved) && user?.id) {
     return (
-      <AcademyLayout>
+      <>
         <div className="px-4 md:px-6 py-12 flex items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
