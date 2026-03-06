@@ -4,9 +4,8 @@ import { Sprout, Flame, Crown, Check, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { toast } from "sonner";
-
-const PROFILE_CACHE_KEY = "va_cache_profile";
 
 interface Props {
   open: boolean;
