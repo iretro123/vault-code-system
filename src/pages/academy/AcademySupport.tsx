@@ -1,4 +1,4 @@
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, ExternalLink } from "lucide-react";
 
 export default function AcademySupport() {
   return (
@@ -28,16 +28,21 @@ export default function AcademySupport() {
         </p>
       </div>
 
-      {/* Calendly embed */}
-      <div className="w-full mt-10 rounded-2xl overflow-hidden border border-white/[0.06] bg-white/[0.02]">
-        <iframe
-          src="https://calendly.com/rz_/vault-os-support-calls-1-on-1"
-          title="Schedule a 1:1 Support Call"
-          className="w-full border-0"
-          style={{ height: 700, minHeight: 600 }}
-          loading="lazy"
-        />
-      </div>
+      {/* CTA Button */}
+      <a
+        href="https://calendly.com/rz_/vault-os-support-calls-1-on-1"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-10 inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-base transition-all duration-150 hover:brightness-110 active:scale-[0.98] shadow-lg shadow-primary/20"
+      >
+        <CalendarCheck className="h-5 w-5" />
+        Book Your 1:1 Call
+        <ExternalLink className="h-4 w-4 opacity-60" />
+      </a>
+
+      <p className="mt-4 text-xs text-muted-foreground/60">
+        Opens Calendly in a new tab
+      </p>
     </div>
   );
 }
