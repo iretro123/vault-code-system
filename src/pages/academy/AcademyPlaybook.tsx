@@ -166,7 +166,7 @@ const AcademyPlaybook = () => {
 
   if (chapters.length === 0) {
     return (
-      <AcademyLayout>
+      <>
         <div className="flex flex-col items-center justify-center h-[60vh] text-center px-8">
           <VaultPlaybookIcon className="h-16 w-16 opacity-10 mb-6" />
           <h2 className="text-2xl font-bold text-foreground mb-2">Vault Playbook</h2>
@@ -174,7 +174,7 @@ const AcademyPlaybook = () => {
             The Trading OS playbook is being prepared. Chapters will appear here once configured.
           </p>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
