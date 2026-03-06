@@ -20,7 +20,7 @@ export default function AcademySupport() {
       {/* Description */}
       <div className="mt-8 max-w-xl text-center space-y-4 text-sm md:text-base text-muted-foreground leading-relaxed">
         <p>
-          These individual calls are designed to help you get the most out of Vault OS and move with clarity.
+          These individual calls are designed to help you get the most out of <span className="text-foreground font-semibold">Vault</span><span className="text-primary font-semibold">OS</span> and move with clarity.
           We'll walk through navigation, answer questions, refine your personal game plan, and make sure you know exactly how to use the platform to support your trading goals.
         </p>
         <p>
