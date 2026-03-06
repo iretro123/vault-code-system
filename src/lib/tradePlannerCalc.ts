@@ -3,14 +3,16 @@
  * Long Calls / Long Puts ONLY
  */
 
-export type AccountTierLabel = "Small" | "Medium" | "Large";
+export type AccountTierLabel = "Micro" | "Small" | "Medium" | "Large";
 export type TradeDirection = "Long Call" | "Long Put";
 export type TradeVerdict = "SAFE" | "AGGRESSIVE" | "NO_TRADE";
+export type PremiumFit = "IDEAL" | "AGGRESSIVE" | "TOO_EXPENSIVE";
 
 export function detectTier(accountSize: number): AccountTierLabel {
-  if (accountSize >= 50000) return "Large";
-  if (accountSize >= 15000) return "Medium";
-  return "Small";
+  if (accountSize >= 25000) return "Large";
+  if (accountSize >= 5000) return "Medium";
+  if (accountSize >= 1000) return "Small";
+  return "Micro";
 }
 
 export interface TierDefaults {
