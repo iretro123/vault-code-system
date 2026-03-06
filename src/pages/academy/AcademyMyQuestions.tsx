@@ -214,7 +214,7 @@ const AcademyMyQuestions = () => {
 
   // List view
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="My Questions" subtitle="Your coach support history" />
       <div className="px-4 md:px-6 pb-6 max-w-2xl space-y-3">
         {/* Filter chips */}
