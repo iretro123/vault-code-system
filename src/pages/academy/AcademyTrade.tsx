@@ -133,7 +133,7 @@ const AcademyTrade = () => {
   }
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="My Trades"
         subtitle="Log trades, track performance, and improve execution with AI review."
