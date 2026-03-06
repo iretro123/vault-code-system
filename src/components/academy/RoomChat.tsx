@@ -288,7 +288,7 @@ function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
 
 /* ── main component ── */
 
-export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab, active = true }: RoomChatProps) {
+export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab, active = true, compact = false }: RoomChatProps) {
   const navigate = useNavigate();
   // Track if this tab has ever been activated — once true, stays true to keep subscriptions alive
   const hasBeenActive = useRef(false);
