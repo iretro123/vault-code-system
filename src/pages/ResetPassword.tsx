@@ -17,6 +17,12 @@ const ResetPassword = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Check URL hash for recovery token (most reliable — handles race condition)
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      setReady(true);
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setReady(true);
