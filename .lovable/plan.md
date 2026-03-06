@@ -1,37 +1,46 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: First Name Not Appearing in Dashboard Greeting + Settings
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Root Cause
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+There's a **race condition** during signup between two `ensureProfile` calls:
 
-### Solution
+1. **Auth listener** (`useAuth.tsx` line 81): `ensureProfile(userId, email)` — called with NO opts (no first name, no username, no phone). This fires immediately on `SIGNED_UP` event.
+2. **Signup page** (`Signup.tsx` line 103): `ensureProfile(userId, email, { display_name, username, phone_number })` — called AFTER with the actual form data.
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+Since call #1 runs first and creates the profile with **defaults** (email prefix as display_name, random username), call #2 finds `existing` profile and **returns early without updating**. The user's actual first name, chosen username, and phone number are silently discarded.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**Result**: Dashboard greeting shows email prefix (e.g. "Good afternoon, john123") instead of "Good afternoon, John". Settings shows a random username instead of the one the user chose.
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+### Fix
+
+**File: `src/lib/ensureProfile.ts`**
+
+When `opts` are provided (display_name, username, phone_number) and a profile already exists, **update the profile** with those values instead of returning early. This way, whichever call runs second still applies the correct user-supplied data.
+
+```typescript
+// Current behavior (broken):
+if (existing) return;  // ← discards form data
+
+// New behavior:
+if (existing) {
+  // If caller provided explicit opts, patch them onto the existing profile
+  if (opts?.display_name || opts?.username || opts?.phone_number) {
+    const updates: Record<string, any> = {};
+    if (opts.display_name) updates.display_name = opts.display_name;
+    if (opts.username) updates.username = opts.username;
+    if (opts.phone_number) updates.phone_number = opts.phone_number;
+    await supabase.from("profiles").update(updates).eq("user_id", userId);
+  }
+  return;
+}
+```
+
+This is a 1-file fix (~8 lines added). No other files need changes — the dashboard already reads `profile.display_name.split(" ")[0]` for the greeting, and settings already reads from the profile. Once the profile stores the correct data, everything downstream works.
+
+### What This Fixes
+- **Dashboard card**: "Good afternoon, **John**" (first name from signup form)
+- **Settings page**: Shows correct display name, chosen username, and phone number
+- **PlayerIdentity dropdown**: Shows correct name and @username
 
