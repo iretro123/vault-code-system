@@ -927,13 +927,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               {showDate && <DateSeparator date={getDateLabel(msg.created_at)} />}
             <ContextMenu>
               <ContextMenuTrigger asChild>
-                <div
+                 <div
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-[hsl(220,12%,89%)] transition-colors duration-75",
+                    "group relative flex gap-3 px-4 hover:bg-white/[0.03] transition-colors duration-75",
                     startsNewGroup ? "mt-2 pt-2 pb-1" : (isGroupedWithNext ? "py-[2px]" : "pt-[2px] pb-0.5"),
-                    isEditing && "bg-[hsl(220,10%,93%)]",
+                    isEditing && "bg-white/[0.04]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
-                    isOfficialAnnouncement && "bg-amber-50"
+                    isOfficialAnnouncement && "bg-amber-500/[0.04]"
                   )}
                 >
                   {/* Avatar column — compact on grouped follow-ups */}
