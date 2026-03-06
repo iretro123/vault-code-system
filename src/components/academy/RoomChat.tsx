@@ -993,9 +993,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
                               <Megaphone className="h-3 w-3" /> Official Announcement
                             </span>
-                            <p className="text-sm text-[hsl(220,15%,15%)] leading-relaxed whitespace-pre-line">
-                              {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
-                            </p>
+                             <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                               {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
+                             </p>
                           </div>
                         </div>
                       </div>
