@@ -1,37 +1,33 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Account Panel Layout Refinement
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+Reorder and restyle the Account panel in `src/components/vault-planner/VaultTradePlanner.tsx` (lines 334–393). No logic or formula changes.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### New order (lines 334–393)
 
-### Solution
+1. **Account Size input** (unchanged)
+2. **Tier toggle** (move up, before the plan card)
+3. **Account Plan card** (move below tier toggle, restyle)
+4. **Unlock Custom** button (stays last)
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Account Plan card restyling
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+Replace the current compact card (lines 345–358) with a cleaner 4-row summary structure:
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+- Increase text from `text-[10px]` → `text-[11px]` for row labels/values
+- Increase header from `text-[9px]` → `text-[10px]`
+- Add `gap-y-1.5` instead of `gap-y-0.5` for better row spacing
+- Values use `font-bold` instead of `font-semibold`
+- Change content to 4 rows:
+  - **Risk per trade** → `$X`
+  - **Best premium zone** → `~$X`
+  - **Stretch zone** → `up to $X`
+  - **Max stop width** → `$X` (new row, = `riskBudget / 100`)
+- Remove the "For a $X account:" paragraph line
+- Keep the "Best for 1-contract setups" footer as `text-[9px]` muted italic
+- Slightly increase padding: `px-3.5 py-3`
+
+### File
+- `src/components/vault-planner/VaultTradePlanner.tsx` — reorder + restyle ~30 lines in Account panel
 
