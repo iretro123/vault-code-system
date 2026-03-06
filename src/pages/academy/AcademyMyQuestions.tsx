@@ -208,7 +208,7 @@ const AcademyMyQuestions = () => {
             )}
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
