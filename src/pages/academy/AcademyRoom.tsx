@@ -34,7 +34,7 @@ const AcademyRoom = () => {
   const isAnnouncements = room.slug === "announcements";
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title={`#${room.name}`} subtitle={room.description} />
       <div className="px-4 md:px-6 pb-6">
         {isAnnouncements ? (
