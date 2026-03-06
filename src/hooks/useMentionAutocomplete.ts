@@ -17,11 +17,7 @@ async function fetchAllUsers(): Promise<MentionUser[]> {
   if (fetchPromise) return fetchPromise;
 
   fetchPromise = (async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("user_id, display_name, username, avatar_url")
-      .order("display_name", { ascending: true })
-      .limit(500);
+    const { data } = await supabase.rpc("get_mention_users");
 
     cachedUsers = (data ?? []).map((r: any) => ({
       user_id: r.user_id,
