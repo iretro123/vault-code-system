@@ -83,15 +83,17 @@ function FieldInput({ error, ...props }: React.InputHTMLAttributes<HTMLInputElem
 }
 
 function SegmentedToggle<T extends string>({
-  options, value, onChange,
-}: { options: T[]; value: T; onChange: (v: T) => void }) {
+  options, value, onChange, disabled,
+}: { options: T[]; value: T; onChange: (v: T) => void; disabled?: boolean }) {
   return (
-    <div className="inline-flex rounded-lg overflow-hidden" style={{ border: panelBorder }}>
+    <div className={`inline-flex rounded-lg overflow-hidden ${disabled ? "opacity-50 pointer-events-none" : ""}`} style={{ border: panelBorder }}>
       {options.map((opt) => (
         <button
           key={opt}
-          onClick={() => onChange(opt)}
+          onClick={() => !disabled && onChange(opt)}
+          disabled={disabled}
           className={`px-3.5 py-1.5 text-[11px] font-semibold transition-all duration-100
+            ${disabled ? "cursor-not-allowed" : ""}
             ${value === opt ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           style={value !== opt ? { background: panelBg } : {}}
         >
