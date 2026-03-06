@@ -41,13 +41,16 @@ const rowBorder = "1px solid hsl(220 10% 14%)";
 
 /* ─── Sub-components ─── */
 
-function PanelCard({ title, children }: { title: string; children: React.ReactNode }) {
+function PanelCard({ title, help, children }: { title: string; help?: string; children: React.ReactNode }) {
   return (
     <div
       className="rounded-xl p-4 md:p-5 flex flex-col gap-3"
       style={{ background: panelBg, border: panelBorder }}
     >
-      <h3 className="text-sm font-bold text-foreground tracking-tight">{title}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-foreground tracking-tight">{title}</h3>
+        {help && <XPTooltip text={help} white title={title + " Guide"} />}
+      </div>
       {children}
     </div>
   );
