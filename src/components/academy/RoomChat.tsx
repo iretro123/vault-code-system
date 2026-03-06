@@ -1359,7 +1359,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="p-1.5 rounded-lg text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)] hover:bg-[hsl(220,10%,94%)] transition-colors"
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
                       title="Attach file"
                     >
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
