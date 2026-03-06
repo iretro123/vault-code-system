@@ -70,7 +70,7 @@ const AcademyCommunity = () => {
               <CommunityTradeFloor onSwitchTab={handleTabChange} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "announcements" ? "block" : "hidden")}>
-              <RoomChat roomSlug="announcements" canPost={canPostRestricted} isAnnouncements={true} active={activeTab === "announcements"} />
+              <RoomChat roomSlug="announcements" canPost={canPostRestricted} isAnnouncements={true} active={activeTab === "announcements"} compact />
             </div>
             <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
               <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} />
