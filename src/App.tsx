@@ -77,29 +77,30 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />
-            <Route path="/academy" element={<Navigate to="/academy/home" replace />} />
-            <Route path="/academy/home" element={<AcademyHome />} />
-            <Route path="/academy/start" element={<AcademyStart />} />
-            <Route path="/academy/learn" element={<AcademyLearn />} />
-            <Route path="/academy/learn/:moduleSlug" element={<AcademyModule />} />
-            <Route path="/academy/community" element={<AcademyCommunity />} />
-            <Route path="/academy/trade" element={<AcademyTrade />} />
-            {/* Legacy room routes — redirect to community */}
-            <Route path="/academy/rooms" element={<Navigate to="/academy/community" replace />} />
-            <Route path="/academy/room/:roomSlug" element={<AcademyRoom />} />
-            <Route path="/academy/live" element={<AcademyLive />} />
-            <Route path="/academy/resources" element={<AcademyResources />} />
-            <Route path="/academy/profile" element={<AcademyProfile />} />
-            <Route path="/academy/settings" element={<AcademySettings />} />
-            <Route path="/academy/my-questions" element={<AcademyMyQuestions />} />
-            <Route path="/academy/journal" element={<AcademyJournal />} />
-            <Route path="/academy/progress" element={<AcademyProgress />} />
-            <Route path="/academy/playbook" element={<AcademyPlaybook />} />
-            <Route path="/academy/vault-os" element={<AcademyVaultOS />} />
-            <Route path="/academy/admin" element={<AcademyAdmin />} />
-            <Route path="/academy/admin/users" element={<AcademyAdminUsers />} />
-            <Route path="/academy/admin/panel" element={<AdminPanel />} />
-            <Route path="/academy/admin/qa" element={<AcademyQA />} />
+            <Route path="/academy" element={<AcademyLayout />}>
+              <Route index element={<Navigate to="home" replace />} />
+              <Route path="home" element={<AcademyHome />} />
+              <Route path="start" element={<AcademyStart />} />
+              <Route path="learn" element={<AcademyLearn />} />
+              <Route path="learn/:moduleSlug" element={<AcademyModule />} />
+              <Route path="community" element={<AcademyCommunity />} />
+              <Route path="trade" element={<AcademyTrade />} />
+              <Route path="rooms" element={<Navigate to="/academy/community" replace />} />
+              <Route path="room/:roomSlug" element={<AcademyRoom />} />
+              <Route path="live" element={<AcademyLive />} />
+              <Route path="resources" element={<AcademyResources />} />
+              <Route path="profile" element={<AcademyProfile />} />
+              <Route path="settings" element={<AcademySettings />} />
+              <Route path="my-questions" element={<AcademyMyQuestions />} />
+              <Route path="journal" element={<AcademyJournal />} />
+              <Route path="progress" element={<AcademyProgress />} />
+              <Route path="playbook" element={<AcademyPlaybook />} />
+              <Route path="vault-os" element={<AcademyVaultOS />} />
+              <Route path="admin" element={<AcademyAdmin />} />
+              <Route path="admin/users" element={<AcademyAdminUsers />} />
+              <Route path="admin/panel" element={<AdminPanel />} />
+              <Route path="admin/qa" element={<AcademyQA />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
