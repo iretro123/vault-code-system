@@ -70,6 +70,9 @@ export interface PlannerResult {
   accountExposurePercent: number;
   breakEvenAtExpiry: number | null;
   thetaWarning: string | null;
+  verdict: TradeVerdict;
+  verdictReason: string;
+  sizingExplanation: string;
 }
 
 export interface ValidationError {
