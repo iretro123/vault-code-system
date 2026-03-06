@@ -26,7 +26,7 @@ function detectTimezone(): string {
 export async function ensureProfile(
   userId: string,
   email?: string | null,
-  opts?: { phone_number?: string; username?: string },
+  opts?: { phone_number?: string; username?: string; display_name?: string },
 ): Promise<void> {
   try {
     const { data: existing, error: fetchError } = await supabase
