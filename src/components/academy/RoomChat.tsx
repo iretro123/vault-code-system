@@ -220,7 +220,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
           return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
         }
         if (!part) return null;
-        return <span key={i}>{renderMentions(part)}</span>;
+        return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
       });
     }
 
