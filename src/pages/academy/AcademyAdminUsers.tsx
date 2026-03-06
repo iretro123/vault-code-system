@@ -72,7 +72,7 @@ const AcademyAdminUsers = () => {
   };
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="User Export"
         subtitle="View and export Academy user data"
