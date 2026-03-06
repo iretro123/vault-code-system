@@ -125,7 +125,7 @@ export function AcademyLayout() {
 
           {/* Content — scrollable area */}
           <main className="flex-1 overflow-y-auto pb-20 md:pb-6">
-            {children}
+            <Outlet />
           </main>
 
           <MobileNav />
