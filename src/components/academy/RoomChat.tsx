@@ -181,7 +181,7 @@ function renderMentions(text: string, isOwnBubble = false): React.ReactNode {
   return parts.map((part, i) => {
     if (/^@\w+/.test(part)) {
       return (
-        <span key={i} className={isOwnBubble ? "text-white font-semibold bg-white/20 rounded px-0.5" : "text-primary font-semibold bg-primary/10 rounded px-0.5"}>
+        <span key={i} className={isOwnBubble ? "text-white font-semibold" : "text-primary font-semibold"}>
           {part}
         </span>
       );
