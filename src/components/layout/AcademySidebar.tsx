@@ -160,23 +160,6 @@ export function AcademySidebar() {
           <SidebarGroupLabel className="text-[11px] tracking-[0.08em] uppercase text-[#8B949E]/60">{!collapsed && "Nav"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* Start — only shown until onboarding complete */}
-              {!onboardingComplete && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={isActive("/academy/start")}>
-                    <NavLink
-                      to="/academy/start"
-                      end
-                      onClick={() => { if (isMobile) setOpenMobile(false); }}
-                      className="flex items-center gap-2 px-2 py-1.5 text-primary/80 hover:text-primary"
-                      activeClassName="bg-[#151C26] text-primary font-medium border-l-[3px] border-l-primary"
-                    >
-                      <Rocket className="h-4 w-4 shrink-0" />
-                      {!collapsed && <span className="text-sm font-medium">Start</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
 
               {coreNav.map(({ icon: Icon, label, path, isLive, isCoach, pageKey }) => {
                 // Hide disabled pages from non-admin users

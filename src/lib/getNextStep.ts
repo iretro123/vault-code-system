@@ -22,7 +22,7 @@ export async function getNextStep(ctx: UserContext): Promise<NextStep> {
       title: "Finish Setup",
       description: "Complete your profile to unlock the full academy.",
       cta_label: "Continue Setup",
-      cta_route: "/academy/start",
+      cta_route: "/academy/home",
     };
   }
 

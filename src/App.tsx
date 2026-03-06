@@ -20,7 +20,7 @@ import VaultLog from "./pages/VaultLog";
 import Reports from "./pages/Reports";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import AcademyHome from "./pages/academy/AcademyHome";
-import AcademyStart from "./pages/academy/AcademyStart";
+
 import AcademyLearn from "./pages/academy/AcademyLearn";
 import AcademyModule from "./pages/academy/AcademyModule";
 import AcademyCommunity from "./pages/academy/AcademyCommunity";
@@ -80,7 +80,7 @@ const App = () => (
             <Route path="/academy" element={<AcademyLayout />}>
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<AcademyHome />} />
-              <Route path="start" element={<AcademyStart />} />
+              <Route path="start" element={<Navigate to="/academy/home" replace />} />
               <Route path="learn" element={<AcademyLearn />} />
               <Route path="learn/:moduleSlug" element={<AcademyModule />} />
               <Route path="community" element={<AcademyCommunity />} />
