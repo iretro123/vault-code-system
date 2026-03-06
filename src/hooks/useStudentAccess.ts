@@ -39,7 +39,7 @@ function writeCache(state: AccessState) {
 }
 
 export function useStudentAccess() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { isCEO, isAdmin, isCoach, isOperator, resolved: permResolved } = useAcademyPermissions();
 
   const cached = readCache();
@@ -54,6 +54,7 @@ export function useStudentAccess() {
   });
 
   const mountedRef = useRef(true);
+  const retryAttemptedRef = useRef(false);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
   const fetchAccess = useCallback(async () => {
@@ -104,6 +105,59 @@ export function useStudentAccess() {
   useEffect(() => {
     fetchAccess();
   }, [fetchAccess]);
+
+  // Auto-retry provisioning: if status is "none" and user is logged in,
+  // attempt to call provision-manual-access ONE TIME per session.
+  // This catches users who signed up before the auth-header fix,
+  // or whose provisioning silently failed for any reason.
+  useEffect(() => {
+    if (state.loading) return;
+    if (state.status !== "none") return;
+    if (!user?.id) return;
+    if (retryAttemptedRef.current) return;
+
+    retryAttemptedRef.current = true;
+
+    const userEmail = (profile as any)?.email || user.email;
+    if (!userEmail) {
+      console.log("[AccessGate] No email available for auto-provision retry");
+      return;
+    }
+
+    (async () => {
+      try {
+        console.log("[AccessGate] Status is 'none' — attempting auto-provision for", userEmail);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          console.log("[AccessGate] No session token for auto-provision");
+          return;
+        }
+
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/provision-manual-access`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            email: userEmail.trim().toLowerCase(),
+            auth_user_id: user.id,
+          }),
+        });
+
+        const result = await res.json();
+        console.log("[AccessGate] Auto-provision result:", result);
+
+        if (result.provisioned === true && mountedRef.current) {
+          console.log("[AccessGate] Auto-provision succeeded — refreshing access");
+          await fetchAccess();
+        }
+      } catch (err) {
+        console.error("[AccessGate] Auto-provision error:", err);
+      }
+    })();
+  }, [state.loading, state.status, user?.id, profile, fetchAccess]);
 
   // Admin/operator bypass
   const adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator);
