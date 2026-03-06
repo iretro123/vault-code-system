@@ -218,7 +218,7 @@ const AcademyPlaybook = () => {
             />
           </div>
         </div>
-      </AcademyLayout>
+      </>
     );
   }
 
