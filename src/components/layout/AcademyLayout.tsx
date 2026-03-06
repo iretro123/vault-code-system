@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 export function AcademyLayout() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
   const { logActivity } = useActivityLog();
