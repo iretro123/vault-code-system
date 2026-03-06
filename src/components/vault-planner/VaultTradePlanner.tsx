@@ -17,8 +17,9 @@ import { TradePlannerResults } from "./TradePlannerResults";
 import { XPTooltip } from "./XPTooltip";
 import { toast } from "sonner";
 import {
-  Lock, Unlock, CheckCircle2, XCircle, Copy,
+  Lock, Unlock, CheckCircle2, XCircle, Copy, RotateCcw,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type UIState = "input" | "loading" | "results";
 const STORAGE_KEY = "vault_trade_planner_inputs";
