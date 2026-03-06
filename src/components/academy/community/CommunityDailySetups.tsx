@@ -138,7 +138,7 @@ export function CommunityDailySetups() {
                       key={i}
                       src={img.url}
                       alt="Chart screenshot"
-                      className="rounded-2xl max-w-full max-h-[400px] object-cover border border-[hsl(220,10%,85%)]"
+                      className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08]"
                       loading="lazy"
                     />
                   ))}

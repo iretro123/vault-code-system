@@ -1,37 +1,37 @@
 
 
-## Apply Chat Image Sizing to All Community Tabs
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-The Chat tab uses optimized image sizing: `max-w-full sm:max-w-[360px] w-auto h-auto object-contain` with rounded corners and subtle border. The other tabs use oversized rendering.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Changes
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. Announcements — `src/components/academy/AnnouncementsFeed.tsx` (line 79-84)**
-Change the image from `max-w-full max-h-[300px] object-cover` to match chat sizing:
-```
-className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] mt-2"
-```
+### Solution
 
-**2. Signals — `src/components/academy/community/CommunityDailySetups.tsx` (line 137-141)**
-Change from `max-w-full max-h-[400px] object-cover` to:
-```
-className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08]"
-```
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**3. Wins — `src/components/academy/community/CommunityWins.tsx` (lines 101-109)**
-Replace the full-width `aspect-video` container with a constrained image matching chat style. Remove the wrapping `div` with `aspect-video` and render the image directly:
-```
-{imageAtt && (
-  <div className="p-4 pb-0">
-    <img
-      src={(imageAtt as any).url}
-      alt="Trade screenshot"
-      className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08]"
-      loading="lazy"
-    />
-  </div>
-)}
-```
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-All three tabs will match the Chat tab's compact, contained image rendering.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
