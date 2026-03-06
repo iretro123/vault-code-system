@@ -23,7 +23,7 @@ export function AcademyLayout() {
   const { hydrated } = useAcademyData();
   const isMobile = useIsMobile();
   const location = useLocation();
-  const navigate = useNavigate();
+  const { setOpenMobile } = useSidebar();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
   const lastPageRef = useRef("");
