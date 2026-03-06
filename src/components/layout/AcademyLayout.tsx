@@ -111,6 +111,13 @@ export function AcademyLayout() {
           <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate("/hub")}
+                  className="md:hidden p-1.5 -ml-1 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Back to Hub"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
                 <Link to="/academy/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                   <span className="text-lg font-bold tracking-tight text-foreground">
                     Vault<span className="text-primary">Academy</span>
