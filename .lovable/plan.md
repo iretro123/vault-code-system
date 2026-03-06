@@ -1,42 +1,37 @@
 
 
-## @Mention System with Notifications (Admin/CEO/Operator Only)
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Overview
-Add the ability for admins, CEOs, and operators to @mention users in chat messages. When someone is @mentioned, they receive an in-app notification (the existing notification tray pops open). Admins can also use `@everyone` to notify all users.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### 1. Database: Create `mention_notifications` trigger via Edge Function approach
-No new tables needed. We'll insert into the existing `academy_notifications` table when a mention is detected. This happens client-side after a successful message send (simpler than a DB trigger, avoids edge function complexity).
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### 2. Mention Autocomplete Dropdown (RoomChat.tsx)
-- Detect `@` typed in the composer textarea
-- Query profiles via `get_community_profiles` RPC or a lightweight query for display_name/username
-- Show a small dropdown above the cursor with matching users (filtered as user types)
-- Only show the autocomplete for users with admin/CEO/operator permissions (use `useAcademyPermissions`)
-- Include `@everyone` option at top of list (admin/CEO/operator only)
-- On selection, insert `@username` into the draft text
+### Solution
 
-### 3. Send Flow: Extract Mentions & Create Notifications (RoomChat.tsx + useRoomMessages.ts)
-After `sendMessage` succeeds:
-- Parse the message body for `@username` patterns
-- If `@everyone` is found (and sender is admin/CEO/operator), insert a broadcast notification (`user_id: null`) into `academy_notifications`
-- If specific `@user` found, look up their user_id and insert a targeted notification into `academy_notifications` with their user_id
-- Notification title: `"{sender_name} mentioned you in #{room}"`, body: message preview, link_path: `/academy/community`
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### 4. Render @mentions with highlight (RoomChat.tsx)
-- In `renderPlainBody`, detect `@username` or `@everyone` patterns and render them as highlighted spans (e.g., `text-primary font-semibold bg-primary/10 rounded px-0.5`)
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### 5. Permission Gate
-- The `@` autocomplete only activates for users where `useAcademyPermissions` returns `isCEO || isAdmin || isOperator`
-- Regular members can type `@` but it won't trigger autocomplete or create notifications
-
-### Files to create/modify:
-- **New**: `src/hooks/useMentionAutocomplete.ts` — fetches user list, filters by typed query
-- **Edit**: `src/components/academy/RoomChat.tsx` — add mention autocomplete UI in composer, parse mentions on send, highlight mentions in body
-- **Edit**: `src/hooks/useRoomMessages.ts` — add mention notification insertion after successful send
-
-### Technical Notes
-- User list for autocomplete is fetched once via `supabase.from('profiles').select('user_id, display_name, username, avatar_url')` (operator RLS allows this; for non-operators we use the existing `get_community_profiles` RPC)
-- Notifications use the existing `academy_notifications` table and realtime subscription — the notification tray auto-opens when a new notification arrives (already implemented)
-- `@everyone` inserts with `user_id: null` which broadcasts to all users per existing RLS policy
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

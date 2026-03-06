@@ -7,9 +7,11 @@ import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { useChatModeration } from "@/hooks/useChatModeration";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
+import { useMentionAutocomplete, parseMentions, getMentionLabel, getMentionInsertText, type MentionUser } from "@/hooks/useMentionAutocomplete";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
@@ -172,6 +174,22 @@ function renderRecapCard(body: string) {
   );
 }
 
+function renderMentions(text: string): React.ReactNode {
+  // Split on @word patterns and highlight them
+  const parts = text.split(/(@\w+)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (/^@\w+/.test(part)) {
+      return (
+        <span key={i} className="text-primary font-semibold bg-primary/10 rounded px-0.5">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+}
+
 function renderPlainBody(body: string, isOwnBubble = false) {
   // Split quote block from rest of message
   const lines = body.split("\n");
@@ -202,7 +220,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
           return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
         }
         if (!part) return null;
-        return <span key={i}>{part}</span>;
+        return <span key={i}>{renderMentions(part)}</span>;
       });
     }
 
@@ -212,7 +230,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
       if (part.startsWith("**") && part.endsWith("**")) {
         return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
       }
-      return <span key={i}>{part}</span>;
+      return <span key={i}>{renderMentions(part)}</span>;
     });
   };
 
@@ -279,6 +297,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const isOperator = authUserRole?.role === "operator";
 
+  const { isCEO, isAdmin, isOperator: isAcademyOperator } = useAcademyPermissions();
+  const canMention = isCEO || isAdmin || isAcademyOperator || isOperator;
+  const {
+    suggestions, mentionStart, selectedIndex, setSelectedIndex,
+    updateMentionState, clearSuggestions,
+  } = useMentionAutocomplete(canMention);
+
   const displayName =
     (profile as any)?.display_name ||
     (profile as any)?.username ||
@@ -322,10 +347,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setDraft(e.target.value);
+      const val = e.target.value;
+      setDraft(val);
       broadcastTyping();
+      // Update mention autocomplete
+      const cursor = e.target.selectionStart ?? val.length;
+      updateMentionState(val, cursor);
     },
-    [broadcastTyping]
+    [broadcastTyping, updateMentionState]
   );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -374,6 +403,25 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     setShowJumpToLatest(false);
   };
 
+  const selectMention = useCallback(
+    (item: (typeof suggestions)[0]) => {
+      const insertText = 'type' in item && item.type === "everyone"
+        ? "everyone"
+        : getMentionInsertText(item as MentionUser);
+      const before = draft.slice(0, mentionStart);
+      const after = draft.slice(textareaRef.current?.selectionStart ?? draft.length);
+      const newDraft = `${before}@${insertText} ${after}`;
+      setDraft(newDraft);
+      clearSuggestions();
+      requestAnimationFrame(() => {
+        const pos = before.length + insertText.length + 2; // +2 for @ and space
+        textareaRef.current?.focus();
+        textareaRef.current?.setSelectionRange(pos, pos);
+      });
+    },
+    [draft, mentionStart, clearSuggestions, suggestions]
+  );
+
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
     let body = text ?? draft;
     if (!body.trim() && (!attachments || attachments.length === 0)) return;
@@ -387,8 +435,56 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     }
 
     if (!text) setDraft("");
+    clearSuggestions();
     shouldAutoScroll.current = true;
-    await sendMessage(body, attachments);
+    const result = await sendMessage(body, attachments);
+
+    // Create mention notifications (admin/CEO/operator only)
+    if (result?.ok && canMention && user) {
+      try {
+        const allUsers = (await import("@/hooks/useMentionAutocomplete")).parseMentions
+          ? undefined : undefined;
+        // Fetch cached users for parsing
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, username")
+          .limit(500);
+        const userList: MentionUser[] = (profilesData ?? []).map((r: any) => ({
+          user_id: r.user_id,
+          display_name: r.display_name,
+          username: r.username,
+          avatar_url: null,
+        }));
+        const { mentionedUserIds, hasEveryone } = parseMentions(body, userList);
+        const senderName = displayName;
+        const preview = body.length > 80 ? body.slice(0, 80) + "…" : body;
+
+        if (hasEveryone) {
+          // Broadcast notification (user_id: null)
+          await supabase.from("academy_notifications").insert({
+            user_id: null,
+            type: "mention",
+            title: `${senderName} mentioned @everyone in #${roomSlug}`,
+            body: preview,
+            link_path: "/academy/community",
+          } as any);
+        }
+
+        // Individual mention notifications
+        for (const uid of mentionedUserIds) {
+          if (uid === user.id) continue; // Don't notify yourself
+          await supabase.from("academy_notifications").insert({
+            user_id: uid,
+            type: "mention",
+            title: `${senderName} mentioned you in #${roomSlug}`,
+            body: preview,
+            link_path: "/academy/community",
+          } as any);
+        }
+      } catch (err) {
+        console.error("Failed to create mention notifications:", err);
+      }
+    }
   };
 
   const ALLOWED_MIME = [
@@ -633,6 +729,30 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }, [draft]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Mention autocomplete navigation
+    if (suggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((selectedIndex + 1) % suggestions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((selectedIndex - 1 + suggestions.length) % suggestions.length);
+        return;
+      }
+      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+        e.preventDefault();
+        selectMention(suggestions[selectedIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        clearSuggestions();
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -1287,7 +1407,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
-            <div className="space-y-2">
+            <div className="relative space-y-2">
               {/* Template chips */}
               <div className="flex items-center gap-1 px-1">
               {[
@@ -1320,6 +1440,58 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
+                </div>
+              )}
+
+              {/* Mention autocomplete dropdown */}
+              {suggestions.length > 0 && (
+                <div className="absolute bottom-full left-0 right-0 mb-1 z-20">
+                  <div className="mx-0 rounded-xl border border-white/[0.08] bg-card shadow-xl overflow-hidden max-h-[200px] overflow-y-auto">
+                    {suggestions.map((item, idx) => {
+                      const isEveryone = 'type' in item && item.type === "everyone";
+                      const mentionUser = !isEveryone ? item as MentionUser : null;
+                      return (
+                        <button
+                          key={isEveryone ? "everyone" : mentionUser!.user_id}
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); selectMention(item); }}
+                          onMouseEnter={() => setSelectedIndex(idx)}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors",
+                            idx === selectedIndex
+                              ? "bg-primary/10 text-foreground"
+                              : "text-foreground/80 hover:bg-white/[0.04]"
+                          )}
+                        >
+                          {isEveryone ? (
+                            <>
+                              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                                <AtSign className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <div>
+                                <span className="text-sm font-semibold text-primary">@everyone</span>
+                                <span className="text-[11px] text-muted-foreground ml-2">Notify all members</span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <ChatAvatar
+                                avatarUrl={mentionUser!.avatar_url}
+                                userName={getMentionLabel(mentionUser!)}
+                                size="h-7 w-7"
+                              />
+                              <div className="min-w-0">
+                                <span className="text-sm font-medium truncate block">{getMentionLabel(mentionUser!)}</span>
+                                {mentionUser!.username && (
+                                  <span className="text-[11px] text-muted-foreground">@{mentionUser!.username}</span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
