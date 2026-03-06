@@ -15,7 +15,7 @@ export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
   const [threadMessage, setThreadMessage] = useState<any>(null);
 
   return (
-    <div className="flex h-full overflow-hidden bg-[hsl(220,15%,93%)]">
+    <div className="flex h-full overflow-hidden bg-background">
       {/* Primary Feed */}
       <div className="flex-1 flex flex-col min-w-0">
         <TradeFloorHero />
@@ -33,7 +33,7 @@ export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
 
       {/* Cockpit Panel — structured right rail */}
       {!isMobile && (
-        <div className="w-[280px] shrink-0 border-l border-[hsl(220,12%,84%)] hidden lg:flex flex-col bg-[hsl(220,14%,89%)]">
+        <div className="w-[280px] shrink-0 border-l border-white/[0.05] hidden lg:flex flex-col bg-card">
           <CockpitPanel onSwitchTab={onSwitchTab} />
         </div>
       )}
