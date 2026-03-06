@@ -6,10 +6,10 @@ import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 
 const TABS = [
-  { key: "trade-floor", label: "Trade Floor" },
+  { key: "trade-floor", label: "Chat" },
   { key: "announcements", label: "Announcements" },
-  { key: "daily-setups", label: "Daily Setups" },
-  { key: "wins", label: "Wins & Proof" },
+  { key: "daily-setups", label: "Signals" },
+  { key: "wins", label: "Wins" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
