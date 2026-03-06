@@ -504,7 +504,7 @@ export function VaultTradePlanner() {
       {/* Footer */}
       <div className="text-center space-y-1 pb-2">
         <p className="text-[10px] text-muted-foreground/50 font-semibold">
-          "How many contracts" is based on <span className="text-foreground/70">BOTH</span> your risk limit <span className="text-foreground/70">and</span> your spend cap. <span className="italic text-muted-foreground/40">This helps prevent oversizing.</span>
+          Contract size is based on both your risk limit and spend cap.
         </p>
         <p className="text-[10px] text-muted-foreground/30 italic">
           Cut at your stop. Planned loss is not a guarantee.
