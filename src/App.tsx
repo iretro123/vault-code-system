@@ -39,7 +39,7 @@ import AcademyMyQuestions from "./pages/academy/AcademyMyQuestions";
 import AcademyPlaybook from "./pages/academy/AcademyPlaybook";
 import AcademyQA from "./pages/academy/AcademyQA";
 import AcademyVaultOS from "./pages/academy/AcademyVaultOS";
-import Hub from "./pages/Hub";
+
 import ReferralRedirect from "./pages/ReferralRedirect";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -66,8 +66,8 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
-            <Route path="/" element={<Navigate to="/hub" replace />} />
-            <Route path="/hub" element={<Hub />} />
+            <Route path="/" element={<Navigate to="/academy" replace />} />
+            <Route path="/hub" element={<Navigate to="/academy" replace />} />
             <Route path="/cockpit" element={<VaultOSGate><TraderCockpit /></VaultOSGate>} />
             <Route path="/log" element={<VaultOSGate><TradeLog /></VaultOSGate>} />
             <Route path="/vault-log" element={<VaultOSGate><VaultLog /></VaultOSGate>} />

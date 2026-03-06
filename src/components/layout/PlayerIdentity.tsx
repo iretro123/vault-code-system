@@ -72,12 +72,6 @@ export function PlayerIdentity() {
           <p className="text-xs text-muted-foreground">@{username}</p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/hub" className="flex items-center gap-2 cursor-pointer">
-            <LayoutGrid className="h-4 w-4" />
-            Mode Select
-          </Link>
-        </DropdownMenuItem>
         {canToggle && (
           <>
             <DropdownMenuSeparator />

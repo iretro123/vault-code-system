@@ -21,7 +21,7 @@ export function VaultOSGate({ children }: { children: React.ReactNode }) {
             Vault OS Beta is not enabled on your account yet.
           </p>
         </div>
-        <Button onClick={() => navigate("/hub")} className="gap-2">
+        <Button onClick={() => navigate("/academy")} className="gap-2">
           Back to Hub
         </Button>
       </div>

@@ -151,7 +151,7 @@ const Signup = () => {
       // Clear stale access cache so fresh state is fetched
       localStorage.removeItem("va_cache_student_access");
 
-      navigate("/hub");
+      navigate("/academy");
     }
 
     setLoading(false);
