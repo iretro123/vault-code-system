@@ -527,7 +527,7 @@ const AcademyQA = () => {
   }));
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Launch QA"
         subtitle="Automated launch checklist — admin only"
