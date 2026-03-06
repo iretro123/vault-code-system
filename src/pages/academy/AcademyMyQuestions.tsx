@@ -144,7 +144,7 @@ const AcademyMyQuestions = () => {
   // Thread view
   if (selected) {
     return (
-      <AcademyLayout>
+      <>
         <div className="px-4 md:px-6 pb-6">
           <button
             onClick={() => setSelected(null)}
