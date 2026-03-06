@@ -51,6 +51,8 @@ interface RoomChatProps {
   onSwitchTab?: (tab: string) => void;
   /** When false, defers data fetch and realtime subscriptions until first activated. Default true. */
   active?: boolean;
+  /** When true, constrains uploaded image height for full-width layouts (non-Chat tabs). */
+  compact?: boolean;
 }
 
 /* ── helpers ── */
