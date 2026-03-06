@@ -79,7 +79,7 @@ function AnnouncementCard({
             <img
               src={a.image_url}
               alt=""
-              className="rounded-lg max-w-full max-h-[300px] object-cover mt-2"
+              className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] mt-2"
               loading="lazy"
             />
           )}
