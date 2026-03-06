@@ -4,7 +4,9 @@ import {
   PlannerResult,
   AccountTierLabel,
   TradeDirection,
+  TradeVerdict,
   TIER_DEFAULTS,
+  detectTier,
   validateInputs,
   calculatePlan,
   buildCopyText,
@@ -12,8 +14,12 @@ import {
 } from "@/lib/tradePlannerCalc";
 import { TradePlannerLoading } from "./TradePlannerLoading";
 import { TradePlannerResults } from "./TradePlannerResults";
+import { XPTooltip } from "./XPTooltip";
 import { toast } from "sonner";
-import { Lock, Unlock, AlertTriangle, CheckCircle2, XCircle, Copy } from "lucide-react";
+import {
+  Lock, Unlock, AlertTriangle, CheckCircle2, XCircle, Copy,
+  ChevronDown, ChevronUp, Shield, TrendingUp, DollarSign, Target,
+} from "lucide-react";
 
 type UIState = "input" | "loading" | "results";
 
@@ -37,7 +43,7 @@ function safeCurrency(n: number | undefined | null): string {
 function PanelCard({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-2xl p-5 md:p-6 flex flex-col gap-5 ${className}`}
+      className={`rounded-2xl p-5 md:p-6 flex flex-col gap-4 ${className}`}
       style={{
         background: "hsl(214 22% 14%)",
         border: "1px solid hsl(213 18% 22%)",
@@ -51,15 +57,19 @@ function PanelCard({ title, children, className = "" }: { title: string; childre
 }
 
 function PlannerInput({
-  label, error, suffix, ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; suffix?: string }) {
+  label, error, suffix, tooltip, ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; suffix?: string; tooltip?: string }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <label className="text-xs font-medium text-muted-foreground inline-flex items-center gap-0.5">
+        {label}
+        {tooltip && <XPTooltip text={tooltip} />}
+      </label>
       <div className="relative">
         <input
           className={`w-full px-3 py-2.5 text-sm font-mono text-foreground rounded-lg outline-none
-            focus:ring-1 focus:ring-primary/40 placeholder:text-muted-foreground/40
+            transition-shadow duration-100
+            focus:ring-2 focus:ring-primary/30 focus:border-primary/40 placeholder:text-muted-foreground/40
             ${error ? "ring-1 ring-red-500/50" : ""}
             ${props.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
           style={{
@@ -91,9 +101,9 @@ function SegmentedToggle<T extends string>({
         <button
           key={opt}
           onClick={() => onChange(opt)}
-          className={`px-4 py-2 text-xs font-semibold transition-colors
+          className={`px-4 py-2 text-xs font-semibold transition-all duration-100
             ${value === opt
-              ? "bg-primary text-white"
+              ? "bg-primary text-white shadow-sm"
               : "text-muted-foreground hover:text-foreground"
             }`}
           style={value !== opt ? { background: "hsl(214 22% 14%)" } : {}}
@@ -110,11 +120,11 @@ function ActionButton({
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "default" | "primary" }) {
   return (
     <button
-      className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all
+      className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-100
         disabled:opacity-40 disabled:cursor-not-allowed
         ${variant === "primary"
-          ? "bg-primary text-white hover:brightness-110"
-          : "text-foreground hover:brightness-110"
+          ? "bg-primary text-white hover:brightness-110 active:scale-[0.98]"
+          : "text-foreground hover:brightness-110 active:scale-[0.98]"
         }`}
       style={variant !== "primary" ? {
         background: "hsl(214 22% 16%)",
@@ -127,16 +137,135 @@ function ActionButton({
   );
 }
 
-function ResultRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+function ResultRow({ label, value, bold, accent }: { label: string; value: string; bold?: boolean; accent?: boolean }) {
   return (
     <div
-      className="flex items-center justify-between px-4 py-3"
+      className="flex items-center justify-between px-4 py-2.5"
       style={{ borderBottom: "1px solid hsl(213 18% 16%)" }}
     >
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={`font-mono ${bold ? "text-lg font-bold" : "text-sm font-semibold"} text-foreground`}>
+      <span className={`font-mono ${bold ? "text-lg font-bold" : "text-sm font-semibold"} ${accent ? "text-primary" : "text-foreground"}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function DollarReadout({ label, value, icon: Icon }: { label: string; value: string; icon: React.ElementType }) {
+  return (
+    <div
+      className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+      style={{ background: "hsl(212 25% 9%)", border: "1px solid hsl(213 18% 18%)" }}
+    >
+      <Icon className="w-3.5 h-3.5 text-primary/60 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] text-muted-foreground/80">{label}</p>
+        <p className="text-sm font-bold font-mono text-foreground">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: string }) {
+  const config = {
+    PASS: {
+      bg: "hsl(160 84% 39% / 0.10)",
+      border: "hsl(160 84% 39% / 0.3)",
+      color: "hsl(160 84% 39%)",
+      label: "PASS",
+      Icon: CheckCircle2,
+    },
+    CAUTION: {
+      bg: "hsl(38 92% 50% / 0.10)",
+      border: "hsl(38 92% 50% / 0.3)",
+      color: "hsl(38 92% 50%)",
+      label: "CAUTION",
+      Icon: AlertTriangle,
+    },
+    NO_TRADE: {
+      bg: "hsl(0 72% 51% / 0.10)",
+      border: "hsl(0 72% 51% / 0.3)",
+      color: "hsl(0 72% 51%)",
+      label: "NO TRADE",
+      Icon: XCircle,
+    },
+  }[verdict];
+
+  return (
+    <div
+      className="rounded-lg px-4 py-3 text-center transition-all duration-150"
+      style={{ background: config.bg, border: `1px solid ${config.border}` }}
+    >
+      <div className="flex items-center justify-center gap-2">
+        <config.Icon className="w-5 h-5" style={{ color: config.color }} />
+        <p className="text-lg font-black tracking-wide" style={{ color: config.color }}>
+          {config.label}
+        </p>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-1">{reason}</p>
+    </div>
+  );
+}
+
+function OutcomeSnapshot({ result }: { result: PlannerResult }) {
+  const items = [
+    { label: "If stopped", value: `-${safeCurrency(result.totalPlannedRisk)}`, negative: true },
+    { label: "If TP1 hits", value: `+${safeCurrency(result.profitAtTP1)}`, negative: false },
+    { label: "If TP2 hits", value: `+${safeCurrency(result.profitAtTP2)}`, negative: false },
+    { label: "Capital committed", value: safeCurrency(result.totalPositionCost), negative: false },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-px rounded-lg overflow-hidden" style={{ border: "1px solid hsl(213 18% 16%)" }}>
+      {items.map((item) => (
+        <div key={item.label} className="px-3 py-2.5 text-center" style={{ background: "hsl(212 25% 9%)" }}>
+          <p className="text-[9px] text-muted-foreground/70 uppercase tracking-wider">{item.label}</p>
+          <p className={`text-sm font-bold font-mono ${item.negative ? "text-red-400" : "text-emerald-400"}`}>
+            {item.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WhatToDoCard({ inputs, result }: { inputs: PlannerInputs; result: PlannerResult }) {
+  if (result.finalContracts === 0) return null;
+  return (
+    <div
+      className="rounded-lg p-3.5 space-y-1.5"
+      style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.15)" }}
+    >
+      <p className="text-[10px] font-bold uppercase tracking-wider text-primary/80 flex items-center gap-1.5">
+        <Target className="w-3 h-3" />
+        What To Do
+      </p>
+      <div className="text-[12px] text-foreground space-y-1 leading-relaxed">
+        <p>• Enter at <strong>{safeCurrency(inputs.entryPremium)}</strong></p>
+        <p>• Stop at <strong>{safeCurrency(inputs.stopPremium)}</strong></p>
+        <p>• Consider quick partial near <strong>{safeCurrency(result.tp1Premium)}</strong></p>
+        <p>• Main target <strong>{safeCurrency(result.rr1to2Target)}</strong></p>
+        <p>• Do not exceed <strong>{result.finalContracts}</strong> contract{result.finalContracts > 1 ? "s" : ""}</p>
+      </div>
+    </div>
+  );
+}
+
+function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[11px] text-primary/70 hover:text-primary transition-colors w-full"
+      >
+        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        {title}
+      </button>
+      {open && (
+        <div className="mt-2 text-[11px] text-muted-foreground/80 leading-relaxed pl-4.5">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -162,13 +291,27 @@ export function VaultTradePlanner() {
   const [chartStop, setChartStop] = useState(saved.chartStopLevel?.toString() ?? "");
   const [underlyingEntry, setUnderlyingEntry] = useState(saved.underlyingEntry?.toString() ?? "");
   const [defaultsLocked, setDefaultsLocked] = useState(true);
+  const [autoTierEnabled, setAutoTierEnabled] = useState(true);
 
   const [uiState, setUIState] = useState<UIState>("input");
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Auto-detect tier on account size change
+  useEffect(() => {
+    if (!autoTierEnabled) return;
+    const size = parseFloat(accountSize);
+    if (!size || size <= 0) return;
+    const detected = detectTier(size);
+    setTier(detected);
+    const d = TIER_DEFAULTS[detected];
+    setRiskPercent(d.riskPercent.toString());
+    setDebitCapPercent(d.debitCapPercent.toString());
+  }, [accountSize, autoTierEnabled]);
+
   const handleTierChange = (t: AccountTierLabel) => {
     setTier(t);
+    setAutoTierEnabled(false);
     const d = TIER_DEFAULTS[t];
     setRiskPercent(d.riskPercent.toString());
     setDebitCapPercent(d.debitCapPercent.toString());
@@ -203,6 +346,11 @@ export function VaultTradePlanner() {
 
   const isValid = liveResult !== null;
 
+  // Live dollar readouts
+  const acctSize = parseFloat(accountSize) || 0;
+  const maxRiskDollars = acctSize * ((parseFloat(riskPercent) || 0) / 100);
+  const maxSpendDollars = acctSize * ((parseFloat(debitCapPercent) || 0) / 100);
+
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(buildInputs())); } catch {}
   }, [buildInputs]);
@@ -228,6 +376,7 @@ export function VaultTradePlanner() {
 
   const handleReset = () => {
     handleTierChange("Small");
+    setAutoTierEnabled(true);
     setAccountSize("");
     setDirection("Long Call");
     setEntryPremium("");
@@ -245,7 +394,7 @@ export function VaultTradePlanner() {
   };
 
   const handleLoadExample = () => {
-    handleTierChange("Medium");
+    setAutoTierEnabled(true);
     setAccountSize("10000");
     setDirection("Long Call");
     setEntryPremium("1.20");
@@ -300,12 +449,10 @@ export function VaultTradePlanner() {
           style={{ background: "hsl(213 18% 25%)" }}
         />
         <p className="text-xs text-muted-foreground">
-          Long Calls / Long Puts only • Simple Mode
+          Long Calls / Long Puts only • Pre-Trade Command Center
         </p>
         <p className="text-sm text-muted-foreground/80 max-w-md mx-auto leading-relaxed">
           You enter the setup. VAULT builds the plan.
-          <br />
-          No guessing. No oversizing. No random sizing.
         </p>
       </div>
 
@@ -321,7 +468,27 @@ export function VaultTradePlanner() {
             onChange={(e) => setAccountSize(e.target.value)}
             error={errors.accountSize}
             placeholder="$10,000"
+            tooltip="Your total trading account balance. VAULT uses this to calculate safe position sizes."
           />
+
+          {/* Auto-detected tier badge */}
+          {acctSize > 0 && (
+            <div
+              className="rounded-lg px-3 py-2 flex items-center gap-2"
+              style={{ background: "hsl(217 91% 60% / 0.06)", border: "1px solid hsl(217 91% 60% / 0.15)" }}
+            >
+              <Shield className="w-3.5 h-3.5 text-primary/70" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground/80">
+                  {autoTierEnabled ? "Detected Account Type" : "Selected Account Type"}
+                </p>
+                <p className="text-xs font-bold text-foreground">{tier}</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground/70">
+                {TIER_DEFAULTS[tier].riskPercent}% loss cap • {TIER_DEFAULTS[tier].debitCapPercent}% spend cap
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <SegmentedToggle
@@ -340,6 +507,7 @@ export function VaultTradePlanner() {
             error={errors.riskPercent}
             suffix="%"
             disabled={defaultsLocked}
+            tooltip="Maximum percentage of your account you are willing to lose on this single trade."
           />
 
           <PlannerInput
@@ -351,6 +519,7 @@ export function VaultTradePlanner() {
             error={errors.debitCapPercent}
             suffix="%"
             disabled={defaultsLocked}
+            tooltip="Maximum percentage of your account that can go toward buying contracts. Spending and risk are different — you can spend $500 but risk only $200 if your stop is tight."
           />
 
           <button
@@ -360,10 +529,35 @@ export function VaultTradePlanner() {
             {defaultsLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
             {defaultsLocked ? "Unlock Custom" : "Lock Defaults"}
           </button>
+
+          {/* Live dollar readouts */}
+          {acctSize > 0 && (
+            <div className="space-y-2 pt-1">
+              <DollarReadout
+                label="Max risk this trade"
+                value={safeCurrency(maxRiskDollars)}
+                icon={Shield}
+              />
+              <DollarReadout
+                label="Max spend this trade"
+                value={safeCurrency(maxSpendDollars)}
+                icon={DollarSign}
+              />
+            </div>
+          )}
         </PanelCard>
 
         {/* ═══ CENTER: Trade ═══ */}
         <PanelCard title="Trade">
+          {/* Optional Ticker */}
+          <PlannerInput
+            label="Ticker (optional)"
+            type="text"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+            placeholder="SPY, AAPL, QQQ…"
+          />
+
           <SegmentedToggle
             options={["Long Call", "Long Put"] as TradeDirection[]}
             value={direction}
@@ -378,6 +572,7 @@ export function VaultTradePlanner() {
             onChange={(e) => setEntryPremium(e.target.value)}
             error={errors.entryPremium}
             placeholder="1.20"
+            tooltip="The premium you will pay per share for the option contract. For example, $1.20 means the contract costs $120 (× 100 shares)."
           />
 
           <PlannerInput
@@ -388,9 +583,10 @@ export function VaultTradePlanner() {
             onChange={(e) => setStopPremium(e.target.value)}
             error={errors.stopPremium}
             placeholder="0.80"
+            tooltip="If the option premium drops to this price, you cut the trade. This is your planned exit on a losing trade."
           />
 
-          <p className="text-[11px] text-muted-foreground/60 -mt-2">
+          <p className="text-[11px] text-muted-foreground/60 -mt-1">
             If option price hits your stop, cut the trade.
           </p>
 
@@ -409,6 +605,17 @@ export function VaultTradePlanner() {
             </div>
           )}
 
+          {/* Contract Guidance — collapsed */}
+          <CollapsibleSection title="How to choose a contract">
+            <div className="space-y-1.5 text-[11px] text-muted-foreground/80">
+              <p>• <strong>Premium</strong> is the cost of one option contract (per share × 100).</p>
+              <p>• More expensive contracts reduce your allowed size.</p>
+              <p>• Cheap contracts are not always safer — they may have worse delta or wider spreads.</p>
+              <p>• Choose contracts that fit your account, risk plan, and stop level.</p>
+              <p>• VAULT does not recommend specific strikes — that is your chart-based decision.</p>
+            </div>
+          </CollapsibleSection>
+
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2 pt-1">
             <ActionButton variant="primary" onClick={handleGenerate} disabled={!isValid}>
@@ -419,7 +626,7 @@ export function VaultTradePlanner() {
             <ActionButton onClick={handleCopyPlan} disabled={!isValid}>
               <span className="flex items-center gap-1">
                 <Copy className="w-3 h-3" />
-                Copy Trade Plan
+                Copy Plan
               </span>
             </ActionButton>
           </div>
@@ -427,53 +634,45 @@ export function VaultTradePlanner() {
 
         {/* ═══ RIGHT: Results ═══ */}
         <PanelCard title="Results">
-          {/* PASS / NO TRADE banner */}
           {isValid && liveResult ? (
-            <>
-              <div
-                className="rounded-lg px-4 py-3 text-center"
-                style={{
-                  background: liveResult.finalContracts > 0
-                    ? "hsl(160 84% 39% / 0.12)"
-                    : "hsl(0 72% 51% / 0.12)",
-                  border: `1px solid ${liveResult.finalContracts > 0
-                    ? "hsl(160 84% 39% / 0.3)"
-                    : "hsl(0 72% 51% / 0.3)"
-                  }`,
-                }}
-              >
-                <p
-                  className="text-lg font-black tracking-wide"
-                  style={{
-                    color: liveResult.finalContracts > 0
-                      ? "hsl(160 84% 39%)"
-                      : "hsl(0 72% 51%)",
-                  }}
-                >
-                  {liveResult.finalContracts > 0 ? "PASS" : "NO TRADE"}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {liveResult.finalContracts > 0
-                    ? "Trade size is within your risk and spend rules."
-                    : "This setup does not fit your account rules."}
-                </p>
-              </div>
+            <div className="space-y-3">
+              {/* Verdict Banner */}
+              <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
 
-              {/* Result rows */}
+              {/* Hero metrics — verdict-first hierarchy */}
               <div
                 className="rounded-lg overflow-hidden"
                 style={{ border: "1px solid hsl(213 18% 16%)" }}
               >
-                <ResultRow label="How Many Contracts" value={`${liveResult.finalContracts}`} bold />
-                <ResultRow label="Option Stop Price" value={safeCurrency(buildInputs().stopPremium)} />
-                <ResultRow label="Planned Loss If Stop Hits" value={`-${safeCurrency(liveResult.totalPlannedRisk)}`} />
+                <ResultRow label="How Many Contracts" value={`${liveResult.finalContracts}`} bold accent />
+                <ResultRow label="Planned Loss If Stop Hits" value={`-${safeCurrency(liveResult.totalPlannedRisk)}`} bold />
                 <ResultRow label="Money Needed to Enter" value={safeCurrency(liveResult.totalPositionCost)} />
+              </div>
+
+              {/* What To Do */}
+              <WhatToDoCard inputs={buildInputs()} result={liveResult} />
+
+              {/* Outcome Snapshot */}
+              {liveResult.finalContracts > 0 && (
+                <OutcomeSnapshot result={liveResult} />
+              )}
+
+              {/* Why This Size — collapsed */}
+              <CollapsibleSection title="Why this size?">
+                <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                  {liveResult.sizingExplanation}
+                </p>
+              </CollapsibleSection>
+
+              {/* Secondary targets */}
+              <div
+                className="rounded-lg overflow-hidden"
+                style={{ border: "1px solid hsl(213 18% 16%)" }}
+              >
                 <ResultRow label="Main Target (1:2)" value={safeCurrency(liveResult.rr1to2Target)} />
-                <ResultRow label="Quick Profit Idea (TP1)" value={safeCurrency(liveResult.tp1Premium)} />
-                <div
-                  className="flex items-center justify-between px-4 py-3"
-                >
-                  <span className="text-xs text-muted-foreground">Bigger Profit Idea (TP2)</span>
+                <ResultRow label="Quick Profit (TP1)" value={safeCurrency(liveResult.tp1Premium)} />
+                <div className="flex items-center justify-between px-4 py-2.5">
+                  <span className="text-xs text-muted-foreground">Bigger Profit (TP2)</span>
                   <span className="font-mono text-sm font-semibold text-foreground">
                     {safeCurrency(liveResult.tp2Premium)}
                   </span>
@@ -485,7 +684,7 @@ export function VaultTradePlanner() {
                 <StatusCheck label="Risk Check" pass={liveResult.riskCheckPass} />
                 <StatusCheck label="Debit Check" pass={liveResult.debitCheckPass} />
               </div>
-            </>
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center py-8">
               <p className="text-sm text-muted-foreground/50 text-center leading-relaxed">
