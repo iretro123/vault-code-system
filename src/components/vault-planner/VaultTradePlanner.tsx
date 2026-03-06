@@ -359,7 +359,7 @@ export function VaultTradePlanner() {
           <SegmentedToggle
             options={["Long Call", "Long Put"] as TradeDirection[]}
             value={direction}
-            onChange={setDirection}
+            onChange={(v) => setDirection(v as TradeDirection)}
           />
 
           <PlannerInput
