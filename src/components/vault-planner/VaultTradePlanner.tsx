@@ -345,8 +345,24 @@ export function VaultTradePlanner() {
             />
           </FieldRow>
 
+          {acctSize > 0 && (
+            <div className="rounded-lg px-3 py-2.5 space-y-1.5" style={{ background: inputBg, border: inputBorder }}>
+              <p className="text-[9px] font-bold text-primary/80 tracking-widest uppercase">Your Account Plan</p>
+              <p className="text-[10px] text-muted-foreground">For a <span className="font-semibold text-foreground">{safeCurrency(acctSize)}</span> account:</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[10px]">
+                <span className="text-muted-foreground">You can risk</span>
+                <span className="text-foreground font-mono font-semibold text-right">{safeCurrency(riskBudget)}</span>
+                <span className="text-muted-foreground">Best premium zone</span>
+                <span className="text-foreground font-mono font-semibold text-right">~{safeCurrency(idealPrem)}</span>
+                <span className="text-muted-foreground">Stretch zone</span>
+                <span className="text-foreground font-mono font-semibold text-right">up to {safeCurrency(aggressivePrem)}</span>
+              </div>
+              <p className="text-[9px] text-muted-foreground/50 italic">Best for: 1-contract setups</p>
+            </div>
+          )}
+
           <SegmentedToggle
-            options={["Small", "Medium", "Large"] as AccountTierLabel[]}
+            options={["Micro", "Small", "Medium", "Large"] as AccountTierLabel[]}
             value={tier}
             onChange={handleTierChange}
           />
