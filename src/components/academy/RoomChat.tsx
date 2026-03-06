@@ -1223,7 +1223,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                              className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md transition-all cursor-pointer"
+                              className={cn("rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md transition-all cursor-pointer", compact && "max-h-[300px]")}
                             />
                               <span className="text-[10px] text-muted-foreground mt-0.5 block truncate max-w-full">{att.filename}</span>
                             </button>
