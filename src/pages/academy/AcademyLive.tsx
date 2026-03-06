@@ -348,9 +348,9 @@ const AcademyLive = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Live Sessions" />
-      </AcademyLayout>
+      </>
     );
   }
 
