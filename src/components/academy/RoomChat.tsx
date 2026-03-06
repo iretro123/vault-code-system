@@ -1035,7 +1035,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           >
                             <X className="h-3 w-3" /> Cancel
                           </button>
-                          <span className="text-[10px] text-[hsl(220,10%,60%)]">esc to cancel · enter to save</span>
+                          <span className="text-[10px] text-muted-foreground">esc to cancel · enter to save</span>
                         </div>
                       </div>
                     ) : isRecap ? (
