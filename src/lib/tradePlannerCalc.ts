@@ -27,6 +27,7 @@ export interface PlannerInputs {
   tp1Percent: number;
   tp2Percent: number;
   // optional
+  ticker?: string;
   dte?: number;
   delta?: number;
   strike?: number;
@@ -52,6 +53,16 @@ export interface PlannerResult {
   debitCheckPass: boolean;
   deltaExposure: number | null;
   riskPerContractPremium: number;
+  // Options-specific additions
+  maxPossibleLoss: number;
+  profitAtRR2: number;
+  profitAtRR3: number;
+  profitAtTP1: number;
+  profitAtTP2: number;
+  accountRiskPercent: number;
+  accountExposurePercent: number;
+  breakEvenAtExpiry: number | null;
+  thetaWarning: string | null;
 }
 
 export interface ValidationError {
@@ -68,6 +79,12 @@ export function validateInputs(inputs: PlannerInputs): ValidationError[] {
   if (inputs.stopPremium < 0) errors.push({ field: "stopPremium", message: "Cut Loss At must be >= 0" });
   if (inputs.stopPremium >= inputs.entryPremium && inputs.entryPremium > 0) {
     errors.push({ field: "stopPremium", message: "Cut Loss At must be lower than Entry Price for long options." });
+  }
+  if (inputs.dte != null && inputs.dte <= 0) {
+    errors.push({ field: "dte", message: "Days Left must be > 0" });
+  }
+  if (inputs.delta != null && (inputs.delta < -1 || inputs.delta > 1)) {
+    errors.push({ field: "delta", message: "Delta must be between -1 and 1" });
   }
   return errors;
 }
@@ -99,6 +116,37 @@ export function calculatePlan(inputs: PlannerInputs): PlannerResult {
     deltaExposure = Math.abs(inputs.delta) * 100 * finalContracts;
   }
 
+  // Options-specific: max possible loss = total premium paid (long options only)
+  const maxPossibleLoss = totalPositionCost;
+
+  // Dollar profit at each target level
+  const profitAtRR2 = (rr1to2Target - inputs.entryPremium) * 100 * finalContracts;
+  const profitAtRR3 = (rr1to3Target - inputs.entryPremium) * 100 * finalContracts;
+  const profitAtTP1 = (tp1Premium - inputs.entryPremium) * 100 * finalContracts;
+  const profitAtTP2 = (tp2Premium - inputs.entryPremium) * 100 * finalContracts;
+
+  // Account context
+  const accountRiskPercent = inputs.accountSize > 0 ? (totalPlannedRisk / inputs.accountSize) * 100 : 0;
+  const accountExposurePercent = inputs.accountSize > 0 ? (totalPositionCost / inputs.accountSize) * 100 : 0;
+
+  // Break-even at expiry (intrinsic only)
+  let breakEvenAtExpiry: number | null = null;
+  if (inputs.strike != null && inputs.strike > 0) {
+    breakEvenAtExpiry = inputs.direction === "Long Call"
+      ? inputs.strike + inputs.entryPremium
+      : inputs.strike - inputs.entryPremium;
+  }
+
+  // Theta decay warning
+  let thetaWarning: string | null = null;
+  if (inputs.dte != null) {
+    if (inputs.dte <= 3) {
+      thetaWarning = "Extreme time decay under 3 DTE — option loses value fast.";
+    } else if (inputs.dte <= 7) {
+      thetaWarning = "Theta accelerates under 7 DTE — time is working against you.";
+    }
+  }
+
   return {
     riskBudget,
     debitCapDollars,
@@ -117,6 +165,15 @@ export function calculatePlan(inputs: PlannerInputs): PlannerResult {
     debitCheckPass,
     deltaExposure,
     riskPerContractPremium,
+    maxPossibleLoss,
+    profitAtRR2,
+    profitAtRR3,
+    profitAtTP1,
+    profitAtTP2,
+    accountRiskPercent,
+    accountExposurePercent,
+    breakEvenAtExpiry,
+    thetaWarning,
   };
 }
 
@@ -127,6 +184,7 @@ export function formatCurrency(n: number): string {
 export function buildCopyText(inputs: PlannerInputs, result: PlannerResult): string {
   const lines = [
     "Vault Trade Plan",
+    inputs.ticker ? `- Ticker: ${inputs.ticker.toUpperCase()}` : null,
     `- Account Size: ${formatCurrency(inputs.accountSize)}`,
     `- Risk %: ${inputs.riskPercent}%`,
     `- Debit Cap %: ${inputs.debitCapPercent}%`,
@@ -136,13 +194,19 @@ export function buildCopyText(inputs: PlannerInputs, result: PlannerResult): str
     `- How Many Contracts: ${result.finalContracts}`,
     `- Money Needed to Enter: ${formatCurrency(result.totalPositionCost)}`,
     `- Planned Loss If Stop Hits: ${formatCurrency(result.totalPlannedRisk)}`,
-    `- 1:2 Target: ${formatCurrency(result.rr1to2Target)}`,
-    `- 1:3 Target: ${formatCurrency(result.rr1to3Target)}`,
-    `- TP1: ${formatCurrency(result.tp1Premium)}`,
-    `- TP2: ${formatCurrency(result.tp2Premium)}`,
-  ];
+    `- Max Possible Loss (Premium Paid): ${formatCurrency(result.maxPossibleLoss)}`,
+    `- 1:2 Target: ${formatCurrency(result.rr1to2Target)} (profit: ${formatCurrency(result.profitAtRR2)})`,
+    `- 1:3 Target: ${formatCurrency(result.rr1to3Target)} (profit: ${formatCurrency(result.profitAtRR3)})`,
+    `- TP1: ${formatCurrency(result.tp1Premium)} (profit: ${formatCurrency(result.profitAtTP1)})`,
+    `- TP2: ${formatCurrency(result.tp2Premium)} (profit: ${formatCurrency(result.profitAtTP2)})`,
+    `- Account Risk: ${result.accountRiskPercent.toFixed(1)}%`,
+    `- Account Exposure: ${result.accountExposurePercent.toFixed(1)}%`,
+  ].filter(Boolean) as string[];
+
+  if (result.breakEvenAtExpiry != null) lines.push(`- Break-Even at Expiry: ${formatCurrency(result.breakEvenAtExpiry)}`);
   if (inputs.dte != null) lines.push(`- DTE: ${inputs.dte}`);
   if (inputs.delta != null) lines.push(`- Delta: ${inputs.delta}`);
   if (inputs.strike != null) lines.push(`- Strike: ${inputs.strike}`);
+  if (result.thetaWarning) lines.push(`- ⚠ ${result.thetaWarning}`);
   return lines.join("\n");
 }
