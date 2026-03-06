@@ -803,8 +803,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 <p className="text-[10px] text-primary/70 font-medium uppercase tracking-wider mb-0.5">Pinned</p>
                 <p className="text-xs text-foreground/70 truncate">{pinned.body}</p>
               </div>
-              {canModerate && (
-                <button onClick={unpinMessage} className="p-1 text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)]">
+               {canModerate && (
+                <button onClick={unpinMessage} className="p-1 text-muted-foreground hover:text-foreground">
                   <X className="h-3 w-3" />
                 </button>
               )}
