@@ -1,5 +1,4 @@
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { AcademyProfileForm } from "@/components/academy/AcademyProfileForm";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
