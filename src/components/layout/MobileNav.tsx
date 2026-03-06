@@ -1,18 +1,17 @@
+import * as React from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { BookOpen, Settings, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const navItems = [
   { icon: BookOpen, label: "Academy", path: "/academy" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
 ];
 
-/** Safe sidebar toggle — returns null if no SidebarProvider exists */
+/** Safe wrapper — returns null when no SidebarProvider exists in the tree */
 function useSidebarSafe() {
   try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks, @typescript-eslint/no-var-requires
-    const { useSidebar } = require("@/components/ui/sidebar");
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useSidebar();
   } catch {
     return null;
