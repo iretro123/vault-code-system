@@ -1330,11 +1330,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 onDragLeave={handleDragLeave}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
-                className={cn(
-                  "relative rounded-xl bg-white border shadow-[0_1px_4px_rgba(0,0,0,0.06)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-100",
+                 className={cn(
+                  "relative rounded-xl bg-card border shadow-[0_1px_4px_rgba(0,0,0,0.15)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.15)] transition-all duration-100",
                   dragOver
-                    ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.06)]"
-                    : "border-[hsl(220,10%,80%)]"
+                    ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.15)]"
+                    : "border-white/[0.08]"
                 )}
               >
                 {/* Drop overlay */}
