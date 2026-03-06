@@ -1316,7 +1316,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <button
                     type="button"
                     onClick={() => setReplyingTo(null)}
-                    className="shrink-0 p-1 rounded-md text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,20%)] hover:bg-[hsl(220,10%,85%)] transition-colors"
+                    className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
