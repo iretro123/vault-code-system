@@ -45,7 +45,7 @@ const AcademyCommunity = () => {
           </div>
 
           {/* Compact tab navigation */}
-          <div className="shrink-0 flex justify-center pt-2.5 pb-1.5 px-4">
+          <div className="shrink-0 flex justify-center py-1.5 px-4">
             <div className="flex w-full md:inline-flex md:w-auto items-center gap-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] p-0.5">
               {TABS.map((tab) => (
                 <button
