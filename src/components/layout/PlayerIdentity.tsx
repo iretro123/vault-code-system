@@ -43,6 +43,8 @@ export function PlayerIdentity() {
   const username = (profile as any)?.username || email.split("@")[0];
   const avatarUrl = (profile as any)?.avatar_url || null;
   const canOpenAdminPanel = roleName === "CEO" || isOperator;
+  const isLeadership = ["CEO", "Admin", "Coach", "Operator"].includes(roleName);
+  const experienceLevel = (profile as any)?.role_level || (profile as any)?.academy_experience;
 
   const handleSignOut = async () => {
     await signOut();
