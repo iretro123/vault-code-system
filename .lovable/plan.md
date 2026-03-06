@@ -1,37 +1,36 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Contain Trade Planner in Single Outer Card
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+The current `VaultTradePlanner` already has the correct 3-column `grid-cols-1 lg:grid-cols-3` layout. The issue is the 3 panels float independently with no containing wrapper — they don't feel like one cohesive tool.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Change: `src/components/vault-planner/VaultTradePlanner.tsx`
 
-### Solution
+Wrap the header + 3-panel grid + footer microcopy inside a single outer container card with:
+- Rounded corners (`rounded-2xl`), subtle border, soft shadow — matching the Vault premium card standard (`hsl(214 24% 11%)` background with `#ffffff14` border)
+- A top-center blue radial glow for depth (matching existing premium card pattern)
+- Generous inner padding (`p-5 md:p-8`)
+- The header, grid, and footer all live inside this one card
+- The 3 inner `PanelCard` components keep their current styling but with a slightly lighter or differentiated background so they read as nested panels within the outer shell (adjust border to `hsl(213 18% 22%)` for contrast against the outer card)
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+This is purely a wrapper change — no logic, formula, or content modifications. The grid stays `lg:grid-cols-3` for desktop side-by-side and stacks on mobile.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+### Structure
+```text
+┌─────────────────────────────────────────────┐
+│  Outer Container Card (premium dark bg)     │
+│                                             │
+│  ┌── Header (title/subtitle) ──┐            │
+│                                             │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐       │
+│  │ Account │ │  Trade  │ │ Results │       │
+│  │         │ │         │ │         │       │
+│  └─────────┘ └─────────┘ └─────────┘       │
+│                                             │
+│  ┌── Footer microcopy ──┐                   │
+└─────────────────────────────────────────────┘
+```
 
 ### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+- `src/components/vault-planner/VaultTradePlanner.tsx` — wrap the outermost `div` in a styled container card with the premium treatment; no other changes
 
