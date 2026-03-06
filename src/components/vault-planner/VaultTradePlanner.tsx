@@ -334,7 +334,7 @@ export function VaultTradePlanner() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
 
         {/* ═══ Account ═══ */}
-        <PanelCard title="Account">
+        <PanelCard title="Account" help={"Account Size — your total trading account balance\nRisk per trade — max loss if your stop gets hit\nBest premium zone — healthiest 1-contract premium range\nStretch zone — more aggressive premium range\nMax stop width — most stop room allowed for 1 contract"}>
           <FieldRow label="Account Size" tooltip="Your total trading account balance." error={errors.accountSize}>
             <FieldInput
               type="number"
