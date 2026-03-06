@@ -257,6 +257,24 @@ export function VaultTradePlanner() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(buildInputs())); } catch {}
   }, [buildInputs]);
 
+  // Auto-clear on logout
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem(STORAGE_KEY);
+        handleReset();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Auto-clear on tab close
+  useEffect(() => {
+    const cleanup = () => localStorage.removeItem(STORAGE_KEY);
+    window.addEventListener('beforeunload', cleanup);
+    return () => window.removeEventListener('beforeunload', cleanup);
+  }, []);
+
   const handleGenerate = () => {
     const inputs = buildInputs();
     const errs = validateInputs(inputs);
