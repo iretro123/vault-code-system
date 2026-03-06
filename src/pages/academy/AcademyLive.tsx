@@ -356,7 +356,7 @@ const AcademyLive = () => {
 
   if (loading && sessions.length === 0) {
     return (
-      <AcademyLayout>
+      <>
         <div className="liveSessionsPage">
           <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
           <div className="px-4 md:px-6 pb-8 space-y-4 animate-pulse">
