@@ -59,8 +59,7 @@ export function useTradeLog() {
         .from("trade_entries")
         .select("*")
         .eq("user_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       const result = data || [];
@@ -76,7 +75,6 @@ export function useTradeLog() {
   async function addEntry(entry: NewTradeEntry) {
     if (!user) return { error: new Error("Not authenticated") };
 
-    // No client-side enforcement — server RPCs and RLS are the authority
     try {
       const { data, error } = await supabase
         .from("trade_entries")
@@ -106,35 +104,40 @@ export function useTradeLog() {
     }
   }
 
-  async function deleteEntry(id: string) {
-    if (!user) return { error: new Error("Not authenticated") };
+  function exportCSV() {
+    if (entries.length === 0) return;
 
-    try {
-      const { error } = await supabase
-        .from("trade_entries")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+    const headers = ["Date", "Symbol", "P/L ($)", "Win/Loss", "Plan Followed", "Emotional State", "Notes"];
+    const rows = entries.map((e) => {
+      const pnl = e.risk_reward * e.risk_used;
+      const outcome = e.risk_reward > 0 ? "Win" : e.risk_reward < 0 ? "Loss" : "Breakeven";
+      const ticker = e.notes?.split(" ")[0] || "";
+      return [
+        e.trade_date,
+        ticker,
+        pnl.toFixed(2),
+        outcome,
+        e.followed_rules ? "Yes" : "No",
+        String(e.emotional_state),
+        `"${(e.notes || "").replace(/"/g, '""')}"`,
+      ].join(",");
+    });
 
-      if (error) throw error;
-
-      setEntries((prev) => prev.filter((e) => e.id !== id));
-      toast({
-        title: "Trade deleted",
-        description: "Entry has been removed.",
-      });
-      return { error: null };
-    } catch (error) {
-      console.error("Error deleting trade entry:", error);
-      return { error };
-    }
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vault-trades-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return {
     entries,
     loading,
     addEntry,
-    deleteEntry,
+    exportCSV,
     refetch: fetchEntries,
   };
 }

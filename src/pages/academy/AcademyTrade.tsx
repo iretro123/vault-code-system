@@ -584,11 +584,16 @@ function AIFocusCard({ hasData }: { hasData: boolean }) {
 }
 
 /* ── 5. Recent Trades (from DB) ── */
-function RecentTradesSection({ entries }: { entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string }[] }) {
+const MOBILE_LIMIT = 15;
+
+function RecentTradesSection({ entries, onExportCSV }: { entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string }[]; onExportCSV: () => void }) {
+  const isMobile = useIsMobile();
+  const [expanded, setExpanded] = useState(false);
+
   if (entries.length === 0) {
     return (
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Recent Trades</h3>
+        <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
         <div className="vault-glass-card p-6 text-center">
           <p className="text-sm text-muted-foreground">No trades logged yet. Use the + Log Trade button to get started.</p>
         </div>
@@ -596,11 +601,18 @@ function RecentTradesSection({ entries }: { entries: { id: string; trade_date: s
     );
   }
 
+  const defaultLimit = isMobile ? MOBILE_LIMIT : 25;
+  const showToggle = entries.length > defaultLimit;
+  const visibleEntries = expanded ? entries : entries.slice(0, defaultLimit);
+
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">Recent Trades</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
+        <span className="text-[10px] text-muted-foreground tabular-nums">{entries.length} total trades</span>
+      </div>
       <div className="space-y-2">
-        {entries.slice(0, 10).map((e) => {
+        {visibleEntries.map((e) => {
           const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
           const s = OUTCOME_STYLES[outcome];
           const pnlNum = e.risk_reward * e.risk_used;
@@ -631,9 +643,39 @@ function RecentTradesSection({ entries }: { entries: { id: string; trade_date: s
           );
         })}
       </div>
-      {entries.length > 10 && (
-        <Button variant="ghost" size="sm" className="w-full text-xs text-primary">View all trades</Button>
+
+      {/* Show all / collapse toggle */}
+      {showToggle && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-xs text-primary gap-1.5"
+          onClick={() => setExpanded(!expanded)}
+        >
+          {expanded ? (
+            <><ChevronUp className="h-3 w-3" /> Show less</>
+          ) : (
+            <><ChevronDown className="h-3 w-3" /> Show all {entries.length} trades</>
+          )}
+        </Button>
       )}
+
+      {/* Mobile hint */}
+      {isMobile && !expanded && showToggle && (
+        <p className="text-[10px] text-muted-foreground/60 text-center">
+          Showing {defaultLimit} most recent trades · expand above or use desktop for full history
+        </p>
+      )}
+
+      {/* Export */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full text-xs gap-1.5"
+        onClick={onExportCSV}
+      >
+        <Download className="h-3 w-3" /> Export All Trades (CSV)
+      </Button>
     </div>
   );
 }
