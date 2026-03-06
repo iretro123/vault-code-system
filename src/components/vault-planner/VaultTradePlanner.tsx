@@ -125,7 +125,7 @@ function ActionButton({
 
 function ResultRow({ label, value, bold, accent }: { label: string; value: string; bold?: boolean; accent?: boolean }) {
   return (
-    <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid hsl(213 18% 16%)" }}>
+    <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: "1px solid hsl(213 18% 16%)" }}>
       <span className="text-[10px] text-muted-foreground">{label}</span>
       <span className={`font-mono ${bold ? "text-base font-bold" : "text-sm font-semibold"} ${accent ? "text-primary" : "text-foreground"}`}>
         {value}
