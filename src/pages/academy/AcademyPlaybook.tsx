@@ -181,7 +181,7 @@ const AcademyPlaybook = () => {
   // ── Mobile: Full-screen reader overlay ──
   if (isMobile && mobileReaderOpen && activeChapter) {
     return (
-      <AcademyLayout>
+      <>
         <div className={`fixed inset-0 bg-background flex flex-col ${mobileFullscreen ? "z-[60]" : "z-50 pb-16"}`}>
           {/* Mobile reader header — hidden in fullscreen */}
           {!mobileFullscreen && (
