@@ -372,7 +372,7 @@ const AcademyLive = () => {
   }
 
   return (
-    <AcademyLayout>
+    <>
       <div className="liveSessionsPage">
         <div className="flex items-center justify-between px-4 md:px-6">
           <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
