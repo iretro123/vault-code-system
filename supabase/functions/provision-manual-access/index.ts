@@ -12,44 +12,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // --- AUTH: Require JWT + operator role ---
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const anonClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await anonClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const sb = createClient(supabaseUrl, serviceKey);
 
-    const { data: isOperator } = await sb.rpc("has_role", {
-      _user_id: user.id,
-      _role: "operator",
-    });
-    if (!isOperator) {
-      return new Response(JSON.stringify({ error: "Forbidden: operator role required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // --- Original provisioning logic ---
+    // --- Parse body first so we can use auth_user_id for validation ---
     const { email, auth_user_id } = await req.json();
     if (!email || !auth_user_id) {
       return new Response(JSON.stringify({ error: "email and auth_user_id required" }), {
@@ -58,6 +27,45 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- AUTH: Two paths ---
+    // Path 1: Operator with JWT (admin-initiated)
+    // Path 2: Self-provisioning (caller's uid matches auth_user_id, whitelist is the gate)
+    const authHeader = req.headers.get("Authorization");
+    let isOperatorCall = false;
+    let isSelfProvision = false;
+
+    if (authHeader?.startsWith("Bearer ")) {
+      const anonClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user }, error: authError } = await anonClient.auth.getUser();
+
+      if (!authError && user) {
+        // Check if operator
+        const { data: isOp } = await sb.rpc("has_role", {
+          _user_id: user.id,
+          _role: "operator",
+        });
+        if (isOp) {
+          isOperatorCall = true;
+          console.log("[provision] Operator call by:", user.id);
+        }
+        // Check if self-provisioning (caller's uid matches the target auth_user_id)
+        else if (user.id === auth_user_id) {
+          isSelfProvision = true;
+          console.log("[provision] Self-provision call by:", user.id);
+        }
+      }
+    }
+
+    if (!isOperatorCall && !isSelfProvision) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Original provisioning logic ---
     const normalizedEmail = email.trim().toLowerCase();
 
     // 1. Check if this email is in allowed_signups and NOT yet claimed
