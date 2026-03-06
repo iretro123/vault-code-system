@@ -10,7 +10,7 @@ export default function AcademySupport() {
 
       {/* Big headline */}
       <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground text-center uppercase leading-none">
-        Tuesday &amp; Thursday
+        Tuesdays &amp; Thursdays
       </h1>
 
       <p className="text-lg md:text-xl font-semibold text-muted-foreground mt-3 text-center">
