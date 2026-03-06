@@ -94,8 +94,8 @@ async function resolveStatus(userId: string): Promise<string> {
   return "Your trading discipline journey continues";
 }
 
-const PARTICLE_COUNT = 30;
-const CONNECT_DIST = 80;
+const PARTICLE_COUNT = 18;
+const CONNECT_DIST = 60;
 
 function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,6 +110,7 @@ function ParticleCanvas() {
 
     let animId: number;
     let opacity = 0;
+    let paused = document.hidden;
     const startTime = performance.now();
 
     const resize = () => {
@@ -135,7 +136,16 @@ function ParticleCanvas() {
       r: Math.random() * 1.2 + 0.8,
     }));
 
+    const onVisibility = () => {
+      paused = document.hidden;
+      if (!paused && !prefersReduced) {
+        animId = requestAnimationFrame(draw);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     const draw = (now: number) => {
+      if (paused) return;
       const cw = w(), ch = h();
       ctx.clearRect(0, 0, cw, ch);
 
@@ -190,6 +200,7 @@ function ParticleCanvas() {
     return () => {
       cancelAnimationFrame(animId);
       ro.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
