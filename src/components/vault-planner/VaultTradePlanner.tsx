@@ -133,17 +133,15 @@ function ResultRow({ label, value, large, accent }: { label: string; value: stri
 
 function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: string }) {
   const config = {
-    SAFE: { bg: "hsl(142 71% 45% / 0.15)", border: "hsl(142 71% 45% / 0.4)", color: "hsl(142 71% 45%)", label: "PASS" },
-    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.12)", border: "hsl(38 92% 50% / 0.4)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE" },
-    NO_TRADE: { bg: "hsl(0 72% 51% / 0.12)", border: "hsl(0 72% 51% / 0.4)", color: "hsl(0 72% 51%)", label: "NO TRADE" },
+    SAFE: { bg: "hsl(142 71% 45% / 0.15)", border: "hsl(142 71% 45% / 0.4)", color: "hsl(142 71% 45%)", label: "PASS", explanation: "This trade fits comfortably inside your account rules." },
+    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.12)", border: "hsl(38 92% 50% / 0.4)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE", explanation: "This trade works, but it is at the top end of your size range." },
+    NO_TRADE: { bg: "hsl(0 72% 51% / 0.12)", border: "hsl(0 72% 51% / 0.4)", color: "hsl(0 72% 51%)", label: "NO TRADE", explanation: "This trade is too large for your account. Lower the premium or widen your stop." },
   }[verdict];
 
   return (
     <div className="rounded-lg px-4 py-3 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
       <p className="text-xl font-black tracking-widest uppercase" style={{ color: config.color }}>{config.label}</p>
-      <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
-        Trade size is within your <span className="font-semibold text-foreground/80">risk</span> and <span className="font-semibold text-foreground/80">spend rules</span>.
-      </p>
+      <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{config.explanation}</p>
     </div>
   );
 }
