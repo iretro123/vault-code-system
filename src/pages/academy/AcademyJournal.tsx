@@ -205,7 +205,7 @@ const AcademyJournal = () => {
           )}
         </Card>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

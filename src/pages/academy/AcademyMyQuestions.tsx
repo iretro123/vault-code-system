@@ -274,7 +274,7 @@ const AcademyMyQuestions = () => {
           ))
         )}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

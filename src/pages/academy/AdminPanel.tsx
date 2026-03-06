@@ -168,7 +168,7 @@ const AdminPanel = () => {
           )}
         </Tabs>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

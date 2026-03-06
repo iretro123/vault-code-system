@@ -624,7 +624,7 @@ const AcademyLive = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 
