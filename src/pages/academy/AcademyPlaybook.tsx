@@ -225,7 +225,7 @@ const AcademyPlaybook = () => {
   // ── Mobile: Chapter list view ──
   if (isMobile) {
     return (
-      <AcademyLayout>
+      <>
         <div className="flex flex-col h-[calc(100vh-64px)]">
           <div className="px-4 py-5 border-b border-border space-y-3">
             <AdminActionBar
