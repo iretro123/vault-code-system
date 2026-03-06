@@ -31,9 +31,9 @@ const AcademyCommunity = () => {
     <>
       <div className="flex flex-col h-full overflow-hidden bg-background">
         {/* Floating workspace panel — inset inside dark shell */}
-        <div className="flex flex-col flex-1 m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
+        <div className="flex flex-col flex-1 mx-3 mb-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
           {/* Admin bar — only visible to admins */}
-          <div className="shrink-0 px-4 pt-2">
+          <div className="shrink-0 px-4 pt-1">
             <AdminActionBar
               title="Community Admin"
               permission="moderate_chat"
@@ -45,7 +45,7 @@ const AcademyCommunity = () => {
           </div>
 
           {/* Compact tab navigation */}
-          <div className="shrink-0 flex justify-center py-1.5 px-4">
+          <div className="shrink-0 flex justify-center py-1 px-4">
             <div className="flex w-full md:inline-flex md:w-auto items-center gap-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] p-0.5">
               {TABS.map((tab) => (
                 <button
