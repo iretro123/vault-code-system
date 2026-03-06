@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
+import { ExperienceLevelBadge } from "@/components/academy/ExperienceLevelBadge";
 import { Button } from "@/components/ui/button";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import {
@@ -42,6 +43,8 @@ export function PlayerIdentity() {
   const username = (profile as any)?.username || email.split("@")[0];
   const avatarUrl = (profile as any)?.avatar_url || null;
   const canOpenAdminPanel = roleName === "CEO" || isOperator;
+  const isLeadership = ["CEO", "Admin", "Coach", "Operator"].includes(roleName);
+  const experienceLevel = (profile as any)?.role_level || (profile as any)?.academy_experience;
 
   const handleSignOut = async () => {
     await signOut();
@@ -59,6 +62,7 @@ export function PlayerIdentity() {
                 {displayName}
               </span>
               <AcademyRoleBadge roleName={roleName} />
+              {!isLeadership && <ExperienceLevelBadge level={experienceLevel} />}
             </div>
             <span className="text-xs text-muted-foreground leading-tight">
               @{username}

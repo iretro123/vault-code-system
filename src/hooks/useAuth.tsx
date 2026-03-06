@@ -38,6 +38,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   hasMinRole: (minRole: AppRole) => boolean;
+  refetchProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -221,18 +222,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      return userRoleIndex >= minRoleIndex;
    }
  
-   const value = {
-     user,
-     session,
-     profile,
-     userRole,
-     loading,
-     signUp,
-     signIn,
-     signOut,
-     hasRole,
-     hasMinRole,
-   };
+    async function refetchProfile() {
+      if (user) {
+        await fetchUserData(user.id);
+      }
+    }
+
+    const value = {
+      user,
+      session,
+      profile,
+      userRole,
+      loading,
+      signUp,
+      signIn,
+      signOut,
+      hasRole,
+      hasMinRole,
+      refetchProfile,
+    };
  
    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
  }

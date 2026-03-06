@@ -71,5 +71,11 @@ export function useChatProfiles() {
     []
   );
 
-  return { ensureProfiles, getProfile };
+  const invalidateProfile = useCallback((userId: string) => {
+    globalFetchedIds.delete(userId);
+    globalProfileCache.delete(userId);
+    notifyListeners();
+  }, []);
+
+  return { ensureProfiles, getProfile, invalidateProfile };
 }
