@@ -174,14 +174,14 @@ function renderRecapCard(body: string) {
   );
 }
 
-function renderMentions(text: string): React.ReactNode {
+function renderMentions(text: string, isOwnBubble = false): React.ReactNode {
   // Split on @word patterns and highlight them
   const parts = text.split(/(@\w+)/g);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
     if (/^@\w+/.test(part)) {
       return (
-        <span key={i} className="text-primary font-semibold bg-primary/10 rounded px-0.5">
+        <span key={i} className={isOwnBubble ? "text-white font-semibold bg-white/20 rounded px-0.5" : "text-primary font-semibold bg-primary/10 rounded px-0.5"}>
           {part}
         </span>
       );
@@ -220,7 +220,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
           return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
         }
         if (!part) return null;
-        return <span key={i}>{renderMentions(part)}</span>;
+        return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
       });
     }
 
@@ -230,7 +230,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
       if (part.startsWith("**") && part.endsWith("**")) {
         return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
       }
-      return <span key={i}>{renderMentions(part)}</span>;
+      return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
     });
   };
 
