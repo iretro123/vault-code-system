@@ -22,6 +22,7 @@ export interface TierDefaults {
 }
 
 export const TIER_DEFAULTS: Record<AccountTierLabel, TierDefaults> = {
+  Micro:  { riskPercent: 2, preferredSpendPercent: 7.5, hardMaxSpendPercent: 12.5 },
   Small:  { riskPercent: 2, preferredSpendPercent: 5, hardMaxSpendPercent: 10 },
   Medium: { riskPercent: 1, preferredSpendPercent: 5, hardMaxSpendPercent: 8 },
   Large:  { riskPercent: 1, preferredSpendPercent: 4, hardMaxSpendPercent: 6 },
