@@ -25,6 +25,7 @@ export function AcademyLayout() {
   const lastPageRef = useRef("");
   useSmartNotifications();
 
+  const isCommunity = location.pathname.startsWith("/academy/community");
   const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
 
   // Page view logging
