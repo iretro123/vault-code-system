@@ -295,6 +295,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     pinMessage, unpinMessage, moderatorDelete,
   } = useChatModeration(roomSlug);
 
+  const { isCEO, isAdmin, isOperator: isAcademyOperator } = useAcademyPermissions();
+  const canMention = isCEO || isAdmin || isAcademyOperator || isOperator;
+  const {
+    suggestions, mentionStart, selectedIndex, setSelectedIndex,
+    updateMentionState, clearSuggestions,
+  } = useMentionAutocomplete(canMention);
+
   const isOperator = authUserRole?.role === "operator";
 
   const displayName =
