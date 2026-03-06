@@ -20,7 +20,7 @@ import VaultLog from "./pages/VaultLog";
 import Reports from "./pages/Reports";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import AcademyHome from "./pages/academy/AcademyHome";
-import AcademyStart from "./pages/academy/AcademyStart";
+
 import AcademyLearn from "./pages/academy/AcademyLearn";
 import AcademyModule from "./pages/academy/AcademyModule";
 import AcademyCommunity from "./pages/academy/AcademyCommunity";
