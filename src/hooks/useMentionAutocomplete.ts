@@ -40,7 +40,7 @@ async function fetchAllUsers(): Promise<MentionUser[]> {
  * Detects `@query` at cursor position, returns filtered suggestions.
  * Only activates when `enabled` is true (admin/CEO/operator).
  */
-export function useMentionAutocomplete(enabled: boolean) {
+export function useMentionAutocomplete({ enabled, canPingEveryone = true }: { enabled: boolean; canPingEveryone?: boolean }) {
   const [suggestions, setSuggestions] = useState<(MentionUser | { type: "everyone" })[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionStart, setMentionStart] = useState<number>(-1);
