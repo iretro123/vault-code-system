@@ -436,8 +436,8 @@ export function VaultTradePlanner() {
           {/* Stop guidance */}
           {acctSize > 0 && entryVal > 0 ? (
             <p className="text-[9px] text-muted-foreground/50 -mt-1.5">
-              Max stop width: <span className="font-mono font-semibold text-foreground/60">${maxStopW.toFixed(2)}</span>
-              {" · "}Lowest stop: <span className="font-mono font-semibold text-foreground/60">${lowestStop.toFixed(2)}</span>
+              For 1 contract — Max risk room: <span className="font-mono font-semibold text-foreground/60">${maxStopW.toFixed(2)}</span>
+              {" · "}Suggested stop: <span className="font-mono font-semibold text-foreground/60">${lowestStop.toFixed(2)} or higher</span>
             </p>
           ) : (
             <p className="text-[10px] text-muted-foreground/40 -mt-1">Cut trade if option hits your stop.</p>
