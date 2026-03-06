@@ -269,8 +269,6 @@ export function VaultTradePlanner() {
   }, [buildInputs]);
 
   const handleReset = () => {
-    handleTierChange("Small");
-    setAutoTierEnabled(true);
     setAccountSize("");
     setDirection("Long Call");
     setEntryPremium("");
