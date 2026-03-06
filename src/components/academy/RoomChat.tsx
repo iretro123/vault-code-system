@@ -1299,7 +1299,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     key={chip.label}
                     type="button"
                     onClick={chip.action}
-                    className="text-[11px] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,25%)] px-2 py-0.5 rounded-md hover:bg-[hsl(220,10%,92%)] transition-colors font-medium"
+                    className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors font-medium"
                   >
                     {chip.emoji} {chip.label}
                   </button>
