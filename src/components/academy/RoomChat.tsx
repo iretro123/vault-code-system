@@ -662,6 +662,30 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }, [draft]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Mention autocomplete navigation
+    if (suggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((selectedIndex + 1) % suggestions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((selectedIndex - 1 + suggestions.length) % suggestions.length);
+        return;
+      }
+      if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+        e.preventDefault();
+        selectMention(suggestions[selectedIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        clearSuggestions();
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
