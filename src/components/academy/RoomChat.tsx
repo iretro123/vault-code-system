@@ -122,7 +122,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
 
         {/* Right — Chart image */}
         {imageAtt && (
-          <div className="hidden sm:block shrink-0 bg-[hsl(220,10%,96%)] border-l border-[hsl(220,10%,88%)] max-w-[280px]">
+          <div className="shrink-0 bg-[hsl(220,10%,96%)] border-t sm:border-t-0 sm:border-l border-[hsl(220,10%,88%)] w-full sm:max-w-[280px]">
             <img
               src={(imageAtt as any).url}
               alt="Chart"
