@@ -29,7 +29,7 @@ const AcademyCommunity = () => {
   };
 
   return (
-    <AcademyLayout>
+    <>
       <div className="flex flex-col h-full overflow-hidden bg-background">
         {/* Floating workspace panel — inset inside dark shell */}
         <div className="flex flex-col flex-1 m-3 rounded-2xl overflow-hidden border border-[hsl(220,18%,28%)] bg-[hsl(220,16%,96%)] shadow-[0_6px_32px_rgba(0,0,0,0.35),0_0_0_1px_rgba(59,130,246,0.08),0_0_12px_rgba(59,130,246,0.04)]">
