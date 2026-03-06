@@ -96,9 +96,9 @@ const AcademyLearn = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Courses" />
-      </AcademyLayout>
+      </>
     );
   }
 
