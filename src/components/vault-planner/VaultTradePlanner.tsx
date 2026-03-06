@@ -142,12 +142,12 @@ function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: str
   }[verdict];
 
   return (
-    <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
-      <div className="flex items-center justify-center gap-1.5">
+    <div className="rounded-lg px-4 py-3 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
+      <div className="flex items-center justify-center gap-2">
         <config.Icon className="w-4 h-4" style={{ color: config.color }} />
-        <p className="text-base font-black tracking-wide" style={{ color: config.color }}>{config.label}</p>
+        <p className="text-lg font-black tracking-widest uppercase" style={{ color: config.color }}>{config.label}</p>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-0.5">{reason}</p>
+      <p className="text-[10px] text-muted-foreground mt-1">{reason}</p>
     </div>
   );
 }
