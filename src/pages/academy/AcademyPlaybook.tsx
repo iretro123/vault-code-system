@@ -263,7 +263,7 @@ const AcademyPlaybook = () => {
 
   // ── Desktop: 3-column layout ──
   return (
-    <AcademyLayout>
+    <>
       <div className="h-[calc(100vh-64px)] flex flex-col">
         {/* Header */}
         <div className="px-6 py-5 border-b border-border space-y-3">
