@@ -403,6 +403,25 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     setShowJumpToLatest(false);
   };
 
+  const selectMention = useCallback(
+    (item: (typeof suggestions)[0]) => {
+      const insertText = 'type' in item && item.type === "everyone"
+        ? "everyone"
+        : getMentionInsertText(item as MentionUser);
+      const before = draft.slice(0, mentionStart);
+      const after = draft.slice(textareaRef.current?.selectionStart ?? draft.length);
+      const newDraft = `${before}@${insertText} ${after}`;
+      setDraft(newDraft);
+      clearSuggestions();
+      requestAnimationFrame(() => {
+        const pos = before.length + insertText.length + 2; // +2 for @ and space
+        textareaRef.current?.focus();
+        textareaRef.current?.setSelectionRange(pos, pos);
+      });
+    },
+    [draft, mentionStart, clearSuggestions, suggestions]
+  );
+
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
     let body = text ?? draft;
     if (!body.trim() && (!attachments || attachments.length === 0)) return;
@@ -416,8 +435,56 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     }
 
     if (!text) setDraft("");
+    clearSuggestions();
     shouldAutoScroll.current = true;
-    await sendMessage(body, attachments);
+    const result = await sendMessage(body, attachments);
+
+    // Create mention notifications (admin/CEO/operator only)
+    if (result?.ok && canMention && user) {
+      try {
+        const allUsers = (await import("@/hooks/useMentionAutocomplete")).parseMentions
+          ? undefined : undefined;
+        // Fetch cached users for parsing
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, username")
+          .limit(500);
+        const userList: MentionUser[] = (profilesData ?? []).map((r: any) => ({
+          user_id: r.user_id,
+          display_name: r.display_name,
+          username: r.username,
+          avatar_url: null,
+        }));
+        const { mentionedUserIds, hasEveryone } = parseMentions(body, userList);
+        const senderName = displayName;
+        const preview = body.length > 80 ? body.slice(0, 80) + "…" : body;
+
+        if (hasEveryone) {
+          // Broadcast notification (user_id: null)
+          await supabase.from("academy_notifications").insert({
+            user_id: null,
+            type: "mention",
+            title: `${senderName} mentioned @everyone in #${roomSlug}`,
+            body: preview,
+            link_path: "/academy/community",
+          } as any);
+        }
+
+        // Individual mention notifications
+        for (const uid of mentionedUserIds) {
+          if (uid === user.id) continue; // Don't notify yourself
+          await supabase.from("academy_notifications").insert({
+            user_id: uid,
+            type: "mention",
+            title: `${senderName} mentioned you in #${roomSlug}`,
+            body: preview,
+            link_path: "/academy/community",
+          } as any);
+        }
+      } catch (err) {
+        console.error("Failed to create mention notifications:", err);
+      }
+    }
   };
 
   const ALLOWED_MIME = [
