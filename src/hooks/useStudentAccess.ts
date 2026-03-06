@@ -111,7 +111,7 @@ export function useStudentAccess() {
     tier: state.tier,
     productKey: state.productKey,
     hasAccess: adminBypass ? true : state.hasAccess,
-    loading: state.loading,
+    loading: state.loading || !permResolved,
     error: state.error,
     refetch: fetchAccess,
     lastUpdated: state.lastUpdated,
