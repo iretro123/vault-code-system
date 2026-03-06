@@ -56,13 +56,13 @@ function getInitials(name: string) {
 }
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
-  advanced:     { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
-  professional: { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
-  veteran:      { label: "Advanced",     cls: "bg-purple-100 text-purple-700 border-purple-200" },
-  intermediate: { label: "Intermediate", cls: "bg-blue-100 text-blue-700 border-blue-200" },
-  active:       { label: "Intermediate", cls: "bg-blue-100 text-blue-700 border-blue-200" },
-  beginner:     { label: "Beginner",     cls: "bg-gray-100 text-gray-500 border-gray-200" },
-  newbie:       { label: "Beginner",     cls: "bg-gray-100 text-gray-500 border-gray-200" },
+  advanced:     { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
+  professional: { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
+  veteran:      { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
+  intermediate: { label: "Intermediate", cls: "bg-blue-500/15 text-blue-300 border-blue-500/20" },
+  active:       { label: "Intermediate", cls: "bg-blue-500/15 text-blue-300 border-blue-500/20" },
+  beginner:     { label: "Beginner",     cls: "bg-white/[0.06] text-muted-foreground border-white/[0.08]" },
+  newbie:       { label: "Beginner",     cls: "bg-white/[0.06] text-muted-foreground border-white/[0.08]" },
 };
 
 const ExperienceBadge = React.forwardRef<HTMLSpanElement, { role?: string }>(
