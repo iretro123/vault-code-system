@@ -148,9 +148,9 @@ const AcademyPlaybook = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Vault Playbook" />
-      </AcademyLayout>
+      </>
     );
   }
 
