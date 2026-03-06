@@ -1,37 +1,47 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Guided Trade Panel — Surgical Addition
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+Add inline premium/stop guidance and quick-fill chips to the Trade panel. No new files, no layout changes, no logic changes.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Changes to `src/components/vault-planner/VaultTradePlanner.tsx` only
 
-### Solution
+**1. Compute guidance values from account state (no `liveResult` needed)**
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+Before the Trade panel renders, derive these from the raw state values (they only need `accountSize` and tier percentages — independent of buy/stop validity):
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+```typescript
+const riskBudget = acctSize * (parseFloat(riskPercent) / 100);
+const prefBudget = acctSize * (parseFloat(preferredSpendPercent) / 100);
+const hardBudget = acctSize * (parseFloat(hardMaxSpendPercent) / 100);
+const idealPrem = prefBudget / 100;
+const aggressivePrem = hardBudget / 100;
+const maxStopW = riskBudget / 100;
+```
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**2. Below Buy Price input — add premium guidance line + quick-fill chips**
+
+Only show when `acctSize > 0`. Compact single line:
+```
+Ideal: up to $0.50 · Aggressive max: $1.00
+```
+Plus two tiny chip buttons: `Use Ideal` / `Use Aggressive` — clicking sets `entryPremium` to the computed value (rounded to 2 decimals).
+
+Chips styled as small pill buttons matching the existing `ActionButton` style but smaller (`text-[9px]`, `px-2 py-0.5`).
+
+**3. Below Stop Price input — add stop guidance line**
+
+Only show when `acctSize > 0` AND `entryPremium` is entered and > 0. Replace the current static helper text with a dynamic line:
+```
+Max stop width: $0.20 · Lowest stop: $0.30
+```
+Where `lowestStop = buyPrice - maxStopWidth` (clamped to >= 0.01).
+
+**4. No other changes**
+- No changes to Account panel, Results panel, header, footer, formulas, or `tradePlannerCalc.ts`
+- No new components or files
+- Keep everything compact — guidance lines are `text-[9px]` muted text, chips are tiny pills
+
+### File
+- `src/components/vault-planner/VaultTradePlanner.tsx` — add ~30 lines in the Trade panel section
 
