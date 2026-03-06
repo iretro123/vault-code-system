@@ -3,7 +3,7 @@ import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
@@ -16,9 +16,9 @@ import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { useSidebar } from "@/components/ui/sidebar";
 
-export function AcademyLayout() {
+/** Inner layout that lives inside SidebarProvider so useSidebar() works. */
+function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
   const isMobile = useIsMobile();
@@ -87,65 +87,63 @@ export function AcademyLayout() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="h-screen flex w-full bg-background relative overflow-hidden">
-        {/* FluxCharts-inspired ambient background — layered radials, vignette */}
-        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true"
-          style={{
-            background: [
-              // Vignette overlay (darkens edges)
-              'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)',
-              // Top-left cyan/blue aura
-              'radial-gradient(ellipse 50% 50% at 15% 10%, rgba(56,189,248,0.10) 0%, transparent 70%)',
-              // Mid-right blue aura
-              'radial-gradient(ellipse 45% 55% at 85% 45%, rgba(59,130,246,0.08) 0%, transparent 70%)',
-              // Bottom-left faint blue
-              'radial-gradient(ellipse 40% 40% at 10% 90%, rgba(56,130,246,0.06) 0%, transparent 70%)',
-              // Base gradient (near-black to deep navy)
-              'linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)',
-            ].join(', '),
-          }}
-        />
+    <div className="h-screen flex w-full bg-background relative overflow-hidden">
+      {/* FluxCharts-inspired ambient background — layered radials, vignette */}
+      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true"
+        style={{
+          background: [
+            'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)',
+            'radial-gradient(ellipse 50% 50% at 15% 10%, rgba(56,189,248,0.10) 0%, transparent 70%)',
+            'radial-gradient(ellipse 45% 55% at 85% 45%, rgba(59,130,246,0.08) 0%, transparent 70%)',
+            'radial-gradient(ellipse 40% 40% at 10% 90%, rgba(56,130,246,0.06) 0%, transparent 70%)',
+            'linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)',
+          ].join(', '),
+        }}
+      />
 
-        {/* Sidebar — offcanvas overlay on mobile, static column on desktop */}
-        <AcademySidebar />
+      <AcademySidebar />
 
-        {/* Main content — flex:1, isolated from sidebar */}
-        <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
-          {/* Header */}
-          <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
-            <div className="flex h-14 items-center justify-between px-4">
-              <div className="flex items-center gap-2">
-                {isMobile && isCommunity && (
-                  <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setOpenMobile(true)}>
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                )}
-                <Link to="/academy/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                  <span className="text-lg font-bold tracking-tight text-foreground">
-                    Vault<span className="text-primary">Academy</span>
-                  </span>
-                </Link>
-              </div>
-              <div className="flex items-center gap-1">
-                <PlayerIdentity />
-              </div>
+      <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
+        <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
+          <div className="flex h-14 items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              {isMobile && isCommunity && (
+                <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setOpenMobile(true)}>
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              )}
+              <Link to="/academy/home" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <span className="text-lg font-bold tracking-tight text-foreground">
+                  Vault<span className="text-primary">Academy</span>
+                </span>
+              </Link>
             </div>
-          </header>
+            <div className="flex items-center gap-1">
+              <PlayerIdentity />
+            </div>
+          </div>
+        </header>
 
-          {/* Content — scrollable area */}
-          <main className={`flex-1 overflow-y-auto ${isCommunity ? "pb-6" : "pb-20 md:pb-6"}`}>
-            <Outlet />
-          </main>
+        <main className={`flex-1 overflow-y-auto ${isCommunity ? "pb-6" : "pb-20 md:pb-6"}`}>
+          <Outlet />
+        </main>
 
-          <CoachDrawer />
-          {!isCommunity && <MobileNav />}
-        </div>
-
-        {showBlockModal && (
-          <AccessBlockModal status={accessStatus2} refetch={refetchAccess} />
-        )}
+        <CoachDrawer />
+        {!isCommunity && <MobileNav />}
       </div>
+
+      {showBlockModal && (
+        <AccessBlockModal status={accessStatus2} refetch={refetchAccess} />
+      )}
+    </div>
+  );
+}
+
+/** Public layout wrapper — provides SidebarProvider context. */
+export function AcademyLayout() {
+  return (
+    <SidebarProvider>
+      <AcademyLayoutInner />
     </SidebarProvider>
   );
 }
