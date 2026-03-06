@@ -1002,10 +1002,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     ) : null}
 
                     {/* Soft-deleted message */}
-                    {msg.is_deleted ? (
+                     {msg.is_deleted ? (
                       <div className="inline-block max-w-[85%]">
-                        <div className="bg-[hsl(220,10%,93%)] rounded-xl px-3.5 py-2 border border-[hsl(220,10%,88%)]">
-                          <p className="text-[13px] text-[hsl(220,10%,55%)] italic">This message was deleted.</p>
+                        <div className="bg-white/[0.04] rounded-xl px-3.5 py-2 border border-white/[0.06]">
+                          <p className="text-[13px] text-muted-foreground italic">This message was deleted.</p>
                         </div>
                       </div>
                     ) : isEditing ? (
