@@ -167,6 +167,7 @@ export function AcademySidebar() {
                     <NavLink
                       to="/academy/start"
                       end
+                      onClick={() => { if (isMobile) setOpenMobile(false); }}
                       className="flex items-center gap-2 px-2 py-1.5 text-primary/80 hover:text-primary"
                       activeClassName="bg-[#151C26] text-primary font-medium border-l-[3px] border-l-primary"
                     >
