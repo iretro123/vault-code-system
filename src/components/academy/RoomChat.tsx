@@ -1404,8 +1404,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           )}
         </div>
       ) : (
-        <div className="pt-3 border-t border-[hsl(220,10%,85%)] mt-2">
-          <p className="text-[13px] text-[hsl(220,10%,45%)] text-center py-2">
+         <div className="pt-3 border-t border-white/[0.06] mt-2">
+          <p className="text-[13px] text-muted-foreground text-center py-2">
             This room is read-only for students.
           </p>
         </div>
