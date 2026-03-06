@@ -25,6 +25,7 @@ export function AcademyLayout() {
   const lastPageRef = useRef("");
   useSmartNotifications();
 
+  const isCommunity = location.pathname.startsWith("/academy/community");
   const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
 
   // Page view logging
@@ -124,12 +125,12 @@ export function AcademyLayout() {
           </header>
 
           {/* Content — scrollable area */}
-          <main className="flex-1 overflow-y-auto pb-6">
+          <main className={`flex-1 overflow-y-auto ${isCommunity ? "pb-6" : "pb-20 md:pb-6"}`}>
             <Outlet />
           </main>
 
-          
           <CoachDrawer />
+          {!isCommunity && <MobileNav />}
         </div>
 
         {showBlockModal && (

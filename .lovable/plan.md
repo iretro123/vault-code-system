@@ -1,24 +1,37 @@
 
 
-## Restore Mobile Bottom Nav (Hide Only on Community Chat)
+## Plan: Full user deletion (hard delete, not soft revoke)
 
 ### Problem
-The `MobileNav` component (Menu / Academy / Settings bottom bar) is imported but **never rendered** in `AcademyLayout.tsx`. It was likely removed during a previous refactor.
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Fix — 1 file edit
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**`src/components/layout/AcademyLayout.tsx`**
-- Add `MobileNav` back inside the layout, right after `<CoachDrawer />`
-- Use `useLocation()` (already imported) to detect if the current path is `/academy/community` — if so, hide the mobile nav
-- The `MobileNav` component already has `md:hidden` so it only shows on mobile
+### Solution
 
-```tsx
-{/* After CoachDrawer, before closing div */}
-{!location.pathname.startsWith("/academy/community") && <MobileNav />}
-```
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-Also add bottom padding to `<main>` on mobile (except community) so content doesn't get hidden behind the nav bar — the existing `pb-6` needs to become `pb-20` on mobile when the nav is visible. We'll use a conditional class.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### No other changes needed
-`MobileNav` is already correctly defined with Menu, Academy, and Settings buttons.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
