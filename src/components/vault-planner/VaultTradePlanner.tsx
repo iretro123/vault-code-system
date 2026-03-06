@@ -355,7 +355,7 @@ export function VaultTradePlanner() {
           )}
 
           <SegmentedToggle
-            options={["Small", "Medium", "Large"] as AccountTierLabel[]}
+            options={["Micro", "Small", "Medium", "Large"] as AccountTierLabel[]}
             value={tier}
             onChange={handleTierChange}
           />
