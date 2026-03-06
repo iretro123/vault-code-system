@@ -18,6 +18,7 @@ import {
   Wrench,
   PanelLeft,
   EyeOff,
+  CalendarCheck,
 } from "lucide-react";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
@@ -51,6 +52,7 @@ const coreNav = [
   { icon: Radio, label: "Live", path: "/academy/live", isLive: true, pageKey: "live" },
   { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources", pageKey: "resources" },
   { icon: LayoutGrid, label: "Vault OS", path: "/academy/vault-os", pageKey: "vault-os" },
+  { icon: CalendarCheck, label: "Schedule 1:1", path: "/academy/support", pageKey: "support" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
   { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];

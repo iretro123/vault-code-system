@@ -1,36 +1,37 @@
 
 
-## Add "Schedule 1:1" Sidebar Tab + Calendly Booking Page
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Changes
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-**1. New page: `src/pages/academy/AcademySupport.tsx`**
-- Bold headline: "TUESDAY & THURSDAY" (large, centered)
-- Subheading: "Schedule 1:1"
-- Description paragraph (the text you provided)
-- Embedded Calendly widget via iframe pointing to `https://calendly.com/rz_/vault-os-support-calls-1-on-1`
-- Clean, premium dark styling consistent with the rest of the academy
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**2. `src/components/layout/AcademySidebar.tsx`**
-- Add a new nav item in `coreNav` before Settings:
-  `{ icon: CalendarCheck, label: "Schedule 1:1", path: "/academy/support", pageKey: "support" }`
+### Solution
 
-**3. `src/App.tsx`**
-- Import `AcademySupport` and add route: `<Route path="support" element={<AcademySupport />} />`
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### Page layout
-```text
-┌──────────────────────────────────┐
-│   TUESDAY & THURSDAY             │  ← big bold headline
-│                                  │
-│   paragraph text                 │
-│                                  │
-│ ┌──────────────────────────────┐ │
-│ │  Calendly iframe embed       │ │  ← full-width, ~700px tall
-│ │                              │ │
-│ └──────────────────────────────┘ │
-└──────────────────────────────────┘
-```
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-3 files total: 1 new page, 2 edits (sidebar + router).
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
