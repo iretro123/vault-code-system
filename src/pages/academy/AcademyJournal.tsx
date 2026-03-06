@@ -82,7 +82,7 @@ const AcademyJournal = () => {
   }
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="Trade Journal" subtitle="Log one trade. Stay honest." />
       <div className="px-4 md:px-6 pb-6">
         <Card className="p-6 max-w-lg space-y-5">
