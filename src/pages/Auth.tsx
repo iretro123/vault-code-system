@@ -58,7 +58,7 @@ const Auth = () => {
     }
 
     toast({ title: "Welcome back", description: "You have been signed in." });
-    navigate("/hub");
+    navigate("/academy");
     setLoading(false);
   };
 
