@@ -786,7 +786,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         {/* Moderator room controls */}
         {canModerate && !isRoomLocked && (
           <div className="mx-3 mt-2 mb-1 flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={lockRoom} className="h-6 gap-1 text-[11px] text-[hsl(220,10%,55%)] hover:text-[hsl(220,10%,30%)]">
+            <Button variant="ghost" size="sm" onClick={lockRoom} className="h-6 gap-1 text-[11px] text-muted-foreground hover:text-foreground">
               <Lock className="h-3 w-3" /> Lock Room
             </Button>
           </div>
