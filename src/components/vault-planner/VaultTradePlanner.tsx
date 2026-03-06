@@ -258,6 +258,16 @@ export function VaultTradePlanner() {
   const isValid = liveResult !== null;
   const acctSize = parseFloat(accountSize) || 0;
 
+  // Guidance values for Trade panel
+  const riskBudget = acctSize * (parseFloat(riskPercent) / 100);
+  const prefBudget = acctSize * (parseFloat(preferredSpendPercent) / 100);
+  const hardBudget = acctSize * (parseFloat(hardMaxSpendPercent) / 100);
+  const idealPrem = prefBudget / 100;
+  const aggressivePrem = hardBudget / 100;
+  const maxStopW = riskBudget / 100;
+  const entryVal = parseFloat(entryPremium) || 0;
+  const lowestStop = entryVal > 0 ? Math.max(0.01, entryVal - maxStopW) : 0;
+
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(buildInputs())); } catch {}
   }, [buildInputs]);
