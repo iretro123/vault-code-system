@@ -975,10 +975,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                )} />
                              )}
                            </>
-                        ) : (
-                          <div className="h-4 w-16 rounded bg-[hsl(220,10%,88%)] animate-pulse" />
-                        )}
-                        <span className="text-[11px] text-[hsl(220,10%,52%)]">
+                         ) : (
+                          <div className="h-4 w-16 rounded bg-white/[0.06] animate-pulse" />
+                         )}
+                         <span className="text-[11px] text-muted-foreground">
                           {formatDateTime(msg.created_at)}
                         </span>
                       </div>
