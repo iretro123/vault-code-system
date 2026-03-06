@@ -51,6 +51,8 @@ interface RoomChatProps {
   onSwitchTab?: (tab: string) => void;
   /** When false, defers data fetch and realtime subscriptions until first activated. Default true. */
   active?: boolean;
+  /** When true, constrains uploaded image height for full-width layouts (non-Chat tabs). */
+  compact?: boolean;
 }
 
 /* ── helpers ── */
@@ -286,7 +288,7 @@ function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
 
 /* ── main component ── */
 
-export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab, active = true }: RoomChatProps) {
+export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab, active = true, compact = false }: RoomChatProps) {
   const navigate = useNavigate();
   // Track if this tab has ever been activated — once true, stays true to keep subscriptions alive
   const hasBeenActive = useRef(false);
@@ -1221,7 +1223,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 src={att.url}
                                 alt={att.filename}
                                 loading="lazy"
-                              className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md transition-all cursor-pointer"
+                              className={cn("rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md transition-all cursor-pointer", compact && "max-h-[300px]")}
                             />
                               <span className="text-[10px] text-muted-foreground mt-0.5 block truncate max-w-full">{att.filename}</span>
                             </button>

@@ -1,22 +1,37 @@
 
 
-## Fix: Constrain Image Height in Non-Chat Community Tabs
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
-All tabs (Chat, Announcements, Signals, Wins) use the same `RoomChat` component with identical image styling: `sm:max-w-[360px] h-auto` and **no max-height**. The Chat tab looks fine because `CommunityTradeFloor` wraps it with a 280px `CockpitPanel` sidebar that narrows the content area, visually constraining images. The other three tabs render `RoomChat` at full width with no sidebar, so tall screenshots blow up.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Approach
-Add a `compact` prop to `RoomChat` that applies `max-h-[300px]` to uploaded images. Pass `compact` from the Announcements, Signals, and Wins tabs. Chat remains untouched.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Changes
+### Solution
 
-**1. `src/components/academy/RoomChat.tsx`**
-- Add `compact?: boolean` to `RoomChatProps` interface
-- On the image element (line 1224), conditionally add `max-h-[300px]` when `compact` is true
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**2. `src/pages/academy/AcademyCommunity.tsx`**
-- Add `compact` prop to the three `RoomChat` instances for announcements, daily-setups, and wins-proof
-- Do NOT touch the Chat tab (`CommunityTradeFloor`)
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-This keeps Chat exactly as-is while constraining image height in the other tabs.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
