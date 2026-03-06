@@ -464,7 +464,7 @@ export function VaultTradePlanner() {
         </PanelCard>
 
         {/* ═══ Results ═══ */}
-        <PanelCard title="Results">
+        <PanelCard title="Results" help={"Contracts to Buy — how many your account allows\nPlanned Loss — estimated loss if you stop out\nMoney Needed — total cost to open the trade\nMain Target — 1:2 risk/reward target\nTP1 / TP2 — early and extended profit ideas"}>
           {isValid && liveResult ? (
             <div className="space-y-2">
               <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
