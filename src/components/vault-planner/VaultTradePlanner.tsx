@@ -83,15 +83,17 @@ function FieldInput({ error, ...props }: React.InputHTMLAttributes<HTMLInputElem
 }
 
 function SegmentedToggle<T extends string>({
-  options, value, onChange,
-}: { options: T[]; value: T; onChange: (v: T) => void }) {
+  options, value, onChange, disabled,
+}: { options: T[]; value: T; onChange: (v: T) => void; disabled?: boolean }) {
   return (
-    <div className="inline-flex rounded-lg overflow-hidden" style={{ border: panelBorder }}>
+    <div className={`inline-flex rounded-lg overflow-hidden ${disabled ? "opacity-50 pointer-events-none" : ""}`} style={{ border: panelBorder }}>
       {options.map((opt) => (
         <button
           key={opt}
-          onClick={() => onChange(opt)}
+          onClick={() => !disabled && onChange(opt)}
+          disabled={disabled}
           className={`px-3.5 py-1.5 text-[11px] font-semibold transition-all duration-100
+            ${disabled ? "cursor-not-allowed" : ""}
             ${value === opt ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
           style={value !== opt ? { background: panelBg } : {}}
         >
@@ -185,34 +187,31 @@ export function VaultTradePlanner() {
   const [stopPremium, setStopPremium] = useState(saved.stopPremium?.toString() ?? "");
   const [ticker, setTicker] = useState(saved.ticker ?? "");
   const [defaultsLocked, setDefaultsLocked] = useState(true);
-  const [autoTierEnabled, setAutoTierEnabled] = useState(true);
+  
 
   const [uiState, setUIState] = useState<UIState>("input");
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Auto-detect tier
+  // Auto-detect tier (always active when account size exists)
   useEffect(() => {
-    if (!autoTierEnabled) return;
     const size = parseFloat(accountSize);
-    if (!size || size <= 0) return;
+    if (!size || size <= 0) {
+      // Reset to defaults when cleared
+      setTier("Small");
+      const d = TIER_DEFAULTS["Small"];
+      setRiskPercent(d.riskPercent.toString());
+      setPreferredSpendPercent(d.preferredSpendPercent.toString());
+      setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
+      return;
+    }
     const detected = detectTier(size);
     setTier(detected);
     const d = TIER_DEFAULTS[detected];
     setRiskPercent(d.riskPercent.toString());
     setPreferredSpendPercent(d.preferredSpendPercent.toString());
     setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
-  }, [accountSize, autoTierEnabled]);
-
-  const handleTierChange = (t: AccountTierLabel) => {
-    setTier(t);
-    setAutoTierEnabled(false);
-    const d = TIER_DEFAULTS[t];
-    setRiskPercent(d.riskPercent.toString());
-    setPreferredSpendPercent(d.preferredSpendPercent.toString());
-    setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
-    setDefaultsLocked(true);
-  };
+  }, [accountSize]);
 
   const buildInputs = useCallback((): PlannerInputs => ({
     accountSize: parseFloat(accountSize) || 0,
@@ -270,8 +269,6 @@ export function VaultTradePlanner() {
   }, [buildInputs]);
 
   const handleReset = () => {
-    handleTierChange("Small");
-    setAutoTierEnabled(true);
     setAccountSize("");
     setDirection("Long Call");
     setEntryPremium("");
@@ -284,7 +281,7 @@ export function VaultTradePlanner() {
   };
 
   const handleLoadExample = () => {
-    setAutoTierEnabled(true);
+    
     setAccountSize("10000");
     setDirection("Long Call");
     setEntryPremium("1.20");
@@ -364,7 +361,15 @@ export function VaultTradePlanner() {
           <SegmentedToggle
             options={["Micro", "Small", "Medium", "Large"] as AccountTierLabel[]}
             value={tier}
-            onChange={handleTierChange}
+            onChange={(t) => {
+              setTier(t);
+              const d = TIER_DEFAULTS[t];
+              setRiskPercent(d.riskPercent.toString());
+              setPreferredSpendPercent(d.preferredSpendPercent.toString());
+              setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
+              setDefaultsLocked(true);
+            }}
+            disabled={acctSize > 0}
           />
 
           {/* Custom overrides */}
