@@ -1189,7 +1189,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
                                 r.reacted
                                   ? "bg-primary/15 border-primary/30 text-primary"
-                                  : "bg-[hsl(220,10%,94%)] border-[hsl(220,10%,85%)] text-[hsl(220,10%,40%)] hover:bg-[hsl(220,10%,90%)]"
+                                  : "bg-white/[0.06] border-white/[0.08] text-muted-foreground hover:bg-white/[0.1]"
                               )}
                             >
                               <span>{r.emoji}</span>
