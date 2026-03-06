@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AcademyLayout } from "@/components/layout/AcademyLayout";
+import { cn } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import {
   User,
