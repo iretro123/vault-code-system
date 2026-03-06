@@ -174,6 +174,22 @@ function renderRecapCard(body: string) {
   );
 }
 
+function renderMentions(text: string): React.ReactNode {
+  // Split on @word patterns and highlight them
+  const parts = text.split(/(@\w+)/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    if (/^@\w+/.test(part)) {
+      return (
+        <span key={i} className="text-primary font-semibold bg-primary/10 rounded px-0.5">
+          {part}
+        </span>
+      );
+    }
+    return part;
+  });
+}
+
 function renderPlainBody(body: string, isOwnBubble = false) {
   // Split quote block from rest of message
   const lines = body.split("\n");
