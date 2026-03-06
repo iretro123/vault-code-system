@@ -106,7 +106,7 @@ const AdminPanel = () => {
   };
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Admin Panel"
         subtitle="Manage members, content, and communications"
