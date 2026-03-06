@@ -39,9 +39,9 @@ function PanelCard({ title, children, className = "" }: { title: string; childre
     <div
       className={`rounded-2xl p-5 md:p-6 flex flex-col gap-5 ${className}`}
       style={{
-        background: "hsl(214 24% 11%)",
-        border: "1px solid hsl(213 18% 18%)",
-        boxShadow: "0 8px 32px hsl(0 0% 0% / 0.35), inset 0 1px 0 hsl(213 18% 22% / 0.3)",
+        background: "hsl(214 22% 14%)",
+        border: "1px solid hsl(213 18% 22%)",
+        boxShadow: "0 4px 16px hsl(0 0% 0% / 0.2), inset 0 1px 0 hsl(213 18% 24% / 0.3)",
       }}
     >
       <h3 className="text-sm font-bold text-foreground tracking-wide">{title}</h3>
