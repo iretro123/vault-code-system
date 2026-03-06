@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";

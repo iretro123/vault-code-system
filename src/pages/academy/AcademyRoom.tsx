@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Navigate, useParams } from "react-router-dom";
 import { getRoomBySlug } from "@/lib/academyRooms";
 import { useAcademyRole } from "@/hooks/useAcademyRole";

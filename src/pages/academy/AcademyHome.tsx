@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
-import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useLoginReminder } from "@/hooks/useLoginReminder";
 import { useAcademyData } from "@/contexts/AcademyDataContext";

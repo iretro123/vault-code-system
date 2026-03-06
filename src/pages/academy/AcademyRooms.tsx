@@ -1,5 +1,4 @@
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { ACADEMY_ROOMS } from "@/lib/academyRooms";
 import { useNavigate, Navigate } from "react-router-dom";
