@@ -1,37 +1,26 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: Match Wins Image Sizing to Chat
 
 ### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+The Wins tab renders images inside full-width white cards. Even with `sm:max-w-[360px]`, the image appears huge because:
+1. The card itself spans full width (or half on desktop via the grid)
+2. There's no `max-h` constraint, so tall images blow up vertically
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+The Chat tab keeps images compact with `max-w-[360px]` BUT images sit inside tight chat bubbles on a dark background, which visually constrains them further.
 
-### Solution
+### Fix — `src/components/academy/community/CommunityWins.tsx`
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+Add a `max-h-[240px]` constraint to match the chat's inline markdown image rendering (`max-h-[240px]` from RoomChat line 218), and switch to `object-cover` for consistent cropping of tall screenshots:
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**Line 106** — change image className from:
+```
+className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08]"
+```
+to:
+```
+className="rounded-xl max-w-full sm:max-w-[300px] max-h-[240px] object-cover border border-white/[0.08]"
+```
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+This matches the Chat tab's inline image rendering: constrained width (300px) + constrained height (240px) + `object-cover` for clean cropping. One line change.
 
