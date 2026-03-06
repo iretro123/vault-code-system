@@ -1,48 +1,37 @@
 
 
-## Honest Assessment
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### The data right now for `retronine82@gmail.com`:
-- `allowed_signups`: `claimed = false` — provisioning **never ran**
-- `students` table: **empty** — no row created
-- `student_access` table: **empty** — no row created
-- `profiles.access_status`: `trial` (default)
-- Edge function logs: **empty** — function was never called or never deployed
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
----
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### 3 Reasons the Previous Fix (Auth Header) IS Part of the Problem
+### Solution
 
-1. **Before the fix, the provisioning call had NO auth header at all** — it was guaranteed to fail with 401 for every single signup. Any user who signed up before the fix is stuck.
-2. **The edge function code was correct** — it does create `students` + `student_access` rows properly when it actually runs. The auth gate was the only barrier.
-3. **The `allowed_signups.claimed` is still `false`** — proving the function never executed its logic, consistent with an auth rejection.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### 3 Reasons the Previous Fix is NOT Sufficient (Why It's Still Broken)
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-1. **No retry on login** — The provisioning only runs during signup (line 127 of `Signup.tsx`). If it fails once, there is NO second chance. Every subsequent login just hits `get_my_access_state`, gets nothing, and shows the block modal. The fix only helps *future* signups, not existing broken users.
-2. **Possible session race condition** — `supabase.auth.getSession()` is called immediately after `signUp()`. If the session hasn't fully propagated yet (async auth state update), the JWT could be null, and the provisioning call still goes without auth.
-3. **No fallback when provisioning fails silently** — The catch block on line 146 just `console.error`s. The user gets redirected to `/hub` regardless, and then `AcademyLayout` shows the block modal with no way to retry.
-
----
-
-### The Real Fix (What Actually Needs to Change)
-
-The problem is clear: **there is no retry mechanism**. Provisioning runs once during signup, and if it fails for ANY reason, the user is permanently stuck.
-
-#### Changes:
-
-**1. `src/hooks/useStudentAccess.ts` — Add auto-retry provisioning**
-- When `fetchAccess` resolves to `status: "none"` for a logged-in user, automatically call `provision-manual-access` ONE TIME (tracked by a `useRef` flag to prevent loops)
-- Use the user's current JWT and email from the profile
-- If provisioning succeeds (`provisioned: true`), call `fetchAccess` again to refresh
-- If it fails or returns `not_whitelisted`, do nothing — block modal shows as normal
-
-This is the safety net that catches ALL failure scenarios: users who signed up before the fix, session race conditions, network failures, etc.
-
-**2. No edge function changes needed** — the self-provisioning path already works correctly.
-
-#### Why this actually solves it:
-- `retronine82@gmail.com` logs in → `get_my_access_state` returns nothing → status is `"none"` → hook retries provisioning → `allowed_signups` has `claimed: false` → provisioning succeeds → access granted
-- Works for every past and future user in this situation
-- One-time retry per session, no infinite loops
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
