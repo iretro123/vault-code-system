@@ -949,7 +949,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="w-9 h-9 rounded-full bg-white/[0.06] animate-pulse" />
                       )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-[hsl(220,10%,60%)] select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-muted-foreground select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
