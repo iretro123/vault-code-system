@@ -1,4 +1,4 @@
-import { PlannerInputs, PlannerResult, formatCurrency, buildCopyText } from "@/lib/tradePlannerCalc";
+import { PlannerInputs, PlannerResult, PremiumFit, formatCurrency, buildCopyText } from "@/lib/tradePlannerCalc";
 import { XPWindow } from "./XPWindow";
 import { XPButton } from "./XPButton";
 import { XPStatusBadge } from "./XPStatusBadge";
