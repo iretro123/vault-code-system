@@ -18,6 +18,7 @@ import { VaultOSGate } from "./components/VaultOSGate";
 import Settings from "./pages/Settings";
 import VaultLog from "./pages/VaultLog";
 import Reports from "./pages/Reports";
+import { AcademyLayout } from "./components/layout/AcademyLayout";
 import AcademyHome from "./pages/academy/AcademyHome";
 import AcademyStart from "./pages/academy/AcademyStart";
 import AcademyLearn from "./pages/academy/AcademyLearn";
