@@ -828,10 +828,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   };
 
   const filteredMessages = useMemo(() => messages.filter((msg) => {
-    if (msg.is_deleted && msg.deleted_at) {
-      const deletedAgeMs = Date.now() - new Date(msg.deleted_at).getTime();
-      if (deletedAgeMs >= 15 * 60 * 1000) return false;
-    }
+    if (msg.is_deleted) return false;
     if ((msg as any).parent_message_id) return false;
     return true;
   }), [messages]);
