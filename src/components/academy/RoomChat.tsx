@@ -49,6 +49,8 @@ interface RoomChatProps {
   isAnnouncements?: boolean;
   onThreadOpen?: (msg: any) => void;
   onSwitchTab?: (tab: string) => void;
+  /** When false, defers data fetch and realtime subscriptions until first activated. Default true. */
+  active?: boolean;
 }
 
 /* ── helpers ── */
