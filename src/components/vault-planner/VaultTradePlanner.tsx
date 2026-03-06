@@ -484,7 +484,6 @@ export function VaultTradePlanner() {
           <div className="flex items-center gap-2 pt-1 flex-wrap">
             <Btn primary onClick={handleGenerate} disabled={!isValid}>Generate</Btn>
             <Btn onClick={handleLoadExample}>Load Example</Btn>
-            <Btn onClick={handleReset}>Reset</Btn>
             <Btn onClick={handleCopyPlan} disabled={!isValid}>
               <span className="flex items-center gap-1"><Copy className="w-3 h-3" />Copy Trade Plan</span>
             </Btn>
