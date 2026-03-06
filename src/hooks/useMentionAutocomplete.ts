@@ -17,11 +17,7 @@ async function fetchAllUsers(): Promise<MentionUser[]> {
   if (fetchPromise) return fetchPromise;
 
   fetchPromise = (async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("user_id, display_name, username, avatar_url")
-      .order("display_name", { ascending: true })
-      .limit(500);
+    const { data } = await supabase.rpc("get_mention_users");
 
     cachedUsers = (data ?? []).map((r: any) => ({
       user_id: r.user_id,
@@ -40,7 +36,7 @@ async function fetchAllUsers(): Promise<MentionUser[]> {
  * Detects `@query` at cursor position, returns filtered suggestions.
  * Only activates when `enabled` is true (admin/CEO/operator).
  */
-export function useMentionAutocomplete(enabled: boolean) {
+export function useMentionAutocomplete({ enabled, canPingEveryone = true }: { enabled: boolean; canPingEveryone?: boolean }) {
   const [suggestions, setSuggestions] = useState<(MentionUser | { type: "everyone" })[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionStart, setMentionStart] = useState<number>(-1);
@@ -85,8 +81,8 @@ export function useMentionAutocomplete(enabled: boolean) {
 
       const results: (MentionUser | { type: "everyone" })[] = [];
 
-      // @everyone always first
-      if ("everyone".startsWith(query)) {
+      // @everyone — only if allowed
+      if (canPingEveryone && "everyone".startsWith(query)) {
         results.push({ type: "everyone" });
       }
 

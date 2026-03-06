@@ -2308,6 +2308,15 @@ export type Database = {
           trades_taken: number
         }[]
       }
+      get_mention_users: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_micro_feedback: { Args: { _user_id: string }; Returns: string }
       get_my_access_state: {
         Args: never

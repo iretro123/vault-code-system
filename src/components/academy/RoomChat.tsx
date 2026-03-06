@@ -298,11 +298,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const isOperator = authUserRole?.role === "operator";
 
   const { isCEO, isAdmin, isOperator: isAcademyOperator } = useAcademyPermissions();
-  const canMention = isCEO || isAdmin || isAcademyOperator || isOperator;
+  const canMention = !!user;
+  const canPingEveryone = isCEO || isAdmin || isAcademyOperator || isOperator;
   const {
     suggestions, mentionStart, selectedIndex, setSelectedIndex,
     updateMentionState, clearSuggestions,
-  } = useMentionAutocomplete(canMention);
+  } = useMentionAutocomplete({ enabled: canMention, canPingEveryone });
 
   const displayName =
     (profile as any)?.display_name ||
@@ -439,16 +440,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     shouldAutoScroll.current = true;
     const result = await sendMessage(body, attachments);
 
-    // Create mention notifications (admin/CEO/operator only)
+    // Create mention notifications for all users who can mention
     if (result?.ok && canMention && user) {
       try {
         const allUsers = (await import("@/hooks/useMentionAutocomplete")).parseMentions
           ? undefined : undefined;
-        // Fetch cached users for parsing
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("user_id, display_name, username")
-          .limit(500);
+        // Fetch users via secure RPC for parsing
+        const { data: profilesData } = await supabase.rpc("get_mention_users");
         const userList: MentionUser[] = (profilesData ?? []).map((r: any) => ({
           user_id: r.user_id,
           display_name: r.display_name,
@@ -459,7 +457,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         const senderName = displayName;
         const preview = body.length > 80 ? body.slice(0, 80) + "…" : body;
 
-        if (hasEveryone) {
+        if (hasEveryone && canPingEveryone) {
           // Broadcast notification (user_id: null)
           await supabase.from("academy_notifications").insert({
             user_id: null,

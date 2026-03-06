@@ -1,36 +1,37 @@
 
 
-## Why Mentions Don't Work (Simple Explanation)
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-**Line 301 of `RoomChat.tsx`:**
-```ts
-const canMention = isCEO || isAdmin || isAcademyOperator || isOperator;
-```
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-This line says: "Only let CEOs, Admins, and Operators use @mentions." Regular members get `false`, so when they type `@`, nothing happens. The autocomplete is completely turned off for them.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-There's also a second problem: even if we flip this switch, the `useMentionAutocomplete` hook queries the `profiles` table directly. RLS on `profiles` only lets users read **their own** profile. So a regular user would get an empty list of people to mention anyway.
+### Solution
 
-**Two locks on the door. Both need to be opened.**
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
----
-
-## Plan
-
-### 1. Database migration — Create `get_mention_users()` function
-A security-definer function that returns only `user_id`, `display_name`, `username`, `avatar_url` from profiles. Safe because it exposes no sensitive data (no email, no phone). Bypasses RLS so all authenticated users get results.
-
-### 2. Update `src/hooks/useMentionAutocomplete.ts`
-- Change `fetchAllUsers()` to call the new `get_mention_users()` RPC instead of querying `profiles` directly
-- Add a `canPingEveryone` option — when `false`, filter out the `@everyone` suggestion
-
-### 3. Update `src/components/academy/RoomChat.tsx` (line 301)
-- Change `canMention` to `!!user` (all logged-in users can mention)
-- Add `canPingEveryone` flag that stays admin/CEO/operator-only
-- Pass `canPingEveryone` to the hook
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
 ### Files
-1. New DB migration — `get_mention_users()` security-definer function
-2. `src/hooks/useMentionAutocomplete.ts` — use RPC, add `canPingEveryone` filter
-3. `src/components/academy/RoomChat.tsx` — unlock mentions for all users, restrict `@everyone`
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
