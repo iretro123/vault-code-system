@@ -126,11 +126,15 @@ const Signup = () => {
       // Auto-provision access for whitelisted users (also marks claimed=true server-side)
       if (newUserId) {
         try {
+          const { data: { session: provSession } } = await supabase.auth.getSession();
           const provRes = await fetch(
             `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-manual-access`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...(provSession?.access_token ? { "Authorization": `Bearer ${provSession.access_token}` } : {}),
+              },
               body: JSON.stringify({ email: email.trim().toLowerCase(), auth_user_id: newUserId }),
             }
           );
