@@ -9,6 +9,7 @@ export type TradeVerdict = "SAFE" | "AGGRESSIVE" | "NO_TRADE";
 export type PremiumFit = "IDEAL" | "AGGRESSIVE" | "TOO_EXPENSIVE";
 
 export function detectTier(accountSize: number): AccountTierLabel {
+  // Exact thresholds: Micro < 1000, Small [1000, 5000), Medium [5000, 25000), Large >= 25000
   if (accountSize >= 25000) return "Large";
   if (accountSize >= 5000) return "Medium";
   if (accountSize >= 1000) return "Small";

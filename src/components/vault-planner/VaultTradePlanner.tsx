@@ -460,7 +460,7 @@ export function VaultTradePlanner() {
         {/* ═══ Results ═══ */}
         <PanelCard title="Results">
           {isValid && liveResult ? (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
 
               {/* Premium Fit badge */}
