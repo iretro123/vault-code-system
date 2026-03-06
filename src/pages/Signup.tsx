@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Shield, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Shield, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,12 +18,12 @@ const Signup = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Membership verification
   const [stripeStatus, setStripeStatus] = useState<"idle" | "checking" | "found" | "not_found">("idle");
-
-  // Signup fields
   const [phoneNumber, setPhoneNumber] = useState("");
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
@@ -70,12 +68,24 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phoneNumber.trim()) {
-      toast({ title: "Phone required", description: "Please enter your phone number.", variant: "destructive" });
+    if (!firstName.trim() || !lastName.trim()) {
+      toast({ title: "Name required", description: "Please enter your first and last name.", variant: "destructive" });
+      return;
+    }
+    if (username.trim().length < 3) {
+      toast({ title: "Username required", description: "Username must be at least 3 characters.", variant: "destructive" });
       return;
     }
     if (usernameStatus === "taken") {
       toast({ title: "Username taken", description: "Please choose a different username.", variant: "destructive" });
+      return;
+    }
+    if (!phoneNumber.trim()) {
+      toast({ title: "Phone required", description: "Please enter your phone number.", variant: "destructive" });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast({ title: "Passwords don't match", description: "Please make sure your passwords match.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -92,7 +102,8 @@ const Signup = () => {
       if (newUserId) {
         await ensureProfile(newUserId, email, {
           phone_number: phoneNumber.trim(),
-          username: username.trim().toLowerCase() || undefined,
+          username: username.trim().toLowerCase(),
+          display_name: `${firstName.trim()} ${lastName.trim()}`,
         });
       }
 
@@ -123,7 +134,7 @@ const Signup = () => {
         }
       }
 
-      // Auto-provision access for whitelisted users (also marks claimed=true server-side)
+      // Auto-provision access for whitelisted users
       if (newUserId) {
         try {
           const { data: { session: provSession } } = await supabase.auth.getSession();
@@ -148,93 +159,177 @@ const Signup = () => {
         }
       }
 
-      // Clear stale access cache so fresh state is fetched
       localStorage.removeItem("va_cache_student_access");
-
       navigate("/academy");
     }
 
     setLoading(false);
   };
 
-  const fieldsValid = phoneNumber.trim().length > 0 && usernameStatus !== "taken" && stripeStatus === "found";
+  const fieldsValid =
+    firstName.trim() !== "" &&
+    lastName.trim() !== "" &&
+    username.trim().length >= 3 &&
+    usernameStatus !== "taken" &&
+    phoneNumber.trim().length > 0 &&
+    stripeStatus === "found" &&
+    password.length >= 8 &&
+    password === confirmPassword;
+
+  const inputClass = "h-12 rounded-lg bg-white/5 border-white/10 text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40";
+  const labelClass = "text-sm font-medium text-white/80 block mb-1.5";
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="px-4 py-4">
-        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Back</span>
-        </Link>
-      </header>
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 mb-4">
+            <Shield className="w-7 h-7 text-primary" />
+          </div>
+          <h1 className="text-2xl font-semibold text-foreground">VAULT OS</h1>
+          <p className="text-muted-foreground text-sm mt-1">Join Vault Academy today</p>
+        </div>
 
-      <main className="flex-1 flex items-center justify-center px-4 pb-8">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 mb-4">
-              <Shield className="w-7 h-7 text-primary" />
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* First Name / Last Name */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>
+                First Name <span className="text-destructive">*</span>
+              </label>
+              <Input
+                placeholder="John"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className={inputClass}
+                required
+                maxLength={50}
+              />
             </div>
-            <h1 className="text-2xl font-semibold">VAULT OS</h1>
-            <p className="text-muted-foreground text-sm mt-1">Create your account</p>
+            <div>
+              <label className={labelClass}>
+                Last Name <span className="text-destructive">*</span>
+              </label>
+              <Input
+                placeholder="Doe"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={inputClass}
+                required
+                maxLength={50}
+              />
+            </div>
           </div>
 
-          <Card className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
-                <div className="relative">
-                  <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-12 pr-8" required />
-                  {stripeStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 animate-spin text-muted-foreground" />}
-                  {stripeStatus === "found" && <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-emerald-500" />}
-                  {stripeStatus === "not_found" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-destructive" />}
-                </div>
-                {stripeStatus === "found" && (
-                  <p className="text-xs text-emerald-500 mt-1">Membership verified</p>
-                )}
-                {stripeStatus === "not_found" && (
-                  <p className="text-xs text-destructive mt-1">This email is not registered with Vault Academy. Contact support.</p>
-                )}
-              </div>
+          {/* Username */}
+          <div>
+            <label className={labelClass}>
+              Username <span className="text-destructive">*</span>
+            </label>
+            <div className="relative">
+              <Input
+                placeholder="trader_one"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
+                className={`${inputClass} pr-9`}
+                required
+                maxLength={30}
+              />
+              {usernameStatus === "checking" && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+              {usernameStatus === "available" && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />}
+              {usernameStatus === "taken" && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
+            </div>
+            {usernameStatus === "taken" && <p className="text-xs text-destructive mt-1">Username is already taken.</p>}
+            <p className="text-[10px] text-muted-foreground/50 mt-1">Cannot be changed after registration.</p>
+          </div>
 
-              <div>
-                <Label htmlFor="password" className="text-sm text-muted-foreground">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 h-12" required minLength={8} />
-              </div>
+          {/* Email */}
+          <div>
+            <label className={labelClass}>
+              Email <span className="text-destructive">*</span>
+            </label>
+            <div className="relative">
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`${inputClass} pr-9`}
+                required
+              />
+              {stripeStatus === "checking" && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+              {stripeStatus === "found" && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />}
+              {stripeStatus === "not_found" && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />}
+            </div>
+            {stripeStatus === "found" && <p className="text-xs text-emerald-500 mt-1">Membership verified</p>}
+            {stripeStatus === "not_found" && <p className="text-xs text-destructive mt-1">This email is not registered with Vault Academy. Contact support.</p>}
+          </div>
 
-              <div>
-                <Label htmlFor="phone" className="text-sm text-muted-foreground">
-                  Phone Number <span className="text-destructive">*</span>
-                </Label>
-                <Input id="phone" type="tel" placeholder="+1 555 000 0000" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} className="mt-1.5 h-12" required maxLength={20} />
-                <p className="text-[10px] text-muted-foreground/60 mt-1">For important account alerts only.</p>
-              </div>
+          {/* Phone Number */}
+          <div>
+            <label className={labelClass}>
+              Phone Number <span className="text-destructive">*</span>
+            </label>
+            <Input
+              type="tel"
+              placeholder="+1 555 000 0000"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className={inputClass}
+              required
+              maxLength={20}
+            />
+            <p className="text-[10px] text-muted-foreground/50 mt-1">For important account alerts only.</p>
+          </div>
 
-              <div>
-                <Label htmlFor="username" className="text-sm text-muted-foreground">
-                  Username <span className="text-muted-foreground/50">(optional)</span>
-                </Label>
-                <div className="relative">
-                  <Input id="username" placeholder="trader_one" value={username} onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))} className="mt-1.5 h-12 pr-8" maxLength={30} />
-                  {usernameStatus === "checking" && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 animate-spin text-muted-foreground" />}
-                  {usernameStatus === "available" && <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-emerald-500" />}
-                  {usernameStatus === "taken" && <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 mt-0.5 h-4 w-4 text-destructive" />}
-                </div>
-                {usernameStatus === "taken" && <p className="text-xs text-destructive mt-1">Username is already taken.</p>}
-                <p className="text-[10px] text-muted-foreground/60 mt-1">Cannot be changed after registration.</p>
-              </div>
+          {/* Password */}
+          <div>
+            <label className={labelClass}>
+              Password <span className="text-destructive">*</span>
+            </label>
+            <Input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputClass}
+              required
+              minLength={8}
+            />
+          </div>
 
-              <Button type="submit" className="w-full h-12 text-base font-medium" disabled={loading || !fieldsValid}>
-                {loading ? "Loading..." : "Create Account"}
-              </Button>
-            </form>
-          </Card>
+          {/* Confirm Password */}
+          <div>
+            <label className={labelClass}>
+              Confirm Password <span className="text-destructive">*</span>
+            </label>
+            <Input
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={inputClass}
+              required
+              minLength={8}
+            />
+            {confirmPassword && password !== confirmPassword && (
+              <p className="text-xs text-destructive mt-1">Passwords do not match.</p>
+            )}
+          </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            Already have an account?
-            <Link to="/auth" className="text-primary hover:underline ml-1 font-medium">Sign in</Link>
-          </p>
-        </div>
-      </main>
+          {/* Submit */}
+          <Button type="submit" className="w-full h-12 text-base font-medium rounded-lg" disabled={loading || !fieldsValid}>
+            {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Creating...</> : "Create Account"}
+          </Button>
+        </form>
+
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          Already have an account?
+          <Link to="/auth" className="text-primary hover:underline ml-1 font-medium">Sign in</Link>
+        </p>
+      </div>
     </div>
   );
 };
