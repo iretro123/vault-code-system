@@ -206,6 +206,9 @@ export function VaultTradePlanner() {
       setRiskPercent(d.riskPercent.toString());
       setPreferredSpendPercent(d.preferredSpendPercent.toString());
       setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
+      setEntryPremium("");
+      setStopPremium("");
+      setTicker("");
       return;
     }
     const detected = detectTier(size);
