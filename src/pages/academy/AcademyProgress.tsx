@@ -101,7 +101,7 @@ const AcademyProgress = () => {
   const weekLabel = `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="Weekly Progress" subtitle={weekLabel} />
       <div className="px-4 md:px-6 pb-6">
         {loading ? (
