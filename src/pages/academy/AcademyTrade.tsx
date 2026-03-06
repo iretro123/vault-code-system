@@ -29,7 +29,7 @@ const OUTCOME_STYLES = {
 const AcademyTrade = () => {
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
-  const { entries, loading: tradesLoading, addEntry, refetch: refetchTrades } = useTradeLog();
+  const { entries, loading: tradesLoading, addEntry, exportCSV, refetch: refetchTrades } = useTradeLog();
 
   // Balance state — loaded from DB
   const [startingBalance, setStartingBalance] = useState<number | null>(null);
