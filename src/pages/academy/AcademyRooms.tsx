@@ -16,7 +16,7 @@ const AcademyRooms = () => {
   }
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader
         title="Community Rooms"
         subtitle="Curated discussion spaces for traders"
