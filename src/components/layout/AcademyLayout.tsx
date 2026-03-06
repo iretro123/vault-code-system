@@ -19,6 +19,7 @@ export function AcademyLayout() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
   const location = useLocation();
+  const navigate = useNavigate();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
   const lastPageRef = useRef("");
