@@ -13,12 +13,12 @@ const AcademyProfile = () => {
   }
 
   return (
-    <AcademyLayout>
+    <>
       <PageHeader title="Complete Your Profile" subtitle="Set up your Academy identity to get started" />
       <div className="px-4 md:px-6 pb-6 max-w-lg">
         <AcademyProfileForm isOnboarding />
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

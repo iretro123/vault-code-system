@@ -123,7 +123,7 @@ const AcademySettings = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

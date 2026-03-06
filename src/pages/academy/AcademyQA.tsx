@@ -625,7 +625,7 @@ const AcademyQA = () => {
           </p>
         </Card>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

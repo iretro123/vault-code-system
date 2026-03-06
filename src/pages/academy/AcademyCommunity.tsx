@@ -85,7 +85,7 @@ const AcademyCommunity = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 
