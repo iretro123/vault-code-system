@@ -393,17 +393,22 @@ export function VaultTradePlanner() {
 
           {/* 1-Contract Fit */}
           {acctSize > 0 && liveResult && (
-            <div className="rounded-lg px-2.5 py-2 space-y-0.5" style={{ background: "hsl(212 25% 9%)", border: "1px solid hsl(213 18% 18%)" }}>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">1-Contract Fit</p>
-              <p className="text-[11px] text-foreground">
-                Ideal premium: up to <span className="font-bold font-mono text-primary">{safeCurrency(liveResult.idealPremiumMax)}</span>
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Aggressive max: up to <span className="font-semibold font-mono">{safeCurrency(liveResult.aggressivePremiumMax)}</span>
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Max stop width: <span className="font-semibold font-mono">{safeCurrency(liveResult.maxOneContractStopWidth)}</span>
-              </p>
+            <div className="rounded-lg px-2.5 py-2" style={{ background: "hsl(212 25% 9%)", border: "1px solid hsl(213 18% 18%)" }}>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-1.5">1-Contract Fit</p>
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div>
+                  <p className="text-[8px] text-muted-foreground/50 uppercase">Ideal</p>
+                  <p className="text-xs font-bold font-mono text-primary">{safeCurrency(liveResult.idealPremiumMax)}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-muted-foreground/50 uppercase">Aggressive</p>
+                  <p className="text-xs font-semibold font-mono text-foreground">{safeCurrency(liveResult.aggressivePremiumMax)}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-muted-foreground/50 uppercase">Max Stop</p>
+                  <p className="text-xs font-semibold font-mono text-foreground">{safeCurrency(liveResult.maxOneContractStopWidth)}</p>
+                </div>
+              </div>
             </div>
           )}
         </PanelCard>
