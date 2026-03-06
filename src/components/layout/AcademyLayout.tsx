@@ -12,7 +12,7 @@ import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function AcademyLayout() {
