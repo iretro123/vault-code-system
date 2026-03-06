@@ -113,6 +113,7 @@ export function TradePlannerResults({ inputs, result, onBack }: Props) {
       <div className="space-y-3">
         {/* Verdict */}
         <VerdictBar verdict={result.verdict} reason={result.verdictReason} />
+        <PremiumFitBadge fit={result.premiumFit} />
 
         {/* Theta warning */}
         {result.thetaWarning && (

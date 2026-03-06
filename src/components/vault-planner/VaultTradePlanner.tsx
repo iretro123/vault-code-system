@@ -152,6 +152,20 @@ function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: str
   );
 }
 
+function PremiumFitBadge({ fit }: { fit: PremiumFit }) {
+  const config = {
+    IDEAL: { bg: "hsl(160 84% 39% / 0.10)", border: "hsl(160 84% 39% / 0.25)", color: "hsl(160 84% 39%)", label: "IDEAL" },
+    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.10)", border: "hsl(38 92% 50% / 0.25)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE" },
+    TOO_EXPENSIVE: { bg: "hsl(0 72% 51% / 0.10)", border: "hsl(0 72% 51% / 0.25)", color: "hsl(0 72% 51%)", label: "TOO EXPENSIVE" },
+  }[fit];
+  return (
+    <div className="rounded-md px-2.5 py-1 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
+      <span className="text-[10px] text-muted-foreground">Premium Fit: </span>
+      <span className="text-[10px] font-bold" style={{ color: config.color }}>{config.label}</span>
+    </div>
+  );
+}
+
 function CollapsibleSection({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
