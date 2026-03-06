@@ -52,8 +52,9 @@ const ROLES = [
 ] as const;
 
 export function ClaimRoleModal({ open, onOpenChange }: Props) {
-  const { user } = useAuth();
+  const { user, refetchProfile } = useAuth();
   const { refetchOnboarding } = useAcademyData();
+  const { invalidateProfile } = useChatProfiles();
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -63,7 +64,7 @@ export function ClaimRoleModal({ open, onOpenChange }: Props) {
     setSaving(true);
 
     const [profileRes, onboardRes] = await Promise.all([
-      supabase.from("profiles").update({ role_level: selected } as any).eq("user_id", user.id),
+      supabase.from("profiles").update({ role_level: selected, academy_experience: selected } as any).eq("user_id", user.id),
       supabase.from("onboarding_state").upsert(
         { user_id: user.id, claimed_role: true, role_level: selected } as any,
         { onConflict: "user_id" }
@@ -77,8 +78,9 @@ export function ClaimRoleModal({ open, onOpenChange }: Props) {
     }
 
     setSuccess(true);
-    // Invalidate profile cache so next auth check picks up the new role
-    try { localStorage.removeItem(PROFILE_CACHE_KEY); } catch {}
+    // Refresh auth profile state + invalidate chat cache
+    await refetchProfile();
+    invalidateProfile(user.id);
     await refetchOnboarding();
 
     setTimeout(() => {

@@ -62,6 +62,7 @@ export function PlayerIdentity() {
                 {displayName}
               </span>
               <AcademyRoleBadge roleName={roleName} />
+              {!isLeadership && <ExperienceLevelBadge level={experienceLevel} />}
             </div>
             <span className="text-xs text-muted-foreground leading-tight">
               @{username}
