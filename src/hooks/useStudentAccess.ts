@@ -38,7 +38,7 @@ function writeCache(state: AccessState) {
 
 export function useStudentAccess() {
   const { user } = useAuth();
-  const { isCEO, isOperator, resolved: permResolved } = useAcademyPermissions();
+  const { isCEO, isAdmin, isCoach, isOperator, resolved: permResolved } = useAcademyPermissions();
 
   const cached = readCache();
   const [state, setState] = useState<AccessState>({
@@ -104,14 +104,14 @@ export function useStudentAccess() {
   }, [fetchAccess]);
 
   // Admin/operator bypass
-  const adminBypass = permResolved && (isCEO || isOperator);
+  const adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator);
 
   return {
     status: state.status,
     tier: state.tier,
     productKey: state.productKey,
     hasAccess: adminBypass ? true : state.hasAccess,
-    loading: state.loading,
+    loading: state.loading || !permResolved,
     error: state.error,
     refetch: fetchAccess,
     lastUpdated: state.lastUpdated,

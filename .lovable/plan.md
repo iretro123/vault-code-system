@@ -1,37 +1,37 @@
 
 
-## Confirmed Root Cause
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-There are **two compounding issues**:
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Issue 1: Race condition — permissions resolve AFTER access status
-- `useStudentAccess` resolves quickly (especially from localStorage cache) and returns `status: "canceled"` or `"none"` — because `test@vault.dev` has no active Stripe subscription in the `student_access` table.
-- `useAcademyPermissions` takes longer (3 DB queries). Until it sets `resolved: true`, the `isAdminBypass` flag is `false`.
-- In `AcademyLayout.tsx` line 31, the block modal shows immediately because `!isAdminBypass` is true during this window.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Issue 2: Bypass is too narrow
-- Line 107 of `useStudentAccess.ts`: `adminBypass = permResolved && (isCEO || isOperator)`
-- This only covers CEO and Operator roles. **Admin and Coach roles are NOT bypassed.**
+### Solution
 
-### Issue 3: Loading state doesn't wait for permissions
-- Line 114: `loading: state.loading` — only reflects the RPC fetch, not whether permissions have resolved.
-- `AcademyLayout.tsx` line 31 doesn't check `loading` at all, so the modal renders before the full picture is ready.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
----
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-## Solution (2 files)
-
-### `src/hooks/useStudentAccess.ts`
-1. Destructure `isAdmin` and `isCoach` from `useAcademyPermissions()`
-2. Expand bypass: `adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator)`
-3. Return combined loading: `loading: state.loading || !permResolved`
-
-### `src/components/layout/AcademyLayout.tsx`
-1. Destructure `loading: accessLoading` from `useStudentAccess()`
-2. Update modal gate: `const showBlockModal = !accessLoading && !isAdminBypass && (...)`
-
-This ensures:
-- The modal never flashes while roles are still loading
-- All leadership roles (CEO, Admin, Coach, Operator) fully bypass Stripe gating
-- Regular members still see the modal correctly when their subscription is canceled/past_due/none
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
