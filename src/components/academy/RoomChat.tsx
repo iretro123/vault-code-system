@@ -1110,12 +1110,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               target="_blank"
                               rel="noopener noreferrer"
                               download={att.filename}
-                              className="flex items-center gap-2 rounded-lg border border-[hsl(220,10%,85%)] bg-white px-3 py-2 hover:bg-[hsl(220,10%,96%)] transition-colors shadow-sm"
+                              className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 hover:bg-white/[0.08] transition-colors"
                             >
                               <FileText className="h-4 w-4 text-primary shrink-0" />
                               <div className="min-w-0">
-                                <p className="text-xs text-[hsl(220,15%,20%)] truncate max-w-[200px]">{att.filename}</p>
-                                <p className="text-[10px] text-[hsl(220,10%,50%)]">
+                                <p className="text-xs text-foreground truncate max-w-[200px]">{att.filename}</p>
+                                <p className="text-[10px] text-muted-foreground">
                                   {att.size >= 1024 * 1024
                                     ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
                                     : `${(att.size / 1024).toFixed(0)} KB`}
