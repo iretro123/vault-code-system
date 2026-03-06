@@ -118,16 +118,11 @@ const AcademyHome = () => {
 
   return (
     <>
-      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl">
-        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "0ms", animationFillMode: "forwards" }}>
-          <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
-        </div>
+      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl animate-fade-in">
+        <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
+        <PlaybookCard />
 
-        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "80ms", animationFillMode: "forwards" }}>
-          <PlaybookCard />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start opacity-0 animate-fade-in" style={{ animationDelay: "160ms", animationFillMode: "forwards" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
           <div className="lg:col-span-3">
             <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
           </div>
@@ -136,18 +131,14 @@ const AcademyHome = () => {
           </div>
         </div>
 
-        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "240ms", animationFillMode: "forwards" }}>
-          <CoachCard />
-        </div>
+        <CoachCard />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 opacity-0 animate-fade-in" style={{ animationDelay: "320ms", animationFillMode: "forwards" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <LiveCallsCard />
           <ToolkitCard />
         </div>
 
-        <div className="opacity-0 animate-fade-in" style={{ animationDelay: "400ms", animationFillMode: "forwards" }}>
-          <QuickAccessRow />
-        </div>
+        <QuickAccessRow />
       </div>
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />

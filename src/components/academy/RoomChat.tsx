@@ -49,6 +49,8 @@ interface RoomChatProps {
   isAnnouncements?: boolean;
   onThreadOpen?: (msg: any) => void;
   onSwitchTab?: (tab: string) => void;
+  /** When false, defers data fetch and realtime subscriptions until first activated. Default true. */
+  active?: boolean;
 }
 
 /* ── helpers ── */
@@ -284,10 +286,15 @@ function getRoleBadgeKey(userRole: string, profileRoleLevel?: string): string {
 
 /* ── main component ── */
 
-export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab }: RoomChatProps) {
+export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadOpen, onSwitchTab, active = true }: RoomChatProps) {
   const navigate = useNavigate();
+  // Track if this tab has ever been activated — once true, stays true to keep subscriptions alive
+  const hasBeenActive = useRef(false);
+  if (active) hasBeenActive.current = true;
+  const shouldLoad = hasBeenActive.current;
+
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
-    useRoomMessages(roomSlug);
+    useRoomMessages(shouldLoad ? roomSlug : "__deferred__");
   const { user, profile, userRole: authUserRole } = useAuth();
   const {
     canModerate, isRoomLocked, isMuted, muteExpiresAt,
