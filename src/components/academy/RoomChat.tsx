@@ -1139,7 +1139,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               key={emoji}
                               type="button"
                               onClick={() => toggleReaction(msg.id, emoji)}
-                              className="text-sm px-1.5 py-1 rounded-md hover:bg-[hsl(220,10%,94%)] transition-colors"
+                              className="text-sm px-1.5 py-1 rounded-md hover:bg-white/[0.08] transition-colors"
                               title={`React ${emoji}`}
                             >
                               {emoji}
