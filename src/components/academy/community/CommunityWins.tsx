@@ -103,7 +103,7 @@ export function CommunityWins() {
                     <img
                       src={(imageAtt as any).url}
                       alt="Trade screenshot"
-                      className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08]"
+                      className="rounded-xl max-w-full sm:max-w-[300px] max-h-[240px] object-cover border border-white/[0.08]"
                       loading="lazy"
                     />
                   </div>
