@@ -457,7 +457,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         const senderName = displayName;
         const preview = body.length > 80 ? body.slice(0, 80) + "…" : body;
 
-        if (hasEveryone) {
+        if (hasEveryone && canPingEveryone) {
           // Broadcast notification (user_id: null)
           await supabase.from("academy_notifications").insert({
             user_id: null,
