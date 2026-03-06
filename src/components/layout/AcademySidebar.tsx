@@ -66,7 +66,7 @@ export function AcademySidebar() {
     setInboxOpen(open);
     try { localStorage.setItem("va_inbox_open", String(open)); } catch {}
   };
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
