@@ -136,7 +136,7 @@ const AcademyAdminUsers = () => {
           </Card>
         )}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

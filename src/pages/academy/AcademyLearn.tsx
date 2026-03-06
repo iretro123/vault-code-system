@@ -374,7 +374,7 @@ const AcademyLearn = () => {
           </>
         )}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

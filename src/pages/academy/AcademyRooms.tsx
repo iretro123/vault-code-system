@@ -51,7 +51,7 @@ const AcademyRooms = () => {
           ))}
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

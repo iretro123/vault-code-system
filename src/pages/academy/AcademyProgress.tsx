@@ -129,7 +129,7 @@ const AcademyProgress = () => {
           </div>
         ) : null}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

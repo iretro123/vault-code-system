@@ -145,7 +145,7 @@ const AcademyStart = () => {
           )}
         </Card>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

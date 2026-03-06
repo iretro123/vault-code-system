@@ -456,7 +456,7 @@ const AcademyResources = () => {
           </Tabs>
         ) : browseContent}
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

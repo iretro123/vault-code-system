@@ -567,7 +567,7 @@ const AcademyAdmin = () => {
           )}
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 

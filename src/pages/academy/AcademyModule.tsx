@@ -426,7 +426,7 @@ const AcademyModule = () => {
           </div>
         </div>
       </div>
-    </AcademyLayout>
+    </>
   );
 };
 
