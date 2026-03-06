@@ -193,28 +193,25 @@ export function VaultTradePlanner() {
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Auto-detect tier
+  // Auto-detect tier (always active when account size exists)
   useEffect(() => {
-    if (!autoTierEnabled) return;
     const size = parseFloat(accountSize);
-    if (!size || size <= 0) return;
+    if (!size || size <= 0) {
+      // Reset to defaults when cleared
+      setTier("Small");
+      const d = TIER_DEFAULTS["Small"];
+      setRiskPercent(d.riskPercent.toString());
+      setPreferredSpendPercent(d.preferredSpendPercent.toString());
+      setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
+      return;
+    }
     const detected = detectTier(size);
     setTier(detected);
     const d = TIER_DEFAULTS[detected];
     setRiskPercent(d.riskPercent.toString());
     setPreferredSpendPercent(d.preferredSpendPercent.toString());
     setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
-  }, [accountSize, autoTierEnabled]);
-
-  const handleTierChange = (t: AccountTierLabel) => {
-    setTier(t);
-    setAutoTierEnabled(false);
-    const d = TIER_DEFAULTS[t];
-    setRiskPercent(d.riskPercent.toString());
-    setPreferredSpendPercent(d.preferredSpendPercent.toString());
-    setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
-    setDefaultsLocked(true);
-  };
+  }, [accountSize]);
 
   const buildInputs = useCallback((): PlannerInputs => ({
     accountSize: parseFloat(accountSize) || 0,
