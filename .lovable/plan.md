@@ -1,27 +1,37 @@
 
 
-## Surgical Refinement: Tier Bug Fix + Polish Pass
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Investigation
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The `detectTier()` function in `tradePlannerCalc.ts` (line 11-16) already has the correct thresholds (`>= 1000` returns "Small"). However, the bug may be a floating-point edge case or a state initialization issue. I will verify and add an explicit guard.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Changes
+### Solution
 
-**1. `src/lib/tradePlannerCalc.ts`** — Harden tier thresholds
-- Ensure `detectTier` uses exact thresholds with no ambiguity (already correct but will add comment for clarity)
-- No formula changes needed — all 1-Contract Fit math is already correct
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**2. `src/components/vault-planner/VaultTradePlanner.tsx`** — Polish pass
-- **Verdict banner**: Add slightly more padding, larger font weight, subtle letter-spacing for premium feel
-- **Button row**: Use `justify-between` or consistent `gap-2` for cleaner alignment; ensure all buttons same height
-- **1-Contract Fit card**: Tighten line spacing, use a grid layout for the 3 values to make it scannable
-- **Results panel**: Reduce vertical gaps from `space-y-2.5` to `space-y-2`, tighten `ResultRow` padding from `py-2` to `py-1.5`
-- **AGGRESSIVE verdict**: Show "Recommended Size (Aggressive)" label clearly as it already does — verify this path works when `safeContracts === 0` but `maxContracts > 0`
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**3. `src/components/vault-planner/TradePlannerResults.tsx`** — No changes needed (already aligned)
-
-### What stays the same
-- All formulas, targets, 3-panel layout, dark premium UI, collapsible sections, tooltip system
-- No new features, no new cards, no new text blocks
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

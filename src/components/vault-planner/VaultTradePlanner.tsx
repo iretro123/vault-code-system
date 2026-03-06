@@ -125,7 +125,7 @@ function ActionButton({
 
 function ResultRow({ label, value, bold, accent }: { label: string; value: string; bold?: boolean; accent?: boolean }) {
   return (
-    <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid hsl(213 18% 16%)" }}>
+    <div className="flex items-center justify-between px-3 py-1.5" style={{ borderBottom: "1px solid hsl(213 18% 16%)" }}>
       <span className="text-[10px] text-muted-foreground">{label}</span>
       <span className={`font-mono ${bold ? "text-base font-bold" : "text-sm font-semibold"} ${accent ? "text-primary" : "text-foreground"}`}>
         {value}
@@ -142,12 +142,12 @@ function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: str
   }[verdict];
 
   return (
-    <div className="rounded-lg px-3 py-2.5 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
-      <div className="flex items-center justify-center gap-1.5">
+    <div className="rounded-lg px-4 py-3 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
+      <div className="flex items-center justify-center gap-2">
         <config.Icon className="w-4 h-4" style={{ color: config.color }} />
-        <p className="text-base font-black tracking-wide" style={{ color: config.color }}>{config.label}</p>
+        <p className="text-lg font-black tracking-widest uppercase" style={{ color: config.color }}>{config.label}</p>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-0.5">{reason}</p>
+      <p className="text-[10px] text-muted-foreground mt-1">{reason}</p>
     </div>
   );
 }
@@ -393,17 +393,22 @@ export function VaultTradePlanner() {
 
           {/* 1-Contract Fit */}
           {acctSize > 0 && liveResult && (
-            <div className="rounded-lg px-2.5 py-2 space-y-0.5" style={{ background: "hsl(212 25% 9%)", border: "1px solid hsl(213 18% 18%)" }}>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">1-Contract Fit</p>
-              <p className="text-[11px] text-foreground">
-                Ideal premium: up to <span className="font-bold font-mono text-primary">{safeCurrency(liveResult.idealPremiumMax)}</span>
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Aggressive max: up to <span className="font-semibold font-mono">{safeCurrency(liveResult.aggressivePremiumMax)}</span>
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Max stop width: <span className="font-semibold font-mono">{safeCurrency(liveResult.maxOneContractStopWidth)}</span>
-              </p>
+            <div className="rounded-lg px-2.5 py-2" style={{ background: "hsl(212 25% 9%)", border: "1px solid hsl(213 18% 18%)" }}>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-1.5">1-Contract Fit</p>
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div>
+                  <p className="text-[8px] text-muted-foreground/50 uppercase">Ideal</p>
+                  <p className="text-xs font-bold font-mono text-primary">{safeCurrency(liveResult.idealPremiumMax)}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-muted-foreground/50 uppercase">Aggressive</p>
+                  <p className="text-xs font-semibold font-mono text-foreground">{safeCurrency(liveResult.aggressivePremiumMax)}</p>
+                </div>
+                <div>
+                  <p className="text-[8px] text-muted-foreground/50 uppercase">Max Stop</p>
+                  <p className="text-xs font-semibold font-mono text-foreground">{safeCurrency(liveResult.maxOneContractStopWidth)}</p>
+                </div>
+              </div>
             </div>
           )}
         </PanelCard>
@@ -441,20 +446,21 @@ export function VaultTradePlanner() {
           <p className="text-[10px] text-muted-foreground/50 -mt-1">Cut trade if option hits your stop.</p>
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex items-center gap-2 pt-1">
             <ActionButton variant="primary" onClick={handleGenerate} disabled={!isValid}>Generate</ActionButton>
-            <ActionButton onClick={handleLoadExample}>Example</ActionButton>
-            <ActionButton onClick={handleReset}>Reset</ActionButton>
             <ActionButton onClick={handleCopyPlan} disabled={!isValid}>
               <span className="flex items-center gap-1"><Copy className="w-2.5 h-2.5" />Copy</span>
             </ActionButton>
+            <div className="flex-1" />
+            <ActionButton onClick={handleLoadExample}>Example</ActionButton>
+            <ActionButton onClick={handleReset}>Reset</ActionButton>
           </div>
         </PanelCard>
 
         {/* ═══ Results ═══ */}
         <PanelCard title="Results">
           {isValid && liveResult ? (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
 
               {/* Premium Fit badge */}
