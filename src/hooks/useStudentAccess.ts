@@ -3,6 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
 export type AccessStatus = "active" | "trialing" | "past_due" | "canceled" | "none";
 
 interface AccessState {
