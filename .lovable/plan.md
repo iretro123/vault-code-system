@@ -1,37 +1,37 @@
 
 
-## Add Card-Level Help Icons to Trade Planner
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-Small, surgical addition of one help icon per panel card — no clutter, no redesign.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Changes to `src/components/vault-planner/VaultTradePlanner.tsx`
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. Update `PanelCard` component** (lines 44–54)
+### Solution
 
-Add an optional `help` prop (string content). When provided, render a small `HelpCircle` icon (14px) at the top-right of the card header, using the existing `XPTooltip` component with `white` mode for a premium popover feel.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-Header becomes a flex row: title left, help icon right.
-
-**2. Pass help content to each panel**
-
-- **Account** panel (line 334): help text =
-  `"Account Size — your total trading account balance\nRisk per trade — max loss if your stop gets hit\nBest premium zone — healthiest 1-contract premium range\nStretch zone — more aggressive premium range\nMax stop width — most stop room allowed for 1 contract"`
-
-- **Trade** panel (line 398): help text =
-  `"Buy Price — the option premium you plan to enter at\nStop Price — where you plan to exit if wrong\nBest zone — this premium fits your account comfortably\nStretch zone — this premium is more aggressive\nSuggested stop — keeps risk inside your rules"`
-
-- **Results** panel (line 464): help text =
-  `"Contracts to Buy — how many your account allows\nPlanned Loss — estimated loss if you stop out\nMoney Needed — total cost to open the trade\nMain Target — 1:2 risk/reward target\nTP1 / TP2 — early and extended profit ideas"`
-
-**3. Keep existing inline tooltips only on these 3 fields** (already correct):
-- Account Size (line 335)
-- Option Buy Price (line 405)
-- Option Stop Price (line 431)
-
-No other inline help icons added.
-
-**4. Import** — add `HelpCircle` to the lucide-react import (line 20).
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
 ### Files
-- `src/components/vault-planner/VaultTradePlanner.tsx` — ~15 lines changed
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

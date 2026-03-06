@@ -41,13 +41,16 @@ const rowBorder = "1px solid hsl(220 10% 14%)";
 
 /* ─── Sub-components ─── */
 
-function PanelCard({ title, children }: { title: string; children: React.ReactNode }) {
+function PanelCard({ title, help, children }: { title: string; help?: string; children: React.ReactNode }) {
   return (
     <div
       className="rounded-xl p-4 md:p-5 flex flex-col gap-3"
       style={{ background: panelBg, border: panelBorder }}
     >
-      <h3 className="text-sm font-bold text-foreground tracking-tight">{title}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-foreground tracking-tight">{title}</h3>
+        {help && <XPTooltip text={help} white title={title + " Guide"} />}
+      </div>
       {children}
     </div>
   );
@@ -331,7 +334,7 @@ export function VaultTradePlanner() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
 
         {/* ═══ Account ═══ */}
-        <PanelCard title="Account">
+        <PanelCard title="Account" help={"Account Size — your total trading account balance\nRisk per trade — max loss if your stop gets hit\nBest premium zone — healthiest 1-contract premium range\nStretch zone — more aggressive premium range\nMax stop width — most stop room allowed for 1 contract"}>
           <FieldRow label="Account Size" tooltip="Your total trading account balance." error={errors.accountSize}>
             <FieldInput
               type="number"
@@ -395,7 +398,7 @@ export function VaultTradePlanner() {
         </PanelCard>
 
         {/* ═══ Trade ═══ */}
-        <PanelCard title="Trade">
+        <PanelCard title="Trade" help={"Buy Price — the option premium you plan to enter at\nStop Price — where you plan to exit if wrong\nBest zone — this premium fits your account comfortably\nStretch zone — this premium is more aggressive\nSuggested stop — keeps risk inside your rules"}>
           <SegmentedToggle
             options={["Long Call", "Long Put"] as TradeDirection[]}
             value={direction}
@@ -461,7 +464,7 @@ export function VaultTradePlanner() {
         </PanelCard>
 
         {/* ═══ Results ═══ */}
-        <PanelCard title="Results">
+        <PanelCard title="Results" help={"Contracts to Buy — how many your account allows\nPlanned Loss — estimated loss if you stop out\nMoney Needed — total cost to open the trade\nMain Target — 1:2 risk/reward target\nTP1 / TP2 — early and extended profit ideas"}>
           {isValid && liveResult ? (
             <div className="space-y-2">
               <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
