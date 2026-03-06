@@ -3,14 +3,16 @@
  * Long Calls / Long Puts ONLY
  */
 
-export type AccountTierLabel = "Small" | "Medium" | "Large";
+export type AccountTierLabel = "Micro" | "Small" | "Medium" | "Large";
 export type TradeDirection = "Long Call" | "Long Put";
 export type TradeVerdict = "SAFE" | "AGGRESSIVE" | "NO_TRADE";
+export type PremiumFit = "IDEAL" | "AGGRESSIVE" | "TOO_EXPENSIVE";
 
 export function detectTier(accountSize: number): AccountTierLabel {
-  if (accountSize >= 50000) return "Large";
-  if (accountSize >= 15000) return "Medium";
-  return "Small";
+  if (accountSize >= 25000) return "Large";
+  if (accountSize >= 5000) return "Medium";
+  if (accountSize >= 1000) return "Small";
+  return "Micro";
 }
 
 export interface TierDefaults {
@@ -20,6 +22,7 @@ export interface TierDefaults {
 }
 
 export const TIER_DEFAULTS: Record<AccountTierLabel, TierDefaults> = {
+  Micro:  { riskPercent: 2, preferredSpendPercent: 7.5, hardMaxSpendPercent: 12.5 },
   Small:  { riskPercent: 2, preferredSpendPercent: 5, hardMaxSpendPercent: 10 },
   Medium: { riskPercent: 1, preferredSpendPercent: 5, hardMaxSpendPercent: 8 },
   Large:  { riskPercent: 1, preferredSpendPercent: 4, hardMaxSpendPercent: 6 },
@@ -74,6 +77,8 @@ export interface PlannerResult {
   verdict: TradeVerdict;
   verdictReason: string;
   sizingExplanation: string;
+  maxOneContractStopWidth: number;
+  premiumFit: PremiumFit;
 }
 
 export interface ValidationError {
@@ -221,6 +226,12 @@ export function calculatePlan(inputs: PlannerInputs): PlannerResult {
     verdict,
     verdictReason,
     sizingExplanation,
+    maxOneContractStopWidth: riskBudget / 100,
+    premiumFit: inputs.entryPremium <= idealPremiumMax
+      ? "IDEAL"
+      : inputs.entryPremium <= aggressivePremiumMax
+        ? "AGGRESSIVE"
+        : "TOO_EXPENSIVE",
   };
 }
 

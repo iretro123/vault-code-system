@@ -1,70 +1,37 @@
 
 
-## Logic Refinement + Compact UX Cleanup for Vault Trade Planner
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-Targeted changes only. No rebuild. Keep the existing 3-panel layout, premium dark UI, and all current formulas.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
----
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### 1. Calculation Engine (`src/lib/tradePlannerCalc.ts`)
+### Solution
 
-**Add "Micro" tier** — update `AccountTierLabel` to `"Micro" | "Small" | "Medium" | "Large"` and add to `TIER_DEFAULTS`:
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-| Tier | Threshold | Risk % | Preferred % | Hard Max % |
-|------|-----------|--------|-------------|------------|
-| Micro | < $1,000 | 2 | 7.5 | 12.5 |
-| Small | $1,000–$4,999 | 2 | 5 | 10 |
-| Medium | $5,000–$24,999 | 1 | 5 | 8 |
-| Large | $25,000+ | 1 | 4 | 6 |
-
-**Update `detectTier()`** to match the new thresholds.
-
-**Add to `PlannerResult`**:
-- `maxOneContractStopWidth: number` — `riskBudget / 100`
-- `premiumFit: "IDEAL" | "AGGRESSIVE" | "TOO_EXPENSIVE"` — compared against `idealPremiumMax` and `aggressivePremiumMax`
-
-**Update display logic for recommended/max in results**:
-- When SAFE: recommended = safeContracts, max = maxContracts
-- When AGGRESSIVE: recommended = maxContracts (labeled aggressive), max = maxContracts
-- When NO_TRADE: recommended = 0, max = 0
-
-All existing formulas, targets, verdict logic stay identical.
-
----
-
-### 2. UI Component (`src/components/vault-planner/VaultTradePlanner.tsx`)
-
-**Account Panel changes:**
-- Update `SegmentedToggle` to show 4 tiers: Micro, Small, Medium, Large
-- Add a compact **"1-Contract Fit"** box below Premium Fit (same styling), showing 3 lines:
-  - `Ideal premium: up to $X.XX`
-  - `Aggressive max: up to $X.XX`
-  - `Max stop width: $X.XX`
-- Merge the current separate "Premium Fit" box into this single "1-Contract Fit" box for compactness
-
-**Results Panel changes:**
-- Add a small **Premium Fit** badge after the verdict banner: `Premium Fit: IDEAL` / `AGGRESSIVE` / `TOO EXPENSIVE` (color-coded, one line)
-- Update contract display labels:
-  - SAFE verdict: "Recommended Size" = safeContracts, "Max Allowed" = maxContracts
-  - AGGRESSIVE: "Recommended Size (Aggressive)" = maxContracts
-  - NO_TRADE: show 0
-- Everything else stays as-is (targets, collapsible "Why this result?", status badges)
-
-**No changes to**: Trade panel, header, footer, loading screen, TradePlannerResults.tsx, any styling/spacing.
-
----
-
-### 3. TradePlannerResults.tsx
-
-- Add `premiumFit` badge display matching the inline results panel
-- Update tier toggle references from 3 to 4 options (if tier is displayed there)
-
----
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
 ### Files
-- `src/lib/tradePlannerCalc.ts` — add Micro tier, `premiumFit` field, `maxOneContractStopWidth`
-- `src/components/vault-planner/VaultTradePlanner.tsx` — 4-tier toggle, 1-Contract Fit box, Premium Fit badge in results, smart contract labels
-- `src/components/vault-planner/TradePlannerResults.tsx` — add Premium Fit badge
-
-No database changes. No new files. No rebuild.
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

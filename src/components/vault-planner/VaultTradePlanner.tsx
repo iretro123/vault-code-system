@@ -5,6 +5,7 @@ import {
   AccountTierLabel,
   TradeDirection,
   TradeVerdict,
+  PremiumFit,
   TIER_DEFAULTS,
   detectTier,
   validateInputs,
@@ -147,6 +148,20 @@ function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: str
         <p className="text-base font-black tracking-wide" style={{ color: config.color }}>{config.label}</p>
       </div>
       <p className="text-[10px] text-muted-foreground mt-0.5">{reason}</p>
+    </div>
+  );
+}
+
+function PremiumFitBadge({ fit }: { fit: PremiumFit }) {
+  const config = {
+    IDEAL: { bg: "hsl(160 84% 39% / 0.10)", border: "hsl(160 84% 39% / 0.25)", color: "hsl(160 84% 39%)", label: "IDEAL" },
+    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.10)", border: "hsl(38 92% 50% / 0.25)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE" },
+    TOO_EXPENSIVE: { bg: "hsl(0 72% 51% / 0.10)", border: "hsl(0 72% 51% / 0.25)", color: "hsl(0 72% 51%)", label: "TOO EXPENSIVE" },
+  }[fit];
+  return (
+    <div className="rounded-md px-2.5 py-1 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
+      <span className="text-[10px] text-muted-foreground">Premium Fit: </span>
+      <span className="text-[10px] font-bold" style={{ color: config.color }}>{config.label}</span>
     </div>
   );
 }
@@ -354,7 +369,7 @@ export function VaultTradePlanner() {
           )}
 
           <SegmentedToggle
-            options={["Small", "Medium", "Large"] as AccountTierLabel[]}
+            options={["Micro", "Small", "Medium", "Large"] as AccountTierLabel[]}
             value={tier}
             onChange={handleTierChange}
           />
@@ -376,15 +391,18 @@ export function VaultTradePlanner() {
             {defaultsLocked ? "Unlock Custom" : "Lock Defaults"}
           </button>
 
-          {/* Premium Fit */}
+          {/* 1-Contract Fit */}
           {acctSize > 0 && liveResult && (
             <div className="rounded-lg px-2.5 py-2 space-y-0.5" style={{ background: "hsl(212 25% 9%)", border: "1px solid hsl(213 18% 18%)" }}>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Premium Fit</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">1-Contract Fit</p>
               <p className="text-[11px] text-foreground">
-                Ideal: up to <span className="font-bold font-mono text-primary">{safeCurrency(liveResult.idealPremiumMax)}</span>
+                Ideal premium: up to <span className="font-bold font-mono text-primary">{safeCurrency(liveResult.idealPremiumMax)}</span>
               </p>
               <p className="text-[11px] text-muted-foreground">
                 Aggressive max: up to <span className="font-semibold font-mono">{safeCurrency(liveResult.aggressivePremiumMax)}</span>
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Max stop width: <span className="font-semibold font-mono">{safeCurrency(liveResult.maxOneContractStopWidth)}</span>
               </p>
             </div>
           )}
@@ -439,15 +457,22 @@ export function VaultTradePlanner() {
             <div className="space-y-2.5">
               <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
 
+              {/* Premium Fit badge */}
+              <PremiumFitBadge fit={liveResult.premiumFit} />
+
               {/* Hero metrics */}
               <div className="rounded-lg overflow-hidden" style={{ border: "1px solid hsl(213 18% 16%)" }}>
-                {liveResult.safeContracts !== liveResult.maxContracts && liveResult.maxContracts > 0 ? (
+                {liveResult.verdict === "SAFE" ? (
                   <>
-                    <ResultRow label="Safe Contracts" value={`${liveResult.safeContracts}`} bold accent />
-                    <ResultRow label="Max Contracts" value={`${liveResult.maxContracts}`} />
+                    <ResultRow label="Recommended Size" value={`${liveResult.safeContracts}`} bold accent />
+                    {liveResult.maxContracts > liveResult.safeContracts && (
+                      <ResultRow label="Max Allowed" value={`${liveResult.maxContracts}`} />
+                    )}
                   </>
+                ) : liveResult.verdict === "AGGRESSIVE" ? (
+                  <ResultRow label="Recommended Size (Aggressive)" value={`${liveResult.maxContracts}`} bold accent />
                 ) : (
-                  <ResultRow label="Contracts" value={`${liveResult.finalContracts}`} bold accent />
+                  <ResultRow label="Recommended Size" value="0" bold />
                 )}
                 <ResultRow label="Planned Loss" value={liveResult.finalContracts > 0 ? `-${safeCurrency(liveResult.totalPlannedRisk)}` : "—"} bold />
                 <ResultRow label="Entry Cost" value={safeCurrency(liveResult.totalPositionCost)} />

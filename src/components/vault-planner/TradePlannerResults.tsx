@@ -1,4 +1,4 @@
-import { PlannerInputs, PlannerResult, formatCurrency, buildCopyText } from "@/lib/tradePlannerCalc";
+import { PlannerInputs, PlannerResult, PremiumFit, formatCurrency, buildCopyText } from "@/lib/tradePlannerCalc";
 import { XPWindow } from "./XPWindow";
 import { XPButton } from "./XPButton";
 import { XPStatusBadge } from "./XPStatusBadge";
@@ -45,6 +45,20 @@ function VerdictBar({ verdict, reason }: { verdict: string; reason: string }) {
         <p className="text-base font-black tracking-wide" style={{ color: config.color }}>{config.label}</p>
       </div>
       <p className="text-[10px] text-muted-foreground mt-0.5">{reason}</p>
+    </div>
+  );
+}
+
+function PremiumFitBadge({ fit }: { fit: PremiumFit }) {
+  const config = {
+    IDEAL: { bg: "hsl(160 84% 39% / 0.10)", border: "hsl(160 84% 39% / 0.25)", color: "hsl(160 84% 39%)", label: "IDEAL" },
+    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.10)", border: "hsl(38 92% 50% / 0.25)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE" },
+    TOO_EXPENSIVE: { bg: "hsl(0 72% 51% / 0.10)", border: "hsl(0 72% 51% / 0.25)", color: "hsl(0 72% 51%)", label: "TOO EXPENSIVE" },
+  }[fit];
+  return (
+    <div className="rounded-[4px] px-2.5 py-1 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
+      <span className="text-[10px] text-muted-foreground">Premium Fit: </span>
+      <span className="text-[10px] font-bold" style={{ color: config.color }}>{config.label}</span>
     </div>
   );
 }
@@ -99,6 +113,7 @@ export function TradePlannerResults({ inputs, result, onBack }: Props) {
       <div className="space-y-3">
         {/* Verdict */}
         <VerdictBar verdict={result.verdict} reason={result.verdictReason} />
+        <PremiumFitBadge fit={result.premiumFit} />
 
         {/* Theta warning */}
         {result.thetaWarning && (
