@@ -2274,6 +2274,15 @@ export type Database = {
           risk_level: string
         }[]
       }
+      get_community_profiles: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          academy_experience: string
+          avatar_url: string
+          role_level: string
+          user_id: string
+        }[]
+      }
       get_daily_vault_status: {
         Args: { _user_id: string }
         Returns: {

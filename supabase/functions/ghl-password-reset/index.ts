@@ -56,17 +56,25 @@ Deno.serve(async (req) => {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Look up phone number from profiles
-    const { data: profile } = await sb
+    // SECURITY: Verify this email belongs to an existing user before proceeding
+    const { data: existingProfile } = await sb
       .from("profiles")
-      .select("phone_number, display_name")
+      .select("user_id, phone_number, display_name")
       .eq("email", normalizedEmail)
       .maybeSingle();
 
-    const phone = profile?.phone_number || null;
-    const displayName = profile?.display_name || "";
+    if (!existingProfile) {
+      // Return generic success to prevent email enumeration
+      console.log("[GHL] No profile found for email, returning generic success:", normalizedEmail);
+      return new Response(JSON.stringify({ success: true, results: { sms: false, email: false } }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // 2. Generate a single recovery link (one token only — no competing tokens)
+    const phone = existingProfile.phone_number || null;
+    const displayName = existingProfile.display_name || "";
+
+    // Generate a single recovery link
     const redirectTo = origin ? `${origin}/reset-password` : "https://vault-code-system.lovable.app/reset-password";
     const { data: linkData, error: linkError } = await sb.auth.admin.generateLink({
       type: "recovery",
@@ -84,7 +92,7 @@ Deno.serve(async (req) => {
 
     const resetLink = linkData.properties.action_link;
 
-    // 3. Upsert contact in GHL
+    // Upsert contact in GHL
     const upsertBody: Record<string, unknown> = {
       email: normalizedEmail,
       locationId: GHL_LOCATION_ID,
@@ -113,7 +121,7 @@ Deno.serve(async (req) => {
 
     const results = { sms: false, email: false };
 
-    // 4. Send SMS if phone number exists
+    // Send SMS if phone number exists
     if (phone) {
       const smsBody = `Vault Academy — Reset your password: ${resetLink}`;
       const { ok: smsOk } = await ghlFetch("/conversations/messages", GHL_API_KEY, {
@@ -125,7 +133,7 @@ Deno.serve(async (req) => {
       console.log("[GHL] SMS sent:", smsOk);
     }
 
-    // 5. Send Email (GHL requires "html" field for Email type, not "message")
+    // Send Email
     const emailHtml = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
       <h2 style="margin:0 0 16px;">Vault Academy — Password Reset</h2>
       <p>Hi${displayName ? ` ${displayName}` : ""},</p>
@@ -140,7 +148,6 @@ Deno.serve(async (req) => {
       message: emailHtml,
       subject: "Reset Your Vault Academy Password",
     };
-    // Add emailFrom if configured
     const GHL_EMAIL_FROM = Deno.env.get("GHL_EMAIL_FROM");
     if (GHL_EMAIL_FROM) {
       emailPayload.emailFrom = GHL_EMAIL_FROM;

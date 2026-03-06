@@ -12,6 +12,44 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // --- AUTH: Require JWT + operator role ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await anonClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const sb = createClient(supabaseUrl, serviceKey);
+
+    const { data: isOperator } = await sb.rpc("has_role", {
+      _user_id: user.id,
+      _role: "operator",
+    });
+    if (!isOperator) {
+      return new Response(JSON.stringify({ error: "Forbidden: operator role required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Original provisioning logic ---
     const { email, auth_user_id } = await req.json();
     if (!email || !auth_user_id) {
       return new Response(JSON.stringify({ error: "email and auth_user_id required" }), {
@@ -19,10 +57,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const sb = createClient(supabaseUrl, serviceKey);
 
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -41,7 +75,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Mark whitelist entry as claimed (service role bypasses RLS)
+    // 2. Mark whitelist entry as claimed
     await sb
       .from("allowed_signups")
       .update({ claimed: true })
@@ -101,7 +135,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 6. Update profiles.access_status to 'active' (service role bypasses RLS)
+    // 6. Update profiles.access_status to 'active'
     const { error: profileErr } = await sb
       .from("profiles")
       .update({ access_status: "active" })
@@ -109,7 +143,6 @@ Deno.serve(async (req) => {
 
     if (profileErr) {
       console.warn("[provision] Failed to update profiles.access_status:", profileErr.message);
-      // Non-fatal — student_access is the source of truth
     }
 
     console.log("[provision] Successfully provisioned access for:", normalizedEmail, "student_id:", newStudent.id);
