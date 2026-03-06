@@ -5,6 +5,7 @@ import {
   AccountTierLabel,
   TradeDirection,
   TradeVerdict,
+  PremiumFit,
   TIER_DEFAULTS,
   detectTier,
   validateInputs,
