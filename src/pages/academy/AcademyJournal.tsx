@@ -75,9 +75,9 @@ const AcademyJournal = () => {
 
   if (!hasAccess && !accessLoading) {
     return (
-      <AcademyLayout>
+      <>
         <PremiumGate status={status} pageName="Trade Journal" />
-      </AcademyLayout>
+      </>
     );
   }
 
