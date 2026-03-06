@@ -1,37 +1,23 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Lock Tier Toggle When Account Size Is Entered
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+**Problem**: Users enter an account size (auto-detecting the correct tier), then accidentally click a different tier — which overrides their risk settings and causes confusion.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+**Solution**: When an account size is entered, the tier toggle becomes read-only (visually dimmed, not clickable). The tier is always auto-detected from the account size. When the user clears the account size field, everything resets.
 
-### Solution
+### Changes to `src/components/vault-planner/VaultTradePlanner.tsx`
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+1. **Remove `autoTierEnabled` state** — tier is now always auto-detected when account size exists, never manually overridable.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+2. **Remove `handleTierChange`** — no longer needed since the toggle is locked when an account size is present.
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+3. **Make the `SegmentedToggle` disabled when `acctSize > 0`** — add a `disabled` prop to the toggle component. When disabled, buttons get `opacity-50 cursor-not-allowed pointer-events-none` styling. When no account size is entered, the toggle remains clickable to let users preview tier defaults.
+
+4. **Auto-reset on clear** — update the `accountSize` effect: when account size is empty/zero, reset tier to "Small" and restore default percentages (same as current reset behavior).
+
+5. **Update `SegmentedToggle` component** — add optional `disabled` prop that prevents clicks and dims the UI.
+
+### No other changes
+- No layout changes, no new files, no logic changes to the calc engine.
 
