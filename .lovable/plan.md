@@ -1,38 +1,37 @@
 
 
-## Fix: Password Reset Redirects to `/auth#` Instead of Reset Form
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
-When the GHL edge function calls `admin.generateLink({ type: "recovery" })`, Lovable Cloud's email hook **also** fires and sends a **second** recovery email through the standard system. That email contains the old-style `/verify` link. When users click it, Supabase verifies the token and does a 303 redirect to `/auth#` (because the custom domain isn't in the allowed redirect list). The user lands on the login page with recovery tokens buried in the URL hash — but nothing picks them up.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The GHL email has the correct direct link, but users are clicking the **other** email that arrives from the system.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Fix (Two Parts)
+### Solution
 
-#### 1. Global Recovery Detection (`src/hooks/useAuth.tsx`)
-In the `onAuthStateChange` listener, detect the `PASSWORD_RECOVERY` event and redirect to `/reset-password`. This catches the case where users click the standard Supabase email and land on `/auth#` with recovery tokens in the hash.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-```ts
-if (event === "PASSWORD_RECOVERY") {
-  window.location.href = "/reset-password";
-  return;
-}
-```
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-This is the safety net — no matter which page the recovery redirect lands on, the user gets sent to the reset form.
-
-#### 2. Auth Page Hash Detection (`src/pages/Auth.tsx`)
-As a backup, check `window.location.hash` on mount. If it contains `type=recovery`, immediately redirect to `/reset-password` (preserving the hash so the reset page can consume the tokens).
-
-```ts
-useEffect(() => {
-  if (window.location.hash.includes("type=recovery")) {
-    window.location.href = "/reset-password" + window.location.hash;
-  }
-}, []);
-```
-
-### Files to Change
-1. `src/hooks/useAuth.tsx` — add `PASSWORD_RECOVERY` redirect in `onAuthStateChange`
-2. `src/pages/Auth.tsx` — add hash detection on mount to redirect to reset page
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

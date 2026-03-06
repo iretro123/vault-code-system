@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,13 @@ const Auth = () => {
   const { toast } = useToast();
   const { signIn } = useAuth();
   const navigate = useNavigate();
+
+  // Catch recovery tokens in hash and redirect to reset page
+  useEffect(() => {
+    if (window.location.hash.includes("type=recovery")) {
+      window.location.href = "/reset-password" + window.location.hash;
+    }
+  }, []);
   const [mode, setMode] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
