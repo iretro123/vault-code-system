@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
@@ -16,13 +16,14 @@ import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export function AcademyLayout() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
   const isMobile = useIsMobile();
   const location = useLocation();
-  const navigate = useNavigate();
+  const { setOpenMobile } = useSidebar();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
   const lastPageRef = useRef("");
@@ -116,7 +117,7 @@ export function AcademyLayout() {
             <div className="flex h-14 items-center justify-between px-4">
               <div className="flex items-center gap-2">
                 {isMobile && isCommunity && (
-                  <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => navigate("/academy/home")}>
+                  <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setOpenMobile(true)}>
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
                 )}
