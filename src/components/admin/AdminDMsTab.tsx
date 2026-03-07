@@ -179,13 +179,25 @@ function ThreadConversation({
                   )}
 
                   {/* Bubble */}
-                  <div className={`max-w-[75%] ${bubbleColor} ${rounding} px-3.5 py-2 text-sm leading-relaxed`}>
-                    <p className="whitespace-pre-wrap break-words text-foreground">{m.body}</p>
-                    {isLastInGroup && (
-                      <p className="text-[10px] text-muted-foreground/50 mt-1">
-                        {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-                      </p>
-                    )}
+                  <div className="max-w-[75%]">
+                    <div className={`${bubbleColor} ${rounding} px-3.5 py-2 text-sm leading-relaxed`}>
+                      <p className="whitespace-pre-wrap break-words text-foreground">{m.body}</p>
+                      {isLastInGroup && (
+                        <p className="text-[10px] text-muted-foreground/50 mt-1">
+                          {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                        </p>
+                      )}
+                    </div>
+                    {/* Read receipt — show on last outgoing (admin) message that has been read */}
+                    {isAdmin && isLastInGroup && (() => {
+                      // Find last admin message in this group
+                      const isLastAdminMsg = !next || next.sender_id === thread.user_id;
+                      if (!isLastAdminMsg) return null;
+                      if (m.read_at) {
+                        return <p className="text-[10px] text-primary/60 mt-0.5 ml-1">Read</p>;
+                      }
+                      return <p className="text-[10px] text-muted-foreground/40 mt-0.5 ml-1">Delivered</p>;
+                    })()}
                   </div>
 
                   {/* Member avatar (right side) */}
