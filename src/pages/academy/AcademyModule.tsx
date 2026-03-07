@@ -40,7 +40,9 @@ const AcademyModule = () => {
   const { modules, loading: modsLoading } = useAcademyModules();
   const { lessons: allLessons, loading: lessonsLoading, refetch: refetchLessons } = useAcademyLessons(moduleSlug);
   const { progress, markComplete } = useLessonProgress();
-  const { isAdmin } = useAcademyRole();
+  const { isAdminActive } = useAdminMode();
+  const { hasPermission } = useAcademyPermissions();
+  const canManageContent = isAdminActive && hasPermission("manage_content");
 
   // Filter hidden lessons for non-admins
   const lessons = useMemo(() =>
