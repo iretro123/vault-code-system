@@ -208,17 +208,29 @@ function InlineThreadView({
                   </div>
 
                   {/* Bubble */}
-                  <div
-                    className={`max-w-[78%] px-3.5 py-2 text-[13.5px] leading-relaxed ${
-                      isMe
-                        ? `bg-white/[0.10] text-foreground ${showAvatar ? "rounded-2xl rounded-br-md" : "rounded-2xl"}`
-                        : `bg-[hsl(213,45%,22%)] text-foreground ${showAvatar ? "rounded-2xl rounded-bl-md" : "rounded-2xl"}`
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                    <p className={`text-[10px] mt-1 ${isMe ? "text-white/30 text-right" : "text-white/30"}`}>
-                      {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-                    </p>
+                  <div className="max-w-[78%]">
+                    <div
+                      className={`px-3.5 py-2 text-[13.5px] leading-relaxed ${
+                        isMe
+                          ? `bg-white/[0.10] text-foreground ${showAvatar ? "rounded-2xl rounded-br-md" : "rounded-2xl"}`
+                          : `bg-[hsl(213,45%,22%)] text-foreground ${showAvatar ? "rounded-2xl rounded-bl-md" : "rounded-2xl"}`
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      <p className={`text-[10px] mt-1 ${isMe ? "text-white/30 text-right" : "text-white/30"}`}>
+                        {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                    {/* Read receipt — show on last outgoing (user) message */}
+                    {isMe && showAvatar && (() => {
+                      const nextMsg = allMessages[idx + 1];
+                      const isLastOutgoing = !nextMsg || nextMsg.sender_id !== user?.id;
+                      if (!isLastOutgoing) return null;
+                      if ((m as any).read_at) {
+                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read</p>;
+                      }
+                      return <p className="text-[10px] text-muted-foreground/40 mt-0.5 text-right mr-1">Delivered</p>;
+                    })()}
                   </div>
                 </div>
               );
