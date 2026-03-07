@@ -227,7 +227,7 @@ const AcademyModule = () => {
                           <EyeOff className="h-3 w-3 text-yellow-500 shrink-0" />
                         )}
                       </div>
-                      {isAdmin && (
+                      {canManageContent && (
                         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 shrink-0">
                           <button
                             className="p-1 hover:text-foreground text-muted-foreground"
