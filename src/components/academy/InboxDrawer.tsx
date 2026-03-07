@@ -179,7 +179,12 @@ function InlineThreadView({
                         : "bg-primary/15 text-foreground"
                     }`}
                   >
-                    {!isMe && <p className="text-[10px] font-semibold text-primary/80 mb-1">Vault Academy</p>}
+                    {!isMe && (
+                      <span className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[10px] font-semibold text-primary/80">{item.sender_name || "RZ"}</span>
+                        {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+                      </span>
+                    )}
                     <p className="whitespace-pre-wrap break-words">{m.body}</p>
                     <p className="text-[10px] text-muted-foreground/60 mt-1">
                       {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
