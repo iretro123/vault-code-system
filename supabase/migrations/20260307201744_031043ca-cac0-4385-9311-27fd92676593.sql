@@ -1,0 +1,1 @@
+ALTER TABLE public.dm_messages ADD COLUMN attachments jsonb DEFAULT '[]'::jsonb;
