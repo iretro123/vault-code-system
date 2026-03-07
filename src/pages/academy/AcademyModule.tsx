@@ -46,8 +46,8 @@ const AcademyModule = () => {
 
   // Filter hidden lessons for non-admins
   const lessons = useMemo(() =>
-    isAdmin ? allLessons : allLessons.filter(l => l.visible !== false),
-    [allLessons, isAdmin]
+    canManageContent ? allLessons : allLessons.filter(l => l.visible !== false),
+    [allLessons, canManageContent]
   );
 
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);

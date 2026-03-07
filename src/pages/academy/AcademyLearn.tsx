@@ -36,12 +36,12 @@ const AcademyLearn = () => {
 
   // Filter hidden modules for non-admins
   const modules = useMemo(() =>
-    isAdmin ? allModules : allModules.filter(m => m.visible !== false),
-    [allModules, isAdmin]
+    canManageContent ? allModules : allModules.filter(m => m.visible !== false),
+    [allModules, canManageContent]
   );
   const lessons = useMemo(() =>
-    isAdmin ? allLessons : allLessons.filter(l => l.visible !== false),
-    [allLessons, isAdmin]
+    canManageContent ? allLessons : allLessons.filter(l => l.visible !== false),
+    [allLessons, canManageContent]
   );
 
   // Admin state
