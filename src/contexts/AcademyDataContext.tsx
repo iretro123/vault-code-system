@@ -148,25 +148,36 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     setInboxLoading(true);
 
-    const { data } = await supabase
-      .from("inbox_items" as any)
-      .select("*")
-      .or(`user_id.eq.${user.id},user_id.is.null`)
-      .order("pinned", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(30);
+    // Fetch inbox items and user's dismissals in parallel
+    const [{ data }, { data: dismissals }] = await Promise.all([
+      supabase
+        .from("inbox_items" as any)
+        .select("*")
+        .or(`user_id.eq.${user.id},user_id.is.null`)
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(30),
+      supabase
+        .from("inbox_dismissals" as any)
+        .select("inbox_item_id")
+        .eq("user_id", user.id),
+    ]);
 
-    const mapped = (data as any[] || []).map((d: any) => ({
-      id: d.id,
-      user_id: d.user_id,
-      type: d.type,
-      title: d.title,
-      body: d.body,
-      link: d.link,
-      created_at: d.created_at,
-      read_at: d.read_at,
-      pinned: d.pinned ?? false,
-    }));
+    const dismissedSet = new Set((dismissals as any[] || []).map((d: any) => d.inbox_item_id));
+
+    const mapped = (data as any[] || [])
+      .filter((d: any) => !dismissedSet.has(d.id))
+      .map((d: any) => ({
+        id: d.id,
+        user_id: d.user_id,
+        type: d.type,
+        title: d.title,
+        body: d.body,
+        link: d.link,
+        created_at: d.created_at,
+        read_at: d.read_at,
+        pinned: d.pinned ?? false,
+      }));
     setInboxItems(mapped);
     writeCache(CACHE_KEY_INBOX, mapped);
     setInboxLoading(false);
