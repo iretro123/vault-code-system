@@ -22,6 +22,7 @@ export interface InboxItem {
   sender_name: string | null;
   sender_avatar: string | null;
   sender_role: string | null;
+  dm_thread_id: string | null;
 }
 
 interface ReferralStats {
