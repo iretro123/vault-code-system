@@ -107,55 +107,59 @@ export function AdminBroadcastTab() {
     if (recipientType === "single" && !userId) { toast.error("Select a recipient"); return; }
     if (!user) return;
 
+    // Show confirm dialog first
+    setConfirmOpen(true);
+  };
+
+  const executeSend = async () => {
+    setConfirmOpen(false);
     setSending(true);
 
     const targetUserId = recipientType === "single" ? userId : null;
+    const linkVal = link.trim() || null;
 
     // 1) Deliver in-app
     if (channel === "in_app") {
       if (mode === "motivation_ping") {
-        // Single user notification via inbox
         if (targetUserId) {
-          await supabase.from("inbox_items" as any).insert({
+          await supabase.from("inbox_items").insert({
             user_id: targetUserId,
             type: "reminder",
             title: title.trim(),
             body: body.trim(),
-            link: null,
-          } as any);
+            link: linkVal,
+          });
         } else {
-          // Broadcast to all via inbox (user_id = null)
-          await supabase.from("inbox_items" as any).insert({
+          await supabase.from("inbox_items").insert({
             user_id: null,
             type: "reminder",
             title: title.trim(),
             body: body.trim(),
-            link: null,
-          } as any);
+            link: linkVal,
+          });
         }
       } else {
-        // Full broadcast: inbox + notification
-        await supabase.from("inbox_items" as any).insert({
+        await supabase.from("inbox_items").insert({
           user_id: targetUserId,
           type: "announcement",
           title: title.trim(),
           body: body.trim(),
-          link: null,
+          link: linkVal,
           pinned: false,
-        } as any);
-        await supabase.from("academy_notifications" as any).insert({
+        });
+        await supabase.from("academy_notifications").insert({
           user_id: targetUserId,
           type: "announcement",
           title: title.trim(),
           body: body.trim(),
-          link_path: null,
+          link_path: linkVal,
         } as any);
       }
     }
 
     // 2) Log to history
-    await supabase.from("broadcast_messages" as any).insert({
-      sender_id: user.id,
+    await supabase.from("broadcast_messages").insert({
+      sender_id: user!.id,
       mode,
       channel,
       recipient_type: recipientType,
@@ -165,10 +169,10 @@ export function AdminBroadcastTab() {
       template_key: templateKey,
       status: channel === "in_app" ? "sent" : "draft",
       sent_at: channel === "in_app" ? new Date().toISOString() : null,
-    } as any);
+    });
 
-    toast.success(channel === "in_app" ? "Message sent" : "Draft saved (provider not configured)");
-    setTitle(""); setBody(""); setUserId(""); setTemplateKey(null);
+    toast.success(channel === "in_app" ? "Message sent ✓" : "Draft saved (provider not configured)");
+    setTitle(""); setBody(""); setLink(""); setUserId(""); setTemplateKey(null);
     fetchHistory();
     setSending(false);
   };
