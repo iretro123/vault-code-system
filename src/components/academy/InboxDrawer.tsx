@@ -136,12 +136,13 @@ function InlineThreadView({
     setSending(false);
   };
 
-  // Sender info
-  const senderName = item.sender_name || "RZ";
+  // Sender info — this is the MEMBER who sent the DM, not admin
+  const senderName = item.sender_name || "Member";
   const senderAvatarSrc =
     item.sender_avatar && item.sender_avatar.startsWith("http")
       ? item.sender_avatar
-      : rzAvatar;
+      : null; // Don't default to RZ avatar for member messages
+  const senderInitials = senderName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   // User info
   const userName = (profile as any)?.display_name || user?.email?.split("@")[0] || "You";
@@ -161,9 +162,9 @@ function InlineThreadView({
         <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/20">
-          <AvatarImage src={senderAvatarSrc} alt={senderName} />
-          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">RZ</AvatarFallback>
+        <Avatar className="h-9 w-9 shrink-0 ring-2 ring-primary/20">
+          {senderAvatarSrc && <AvatarImage src={senderAvatarSrc} alt={senderName} />}
+          <AvatarFallback className="text-[11px] bg-primary/20 text-primary font-bold">{senderInitials}</AvatarFallback>
         </Avatar>
         <div className="flex flex-col min-w-0">
           <span className="flex items-center gap-1.5">
@@ -203,8 +204,8 @@ function InlineThreadView({
                         </Avatar>
                       ) : (
                         <Avatar className="h-7 w-7">
-                          <AvatarImage src={senderAvatarSrc} alt={senderName} />
-                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">RZ</AvatarFallback>
+                          {senderAvatarSrc && <AvatarImage src={senderAvatarSrc} alt={senderName} />}
+                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{senderInitials}</AvatarFallback>
                         </Avatar>
                       )
                     ) : null}
