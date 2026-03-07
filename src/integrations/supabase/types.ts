@@ -796,6 +796,32 @@ export type Database = {
         }
         Relationships: []
       }
+      inbox_dismissals: {
+        Row: {
+          dismissed_at: string
+          inbox_item_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          inbox_item_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          inbox_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_dismissals_inbox_item_id_fkey"
+            columns: ["inbox_item_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inbox_items: {
         Row: {
           body: string
