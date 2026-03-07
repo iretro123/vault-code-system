@@ -10,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Send, Loader2, Clock, CheckCircle2,
   AlertTriangle, FileText, Trash2, RotateCcw,
+  Sparkles, Eye,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -73,6 +75,15 @@ export function AdminBroadcastTab() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  /* ── Auto DM state ── */
+  const [dmEnabled, setDmEnabled] = useState(true);
+  const [dmTitle, setDmTitle] = useState("Welcome to Vault OS");
+  const [dmBody, setDmBody] = useState("");
+  const [dmLink, setDmLink] = useState("/academy/home");
+  const [dmSaving, setDmSaving] = useState(false);
+  const [dmLoading, setDmLoading] = useState(true);
+  const [dmPreview, setDmPreview] = useState(false);
+
   const fetchUsers = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
@@ -92,7 +103,23 @@ export function AdminBroadcastTab() {
     setLoadingHistory(false);
   }, []);
 
-  useEffect(() => { fetchUsers(); fetchHistory(); }, [fetchUsers, fetchHistory]);
+  const fetchWelcomeDm = useCallback(async () => {
+    const { data } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "welcome_dm")
+      .maybeSingle();
+    if (data?.value) {
+      const v = data.value as any;
+      setDmEnabled(v.enabled ?? true);
+      setDmTitle(v.title ?? "Welcome to Vault OS");
+      setDmBody(v.body ?? "");
+      setDmLink(v.link ?? "/academy/home");
+    }
+    setDmLoading(false);
+  }, []);
+
+  useEffect(() => { fetchUsers(); fetchHistory(); fetchWelcomeDm(); }, [fetchUsers, fetchHistory, fetchWelcomeDm]);
 
   /* ── Apply template ── */
   const applyTemplate = (key: string) => {
@@ -199,6 +226,19 @@ export function AdminBroadcastTab() {
     return u?.display_name || u?.email || r.recipient_user_id?.slice(0, 8) || "—";
   };
 
+  const saveDm = async () => {
+    if (!user) return;
+    setDmSaving(true);
+    await supabase.from("system_settings").upsert({
+      key: "welcome_dm",
+      value: { enabled: dmEnabled, title: dmTitle, body: dmBody, link: dmLink } as any,
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    });
+    toast.success("Auto DM saved ✓");
+    setDmSaving(false);
+  };
+
   return (
     <div className="space-y-6 max-w-3xl">
       <Tabs defaultValue="compose" className="space-y-4">
@@ -211,6 +251,9 @@ export function AdminBroadcastTab() {
           </TabsTrigger>
           <TabsTrigger value="templates" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
             <FileText className="h-3.5 w-3.5" /> Templates
+          </TabsTrigger>
+          <TabsTrigger value="auto_dm" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
+            <Sparkles className="h-3.5 w-3.5" /> Auto DM
           </TabsTrigger>
         </TabsList>
 
@@ -396,6 +439,88 @@ export function AdminBroadcastTab() {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* ─── AUTO DM ─── */}
+        <TabsContent value="auto_dm">
+          <Card className="p-5 space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Welcome DM</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Sent once when a new member joins</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{dmEnabled ? "On" : "Off"}</span>
+                <Switch checked={dmEnabled} onCheckedChange={setDmEnabled} />
+              </div>
+            </div>
+
+            {dmLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    value={dmTitle}
+                    onChange={(e) => setDmTitle(e.target.value)}
+                    placeholder="Welcome to Vault OS"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Message</Label>
+                  <Textarea
+                    value={dmBody}
+                    onChange={(e) => setDmBody(e.target.value)}
+                    rows={6}
+                    placeholder="Hey {first_name} — welcome in..."
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground">
+                      Use <code className="bg-white/[0.06] px-1 py-0.5 rounded text-[10px]">{"{first_name}"}</code> to personalize
+                    </p>
+                    <span className="text-[10px] text-muted-foreground">{dmBody.length} chars</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Link (optional)</Label>
+                  <Input
+                    value={dmLink}
+                    onChange={(e) => setDmLink(e.target.value)}
+                    placeholder="/academy/home"
+                  />
+                </div>
+
+                {/* Preview */}
+                {dmPreview && (
+                  <Card className="p-4 bg-white/[0.02] border-white/[0.08]">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Preview</p>
+                    <p className="text-sm font-semibold text-foreground">{dmTitle}</p>
+                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">
+                      {dmBody.replace(/\{first_name\}/g, "Alex")}
+                    </p>
+                    {dmLink && (
+                      <p className="text-xs text-primary mt-2 underline">{dmLink}</p>
+                    )}
+                  </Card>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Button onClick={saveDm} disabled={dmSaving || !dmTitle.trim()} className="gap-1.5">
+                    {dmSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    Save
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setDmPreview(!dmPreview)}>
+                    <Eye className="h-3 w-3" /> {dmPreview ? "Hide Preview" : "Preview"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </Card>
         </TabsContent>
       </Tabs>
 

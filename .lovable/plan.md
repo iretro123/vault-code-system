@@ -1,35 +1,37 @@
 
 
-## Add "Auto DM" Tab to Broadcast (Skool-style)
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-Like the Skool screenshot — a simple editor where you can toggle the auto welcome DM on/off, edit the message body, save it, and preview it. The trigger reads from the database so changes take effect immediately.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Changes
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. Database migration**
+### Solution
 
-- Create `system_settings` table (simple key-value store for app config)
-- RLS: only operator / manage_notifications can read/write
-- Seed it with the current welcome DM content as the `welcome_dm` key
-- Update `send_welcome_inbox()` trigger to read config from `system_settings` dynamically instead of hardcoded text
-- If `enabled = false`, skip the insert entirely
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**2. `AdminBroadcastTab.tsx` — Add 4th tab: "Auto DM"**
-
-Add a tab matching the Skool UI pattern:
-- **On/Off toggle** (top-right, like Skool)
-- **Message textarea** with `{first_name}` placeholder support and character count
-- **Link input** (optional, where to send them)
-- **Save button** — upserts to `system_settings`
-- **Preview button** — shows the message with `{first_name}` replaced by "Alex"
-- Helper text: "Use {first_name} to personalize. Sent once when a new member joins."
-
-No other tabs or existing functionality changes.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
 ### Files
-
-| What | Where |
-|------|-------|
-| `system_settings` table + seed + updated trigger function | DB migration |
-| Add "Auto DM" tab | `src/components/admin/AdminBroadcastTab.tsx` |
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
