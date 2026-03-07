@@ -256,7 +256,7 @@ const AcademyModule = () => {
               </div>
 
               {/* Admin: add lesson */}
-              {isAdmin && (
+              {canManageContent && (
                 <div className="px-4 py-3 border-t border-border">
                   {showAdd ? (
                     <div className="space-y-2">
