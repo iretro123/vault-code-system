@@ -112,7 +112,7 @@ function InlineThreadView({
   item: InboxItem;
   onBack: () => void;
 }) {
-  const { user, profile } = useAuth();
+  const { user, profile, hasRole } = useAuth();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [draft, setDraft] = useState("");
@@ -123,7 +123,6 @@ function InlineThreadView({
 
   // Find existing thread for the MEMBER (not the current user if admin)
   // dm_threads.user_id is always the member. Operators must resolve the member's ID.
-  const { hasRole } = useAuth();
   useEffect(() => {
     if (!user?.id || !item.id) return;
     let cancelled = false;
