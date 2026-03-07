@@ -15,6 +15,14 @@ export interface DmThread {
   user_avatar_url?: string;
 }
 
+export interface DmAttachmentData {
+  type: "image" | "file";
+  url: string;
+  filename: string;
+  size: number;
+  mime: string;
+}
+
 export interface DmMessage {
   id: string;
   thread_id: string;
@@ -22,6 +30,7 @@ export interface DmMessage {
   body: string;
   created_at: string;
   read_at: string | null;
+  attachments: DmAttachmentData[];
 }
 
 /**
