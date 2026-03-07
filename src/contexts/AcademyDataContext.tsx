@@ -18,6 +18,10 @@ export interface InboxItem {
   created_at: string;
   read_at: string | null;
   pinned: boolean;
+  sender_id: string | null;
+  sender_name: string | null;
+  sender_avatar: string | null;
+  sender_role: string | null;
 }
 
 interface ReferralStats {
