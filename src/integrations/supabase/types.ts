@@ -1404,6 +1404,7 @@ export type Database = {
           initialized_at: string | null
           intro_posted: boolean
           is_banned: boolean
+          last_seen_at: string | null
           market_type: string
           onboarding_completed: boolean
           phone_number: string | null
@@ -1430,6 +1431,7 @@ export type Database = {
           initialized_at?: string | null
           intro_posted?: boolean
           is_banned?: boolean
+          last_seen_at?: string | null
           market_type?: string
           onboarding_completed?: boolean
           phone_number?: string | null
@@ -1456,6 +1458,7 @@ export type Database = {
           initialized_at?: string | null
           intro_posted?: boolean
           is_banned?: boolean
+          last_seen_at?: string | null
           market_type?: string
           onboarding_completed?: boolean
           phone_number?: string | null
