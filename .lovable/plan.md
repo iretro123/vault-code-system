@@ -1,33 +1,37 @@
 
 
-## Fix Avatar Rendering in Admin Inbox (Verified Live)
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### What I found by testing
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-**Bug 1 — Inbox list**: `SenderAvatar` (line 59-64) treats ALL non-HTTP avatars the same — falls back to `rzAvatar`. John Doe's avatar is likely `icon:diamond|hsl(...)` or `initials:hsl(...)` format, which is not an HTTP URL, so it shows the admin's photo instead of JD's initials/icon.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**Bug 2 — Thread view**: Admin's outgoing messages (line 201-204) only render `AvatarFallback` with initials. The admin's `profile.avatar_url` is also in `icon:` format (not HTTP), so `AvatarImage` has nothing to render and falls back to a plain "R". The `ChatAvatar` component from `chatAvatars.tsx` already handles all three formats (`icon:`, `initials:`, `http`) correctly — but is not used here.
+### Solution
 
-### Fix (single file: `InboxDrawer.tsx`)
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**1. Import `ChatAvatar`** from `@/lib/chatAvatars`
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**2. Replace `SenderAvatar` component (lines 43-72)**
-- Check if sender is an operator (role = CEO/Admin/Coach/Operator) → use `rzAvatar` import as before
-- For regular members → use `ChatAvatar` component with `item.sender_avatar` and `item.sender_name`, which correctly parses `icon:`, `initials:`, and HTTP formats
-
-**3. Fix admin's own avatar in thread messages (lines 200-204)**
-- Replace the plain `Avatar`/`AvatarFallback` with `ChatAvatar` using `(profile as any)?.avatar_url` and `userName`
-- This will render the admin's actual icon/image avatar instead of just "R"
-
-**4. Fix member avatar in thread messages (lines 206-209)**
-- Replace the plain `Avatar` with `ChatAvatar` using `item.sender_avatar` and `senderName`
-
-**5. Fix thread header avatar (lines 165-168)**
-- Replace `Avatar`/`AvatarFallback` with `ChatAvatar` for the member's header avatar
-
-### Result
-- Inbox list: member messages show member's actual avatar (icon/initials), admin messages show RZ photo
-- Thread view: admin's messages show their actual avatar, member's messages show member's avatar
-- All avatar formats (`icon:`, `initials:`, `http`) render correctly everywhere
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

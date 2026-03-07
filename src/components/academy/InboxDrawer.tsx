@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChatAvatar } from "@/lib/chatAvatars";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import {
   getOrCreateThread,
@@ -41,11 +42,9 @@ function typeIcon(type: string) {
 }
 
 /* ── Sender avatar helper ── */
-function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
-  const initials = item.sender_name
-    ? item.sender_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "VA";
+const OPERATOR_ROLES = ["CEO", "Admin", "Coach", "Operator", "Owner"];
 
+function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
   // System item (no sender) → Vault logo
   if (!item.sender_id) {
     return (
@@ -56,19 +55,21 @@ function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
     );
   }
 
-  // Personal DM / auto-DM / broadcast from operator → use RZ photo
-  // If sender_avatar is an HTTP URL use it, otherwise fallback to RZ
-  const avatarSrc =
-    item.sender_avatar && item.sender_avatar.startsWith("http")
-      ? item.sender_avatar
-      : rzAvatar;
+  // Operator/admin sender → always use RZ photo
+  const isOperator = OPERATOR_ROLES.includes(item.sender_role || "");
+  if (isOperator) {
+    const avatarSrc = item.sender_avatar?.startsWith("http") ? item.sender_avatar : rzAvatar;
+    return (
+      <Avatar style={{ width: size, height: size }} className="shrink-0">
+        <AvatarImage src={avatarSrc} alt={item.sender_name || "Admin"} />
+        <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">RZ</AvatarFallback>
+      </Avatar>
+    );
+  }
 
-  return (
-    <Avatar style={{ width: size, height: size }} className="shrink-0">
-      <AvatarImage src={avatarSrc} alt={item.sender_name || "Admin"} />
-      <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{initials}</AvatarFallback>
-    </Avatar>
-  );
+  // Regular member → use ChatAvatar which handles icon:/initials:/http formats
+  const sizeClass = size <= 24 ? "h-6 w-6" : size <= 28 ? "h-7 w-7" : "h-9 w-9";
+  return <ChatAvatar avatarUrl={item.sender_avatar} userName={item.sender_name || "Member"} size={sizeClass} />;
 }
 
 function SenderName({ item }: { item: InboxItem }) {
@@ -162,10 +163,9 @@ function InlineThreadView({
         <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <Avatar className="h-9 w-9 shrink-0 ring-2 ring-primary/20">
-          {senderAvatarSrc && <AvatarImage src={senderAvatarSrc} alt={senderName} />}
-          <AvatarFallback className="text-[11px] bg-primary/20 text-primary font-bold">{senderInitials}</AvatarFallback>
-        </Avatar>
+        <div className="h-9 w-9 shrink-0 ring-2 ring-primary/20 rounded-full">
+          <ChatAvatar avatarUrl={item.sender_avatar} userName={senderName} size="h-9 w-9" />
+        </div>
         <div className="flex flex-col min-w-0">
           <span className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-foreground truncate">{senderName}</span>
@@ -199,14 +199,9 @@ function InlineThreadView({
                   <div className="w-7 shrink-0 flex justify-center">
                     {showAvatar ? (
                       isMe ? (
-                        <Avatar className="h-7 w-7">
-                          <AvatarFallback className="text-[10px] bg-white/[0.08] text-foreground/70 font-semibold">{userInitials}</AvatarFallback>
-                        </Avatar>
+                        <ChatAvatar avatarUrl={(profile as any)?.avatar_url} userName={userName} size="h-7 w-7" />
                       ) : (
-                        <Avatar className="h-7 w-7">
-                          {senderAvatarSrc && <AvatarImage src={senderAvatarSrc} alt={senderName} />}
-                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{senderInitials}</AvatarFallback>
-                        </Avatar>
+                        <ChatAvatar avatarUrl={item.sender_avatar} userName={senderName} size="h-7 w-7" />
                       )
                     ) : null}
                   </div>
