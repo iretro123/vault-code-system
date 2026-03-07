@@ -348,7 +348,7 @@ const AcademyLearn = () => {
             </div>
 
             {/* Admin: Add module */}
-            {isAdmin && (
+            {canManageContent && (
               <div className="mt-6">
                 {showAdd ? (
                   <Card className="vault-card p-5 space-y-3 max-w-md">

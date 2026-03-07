@@ -447,7 +447,7 @@ const AcademyModule = () => {
           {!editingId && !activeLesson && (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-sm text-muted-foreground">
-                No lessons yet.{isAdmin && " Add your first lesson in the sidebar."}
+                No lessons yet.{canManageContent && " Add your first lesson in the sidebar."}
               </p>
             </div>
           )}
