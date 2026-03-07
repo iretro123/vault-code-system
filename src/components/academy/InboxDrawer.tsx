@@ -245,8 +245,18 @@ function InlineThreadView({
         </div>
       </ScrollArea>
 
-      {/* ── iOS-style input bar ── */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-white/[0.06] bg-[hsl(220,18%,7%)]">
+      {/* ── Premium input bar ── */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-white/[0.06] bg-gradient-to-t from-[hsl(220,18%,6%)] to-[hsl(220,18%,7%)]">
+        {threadId && user?.id && (
+          <DmFileUpload
+            threadId={threadId}
+            userId={user.id}
+            uploading={uploading}
+            setUploading={setUploading}
+            onUploaded={(att) => handleSend([att])}
+            disabled={initializing}
+          />
+        )}
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -261,7 +271,7 @@ function InlineThreadView({
           }}
         />
         <button
-          onClick={handleSend}
+          onClick={() => handleSend()}
           disabled={!draft.trim() || sending || initializing}
           className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
         >
