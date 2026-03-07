@@ -185,14 +185,19 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
 
   const markInboxRead = useCallback(async (itemId: string) => {
     if (!user) return;
-    await supabase
-      .from("inbox_items" as any)
-      .update({ read_at: new Date().toISOString() } as any)
-      .eq("id", itemId);
+    const item = inboxItems.find((i) => i.id === itemId);
+    if (item && item.user_id === user.id) {
+      // Personal item — update directly (RLS allows)
+      await supabase
+        .from("inbox_items" as any)
+        .update({ read_at: new Date().toISOString() } as any)
+        .eq("id", itemId);
+    }
+    // For broadcast items, we skip the update (RLS blocks it) — read state is visual only
     setInboxItems((prev) =>
       prev.map((i) => (i.id === itemId ? { ...i, read_at: new Date().toISOString() } : i))
     );
-  }, [user]);
+  }, [user, inboxItems]);
 
   const markAllInboxRead = useCallback(async () => {
     if (!user) return;
@@ -213,16 +218,28 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
 
   const dismissInboxItem = useCallback(async (itemId: string) => {
     if (!user) return;
-    await supabase
-      .from("inbox_items" as any)
-      .delete()
-      .eq("id", itemId);
+    const item = inboxItems.find((i) => i.id === itemId);
+
+    if (item && item.user_id === null) {
+      // Broadcast item — can't delete shared row, insert dismissal record instead
+      await supabase
+        .from("inbox_dismissals" as any)
+        .upsert({ user_id: user.id, inbox_item_id: itemId, dismissed_at: new Date().toISOString() } as any, { onConflict: "user_id,inbox_item_id" });
+    } else {
+      // Personal item — hard delete (RLS allows)
+      await supabase
+        .from("inbox_items" as any)
+        .delete()
+        .eq("id", itemId);
+    }
+
+    // Remove from local state + cache immediately
     setInboxItems((prev) => {
       const next = prev.filter((i) => i.id !== itemId);
       writeCache(CACHE_KEY_INBOX, next);
       return next;
     });
-  }, [user]);
+  }, [user, inboxItems]);
 
   const fetchReferrals = useCallback(async () => {
     if (!user) {
