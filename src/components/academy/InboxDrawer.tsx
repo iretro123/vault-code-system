@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChatAvatar } from "@/lib/chatAvatars";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import {
   getOrCreateThread,
