@@ -163,10 +163,9 @@ function InlineThreadView({
         <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <Avatar className="h-9 w-9 shrink-0 ring-2 ring-primary/20">
-          {senderAvatarSrc && <AvatarImage src={senderAvatarSrc} alt={senderName} />}
-          <AvatarFallback className="text-[11px] bg-primary/20 text-primary font-bold">{senderInitials}</AvatarFallback>
-        </Avatar>
+        <div className="h-9 w-9 shrink-0 ring-2 ring-primary/20 rounded-full">
+          <ChatAvatar avatarUrl={item.sender_avatar} userName={senderName} size="h-9 w-9" />
+        </div>
         <div className="flex flex-col min-w-0">
           <span className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-foreground truncate">{senderName}</span>
