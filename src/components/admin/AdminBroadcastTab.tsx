@@ -226,6 +226,19 @@ export function AdminBroadcastTab() {
     return u?.display_name || u?.email || r.recipient_user_id?.slice(0, 8) || "—";
   };
 
+  const saveDm = async () => {
+    if (!user) return;
+    setDmSaving(true);
+    await supabase.from("system_settings").upsert({
+      key: "welcome_dm",
+      value: { enabled: dmEnabled, title: dmTitle, body: dmBody, link: dmLink } as any,
+      updated_at: new Date().toISOString(),
+      updated_by: user.id,
+    });
+    toast.success("Auto DM saved ✓");
+    setDmSaving(false);
+  };
+
   return (
     <div className="space-y-6 max-w-3xl">
       <Tabs defaultValue="compose" className="space-y-4">
