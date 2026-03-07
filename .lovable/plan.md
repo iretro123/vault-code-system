@@ -1,39 +1,37 @@
 
 
-## Fix: Admin Inbox Spam + iOS-Style Admin DM Thread
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Causes
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-**1. Every user message creates a separate admin inbox card**
-The `notify_operators_on_dm_message` trigger blindly INSERTs a new `inbox_items` row for every single message. 3 messages from John Doe = 3 separate "John Doe sent a message" cards in your inbox. This is the spam you're seeing.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**Fix**: Modify the trigger to UPSERT — if an unread `coach_reply` from the same sender already exists, just update its body/timestamp instead of creating a new row.
+### Solution
 
-**2. Admin thread view (AdminDMsTab) has no iOS styling**
-The admin `ThreadConversation` component uses plain boxes with no avatars, no grouping, no bubble tails — completely different from the user's polished `InlineThreadView`. This is why the two sides look different.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**Fix**: Rewrite `ThreadConversation` in `AdminDMsTab.tsx` with the same iOS-style design: avatars next to bubbles, message grouping, asymmetric rounded corners, pill input bar. Show the user's actual profile pic (already available from `thread.user_avatar_url`) and admin's RZ avatar.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**3. Admin thread list shows generic initials, not user profile pics**
-The `ThreadList` only renders `AvatarFallback` initials. The user's `avatar_url` is already fetched but never rendered as an image.
-
-**Fix**: Use `ChatAvatar` or `AvatarImage` with `thread.user_avatar_url` in the thread list.
-
-### Changes
-
-| File | What |
-|------|------|
-| DB migration | Replace `notify_operators_on_dm_message` with UPSERT logic (update existing unread item or insert new) |
-| `src/components/admin/AdminDMsTab.tsx` | Rewrite `ThreadConversation` with iOS-style bubbles, avatars, grouping, pill input. Update `ThreadList` to show user profile pics. Import `ChatAvatar` + `AcademyRoleBadge` + `rzAvatar`. |
-
-### UPSERT Trigger Logic (Pseudocode)
-```text
-ON INSERT dm_messages (from non-operator):
-  1. Check if unread inbox_items row exists for this operator
-     WHERE sender_id = message.sender_id AND type = 'coach_reply' AND read_at IS NULL
-  2. If exists → UPDATE body, title, created_at (bumps to top)
-  3. If not → INSERT new row (current behavior)
-```
-
-This means rapid-fire messages from John Doe collapse into ONE card that always shows the latest message preview.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
