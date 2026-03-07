@@ -29,7 +29,9 @@ const AcademyLearn = () => {
   const { modules: allModules, loading: modsLoading, refetch: refetchModules } = useAcademyModules();
   const { lessons: allLessons, loading: lessonsLoading } = useAcademyLessons();
   const { progress } = useLessonProgress();
-  const { isAdmin } = useAcademyRole();
+  const { isAdminActive } = useAdminMode();
+  const { hasPermission } = useAcademyPermissions();
+  const canManageContent = isAdminActive && hasPermission("manage_content");
   const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
 
   // Filter hidden modules for non-admins
