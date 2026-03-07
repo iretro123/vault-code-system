@@ -28,8 +28,6 @@ Deno.serve(async (req) => {
     }
 
     // --- AUTH: Two paths ---
-    // Path 1: Operator with JWT (admin-initiated)
-    // Path 2: Self-provisioning (caller's uid matches auth_user_id, whitelist is the gate)
     const authHeader = req.headers.get("Authorization");
     let isOperatorCall = false;
     let isSelfProvision = false;
@@ -43,7 +41,6 @@ Deno.serve(async (req) => {
 
       if (!claimsErr && claimsData?.claims?.sub) {
         const callerId = claimsData.claims.sub as string;
-        // Check if operator
         const { data: isOp } = await sb.rpc("has_role", {
           _user_id: callerId,
           _role: "operator",
@@ -51,9 +48,7 @@ Deno.serve(async (req) => {
         if (isOp) {
           isOperatorCall = true;
           console.log("[provision] Operator call by:", callerId);
-        }
-        // Check if self-provisioning (caller's uid matches the target auth_user_id)
-        else if (callerId === auth_user_id) {
+        } else if (callerId === auth_user_id) {
           isSelfProvision = true;
           console.log("[provision] Self-provision call by:", callerId);
         }
@@ -78,85 +73,58 @@ Deno.serve(async (req) => {
       .eq("claimed", false)
       .maybeSingle();
 
-    if (!whitelist) {
-      console.log("[provision] No unclaimed whitelist entry for:", normalizedEmail);
-      return new Response(JSON.stringify({ provisioned: false, reason: "not_whitelisted" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 2. Mark whitelist entry as claimed
-    await sb
-      .from("allowed_signups")
-      .update({ claimed: true })
-      .eq("id", whitelist.id);
-
-    console.log("[provision] Marked whitelist entry as claimed:", whitelist.id);
-
-    // 3. Check if students row already exists
-    const { data: existingStudent } = await sb
-      .from("students")
-      .select("id")
-      .eq("auth_user_id", auth_user_id)
-      .maybeSingle();
-
-    if (existingStudent) {
-      console.log("[provision] Student already exists for:", auth_user_id);
-      return new Response(JSON.stringify({ provisioned: false, reason: "already_exists" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 4. Create students row
-    const { data: newStudent, error: studentErr } = await sb
-      .from("students")
-      .insert({
-        email: normalizedEmail,
+    // --- PATH A: Whitelist found → provision via whitelist ---
+    if (whitelist) {
+      return await provisionUser(sb, {
+        normalizedEmail,
         auth_user_id,
-        stripe_customer_id: whitelist.stripe_customer_id || null,
-      })
-      .select("id")
-      .single();
-
-    if (studentErr || !newStudent) {
-      console.error("[provision] Failed to create student:", studentErr?.message);
-      return new Response(JSON.stringify({ error: "Failed to create student record" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        stripeCustomerId: whitelist.stripe_customer_id || null,
+        source: "whitelist",
+        whitelistId: whitelist.id,
       });
     }
 
-    // 5. Create student_access row
-    const { error: accessErr } = await sb
-      .from("student_access")
-      .insert({
-        user_id: newStudent.id,
-        status: "active",
-        product_key: "vault_academy",
-        tier: "elite_v1",
-        stripe_customer_id: whitelist.stripe_customer_id || null,
-      });
+    // --- PATH B: No whitelist → check Whop API for active membership ---
+    console.log("[provision] No whitelist entry for:", normalizedEmail, "→ checking Whop");
 
-    if (accessErr) {
-      console.error("[provision] Failed to create student_access:", accessErr.message);
-      return new Response(JSON.stringify({ error: "Failed to create access record" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const whopKey = Deno.env.get("WHOP_API_KEY");
+    if (whopKey) {
+      const whopActive = await checkWhopMembership(normalizedEmail, whopKey);
+      if (whopActive) {
+        console.log("[provision] Whop active membership found for:", normalizedEmail);
+        return await provisionUser(sb, {
+          normalizedEmail,
+          auth_user_id,
+          stripeCustomerId: null,
+          source: "whop",
+          whitelistId: null,
+        });
+      }
+      console.log("[provision] No active Whop membership for:", normalizedEmail);
+    } else {
+      console.warn("[provision] WHOP_API_KEY not set, skipping Whop check");
     }
 
-    // 6. Update profiles.access_status to 'active'
-    const { error: profileErr } = await sb
-      .from("profiles")
-      .update({ access_status: "active" })
-      .eq("user_id", auth_user_id);
-
-    if (profileErr) {
-      console.warn("[provision] Failed to update profiles.access_status:", profileErr.message);
+    // --- PATH C: Also check Stripe as fallback ---
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (stripeKey) {
+      const stripeCustomerId = await checkStripeMembership(normalizedEmail, stripeKey);
+      if (stripeCustomerId) {
+        console.log("[provision] Stripe customer found for:", normalizedEmail);
+        return await provisionUser(sb, {
+          normalizedEmail,
+          auth_user_id,
+          stripeCustomerId,
+          source: "stripe",
+          whitelistId: null,
+        });
+      }
+      console.log("[provision] No Stripe customer for:", normalizedEmail);
     }
 
-    console.log("[provision] Successfully provisioned access for:", normalizedEmail, "student_id:", newStudent.id);
-    return new Response(JSON.stringify({ provisioned: true, student_id: newStudent.id }), {
+    // --- Not found anywhere ---
+    console.log("[provision] No unclaimed whitelist or active membership for:", normalizedEmail);
+    return new Response(JSON.stringify({ provisioned: false, reason: "not_whitelisted" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
@@ -167,3 +135,159 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+// ── Whop membership check (paginated, server-side email match) ──
+async function checkWhopMembership(email: string, whopKey: string): Promise<boolean> {
+  try {
+    const MAX_PAGES = 10;
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore && page <= MAX_PAGES) {
+      const url = `https://api.whop.com/api/v2/memberships?per=50&page=${page}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${whopKey}` },
+      });
+
+      if (!res.ok) {
+        console.error("[provision] Whop API error:", res.status, await res.text());
+        break;
+      }
+
+      const data = await res.json();
+      const memberships = data.data ?? data.pagination?.data ?? [];
+
+      if (!Array.isArray(memberships) || memberships.length === 0) break;
+
+      for (const m of memberships) {
+        const mEmail = (m.email ?? "").trim().toLowerCase();
+        const mUserEmail = (m.user?.email ?? "").trim().toLowerCase();
+
+        if (mEmail === email || mUserEmail === email) {
+          const isActive = m.valid === true && ["active", "trialing", "completed"].includes(m.status);
+          if (isActive) return true;
+          console.log(`[provision] Whop match but inactive: valid=${m.valid}, status=${m.status}`);
+          return false;
+        }
+      }
+
+      const pagination = data.pagination;
+      if (pagination && pagination.current_page < pagination.last_page) {
+        page++;
+      } else if (memberships.length < 50) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
+  } catch (err) {
+    console.error("[provision] Whop fetch error:", err);
+  }
+  return false;
+}
+
+// ── Stripe customer check ──
+async function checkStripeMembership(email: string, stripeKey: string): Promise<string | null> {
+  try {
+    const url = `https://api.stripe.com/v1/customers?email=${encodeURIComponent(email)}&limit=1`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${stripeKey}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.data && data.data.length > 0) {
+        return data.data[0].id;
+      }
+    }
+  } catch (err) {
+    console.error("[provision] Stripe check error:", err);
+  }
+  return null;
+}
+
+// ── Shared provisioning logic ──
+async function provisionUser(
+  sb: any,
+  opts: {
+    normalizedEmail: string;
+    auth_user_id: string;
+    stripeCustomerId: string | null;
+    source: "whitelist" | "whop" | "stripe";
+    whitelistId: string | null;
+  }
+) {
+  const { normalizedEmail, auth_user_id, stripeCustomerId, source, whitelistId } = opts;
+
+  // Mark whitelist as claimed if applicable
+  if (whitelistId) {
+    await sb.from("allowed_signups").update({ claimed: true }).eq("id", whitelistId);
+    console.log("[provision] Marked whitelist entry as claimed:", whitelistId);
+  }
+
+  // Check if student already exists
+  const { data: existingStudent } = await sb
+    .from("students")
+    .select("id")
+    .eq("auth_user_id", auth_user_id)
+    .maybeSingle();
+
+  if (existingStudent) {
+    console.log("[provision] Student already exists for:", auth_user_id);
+    return new Response(JSON.stringify({ provisioned: false, reason: "already_exists" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Create students row
+  const { data: newStudent, error: studentErr } = await sb
+    .from("students")
+    .insert({
+      email: normalizedEmail,
+      auth_user_id,
+      stripe_customer_id: stripeCustomerId,
+    })
+    .select("id")
+    .single();
+
+  if (studentErr || !newStudent) {
+    console.error("[provision] Failed to create student:", studentErr?.message);
+    return new Response(JSON.stringify({ error: "Failed to create student record" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Create student_access row
+  const { error: accessErr } = await sb
+    .from("student_access")
+    .insert({
+      user_id: newStudent.id,
+      status: "active",
+      product_key: "vault_academy",
+      tier: "elite_v1",
+      stripe_customer_id: stripeCustomerId,
+    });
+
+  if (accessErr) {
+    console.error("[provision] Failed to create student_access:", accessErr.message);
+    return new Response(JSON.stringify({ error: "Failed to create access record" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Update profiles.access_status
+  const { error: profileErr } = await sb
+    .from("profiles")
+    .update({ access_status: "active" })
+    .eq("user_id", auth_user_id);
+
+  if (profileErr) {
+    console.warn("[provision] Failed to update profiles.access_status:", profileErr.message);
+  }
+
+  console.log(`[provision] Successfully provisioned via ${source} for:`, normalizedEmail, "student_id:", newStudent.id);
+  return new Response(JSON.stringify({ provisioned: true, student_id: newStudent.id, source }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
