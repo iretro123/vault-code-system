@@ -223,7 +223,7 @@ const AcademyModule = () => {
                         )}>
                           {lesson.lesson_title}
                         </span>
-                        {isHidden && isAdmin && (
+                        {isHidden && canManageContent && (
                           <EyeOff className="h-3 w-3 text-yellow-500 shrink-0" />
                         )}
                       </div>
