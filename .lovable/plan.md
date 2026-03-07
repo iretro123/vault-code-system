@@ -1,37 +1,53 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Add File Attachments + Luxury UI Polish for DM System
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Current State
+- `dm_messages` table has NO `attachments` column — only `id, thread_id, sender_id, body, created_at, read_at`
+- The existing `academy-chat-files` storage bucket (public, 15MB limit) already handles uploads in RoomChat — we can reuse the same bucket and upload pattern
+- Both `InboxDrawer.tsx` (member side) and `AdminDMsTab.tsx` (admin side) need attachment support and visual upgrade
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Changes
 
-### Solution
+**1. Database migration — add attachments column to dm_messages**
+- `ALTER TABLE dm_messages ADD COLUMN attachments jsonb DEFAULT '[]'::jsonb;`
+- Same format as `academy_messages.attachments`: `[{type, url, filename, size, mime}]`
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**2. Storage — reuse existing `academy-chat-files` bucket**
+- Upload path: `dm/{thread_id}/{user_id}/{timestamp}_{filename}`
+- Add RLS policy for the new `dm/` prefix path (authenticated users can upload to their own folder)
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**3. `src/hooks/useDirectMessages.ts` — update types + sendDmMessage**
+- Add `attachments` field to `DmMessage` interface
+- Update `sendDmMessage` to accept optional attachments array and include in insert
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**4. `src/components/academy/InboxDrawer.tsx` — member DM thread view**
+- Add file upload button (paperclip icon) next to the input bar
+- Reuse the same upload logic pattern from `RoomChat.tsx` (file validation, storage upload, public URL)
+- Render attachments in message bubbles (image preview for images, file link for others)
+- Luxury UI polish:
+  - Subtle gradient on input bar background
+  - Refined bubble shadows with `shadow-[0_1px_3px_rgba(0,0,0,0.3)]`
+  - Upgrade header with frosted-glass effect (`backdrop-blur-md`)
+  - Better spacing, subtle divider glow
+  - Attachment preview with rounded corners and hover overlay
+
+**5. `src/components/admin/AdminDMsTab.tsx` — admin thread view**
+- Same attachment upload + rendering in `ThreadConversation`
+- Luxury UI polish:
+  - Premium card styling with subtle border glow
+  - Thread list rows with refined hover states and better typography
+  - Frosted input bar
+  - Image thumbnails in bubbles with lightbox support
+  - Empty state with premium styling
+
+**6. Shared `DmAttachmentRenderer` component**
+- Small inline component to render image thumbnails (clickable → lightbox using existing `ImageLightbox`) and file download links inside message bubbles
+- Used by both InboxDrawer and AdminDMsTab
+
+### Technical Details
+- Upload flow mirrors RoomChat: validate MIME/size → upload to storage via fetch API → get public URL → attach to message insert
+- Allowed types: PNG, JPG, GIF, PDF, MP4 (same as community chat)
+- Max file size: 15MB (same limit)
+- Attachments stored as JSONB array: `[{type: "image"|"file", url, filename, size, mime}]`
 
