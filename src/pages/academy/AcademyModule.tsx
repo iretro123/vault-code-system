@@ -284,7 +284,7 @@ const AcademyModule = () => {
         {/* Main content area */}
         <div className="flex-1 flex flex-col overflow-y-auto">
           {/* Edit panel */}
-          {editingId && isAdmin && (() => {
+          {editingId && canManageContent && (() => {
             const lesson = lessons.find((l) => l.id === editingId);
             if (!lesson) return null;
             return (
