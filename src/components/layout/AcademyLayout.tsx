@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
@@ -12,7 +12,9 @@ import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
-import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Loader2, ShieldAlert, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -23,14 +25,27 @@ function AcademyLayoutInner() {
   const { hydrated } = useAcademyData();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
+  const { toast } = useToast();
+  const isOnline = useOnlineStatus();
   const lastPageRef = useRef("");
+  const hadUserRef = useRef(false);
   useSmartNotifications();
 
   const isCommunity = location.pathname.startsWith("/academy/community");
   const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
+
+  // Session-loss detection
+  useEffect(() => {
+    if (!loading && hadUserRef.current && !user) {
+      toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" });
+      navigate("/auth", { replace: true });
+    }
+    if (user) hadUserRef.current = true;
+  }, [user, loading]);
 
   // Page view logging
   useEffect(() => {
@@ -104,6 +119,12 @@ function AcademyLayoutInner() {
       <AcademySidebar />
 
       <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
+        {!isOnline && (
+          <div className="flex items-center justify-center gap-2 bg-amber-500/15 border-b border-amber-500/20 px-4 py-1.5 text-xs font-medium text-amber-400">
+            <WifiOff className="h-3.5 w-3.5" />
+            You're offline — some features may not work
+          </div>
+        )}
         <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
           <div className="flex h-14 items-center justify-between px-4">
             <div className="flex items-center gap-2">

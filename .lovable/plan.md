@@ -1,28 +1,37 @@
 
 
-## Implementation: Fixes #1, #2, #3, #5 (skipping #4)
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### 1. QueryClient — sensible defaults (`src/App.tsx`)
-Replace `new QueryClient()` with configured defaults:
-- `staleTime: 60_000` — data fresh for 60s, no redundant refetches
-- `retry: 1` — one retry instead of three
-- `refetchOnWindowFocus: false` — prevent surprise refetches
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### 2. Session expiry recovery (`src/components/layout/AcademyLayout.tsx`)
-Add a `useEffect` that watches `user` after hydration. If `user` was previously truthy and becomes `null`, redirect to `/auth` with a "Session expired" toast. Uses a `hadUser` ref to track.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### 3. Login spinner (`src/pages/Auth.tsx`)
-Replace `{loading ? "Loading..." : "Sign In"}` with a proper `Loader2` spinner + "Signing in..." text, matching the pattern already used on the forgot-password button.
+### Solution
 
-### 5. Offline indicator (`new hook + AcademyLayout`)
-- Create `src/hooks/useOnlineStatus.ts` — listens to `online`/`offline` window events, returns a boolean.
-- Add a thin amber banner at the top of `AcademyLayoutInner` (inside the header or above it) when offline: "You're offline — some features may not work."
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### Files changed
-| File | Change |
-|------|--------|
-| `src/App.tsx` | Configure QueryClient defaults |
-| `src/pages/Auth.tsx` | Add Loader2 spinner to sign-in button |
-| `src/hooks/useOnlineStatus.ts` | New hook for online/offline detection |
-| `src/components/layout/AcademyLayout.tsx` | Add session-loss redirect + offline banner |
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
