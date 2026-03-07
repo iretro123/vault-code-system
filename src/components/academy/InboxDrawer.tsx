@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Check, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio, X, ArrowLeft, Send, Loader2 } from "lucide-react";
+import rzAvatar from "@/assets/rz-avatar.png";
 import { useAcademyData, InboxItem } from "@/contexts/AcademyDataContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
