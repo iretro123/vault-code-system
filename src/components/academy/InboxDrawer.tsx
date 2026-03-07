@@ -199,14 +199,9 @@ function InlineThreadView({
                   <div className="w-7 shrink-0 flex justify-center">
                     {showAvatar ? (
                       isMe ? (
-                        <Avatar className="h-7 w-7">
-                          <AvatarFallback className="text-[10px] bg-white/[0.08] text-foreground/70 font-semibold">{userInitials}</AvatarFallback>
-                        </Avatar>
+                        <ChatAvatar avatarUrl={(profile as any)?.avatar_url} userName={userName} size="h-7 w-7" />
                       ) : (
-                        <Avatar className="h-7 w-7">
-                          {senderAvatarSrc && <AvatarImage src={senderAvatarSrc} alt={senderName} />}
-                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{senderInitials}</AvatarFallback>
-                        </Avatar>
+                        <ChatAvatar avatarUrl={item.sender_avatar} userName={senderName} size="h-7 w-7" />
                       )
                     ) : null}
                   </div>
