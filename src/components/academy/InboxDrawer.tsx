@@ -42,11 +42,9 @@ function typeIcon(type: string) {
 }
 
 /* ── Sender avatar helper ── */
-function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
-  const initials = item.sender_name
-    ? item.sender_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "VA";
+const OPERATOR_ROLES = ["CEO", "Admin", "Coach", "Operator", "Owner"];
 
+function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
   // System item (no sender) → Vault logo
   if (!item.sender_id) {
     return (
@@ -57,19 +55,21 @@ function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
     );
   }
 
-  // Personal DM / auto-DM / broadcast from operator → use RZ photo
-  // If sender_avatar is an HTTP URL use it, otherwise fallback to RZ
-  const avatarSrc =
-    item.sender_avatar && item.sender_avatar.startsWith("http")
-      ? item.sender_avatar
-      : rzAvatar;
+  // Operator/admin sender → always use RZ photo
+  const isOperator = OPERATOR_ROLES.includes(item.sender_role || "");
+  if (isOperator) {
+    const avatarSrc = item.sender_avatar?.startsWith("http") ? item.sender_avatar : rzAvatar;
+    return (
+      <Avatar style={{ width: size, height: size }} className="shrink-0">
+        <AvatarImage src={avatarSrc} alt={item.sender_name || "Admin"} />
+        <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">RZ</AvatarFallback>
+      </Avatar>
+    );
+  }
 
-  return (
-    <Avatar style={{ width: size, height: size }} className="shrink-0">
-      <AvatarImage src={avatarSrc} alt={item.sender_name || "Admin"} />
-      <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{initials}</AvatarFallback>
-    </Avatar>
-  );
+  // Regular member → use ChatAvatar which handles icon:/initials:/http formats
+  const sizeClass = size <= 24 ? "h-6 w-6" : size <= 28 ? "h-7 w-7" : "h-9 w-9";
+  return <ChatAvatar avatarUrl={item.sender_avatar} userName={item.sender_name || "Member"} size={sizeClass} />;
 }
 
 function SenderName({ item }: { item: InboxItem }) {
