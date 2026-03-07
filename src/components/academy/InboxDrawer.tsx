@@ -264,11 +264,14 @@ function ItemList({
               onClick={() => onItemClick(item)}
               className="min-w-0 flex-1 w-0 flex items-start gap-2.5 text-left"
             >
-              <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
+              <span className="mt-0.5 shrink-0">
+                <SenderAvatar item={item} size={28} />
+              </span>
               {!item.read_at && (
                 <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
               )}
               <div className="min-w-0 flex-1">
+                <SenderName item={item} />
                 <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
                 {item.body && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1 truncate">
