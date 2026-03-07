@@ -98,12 +98,17 @@ function InlineThreadView({
 
   const { messages, loading: msgsLoading } = useThreadMessages(threadId);
 
-  // Find or create thread on mount
+  // Find existing thread by user, or fall back to getOrCreateThread
   useEffect(() => {
     if (!user?.id || !item.id) return;
     let cancelled = false;
     (async () => {
-      const id = await getOrCreateThread(user.id, item.id);
+      // First try to find any existing thread for this user
+      let id = await findThreadByUser(user.id);
+      // If none exists, create one tied to this inbox item
+      if (!id) {
+        id = await getOrCreateThread(user.id, item.id);
+      }
       if (!cancelled) {
         setThreadId(id);
         setInitializing(false);
