@@ -12,6 +12,7 @@ export interface InboxItem {
   created_at: string;
   read_at: string | null;
   pinned: boolean;
+  dm_thread_id: string | null;
 }
 
 export function useInboxItems() {
