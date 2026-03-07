@@ -202,7 +202,7 @@ const AcademyLearn = () => {
                 const isLocked = false;
                 const isHidden = mod.visible === false;
 
-                if (isEditing && isAdmin) {
+                if (isEditing && canManageContent) {
                   return (
                     <Card key={mod.id} className="vault-card p-5 space-y-3">
                       <h3 className="text-sm font-semibold text-foreground">Edit Module</h3>
