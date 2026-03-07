@@ -17,14 +17,6 @@ import {
   markThreadRead,
 } from "@/hooks/useDirectMessages";
 import vaultLogo from "@/assets/vault-v-logo.png";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useAuth } from "@/hooks/useAuth";
-import {
-  getOrCreateThread,
-  useThreadMessages,
-  sendDmMessage,
-  markThreadRead,
-} from "@/hooks/useDirectMessages";
 
 interface InboxDrawerProps {
   open: boolean;
