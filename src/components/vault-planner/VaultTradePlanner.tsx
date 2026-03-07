@@ -316,7 +316,7 @@ export function VaultTradePlanner() {
     toast.success("Example loaded");
   };
 
-  const handleCopyPlan = () => {
+  const handleCopyPlan = async () => {
     const inputs = buildInputs();
     const errs = validateInputs(inputs);
     if (errs.length > 0) { toast.error("Fix errors before copying"); return; }

@@ -487,7 +487,7 @@ function StudentDetail({
             <span className="text-muted-foreground shrink-0">{label}:</span>
             <span className="font-mono truncate">{value}</span>
             {value !== "—" && (
-              <button onClick={() => copyToClipboard(value)} className="text-muted-foreground hover:text-foreground ml-auto shrink-0">
+              <button onClick={() => copyToClip(value)} className="text-muted-foreground hover:text-foreground ml-auto shrink-0">
                 <Copy className="h-3 w-3" />
               </button>
             )}

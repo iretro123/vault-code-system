@@ -330,7 +330,7 @@ function ReferralDetailDialog({ row, onClose }: { row: ReferralRow; onClose: () 
                   <span className="text-xs font-mono truncate">{value}</span>
                 )}
                 {copyable && value && value !== "—" && (
-                  <button onClick={() => copyToClipboard(value as string)} className="shrink-0">
+                  <button onClick={() => copyToClip(value as string)} className="shrink-0">
                     <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                   </button>
                 )}
