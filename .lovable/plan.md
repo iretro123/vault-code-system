@@ -1,37 +1,58 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## 1:1 Direct Messages (Reply to Welcome DM)
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Current State
+Right now, inbox items are **one-way notifications** — users see the message, click to navigate, or dismiss. There is no reply button, no conversation thread, and no way for a user to respond back to an admin/coach. No DM or conversation tables exist yet.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### What Needs to Happen
 
-### Solution
+To give users a "Reply" button on the welcome DM (and any admin message) that creates a private 1:1 thread visible to both the user and the admin/coach side, we need:
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**1. Database: New `dm_threads` + `dm_messages` tables**
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+- `dm_threads` — one row per conversation between admin and a user
+  - `id`, `user_id` (the member), `admin_id` (who initiated / assigned), `created_at`, `last_message_at`, `inbox_item_id` (optional link to the original inbox item that started it)
+  
+- `dm_messages` — individual messages within a thread
+  - `id`, `thread_id`, `sender_id`, `body`, `created_at`, `read_at`
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+- RLS:
+  - Users can only see threads where `user_id = auth.uid()`
+  - Operators / manage_notifications permission holders can see all threads
+  - Both parties can insert messages into threads they belong to
+
+- Enable realtime on `dm_messages` so replies appear instantly
+
+**2. Inbox: Add "Reply" button to welcome DM items**
+
+When a user clicks on a `reminder`-type inbox item (like the welcome DM), instead of just navigating away, open an **inline thread view** inside the inbox panel:
+- Show the original message as the first bubble
+- Show a text input + send button at the bottom
+- User types a reply → inserts into `dm_messages` → creates a `dm_thread` if one doesn't exist yet
+- Pressing back returns to the inbox list
+
+**3. Admin side: New "DMs" tab in Admin Panel (or Broadcast page)**
+
+Add a "DMs" tab that shows:
+- List of all active 1:1 threads (user name, last message preview, timestamp)
+- Click a thread → see full conversation + reply input
+- Unread indicator for threads with new user messages
+- This reuses the same `dm_messages` table, filtered by operator permission
+
+**4. Notifications**
+
+When a user replies, insert an `inbox_item` for the admin (type `dm_reply`) so it shows up in the admin's inbox too. When admin replies back, insert for the user.
+
+### Changes
+
+| What | Where |
+|------|-------|
+| Create `dm_threads` + `dm_messages` tables with RLS + realtime | DB migration |
+| Add reply/thread view to inbox panel when clicking a DM item | `src/components/academy/InboxDrawer.tsx` |
+| Add "DMs" tab to Admin Panel for admin-side thread view | `src/pages/academy/AdminPanel.tsx` + new `AdminDMsTab.tsx` component |
+| Hook for DM data (threads, messages, send, mark read) | New `src/hooks/useDirectMessages.ts` |
+
+### Scope Note
+This is a meaningful new feature (private messaging). The core tables + reply flow from inbox + admin DM tab would be the V1. No group DMs, no file attachments in DMs for now — just text replies in a 1:1 thread.
 
