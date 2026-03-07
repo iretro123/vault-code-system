@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft, Send, MessageSquare, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
+import { ChatAvatar } from "@/lib/chatAvatars";
+import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
+import rzAvatar from "@/assets/rz-avatar.png";
 import {
   useDirectMessages,
   useThreadMessages,
@@ -16,6 +17,7 @@ import {
   DmThread,
 } from "@/hooks/useDirectMessages";
 
+/* ── Thread List ── */
 function ThreadList({
   threads,
   loading,
@@ -49,18 +51,17 @@ function ThreadList({
     <div className="space-y-1">
       {threads.map((t) => {
         const name = t.user_display_name || t.user_email || "Member";
-        const initials = name.slice(0, 2).toUpperCase();
         return (
           <button
             key={t.id}
             onClick={() => onSelect(t)}
             className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-white/[0.05] transition-colors"
           >
-            <Avatar className="h-9 w-9 shrink-0">
-              <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+            <ChatAvatar
+              avatarUrl={t.user_avatar_url}
+              userName={name}
+              size="h-9 w-9"
+            />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-foreground truncate">{name}</p>
               <p className="text-xs text-muted-foreground truncate">
@@ -74,6 +75,7 @@ function ThreadList({
   );
 }
 
+/* ── iOS-Style Thread Conversation ── */
 function ThreadConversation({
   thread,
   onBack,
@@ -87,7 +89,7 @@ function ThreadConversation({
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const name = thread.user_display_name || thread.user_email || "Member";
+  const memberName = thread.user_display_name || thread.user_email || "Member";
 
   // Mark messages as read when viewing
   useEffect(() => {
@@ -110,15 +112,23 @@ function ThreadConversation({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-1 pb-3 border-b border-white/[0.06]">
-        <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8">
+      {/* ── Header ── */}
+      <div className="flex items-center gap-3 px-1 pb-3 border-b border-white/[0.06]">
+        <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+        <ChatAvatar
+          avatarUrl={thread.user_avatar_url}
+          userName={memberName}
+          size="h-8 w-8"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-foreground truncate">{memberName}</p>
+          <p className="text-[10px] text-muted-foreground">Member</p>
+        </div>
       </div>
 
-      {/* Messages */}
+      {/* ── Messages ── */}
       <ScrollArea className="flex-1 py-3">
         {loading ? (
           <div className="flex justify-center py-8">
@@ -127,26 +137,69 @@ function ThreadConversation({
         ) : messages.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-8">No messages yet.</p>
         ) : (
-          <div className="space-y-3 px-1">
-            {messages.map((m) => {
+          <div className="space-y-0.5 px-1">
+            {messages.map((m, i) => {
               const isAdmin = m.sender_id !== thread.user_id;
+              const prev = i > 0 ? messages[i - 1] : null;
+              const next = i < messages.length - 1 ? messages[i + 1] : null;
+              const sameSenderAsPrev = prev && prev.sender_id === m.sender_id;
+              const sameSenderAsNext = next && next.sender_id === m.sender_id;
+              const isLastInGroup = !sameSenderAsNext;
+              const isFirstInGroup = !sameSenderAsPrev;
+
+              // Admin = left (blue bubble), Member = right (neutral bubble)
+              const bubbleColor = isAdmin
+                ? "bg-[hsl(213,45%,22%)]"
+                : "bg-white/[0.10]";
+
+              // Asymmetric rounding for iOS tail effect
+              let rounding = "rounded-2xl";
+              if (isLastInGroup) {
+                rounding = isAdmin
+                  ? "rounded-2xl rounded-bl-md"
+                  : "rounded-2xl rounded-br-md";
+              }
+
               return (
                 <div
                   key={m.id}
-                  className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}
+                  className={`flex items-end gap-2 ${isAdmin ? "justify-start" : "justify-end"} ${isFirstInGroup ? "mt-3" : "mt-0.5"}`}
                 >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                      isAdmin
-                        ? "bg-primary/20 text-foreground"
-                        : "bg-white/[0.06] text-foreground"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">
-                      {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-                    </p>
+                  {/* Admin avatar (left side) */}
+                  {isAdmin && (
+                    <div className="w-7 shrink-0">
+                      {isLastInGroup ? (
+                        <img
+                          src={rzAvatar}
+                          alt="RZ"
+                          className="h-7 w-7 rounded-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* Bubble */}
+                  <div className={`max-w-[75%] ${bubbleColor} ${rounding} px-3.5 py-2 text-sm leading-relaxed`}>
+                    <p className="whitespace-pre-wrap break-words text-foreground">{m.body}</p>
+                    {isLastInGroup && (
+                      <p className="text-[10px] text-muted-foreground/50 mt-1">
+                        {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                      </p>
+                    )}
                   </div>
+
+                  {/* Member avatar (right side) */}
+                  {!isAdmin && (
+                    <div className="w-7 shrink-0">
+                      {isLastInGroup ? (
+                        <ChatAvatar
+                          avatarUrl={thread.user_avatar_url}
+                          userName={memberName}
+                          size="h-7 w-7"
+                        />
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -155,13 +208,13 @@ function ThreadConversation({
         )}
       </ScrollArea>
 
-      {/* Input */}
+      {/* ── Pill Input ── */}
       <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06]">
-        <Input
+        <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Type a reply…"
-          className="flex-1 bg-white/[0.04] border-white/[0.08] text-sm"
+          className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-full px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -169,24 +222,28 @@ function ThreadConversation({
             }
           }}
         />
-        <Button
-          size="icon"
+        <button
           onClick={handleSend}
           disabled={!draft.trim() || sending}
-          className="h-9 w-9 shrink-0"
+          className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
         >
-          {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </Button>
+          {sending ? (
+            <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
+          ) : (
+            <Send className="h-4 w-4 text-primary-foreground" />
+          )}
+        </button>
       </div>
     </div>
   );
 }
 
+/* ── Main Tab ── */
 export function AdminDMsTab() {
   const { threads, loading, refetchThreads } = useDirectMessages();
   const [selected, setSelected] = useState<DmThread | null>(null);
 
-  // Realtime: auto-refresh thread list when threads are updated
+  // Realtime: auto-refresh thread list
   useEffect(() => {
     const channel = supabase
       .channel("admin-dm-threads-rt")
