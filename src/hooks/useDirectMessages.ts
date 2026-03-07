@@ -145,6 +145,20 @@ export function useThreadMessages(threadId: string | null) {
 }
 
 /**
+ * Find an existing thread for a user (any thread), used when opening DM from inbox.
+ */
+export async function findThreadByUser(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("dm_threads")
+    .select("id")
+    .eq("user_id", userId)
+    .order("last_message_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.id || null;
+}
+
+/**
  * Find or create a thread for a given inbox_item_id, then send first message.
  */
 export async function getOrCreateThread(

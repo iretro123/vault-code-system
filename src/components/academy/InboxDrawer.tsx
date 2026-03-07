@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import {
   getOrCreateThread,
+  findThreadByUser,
   useThreadMessages,
   sendDmMessage,
   markThreadRead,
@@ -97,12 +98,17 @@ function InlineThreadView({
 
   const { messages, loading: msgsLoading } = useThreadMessages(threadId);
 
-  // Find or create thread on mount
+  // Find existing thread by user, or fall back to getOrCreateThread
   useEffect(() => {
     if (!user?.id || !item.id) return;
     let cancelled = false;
     (async () => {
-      const id = await getOrCreateThread(user.id, item.id);
+      // First try to find any existing thread for this user
+      let id = await findThreadByUser(user.id);
+      // If none exists, create one tied to this inbox item
+      if (!id) {
+        id = await getOrCreateThread(user.id, item.id);
+      }
       if (!cancelled) {
         setThreadId(id);
         setInitializing(false);
@@ -145,7 +151,10 @@ function InlineThreadView({
           {/* Original message as first bubble */}
           <div className="flex justify-start">
             <div className="max-w-[85%] rounded-2xl px-3.5 py-2.5 bg-primary/15 text-sm leading-relaxed">
-              <p className="text-[10px] font-semibold text-primary/80 mb-1">Vault Academy</p>
+              <span className="flex items-center gap-1.5 mb-1">
+                <span className="text-[10px] font-semibold text-primary/80">{item.sender_name || "RZ"}</span>
+                {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+              </span>
               <p className="whitespace-pre-wrap break-words text-foreground">{item.body}</p>
               <p className="text-[10px] text-muted-foreground/60 mt-1">
                 {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
@@ -170,7 +179,12 @@ function InlineThreadView({
                         : "bg-primary/15 text-foreground"
                     }`}
                   >
-                    {!isMe && <p className="text-[10px] font-semibold text-primary/80 mb-1">Vault Academy</p>}
+                    {!isMe && (
+                      <span className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[10px] font-semibold text-primary/80">{item.sender_name || "RZ"}</span>
+                        {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+                      </span>
+                    )}
                     <p className="whitespace-pre-wrap break-words">{m.body}</p>
                     <p className="text-[10px] text-muted-foreground/60 mt-1">
                       {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
@@ -471,8 +485,8 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const handleClick = (item: InboxItem) => {
     if (!item.read_at) markRead(item.id);
 
-    // If it's a reminder (like welcome DM), open inline thread for reply
-    if (item.type === "reminder") {
+    // If it's a DM-type item (reminder or coach_reply), open inline thread for reply
+    if (item.type === "reminder" || item.type === "coach_reply") {
       setActiveThread(item);
       return;
     }
