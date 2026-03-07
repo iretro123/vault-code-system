@@ -1,37 +1,34 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: One Persistent Thread Per Member
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### The Bug (2 lines cause everything)
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+1. **`InboxDrawer.tsx` line 106**: `findThreadByUser(user.id)` — when admin clicks a notification from John Doe, `user.id` is the **admin's** ID, not John Doe's. This finds nothing, so it creates a new thread with `user_id = admin_id`.
 
-### Solution
+2. **`useDirectMessages.ts` line 169-173**: `getOrCreateThread` filters by both `user_id` AND `inbox_item_id`. Different inbox items for the same user create separate threads.
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Changes
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**1. DB migration**
+- Delete duplicate/orphan `dm_threads` (threads where `user_id` is an operator, or duplicates per member — keep the one with most messages)
+- Add `UNIQUE` constraint on `dm_threads(user_id)` to enforce 1 thread per member at DB level
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**2. `src/hooks/useDirectMessages.ts`**
+- Simplify `getOrCreateThread(userId)` to look up by `user_id` only (drop `inbox_item_id` param)
+- Add `findOrCreateThreadForMember(memberId)` helper for admin use
+
+**3. `src/components/academy/InboxDrawer.tsx`**
+- Fix line 106: when user is admin and item has `sender_id`, use `item.sender_id` (the member) instead of `user.id` (the admin) for thread lookup
+- This ensures admin always opens the member's single existing thread
+
+**4. `src/components/admin/AdminDMsTab.tsx`**
+- Add last-message body preview in thread list rows
+- Add unread indicator dot on threads with unread messages
+
+### Result
+- 1 user = 1 thread, enforced by DB unique constraint
+- Admin clicking any notification opens the correct member's thread
+- No more duplicate threads regardless of inbox item changes
+- Clean iMessage-style admin inbox
 
