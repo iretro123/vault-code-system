@@ -203,7 +203,7 @@ const AcademyModule = () => {
                         isActive
                           ? "bg-primary/10 border-l-2 border-primary"
                           : "hover:bg-muted/40 border-l-2 border-transparent",
-                        isHidden && isAdmin && "opacity-50"
+                        isHidden && canManageContent && "opacity-50"
                       )}
                     >
                       <div className={cn(
