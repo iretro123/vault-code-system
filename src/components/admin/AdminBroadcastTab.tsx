@@ -25,10 +25,10 @@ const enableMessagingProviders = false;
 
 /* ── Templates ── */
 const TEMPLATES = [
-  { key: "daily_reminder", title: "Daily reminder: journal your trades", body: "Don't forget to log today's trades and reflect on your performance. Consistency builds discipline 📝" },
-  { key: "new_module", title: "New module dropped", body: "A new module is now available in the Academy. Head over to Learn and level up your skills 🚀" },
+  { key: "weekly_review", title: "Weekly Review reminder", body: "Time to review your week. Head to your journal and reflect on wins, losses, and lessons learned 📊" },
+  { key: "log_trades", title: "Log your trades today", body: "Don't forget to log today's trades and reflect on your performance. Consistency builds discipline 📝" },
+  { key: "new_lesson", title: "New lesson available", body: "A new lesson is now available in the Academy. Head over to Learn and level up your skills 🚀" },
   { key: "live_session", title: "Live session starting soon", body: "A live session is about to start! Join now so you don't miss it 🔴" },
-  { key: "coach_replied", title: "Coach replied to your question", body: "Your coach has responded. Check your inbox for the latest answer 💬" },
 ];
 
 interface UserOption {
