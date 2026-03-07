@@ -123,7 +123,7 @@ function ThreadList({
           <button
             key={t.id}
             onClick={() => onSelect(t)}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-white/[0.05] transition-colors"
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-white/[0.04] border border-transparent hover:border-white/[0.06] transition-all"
           >
             <div className="relative shrink-0">
               <ChatAvatar
