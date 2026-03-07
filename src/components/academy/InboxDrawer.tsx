@@ -98,14 +98,17 @@ function InlineThreadView({
 
   const { messages, loading: msgsLoading } = useThreadMessages(threadId);
 
-  // Find existing thread by user, or fall back to getOrCreateThread
+  // Find existing thread for the MEMBER (not the current user if admin)
+  // item.sender_id = the member who sent the notification
   useEffect(() => {
     if (!user?.id || !item.id) return;
     let cancelled = false;
     (async () => {
-      let id = await findThreadByUser(user.id);
+      // Use sender_id (the member) when available, otherwise current user
+      const memberId = item.sender_id || user.id;
+      let id = await findThreadByUser(memberId);
       if (!id) {
-        id = await getOrCreateThread(user.id, item.id);
+        id = await getOrCreateThread(memberId);
       }
       if (!cancelled) {
         setThreadId(id);
