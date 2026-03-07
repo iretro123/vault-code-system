@@ -121,23 +121,21 @@ function InlineThreadView({
 
   const { messages, loading: msgsLoading } = useThreadMessages(threadId);
 
-  // Find existing thread for the MEMBER (not the current user if admin)
-  // dm_threads.user_id is always the member. Operators must resolve the member's ID.
+  // Resolve thread — prefer direct dm_thread_id link, fallback to lookup
   useEffect(() => {
     if (!user?.id || !item.id) return;
     let cancelled = false;
     (async () => {
-      // Operator viewing a member's DM → member is item.sender_id
-      // Member viewing their own DM → member is themselves
+      if (item.dm_thread_id) {
+        // Direct link — no guessing needed
+        if (!cancelled) { setThreadId(item.dm_thread_id); setInitializing(false); }
+        return;
+      }
+      // Legacy fallback for inbox items without dm_thread_id
       const memberId = hasRole("operator") ? (item.sender_id || user.id) : user.id;
       let id = await findThreadByUser(memberId);
-      if (!id) {
-        id = await getOrCreateThread(memberId);
-      }
-      if (!cancelled) {
-        setThreadId(id);
-        setInitializing(false);
-      }
+      if (!id) id = await getOrCreateThread(memberId);
+      if (!cancelled) { setThreadId(id); setInitializing(false); }
     })();
     return () => { cancelled = true; };
   }, [user?.id, item.id]);

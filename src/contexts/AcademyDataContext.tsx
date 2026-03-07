@@ -221,6 +221,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
         sender_name: sender?.name ?? null,
         sender_avatar: sender?.avatar ?? null,
         sender_role: sender?.role ?? null,
+        dm_thread_id: d.dm_thread_id ?? null,
       };
     });
     setInboxItems(mapped);
