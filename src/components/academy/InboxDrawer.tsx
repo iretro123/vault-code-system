@@ -45,6 +45,7 @@ function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
     ? item.sender_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
     : "VA";
 
+  // System item (no sender) → Vault logo
   if (!item.sender_id) {
     return (
       <Avatar style={{ width: size, height: size }} className="shrink-0">
@@ -54,9 +55,16 @@ function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
     );
   }
 
+  // Personal DM / auto-DM / broadcast from operator → use RZ photo
+  // If sender_avatar is an HTTP URL use it, otherwise fallback to RZ
+  const avatarSrc =
+    item.sender_avatar && item.sender_avatar.startsWith("http")
+      ? item.sender_avatar
+      : rzAvatar;
+
   return (
     <Avatar style={{ width: size, height: size }} className="shrink-0">
-      {item.sender_avatar && <AvatarImage src={item.sender_avatar} alt={item.sender_name || "Sender"} />}
+      <AvatarImage src={avatarSrc} alt={item.sender_name || "Admin"} />
       <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{initials}</AvatarFallback>
     </Avatar>
   );
