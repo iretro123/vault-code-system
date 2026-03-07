@@ -128,7 +128,7 @@ function InlineThreadView({
     let cancelled = false;
     (async () => {
       // Use sender_id (the member) when available, otherwise current user
-      const memberId = item.sender_id || user.id;
+      const memberId = user.id;
       let id = await findThreadByUser(memberId);
       if (!id) {
         id = await getOrCreateThread(memberId);
