@@ -133,6 +133,11 @@ const AdminPanel = () => {
               <AdminMembersTab />
             </TabsContent>
           )}
+          {visibleTabs.some((t) => t.value === "dms") && (
+            <TabsContent value="dms">
+              <AdminDMsTab />
+            </TabsContent>
+          )}
           {visibleTabs.some((t) => t.value === "announcements") && (
             <TabsContent value="announcements">
               <AdminAnnouncementsTab />
