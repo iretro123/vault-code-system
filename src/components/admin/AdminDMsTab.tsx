@@ -74,6 +74,25 @@ function useUnreadCounts(threadIds: string[], adminId: string | undefined) {
   return counts;
 }
 
+/* ── Presence indicators ── */
+function MemberPresenceDot({ userId }: { userId: string }) {
+  const { online } = useUserPresence(userId);
+  return (
+    <span
+      className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
+        online ? "bg-emerald-500" : "bg-muted-foreground/40"
+      }`}
+    />
+  );
+}
+
+function MemberPresenceLabel({ userId }: { userId: string }) {
+  const { online, lastSeenAt } = useUserPresence(userId);
+  if (online) return <p className="text-[10px] text-emerald-400">Online</p>;
+  if (lastSeenAt) return <p className="text-[10px] text-muted-foreground">Last seen {formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true })}</p>;
+  return <p className="text-[10px] text-muted-foreground">Member</p>;
+}
+
 /* ── Thread List ── */
 function ThreadList({
   threads,
