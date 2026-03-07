@@ -166,7 +166,7 @@ export function NotificationsPanel() {
                           {n.body}
                         </p>
                       )}
-                      <p className="text-[10px] text-muted-foreground/50 mt-1">{relativeTime(n.created_at)}</p>
+                      <p className="text-[10px] text-muted-foreground/50 mt-1">{formatRelative(n.created_at)}</p>
                     </div>
                   </button>
                 ))
