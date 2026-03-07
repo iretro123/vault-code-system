@@ -220,6 +220,8 @@ function InlineThreadView({
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      {/* Render attachments */}
+                      <DmAttachmentRenderer attachments={(m as any).attachments || []} />
                       <p className={`text-[10px] mt-1 ${isMe ? "text-white/30 text-right" : "text-white/30"}`}>
                         {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                       </p>
