@@ -453,7 +453,7 @@ function WhatsNewCard({
         <p className="text-xs text-muted-foreground line-clamp-3 mt-1.5 leading-relaxed">{item.body}</p>
       )}
       <p className="text-[11px] text-muted-foreground/60 mt-3">
-        {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+        {formatRelative(item.created_at)}
       </p>
       <span
         role="button"
