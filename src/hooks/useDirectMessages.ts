@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -145,7 +145,7 @@ export function useThreadMessages(threadId: string | null) {
 }
 
 /**
- * Find an existing thread for a user (any thread), used when opening DM from inbox.
+ * Find an existing thread for a member (by their user_id).
  */
 export async function findThreadByUser(userId: string): Promise<string | null> {
   const { data } = await supabase
@@ -159,18 +159,17 @@ export async function findThreadByUser(userId: string): Promise<string | null> {
 }
 
 /**
- * Find or create a thread for a given inbox_item_id, then send first message.
+ * Find or create a thread for a given member.
+ * Lookup is by user_id ONLY — one persistent thread per member.
  */
 export async function getOrCreateThread(
-  userId: string,
-  inboxItemId: string
+  memberId: string
 ): Promise<string | null> {
-  // Check if thread exists for this inbox item
+  // Check if thread exists for this member
   const { data: existing } = await supabase
     .from("dm_threads")
     .select("id")
-    .eq("user_id", userId)
-    .eq("inbox_item_id", inboxItemId)
+    .eq("user_id", memberId)
     .maybeSingle();
 
   if (existing?.id) return existing.id;
@@ -178,7 +177,7 @@ export async function getOrCreateThread(
   // Create new thread
   const { data: newThread, error } = await supabase
     .from("dm_threads")
-    .insert({ user_id: userId, inbox_item_id: inboxItemId })
+    .insert({ user_id: memberId })
     .select("id")
     .single();
 
@@ -237,8 +236,6 @@ export async function getAdminUnreadCount(): Promise<number> {
     .is("read_at", null)
     .not("sender_id", "is", null);
 
-  // We can't easily filter "sender is not operator" without a join,
-  // so we'll just count all unread messages the admin can see
   if (error) return 0;
   return count || 0;
 }

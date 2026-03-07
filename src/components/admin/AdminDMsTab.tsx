@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,15 +17,72 @@ import {
   DmThread,
 } from "@/hooks/useDirectMessages";
 
+/* ── Last message preview hook ── */
+function useLastMessages(threadIds: string[]) {
+  const [lastMsgs, setLastMsgs] = useState<Record<string, { body: string; sender_id: string; read_at: string | null }>>({});
+
+  const fetchLast = useCallback(async () => {
+    if (threadIds.length === 0) return;
+    // Fetch the latest message per thread
+    const results: Record<string, { body: string; sender_id: string; read_at: string | null }> = {};
+    // Batch: get last 1 message per thread (use individual queries since we can't do DISTINCT ON via JS client)
+    const promises = threadIds.map(async (tid) => {
+      const { data } = await supabase
+        .from("dm_messages")
+        .select("body, sender_id, read_at")
+        .eq("thread_id", tid)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) results[tid] = data;
+    });
+    await Promise.all(promises);
+    setLastMsgs(results);
+  }, [threadIds.join(",")]);
+
+  useEffect(() => { fetchLast(); }, [fetchLast]);
+
+  return lastMsgs;
+}
+
+/* ── Unread count per thread hook ── */
+function useUnreadCounts(threadIds: string[], adminId: string | undefined) {
+  const [counts, setCounts] = useState<Record<string, number>>({});
+
+  const fetchCounts = useCallback(async () => {
+    if (!adminId || threadIds.length === 0) return;
+    const results: Record<string, number> = {};
+    const promises = threadIds.map(async (tid) => {
+      const { count } = await supabase
+        .from("dm_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("thread_id", tid)
+        .neq("sender_id", adminId)
+        .is("read_at", null);
+      results[tid] = count || 0;
+    });
+    await Promise.all(promises);
+    setCounts(results);
+  }, [threadIds.join(","), adminId]);
+
+  useEffect(() => { fetchCounts(); }, [fetchCounts]);
+
+  return counts;
+}
+
 /* ── Thread List ── */
 function ThreadList({
   threads,
   loading,
   onSelect,
+  lastMsgs,
+  unreadCounts,
 }: {
   threads: DmThread[];
   loading: boolean;
   onSelect: (t: DmThread) => void;
+  lastMsgs: Record<string, { body: string; sender_id: string; read_at: string | null }>;
+  unreadCounts: Record<string, number>;
 }) {
   if (loading) {
     return (
@@ -51,22 +108,40 @@ function ThreadList({
     <div className="space-y-1">
       {threads.map((t) => {
         const name = t.user_display_name || t.user_email || "Member";
+        const last = lastMsgs[t.id];
+        const unread = unreadCounts[t.id] || 0;
+        const preview = last?.body
+          ? last.body.length > 60 ? last.body.slice(0, 60) + "…" : last.body
+          : null;
+
         return (
           <button
             key={t.id}
             onClick={() => onSelect(t)}
             className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-white/[0.05] transition-colors"
           >
-            <ChatAvatar
-              avatarUrl={t.user_avatar_url}
-              userName={name}
-              size="h-9 w-9"
-            />
+            <div className="relative shrink-0">
+              <ChatAvatar
+                avatarUrl={t.user_avatar_url}
+                userName={name}
+                size="h-9 w-9"
+              />
+              {unread > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary border-2 border-background" />
+              )}
+            </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground truncate">{name}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {formatDistanceToNow(new Date(t.last_message_at), { addSuffix: true })}
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className={`text-sm font-medium truncate ${unread > 0 ? "text-foreground" : "text-foreground/80"}`}>{name}</p>
+                <p className="text-[10px] text-muted-foreground shrink-0">
+                  {formatDistanceToNow(new Date(t.last_message_at), { addSuffix: true })}
+                </p>
+              </div>
+              {preview && (
+                <p className={`text-xs truncate mt-0.5 ${unread > 0 ? "text-foreground/70 font-medium" : "text-muted-foreground"}`}>
+                  {preview}
+                </p>
+              )}
             </div>
           </button>
         );
@@ -188,9 +263,8 @@ function ThreadConversation({
                         </p>
                       )}
                     </div>
-                    {/* Read receipt — show on last outgoing (admin) message that has been read */}
+                    {/* Read receipt */}
                     {isAdmin && isLastInGroup && (() => {
-                      // Find last admin message in this group
                       const isLastAdminMsg = !next || next.sender_id === thread.user_id;
                       if (!isLastAdminMsg) return null;
                       if (m.read_at) {
@@ -252,8 +326,13 @@ function ThreadConversation({
 
 /* ── Main Tab ── */
 export function AdminDMsTab() {
+  const { user } = useAuth();
   const { threads, loading, refetchThreads } = useDirectMessages();
   const [selected, setSelected] = useState<DmThread | null>(null);
+
+  const threadIds = threads.map((t) => t.id);
+  const lastMsgs = useLastMessages(threadIds);
+  const unreadCounts = useUnreadCounts(threadIds, user?.id);
 
   // Realtime: auto-refresh thread list
   useEffect(() => {
@@ -285,7 +364,13 @@ export function AdminDMsTab() {
             <h3 className="text-sm font-semibold text-foreground">Direct Messages</h3>
             <p className="text-xs text-muted-foreground">{threads.length} conversation{threads.length !== 1 ? "s" : ""}</p>
           </div>
-          <ThreadList threads={threads} loading={loading} onSelect={setSelected} />
+          <ThreadList
+            threads={threads}
+            loading={loading}
+            onSelect={setSelected}
+            lastMsgs={lastMsgs}
+            unreadCounts={unreadCounts}
+          />
         </>
       )}
     </Card>
