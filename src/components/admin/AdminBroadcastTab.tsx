@@ -437,23 +437,3 @@ export function AdminBroadcastTab() {
     </div>
   );
 }
-
-/* ── Small helper component ── */
-function ChannelButton({ active, onClick, icon, label, disabled }: {
-  active: boolean; onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-colors ${
-        disabled ? "opacity-40 cursor-not-allowed" : ""
-      } ${
-        active
-          ? "border-primary/40 bg-primary/[0.08] text-primary"
-          : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
-      }`}
-    >
-      {icon} {label}
-    </button>
-  );
-}
