@@ -103,7 +103,23 @@ export function AdminBroadcastTab() {
     setLoadingHistory(false);
   }, []);
 
-  useEffect(() => { fetchUsers(); fetchHistory(); }, [fetchUsers, fetchHistory]);
+  const fetchWelcomeDm = useCallback(async () => {
+    const { data } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "welcome_dm")
+      .maybeSingle();
+    if (data?.value) {
+      const v = data.value as any;
+      setDmEnabled(v.enabled ?? true);
+      setDmTitle(v.title ?? "Welcome to Vault OS");
+      setDmBody(v.body ?? "");
+      setDmLink(v.link ?? "/academy/home");
+    }
+    setDmLoading(false);
+  }, []);
+
+  useEffect(() => { fetchUsers(); fetchHistory(); fetchWelcomeDm(); }, [fetchUsers, fetchHistory, fetchWelcomeDm]);
 
   /* ── Apply template ── */
   const applyTemplate = (key: string) => {
