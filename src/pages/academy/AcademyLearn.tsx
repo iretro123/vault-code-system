@@ -10,7 +10,8 @@ import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
-import { useAcademyRole } from "@/hooks/useAcademyRole";
+import { useAdminMode } from "@/contexts/AdminModeContext";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
 import { SendNotificationModal } from "@/components/academy/SendNotificationModal";
 import { ClaimRoleBanner } from "@/components/academy/ClaimRoleBanner";
@@ -28,17 +29,19 @@ const AcademyLearn = () => {
   const { modules: allModules, loading: modsLoading, refetch: refetchModules } = useAcademyModules();
   const { lessons: allLessons, loading: lessonsLoading } = useAcademyLessons();
   const { progress } = useLessonProgress();
-  const { isAdmin } = useAcademyRole();
+  const { isAdminActive } = useAdminMode();
+  const { hasPermission } = useAcademyPermissions();
+  const canManageContent = isAdminActive && hasPermission("manage_content");
   const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
 
   // Filter hidden modules for non-admins
   const modules = useMemo(() =>
-    isAdmin ? allModules : allModules.filter(m => m.visible !== false),
-    [allModules, isAdmin]
+    canManageContent ? allModules : allModules.filter(m => m.visible !== false),
+    [allModules, canManageContent]
   );
   const lessons = useMemo(() =>
-    isAdmin ? allLessons : allLessons.filter(l => l.visible !== false),
-    [allLessons, isAdmin]
+    canManageContent ? allLessons : allLessons.filter(l => l.visible !== false),
+    [allLessons, canManageContent]
   );
 
   // Admin state
@@ -199,7 +202,7 @@ const AcademyLearn = () => {
                 const isLocked = false;
                 const isHidden = mod.visible === false;
 
-                if (isEditing && isAdmin) {
+                if (isEditing && canManageContent) {
                   return (
                     <Card key={mod.id} className="vault-card p-5 space-y-3">
                       <h3 className="text-sm font-semibold text-foreground">Edit Module</h3>
@@ -225,7 +228,7 @@ const AcademyLearn = () => {
                     className={cn(
                       "vault-card overflow-hidden group transition-colors transition-shadow duration-200",
                       isLocked ? "opacity-70" : "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer",
-                      isHidden && isAdmin && "opacity-60 border-dashed"
+                      isHidden && canManageContent && "opacity-60 border-dashed"
                     )}
                     onClick={() => !isLocked && navigate(`/academy/learn/${mod.slug}`)}
                   >
@@ -243,7 +246,7 @@ const AcademyLearn = () => {
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm text-[11px] font-mono text-white/70">
                           Module {String(i + 1).padStart(2, "0")}
                         </span>
-                        {isHidden && isAdmin && (
+                        {isHidden && canManageContent && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/80 backdrop-blur-sm text-[10px] font-semibold text-black">
                             <EyeOff className="h-3 w-3" /> Hidden
                           </span>
@@ -308,7 +311,7 @@ const AcademyLearn = () => {
                         )}
 
                         {/* Admin controls */}
-                        {isAdmin && (
+                        {canManageContent && (
                           <div className="flex gap-1 shrink-0">
                             <Button
                               variant="ghost"
@@ -345,7 +348,7 @@ const AcademyLearn = () => {
             </div>
 
             {/* Admin: Add module */}
-            {isAdmin && (
+            {canManageContent && (
               <div className="mt-6">
                 {showAdd ? (
                   <Card className="vault-card p-5 space-y-3 max-w-md">

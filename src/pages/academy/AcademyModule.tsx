@@ -9,7 +9,8 @@ import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
-import { useAcademyRole } from "@/hooks/useAcademyRole";
+import { useAdminMode } from "@/contexts/AdminModeContext";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, Check, CheckCircle2, Plus, Pencil, Trash2,
@@ -39,12 +40,14 @@ const AcademyModule = () => {
   const { modules, loading: modsLoading } = useAcademyModules();
   const { lessons: allLessons, loading: lessonsLoading, refetch: refetchLessons } = useAcademyLessons(moduleSlug);
   const { progress, markComplete } = useLessonProgress();
-  const { isAdmin } = useAcademyRole();
+  const { isAdminActive } = useAdminMode();
+  const { hasPermission } = useAcademyPermissions();
+  const canManageContent = isAdminActive && hasPermission("manage_content");
 
   // Filter hidden lessons for non-admins
   const lessons = useMemo(() =>
-    isAdmin ? allLessons : allLessons.filter(l => l.visible !== false),
-    [allLessons, isAdmin]
+    canManageContent ? allLessons : allLessons.filter(l => l.visible !== false),
+    [allLessons, canManageContent]
   );
 
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -200,7 +203,7 @@ const AcademyModule = () => {
                         isActive
                           ? "bg-primary/10 border-l-2 border-primary"
                           : "hover:bg-muted/40 border-l-2 border-transparent",
-                        isHidden && isAdmin && "opacity-50"
+                        isHidden && canManageContent && "opacity-50"
                       )}
                     >
                       <div className={cn(
@@ -220,11 +223,11 @@ const AcademyModule = () => {
                         )}>
                           {lesson.lesson_title}
                         </span>
-                        {isHidden && isAdmin && (
+                        {isHidden && canManageContent && (
                           <EyeOff className="h-3 w-3 text-yellow-500 shrink-0" />
                         )}
                       </div>
-                      {isAdmin && (
+                      {canManageContent && (
                         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 shrink-0">
                           <button
                             className="p-1 hover:text-foreground text-muted-foreground"
@@ -253,7 +256,7 @@ const AcademyModule = () => {
               </div>
 
               {/* Admin: add lesson */}
-              {isAdmin && (
+              {canManageContent && (
                 <div className="px-4 py-3 border-t border-border">
                   {showAdd ? (
                     <div className="space-y-2">
@@ -281,7 +284,7 @@ const AcademyModule = () => {
         {/* Main content area */}
         <div className="flex-1 flex flex-col overflow-y-auto">
           {/* Edit panel */}
-          {editingId && isAdmin && (() => {
+          {editingId && canManageContent && (() => {
             const lesson = lessons.find((l) => l.id === editingId);
             if (!lesson) return null;
             return (
@@ -444,7 +447,7 @@ const AcademyModule = () => {
           {!editingId && !activeLesson && (
             <div className="flex-1 flex items-center justify-center">
               <p className="text-sm text-muted-foreground">
-                No lessons yet.{isAdmin && " Add your first lesson in the sidebar."}
+                No lessons yet.{canManageContent && " Add your first lesson in the sidebar."}
               </p>
             </div>
           )}
