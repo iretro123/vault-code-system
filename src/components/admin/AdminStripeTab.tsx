@@ -270,7 +270,7 @@ export function AdminStripeTab() {
                       <TableCell>
                         {s.stripe_customer_id ? (
                           <button
-                            onClick={(e) => { e.stopPropagation(); copyToClipboard(s.stripe_customer_id!); }}
+                            onClick={(e) => { e.stopPropagation(); copyToClip(s.stripe_customer_id!); }}
                             className="text-xs font-mono text-muted-foreground hover:text-foreground flex items-center gap-1"
                           >
                             {s.stripe_customer_id.slice(0, 18)}… <Copy className="h-3 w-3" />
