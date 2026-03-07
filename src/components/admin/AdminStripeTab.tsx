@@ -420,7 +420,7 @@ function WebhookEventDetailModal({ event, onClose }: { event: WebhookEventRow; o
                   <span className="font-mono text-right max-w-[250px] truncate">{value}</span>
                 )}
                 {copyable && value && value !== "—" && (
-                  <button onClick={() => copyToClipboard(value as string)} className="text-muted-foreground hover:text-foreground">
+                  <button onClick={() => copyToClip(value as string)} className="text-muted-foreground hover:text-foreground">
                     <Copy className="h-3 w-3" />
                   </button>
                 )}
