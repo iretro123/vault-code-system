@@ -385,7 +385,7 @@ function ItemList({
                 <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
                 {item.body && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1 truncate">
-                  {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+{formatRelative(item.created_at)}
                 </p>
               </div>
             </button>
