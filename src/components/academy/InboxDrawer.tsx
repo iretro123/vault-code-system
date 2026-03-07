@@ -204,8 +204,8 @@ function InlineThreadView({
                         </Avatar>
                       ) : (
                         <Avatar className="h-7 w-7">
-                          <AvatarImage src={senderAvatarSrc} alt={senderName} />
-                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">RZ</AvatarFallback>
+                          {senderAvatarSrc && <AvatarImage src={senderAvatarSrc} alt={senderName} />}
+                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{senderInitials}</AvatarFallback>
                         </Avatar>
                       )
                     ) : null}
