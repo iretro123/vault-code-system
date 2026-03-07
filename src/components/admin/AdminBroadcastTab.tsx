@@ -154,6 +154,7 @@ export function AdminBroadcastTab() {
             title: title.trim(),
             body: body.trim(),
             link: linkVal,
+            sender_id: user!.id,
           });
         } else {
           await supabase.from("inbox_items").insert({
