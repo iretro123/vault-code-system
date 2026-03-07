@@ -485,8 +485,8 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const handleClick = (item: InboxItem) => {
     if (!item.read_at) markRead(item.id);
 
-    // If it's a reminder (like welcome DM), open inline thread for reply
-    if (item.type === "reminder") {
+    // If it's a DM-type item (reminder or coach_reply), open inline thread for reply
+    if (item.type === "reminder" || item.type === "coach_reply") {
       setActiveThread(item);
       return;
     }
