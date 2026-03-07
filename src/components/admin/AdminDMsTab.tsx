@@ -19,6 +19,7 @@ import {
   DmThread,
   type DmAttachmentData,
 } from "@/hooks/useDirectMessages";
+import { useUserPresence } from "@/hooks/useUserPresence";
 
 /* ── Last message preview hook ── */
 function useLastMessages(threadIds: string[]) {
