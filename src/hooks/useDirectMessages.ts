@@ -122,6 +122,39 @@ export function useThreadMessages(threadId: string | null) {
     fetchMessages();
   }, [fetchMessages]);
 
+  /** Add an optimistic message that appears instantly for the sender */
+  const addOptimisticMessage = useCallback(
+    (msg: DmMessage) => {
+      setMessages((prev) => [...prev, msg]);
+    },
+    []
+  );
+
+  /** Remove optimistic messages that match a confirmed real message */
+  const reconcileOptimistic = useCallback(
+    (realMsg: DmMessage) => {
+      setMessages((prev) => {
+        // Find matching optimistic msg (same sender + body)
+        const optimisticIdx = prev.findIndex(
+          (m) =>
+            m.id.startsWith("optimistic-") &&
+            m.sender_id === realMsg.sender_id &&
+            m.body === realMsg.body
+        );
+        if (optimisticIdx !== -1) {
+          // Replace optimistic with real
+          const next = [...prev];
+          next[optimisticIdx] = realMsg;
+          return next;
+        }
+        // No optimistic match — just append if not duplicate
+        if (prev.some((m) => m.id === realMsg.id)) return prev;
+        return [...prev, realMsg];
+      });
+    },
+    []
+  );
+
   // Realtime subscription — INSERT (new messages) + UPDATE (read_at changes)
   useEffect(() => {
     if (!threadId) return;
@@ -136,11 +169,7 @@ export function useThreadMessages(threadId: string | null) {
           filter: `thread_id=eq.${threadId}`,
         },
         (payload) => {
-          const newMsg = payload.new as DmMessage;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
-          });
+          reconcileOptimistic(payload.new as DmMessage);
         }
       )
       .on(
@@ -163,9 +192,9 @@ export function useThreadMessages(threadId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [threadId]);
+  }, [threadId, reconcileOptimistic]);
 
-  return { messages, loading, refetchMessages: fetchMessages };
+  return { messages, loading, refetchMessages: fetchMessages, addOptimisticMessage };
 }
 
 /**

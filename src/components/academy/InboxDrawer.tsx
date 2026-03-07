@@ -119,7 +119,7 @@ function InlineThreadView({
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { messages, loading: msgsLoading } = useThreadMessages(threadId);
+  const { messages, loading: msgsLoading, addOptimisticMessage } = useThreadMessages(threadId);
 
   // Resolve thread — prefer direct dm_thread_id link, fallback to lookup
   useEffect(() => {
@@ -154,9 +154,22 @@ function InlineThreadView({
 
   const handleSend = async (extraAttachments?: DmAttachment[]) => {
     if ((!draft.trim() && !extraAttachments?.length) || !user?.id || !threadId) return;
+    const body = draft.trim();
+    const optimisticId = `optimistic-${Date.now()}`;
+
+    // Optimistic: show message instantly
+    addOptimisticMessage({
+      id: optimisticId,
+      thread_id: threadId,
+      sender_id: user.id,
+      body,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      attachments: extraAttachments || [],
+    });
+    setDraft("");
     setSending(true);
-    const ok = await sendDmMessage(threadId, user.id, draft.trim(), extraAttachments);
-    if (ok) setDraft("");
+    await sendDmMessage(threadId, user.id, body, extraAttachments);
     setSending(false);
   };
 

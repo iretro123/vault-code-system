@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -337,6 +337,15 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [user, authLoading, fetchOnboarding, fetchNotifications, fetchInbox, fetchReferrals]);
 
+  // Debounced inbox refetch — collapses rapid-fire DM events into one fetch
+  const inboxDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedFetchInbox = useCallback(() => {
+    if (inboxDebounceRef.current) clearTimeout(inboxDebounceRef.current);
+    inboxDebounceRef.current = setTimeout(() => {
+      fetchInbox();
+    }, 400);
+  }, [fetchInbox]);
+
   // Realtime: auto-refresh inbox when new items arrive for this user
   useEffect(() => {
     if (!user?.id) return;
@@ -350,7 +359,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
           table: "inbox_items",
           filter: `user_id=eq.${user.id}`,
         },
-        () => { fetchInbox(); }
+        () => { debouncedFetchInbox(); }
       )
       .on(
         "postgres_changes",
@@ -360,12 +369,28 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
           table: "inbox_items",
           filter: `user_id=eq.${user.id}`,
         },
-        () => { fetchInbox(); }
+        (payload) => {
+          // Optimistic: update timestamp immediately before full refetch
+          const updated = payload.new as any;
+          if (updated?.id) {
+            setInboxItems((prev) =>
+              prev.map((i) =>
+                i.id === updated.id
+                  ? { ...i, body: updated.body ?? i.body, created_at: updated.created_at ?? i.created_at, read_at: null }
+                  : i
+              )
+            );
+          }
+          debouncedFetchInbox();
+        }
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [user?.id, fetchInbox]);
+    return () => {
+      supabase.removeChannel(channel);
+      if (inboxDebounceRef.current) clearTimeout(inboxDebounceRef.current);
+    };
+  }, [user?.id, debouncedFetchInbox]);
 
   return (
     <AcademyDataContext.Provider
