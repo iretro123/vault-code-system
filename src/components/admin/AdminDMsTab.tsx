@@ -301,8 +301,17 @@ function ThreadConversation({
         )}
       </ScrollArea>
 
-      {/* ── Pill Input ── */}
-      <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06]">
+      {/* ── Premium Input ── */}
+      <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06] bg-gradient-to-t from-white/[0.01] to-transparent">
+        {user?.id && (
+          <DmFileUpload
+            threadId={thread.id}
+            userId={user.id}
+            uploading={uploading}
+            setUploading={setUploading}
+            onUploaded={(att) => handleSend([att as DmAttachmentData])}
+          />
+        )}
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -316,7 +325,7 @@ function ThreadConversation({
           }}
         />
         <button
-          onClick={handleSend}
+          onClick={() => handleSend()}
           disabled={!draft.trim() || sending}
           className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
         >
