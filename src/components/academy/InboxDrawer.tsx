@@ -263,7 +263,7 @@ function InlineThreadView({
                       const isLastOutgoing = !nextMsg || nextMsg.sender_id !== user?.id;
                       if (!isLastOutgoing) return null;
                       if ((m as any).read_at) {
-                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read · {formatDistanceToNow(new Date((m as any).read_at), { addSuffix: true })}</p>;
+                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read · {formatRelative((m as any).read_at)}</p>;
                       }
                       return <p className="text-[10px] text-muted-foreground/40 mt-0.5 text-right mr-1">Delivered</p>;
                     })()}
