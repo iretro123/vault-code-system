@@ -186,8 +186,6 @@ export function AdminBroadcastTab() {
   };
 
   const handleResend = (r: BroadcastRecord) => {
-    setMode(r.mode as any);
-    setChannel(r.channel);
     setRecipientType(r.recipient_type as any);
     setUserId(r.recipient_user_id || "");
     setTitle(r.title);
