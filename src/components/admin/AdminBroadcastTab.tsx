@@ -75,6 +75,15 @@ export function AdminBroadcastTab() {
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  /* ── Auto DM state ── */
+  const [dmEnabled, setDmEnabled] = useState(true);
+  const [dmTitle, setDmTitle] = useState("Welcome to Vault OS");
+  const [dmBody, setDmBody] = useState("");
+  const [dmLink, setDmLink] = useState("/academy/home");
+  const [dmSaving, setDmSaving] = useState(false);
+  const [dmLoading, setDmLoading] = useState(true);
+  const [dmPreview, setDmPreview] = useState(false);
+
   const fetchUsers = useCallback(async () => {
     const { data } = await supabase
       .from("profiles")
