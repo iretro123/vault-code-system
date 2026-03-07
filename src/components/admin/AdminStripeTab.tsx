@@ -81,9 +81,10 @@ const STATUS_COLORS: Record<string, string> = {
   ignored: "bg-gray-500/15 text-gray-400 border-gray-500/20",
 };
 
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text);
-  toast.success("Copied");
+const copyToClip = async (text: string) => {
+  const { copyToClipboard } = await import("@/lib/copyToClipboard");
+  const ok = await copyToClipboard(text);
+  ok ? toast.success("Copied") : toast.error("Failed to copy");
 };
 
 // ─── Main Component ───
