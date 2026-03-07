@@ -258,17 +258,6 @@ export function AdminBroadcastTab() {
               )}
             </div>
 
-            {/* SMS opt-in notice */}
-            {channel === "sms" && (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.04] p-3 space-y-1">
-                <p className="text-xs font-medium text-amber-400">SMS Requirements</p>
-                <ul className="text-[10px] text-muted-foreground space-y-0.5 list-disc list-inside">
-                  <li>Recipient must have a verified phone number</li>
-                  <li>User must have explicitly opted in to SMS notifications</li>
-                  <li>Do-not-contact and unsubscribe flags are respected</li>
-                </ul>
-              </div>
-            )}
 
             {/* Template quick-fill */}
             <div className="space-y-1.5">
