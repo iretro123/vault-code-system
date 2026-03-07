@@ -168,15 +168,16 @@ function InlineThreadView({
         <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="h-9 w-9 shrink-0 ring-2 ring-primary/20 rounded-full">
+        <div className="relative h-9 w-9 shrink-0 ring-2 ring-primary/20 rounded-full">
           <ChatAvatar avatarUrl={item.sender_avatar} userName={senderName} size="h-9 w-9" />
+          <PresenceDot userId={item.sender_id} />
         </div>
         <div className="flex flex-col min-w-0">
           <span className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-foreground truncate">{senderName}</span>
             {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
           </span>
-          <span className="text-[11px] text-muted-foreground/60 leading-none">Direct Message</span>
+          <PresenceLabel userId={item.sender_id} />
         </div>
       </div>
 
