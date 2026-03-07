@@ -9,7 +9,8 @@ import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
-import { useAcademyRole } from "@/hooks/useAcademyRole";
+import { useAdminMode } from "@/contexts/AdminModeContext";
+import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, Check, CheckCircle2, Plus, Pencil, Trash2,
