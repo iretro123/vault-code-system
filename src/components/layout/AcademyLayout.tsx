@@ -25,10 +25,14 @@ function AcademyLayoutInner() {
   const { hydrated } = useAcademyData();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
+  const { toast } = useToast();
+  const isOnline = useOnlineStatus();
   const lastPageRef = useRef("");
+  const hadUserRef = useRef(false);
   useSmartNotifications();
 
   const isCommunity = location.pathname.startsWith("/academy/community");
