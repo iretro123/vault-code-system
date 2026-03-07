@@ -35,6 +35,7 @@ function AcademyLayoutInner() {
   const lastPageRef = useRef("");
   const hadUserRef = useRef(false);
   useSmartNotifications();
+  usePresenceHeartbeat();
 
   const isCommunity = location.pathname.startsWith("/academy/community");
   const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
