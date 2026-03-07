@@ -194,7 +194,7 @@ function ThreadConversation({
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-1 pb-3 border-b border-white/[0.06]">
+      <div className="flex items-center gap-3 px-1 pb-3 border-b border-white/[0.06] bg-gradient-to-r from-white/[0.02] to-transparent">
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
