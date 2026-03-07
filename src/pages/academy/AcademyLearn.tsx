@@ -228,7 +228,7 @@ const AcademyLearn = () => {
                     className={cn(
                       "vault-card overflow-hidden group transition-colors transition-shadow duration-200",
                       isLocked ? "opacity-70" : "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer",
-                      isHidden && isAdmin && "opacity-60 border-dashed"
+                      isHidden && canManageContent && "opacity-60 border-dashed"
                     )}
                     onClick={() => !isLocked && navigate(`/academy/learn/${mod.slug}`)}
                   >
