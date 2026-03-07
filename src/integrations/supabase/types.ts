@@ -830,6 +830,7 @@ export type Database = {
           link: string | null
           pinned: boolean
           read_at: string | null
+          sender_id: string | null
           title: string
           type: string
           user_id: string | null
@@ -841,6 +842,7 @@ export type Database = {
           link?: string | null
           pinned?: boolean
           read_at?: string | null
+          sender_id?: string | null
           title: string
           type?: string
           user_id?: string | null
@@ -852,6 +854,7 @@ export type Database = {
           link?: string | null
           pinned?: boolean
           read_at?: string | null
+          sender_id?: string | null
           title?: string
           type?: string
           user_id?: string | null

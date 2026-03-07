@@ -8,12 +8,15 @@ import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import {
   getOrCreateThread,
   useThreadMessages,
   sendDmMessage,
   markThreadRead,
 } from "@/hooks/useDirectMessages";
+import vaultLogo from "@/assets/vault-v-logo.png";
 
 interface InboxDrawerProps {
   open: boolean;
@@ -33,6 +36,39 @@ function typeIcon(type: string) {
     case "live_scheduled": return <Radio className="h-4 w-4 text-[hsl(200,80%,65%)]" />;
     default: return <Bell className="h-4 w-4 text-muted-foreground" />;
   }
+}
+
+/* ── Sender avatar helper ── */
+function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
+  const initials = item.sender_name
+    ? item.sender_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    : "VA";
+
+  if (!item.sender_id) {
+    return (
+      <Avatar style={{ width: size, height: size }} className="shrink-0">
+        <AvatarImage src={vaultLogo} alt="Vault Academy" />
+        <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">VA</AvatarFallback>
+      </Avatar>
+    );
+  }
+
+  return (
+    <Avatar style={{ width: size, height: size }} className="shrink-0">
+      {item.sender_avatar && <AvatarImage src={item.sender_avatar} alt={item.sender_name || "Sender"} />}
+      <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{initials}</AvatarFallback>
+    </Avatar>
+  );
+}
+
+function SenderName({ item }: { item: InboxItem }) {
+  const name = item.sender_name || "Vault Academy";
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="text-[11px] font-semibold text-foreground/80">{name}</span>
+      {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+    </span>
+  );
 }
 
 /* ── Inline Thread View (reply to a DM) ── */
@@ -228,11 +264,14 @@ function ItemList({
               onClick={() => onItemClick(item)}
               className="min-w-0 flex-1 w-0 flex items-start gap-2.5 text-left"
             >
-              <span className="mt-0.5 shrink-0">{typeIcon(item.type)}</span>
+              <span className="mt-0.5 shrink-0">
+                <SenderAvatar item={item} size={28} />
+              </span>
               {!item.read_at && (
                 <span className="mt-1.5 h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
               )}
               <div className="min-w-0 flex-1">
+                <SenderName item={item} />
                 <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
                 {item.body && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1 truncate">
@@ -284,9 +323,15 @@ function WhatsNewCard({
         isUnread ? "border-[hsl(45,90%,50%)]/20" : "border-white/[0.08]"
       }`}
     >
-      <div className="flex items-center gap-2 mb-2.5">
-        <span className="shrink-0">{typeIcon(item.type)}</span>
-        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <SenderAvatar item={item} size={24} />
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[11px] font-semibold text-foreground/80 truncate">
+            {item.sender_name || "Vault Academy"}
+          </span>
+          {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+        </div>
+        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground ml-auto shrink-0">
           {whatsNewTypeLabel(item.type)}
         </span>
         {isUnread && (

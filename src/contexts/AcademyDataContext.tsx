@@ -18,6 +18,10 @@ export interface InboxItem {
   created_at: string;
   read_at: string | null;
   pinned: boolean;
+  sender_id: string | null;
+  sender_name: string | null;
+  sender_avatar: string | null;
+  sender_role: string | null;
 }
 
 interface ReferralStats {
@@ -165,9 +169,44 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
 
     const dismissedSet = new Set((dismissals as any[] || []).map((d: any) => d.inbox_item_id));
 
-    const mapped = (data as any[] || [])
-      .filter((d: any) => !dismissedSet.has(d.id))
-      .map((d: any) => ({
+    const filtered = (data as any[] || []).filter((d: any) => !dismissedSet.has(d.id));
+
+    // Collect unique sender_ids to batch-fetch profiles + roles
+    const senderIds = [...new Set(filtered.map((d: any) => d.sender_id).filter(Boolean))] as string[];
+
+    let senderMap: Record<string, { name: string | null; avatar: string | null; role: string | null }> = {};
+
+    if (senderIds.length > 0) {
+      const [{ data: profiles }, { data: userRoles }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("user_id, display_name, avatar_url")
+          .in("user_id", senderIds),
+        supabase
+          .from("academy_user_roles" as any)
+          .select("user_id, role_id, academy_roles(name)")
+          .in("user_id", senderIds),
+      ]);
+
+      for (const p of (profiles as any[] || [])) {
+        senderMap[p.user_id] = { name: p.display_name, avatar: p.avatar_url, role: null };
+      }
+
+      for (const ur of (userRoles as any[] || [])) {
+        const roleName = ur.academy_roles?.name;
+        if (roleName && senderMap[ur.user_id]) {
+          // Keep highest priority role (CEO > Admin > Coach)
+          const current = senderMap[ur.user_id].role;
+          if (!current || roleName === "CEO" || (roleName === "Admin" && current !== "CEO") || (roleName === "Coach" && !current)) {
+            senderMap[ur.user_id].role = roleName;
+          }
+        }
+      }
+    }
+
+    const mapped: InboxItem[] = filtered.map((d: any) => {
+      const sender = d.sender_id ? senderMap[d.sender_id] : null;
+      return {
         id: d.id,
         user_id: d.user_id,
         type: d.type,
@@ -177,7 +216,12 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
         created_at: d.created_at,
         read_at: d.read_at,
         pinned: d.pinned ?? false,
-      }));
+        sender_id: d.sender_id ?? null,
+        sender_name: sender?.name ?? null,
+        sender_avatar: sender?.avatar ?? null,
+        sender_role: sender?.role ?? null,
+      };
+    });
     setInboxItems(mapped);
     writeCache(CACHE_KEY_INBOX, mapped);
     setInboxLoading(false);

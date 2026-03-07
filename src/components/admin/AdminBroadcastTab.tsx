@@ -154,6 +154,7 @@ export function AdminBroadcastTab() {
             title: title.trim(),
             body: body.trim(),
             link: linkVal,
+            sender_id: user!.id,
           });
         } else {
           await supabase.from("inbox_items").insert({
@@ -162,6 +163,7 @@ export function AdminBroadcastTab() {
             title: title.trim(),
             body: body.trim(),
             link: linkVal,
+            sender_id: user!.id,
           });
         }
       } else {
@@ -172,6 +174,7 @@ export function AdminBroadcastTab() {
           body: body.trim(),
           link: linkVal,
           pinned: false,
+          sender_id: user!.id,
         });
         await supabase.from("academy_notifications").insert({
           user_id: targetUserId,

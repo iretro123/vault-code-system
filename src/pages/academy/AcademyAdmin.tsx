@@ -95,6 +95,7 @@ const AcademyAdmin = () => {
       body: annoBody.trim(),
       link: annoLink.trim() || null,
       pinned: annoPinned,
+      sender_id: user!.id,
     } as any);
     if (error) toast.error(error.message);
     else {
@@ -113,6 +114,7 @@ const AcademyAdmin = () => {
       title: motiTitle.trim(),
       body: motiBody.trim(),
       link: null,
+      sender_id: user!.id,
     } as any);
     if (error) toast.error(error.message);
     else {
