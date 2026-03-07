@@ -979,11 +979,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           const canDelete = !msg.is_deleted && (isOwn || isOperator || canModerate);
           const isEditing = editingId === msg.id;
 
-          const copyMessage = () => {
-            navigator.clipboard.writeText(msg.body).then(
-              () => toast.success("Copied to clipboard"),
-              () => toast.error("Failed to copy")
-            );
+          const copyMessage = async () => {
+            const { copyToClipboard } = await import("@/lib/copyToClipboard");
+            const ok = await copyToClipboard(msg.body);
+            ok ? toast.success("Copied to clipboard") : toast.error("Failed to copy");
           };
 
           const isPinned = pinnedMessageId === msg.id;

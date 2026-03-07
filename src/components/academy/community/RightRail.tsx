@@ -43,11 +43,10 @@ export function RightRail({ slug, pinnedMessages = [], onClose }: RightRailProps
     { label: "Ask Feedback", template: FEEDBACK_FORMAT, icon: "💬" },
   ];
 
-  const copyTemplate = (t: string) => {
-    navigator.clipboard.writeText(t).then(
-      () => toast.success("Template copied — paste into the composer"),
-      () => toast.error("Failed to copy")
-    );
+  const copyTemplate = async (t: string) => {
+    const { copyToClipboard } = await import("@/lib/copyToClipboard");
+    const ok = await copyToClipboard(t);
+    ok ? toast.success("Template copied — paste into the composer") : toast.error("Failed to copy");
   };
 
   return (

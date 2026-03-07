@@ -81,7 +81,8 @@ interface ChatMessage {
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
+    const { copyToClipboard } = await import("@/lib/copyToClipboard");
+    await copyToClipboard(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

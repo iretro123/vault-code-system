@@ -89,9 +89,10 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
   const [showGuidelines, setShowGuidelines] = useState(false);
   const refLink = `${window.location.origin}/ref/${user?.id || ""}`;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(refLink);
-    toast.success("Referral link copied!");
+  const handleCopy = async () => {
+    const { copyToClipboard } = await import("@/lib/copyToClipboard");
+    const ok = await copyToClipboard(refLink);
+    ok ? toast.success("Referral link copied!") : toast.error("Failed to copy");
   };
 
   return (

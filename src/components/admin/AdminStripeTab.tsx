@@ -186,7 +186,7 @@ export function AdminStripeTab() {
                 Run Test Checkout
               </Button>
               <button
-                onClick={() => { navigator.clipboard.writeText("4242424242424242"); toast.success("Test card copied"); }}
+                onClick={async () => { const { copyToClipboard } = await import("@/lib/copyToClipboard"); await copyToClipboard("4242424242424242"); toast.success("Test card copied"); }}
                 className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-mono"
               >
                 4242 4242 4242 4242 <Copy className="h-3 w-3" />
