@@ -302,22 +302,13 @@ export function AdminBroadcastTab() {
               <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
             </div>
 
-            {/* Email-specific fields (behind feature flag) */}
-            {enableMessagingProviders && channel === "email" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Subject Line Override (optional)</Label>
-                <Input placeholder="Override email subject…" disabled />
-                <p className="text-[10px] text-muted-foreground">Leave empty to use the title above</p>
-              </div>
-            )}
-
             <Button
               onClick={handleSend}
               disabled={sending || !title.trim() || (recipientType === "single" && !userId)}
               className="gap-1.5"
             >
               {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              {channel !== "in_app" && !enableMessagingProviders ? "Save Draft" : "Send"}
+              Send
             </Button>
           </Card>
         </TabsContent>
