@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, ToggleLeft, Loader2 } from "lucide-react";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, ToggleLeft, Loader2, MessageSquare } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
@@ -13,9 +13,11 @@ import { AdminLogsTab } from "@/components/admin/AdminLogsTab";
 import { AdminStripeTab } from "@/components/admin/AdminStripeTab";
 import { AdminReferralsTab } from "@/components/admin/AdminReferralsTab";
 import { AdminFeatureFlagsTab } from "@/components/admin/AdminFeatureFlagsTab";
+import { AdminDMsTab } from "@/components/admin/AdminDMsTab";
 
 const TAB_CONFIG = [
   { value: "members", label: "Members", icon: Users, perm: "manage_users" },
+  { value: "dms", label: "DMs", icon: MessageSquare, perm: "manage_notifications" },
   { value: "announcements", label: "Announcements", icon: Megaphone, perm: "manage_notifications" },
   { value: "broadcast", label: "Broadcast", icon: Send, perm: "manage_notifications" },
   { value: "content", label: "Content", icon: BookOpen, perm: "manage_content" },
@@ -129,6 +131,11 @@ const AdminPanel = () => {
           {visibleTabs.some((t) => t.value === "members") && (
             <TabsContent value="members">
               <AdminMembersTab />
+            </TabsContent>
+          )}
+          {visibleTabs.some((t) => t.value === "dms") && (
+            <TabsContent value="dms">
+              <AdminDMsTab />
             </TabsContent>
           )}
           {visibleTabs.some((t) => t.value === "announcements") && (

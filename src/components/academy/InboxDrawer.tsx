@@ -1,11 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio, X } from "lucide-react";
+import { Check, MessageSquare, Megaphone, Bell, Sparkles, Mail, BookOpen, Radio, X, ArrowLeft, Send, Loader2 } from "lucide-react";
 import { useAcademyData, InboxItem } from "@/contexts/AcademyDataContext";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  getOrCreateThread,
+  useThreadMessages,
+  sendDmMessage,
+  markThreadRead,
+} from "@/hooks/useDirectMessages";
 
 interface InboxDrawerProps {
   open: boolean;
@@ -15,6 +23,7 @@ interface InboxDrawerProps {
 const INBOX_TYPES = ["coach_reply", "reminder"];
 const WHATS_NEW_TYPES = ["announcement", "new_module", "live_scheduled"];
 
+/* ── Type icon helper ── */
 function typeIcon(type: string) {
   switch (type) {
     case "coach_reply": return <MessageSquare className="h-4 w-4 text-[hsl(45,90%,50%)]" />;
@@ -26,6 +35,139 @@ function typeIcon(type: string) {
   }
 }
 
+/* ── Inline Thread View (reply to a DM) ── */
+function InlineThreadView({
+  item,
+  onBack,
+}: {
+  item: InboxItem;
+  onBack: () => void;
+}) {
+  const { user } = useAuth();
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [initializing, setInitializing] = useState(true);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const { messages, loading: msgsLoading } = useThreadMessages(threadId);
+
+  // Find or create thread on mount
+  useEffect(() => {
+    if (!user?.id || !item.id) return;
+    let cancelled = false;
+    (async () => {
+      const id = await getOrCreateThread(user.id, item.id);
+      if (!cancelled) {
+        setThreadId(id);
+        setInitializing(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, item.id]);
+
+  // Mark read
+  useEffect(() => {
+    if (threadId && user?.id) markThreadRead(threadId, user.id);
+  }, [threadId, user?.id, messages.length]);
+
+  // Auto-scroll
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  const handleSend = async () => {
+    if (!draft.trim() || !user?.id || !threadId) return;
+    setSending(true);
+    const ok = await sendDmMessage(threadId, user.id, draft.trim());
+    if (ok) setDraft("");
+    setSending(false);
+  };
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Back header */}
+      <div className="flex items-center gap-2 px-4 pb-3 border-b border-white/[0.06]">
+        <button onClick={onBack} className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
+      </div>
+
+      {/* Messages area */}
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="px-4 py-3 space-y-3">
+          {/* Original message as first bubble */}
+          <div className="flex justify-start">
+            <div className="max-w-[85%] rounded-2xl px-3.5 py-2.5 bg-primary/15 text-sm leading-relaxed">
+              <p className="text-[10px] font-semibold text-primary/80 mb-1">Vault Academy</p>
+              <p className="whitespace-pre-wrap break-words text-foreground">{item.body}</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1">
+                {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+              </p>
+            </div>
+          </div>
+
+          {/* Thread messages */}
+          {initializing || msgsLoading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            messages.map((m) => {
+              const isMe = m.sender_id === user?.id;
+              return (
+                <div key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                      isMe
+                        ? "bg-white/[0.08] text-foreground"
+                        : "bg-primary/15 text-foreground"
+                    }`}
+                  >
+                    {!isMe && <p className="text-[10px] font-semibold text-primary/80 mb-1">Vault Academy</p>}
+                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                      {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={bottomRef} />
+        </div>
+      </ScrollArea>
+
+      {/* Reply input */}
+      <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-t border-white/[0.06]">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Type a reply…"
+          className="flex-1 bg-white/[0.04] border-white/[0.08] text-sm h-9"
+          disabled={initializing}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+        />
+        <Button
+          size="icon"
+          onClick={handleSend}
+          disabled={!draft.trim() || sending || initializing}
+          className="h-9 w-9 shrink-0"
+        >
+          {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Item List (Inbox tab) ── */
 function ItemList({
   items,
   onItemClick,
@@ -113,7 +255,7 @@ function ItemList({
   );
 }
 
-/* ── What's New: premium vertical card ── */
+/* ── What's New card + list ── */
 
 function whatsNewTypeLabel(type: string) {
   switch (type) {
@@ -142,7 +284,6 @@ function WhatsNewCard({
         isUnread ? "border-[hsl(45,90%,50%)]/20" : "border-white/[0.08]"
       }`}
     >
-      {/* Header row: icon + label … dismiss */}
       <div className="flex items-center gap-2 mb-2.5">
         <span className="shrink-0">{typeIcon(item.type)}</span>
         <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -152,21 +293,13 @@ function WhatsNewCard({
           <span className="h-2 w-2 rounded-full bg-[hsl(45,90%,50%)] shrink-0" />
         )}
       </div>
-
-      {/* Title */}
       <p className="text-sm font-semibold text-foreground line-clamp-2 leading-snug">{item.title}</p>
-
-      {/* Body */}
       {item.body && (
         <p className="text-xs text-muted-foreground line-clamp-3 mt-1.5 leading-relaxed">{item.body}</p>
       )}
-
-      {/* Timestamp */}
       <p className="text-[11px] text-muted-foreground/60 mt-3">
         {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
       </p>
-
-      {/* Dismiss X — absolute top-right */}
       <span
         role="button"
         aria-label="Dismiss"
@@ -234,9 +367,11 @@ function WhatsNewList({
   );
 }
 
+/* ── Main InboxDrawer ── */
 export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const navigate = useNavigate();
   const [tab, setTab] = useState("inbox");
+  const [activeThread, setActiveThread] = useState<InboxItem | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const hasFetchedRef = useRef(false);
   const { inboxItems: items, inboxLoading: loading, inboxUnreadCount: unreadCount, refetchInbox: refetch, markInboxRead: markRead, markAllInboxRead: markAllRead, dismissInboxItem } = useAcademyData();
@@ -248,10 +383,10 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
 
   const handleClose = useCallback(() => {
     if (unreadCount > 0) markAllRead();
+    setActiveThread(null);
     onOpenChange(false);
   }, [onOpenChange, unreadCount, markAllRead]);
 
-  // Fetch once on first open, then background-refresh
   useEffect(() => {
     if (open && !hasFetchedRef.current) {
       hasFetchedRef.current = true;
@@ -259,7 +394,6 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     }
   }, [open, refetch]);
 
-  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
@@ -267,7 +401,6 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [open, handleClose]);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => {
@@ -283,11 +416,43 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
 
   const handleClick = (item: InboxItem) => {
     if (!item.read_at) markRead(item.id);
+
+    // If it's a reminder (like welcome DM), open inline thread for reply
+    if (item.type === "reminder") {
+      setActiveThread(item);
+      return;
+    }
+
     if (item.link) {
       onOpenChange(false);
       navigate(item.link);
     }
   };
+
+  // If viewing a thread, show the thread view instead of tabs
+  if (open && activeThread) {
+    return (
+      <div
+        ref={panelRef}
+        className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[340px] max-w-[90vw] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl overflow-hidden visible pointer-events-auto`}
+        style={{ marginLeft: "8px", transition: "none", animation: "none" }}
+      >
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/[0.06]">
+          <h2 className="text-base font-semibold text-foreground">Message</h2>
+          <button
+            onClick={handleClose}
+            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <InlineThreadView
+          item={activeThread}
+          onBack={() => setActiveThread(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
