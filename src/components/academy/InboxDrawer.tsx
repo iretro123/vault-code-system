@@ -173,12 +173,9 @@ function InlineThreadView({
   const userName = (profile as any)?.display_name || user?.email?.split("@")[0] || "You";
   const userInitials = userName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
-  // Build unified message list: original item as first message + thread messages
+  // Render only actual dm_messages — no ghost/fake prepend from inbox item
   type ChatMsg = { id: string; body: string; sender_id: string; created_at: string };
-  const allMessages: ChatMsg[] = [
-    { id: "original", body: item.body, sender_id: item.sender_id || "admin", created_at: item.created_at },
-    ...messages,
-  ];
+  const allMessages: ChatMsg[] = [...messages];
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
