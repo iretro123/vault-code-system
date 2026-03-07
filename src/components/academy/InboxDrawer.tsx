@@ -154,9 +154,22 @@ function InlineThreadView({
 
   const handleSend = async (extraAttachments?: DmAttachment[]) => {
     if ((!draft.trim() && !extraAttachments?.length) || !user?.id || !threadId) return;
+    const body = draft.trim();
+    const optimisticId = `optimistic-${Date.now()}`;
+
+    // Optimistic: show message instantly
+    addOptimisticMessage({
+      id: optimisticId,
+      thread_id: threadId,
+      sender_id: user.id,
+      body,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      attachments: extraAttachments || [],
+    });
+    setDraft("");
     setSending(true);
-    const ok = await sendDmMessage(threadId, user.id, draft.trim(), extraAttachments);
-    if (ok) setDraft("");
+    await sendDmMessage(threadId, user.id, body, extraAttachments);
     setSending(false);
   };
 
