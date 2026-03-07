@@ -119,7 +119,7 @@ function InlineThreadView({
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { messages, loading: msgsLoading } = useThreadMessages(threadId);
+  const { messages, loading: msgsLoading, addOptimisticMessage } = useThreadMessages(threadId);
 
   // Resolve thread — prefer direct dm_thread_id link, fallback to lookup
   useEffect(() => {
