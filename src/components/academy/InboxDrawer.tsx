@@ -81,7 +81,7 @@ function SenderName({ item }: { item: InboxItem }) {
   );
 }
 
-/* ── Inline Thread View (reply to a DM) ── */
+/* ── Inline Thread View (reply to a DM) — iOS-style ── */
 function InlineThreadView({
   item,
   onBack,
@@ -89,7 +89,7 @@ function InlineThreadView({
   item: InboxItem;
   onBack: () => void;
 }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [draft, setDraft] = useState("");
@@ -103,9 +103,7 @@ function InlineThreadView({
     if (!user?.id || !item.id) return;
     let cancelled = false;
     (async () => {
-      // First try to find any existing thread for this user
       let id = await findThreadByUser(user.id);
-      // If none exists, create one tied to this inbox item
       if (!id) {
         id = await getOrCreateThread(user.id, item.id);
       }
@@ -135,58 +133,90 @@ function InlineThreadView({
     setSending(false);
   };
 
+  // Sender info
+  const senderName = item.sender_name || "RZ";
+  const senderAvatarSrc =
+    item.sender_avatar && item.sender_avatar.startsWith("http")
+      ? item.sender_avatar
+      : rzAvatar;
+
+  // User info
+  const userName = (profile as any)?.display_name || user?.email?.split("@")[0] || "You";
+  const userInitials = userName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  // Build unified message list: original item as first message + thread messages
+  type ChatMsg = { id: string; body: string; sender_id: string; created_at: string };
+  const allMessages: ChatMsg[] = [
+    { id: "original", body: item.body, sender_id: item.sender_id || "admin", created_at: item.created_at },
+    ...messages,
+  ];
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Back header */}
-      <div className="flex items-center gap-2 px-4 pb-3 border-b border-white/[0.06]">
-        <button onClick={onBack} className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
+      {/* ── Chat header with avatar + name + badge ── */}
+      <div className="flex items-center gap-3 px-4 pb-3 border-b border-white/[0.06]">
+        <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
+        <Avatar className="h-8 w-8 shrink-0 ring-2 ring-primary/20">
+          <AvatarImage src={senderAvatarSrc} alt={senderName} />
+          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">RZ</AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col min-w-0">
+          <span className="flex items-center gap-1.5">
+            <span className="text-sm font-semibold text-foreground truncate">{senderName}</span>
+            {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+          </span>
+          <span className="text-[11px] text-muted-foreground/60 leading-none">Direct Message</span>
+        </div>
       </div>
 
-      {/* Messages area */}
+      {/* ── Messages area ── */}
       <ScrollArea className="flex-1 min-h-0">
-        <div className="px-4 py-3 space-y-3">
-          {/* Original message as first bubble */}
-          <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-2xl px-3.5 py-2.5 bg-primary/15 text-sm leading-relaxed">
-              <span className="flex items-center gap-1.5 mb-1">
-                <span className="text-[10px] font-semibold text-primary/80">{item.sender_name || "RZ"}</span>
-                {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
-              </span>
-              <p className="whitespace-pre-wrap break-words text-foreground">{item.body}</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-1">
-                {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
-              </p>
-            </div>
-          </div>
-
-          {/* Thread messages */}
+        <div className="px-3 py-4 space-y-1">
           {initializing || msgsLoading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
             </div>
           ) : (
-            messages.map((m) => {
+            allMessages.map((m, idx) => {
               const isMe = m.sender_id === user?.id;
+              const prev = idx > 0 ? allMessages[idx - 1] : null;
+              const sameSenderAsPrev = prev && (prev.sender_id === user?.id) === isMe;
+              const showAvatar = !sameSenderAsPrev;
+
               return (
-                <div key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                <div
+                  key={m.id}
+                  className={`flex items-end gap-2 ${isMe ? "flex-row-reverse" : "flex-row"} ${sameSenderAsPrev ? "mt-0.5" : "mt-3"}`}
+                  style={idx === 0 ? { marginTop: 0 } : undefined}
+                >
+                  {/* Avatar slot */}
+                  <div className="w-7 shrink-0 flex justify-center">
+                    {showAvatar ? (
+                      isMe ? (
+                        <Avatar className="h-7 w-7">
+                          <AvatarFallback className="text-[10px] bg-white/[0.08] text-foreground/70 font-semibold">{userInitials}</AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={senderAvatarSrc} alt={senderName} />
+                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">RZ</AvatarFallback>
+                        </Avatar>
+                      )
+                    ) : null}
+                  </div>
+
+                  {/* Bubble */}
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-[78%] px-3.5 py-2 text-[13.5px] leading-relaxed ${
                       isMe
-                        ? "bg-white/[0.08] text-foreground"
-                        : "bg-primary/15 text-foreground"
+                        ? `bg-white/[0.10] text-foreground ${showAvatar ? "rounded-2xl rounded-br-md" : "rounded-2xl"}`
+                        : `bg-[hsl(213,45%,22%)] text-foreground ${showAvatar ? "rounded-2xl rounded-bl-md" : "rounded-2xl"}`
                     }`}
                   >
-                    {!isMe && (
-                      <span className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-semibold text-primary/80">{item.sender_name || "RZ"}</span>
-                        {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
-                      </span>
-                    )}
                     <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    <p className={`text-[10px] mt-1 ${isMe ? "text-white/30 text-right" : "text-white/30"}`}>
                       {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                     </p>
                   </div>
@@ -198,13 +228,13 @@ function InlineThreadView({
         </div>
       </ScrollArea>
 
-      {/* Reply input */}
-      <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-t border-white/[0.06]">
-        <Input
+      {/* ── iOS-style input bar ── */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-white/[0.06] bg-[hsl(220,18%,7%)]">
+        <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Type a reply…"
-          className="flex-1 bg-white/[0.04] border-white/[0.08] text-sm h-9"
+          placeholder="Message…"
+          className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-full px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40 transition-colors disabled:opacity-40"
           disabled={initializing}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -213,14 +243,13 @@ function InlineThreadView({
             }
           }}
         />
-        <Button
-          size="icon"
+        <button
           onClick={handleSend}
           disabled={!draft.trim() || sending || initializing}
-          className="h-9 w-9 shrink-0"
+          className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
         >
-          {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </Button>
+          {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+        </button>
       </div>
     </div>
   );
