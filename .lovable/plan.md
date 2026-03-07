@@ -1,48 +1,37 @@
 
 
-## Fix: Persistent Dismiss for Inbox + What's New
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-Two distinct bugs cause dismissed items to reappear:
-
-**Bug 1 — Broadcast inbox items (`user_id = NULL`) can't be deleted or updated.**
-The `inbox_items` DELETE RLS policy is `auth.uid() = user_id`. When `user_id` is NULL, the check always fails silently. Same for UPDATE (mark read). So when a user clicks X on a broadcast item (announcement, new module, etc.), it vanishes from local state but the DB call fails — and it comes right back on refresh/login.
-
-**Bug 2 — Personal items delete works, but the localStorage cache re-seeds stale data.**
-On mount, `AcademyDataContext` seeds state from `localStorage` cache before fetching. If a user dismisses an item and the page reloads before the fresh fetch completes, the cached (stale) list flashes the old item momentarily.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
 ### Solution
 
-**1. Database: Create `inbox_dismissals` table**
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-Simple per-user tracking table:
-- `user_id uuid`, `inbox_item_id uuid`, `dismissed_at timestamptz`
-- Primary key on `(user_id, inbox_item_id)` — one dismiss per user per item
-- RLS: users can INSERT and SELECT their own rows only
-
-This handles broadcast items (shared rows that can't be deleted) by recording that *this user* dismissed *this item*.
-
-**2. Update `AcademyDataContext.tsx` — `fetchInbox`**
-
-After fetching inbox items, also fetch the user's `inbox_dismissals`. Filter out any items whose ID appears in the dismissals set before setting state and writing to cache.
-
-**3. Update `AcademyDataContext.tsx` — `dismissInboxItem`**
-
-- If the item has `user_id === user.id` (personal): keep the existing hard-delete (works with RLS)
-- If the item has `user_id === null` (broadcast): INSERT into `inbox_dismissals` instead
-- Either way, remove from local state + update cache immediately
-
-**4. Update `AcademyDataContext.tsx` — `markInboxRead` / `markAllInboxRead`**
-
-For broadcast items where UPDATE fails due to RLS, track read state via `inbox_dismissals` with a `read_at` column (or just treat dismiss as the action). Since the current UX uses dismiss (X button) as the primary action and "mark all read" auto-fires on panel close, the simplest fix is: for broadcast items, insert a dismissal record when marking read.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
 ### Files
-
-| What | Where |
-|------|-------|
-| Create `inbox_dismissals` table with RLS | DB migration |
-| Update fetch/dismiss/markRead to handle broadcasts | `src/contexts/AcademyDataContext.tsx` |
-
-No changes to `InboxDrawer.tsx` or `NotificationsPanel.tsx` — the UI already calls the right functions, only the underlying data logic needs fixing.
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
