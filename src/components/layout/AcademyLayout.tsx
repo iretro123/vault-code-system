@@ -119,6 +119,12 @@ function AcademyLayoutInner() {
       <AcademySidebar />
 
       <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
+        {!isOnline && (
+          <div className="flex items-center justify-center gap-2 bg-amber-500/15 border-b border-amber-500/20 px-4 py-1.5 text-xs font-medium text-amber-400">
+            <WifiOff className="h-3.5 w-3.5" />
+            You're offline — some features may not work
+          </div>
+        )}
         <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
           <div className="flex h-14 items-center justify-between px-4">
             <div className="flex items-center gap-2">
