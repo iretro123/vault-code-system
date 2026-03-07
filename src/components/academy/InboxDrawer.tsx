@@ -38,6 +38,39 @@ function typeIcon(type: string) {
   }
 }
 
+/* ── Sender avatar helper ── */
+function SenderAvatar({ item, size = 28 }: { item: InboxItem; size?: number }) {
+  const initials = item.sender_name
+    ? item.sender_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    : "VA";
+
+  if (!item.sender_id) {
+    return (
+      <Avatar style={{ width: size, height: size }} className="shrink-0">
+        <AvatarImage src={vaultLogo} alt="Vault Academy" />
+        <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">VA</AvatarFallback>
+      </Avatar>
+    );
+  }
+
+  return (
+    <Avatar style={{ width: size, height: size }} className="shrink-0">
+      {item.sender_avatar && <AvatarImage src={item.sender_avatar} alt={item.sender_name || "Sender"} />}
+      <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{initials}</AvatarFallback>
+    </Avatar>
+  );
+}
+
+function SenderName({ item }: { item: InboxItem }) {
+  const name = item.sender_name || "Vault Academy";
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="text-[11px] font-semibold text-foreground/80">{name}</span>
+      {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+    </span>
+  );
+}
+
 /* ── Inline Thread View (reply to a DM) ── */
 function InlineThreadView({
   item,
