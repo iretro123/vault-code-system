@@ -55,8 +55,8 @@ export function AdminBroadcastTab() {
   const { user } = useAuth();
 
   /* ── Form state ── */
-  const [mode, setMode] = useState<"motivation_ping" | "broadcast">("motivation_ping");
-  const [channel, setChannel] = useState("in_app");
+  const [mode] = useState<"motivation_ping">("motivation_ping");
+  const [channel] = useState("in_app");
   const [recipientType, setRecipientType] = useState<"all" | "single">("single");
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
