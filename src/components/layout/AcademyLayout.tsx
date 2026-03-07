@@ -38,6 +38,15 @@ function AcademyLayoutInner() {
   const isCommunity = location.pathname.startsWith("/academy/community");
   const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
 
+  // Session-loss detection
+  useEffect(() => {
+    if (!loading && hadUserRef.current && !user) {
+      toast({ title: "Session expired", description: "Please sign in again.", variant: "destructive" });
+      navigate("/auth", { replace: true });
+    }
+    if (user) hadUserRef.current = true;
+  }, [user, loading]);
+
   // Page view logging
   useEffect(() => {
     const path = location.pathname;
