@@ -19,6 +19,8 @@ import {
   sendDmMessage,
   markThreadRead,
 } from "@/hooks/useDirectMessages";
+import { DmAttachmentRenderer, type DmAttachment } from "./dm/DmAttachmentRenderer";
+import { DmFileUpload } from "./dm/DmFileUpload";
 import vaultLogo from "@/assets/vault-v-logo.png";
 
 interface InboxDrawerProps {
@@ -129,10 +131,12 @@ function InlineThreadView({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const handleSend = async () => {
-    if (!draft.trim() || !user?.id || !threadId) return;
+  const [uploading, setUploading] = useState(false);
+
+  const handleSend = async (extraAttachments?: DmAttachment[]) => {
+    if ((!draft.trim() && !extraAttachments?.length) || !user?.id || !threadId) return;
     setSending(true);
-    const ok = await sendDmMessage(threadId, user.id, draft.trim());
+    const ok = await sendDmMessage(threadId, user.id, draft.trim(), extraAttachments);
     if (ok) setDraft("");
     setSending(false);
   };
@@ -159,7 +163,7 @@ function InlineThreadView({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* ── Chat header with avatar + name + badge ── */}
-      <div className="flex items-center gap-3 px-4 pb-3 border-b border-white/[0.06]">
+      <div className="flex items-center gap-3 px-4 pb-3 border-b border-white/[0.06] bg-gradient-to-r from-white/[0.02] to-transparent">
         <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -216,6 +220,8 @@ function InlineThreadView({
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      {/* Render attachments */}
+                      <DmAttachmentRenderer attachments={(m as any).attachments || []} />
                       <p className={`text-[10px] mt-1 ${isMe ? "text-white/30 text-right" : "text-white/30"}`}>
                         {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                       </p>
@@ -239,8 +245,18 @@ function InlineThreadView({
         </div>
       </ScrollArea>
 
-      {/* ── iOS-style input bar ── */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-white/[0.06] bg-[hsl(220,18%,7%)]">
+      {/* ── Premium input bar ── */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-t border-white/[0.06] bg-gradient-to-t from-[hsl(220,18%,6%)] to-[hsl(220,18%,7%)]">
+        {threadId && user?.id && (
+          <DmFileUpload
+            threadId={threadId}
+            userId={user.id}
+            uploading={uploading}
+            setUploading={setUploading}
+            onUploaded={(att) => handleSend([att])}
+            disabled={initializing}
+          />
+        )}
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -255,7 +271,7 @@ function InlineThreadView({
           }}
         />
         <button
-          onClick={handleSend}
+          onClick={() => handleSend()}
           disabled={!draft.trim() || sending || initializing}
           className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-30 transition-opacity"
         >

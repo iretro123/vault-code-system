@@ -15,6 +15,14 @@ export interface DmThread {
   user_avatar_url?: string;
 }
 
+export interface DmAttachmentData {
+  type: "image" | "file";
+  url: string;
+  filename: string;
+  size: number;
+  mime: string;
+}
+
 export interface DmMessage {
   id: string;
   thread_id: string;
@@ -22,6 +30,7 @@ export interface DmMessage {
   body: string;
   created_at: string;
   read_at: string | null;
+  attachments: DmAttachmentData[];
 }
 
 /**
@@ -101,7 +110,7 @@ export function useThreadMessages(threadId: string | null) {
         .eq("thread_id", threadId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      setMessages((data as DmMessage[]) || []);
+      setMessages((data as unknown as DmMessage[]) || []);
     } catch (e) {
       console.error("[useThreadMessages] error", e);
     } finally {
@@ -194,11 +203,16 @@ export async function getOrCreateThread(
 export async function sendDmMessage(
   threadId: string,
   senderId: string,
-  body: string
+  body: string,
+  attachments?: DmAttachmentData[]
 ): Promise<boolean> {
+  const insert: any = { thread_id: threadId, sender_id: senderId, body };
+  if (attachments && attachments.length > 0) {
+    insert.attachments = attachments;
+  }
   const { error: msgErr } = await supabase
     .from("dm_messages")
-    .insert({ thread_id: threadId, sender_id: senderId, body });
+    .insert(insert);
 
   if (msgErr) {
     console.error("[sendDmMessage] insert error", msgErr);

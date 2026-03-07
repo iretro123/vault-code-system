@@ -8,6 +8,8 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
+import { DmAttachmentRenderer } from "@/components/academy/dm/DmAttachmentRenderer";
+import { DmFileUpload } from "@/components/academy/dm/DmFileUpload";
 import rzAvatar from "@/assets/rz-avatar.png";
 import {
   useDirectMessages,
@@ -15,6 +17,7 @@ import {
   sendDmMessage,
   markThreadRead,
   DmThread,
+  type DmAttachmentData,
 } from "@/hooks/useDirectMessages";
 
 /* ── Last message preview hook ── */
@@ -95,9 +98,11 @@ function ThreadList({
   if (threads.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <MessageSquare className="h-8 w-8 text-muted-foreground/50 mb-3" />
-        <p className="text-sm font-medium text-foreground/80">No conversations yet</p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 border border-primary/10">
+          <MessageSquare className="h-6 w-6 text-primary/60" />
+        </div>
+        <p className="text-sm font-semibold text-foreground/80">No conversations yet</p>
+        <p className="text-xs text-muted-foreground mt-1.5 max-w-[220px]">
           When members reply to their welcome DM, conversations will appear here.
         </p>
       </div>
@@ -118,7 +123,7 @@ function ThreadList({
           <button
             key={t.id}
             onClick={() => onSelect(t)}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-white/[0.05] transition-colors"
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-white/[0.04] border border-transparent hover:border-white/[0.06] transition-all"
           >
             <div className="relative shrink-0">
               <ChatAvatar
@@ -162,6 +167,7 @@ function ThreadConversation({
   const { messages, loading } = useThreadMessages(thread.id);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const memberName = thread.user_display_name || thread.user_email || "Member";
@@ -177,10 +183,10 @@ function ThreadConversation({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const handleSend = async () => {
-    if (!draft.trim() || !user?.id) return;
+  const handleSend = async (extraAttachments?: DmAttachmentData[]) => {
+    if ((!draft.trim() && !extraAttachments?.length) || !user?.id) return;
     setSending(true);
-    const ok = await sendDmMessage(thread.id, user.id, draft.trim());
+    const ok = await sendDmMessage(thread.id, user.id, draft.trim(), extraAttachments);
     if (ok) setDraft("");
     setSending(false);
   };
@@ -188,7 +194,7 @@ function ThreadConversation({
   return (
     <div className="flex flex-col h-full">
       {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-1 pb-3 border-b border-white/[0.06]">
+      <div className="flex items-center gap-3 px-1 pb-3 border-b border-white/[0.06] bg-gradient-to-r from-white/[0.02] to-transparent">
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -255,8 +261,9 @@ function ThreadConversation({
 
                   {/* Bubble */}
                   <div className="max-w-[75%]">
-                    <div className={`${bubbleColor} ${rounding} px-3.5 py-2 text-sm leading-relaxed`}>
+                    <div className={`${bubbleColor} ${rounding} px-3.5 py-2 text-sm leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.2)]`}>
                       <p className="whitespace-pre-wrap break-words text-foreground">{m.body}</p>
+                      <DmAttachmentRenderer attachments={(m as any).attachments || []} />
                       {isLastInGroup && (
                         <p className="text-[10px] text-muted-foreground/50 mt-1">
                           {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
@@ -294,8 +301,17 @@ function ThreadConversation({
         )}
       </ScrollArea>
 
-      {/* ── Pill Input ── */}
-      <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06]">
+      {/* ── Premium Input ── */}
+      <div className="flex items-center gap-2 pt-3 border-t border-white/[0.06] bg-gradient-to-t from-white/[0.01] to-transparent">
+        {user?.id && (
+          <DmFileUpload
+            threadId={thread.id}
+            userId={user.id}
+            uploading={uploading}
+            setUploading={setUploading}
+            onUploaded={(att) => handleSend([att as DmAttachmentData])}
+          />
+        )}
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -309,7 +325,7 @@ function ThreadConversation({
           }}
         />
         <button
-          onClick={handleSend}
+          onClick={() => handleSend()}
           disabled={!draft.trim() || sending}
           className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
         >
@@ -349,7 +365,7 @@ export function AdminDMsTab() {
   }, [refetchThreads]);
 
   return (
-    <Card className="bg-white/[0.02] border-white/[0.06] p-4 min-h-[400px]">
+    <Card className="bg-white/[0.02] border-white/[0.06] p-5 min-h-[400px] shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
       {selected ? (
         <ThreadConversation
           thread={selected}
@@ -360,9 +376,9 @@ export function AdminDMsTab() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Direct Messages</h3>
-            <p className="text-xs text-muted-foreground">{threads.length} conversation{threads.length !== 1 ? "s" : ""}</p>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-semibold text-foreground tracking-tight">Direct Messages</h3>
+            <p className="text-xs text-muted-foreground/60">{threads.length} conversation{threads.length !== 1 ? "s" : ""}</p>
           </div>
           <ThreadList
             threads={threads}

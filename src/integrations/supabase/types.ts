@@ -704,6 +704,7 @@ export type Database = {
       }
       dm_messages: {
         Row: {
+          attachments: Json | null
           body: string
           created_at: string
           id: string
@@ -712,6 +713,7 @@ export type Database = {
           thread_id: string
         }
         Insert: {
+          attachments?: Json | null
           body: string
           created_at?: string
           id?: string
@@ -720,6 +722,7 @@ export type Database = {
           thread_id: string
         }
         Update: {
+          attachments?: Json | null
           body?: string
           created_at?: string
           id?: string
