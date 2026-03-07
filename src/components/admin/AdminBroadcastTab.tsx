@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Send, Loader2, Zap, Radio, Mail, Smartphone, Clock, CheckCircle2,
+  Send, Loader2, Clock, CheckCircle2,
   AlertTriangle, FileText, Trash2, RotateCcw,
 } from "lucide-react";
 import {
@@ -20,15 +20,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { formatDateTimeFull } from "@/lib/formatTime";
 
-/* ── Feature flag: set true when Email/SMS providers are configured ── */
-const enableMessagingProviders = false;
+/* ── Templates ── */
 
 /* ── Templates ── */
 const TEMPLATES = [
-  { key: "daily_reminder", title: "Daily reminder: journal your trades", body: "Don't forget to log today's trades and reflect on your performance. Consistency builds discipline 📝" },
-  { key: "new_module", title: "New module dropped", body: "A new module is now available in the Academy. Head over to Learn and level up your skills 🚀" },
+  { key: "weekly_review", title: "Weekly Review reminder", body: "Time to review your week. Head to your journal and reflect on wins, losses, and lessons learned 📊" },
+  { key: "log_trades", title: "Log your trades today", body: "Don't forget to log today's trades and reflect on your performance. Consistency builds discipline 📝" },
+  { key: "new_lesson", title: "New lesson available", body: "A new lesson is now available in the Academy. Head over to Learn and level up your skills 🚀" },
   { key: "live_session", title: "Live session starting soon", body: "A live session is about to start! Join now so you don't miss it 🔴" },
-  { key: "coach_replied", title: "Coach replied to your question", body: "Your coach has responded. Check your inbox for the latest answer 💬" },
 ];
 
 interface UserOption {
@@ -55,8 +54,8 @@ export function AdminBroadcastTab() {
   const { user } = useAuth();
 
   /* ── Form state ── */
-  const [mode, setMode] = useState<"motivation_ping" | "broadcast">("motivation_ping");
-  const [channel, setChannel] = useState("in_app");
+  const [mode] = useState<"motivation_ping">("motivation_ping");
+  const [channel] = useState("in_app");
   const [recipientType, setRecipientType] = useState<"all" | "single">("single");
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
@@ -186,8 +185,6 @@ export function AdminBroadcastTab() {
   };
 
   const handleResend = (r: BroadcastRecord) => {
-    setMode(r.mode as any);
-    setChannel(r.channel);
     setRecipientType(r.recipient_type as any);
     setUserId(r.recipient_user_id || "");
     setTitle(r.title);
@@ -220,75 +217,6 @@ export function AdminBroadcastTab() {
         {/* ─── COMPOSE ─── */}
         <TabsContent value="compose">
           <Card className="p-5 space-y-4">
-            {/* Mode selector */}
-            <div className="space-y-1.5">
-              <Label className="text-xs">Mode</Label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setMode("motivation_ping"); setChannel("in_app"); }}
-                  className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors ${
-                    mode === "motivation_ping"
-                      ? "border-primary/40 bg-primary/[0.08] text-primary"
-                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <Zap className="h-4 w-4" />
-                  <div className="text-left">
-                    <p className="font-medium text-xs">Motivation Ping</p>
-                    <p className="text-[10px] opacity-60">Quick in-app notification</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setMode("broadcast")}
-                  className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors ${
-                    mode === "broadcast"
-                      ? "border-primary/40 bg-primary/[0.08] text-primary"
-                      : "border-white/[0.06] bg-white/[0.02] text-muted-foreground hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <Radio className="h-4 w-4" />
-                  <div className="text-left">
-                    <p className="font-medium text-xs">Broadcast</p>
-                    <p className="text-[10px] opacity-60">In-app + Email/SMS</p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Channel (only for broadcast mode) */}
-            {mode === "broadcast" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Channel</Label>
-                <div className="flex gap-2">
-                  <ChannelButton
-                    active={channel === "in_app"}
-                    onClick={() => setChannel("in_app")}
-                    icon={<Zap className="h-3.5 w-3.5" />}
-                    label="In-App"
-                  />
-                  <ChannelButton
-                    active={channel === "email"}
-                    onClick={() => enableMessagingProviders ? setChannel("email") : toast.info("Email provider not configured yet")}
-                    icon={<Mail className="h-3.5 w-3.5" />}
-                    label="Email"
-                    disabled={!enableMessagingProviders}
-                  />
-                  <ChannelButton
-                    active={channel === "sms"}
-                    onClick={() => enableMessagingProviders ? setChannel("sms") : toast.info("SMS provider not configured yet")}
-                    icon={<Smartphone className="h-3.5 w-3.5" />}
-                    label="SMS"
-                    disabled={!enableMessagingProviders}
-                  />
-                </div>
-                {!enableMessagingProviders && (channel === "email" || channel === "sms") && (
-                  <p className="text-[10px] text-amber-400 flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" /> Provider not connected. Message will be saved as draft.
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* Recipient */}
             <div className="space-y-1.5">
               <Label className="text-xs">Recipient</Label>
@@ -330,17 +258,6 @@ export function AdminBroadcastTab() {
               )}
             </div>
 
-            {/* SMS opt-in notice */}
-            {channel === "sms" && (
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.04] p-3 space-y-1">
-                <p className="text-xs font-medium text-amber-400">SMS Requirements</p>
-                <ul className="text-[10px] text-muted-foreground space-y-0.5 list-disc list-inside">
-                  <li>Recipient must have a verified phone number</li>
-                  <li>User must have explicitly opted in to SMS notifications</li>
-                  <li>Do-not-contact and unsubscribe flags are respected</li>
-                </ul>
-              </div>
-            )}
 
             {/* Template quick-fill */}
             <div className="space-y-1.5">
@@ -385,22 +302,13 @@ export function AdminBroadcastTab() {
               <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
             </div>
 
-            {/* Email-specific fields (behind feature flag) */}
-            {enableMessagingProviders && channel === "email" && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Subject Line Override (optional)</Label>
-                <Input placeholder="Override email subject…" disabled />
-                <p className="text-[10px] text-muted-foreground">Leave empty to use the title above</p>
-              </div>
-            )}
-
             <Button
               onClick={handleSend}
               disabled={sending || !title.trim() || (recipientType === "single" && !userId)}
               className="gap-1.5"
             >
               {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              {channel !== "in_app" && !enableMessagingProviders ? "Save Draft" : "Send"}
+              Send
             </Button>
           </Card>
         </TabsContent>
@@ -527,25 +435,5 @@ export function AdminBroadcastTab() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  );
-}
-
-/* ── Small helper component ── */
-function ChannelButton({ active, onClick, icon, label, disabled }: {
-  active: boolean; onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-colors ${
-        disabled ? "opacity-40 cursor-not-allowed" : ""
-      } ${
-        active
-          ? "border-primary/40 bg-primary/[0.08] text-primary"
-          : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
-      }`}
-    >
-      {icon} {label}
-    </button>
   );
 }
