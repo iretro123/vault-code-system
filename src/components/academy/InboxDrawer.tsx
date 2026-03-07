@@ -19,6 +19,8 @@ import {
   sendDmMessage,
   markThreadRead,
 } from "@/hooks/useDirectMessages";
+import { DmAttachmentRenderer, type DmAttachment } from "./dm/DmAttachmentRenderer";
+import { DmFileUpload } from "./dm/DmFileUpload";
 import vaultLogo from "@/assets/vault-v-logo.png";
 
 interface InboxDrawerProps {
