@@ -85,6 +85,25 @@ function SenderName({ item }: { item: InboxItem }) {
   );
 }
 
+/* ── Presence indicators ── */
+function PresenceDot({ userId }: { userId: string | null | undefined }) {
+  const { online } = useUserPresence(userId);
+  return (
+    <span
+      className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
+        online ? "bg-emerald-500" : "bg-muted-foreground/40"
+      }`}
+    />
+  );
+}
+
+function PresenceLabel({ userId }: { userId: string | null | undefined }) {
+  const { online, lastSeenAt } = useUserPresence(userId);
+  if (online) return <span className="text-[11px] text-emerald-400 leading-none">Online</span>;
+  if (lastSeenAt) return <span className="text-[11px] text-muted-foreground/60 leading-none">Last seen {formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true })}</span>;
+  return <span className="text-[11px] text-muted-foreground/60 leading-none">Direct Message</span>;
+}
+
 /* ── Inline Thread View (reply to a DM) — iOS-style ── */
 function InlineThreadView({
   item,
