@@ -279,7 +279,7 @@ function ThreadConversation({
                       const isLastAdminMsg = !next || next.sender_id === thread.user_id;
                       if (!isLastAdminMsg) return null;
                       if (m.read_at) {
-                        return <p className="text-[10px] text-primary/60 mt-0.5 ml-1">Read</p>;
+                        return <p className="text-[10px] text-primary/60 mt-0.5 ml-1">Read · {formatDistanceToNow(new Date(m.read_at), { addSuffix: true })}</p>;
                       }
                       return <p className="text-[10px] text-muted-foreground/40 mt-0.5 ml-1">Delivered</p>;
                     })()}
