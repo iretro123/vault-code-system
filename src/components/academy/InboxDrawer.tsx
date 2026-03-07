@@ -8,6 +8,17 @@ import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
+import {
+  getOrCreateThread,
+  useThreadMessages,
+  sendDmMessage,
+  markThreadRead,
+} from "@/hooks/useDirectMessages";
+import vaultLogo from "@/assets/vault-v-logo.png";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getOrCreateThread,
   useThreadMessages,
