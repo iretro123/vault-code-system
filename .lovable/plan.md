@@ -1,47 +1,37 @@
 
 
-## Bug: Whop Subscribers Get Blocked After Signup
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The access provisioning pipeline has a critical gap for Whop users:
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-1. **Signup gate works** — `check-stripe-customer` correctly verifies Whop membership and shows the green checkmark, allowing signup.
-2. **Provisioning fails** — After signup, `provision-manual-access` ONLY checks the `allowed_signups` whitelist table. If the user isn't manually whitelisted, provisioning returns `not_whitelisted` and no `students` + `student_access` records are created.
-3. **No Whop webhook exists** — Unlike Stripe (which sends webhooks to create access), Whop has no webhook integration to automatically provision access.
-4. **Result** — Whop user signs up successfully, but `get_my_access_state` returns nothing (no student record), so `useStudentAccess` resolves to `status: "none"` and `hasAccess: false`. The `AccessBlockModal` blocks them.
+### Solution
 
-The auto-retry in `useStudentAccess` also calls `provision-manual-access`, which again only checks the whitelist — same dead end.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### Fix
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**One change: Update `provision-manual-access` edge function** to add a Whop membership check as a fallback when the user isn't in the whitelist.
-
-Current flow:
-```text
-Check whitelist → not found → return "not_whitelisted" (BLOCKED)
-```
-
-New flow:
-```text
-Check whitelist → not found → Check Whop API for active membership → found active → provision access
-                                                                   → not found → return "not_whitelisted"
-```
-
-### Changes
-
-| File | Change |
-|------|--------|
-| `supabase/functions/provision-manual-access/index.ts` | After the whitelist check fails, add a Whop API lookup (same pagination logic as `check-stripe-customer`). If the user's email matches an active Whop membership, create the `students` and `student_access` records with `product_key: "vault_academy"` and `status: "active"`, then update `profiles.access_status`. This preserves the existing whitelist path for manually added users. |
-
-### What stays the same
-- Manual whitelist flow (admin adds email → user signs up → provisioned via whitelist) — unchanged.
-- Stripe webhook flow — unchanged.
-- The signup page gate (`check-stripe-customer`) — unchanged; it already verifies Whop.
-- `useStudentAccess` auto-retry — unchanged; it will now succeed because `provision-manual-access` will find the Whop membership.
-
-### Security
-- Self-provisioning still requires a valid JWT where the caller's `uid` matches the target `auth_user_id`.
-- Operator path still works as before.
-- Whop membership is verified server-side via the Whop API with the existing `WHOP_API_KEY` secret.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
