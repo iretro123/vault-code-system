@@ -440,6 +440,88 @@ export function AdminBroadcastTab() {
             ))}
           </div>
         </TabsContent>
+
+        {/* ─── AUTO DM ─── */}
+        <TabsContent value="auto_dm">
+          <Card className="p-5 space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Welcome DM</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Sent once when a new member joins</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{dmEnabled ? "On" : "Off"}</span>
+                <Switch checked={dmEnabled} onCheckedChange={setDmEnabled} />
+              </div>
+            </div>
+
+            {dmLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    value={dmTitle}
+                    onChange={(e) => setDmTitle(e.target.value)}
+                    placeholder="Welcome to Vault OS"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Message</Label>
+                  <Textarea
+                    value={dmBody}
+                    onChange={(e) => setDmBody(e.target.value)}
+                    rows={6}
+                    placeholder="Hey {first_name} — welcome in..."
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground">
+                      Use <code className="bg-white/[0.06] px-1 py-0.5 rounded text-[10px]">{"{first_name}"}</code> to personalize
+                    </p>
+                    <span className="text-[10px] text-muted-foreground">{dmBody.length} chars</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Link (optional)</Label>
+                  <Input
+                    value={dmLink}
+                    onChange={(e) => setDmLink(e.target.value)}
+                    placeholder="/academy/home"
+                  />
+                </div>
+
+                {/* Preview */}
+                {dmPreview && (
+                  <Card className="p-4 bg-white/[0.02] border-white/[0.08]">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-semibold">Preview</p>
+                    <p className="text-sm font-semibold text-foreground">{dmTitle}</p>
+                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line">
+                      {dmBody.replace(/\{first_name\}/g, "Alex")}
+                    </p>
+                    {dmLink && (
+                      <p className="text-xs text-primary mt-2 underline">{dmLink}</p>
+                    )}
+                  </Card>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Button onClick={saveDm} disabled={dmSaving || !dmTitle.trim()} className="gap-1.5">
+                    {dmSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    Save
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setDmPreview(!dmPreview)}>
+                    <Eye className="h-3 w-3" /> {dmPreview ? "Hide Preview" : "Preview"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Delete confirmation */}
