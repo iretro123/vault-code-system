@@ -61,8 +61,10 @@ export function AdminBroadcastTab() {
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [link, setLink] = useState("");
   const [templateKey, setTemplateKey] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   /* ── Users list ── */
   const [users, setUsers] = useState<UserOption[]>([]);
@@ -105,55 +107,59 @@ export function AdminBroadcastTab() {
     if (recipientType === "single" && !userId) { toast.error("Select a recipient"); return; }
     if (!user) return;
 
+    // Show confirm dialog first
+    setConfirmOpen(true);
+  };
+
+  const executeSend = async () => {
+    setConfirmOpen(false);
     setSending(true);
 
     const targetUserId = recipientType === "single" ? userId : null;
+    const linkVal = link.trim() || null;
 
     // 1) Deliver in-app
     if (channel === "in_app") {
       if (mode === "motivation_ping") {
-        // Single user notification via inbox
         if (targetUserId) {
-          await supabase.from("inbox_items" as any).insert({
+          await supabase.from("inbox_items").insert({
             user_id: targetUserId,
             type: "reminder",
             title: title.trim(),
             body: body.trim(),
-            link: null,
-          } as any);
+            link: linkVal,
+          });
         } else {
-          // Broadcast to all via inbox (user_id = null)
-          await supabase.from("inbox_items" as any).insert({
+          await supabase.from("inbox_items").insert({
             user_id: null,
             type: "reminder",
             title: title.trim(),
             body: body.trim(),
-            link: null,
-          } as any);
+            link: linkVal,
+          });
         }
       } else {
-        // Full broadcast: inbox + notification
-        await supabase.from("inbox_items" as any).insert({
+        await supabase.from("inbox_items").insert({
           user_id: targetUserId,
           type: "announcement",
           title: title.trim(),
           body: body.trim(),
-          link: null,
+          link: linkVal,
           pinned: false,
-        } as any);
-        await supabase.from("academy_notifications" as any).insert({
+        });
+        await supabase.from("academy_notifications").insert({
           user_id: targetUserId,
           type: "announcement",
           title: title.trim(),
           body: body.trim(),
-          link_path: null,
+          link_path: linkVal,
         } as any);
       }
     }
 
     // 2) Log to history
-    await supabase.from("broadcast_messages" as any).insert({
-      sender_id: user.id,
+    await supabase.from("broadcast_messages").insert({
+      sender_id: user!.id,
       mode,
       channel,
       recipient_type: recipientType,
@@ -163,10 +169,10 @@ export function AdminBroadcastTab() {
       template_key: templateKey,
       status: channel === "in_app" ? "sent" : "draft",
       sent_at: channel === "in_app" ? new Date().toISOString() : null,
-    } as any);
+    });
 
-    toast.success(channel === "in_app" ? "Message sent" : "Draft saved (provider not configured)");
-    setTitle(""); setBody(""); setUserId(""); setTemplateKey(null);
+    toast.success(channel === "in_app" ? "Message sent ✓" : "Draft saved (provider not configured)");
+    setTitle(""); setBody(""); setLink(""); setUserId(""); setTemplateKey(null);
     fetchHistory();
     setSending(false);
   };
@@ -369,6 +375,15 @@ export function AdminBroadcastTab() {
                 rows={3}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Link (optional)</Label>
+              <Input
+                placeholder="e.g. /academy/home"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
+            </div>
 
             {/* Email-specific fields (behind feature flag) */}
             {enableMessagingProviders && channel === "email" && (
@@ -489,6 +504,24 @@ export function AdminBroadcastTab() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Send confirmation */}
+      <AlertDialog open={confirmOpen} onOpenChange={(open) => !open && setConfirmOpen(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Send</AlertDialogTitle>
+            <AlertDialogDescription>
+              Send "{title}" to {recipientType === "all" ? "all members" : users.find(u => u.user_id === userId)?.display_name || "selected user"}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={executeSend}>
+              Send Now
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
