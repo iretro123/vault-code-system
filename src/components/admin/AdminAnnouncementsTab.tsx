@@ -124,6 +124,7 @@ export function AdminAnnouncementsTab() {
             body: body.trim(),
             link: "/academy/room/announcements",
             pinned,
+            sender_id: user!.id,
           } as any);
         }
 

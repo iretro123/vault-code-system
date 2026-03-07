@@ -174,6 +174,7 @@ export function AdminBroadcastTab() {
           body: body.trim(),
           link: linkVal,
           pinned: false,
+          sender_id: user!.id,
         });
         await supabase.from("academy_notifications").insert({
           user_id: targetUserId,

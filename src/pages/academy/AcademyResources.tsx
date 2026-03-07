@@ -303,6 +303,7 @@ function AdminToolkitManager({ items, refetch }: { items: ToolkitItem[]; refetch
     await supabase.from("inbox_items").insert({
       title: "New resource added", body: `"${title.trim()}" was added to the Toolkit.`,
       type: "toolkit_activity", link: "/academy/resources", user_id: null,
+      sender_id: user!.id,
     });
     toast.success("Resource added");
     setTitle(""); setDescription(""); setExternalUrl(""); setFile(null); setAdding(false);

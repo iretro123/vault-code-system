@@ -114,6 +114,7 @@ const AcademyAdmin = () => {
       title: motiTitle.trim(),
       body: motiBody.trim(),
       link: null,
+      sender_id: user!.id,
     } as any);
     if (error) toast.error(error.message);
     else {
