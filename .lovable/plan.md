@@ -1,37 +1,28 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: Online Presence Not Showing for Either Side
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Root Causes Found
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+**Problem 1 — `profiles` table is NOT in the Supabase realtime publication.**
+The `useUserPresence` hook subscribes to `postgres_changes` on `profiles`, but since `profiles` was never added to the realtime publication, no UPDATE events are broadcast. The realtime subscription silently does nothing.
 
-### Solution
+**Problem 2 — Members cannot SELECT the admin's profile row (RLS blocks it).**
+The current profiles SELECT policy is: `(auth.uid() = user_id) OR has_role(operator)`. When John Doe (a regular member) tries to query the admin's `last_seen_at` via `useUserPresence`, the query returns nothing because RLS blocks it. The admin CAN see John Doe's presence (operators can read all profiles), but John Doe cannot see the admin's.
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Fix
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**1. Database migration (two changes):**
+- Add `profiles` to the realtime publication so `useUserPresence` realtime subscriptions actually fire
+- Add an RLS SELECT policy allowing any authenticated user to read any profile row. This is safe — profiles contain display names, avatars, and presence data that are already shown publicly in chat. Policy: `CREATE POLICY "Authenticated can read profiles for presence" ON profiles FOR SELECT TO authenticated USING (true);`
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+That's it. No code changes needed — the hooks (`usePresenceHeartbeat` + `useUserPresence`) are already correct, they just can't work because the database blocks them.
+
+**2. Verify the existing SELECT policy won't conflict:**
+The current policy `Users can read own profile` uses `USING ((auth.uid() = user_id) OR has_role(...))`. Adding a second permissive SELECT policy with `USING (true)` is fine — Postgres OR's permissive policies together. However since these are RESTRICTIVE (permissive = No), we need to replace the existing one or add a permissive one. The existing policies are restrictive, so we need to add a PERMISSIVE policy instead.
+
+### Result
+- Admin sees John Doe's green dot (already works since operators can read all profiles)
+- John Doe sees admin's green dot (fixed by new SELECT policy)
+- Both sides get instant updates (fixed by adding profiles to realtime publication)
 
