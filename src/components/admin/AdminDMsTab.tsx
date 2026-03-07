@@ -199,14 +199,17 @@ function ThreadConversation({
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <ChatAvatar
-          avatarUrl={thread.user_avatar_url}
-          userName={memberName}
-          size="h-8 w-8"
-        />
+        <div className="relative">
+          <ChatAvatar
+            avatarUrl={thread.user_avatar_url}
+            userName={memberName}
+            size="h-8 w-8"
+          />
+          <MemberPresenceDot userId={thread.user_id} />
+        </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground truncate">{memberName}</p>
-          <p className="text-[10px] text-muted-foreground">Member</p>
+          <MemberPresenceLabel userId={thread.user_id} />
         </div>
       </div>
 
