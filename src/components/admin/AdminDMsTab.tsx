@@ -167,6 +167,7 @@ function ThreadConversation({
   const { messages, loading } = useThreadMessages(thread.id);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const memberName = thread.user_display_name || thread.user_email || "Member";
@@ -182,10 +183,10 @@ function ThreadConversation({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const handleSend = async () => {
-    if (!draft.trim() || !user?.id) return;
+  const handleSend = async (extraAttachments?: DmAttachmentData[]) => {
+    if ((!draft.trim() && !extraAttachments?.length) || !user?.id) return;
     setSending(true);
-    const ok = await sendDmMessage(thread.id, user.id, draft.trim());
+    const ok = await sendDmMessage(thread.id, user.id, draft.trim(), extraAttachments);
     if (ok) setDraft("");
     setSending(false);
   };
