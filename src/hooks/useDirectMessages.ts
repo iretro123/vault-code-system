@@ -122,7 +122,7 @@ export function useThreadMessages(threadId: string | null) {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Realtime subscription
+  // Realtime subscription — INSERT (new messages) + UPDATE (read_at changes)
   useEffect(() => {
     if (!threadId) return;
     const channel = supabase
@@ -141,6 +141,21 @@ export function useThreadMessages(threadId: string | null) {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "dm_messages",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        (payload) => {
+          const updated = payload.new as DmMessage;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === updated.id ? { ...m, read_at: updated.read_at } : m))
+          );
         }
       )
       .subscribe();
