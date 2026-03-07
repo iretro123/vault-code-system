@@ -8,6 +8,8 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
+import { DmAttachmentRenderer } from "@/components/academy/dm/DmAttachmentRenderer";
+import { DmFileUpload } from "@/components/academy/dm/DmFileUpload";
 import rzAvatar from "@/assets/rz-avatar.png";
 import {
   useDirectMessages,
@@ -15,6 +17,7 @@ import {
   sendDmMessage,
   markThreadRead,
   DmThread,
+  type DmAttachmentData,
 } from "@/hooks/useDirectMessages";
 
 /* ── Last message preview hook ── */
