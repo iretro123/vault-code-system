@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
+import { formatRelative } from "@/lib/formatTime";
 
 /* ── time helpers ── */
 function relativeTime(iso: string) {
