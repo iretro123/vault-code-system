@@ -272,7 +272,7 @@ export function AdminReferralsTab() {
                     </TableCell>
                     <TableCell>
                       <button
-                        onClick={(e) => { e.stopPropagation(); copyToClipboard(r.id); }}
+                        onClick={(e) => { e.stopPropagation(); copyToClip(r.id); }}
                         className="text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1"
                       >
                         {r.id.slice(0, 8)}… <Copy className="h-3 w-3" />
