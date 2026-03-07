@@ -1,37 +1,32 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: Inbox DM Reply Flow + Show RZ Name and CEO Badge
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Problems
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+1. **User can't open reply for `coach_reply` items** — The `handleClick` function (line 475) only opens the inline thread for `type === "reminder"`. Admin reply notifications have `type === "coach_reply"`, so clicking them does nothing (no link set either, so it's a dead click).
+
+2. **Thread lookup fails for admin reply notifications** — `getOrCreateThread` uses `inbox_item_id` to find/create a thread. When a user clicks a `coach_reply` notification, that notification's `id` is different from the original welcome DM's `id` that the thread was created against. So it creates a NEW empty thread instead of finding the existing one.
+
+3. **"Vault Academy" shown instead of "RZ" + CEO badge** — In `InlineThreadView`, the sender label is hardcoded as `"Vault Academy"` (lines 148, 173) with no role badge. Should show the sender's actual name ("RZ") and their CEO badge.
 
 ### Solution
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**A. Allow `coach_reply` type to open inline thread** (InboxDrawer.tsx, `handleClick`)
+- Change the condition from `item.type === "reminder"` to include `coach_reply`: `if (item.type === "reminder" || item.type === "coach_reply")`
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**B. Fix thread lookup for reply notifications** (InboxDrawer.tsx, `InlineThreadView`)
+- Instead of using `getOrCreateThread(userId, item.id)` which creates a new thread per inbox item, look up the existing thread directly:
+  - Query `dm_threads` for the current user's thread (there should be exactly one per user)
+  - If none exists, fall back to `getOrCreateThread` with the item id
+- This ensures clicking any DM notification (original or follow-up) opens the same conversation thread
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**C. Show "RZ" name + CEO badge in thread bubbles** (InboxDrawer.tsx, `InlineThreadView`)
+- Replace hardcoded "Vault Academy" with `item.sender_name || "RZ"` for the sender label
+- Add `<AcademyRoleBadge roleName={item.sender_role} />` next to the name
+- Apply same treatment to both the original message bubble and incoming thread messages
+
+### Files Changed
+- `src/components/academy/InboxDrawer.tsx` — All three fixes in one file
+- `src/hooks/useDirectMessages.ts` — Add a `findThreadByUserId` helper function
 
