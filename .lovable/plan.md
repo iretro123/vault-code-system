@@ -1,34 +1,41 @@
 
 
-## Fix: One Persistent Thread Per Member
+## Fix: Admin Inbox — One Persistent Thread Per Member
 
-### The Bug (2 lines cause everything)
+### Confirmed Root Cause (from live data)
 
-1. **`InboxDrawer.tsx` line 106**: `findThreadByUser(user.id)` — when admin clicks a notification from John Doe, `user.id` is the **admin's** ID, not John Doe's. This finds nothing, so it creates a new thread with `user_id = admin_id`.
+There are currently **2 threads** in the database:
+- Thread `31b7...` → `user_id = John Doe` → **9 messages** (correct, this is the real thread)
+- Thread `511e...` → `user_id = RZ (admin)` → **0 messages** (orphan, created by the bug)
 
-2. **`useDirectMessages.ts` line 169-173**: `getOrCreateThread` filters by both `user_id` AND `inbox_item_id`. Different inbox items for the same user create separate threads.
+The orphan was created because **line 106 of `InboxDrawer.tsx`** calls `findThreadByUser(user.id)` where `user.id` is the **admin's** ID when the admin clicks a notification from John Doe. This finds nothing for John Doe, then `getOrCreateThread(user.id, item.id)` creates a new thread with `user_id = admin`.
+
+The trigger functions (checked live) are now correctly collapsing inbox items — only **1 inbox card** per sender exists. The duplicate thread problem is purely in the frontend lookup logic.
 
 ### Changes
 
-**1. DB migration**
-- Delete duplicate/orphan `dm_threads` (threads where `user_id` is an operator, or duplicates per member — keep the one with most messages)
-- Add `UNIQUE` constraint on `dm_threads(user_id)` to enforce 1 thread per member at DB level
+**1. Database migration**
+- Delete the orphan thread (`user_id = admin`)
+- Add `UNIQUE` constraint on `dm_threads(user_id)` to prevent future duplicates
 
 **2. `src/hooks/useDirectMessages.ts`**
-- Simplify `getOrCreateThread(userId)` to look up by `user_id` only (drop `inbox_item_id` param)
-- Add `findOrCreateThreadForMember(memberId)` helper for admin use
+- Simplify `getOrCreateThread(memberId)` — remove `inboxItemId` param, look up by `user_id` only
+- Add `findOrCreateThreadForMember(memberId)` convenience function
 
-**3. `src/components/academy/InboxDrawer.tsx`**
-- Fix line 106: when user is admin and item has `sender_id`, use `item.sender_id` (the member) instead of `user.id` (the admin) for thread lookup
-- This ensures admin always opens the member's single existing thread
+**3. `src/components/academy/InboxDrawer.tsx` (line 106)**
+- When current user is admin and item has `sender_id`, use `item.sender_id` (the member) for thread lookup instead of `user.id` (the admin)
+- This is the single line that causes all the duplication
 
 **4. `src/components/admin/AdminDMsTab.tsx`**
-- Add last-message body preview in thread list rows
-- Add unread indicator dot on threads with unread messages
+- Add last-message body preview text in thread list rows
+- Add unread indicator dot for threads with unread messages
 
-### Result
-- 1 user = 1 thread, enforced by DB unique constraint
-- Admin clicking any notification opens the correct member's thread
-- No more duplicate threads regardless of inbox item changes
-- Clean iMessage-style admin inbox
+### Key fix (1 line)
+```typescript
+// BEFORE (line 106):
+let id = await findThreadByUser(user.id);
+// AFTER:
+const memberId = item.sender_id || user.id;
+let id = await findThreadByUser(memberId);
+```
 
