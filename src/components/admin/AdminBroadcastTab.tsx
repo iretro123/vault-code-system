@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Send, Loader2, Zap, Radio, Mail, Smartphone, Clock, CheckCircle2,
+  Send, Loader2, Clock, CheckCircle2,
   AlertTriangle, FileText, Trash2, RotateCcw,
 } from "lucide-react";
 import {
