@@ -163,7 +163,7 @@ function InlineThreadView({
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {/* ── Chat header with avatar + name + badge ── */}
-      <div className="flex items-center gap-3 px-4 pb-3 border-b border-white/[0.06]">
+      <div className="flex items-center gap-3 px-4 pb-3 border-b border-white/[0.06] bg-gradient-to-r from-white/[0.02] to-transparent">
         <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
