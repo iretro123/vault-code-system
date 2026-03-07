@@ -136,12 +136,13 @@ function InlineThreadView({
     setSending(false);
   };
 
-  // Sender info
-  const senderName = item.sender_name || "RZ";
+  // Sender info — this is the MEMBER who sent the DM, not admin
+  const senderName = item.sender_name || "Member";
   const senderAvatarSrc =
     item.sender_avatar && item.sender_avatar.startsWith("http")
       ? item.sender_avatar
-      : rzAvatar;
+      : null; // Don't default to RZ avatar for member messages
+  const senderInitials = senderName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   // User info
   const userName = (profile as any)?.display_name || user?.email?.split("@")[0] || "You";
