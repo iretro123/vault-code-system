@@ -352,6 +352,16 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
         },
         () => { fetchInbox(); }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "inbox_items",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => { fetchInbox(); }
+      )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
