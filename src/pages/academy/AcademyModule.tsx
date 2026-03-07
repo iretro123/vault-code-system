@@ -11,6 +11,7 @@ import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
+import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, Loader2, Check, CheckCircle2, Plus, Pencil, Trash2,

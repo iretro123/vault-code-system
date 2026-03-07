@@ -1,51 +1,37 @@
 
 
-## Bug: Admin Mode Race Condition + Missing Coach Permission
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### What You're Seeing
-You have Admin Mode ON (stored in localStorage), but edit controls never appear. The code changes from the last fix are correct — the real bug is deeper, in `AdminModeContext.tsx`.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Root Cause: Race Condition in AdminModeContext
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**Line 41 of `AdminModeContext.tsx`:**
-```ts
-const [adminModeOn, setAdminModeOn] = useState(() => canToggle && readFlag(STORAGE_KEY));
-```
+### Solution
 
-`canToggle` depends on `useAcademyPermissions()`, which loads async (DB query). On first render, permissions haven't loaded, so `canToggle = false`. The `useState` initializer only runs **once**, so `adminModeOn` permanently initializes to `false` — even though localStorage says `"1"`.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-Result: Admin Mode is always OFF after any page load/refresh, so `isAdminActive` is always `false`, so `canManageContent` is always `false`, so no edit buttons ever render.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### Secondary Issue: Coach Role Missing `manage_content`
-
-The DB shows Coach has `coach_reply`, `manage_live_sessions`, `moderate_chat`, `view_admin_panel` — but **not** `manage_content`. Per your project rules, Coaches should be able to edit videos/notes.
-
-### Fix Plan
-
-| # | What | Where |
-|---|------|-------|
-| 1 | **Fix race condition** — add a `useEffect` that syncs `adminModeOn` from localStorage when `canToggle` transitions to `true` | `src/contexts/AdminModeContext.tsx` |
-| 2 | **Grant Coach `manage_content`** permission | DB migration |
-| 3 | **Add AdminActionBar** to AcademyModule page for consistency with AcademyLearn | `src/pages/academy/AcademyModule.tsx` |
-
-### Fix Detail
-
-**AdminModeContext.tsx** — add after state declarations:
-```ts
-// Sync admin mode from localStorage once permissions resolve
-useEffect(() => {
-  if (canToggle && readFlag(STORAGE_KEY) && !adminModeOn) {
-    setAdminModeOn(true);
-  }
-}, [canToggle]);
-```
-
-**DB migration** — add `manage_content` to Coach role:
-```sql
-INSERT INTO academy_role_permissions (role_id, permission_key)
-SELECT id, 'manage_content' FROM academy_roles WHERE name = 'Coach'
-ON CONFLICT DO NOTHING;
-```
-
-**AcademyModule.tsx** — add `AdminActionBar` import and render it below the top bar for inline admin actions (Add Lesson, etc.) when admin mode is active.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

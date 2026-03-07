@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 
 interface AdminModeState {
@@ -40,6 +40,13 @@ export function AdminModeProvider({ children }: { children: ReactNode }) {
 
   const [adminModeOn, setAdminModeOn] = useState(() => canToggle && readFlag(STORAGE_KEY));
   const [previewAsMember, setPreviewAsMember] = useState(() => readFlag(PREVIEW_KEY));
+
+  // Sync admin mode from localStorage once permissions resolve (fixes race condition)
+  useEffect(() => {
+    if (canToggle && readFlag(STORAGE_KEY) && !adminModeOn) {
+      setAdminModeOn(true);
+    }
+  }, [canToggle]);
 
   const toggleAdminMode = useCallback(() => {
     setAdminModeOn((prev) => {
