@@ -252,6 +252,9 @@ export function AdminBroadcastTab() {
           <TabsTrigger value="templates" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
             <FileText className="h-3.5 w-3.5" /> Templates
           </TabsTrigger>
+          <TabsTrigger value="auto_dm" className="gap-1.5 text-xs data-[state=active]:bg-white/[0.08] px-3 py-1.5">
+            <Sparkles className="h-3.5 w-3.5" /> Auto DM
+          </TabsTrigger>
         </TabsList>
 
         {/* ─── COMPOSE ─── */}
