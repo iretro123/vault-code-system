@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import { formatRelative } from "@/lib/formatTime";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -253,7 +254,7 @@ function InlineThreadView({
                       {/* Render attachments */}
                       <DmAttachmentRenderer attachments={(m as any).attachments || []} />
                       <p className={`text-[10px] mt-1 ${isMe ? "text-white/30 text-right" : "text-white/30"}`}>
-                        {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                        {formatRelative(m.created_at)}
                       </p>
                     </div>
                     {/* Read receipt — show on last outgoing (user) message */}
@@ -262,7 +263,7 @@ function InlineThreadView({
                       const isLastOutgoing = !nextMsg || nextMsg.sender_id !== user?.id;
                       if (!isLastOutgoing) return null;
                       if ((m as any).read_at) {
-                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read · {formatDistanceToNow(new Date((m as any).read_at), { addSuffix: true })}</p>;
+                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read · {formatRelative((m as any).read_at)}</p>;
                       }
                       return <p className="text-[10px] text-muted-foreground/40 mt-0.5 text-right mr-1">Delivered</p>;
                     })()}
@@ -384,7 +385,7 @@ function ItemList({
                 <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
                 {item.body && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.body}</p>}
                 <p className="text-xs text-muted-foreground/70 mt-1 truncate">
-                  {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+{formatRelative(item.created_at)}
                 </p>
               </div>
             </button>
@@ -452,7 +453,7 @@ function WhatsNewCard({
         <p className="text-xs text-muted-foreground line-clamp-3 mt-1.5 leading-relaxed">{item.body}</p>
       )}
       <p className="text-[11px] text-muted-foreground/60 mt-3">
-        {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+        {formatRelative(item.created_at)}
       </p>
       <span
         role="button"

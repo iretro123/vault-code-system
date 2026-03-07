@@ -1,52 +1,37 @@
 
 
-## Add Smart "now" Timestamps to Inbox
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### What Changes
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-Add a `formatRelative()` function that produces iMessage-style timestamps, and use it everywhere in the inbox drawer.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**Time logic:**
-- < 10 seconds → **"now"**
-- < 60 seconds → **"Xs ago"** (e.g. "23s ago")
-- < 60 minutes → **"Xm ago"** (e.g. "3m ago")
-- < 24 hours → **"Xh ago"** (e.g. "2h ago")
-- older → **"Feb 15"**
+### Solution
 
-### Files to Change
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**1. `src/lib/formatTime.ts`** — Add `formatRelative()` function (new export, no existing code touched)
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-```typescript
-export function formatRelative(date: string | Date): string {
-  const d = new Date(date);
-  const diffMs = Date.now() - d.getTime();
-  if (diffMs < 0) return "now";
-  const secs = Math.floor(diffMs / 1000);
-  if (secs < 10) return "now";
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return format(d, "MMM d");
-}
-```
-
-**2. `src/components/academy/InboxDrawer.tsx`** — Replace all 4 `formatDistanceToNow` calls with `formatRelative`:
-
-| Line | Current | New |
-|------|---------|-----|
-| ~103 | `formatDistanceToNow(...)` (last seen) | Keep as-is (presence, not inbox) |
-| ~256 | `formatDistanceToNow(...)` (DM bubble timestamp) | `formatRelative(m.created_at)` |
-| ~265 | `formatDistanceToNow(...)` (read receipt) | `formatRelative((m as any).read_at)` |
-| ~387 | `formatDistanceToNow(...)` (inbox list row) | `formatRelative(item.created_at)` |
-| ~455 | `formatDistanceToNow(...)` (What's New card) | `formatRelative(item.created_at)` |
-
-Import: add `import { formatRelative } from "@/lib/formatTime"` — keep existing `formatDistanceToNow` import for the presence line.
-
-### What This Does NOT Touch
-- No changes to AcademyDataContext, useDirectMessages, or useInboxItems
-- No changes to realtime subscriptions or optimistic messaging
-- No changes to any other component
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
