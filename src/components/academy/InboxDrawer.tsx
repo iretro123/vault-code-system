@@ -19,6 +19,7 @@ import {
   sendDmMessage,
   markThreadRead,
 } from "@/hooks/useDirectMessages";
+import { useUserPresence } from "@/hooks/useUserPresence";
 import { DmAttachmentRenderer, type DmAttachment } from "./dm/DmAttachmentRenderer";
 import { DmFileUpload } from "./dm/DmFileUpload";
 import vaultLogo from "@/assets/vault-v-logo.png";
@@ -82,6 +83,25 @@ function SenderName({ item }: { item: InboxItem }) {
       {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
     </span>
   );
+}
+
+/* ── Presence indicators ── */
+function PresenceDot({ userId }: { userId: string | null | undefined }) {
+  const { online } = useUserPresence(userId);
+  return (
+    <span
+      className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
+        online ? "bg-emerald-500" : "bg-muted-foreground/40"
+      }`}
+    />
+  );
+}
+
+function PresenceLabel({ userId }: { userId: string | null | undefined }) {
+  const { online, lastSeenAt } = useUserPresence(userId);
+  if (online) return <span className="text-[11px] text-emerald-400 leading-none">Online</span>;
+  if (lastSeenAt) return <span className="text-[11px] text-muted-foreground/60 leading-none">Last seen {formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true })}</span>;
+  return <span className="text-[11px] text-muted-foreground/60 leading-none">Direct Message</span>;
 }
 
 /* ── Inline Thread View (reply to a DM) — iOS-style ── */
@@ -167,15 +187,16 @@ function InlineThreadView({
         <button onClick={onBack} className="rounded-full p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="h-9 w-9 shrink-0 ring-2 ring-primary/20 rounded-full">
+        <div className="relative h-9 w-9 shrink-0 ring-2 ring-primary/20 rounded-full">
           <ChatAvatar avatarUrl={item.sender_avatar} userName={senderName} size="h-9 w-9" />
+          <PresenceDot userId={item.sender_id} />
         </div>
         <div className="flex flex-col min-w-0">
           <span className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-foreground truncate">{senderName}</span>
             {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
           </span>
-          <span className="text-[11px] text-muted-foreground/60 leading-none">Direct Message</span>
+          <PresenceLabel userId={item.sender_id} />
         </div>
       </div>
 
@@ -232,7 +253,7 @@ function InlineThreadView({
                       const isLastOutgoing = !nextMsg || nextMsg.sender_id !== user?.id;
                       if (!isLastOutgoing) return null;
                       if ((m as any).read_at) {
-                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read</p>;
+                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read · {formatDistanceToNow(new Date((m as any).read_at), { addSuffix: true })}</p>;
                       }
                       return <p className="text-[10px] text-muted-foreground/40 mt-0.5 text-right mr-1">Delivered</p>;
                     })()}

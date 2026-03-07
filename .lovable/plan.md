@@ -1,47 +1,37 @@
 
 
-## Realtime Read Receipts + Online Presence for DM System
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Current State
-- **Read receipts exist** but are NOT realtime — `read_at` is set via `markThreadRead()` but the sender's UI only sees it on next fetch/reload, not instantly
-- **Realtime subscription** exists for new message INSERTs only — does NOT listen for UPDATEs (read_at changes)
-- **Online presence** does NOT exist — `useOnlineStatus` only checks browser network status, there's no user-level presence tracking
-- No `last_seen_at` column or presence channel anywhere in the codebase
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Changes
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. Realtime read receipt updates (`useDirectMessages.ts`)**
-- Add a realtime subscription for `UPDATE` events on `dm_messages` (same channel), so when the other side marks messages as read, `read_at` updates flow instantly to the sender's UI
-- When UPDATE payload arrives, merge the updated `read_at` into the local messages state
-- Both InboxDrawer and AdminDMsTab already render read receipts from message data — they'll update automatically once the hook pushes updated state
+### Solution
 
-**2. Auto-mark-as-read on thread open (both sides)**
-- **InboxDrawer**: Already calls `markThreadRead` in useEffect — ensure it fires immediately on mount AND on every new incoming message
-- **AdminDMsTab**: Same pattern — already has `markThreadRead` in useEffect on `messages.length` change
-- Add: also mark the inbox_item as read when opening a DM thread (call `markRead` from `useInboxItems`)
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**3. Show read timestamp instead of just "Read"**
-- Update read receipt rendering in both `InboxDrawer.tsx` and `AdminDMsTab.tsx` to show "Read · 2m ago" format using `formatDistanceToNow`
-- Apply to the last outgoing message in each conversation
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**4. Online presence system (new)**
-- **Database**: Add `last_seen_at timestamptz` column to `profiles` table
-- **Heartbeat hook** (`usePresenceHeartbeat.ts`): New hook that updates `profiles.last_seen_at` every 60 seconds while the user is active. Uses `visibilitychange` + interval to pause when tab is hidden
-- **Presence display**: Add a green/gray dot indicator next to the member name in:
-  - AdminDMsTab thread header (admin sees if member is online)
-  - InboxDrawer thread header (member sees if admin is online — always show admin as "online" or use admin's last_seen_at)
-- **Online threshold**: User is "online" if `last_seen_at` is within the last 3 minutes
-- **Realtime for presence**: Subscribe to `postgres_changes` on `profiles` for `last_seen_at` updates on the specific user being viewed — gives instant green dot toggle
-
-### Files to create/modify
-- **Create** `src/hooks/usePresenceHeartbeat.ts` — heartbeat interval + visibility listener
-- **Modify** `src/hooks/useDirectMessages.ts` — add UPDATE subscription for read_at changes
-- **Modify** `src/components/academy/InboxDrawer.tsx` — show "Read · time", green dot presence
-- **Modify** `src/components/admin/AdminDMsTab.tsx` — show "Read · time", green dot presence  
-- **Migration**: `ALTER TABLE profiles ADD COLUMN last_seen_at timestamptz;`
-
-### Technical Notes
-- Heartbeat updates `profiles.last_seen_at = now()` — profiles table already allows users to update own row
-- The UPDATE realtime subscription uses the same channel as INSERT to avoid extra connections
-- Green dot: `h-2.5 w-2.5 rounded-full bg-emerald-500` with subtle ring, gray when offline
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

@@ -19,6 +19,7 @@ import {
   DmThread,
   type DmAttachmentData,
 } from "@/hooks/useDirectMessages";
+import { useUserPresence } from "@/hooks/useUserPresence";
 
 /* ── Last message preview hook ── */
 function useLastMessages(threadIds: string[]) {
@@ -71,6 +72,25 @@ function useUnreadCounts(threadIds: string[], adminId: string | undefined) {
   useEffect(() => { fetchCounts(); }, [fetchCounts]);
 
   return counts;
+}
+
+/* ── Presence indicators ── */
+function MemberPresenceDot({ userId }: { userId: string }) {
+  const { online } = useUserPresence(userId);
+  return (
+    <span
+      className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${
+        online ? "bg-emerald-500" : "bg-muted-foreground/40"
+      }`}
+    />
+  );
+}
+
+function MemberPresenceLabel({ userId }: { userId: string }) {
+  const { online, lastSeenAt } = useUserPresence(userId);
+  if (online) return <p className="text-[10px] text-emerald-400">Online</p>;
+  if (lastSeenAt) return <p className="text-[10px] text-muted-foreground">Last seen {formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true })}</p>;
+  return <p className="text-[10px] text-muted-foreground">Member</p>;
 }
 
 /* ── Thread List ── */
@@ -198,14 +218,17 @@ function ThreadConversation({
         <Button variant="ghost" size="icon" onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <ChatAvatar
-          avatarUrl={thread.user_avatar_url}
-          userName={memberName}
-          size="h-8 w-8"
-        />
+        <div className="relative">
+          <ChatAvatar
+            avatarUrl={thread.user_avatar_url}
+            userName={memberName}
+            size="h-8 w-8"
+          />
+          <MemberPresenceDot userId={thread.user_id} />
+        </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground truncate">{memberName}</p>
-          <p className="text-[10px] text-muted-foreground">Member</p>
+          <MemberPresenceLabel userId={thread.user_id} />
         </div>
       </div>
 
@@ -275,7 +298,7 @@ function ThreadConversation({
                       const isLastAdminMsg = !next || next.sender_id === thread.user_id;
                       if (!isLastAdminMsg) return null;
                       if (m.read_at) {
-                        return <p className="text-[10px] text-primary/60 mt-0.5 ml-1">Read</p>;
+                        return <p className="text-[10px] text-primary/60 mt-0.5 ml-1">Read · {formatDistanceToNow(new Date(m.read_at), { addSuffix: true })}</p>;
                       }
                       return <p className="text-[10px] text-muted-foreground/40 mt-0.5 ml-1">Delivered</p>;
                     })()}
