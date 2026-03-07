@@ -316,11 +316,12 @@ export function VaultTradePlanner() {
     toast.success("Example loaded");
   };
 
-  const handleCopyPlan = () => {
+  const handleCopyPlan = async () => {
     const inputs = buildInputs();
     const errs = validateInputs(inputs);
     if (errs.length > 0) { toast.error("Fix errors before copying"); return; }
-    navigator.clipboard.writeText(buildCopyText(inputs, calculatePlan(inputs)));
+    const { copyToClipboard } = await import("@/lib/copyToClipboard");
+    await copyToClipboard(buildCopyText(inputs, calculatePlan(inputs)));
     toast.success("Trade plan copied");
   };
 

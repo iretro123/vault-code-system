@@ -36,9 +36,10 @@ const STATUS_COLORS: Record<string, string> = {
   converted: "bg-amber-500/15 text-amber-400 border-amber-500/20",
 };
 
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text);
-  toast.success("Copied");
+const copyToClip = async (text: string) => {
+  const { copyToClipboard } = await import("@/lib/copyToClipboard");
+  const ok = await copyToClipboard(text);
+  ok ? toast.success("Copied") : toast.error("Failed to copy");
 };
 
 // ─── Main Component ───
@@ -271,7 +272,7 @@ export function AdminReferralsTab() {
                     </TableCell>
                     <TableCell>
                       <button
-                        onClick={(e) => { e.stopPropagation(); copyToClipboard(r.id); }}
+                        onClick={(e) => { e.stopPropagation(); copyToClip(r.id); }}
                         className="text-[10px] font-mono text-muted-foreground hover:text-foreground flex items-center gap-1"
                       >
                         {r.id.slice(0, 8)}… <Copy className="h-3 w-3" />
@@ -329,7 +330,7 @@ function ReferralDetailDialog({ row, onClose }: { row: ReferralRow; onClose: () 
                   <span className="text-xs font-mono truncate">{value}</span>
                 )}
                 {copyable && value && value !== "—" && (
-                  <button onClick={() => copyToClipboard(value as string)} className="shrink-0">
+                  <button onClick={() => copyToClip(value as string)} className="shrink-0">
                     <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
                   </button>
                 )}

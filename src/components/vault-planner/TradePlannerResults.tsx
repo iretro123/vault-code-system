@@ -71,9 +71,10 @@ function safeCurrency(n: number | undefined | null): string {
 export function TradePlannerResults({ inputs, result, onBack }: Props) {
   const canTrade = result.finalContracts > 0;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(buildCopyText(inputs, result));
-    toast.success("Trade plan copied to clipboard");
+  const handleCopy = async () => {
+    const { copyToClipboard } = await import("@/lib/copyToClipboard");
+    const ok = await copyToClipboard(buildCopyText(inputs, result));
+    ok ? toast.success("Trade plan copied to clipboard") : toast.error("Failed to copy");
   };
 
   const handleSave = () => {

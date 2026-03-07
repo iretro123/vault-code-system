@@ -341,9 +341,10 @@ const AcademyLive = () => {
     refetch();
   };
 
-  const copyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied");
+  const copyLink = async (url: string) => {
+    const { copyToClipboard } = await import("@/lib/copyToClipboard");
+    const ok = await copyToClipboard(url);
+    ok ? toast.success("Link copied") : toast.error("Failed to copy");
   };
 
   if (!hasAccess && !accessLoading) {

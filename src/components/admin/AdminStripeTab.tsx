@@ -81,9 +81,10 @@ const STATUS_COLORS: Record<string, string> = {
   ignored: "bg-gray-500/15 text-gray-400 border-gray-500/20",
 };
 
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text);
-  toast.success("Copied");
+const copyToClip = async (text: string) => {
+  const { copyToClipboard } = await import("@/lib/copyToClipboard");
+  const ok = await copyToClipboard(text);
+  ok ? toast.success("Copied") : toast.error("Failed to copy");
 };
 
 // ─── Main Component ───
@@ -185,7 +186,7 @@ export function AdminStripeTab() {
                 Run Test Checkout
               </Button>
               <button
-                onClick={() => { navigator.clipboard.writeText("4242424242424242"); toast.success("Test card copied"); }}
+                onClick={async () => { const { copyToClipboard } = await import("@/lib/copyToClipboard"); await copyToClipboard("4242424242424242"); toast.success("Test card copied"); }}
                 className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 font-mono"
               >
                 4242 4242 4242 4242 <Copy className="h-3 w-3" />
@@ -269,7 +270,7 @@ export function AdminStripeTab() {
                       <TableCell>
                         {s.stripe_customer_id ? (
                           <button
-                            onClick={(e) => { e.stopPropagation(); copyToClipboard(s.stripe_customer_id!); }}
+                            onClick={(e) => { e.stopPropagation(); copyToClip(s.stripe_customer_id!); }}
                             className="text-xs font-mono text-muted-foreground hover:text-foreground flex items-center gap-1"
                           >
                             {s.stripe_customer_id.slice(0, 18)}… <Copy className="h-3 w-3" />
@@ -419,7 +420,7 @@ function WebhookEventDetailModal({ event, onClose }: { event: WebhookEventRow; o
                   <span className="font-mono text-right max-w-[250px] truncate">{value}</span>
                 )}
                 {copyable && value && value !== "—" && (
-                  <button onClick={() => copyToClipboard(value as string)} className="text-muted-foreground hover:text-foreground">
+                  <button onClick={() => copyToClip(value as string)} className="text-muted-foreground hover:text-foreground">
                     <Copy className="h-3 w-3" />
                   </button>
                 )}
@@ -486,7 +487,7 @@ function StudentDetail({
             <span className="text-muted-foreground shrink-0">{label}:</span>
             <span className="font-mono truncate">{value}</span>
             {value !== "—" && (
-              <button onClick={() => copyToClipboard(value)} className="text-muted-foreground hover:text-foreground ml-auto shrink-0">
+              <button onClick={() => copyToClip(value)} className="text-muted-foreground hover:text-foreground ml-auto shrink-0">
                 <Copy className="h-3 w-3" />
               </button>
             )}
