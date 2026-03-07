@@ -311,7 +311,7 @@ const AcademyLearn = () => {
                         )}
 
                         {/* Admin controls */}
-                        {isAdmin && (
+                        {canManageContent && (
                           <div className="flex gap-1 shrink-0">
                             <Button
                               variant="ghost"
