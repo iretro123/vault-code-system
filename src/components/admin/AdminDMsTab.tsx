@@ -365,7 +365,7 @@ export function AdminDMsTab() {
   }, [refetchThreads]);
 
   return (
-    <Card className="bg-white/[0.02] border-white/[0.06] p-4 min-h-[400px]">
+    <Card className="bg-white/[0.02] border-white/[0.06] p-5 min-h-[400px] shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
       {selected ? (
         <ThreadConversation
           thread={selected}
@@ -376,9 +376,9 @@ export function AdminDMsTab() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Direct Messages</h3>
-            <p className="text-xs text-muted-foreground">{threads.length} conversation{threads.length !== 1 ? "s" : ""}</p>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-base font-semibold text-foreground tracking-tight">Direct Messages</h3>
+            <p className="text-xs text-muted-foreground/60">{threads.length} conversation{threads.length !== 1 ? "s" : ""}</p>
           </div>
           <ThreadList
             threads={threads}
