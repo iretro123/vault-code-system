@@ -17,6 +17,7 @@ import { AdminDMsTab } from "@/components/admin/AdminDMsTab";
 
 const TAB_CONFIG = [
   { value: "members", label: "Members", icon: Users, perm: "manage_users" },
+  { value: "dms", label: "DMs", icon: MessageSquare, perm: "manage_notifications" },
   { value: "announcements", label: "Announcements", icon: Megaphone, perm: "manage_notifications" },
   { value: "broadcast", label: "Broadcast", icon: Send, perm: "manage_notifications" },
   { value: "content", label: "Content", icon: BookOpen, perm: "manage_content" },
