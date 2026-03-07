@@ -203,11 +203,16 @@ export async function getOrCreateThread(
 export async function sendDmMessage(
   threadId: string,
   senderId: string,
-  body: string
+  body: string,
+  attachments?: DmAttachmentData[]
 ): Promise<boolean> {
+  const insert: any = { thread_id: threadId, sender_id: senderId, body };
+  if (attachments && attachments.length > 0) {
+    insert.attachments = attachments;
+  }
   const { error: msgErr } = await supabase
     .from("dm_messages")
-    .insert({ thread_id: threadId, sender_id: senderId, body });
+    .insert(insert);
 
   if (msgErr) {
     console.error("[sendDmMessage] insert error", msgErr);
