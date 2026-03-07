@@ -1,75 +1,37 @@
 
 
-## Bulletproof DM Thread Resolution
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### The Problem Today
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The DM system has **one critical fragile point**: when a user clicks an inbox notification to open a DM conversation, the code must figure out *which thread to open*. Currently it uses `sender_id` from the inbox notification to guess — and this guess can break in multiple scenarios:
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-1. **Admin clicks a member's DM notification** — `sender_id` = member's ID, so `hasRole("operator") ? item.sender_id : user.id` works
-2. **Member clicks admin's DM notification** — `sender_id` = admin's ID, so it uses `user.id` (correct)
-3. **But if `sender_id` is null** (system notifications, edge cases) — operator path falls back to `user.id` (admin's own ID) → creates orphan thread
-4. **UPSERT trigger reuses inbox items** — when admin sends multiple DMs, the trigger updates the *same* inbox card. If the inbox item was originally from a different source (e.g. coach ticket reply using the same `sender_id`), clicking it could resolve the wrong thread
+### Solution
 
-### The Fix: Store `dm_thread_id` on `inbox_items`
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-Instead of guessing the thread from `sender_id`, **store the thread ID directly** on the inbox notification. No guessing, no role checks, no fragile lookups.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**1. Database migration — add `dm_thread_id` column to `inbox_items`**
-```sql
-ALTER TABLE inbox_items ADD COLUMN dm_thread_id uuid REFERENCES dm_threads(id) ON DELETE SET NULL;
-```
-
-**2. Update both DM notification triggers to include `dm_thread_id`**
-
-- `notify_user_on_operator_dm()` — when admin sends a DM, the trigger already has `NEW.thread_id`. Store it on the inbox item.
-- `notify_operators_on_dm_message()` — when member sends a DM, store `NEW.thread_id` on the operator's inbox item.
-
-Both triggers do UPSERT (update existing or insert new). The UPDATE path must also set `dm_thread_id`.
-
-**3. Update `InboxDrawer.tsx` — use `dm_thread_id` directly when available**
-
-```typescript
-// Line 130-136 becomes:
-if (item.dm_thread_id) {
-  // Direct link — no lookup needed
-  setThreadId(item.dm_thread_id);
-  setInitializing(false);
-} else {
-  // Fallback for legacy inbox items without dm_thread_id
-  const memberId = hasRole("operator") ? (item.sender_id || user.id) : user.id;
-  let id = await findThreadByUser(memberId);
-  if (!id) id = await getOrCreateThread(memberId);
-  setThreadId(id);
-  setInitializing(false);
-}
-```
-
-**4. Update `InboxItem` type** in `AcademyDataContext` to include `dm_thread_id?: string | null`
-
-**5. Update inbox data fetcher** to include `dm_thread_id` in the select query
-
-### Files to Change
-
-| File | Change |
-|------|--------|
-| Database migration | Add `dm_thread_id uuid` column; update both DM trigger functions |
-| `src/components/academy/InboxDrawer.tsx` | Use `dm_thread_id` when available, fallback to current logic |
-| `src/contexts/AcademyDataContext.tsx` | Add `dm_thread_id` to `InboxItem` type and fetch query |
-| `src/hooks/useInboxItems.ts` | Add `dm_thread_id` to mapping |
-
-### What This Covers
-
-| Scenario | Before | After |
-|----------|--------|-------|
-| Admin sends DM to member | Fragile `sender_id` lookup | Direct `dm_thread_id` link |
-| Member replies to admin DM | Works (uses `user.id`) | Direct `dm_thread_id` link |
-| Auto-DM welcome message | Fragile `sender_id` lookup | Direct `dm_thread_id` link |
-| `sender_id` is null | Breaks (creates orphan) | Direct `dm_thread_id` link |
-| Ask Coach ticket | Separate system (unaffected) | Separate system (unaffected) |
-| Old inbox items without `dm_thread_id` | N/A | Graceful fallback to current logic |
-
-### What About "Ask Coach"?
-
-"Ask Coach" uses `coach_tickets` — a completely separate system with its own UI in `CoachDrawer.tsx`. It does NOT create `dm_threads`. The inbox notifications it creates have `link: '/academy/my-questions'`, which navigates to the questions page rather than opening a DM thread. So it's already safe and unaffected.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

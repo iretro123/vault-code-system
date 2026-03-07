@@ -12,6 +12,7 @@ export interface InboxItem {
   created_at: string;
   read_at: string | null;
   pinned: boolean;
+  dm_thread_id: string | null;
 }
 
 export function useInboxItems() {
@@ -41,6 +42,7 @@ export function useInboxItems() {
       created_at: d.created_at,
       read_at: d.read_at,
       pinned: d.pinned ?? false,
+      dm_thread_id: d.dm_thread_id ?? null,
     })));
     setLoading(false);
   }, [user]);

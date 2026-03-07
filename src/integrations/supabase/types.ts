@@ -829,6 +829,7 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          dm_thread_id: string | null
           id: string
           link: string | null
           pinned: boolean
@@ -841,6 +842,7 @@ export type Database = {
         Insert: {
           body?: string
           created_at?: string
+          dm_thread_id?: string | null
           id?: string
           link?: string | null
           pinned?: boolean
@@ -853,6 +855,7 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          dm_thread_id?: string | null
           id?: string
           link?: string | null
           pinned?: boolean
@@ -862,7 +865,15 @@ export type Database = {
           type?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inbox_items_dm_thread_id_fkey"
+            columns: ["dm_thread_id"]
+            isOneToOne: false
+            referencedRelation: "dm_threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       instant_answers: {
         Row: {
