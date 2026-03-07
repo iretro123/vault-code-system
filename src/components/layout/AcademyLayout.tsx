@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
 import { MobileNav } from "./MobileNav";
@@ -12,7 +12,9 @@ import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
-import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Loader2, ShieldAlert, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";

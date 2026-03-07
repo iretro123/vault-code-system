@@ -44,7 +44,15 @@ import AcademySupport from "./pages/academy/AcademySupport";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import ResetPassword from "./pages/ResetPassword";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function ReferralCapture() {
   const [searchParams] = useSearchParams();

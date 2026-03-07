@@ -155,8 +155,9 @@ const Auth = () => {
                     <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 h-12" required minLength={8} />
                   </div>
 
-                  <Button type="submit" className="w-full h-12 text-base font-medium" disabled={loading}>
-                    {loading ? "Loading..." : "Sign In"}
+                  <Button type="submit" className="w-full h-12 text-base font-medium gap-2" disabled={loading}>
+                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {loading ? "Signing in…" : "Sign In"}
                   </Button>
                 </form>
               </Card>
