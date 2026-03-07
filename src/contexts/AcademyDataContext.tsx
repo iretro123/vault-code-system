@@ -335,6 +335,26 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [user, authLoading, fetchOnboarding, fetchNotifications, fetchInbox, fetchReferrals]);
 
+  // Realtime: auto-refresh inbox when new items arrive for this user
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`inbox-rt-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "inbox_items",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => { fetchInbox(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, fetchInbox]);
+
   return (
     <AcademyDataContext.Provider
       value={{

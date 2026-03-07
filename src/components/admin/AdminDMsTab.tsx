@@ -185,6 +185,20 @@ export function AdminDMsTab() {
   const { threads, loading, refetchThreads } = useDirectMessages();
   const [selected, setSelected] = useState<DmThread | null>(null);
 
+  // Realtime: auto-refresh thread list when threads are updated
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-dm-threads-rt")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "dm_threads" },
+        () => { refetchThreads(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [refetchThreads]);
+
   return (
     <Card className="bg-white/[0.02] border-white/[0.06] p-4 min-h-[400px]">
       {selected ? (
