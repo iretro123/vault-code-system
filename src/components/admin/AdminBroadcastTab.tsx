@@ -20,8 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { formatDateTimeFull } from "@/lib/formatTime";
 
-/* ── Feature flag: set true when Email/SMS providers are configured ── */
-const enableMessagingProviders = false;
+/* ── Templates ── */
 
 /* ── Templates ── */
 const TEMPLATES = [
