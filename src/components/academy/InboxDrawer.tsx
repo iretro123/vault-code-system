@@ -112,7 +112,7 @@ function InlineThreadView({
   item: InboxItem;
   onBack: () => void;
 }) {
-  const { user, profile } = useAuth();
+  const { user, profile, hasRole } = useAuth();
   const [threadId, setThreadId] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [draft, setDraft] = useState("");
@@ -122,13 +122,14 @@ function InlineThreadView({
   const { messages, loading: msgsLoading } = useThreadMessages(threadId);
 
   // Find existing thread for the MEMBER (not the current user if admin)
-  // item.sender_id = the member who sent the notification
+  // dm_threads.user_id is always the member. Operators must resolve the member's ID.
   useEffect(() => {
     if (!user?.id || !item.id) return;
     let cancelled = false;
     (async () => {
-      // Use sender_id (the member) when available, otherwise current user
-      const memberId = user.id;
+      // Operator viewing a member's DM → member is item.sender_id
+      // Member viewing their own DM → member is themselves
+      const memberId = hasRole("operator") ? (item.sender_id || user.id) : user.id;
       let id = await findThreadByUser(memberId);
       if (!id) {
         id = await getOrCreateThread(memberId);
