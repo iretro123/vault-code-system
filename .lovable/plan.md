@@ -1,45 +1,37 @@
 
 
-## Fix: Inbox Not Updating in Real-Time on New DM Messages
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The realtime subscription in `AcademyDataContext.tsx` (line 348) only listens for `INSERT` events on `inbox_items`. But the DM notification triggers use UPSERT logic — when a member sends a follow-up message, the trigger **updates** the existing inbox card (changes body, created_at, read_at) rather than inserting a new row. The `UPDATE` event is ignored, so the inbox stays stale showing "3 hours ago."
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Fix
+### Solution
 
-**File: `src/contexts/AcademyDataContext.tsx`** (lines 340-358)
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-Change the realtime subscription to listen for both `INSERT` and `UPDATE` events on `inbox_items`:
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-```typescript
-// Listen for INSERT (new inbox items)
-.on("postgres_changes", {
-  event: "INSERT",
-  schema: "public",
-  table: "inbox_items",
-  filter: `user_id=eq.${user.id}`,
-}, () => { fetchInbox(); })
-// Listen for UPDATE (DM trigger UPSERT updates existing items)
-.on("postgres_changes", {
-  event: "UPDATE",
-  schema: "public",
-  table: "inbox_items",
-  filter: `user_id=eq.${user.id}`,
-}, () => { fetchInbox(); })
-```
-
-This covers both sides:
-- **Admin side**: when a member sends a DM, the trigger updates the admin's existing inbox card → `UPDATE` event fires → inbox refreshes
-- **Member side**: when admin sends a DM, the trigger updates the member's existing inbox card → `UPDATE` event fires → inbox refreshes
-
-### What This Does NOT Touch
-- InboxDrawer UI — no changes
-- Thread resolution logic — no changes
-- The `dm_thread_id` fix we just built — untouched
-
-### Files to Change
-| File | Change |
-|------|--------|
-| `src/contexts/AcademyDataContext.tsx` | Add `UPDATE` event listener to the realtime channel (lines 340-358) |
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
