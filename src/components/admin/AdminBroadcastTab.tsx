@@ -61,8 +61,10 @@ export function AdminBroadcastTab() {
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [link, setLink] = useState("");
   const [templateKey, setTemplateKey] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   /* ── Users list ── */
   const [users, setUsers] = useState<UserOption[]>([]);
