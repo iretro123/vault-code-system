@@ -110,7 +110,7 @@ export function useThreadMessages(threadId: string | null) {
         .eq("thread_id", threadId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      setMessages((data as DmMessage[]) || []);
+      setMessages((data as unknown as DmMessage[]) || []);
     } catch (e) {
       console.error("[useThreadMessages] error", e);
     } finally {
