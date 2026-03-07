@@ -131,10 +131,12 @@ function InlineThreadView({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const handleSend = async () => {
-    if (!draft.trim() || !user?.id || !threadId) return;
+  const [uploading, setUploading] = useState(false);
+
+  const handleSend = async (extraAttachments?: DmAttachment[]) => {
+    if ((!draft.trim() && !extraAttachments?.length) || !user?.id || !threadId) return;
     setSending(true);
-    const ok = await sendDmMessage(threadId, user.id, draft.trim());
+    const ok = await sendDmMessage(threadId, user.id, draft.trim(), extraAttachments);
     if (ok) setDraft("");
     setSending(false);
   };
