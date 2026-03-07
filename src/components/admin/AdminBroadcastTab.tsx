@@ -384,7 +384,6 @@ export function AdminBroadcastTab() {
               />
               <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
             </div>
-            </div>
 
             {/* Email-specific fields (behind feature flag) */}
             {enableMessagingProviders && channel === "email" && (
