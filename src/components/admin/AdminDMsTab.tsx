@@ -98,9 +98,11 @@ function ThreadList({
   if (threads.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <MessageSquare className="h-8 w-8 text-muted-foreground/50 mb-3" />
-        <p className="text-sm font-medium text-foreground/80">No conversations yet</p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-4 border border-primary/10">
+          <MessageSquare className="h-6 w-6 text-primary/60" />
+        </div>
+        <p className="text-sm font-semibold text-foreground/80">No conversations yet</p>
+        <p className="text-xs text-muted-foreground mt-1.5 max-w-[220px]">
           When members reply to their welcome DM, conversations will appear here.
         </p>
       </div>
