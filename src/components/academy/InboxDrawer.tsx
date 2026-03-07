@@ -323,9 +323,15 @@ function WhatsNewCard({
         isUnread ? "border-[hsl(45,90%,50%)]/20" : "border-white/[0.08]"
       }`}
     >
-      <div className="flex items-center gap-2 mb-2.5">
-        <span className="shrink-0">{typeIcon(item.type)}</span>
-        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <SenderAvatar item={item} size={24} />
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[11px] font-semibold text-foreground/80 truncate">
+            {item.sender_name || "Vault Academy"}
+          </span>
+          {item.sender_role && <AcademyRoleBadge roleName={item.sender_role} />}
+        </div>
+        <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground ml-auto shrink-0">
           {whatsNewTypeLabel(item.type)}
         </span>
         {isUnread && (
