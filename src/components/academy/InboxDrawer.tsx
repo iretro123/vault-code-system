@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import {
   getOrCreateThread,
+  findThreadByUser,
   useThreadMessages,
   sendDmMessage,
   markThreadRead,
