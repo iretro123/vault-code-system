@@ -1,37 +1,35 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: Show a placeholder preview when AI Pixel Art mode is selected (before generation)
 
 ### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
-
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+When the user selects "AI Pixel Art" tab, the avatar preview still shows their initials because `avatarMode` is set to `"ai"` but `renderAvatar()` has no case for `"ai"` — it falls through to the initials default.
 
 ### Solution
+Add an `"ai"` case to the `renderAvatar()` function that shows:
+- If `aiPreviewUrl` exists → show the generated image (already works after generation)
+- If no preview yet → show a placeholder state (e.g., a styled box with a Sparkles icon and the selected style label, using the selected color)
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Changes
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**`src/components/settings/SettingsProfile.tsx`**
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+1. **`renderAvatar()` (~line 195)** — Add a case before the initials fallback:
+   ```
+   if (avatarMode === "ai") {
+     if (aiPreviewUrl) {
+       return <img src={aiPreviewUrl} alt="AI Avatar" className="h-20 w-20 rounded-2xl object-cover" />;
+     }
+     return (
+       <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20">
+         <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+         <span className="text-[9px] text-muted-foreground/40 mt-1">Generate</span>
+       </div>
+     );
+   }
+   ```
+
+2. **Hide color swatches when in AI mode** — The color picker row (~line 227) currently shows for all non-image modes including `"ai"`. Add `&& avatarMode !== "ai"` to the condition so colors only show for initials/icon modes.
+
+That's it — two small edits, no logic changes to generation or saving.
 
