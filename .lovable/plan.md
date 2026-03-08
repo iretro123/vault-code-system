@@ -1,38 +1,37 @@
 
 
-## Fix Mobile Nav Safe Area for Modern iPhones & Android
+## Plan: Full user deletion (hard delete, not soft revoke)
 
 ### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The bottom nav (`MobileNav`) uses `fixed bottom-0` with no safe-area padding. On iPhone 14/15/16/17 and modern Android phones with gesture navigation, the home indicator bar (~34px) overlaps the nav buttons, making them hard to tap. Browser address bars on Android can also clip into the nav.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-`viewport-fit=cover` is already set in `index.html` (good), but `env(safe-area-inset-bottom)` is never used.
+### Solution
 
-### Fix (3 files)
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-| File | Change |
-|------|--------|
-| `src/components/layout/MobileNav.tsx` | Add `pb-[env(safe-area-inset-bottom,0px)]` to the `<nav>` element so buttons sit above the home indicator |
-| `src/components/layout/AcademyLayout.tsx` | Increase mobile `<main>` bottom padding from `pb-20` to `pb-24` to account for the taller nav with safe area |
-| `src/index.css` | Add a `.safe-bottom` utility as a reusable class for any future fixed-bottom elements |
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### MobileNav change
-
-```tsx
-<nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-white/10 z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]">
-```
-
-This single property ensures:
-- **iPhone 14–17**: 34px padding above the home indicator
-- **Android gesture nav**: ~24px padding above the gesture bar
-- **Older phones with hardware buttons**: 0px (no wasted space)
-- **Safari/Chrome bottom toolbar**: content stays above the browser chrome
-
-### Layout padding
-
-```tsx
-<main className={`flex-1 overflow-y-auto ${isCommunity ? "pb-6" : "pb-24 md:pb-6"}`}>
-```
-
-Bumped from `pb-20` (80px) to `pb-24` (96px) so scrollable content isn't hidden behind the now-taller nav bar on notched devices.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
