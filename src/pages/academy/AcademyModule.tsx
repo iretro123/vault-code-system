@@ -18,6 +18,7 @@ import {
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Play, EyeOff,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
