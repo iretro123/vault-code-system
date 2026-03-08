@@ -212,6 +212,17 @@ export function SettingsProfile() {
   };
 
   const renderAvatar = () => {
+    if (avatarMode === "ai") {
+      if (aiPreviewUrl) {
+        return <img src={aiPreviewUrl} alt="AI Avatar" className="h-20 w-20 rounded-2xl object-cover" />;
+      }
+      return (
+        <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20">
+          <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+          <span className="text-[9px] text-muted-foreground/40 mt-1">Generate</span>
+        </div>
+      );
+    }
     if (avatarMode === "image" && imageUrl) {
       return <img src={imageUrl} alt="Avatar" className="h-20 w-20 rounded-2xl object-cover" />;
     }
@@ -260,7 +271,7 @@ export function SettingsProfile() {
               </div>
             )}
 
-            {avatarMode !== "image" && (
+            {avatarMode !== "image" && avatarMode !== "ai" && (
               <div className="flex gap-1.5 flex-wrap">
                 {AVATAR_COLORS.map((c) => (
                   <button key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
