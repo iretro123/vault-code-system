@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { Plus, ChevronDown, TrendingUp, MessageSquare, Sparkles, BookOpen, Video, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
