@@ -242,9 +242,9 @@ export function SettingsProfile() {
           {renderAvatar()}
           <div className="space-y-3 flex-1">
             <div className="flex gap-2 flex-wrap">
-              {(["initials", "icon", "image"] as const).map((m) => (
+              {(["initials", "icon", "image", "ai"] as const).map((m) => (
                 <button key={m} onClick={() => setAvatarMode(m)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === m ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground"}`}>
-                  {m === "image" ? "Photo" : m.charAt(0).toUpperCase() + m.slice(1)}
+                  {m === "image" ? "Photo" : m === "ai" ? "AI Pixel Art" : m.charAt(0).toUpperCase() + m.slice(1)}
                 </button>
               ))}
             </div>
