@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Shield, ArrowLeft, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { AtSign, Lock, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,15 +13,16 @@ const Auth = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  // Catch recovery tokens in hash and redirect to reset page
   useEffect(() => {
     if (window.location.hash.includes("type=recovery")) {
       window.location.href = "/reset-password" + window.location.hash;
     }
   }, []);
+
   const [mode, setMode] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
@@ -40,7 +39,6 @@ const Auth = () => {
       return;
     }
 
-    // Check if user is revoked/banned before allowing navigation
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
       const { data: profileData } = await supabase
@@ -90,86 +88,125 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="px-4 py-4">
-        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Back</span>
-        </Link>
-      </header>
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-black tracking-tight">
+            <span className="text-foreground">VAULT</span>
+            <span className="text-primary">OS</span>
+          </h1>
+        </div>
 
-      <main className="flex-1 flex items-center justify-center px-4 pb-8">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 mb-4">
-              <Shield className="w-7 h-7 text-primary" />
-            </div>
-            <h1 className="text-2xl font-semibold">VAULT OS</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              {mode === "login" ? "Welcome back" : "Reset your password"}
+        {mode === "forgot" ? (
+          <div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+            <p className="text-center text-sm text-muted-foreground mb-6">
+              Enter your email to receive a reset link
+            </p>
+
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              {/* Email */}
+              <div className="relative">
+                <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setResetError(""); setResetSent(false); }}
+                  className="h-12 pl-10 bg-muted/50 border-border/40 rounded-xl text-sm"
+                  required
+                />
+              </div>
+
+              {resetSent && (
+                <div className="flex items-start gap-1.5 text-xs text-emerald-500">
+                  <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span>Password reset email sent. Check your inbox.</span>
+                </div>
+              )}
+              {resetError && (
+                <div className="flex items-start gap-1.5 text-xs text-destructive">
+                  <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span>{resetError}</span>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full h-12 text-base font-semibold rounded-xl gap-2" disabled={loading || !email.trim()}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Send Reset Link <ArrowRight className="h-4 w-4" /></>}
+              </Button>
+            </form>
+
+            <p className="text-center text-sm text-muted-foreground mt-5">
+              <button type="button" onClick={() => { setMode("login"); setResetSent(false); setResetError(""); }} className="text-primary hover:underline font-medium">
+                Back to sign in
+              </button>
             </p>
           </div>
+        ) : (
+          <>
+            <div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+              {/* First time link */}
+              <p className="text-center text-sm text-muted-foreground mb-6">
+                First time here?{" "}
+                <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
+              </p>
 
-          {mode === "forgot" ? (
-            <Card className="p-6">
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div>
-                  <Label htmlFor="reset-email" className="text-sm text-muted-foreground">Email</Label>
-                  <Input id="reset-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => { setEmail(e.target.value); setResetError(""); setResetSent(false); }} className="mt-1.5 h-12" required />
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Email */}
+                <div className="relative">
+                  <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 pl-10 bg-muted/50 border-border/40 rounded-xl text-sm"
+                    required
+                  />
                 </div>
-                {resetSent && (
-                  <div className="flex items-start gap-1.5 text-xs text-emerald-500">
-                    <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                    <span>Password reset email sent. Check your inbox.</span>
-                  </div>
-                )}
-                {resetError && (
-                  <div className="flex items-start gap-1.5 text-xs text-destructive">
-                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                    <span>{resetError}</span>
-                  </div>
-                )}
-                <Button type="submit" className="w-full h-12 text-base font-medium gap-2" disabled={loading || !email.trim()}>
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Send Reset Link
+
+                {/* Password */}
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 pl-10 pr-11 bg-muted/50 border-border/40 rounded-xl text-sm"
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+
+                {/* Forgot password */}
+                <div className="text-right">
+                  <button type="button" onClick={() => setMode("forgot")} className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                    Forgot password?
+                  </button>
+                </div>
+
+                {/* Submit */}
+                <Button type="submit" className="w-full h-12 text-base font-semibold rounded-xl gap-2" disabled={loading}>
+                  {loading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Signing in…</>
+                  ) : (
+                    <>Sign In <ArrowRight className="h-4 w-4" /></>
+                  )}
                 </Button>
               </form>
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                <button type="button" onClick={() => { setMode("login"); setResetSent(false); setResetError(""); }} className="text-primary hover:underline font-medium">Back to sign in</button>
-              </p>
-            </Card>
-          ) : (
-            <>
-              <Card className="p-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
-                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-12" required />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-sm text-muted-foreground">Password</Label>
-                      <button type="button" onClick={() => setMode("forgot")} className="text-xs text-primary hover:underline">Forgot password?</button>
-                    </div>
-                    <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 h-12" required minLength={8} />
-                  </div>
-
-                  <Button type="submit" className="w-full h-12 text-base font-medium gap-2" disabled={loading}>
-                    {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {loading ? "Signing in…" : "Sign In"}
-                  </Button>
-                </form>
-              </Card>
-
-              <p className="text-center text-sm text-muted-foreground mt-6">
-                Don't have an account?
-                <Link to="/signup" className="text-primary hover:underline ml-1 font-medium">Sign up</Link>
-              </p>
-            </>
-          )}
-        </div>
-      </main>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
