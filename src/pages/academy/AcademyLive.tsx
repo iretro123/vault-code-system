@@ -449,9 +449,9 @@ const AcademyLive = () => {
                   </div>
                   <h2 className="text-2xl font-bold text-white mt-2">{nextSession.title}</h2>
                   {nextSession.description && <p className="text-sm text-white/50 mt-1">{nextSession.description}</p>}
-                  <p className="text-sm text-white/45 mt-1">
-                    {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST
-                    {nextSession.duration_minutes > 0 && <span className="ml-2 text-white/30">· {nextSession.duration_minutes} min</span>}
+                  <p className="text-sm font-semibold text-white mt-1">
+                    {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST
+                    {nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}
                   </p>
 
                   <div className="flex items-center gap-3 mt-5 flex-wrap">
