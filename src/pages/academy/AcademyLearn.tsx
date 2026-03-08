@@ -114,7 +114,7 @@ const AcademyLearn = () => {
 
   return (
     <>
-      <div className="px-4 md:px-8 pt-6 pb-10 max-w-5xl mx-auto">
+      <div className="px-4 md:px-8 pt-6 pb-24 md:pb-10 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Courses</h1>

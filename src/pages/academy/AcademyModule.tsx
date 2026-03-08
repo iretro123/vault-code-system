@@ -411,8 +411,8 @@ const AcademyModule = () => {
               </div>
 
               {/* Bottom action bar */}
-              <div className="border-t border-border bg-card/50 px-6 py-4 shrink-0">
-                <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+              <div className="border-t border-border bg-card/50 px-4 md:px-6 py-3 shrink-0 mb-16 md:mb-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:pb-4">
+                <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
