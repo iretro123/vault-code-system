@@ -1,100 +1,37 @@
 
 
-## Auto-DM Audit: Issue Found
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Current Flow
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-1. New user signs up → `ensureProfile()` inserts into `profiles` table
-2. Database trigger `send_welcome_inbox` fires on profile INSERT
-3. Trigger creates an `inbox_items` row (type='reminder') with the welcome message
-4. **No `dm_thread` or `dm_message` is created**
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### The Problem
+### Solution
 
-The welcome "DM" is only an inbox notification, not an actual DM conversation. This causes:
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-- **No dm_thread_id** on the inbox item — when member clicks it, the fallback creates a new empty thread with no message history
-- **Welcome message body is not in `dm_messages`** — so neither member nor admin sees it as a conversation message
-- **Admin DMs tab** shows "No conversations yet" because no thread exists until the member replies
-- When the member does reply, the conversation has no context (the original welcome text is lost)
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### Fix
-
-Update the `send_welcome_inbox` trigger to also:
-1. Create a `dm_thread` for the new member
-2. Insert the welcome message as a `dm_message` (sender = operator/system)
-3. Set `dm_thread_id` on the `inbox_items` row so clicking the notification opens the real conversation
-
-**File: New database migration**
-
-```sql
-CREATE OR REPLACE FUNCTION public.send_welcome_inbox()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  config jsonb;
-  first_name text;
-  dm_title text;
-  dm_body text;
-  dm_link text;
-  v_thread_id uuid;
-  v_inbox_id uuid;
-  v_operator_id uuid;
-BEGIN
-  SELECT value INTO config FROM public.system_settings WHERE key = 'welcome_dm';
-  IF config IS NULL OR NOT COALESCE((config->>'enabled')::boolean, true) THEN
-    RETURN NEW;
-  END IF;
-
-  -- Deduplicate
-  IF EXISTS (SELECT 1 FROM public.inbox_items WHERE user_id = NEW.user_id AND type = 'reminder' AND title = COALESCE(config->>'title', 'Welcome to Vault OS')) THEN
-    RETURN NEW;
-  END IF;
-
-  -- Get operator (sender)
-  SELECT ur.user_id INTO v_operator_id FROM public.user_roles ur WHERE ur.role = 'operator' LIMIT 1;
-
-  dm_title := COALESCE(config->>'title', 'Welcome to Vault OS');
-  dm_body := COALESCE(config->>'body', 'Welcome!');
-  dm_link := config->>'link';
-  first_name := split_part(COALESCE(NULLIF(NEW.display_name, ''), 'there'), ' ', 1);
-  dm_body := replace(dm_body, '{first_name}', first_name);
-
-  -- Create DM thread
-  INSERT INTO public.dm_threads (user_id) VALUES (NEW.user_id)
-  ON CONFLICT (user_id) DO NOTHING
-  RETURNING id INTO v_thread_id;
-
-  IF v_thread_id IS NULL THEN
-    SELECT id INTO v_thread_id FROM public.dm_threads WHERE user_id = NEW.user_id;
-  END IF;
-
-  -- Insert welcome as a real DM message
-  IF v_thread_id IS NOT NULL AND v_operator_id IS NOT NULL THEN
-    INSERT INTO public.dm_messages (thread_id, sender_id, body)
-    VALUES (v_thread_id, v_operator_id, dm_body);
-  END IF;
-
-  -- Create inbox item with dm_thread_id linked
-  INSERT INTO public.inbox_items (user_id, type, title, body, link, dm_thread_id)
-  VALUES (NEW.user_id, 'reminder', dm_title, dm_body, dm_link, v_thread_id);
-
-  RETURN NEW;
-END;
-$$;
-```
-
-### What This Fixes
-
-- Welcome message appears as a real DM conversation (visible in admin DMs tab)
-- Inbox notification links directly to the thread (no fallback guessing)
-- Member can reply in-context; admin sees the full conversation
-- Existing users unaffected (deduplicate check prevents double sends)
-
-### No Frontend Changes Needed
-
-The `InboxDrawer` already handles `dm_thread_id` linking and `useThreadMessages` renders messages correctly. The fix is entirely in the database trigger.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
