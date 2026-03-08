@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TIMEZONES, formatTimezone } from "@/lib/timezones";
-import { Loader2, Check, Upload } from "lucide-react";
+import { Loader2, Check, Upload, Sparkles, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,9 +17,22 @@ const AVATAR_COLORS = [
 
 import { AVATAR_ICONS } from "@/lib/avatarIcons";
 
-type AvatarMode = "initials" | "icon" | "image";
+type AvatarMode = "initials" | "icon" | "image" | "ai";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const AI_STYLES = [
+  { id: "warrior", label: "Warrior" },
+  { id: "mage", label: "Mage" },
+  { id: "samurai", label: "Samurai" },
+  { id: "dragon", label: "Dragon" },
+  { id: "knight", label: "Knight" },
+  { id: "ninja", label: "Ninja" },
+  { id: "bull", label: "Bull" },
+  { id: "bear", label: "Bear" },
+  { id: "phoenix", label: "Phoenix" },
+  { id: "skull", label: "Skull" },
+] as const;
 
 function cropToSquare(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -81,6 +94,9 @@ export function SettingsProfile() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [hydrated, setHydrated] = useState(!!profile);
+  const [aiStyle, setAiStyle] = useState("warrior");
+  const [generating, setGenerating] = useState(false);
+  const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null);
 
   // Sync from profile only once when it arrives (if component mounted before profile loaded)
   useEffect(() => {
@@ -142,7 +158,35 @@ export function SettingsProfile() {
       toast.error("Upload failed. Try again.");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!user) return;
+    setGenerating(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) { toast.error("Session expired."); setGenerating(false); return; }
+
+      const { data, error } = await supabase.functions.invoke("generate-avatar", {
+        body: { style: aiStyle },
+      });
+
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); setGenerating(false); return; }
+
+      const url = data?.url;
+      if (!url) throw new Error("No URL returned");
+
+      setAiPreviewUrl(url);
+      setImageUrl(url);
+      setAvatarMode("image");
+    } catch (e: any) {
+      toast.error(e?.message || "Generation failed. Try again.");
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -198,9 +242,9 @@ export function SettingsProfile() {
           {renderAvatar()}
           <div className="space-y-3 flex-1">
             <div className="flex gap-2 flex-wrap">
-              {(["initials", "icon", "image"] as const).map((m) => (
+              {(["initials", "icon", "image", "ai"] as const).map((m) => (
                 <button key={m} onClick={() => setAvatarMode(m)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === m ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground"}`}>
-                  {m === "image" ? "Photo" : m.charAt(0).toUpperCase() + m.slice(1)}
+                  {m === "image" ? "Photo" : m === "ai" ? "AI Pixel Art" : m.charAt(0).toUpperCase() + m.slice(1)}
                 </button>
               ))}
             </div>
@@ -231,6 +275,52 @@ export function SettingsProfile() {
                     {icon.svg}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {avatarMode === "ai" && (
+              <div className="space-y-3">
+                <div className="flex gap-1.5 flex-wrap">
+                  {AI_STYLES.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setAiStyle(s.id)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        aiStyle === s.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={generating}
+                    onClick={handleGenerate}
+                    className="gap-1.5"
+                  >
+                    {generating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : aiPreviewUrl ? (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    {generating ? "Generating…" : aiPreviewUrl ? "Regenerate" : "Generate Avatar"}
+                  </Button>
+                </div>
+
+                {aiPreviewUrl && !generating && (
+                  <p className="text-[10px] text-muted-foreground/60">
+                    Like it? Hit "Save Profile" below to keep it.
+                  </p>
+                )}
               </div>
             )}
           </div>
