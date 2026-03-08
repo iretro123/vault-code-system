@@ -1,37 +1,38 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: Live Session Status Line Shows Wrong Day
 
 ### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+Line 58 in `HeroHeader.tsx` sets `tomorrow = now + 24 hours`, and the query fetches any `live_sessions` between now and 24 hours from now. On Saturday evening, this picks up Sunday's session and displays **"Live session tonight"** — which is incorrect since it's tomorrow, not tonight.
 
-### Solution
+The same bug exists in `DashboardStatusLine.tsx` (identical logic).
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Fix
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**Files: `src/components/academy/dashboard/HeroHeader.tsx` + `src/components/academy/DashboardStatusLine.tsx`**
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+Change the live session query window from "next 24 hours" to "end of today" so it only picks up same-day sessions. Then add smart labeling:
+
+```typescript
+// Instead of: tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+// Use end of today:
+const endOfToday = new Date(now);
+endOfToday.setHours(23, 59, 59, 999);
+
+// Also query next 48h to find upcoming sessions for "tomorrow" label
+const endOfTomorrow = new Date(endOfToday.getTime() + 24 * 60 * 60 * 1000);
+```
+
+Update the display logic:
+- Session is **today** → `Live session tonight: "title"`
+- Session is **tomorrow** → `Live session tomorrow: "title"`
+- No session today or tomorrow → skip, show next status line
+
+### Files to Change
+
+| File | Change |
+|------|--------|
+| `src/components/academy/dashboard/HeroHeader.tsx` | Fix query window + smart day label (lines 58, 68-82) |
+| `src/components/academy/DashboardStatusLine.tsx` | Same fix for the duplicate status resolver (lines 49-58, 65-70) |
 
