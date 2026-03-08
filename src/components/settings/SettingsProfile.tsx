@@ -17,9 +17,22 @@ const AVATAR_COLORS = [
 
 import { AVATAR_ICONS } from "@/lib/avatarIcons";
 
-type AvatarMode = "initials" | "icon" | "image";
+type AvatarMode = "initials" | "icon" | "image" | "ai";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const AI_STYLES = [
+  { id: "warrior", label: "Warrior" },
+  { id: "mage", label: "Mage" },
+  { id: "samurai", label: "Samurai" },
+  { id: "dragon", label: "Dragon" },
+  { id: "knight", label: "Knight" },
+  { id: "ninja", label: "Ninja" },
+  { id: "bull", label: "Bull" },
+  { id: "bear", label: "Bear" },
+  { id: "phoenix", label: "Phoenix" },
+  { id: "skull", label: "Skull" },
+] as const;
 
 function cropToSquare(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
