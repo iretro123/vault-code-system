@@ -391,6 +391,28 @@ const AcademyLive = () => {
                 {canManage && <p className="text-xs text-white/30 mt-1">Click "Create Session" to add one.</p>}
               </div>
             )}
+
+            {/* 3 SESSION TYPE CARDS — inside left column */}
+            <section className="mt-5">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Our Live Experiences</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {SESSION_TYPES.map((st) => (
+                  <div key={st.title} className="group/card rounded-2xl overflow-hidden border border-white/[0.07] hover:border-white/[0.16] transition-all duration-300 hover:shadow-[0_8px_40px_-12px_hsl(217_91%_60%/0.15)]" style={{ background: "linear-gradient(180deg, hsl(214 22% 13%) 0%, hsl(214 24% 10%) 100%)" }}>
+                    <div className="relative h-[120px] overflow-hidden">
+                      <img src={st.image} alt={st.title} className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover/card:scale-[1.06]" loading="lazy" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[hsl(214,24%,10%)] via-[hsl(214,24%,10%)]/50 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,24%,10%)]/30 to-transparent" />
+                      <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-[0.18em] text-primary bg-primary/15 border border-primary/25 rounded-lg px-2.5 py-0.5 backdrop-blur-sm">{st.label}</span>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-[15px] font-bold text-foreground mb-1 tracking-tight">{st.title}</h3>
+                      <p className="text-[13px] text-muted-foreground mb-3">{st.subtitle}</p>
+                      <div className="pt-3 mt-auto border-t border-white/[0.06] flex items-center gap-2"><Clock className="h-4 w-4 text-primary/60" /><p className="text-sm font-bold text-white tracking-wide">{st.schedule}</p></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
 
           {/* RIGHT SIDEBAR */}
