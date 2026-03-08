@@ -24,6 +24,7 @@ import { useUserPresence } from "@/hooks/useUserPresence";
 import { DmAttachmentRenderer, type DmAttachment } from "./dm/DmAttachmentRenderer";
 import { DmFileUpload } from "./dm/DmFileUpload";
 import vaultLogo from "@/assets/vault-v-logo.png";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface InboxDrawerProps {
   open: boolean;
