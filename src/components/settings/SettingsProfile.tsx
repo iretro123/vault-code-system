@@ -168,27 +168,48 @@ export function SettingsProfile() {
   };
 
   const handleGenerate = async (styleOverride?: string) => {
-    if (!user || generating) return;
+    if (!user) return;
     const chosenStyle = styleOverride || aiStyle;
+
+    // Cancel any in-flight request
+    if (abortRef.current) abortRef.current.abort();
+    // Clear any pending debounce
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    // Debounce 300ms
+    await new Promise<void>((resolve) => {
+      debounceRef.current = setTimeout(resolve, 300);
+    });
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setGenerating(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-avatar", {
         body: { style: chosenStyle },
       });
 
+      // If aborted, silently bail
+      if (controller.signal.aborted) return;
+
       if (error) throw error;
       if (data?.error) { toast.error(data.error); setGenerating(false); return; }
 
+      // Show base64 preview instantly
+      const preview = data?.preview;
       const url = data?.url;
-      if (!url) throw new Error("No URL returned");
+      if (!preview && !url) throw new Error("No image returned");
 
-      setAiPreviewUrl(url);
-      setImageUrl(url);
+      setAiPreviewUrl(preview || url);
+      setAiStorageUrl(url || null);
+      setImageUrl(url || preview);
       setAvatarMode("ai");
     } catch (e: any) {
+      if (controller.signal.aborted) return;
       toast.error(e?.message || "Generation failed. Try again.");
     } finally {
-      setGenerating(false);
+      if (!controller.signal.aborted) setGenerating(false);
     }
   };
 
