@@ -167,10 +167,11 @@ const AcademyModule = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 md:hidden"
+          className="h-8 px-2 md:hidden gap-1 text-xs"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          {sidebarOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {sidebarOpen ? "Hide" : "Lessons"}
+          {sidebarOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </Button>
       </div>
 
