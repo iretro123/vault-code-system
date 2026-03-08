@@ -970,6 +970,30 @@ export type Database = {
           },
         ]
       }
+      live_session_attendance: {
+        Row: {
+          clicked_at: string
+          id: string
+          session_id: string | null
+          session_title: string
+          user_id: string
+        }
+        Insert: {
+          clicked_at?: string
+          id?: string
+          session_id?: string | null
+          session_title?: string
+          user_id: string
+        }
+        Update: {
+          clicked_at?: string
+          id?: string
+          session_id?: string | null
+          session_title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       live_sessions: {
         Row: {
           created_at: string
