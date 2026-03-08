@@ -173,12 +173,10 @@ export function SettingsProfile() {
     if (!user) return;
     const chosenStyle = styleOverride || aiStyle;
 
-    // Cancel any in-flight request
     if (abortRef.current) abortRef.current.abort();
-    // Clear any pending debounce
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (progressRef.current) clearInterval(progressRef.current);
 
-    // Debounce 300ms
     await new Promise<void>((resolve) => {
       debounceRef.current = setTimeout(resolve, 300);
     });
@@ -187,31 +185,44 @@ export function SettingsProfile() {
     abortRef.current = controller;
 
     setGenerating(true);
+    setGenProgress(0);
+
+    // Simulate progress over ~12s
+    const startTime = Date.now();
+    progressRef.current = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      // Ease toward 90% over 12s, never reach 100 until done
+      const pct = Math.min(90, (elapsed / 12) * 90);
+      setGenProgress(Math.round(pct));
+    }, 200);
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-avatar", {
         body: { style: chosenStyle },
       });
 
-      // If aborted, silently bail
       if (controller.signal.aborted) return;
 
       if (error) throw error;
       if (data?.error) { toast.error(data.error); setGenerating(false); return; }
 
-      // Show base64 preview instantly
-      const preview = data?.preview;
       const url = data?.url;
-      if (!preview && !url) throw new Error("No image returned");
+      if (!url) throw new Error("No image returned");
 
-      setAiPreviewUrl(preview || url);
-      setAiStorageUrl(url || null);
-      setImageUrl(url || preview);
+      setGenProgress(100);
+      setAiPreviewUrl(url);
+      setAiStorageUrl(url);
+      setImageUrl(url);
       setAvatarMode("ai");
     } catch (e: any) {
       if (controller.signal.aborted) return;
       toast.error(e?.message || "Generation failed. Try again.");
     } finally {
-      if (!controller.signal.aborted) setGenerating(false);
+      if (!controller.signal.aborted) {
+        setGenerating(false);
+        setGenProgress(0);
+      }
+      if (progressRef.current) clearInterval(progressRef.current);
     }
   };
 
