@@ -148,7 +148,7 @@ const AcademyModule = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
         <button
