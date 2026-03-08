@@ -158,7 +158,35 @@ export function SettingsProfile() {
       toast.error("Upload failed. Try again.");
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!user) return;
+    setGenerating(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) { toast.error("Session expired."); setGenerating(false); return; }
+
+      const { data, error } = await supabase.functions.invoke("generate-avatar", {
+        body: { style: aiStyle },
+      });
+
+      if (error) throw error;
+      if (data?.error) { toast.error(data.error); setGenerating(false); return; }
+
+      const url = data?.url;
+      if (!url) throw new Error("No URL returned");
+
+      setAiPreviewUrl(url);
+      setImageUrl(url);
+      setAvatarMode("image");
+    } catch (e: any) {
+      toast.error(e?.message || "Generation failed. Try again.");
+    } finally {
+      setGenerating(false);
     }
   };
 
