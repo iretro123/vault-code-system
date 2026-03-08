@@ -1,37 +1,85 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Redesign Live Sessions Page — Premium Command Center
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Summary
+Redesign the left column of AcademyLive.tsx to match the reference: premium header, hero "Next Live Session" card with supporting line, and 3 session-type cards (Sunday Market Prep, Live Trading Room, Weekly Pro Q&A) below. **Keep the right sidebar exactly as-is.** Add Zoom click tracking for attendance consistency.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Zoom Click Tracking — YES, it's possible
+When a user clicks "Join Zoom," we can log that click to the database. This gives real per-user attendance data. We won't know if they actually stayed on the call, but we know they clicked to join — which is a strong signal.
 
-### Solution
+**Implementation:**
+- Create a `live_session_attendance` table: `id`, `user_id`, `session_id` (nullable text for static types), `session_title`, `clicked_at`
+- On "Join Zoom" click, insert a row before opening the link
+- On the right sidebar, add an **Attendance Streak** card showing: sessions attended this month, total all-time, and a consistency percentage bar
+- Each user sees only their own data (RLS: `user_id = auth.uid()`)
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Layout Changes
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**Header** — Replace `PageHeader` with a custom premium header:
+- Large "Live Sessions" h1 (text-3xl font-bold)
+- Subtitle: "Prepare. Execute. Review. Attend live sessions to build real trading skillset."
+- Right side: "Full Schedule" glass button (scrolls to schedule section)
+- Spacious padding, no border
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**Hero Card** — Keep existing "Next Live Session" hero but add:
+- Supporting line below date: "Bring notebook · headphones · charts ready" (text-xs text-white/40)
+- Keep all existing actions (Join Zoom, Copy Link, Calendar, Notify Me, SessionTimer)
+- Wrap Join Zoom click with attendance tracking
+
+**3 Session Type Cards** — New row below hero, `grid grid-cols-1 md:grid-cols-3 gap-4`:
+
+Each card structure:
+- Top: dark gradient image area (200px tall) with cinematic gradient + large low-opacity lucide icon (Monitor/Mic/Users)
+- Title + subtitle
+- 4 bullet points
+- Footer with schedule time
+
+Card 1: Sunday Market Prep — Monitor icon, blue-to-dark gradient
+Card 2: Live Trading Room — Mic icon, indigo-to-dark gradient  
+Card 3: Weekly Pro Q&A — Users icon, violet-to-dark gradient
+
+All three share the same gradient treatment, just slightly shifted hues for unity.
+
+**Below cards** — Keep existing "This Week" and "Replays" sections unchanged.
+
+**Right sidebar** — Keep 100% as-is. Add one new card at the top: "Your Attendance" showing clicks/month and a small progress bar.
+
+### Files changed
+
+| File | Change |
+|------|--------|
+| `src/pages/academy/AcademyLive.tsx` | Rewrite header + add 3 session cards + attendance tracking on Zoom click + attendance card in right sidebar |
+| `src/index.css` | Add `.live-session-type-card` image area gradient styles |
+| Migration | Create `live_session_attendance` table with RLS |
+
+### Technical details
+
+**Database migration:**
+```sql
+create table public.live_session_attendance (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  session_title text not null default '',
+  session_id text null,
+  clicked_at timestamptz not null default now()
+);
+alter table public.live_session_attendance enable row level security;
+create policy "Users can insert own attendance" on public.live_session_attendance for insert to authenticated with check (auth.uid() = user_id);
+create policy "Users can read own attendance" on public.live_session_attendance for select to authenticated using (auth.uid() = user_id);
+```
+
+**Attendance tracking in Join Zoom click:**
+```typescript
+const trackZoomClick = async (session: LiveSession) => {
+  if (!user?.id) return;
+  await supabase.from("live_session_attendance").insert({
+    user_id: user.id,
+    session_title: session.title,
+    session_id: session.id,
+  });
+};
+```
+
+**Right sidebar attendance card** — Query count of attendance records for current month, show as "X sessions joined this month" with a small progress bar (target: 8/month for full consistency).
 
