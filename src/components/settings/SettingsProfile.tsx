@@ -94,6 +94,9 @@ export function SettingsProfile() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [hydrated, setHydrated] = useState(!!profile);
+  const [aiStyle, setAiStyle] = useState("warrior");
+  const [generating, setGenerating] = useState(false);
+  const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null);
 
   // Sync from profile only once when it arrives (if component mounted before profile loaded)
   useEffect(() => {
