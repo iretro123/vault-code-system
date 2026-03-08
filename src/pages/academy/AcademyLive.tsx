@@ -454,7 +454,7 @@ const AcademyLive = () => {
                     {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST
                     {nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}
                   </p>
-                  <SessionTimer sessionDate={nextSession.session_date} durationMinutes={nextSession.duration_minutes} />
+                  
 
                   <div className="flex items-center gap-3 mt-5 flex-wrap">
                     {nextSession.join_url && (
