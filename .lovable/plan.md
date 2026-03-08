@@ -1,21 +1,37 @@
 
 
-## Make Session Card Dates Bigger and More Visible
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Change — `src/pages/academy/AcademyLive.tsx` (line 455)
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-Replace the current small, muted footer with a centered, large white date display:
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**Before:** `text-xs font-semibold text-white/50` with small clock icon, left-aligned
-**After:** Centered layout, `text-sm font-bold text-white` schedule text, clock icon slightly larger, generous padding above
+### Solution
 
-```tsx
-// Line 455 — replace footer div
-<div className="pt-4 mt-auto border-t border-white/[0.06] flex items-center justify-center gap-2">
-  <Clock className="h-4 w-4 text-primary/60" />
-  <p className="text-sm font-bold text-white tracking-wide">{st.schedule}</p>
-</div>
-```
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-One line change. Dates become centered, bigger, bold white, and immediately visible.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
