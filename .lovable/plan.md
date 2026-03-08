@@ -1,37 +1,36 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Add Countdown / Live Duration Timer to Live Sessions Page
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### What It Does
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+A real-time timer displayed on the next session hero card:
+- **Before session starts**: Countdown showing `Xd Xh Xm Xs` until the session begins
+- **During session**: Switches to a "LIVE" badge + elapsed timer showing `Xh Xm Xs` since it started
+- **After session ends** (based on `duration_minutes`): Timer disappears, card reverts to normal state
 
-### Solution
+### Implementation
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**1. New component: `src/components/academy/live/SessionTimer.tsx`**
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+A self-contained component that takes `sessionDate` (ISO string) and `durationMinutes` (number), runs a 1-second `setInterval`, and renders:
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+- **Pre-session**: `⏳ Starts in 2d 5h 32m 14s` — white/60 text, monospace numbers
+- **Live now**: Pulsing red dot + `LIVE · 00:14:32` — red accent, bold white
+- **Ended**: Returns `null` (hides itself)
+
+```tsx
+<SessionTimer sessionDate={nextSession.session_date} durationMinutes={nextSession.duration_minutes} />
+```
+
+**2. File: `src/pages/academy/AcademyLive.tsx`**
+
+Insert `<SessionTimer>` between the date line (line 455) and the action buttons (line 457). One line addition, no other changes.
+
+### Design Details
+
+- Countdown uses `font-mono` for stable digit widths (no layout jank)
+- Live state: small pulsing red dot (`animate-pulse`) + "LIVE" badge
+- Timer updates every second via `setInterval`, cleaned up on unmount
+- Lightweight — no external dependencies
 
