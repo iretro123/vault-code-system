@@ -478,6 +478,7 @@ const AcademyLive = () => {
                     <button className="live-btn-glass text-xs gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <Bell className="h-3.5 w-3.5" /> Notify Me
                     </button>
+                    <SessionTimer sessionDate={nextSession.session_date} durationMinutes={nextSession.duration_minutes} />
                   </div>
                 </div>
               ) : (
