@@ -271,7 +271,7 @@ export function SettingsProfile() {
               </div>
             )}
 
-            {avatarMode !== "image" && (
+            {avatarMode !== "image" && avatarMode !== "ai" && (
               <div className="flex gap-1.5 flex-wrap">
                 {AVATAR_COLORS.map((c) => (
                   <button key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
