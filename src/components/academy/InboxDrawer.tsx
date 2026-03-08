@@ -24,6 +24,7 @@ import { useUserPresence } from "@/hooks/useUserPresence";
 import { DmAttachmentRenderer, type DmAttachment } from "./dm/DmAttachmentRenderer";
 import { DmFileUpload } from "./dm/DmFileUpload";
 import vaultLogo from "@/assets/vault-v-logo.png";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface InboxDrawerProps {
   open: boolean;
@@ -525,6 +526,7 @@ function WhatsNewList({
 /* ── Main InboxDrawer ── */
 export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState("inbox");
   const [activeThread, setActiveThread] = useState<InboxItem | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -589,8 +591,12 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     return (
       <div
         ref={panelRef}
-        className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[340px] max-w-[90vw] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl overflow-hidden visible pointer-events-auto`}
-        style={{ marginLeft: "8px", transition: "none", animation: "none" }}
+        className={`fixed z-50 flex flex-col border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl overflow-hidden visible pointer-events-auto ${
+          isMobile
+            ? "inset-0 w-full rounded-none"
+            : "left-[var(--sidebar-width,16rem)] top-14 bottom-4 w-[340px] max-w-[90vw] rounded-xl"
+        }`}
+        style={{ marginLeft: isMobile ? 0 : "8px", transition: "none", animation: "none" }}
       >
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/[0.06]">
           <h2 className="text-base font-semibold text-foreground">Message</h2>
@@ -612,10 +618,14 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   return (
     <div
       ref={panelRef}
-      className={`fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[340px] max-w-[90vw] flex flex-col rounded-xl border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl overflow-hidden ${
+      className={`fixed z-50 flex flex-col border border-white/[0.08] bg-[hsl(220,18%,7%)]/95 backdrop-blur-xl shadow-2xl overflow-hidden ${
+        isMobile
+          ? "inset-0 w-full rounded-none"
+          : "left-[var(--sidebar-width,16rem)] top-14 bottom-4 w-[340px] max-w-[90vw] rounded-xl"
+      } ${
         open ? "visible pointer-events-auto" : "invisible pointer-events-none"
       }`}
-      style={{ marginLeft: "8px", transition: "none", animation: "none" }}
+      style={{ marginLeft: isMobile ? 0 : "8px", transition: "none", animation: "none" }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/[0.06]">

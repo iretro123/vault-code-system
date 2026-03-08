@@ -1,49 +1,37 @@
 
 
-## Fix Mobile Inbox Panel
+## Plan: Full user deletion (hard delete, not soft revoke)
 
 ### Problem
-On mobile, clicking the inbox icon in the sidebar opens the `InboxDrawer` panel positioned at `left: var(--sidebar-width)` — which places it partially off-screen behind the sidebar overlay. The sidebar stays open, both compete for space, and the inbox content is clipped/unusable.
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
+
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
 ### Solution
-On mobile, the InboxDrawer should render as a **full-screen panel** instead of a side-anchored floating panel. When opened on mobile:
 
-1. **Close the sidebar first** — call `setOpenMobile(false)` before opening inbox
-2. **Render full-screen on mobile** — instead of `fixed left-[var(--sidebar-width)] w-[340px]`, use `fixed inset-0` on mobile so the inbox takes the full viewport
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### Changes
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**File: `src/components/academy/InboxDrawer.tsx`**
-- Accept `isMobile` prop (or use `useIsMobile` hook internally)
-- On mobile: change the panel positioning from `fixed left-[var(--sidebar-width)] w-[340px]` to `fixed inset-0 w-full` (full-screen overlay)
-- Apply this to both the main inbox view (line 613-617) and the thread view (line 590-593)
-
-**File: `src/components/layout/AcademySidebar.tsx`**
-- When inbox button is clicked on mobile: close the sidebar first (`setOpenMobile(false)`), then open inbox
-- Update the inbox button `onClick` handler (line 289-293) to include `if (isMobile) setOpenMobile(false);`
-
-### Technical Details
-
-In `InboxDrawer.tsx`, add the `useIsMobile` hook and conditionally apply positioning:
-
-```tsx
-// Desktop: current anchored panel
-"fixed left-[var(--sidebar-width,16rem)] top-14 bottom-4 z-50 w-[340px]"
-
-// Mobile: full-screen overlay
-"fixed inset-0 z-50 w-full max-w-full"
-```
-
-In `AcademySidebar.tsx`, update the inbox click handler:
-
-```tsx
-onClick={(e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  if (isMobile) setOpenMobile(false); // close sidebar first
-  handleInboxChange(!inboxOpen);
-}}
-```
-
-Both the main panel render and the thread view render need the mobile-aware class logic.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
