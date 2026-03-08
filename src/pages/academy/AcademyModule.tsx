@@ -394,12 +394,16 @@ const AcademyModule = () => {
                   </div>
 
                   {/* Notes */}
-                  {activeLesson.notes && (
+                  {(activeLesson.notes || canManageContent) && (
                     <div className="rounded-lg bg-muted/30 border border-border p-4 mb-6">
                       <p className="text-xs font-medium text-muted-foreground mb-2">Study Notes</p>
-                      <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
-                        {activeLesson.notes}
-                      </p>
+                      {activeLesson.notes ? (
+                        <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
+                          {activeLesson.notes}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit above to add study notes.</p>
+                      )}
                     </div>
                   )}
                 </div>
