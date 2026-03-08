@@ -526,6 +526,7 @@ function WhatsNewList({
 /* ── Main InboxDrawer ── */
 export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [tab, setTab] = useState("inbox");
   const [activeThread, setActiveThread] = useState<InboxItem | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
