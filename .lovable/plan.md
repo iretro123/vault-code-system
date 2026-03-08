@@ -1,29 +1,37 @@
 
 
-## Premium Luxury Background for Login Page
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Change (1 file)
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-**File: `src/pages/Auth.tsx` (line 91)**
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-Replace the outer `div` with a layered radial gradient background — a subtle blue aura glow behind the card on a deep dark base. No animations, no blur, no performance cost.
+### Solution
 
-```tsx
-<div
-  className="min-h-screen flex items-center justify-center px-4"
-  style={{
-    background: `
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 20% 80%, rgba(59,130,246,0.06) 0%, transparent 50%),
-      radial-gradient(ellipse 50% 40% at 80% 70%, rgba(99,102,241,0.05) 0%, transparent 50%),
-      linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,5%) 100%)
-    `
-  }}
->
-```
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-- Top-center blue aura gives the "high-ticket" glow effect
-- Two faint corner accents add depth without distraction
-- Deep dark base (#0f1318 range) for maximum card contrast
-- Pure CSS gradients — zero performance impact, iOS-smooth
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
