@@ -452,7 +452,7 @@ const AcademyLive = () => {
                   <ul className="space-y-1.5 mb-4">
                     {st.bullets.map((b) => (<li key={b} className="flex items-start gap-2 text-[13px] text-white/60"><CheckCircle2 className="h-3.5 w-3.5 text-primary/70 shrink-0 mt-0.5" />{b}</li>))}
                   </ul>
-                  <div className="pt-3 border-t border-white/[0.06]"><p className="text-xs font-semibold text-white/50 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{st.schedule}</p></div>
+                  <div className="pt-4 mt-auto border-t border-white/[0.06] flex items-center justify-center gap-2"><Clock className="h-4 w-4 text-primary/60" /><p className="text-sm font-bold text-white tracking-wide">{st.schedule}</p></div>
                 </div>
               </div>
             ))}
