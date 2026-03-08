@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useTradeLog } from "@/hooks/useTradeLog";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
   FileText, HelpCircle, Trophy,
@@ -12,18 +13,32 @@ import { cn } from "@/lib/utils";
 /* ── Your Week ── */
 function YourWeekCard() {
   const { entries } = useTradeLog();
+  const { user } = useAuth();
+  const [journalCount, setJournalCount] = useState(0);
 
   const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
 
   const tradesThisWeek = entries?.filter(
-    (e: any) => new Date(e.trade_date) >= startOfWeek
+    (e: any) => new Date(e.trade_date) >= monday
   ).length ?? 0;
 
-  const journalCount = 0;
-  const reviewStatus = "Due";
+  useEffect(() => {
+    if (!user) return;
+    const startDate = monday.toISOString().slice(0, 10);
+    const endDate = sunday.toISOString().slice(0, 10);
+    supabase.from("journal_entries").select("id", { count: "exact", head: true })
+      .eq("user_id", user.id).gte("entry_date", startDate).lte("entry_date", endDate)
+      .then(({ count }) => setJournalCount(count ?? 0));
+  }, [user]);
+
+  const reviewStatus = journalCount > 0 ? "Done" : "Due";
 
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3.5 space-y-2.5">

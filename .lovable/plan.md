@@ -1,20 +1,37 @@
 
 
-## Connect "Your Week" Cards to Real Data
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-Both `CockpitPanel.tsx` and `TradeFloorRightSidebar.tsx` have hardcoded `journalCount = 0` and `reviewStatus = "Due"`. Fix: query `journal_entries` and `lesson_progress` for the current week, matching the pattern already used in `ThisWeekCard.tsx`.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Changes
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**Both files: `CockpitPanel.tsx` and `TradeFloorRightSidebar.tsx`**
+### Solution
 
-In `YourWeekCard`, add `useAuth` + `supabase` imports and a `useEffect` that runs the same queries as `ThisWeekCard`:
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-- **Trades**: already connected via `useTradeLog()` — no change needed
-- **Journal**: `supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("entry_date", monday).lte("entry_date", sunday)`
-- **Review**: "Done" if journal count > 0, otherwise "Due" (same logic as `ThisWeekCard`)
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-Week range: Monday–Sunday (matching `ThisWeekCard`'s `getWeekRange` helper).
-
-Replace hardcoded stubs with state from the query results. Two file edits, no migrations, no new dependencies.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
