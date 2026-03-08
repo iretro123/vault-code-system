@@ -204,7 +204,7 @@ const Signup = () => {
         </div>
 
         {/* Card container */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+        <div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {/* First Name / Last Name */}
             <div className="grid grid-cols-2 gap-3">
