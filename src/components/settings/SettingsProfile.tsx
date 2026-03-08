@@ -162,16 +162,13 @@ export function SettingsProfile() {
     }
   };
 
-  const handleGenerate = async () => {
-    if (!user) return;
+  const handleGenerate = async (styleOverride?: string) => {
+    if (!user || generating) return;
+    const chosenStyle = styleOverride || aiStyle;
     setGenerating(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      if (!accessToken) { toast.error("Session expired."); setGenerating(false); return; }
-
       const { data, error } = await supabase.functions.invoke("generate-avatar", {
-        body: { style: aiStyle },
+        body: { style: chosenStyle },
       });
 
       if (error) throw error;
@@ -182,7 +179,7 @@ export function SettingsProfile() {
 
       setAiPreviewUrl(url);
       setImageUrl(url);
-      setAvatarMode("image");
+      setAvatarMode("ai");
     } catch (e: any) {
       toast.error(e?.message || "Generation failed. Try again.");
     } finally {
@@ -213,13 +210,20 @@ export function SettingsProfile() {
 
   const renderAvatar = () => {
     if (avatarMode === "ai") {
-      if (aiPreviewUrl) {
-        return <img src={aiPreviewUrl} alt="AI Avatar" className="h-20 w-20 rounded-2xl object-cover" />;
-      }
       return (
-        <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20">
-          <Sparkles className="h-6 w-6 text-muted-foreground/40" />
-          <span className="text-[9px] text-muted-foreground/40 mt-1">Generate</span>
+        <div className="relative h-20 w-20 rounded-2xl overflow-hidden">
+          {aiPreviewUrl ? (
+            <img src={aiPreviewUrl} alt="AI Avatar" className={`h-20 w-20 rounded-2xl object-cover ${generating ? "opacity-40" : ""}`} />
+          ) : (
+            <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20">
+              <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+            </div>
+          )}
+          {generating && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          )}
         </div>
       );
     }
@@ -254,7 +258,7 @@ export function SettingsProfile() {
           <div className="space-y-3 flex-1">
             <div className="flex gap-2 flex-wrap">
               {(["initials", "icon", "image", "ai"] as const).map((m) => (
-                <button key={m} onClick={() => setAvatarMode(m)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === m ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground"}`}>
+                <button key={m} onClick={() => { setAvatarMode(m); if (m === "ai" && !aiPreviewUrl) handleGenerate(); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === m ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground"}`}>
                   {m === "image" ? "Photo" : m === "ai" ? "AI Pixel Art" : m.charAt(0).toUpperCase() + m.slice(1)}
                 </button>
               ))}
@@ -295,42 +299,26 @@ export function SettingsProfile() {
                   {AI_STYLES.map((s) => (
                     <button
                       key={s.id}
-                      onClick={() => setAiStyle(s.id)}
+                      onClick={() => { setAiStyle(s.id); handleGenerate(s.id); }}
+                      disabled={generating}
                       className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                         aiStyle === s.id
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                      }`}
+                      } ${generating ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {s.label}
                     </button>
                   ))}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={generating}
-                    onClick={handleGenerate}
-                    className="gap-1.5"
-                  >
-                    {generating ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : aiPreviewUrl ? (
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    ) : (
-                      <Sparkles className="h-3.5 w-3.5" />
-                    )}
-                    {generating ? "Generating…" : aiPreviewUrl ? "Regenerate" : "Generate Avatar"}
-                  </Button>
-                </div>
-
                 {aiPreviewUrl && !generating && (
                   <p className="text-[10px] text-muted-foreground/60">
-                    Like it? Hit "Save Profile" below to keep it.
+                    Tap another style to regenerate. Save Profile below to keep it.
                   </p>
+                )}
+                {generating && (
+                  <p className="text-[10px] text-muted-foreground/60">Generating…</p>
                 )}
               </div>
             )}
