@@ -180,15 +180,27 @@ const Signup = () => {
   const labelClass = "text-xs font-medium text-white/70 block mb-1";
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-6">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-6"
+      style={{
+        background: `
+          radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
+          radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.22) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 50% at 20% 80%, rgba(59,130,246,0.10) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 40% at 80% 70%, rgba(99,102,241,0.08) 0%, transparent 50%),
+          radial-gradient(ellipse 40% 30% at 50% 50%, rgba(59,130,246,0.06) 0%, transparent 60%),
+          linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
+        `
+      }}
+    >
       <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 mb-3">
-            <Shield className="w-5 h-5 text-primary" />
-          </div>
-          <h1 className="text-xl font-semibold text-foreground tracking-[0.2em]">VAULT OS</h1>
-          <p className="text-muted-foreground text-xs mt-1">Join Vault Academy today</p>
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-black tracking-tight">
+            <span className="text-foreground">VAULT</span>
+            <span className="text-primary">OS</span>
+          </h1>
+          <p className="text-muted-foreground text-sm mt-2">Join Vault Academy</p>
         </div>
 
         {/* Card container */}
