@@ -52,7 +52,7 @@ export function SessionTimer({ sessionDate, durationMinutes }: SessionTimerProps
   if (now >= start) {
     const { h, m, s } = splitElapsed(now - start);
     return (
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/5 mt-2">
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/5">
         <span className="flex items-center gap-1.5 text-red-400 text-[11px] font-bold uppercase tracking-wide">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           Live
@@ -70,7 +70,7 @@ export function SessionTimer({ sessionDate, durationMinutes }: SessionTimerProps
 
   const { d, h, m, s } = splitCountdown(start - now);
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/5 mt-2">
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/5">
       <Clock className="w-3.5 h-3.5 text-blue-400/60" />
       <span className="inline-flex items-baseline text-sm">
         {d > 0 && <><Digit value={d} label="d" /><Sep /></>}
