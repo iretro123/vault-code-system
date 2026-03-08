@@ -437,22 +437,22 @@ const AcademyLive = () => {
         {/* 3 SESSION TYPE CARDS — FULL WIDTH */}
         <section className="mt-4">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-5">Our Live Experiences</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {SESSION_TYPES.map((st) => (
               <div key={st.title} className="group/card rounded-2xl overflow-hidden border border-white/[0.07] hover:border-white/[0.16] transition-all duration-300 hover:shadow-[0_8px_40px_-12px_hsl(217_91%_60%/0.15)]" style={{ background: "linear-gradient(180deg, hsl(214 22% 13%) 0%, hsl(214 24% 10%) 100%)" }}>
-                <div className="relative h-[220px] overflow-hidden">
+                <div className="relative h-[150px] overflow-hidden">
                   <img src={st.image} alt={st.title} className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover/card:scale-[1.06]" loading="lazy" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[hsl(214,24%,10%)] via-[hsl(214,24%,10%)]/50 to-transparent" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,24%,10%)]/30 to-transparent" />
-                  <span className="absolute top-4 left-4 text-[10px] font-bold uppercase tracking-[0.18em] text-primary bg-primary/15 border border-primary/25 rounded-lg px-3 py-1 backdrop-blur-sm">{st.label}</span>
+                  <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-[0.18em] text-primary bg-primary/15 border border-primary/25 rounded-lg px-2.5 py-0.5 backdrop-blur-sm">{st.label}</span>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-foreground mb-1 tracking-tight">{st.title}</h3>
-                  <p className="text-[13px] text-muted-foreground mb-4">{st.subtitle}</p>
-                  <ul className="space-y-2.5 mb-5">
-                    {st.bullets.map((b) => (<li key={b} className="flex items-start gap-2.5 text-[13px] text-white/60"><CheckCircle2 className="h-4 w-4 text-primary/70 shrink-0 mt-0.5" />{b}</li>))}
+                <div className="p-5">
+                  <h3 className="text-[15px] font-bold text-foreground mb-1 tracking-tight">{st.title}</h3>
+                  <p className="text-[13px] text-muted-foreground mb-3">{st.subtitle}</p>
+                  <ul className="space-y-1.5 mb-4">
+                    {st.bullets.map((b) => (<li key={b} className="flex items-start gap-2 text-[13px] text-white/60"><CheckCircle2 className="h-3.5 w-3.5 text-primary/70 shrink-0 mt-0.5" />{b}</li>))}
                   </ul>
-                  <div className="pt-4 border-t border-white/[0.06]"><p className="text-xs font-semibold text-white/50 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{st.schedule}</p></div>
+                  <div className="pt-3 border-t border-white/[0.06]"><p className="text-xs font-semibold text-white/50 flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />{st.schedule}</p></div>
                 </div>
               </div>
             ))}
