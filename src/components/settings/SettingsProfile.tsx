@@ -96,10 +96,12 @@ export function SettingsProfile() {
   const [hydrated, setHydrated] = useState(!!profile);
   const [aiStyle, setAiStyle] = useState("warrior");
   const [generating, setGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState(0);
   const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null);
   const [aiStorageUrl, setAiStorageUrl] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync from profile only once when it arrives (if component mounted before profile loaded)
   useEffect(() => {
