@@ -334,7 +334,7 @@ const Signup = () => {
             <div className="border-t border-white/[0.06] pt-3.5">
               <Button
                 type="submit"
-                className="w-full h-10 text-sm font-medium rounded-lg hover:shadow-[0_0_20px_4px_hsl(217_91%_60%/0.15)]"
+                className="w-full h-12 text-base font-semibold rounded-xl gap-2"
                 disabled={loading || !fieldsValid}
               >
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Creating...</> : "Create Account"}
