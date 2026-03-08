@@ -723,8 +723,88 @@ const AcademyLive = () => {
         </section>
 
         {/* ── Schedule & Replays — FULL WIDTH ── */}
-        <div className="mt-8 max-w-[900px] space-y-8">
+        <div id="live-full-schedule" className="mt-8 max-w-[900px] space-y-8">
+          {weekList.length > 0 && (
+            <section>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
+              <div className="live-glass-card divide-y divide-white/[0.05]">
+                {weekList.map((s) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      "flex items-center gap-3 px-5 py-3.5 group/row hover:bg-white/[0.02] transition-colors",
+                      canManage && "cursor-pointer",
+                      selectedId === s.id && canManage && "bg-primary/[0.06]"
+                    )}
+                    onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}
+                  >
+                    <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
+                      <CalendarDays className="h-3.5 w-3.5 text-white/35" />
+                    </div>
+                    <span className="text-xs text-white/40 w-10 shrink-0">{format(new Date(s.session_date), "EEE d")}</span>
+                    <span className="text-sm font-medium text-white/85 flex-1 truncate">{s.title}</span>
+                    <span className="text-xs text-white/30 shrink-0">{s.duration_minutes} min</span>
+                    <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)} EST</span>
+                    {canManage && (
+                      <>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/row:opacity-100"><Pencil className="h-3 w-3" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/row:opacity-100"><Trash2 className="h-3 w-3" /></button>
+                      </>
+                    )}
+                    <ChevronRight className="h-3.5 w-3.5 text-white/20 shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
+          {past.length > 0 && (
+            <section>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
+              <div className="space-y-2">
+                {past.map((s) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      "live-glass-card px-5 py-4 flex items-center gap-4 group/replay",
+                      canManage && "cursor-pointer",
+                      selectedId === s.id && canManage && "ring-1 ring-primary/40"
+                    )}
+                    onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}
+                  >
+                    <div className="h-10 w-10 rounded-xl bg-white/[0.05] flex items-center justify-center shrink-0">
+                      <Play className="h-4 w-4 text-white/30" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white/85 truncate">{s.title}</p>
+                      <p className="text-xs text-white/35">
+                        {format(new Date(s.session_date), "EEEE, MMM d")}
+                        {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
+                      </p>
+                    </div>
+                    {canManage && (
+                      <>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/replay:opacity-100"><Pencil className="h-3 w-3" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/replay:opacity-100"><Trash2 className="h-3 w-3" /></button>
+                      </>
+                    )}
+                    {(s.replay_url || s.join_url) && (
+                      <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                        <button className="live-pill-btn">Watch Replay</button>
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AcademyLive;
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
                   <div className="live-glass-card divide-y divide-white/[0.05]">
                     {weekList.map((s) => (
