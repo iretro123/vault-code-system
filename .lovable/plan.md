@@ -1,37 +1,53 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## AI-Generated Pixel Art Avatars
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Overview
+Add a new avatar mode where users can generate unique pixel-art gaming avatars using Lovable AI's image generation. Users click "Generate" to get a random avatar, can regenerate until they find one they like, then save it.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Architecture
 
-### Solution
+```text
+User clicks "Generate"
+  → Edge function (generate-avatar/index.ts)
+    → Lovable AI (gemini-2.5-flash-image) with pixel art prompt
+    → Returns base64 image
+  → Upload to storage bucket (avatars/)
+  → Display in avatar picker
+  → Save URL to profile on confirm
+```
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Changes
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**1. Edge Function: `supabase/functions/generate-avatar/index.ts`**
+- Accepts a style hint (e.g. "warrior", "mage", "dragon", "samurai", "knight")
+- Calls Lovable AI image generation with a prompt like: *"Pixel art avatar icon, 64x64, [style], dark background, retro gaming style, no text"*
+- Returns the base64 image
+- Then uploads to the `avatars` storage bucket under the user's folder
+- Returns the public URL
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**2. Update `supabase/config.toml`**
+- Add `[functions.generate-avatar]` with `verify_jwt = false`
+
+**3. Update `src/components/settings/SettingsProfile.tsx`**
+- Add a 4th avatar mode tab: "AI Pixel Art" alongside Initials / Icon / Photo
+- Show a grid of style presets (Warrior, Mage, Samurai, Dragon, Knight, Ninja, Bull, Bear, Phoenix, Skull) as clickable chips
+- "Generate" button calls the edge function with the selected style
+- Shows loading spinner during generation (~3-5 seconds)
+- Preview the result; user can regenerate or confirm
+- On confirm, saves the public URL as `avatar_url`
+
+**4. Update `src/lib/chatAvatars.tsx`**
+- Already supports `image` mode via HTTP URLs, so no changes needed — generated avatars will render automatically in chat
+
+### Style Presets (10 options)
+Warrior, Mage, Samurai, Dragon, Knight, Ninja, Bull, Bear, Phoenix, Skull
+
+Each generates a unique pixel-art character avatar with the selected theme.
+
+### Technical Notes
+- Uses `LOVABLE_API_KEY` (already provisioned) — no user setup needed
+- Images stored in existing `avatars` bucket
+- Rate limit: one generation at a time per user, button disabled during generation
+- Generated images are ~640x640 WebP, same as photo uploads
 
