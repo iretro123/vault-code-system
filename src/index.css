@@ -509,8 +509,13 @@ html {
   .vault-chat-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(59, 130, 246, 0.50);
   }
-  .vault-chat-scroll::-webkit-scrollbar-thumb:active {
+   .vault-chat-scroll::-webkit-scrollbar-thumb:active {
     background: rgba(59, 130, 246, 0.60);
+  }
+
+  /* Safe-area bottom padding for fixed-bottom elements on notched devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 

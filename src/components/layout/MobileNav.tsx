@@ -13,7 +13,7 @@ export function MobileNav() {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-white/10 z-50 md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-white/10 z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]">
       <div className="flex items-center justify-around px-2 py-2">
         <button
           onClick={toggleSidebar}
