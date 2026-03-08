@@ -1,54 +1,37 @@
 
 
-## Match Signup Page to Login Page Premium Style
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Changes (1 file: `src/pages/Signup.tsx`)
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-**1. Background** (line 183)
-Replace flat `bg-background` with the same luxury blue-glow gradient from Auth.tsx:
-```tsx
-<div
-  className="min-h-screen flex items-center justify-center px-4 py-6"
-  style={{
-    background: `
-      radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.22) 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 20% 80%, rgba(59,130,246,0.10) 0%, transparent 50%),
-      radial-gradient(ellipse 50% 40% at 80% 70%, rgba(99,102,241,0.08) 0%, transparent 50%),
-      radial-gradient(ellipse 40% 30% at 50% 50%, rgba(59,130,246,0.06) 0%, transparent 60%),
-      linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
-    `
-  }}
->
-```
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**2. Logo** (lines 186-192)
-Replace the Shield icon + small text with the same bold wordmark from Auth:
-```tsx
-<div className="text-center mb-8">
-  <h1 className="text-5xl font-black tracking-tight">
-    <span className="text-foreground">VAULT</span>
-    <span className="text-primary">OS</span>
-  </h1>
-  <p className="text-muted-foreground text-sm mt-2">Join Vault Academy</p>
-</div>
-```
+### Solution
 
-**3. Card styling** (line 195)
-Match the login card's border/shadow:
-```tsx
-<div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-```
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**4. Input styling** (line 179)
-Update `inputClass` to match login's taller, rounded-xl inputs:
-```tsx
-const inputClass = "h-12 bg-muted/50 border-border/40 rounded-xl text-sm ...";
-```
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**5. Button** — match login's `h-12 rounded-xl font-semibold` style with hover glow.
-
-**6. Remove** unused `Shield` import.
-
-All logic stays identical — only visual wrapper changes.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

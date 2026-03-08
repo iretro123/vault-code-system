@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Shield, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -176,23 +176,35 @@ const Signup = () => {
     password.length >= 8 &&
     password === confirmPassword;
 
-  const inputClass = "h-10 rounded-lg bg-white/5 border-white/[0.08] text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40 transition-colors";
+  const inputClass = "h-12 bg-muted/50 border-border/40 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40 transition-colors";
   const labelClass = "text-xs font-medium text-white/70 block mb-1";
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-6">
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-6"
+      style={{
+        background: `
+          radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
+          radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.22) 0%, transparent 55%),
+          radial-gradient(ellipse 60% 50% at 20% 80%, rgba(59,130,246,0.10) 0%, transparent 50%),
+          radial-gradient(ellipse 50% 40% at 80% 70%, rgba(99,102,241,0.08) 0%, transparent 50%),
+          radial-gradient(ellipse 40% 30% at 50% 50%, rgba(59,130,246,0.06) 0%, transparent 60%),
+          linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
+        `
+      }}
+    >
       <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 mb-3">
-            <Shield className="w-5 h-5 text-primary" />
-          </div>
-          <h1 className="text-xl font-semibold text-foreground tracking-[0.2em]">VAULT OS</h1>
-          <p className="text-muted-foreground text-xs mt-1">Join Vault Academy today</p>
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-black tracking-tight">
+            <span className="text-foreground">VAULT</span>
+            <span className="text-primary">OS</span>
+          </h1>
+          <p className="text-muted-foreground text-sm mt-2">Join Vault Academy</p>
         </div>
 
         {/* Card container */}
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+        <div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
           <form onSubmit={handleSubmit} className="space-y-3.5">
             {/* First Name / Last Name */}
             <div className="grid grid-cols-2 gap-3">
@@ -322,7 +334,7 @@ const Signup = () => {
             <div className="border-t border-white/[0.06] pt-3.5">
               <Button
                 type="submit"
-                className="w-full h-10 text-sm font-medium rounded-lg hover:shadow-[0_0_20px_4px_hsl(217_91%_60%/0.15)]"
+                className="w-full h-12 text-base font-semibold rounded-xl gap-2"
                 disabled={loading || !fieldsValid}
               >
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Creating...</> : "Create Account"}
