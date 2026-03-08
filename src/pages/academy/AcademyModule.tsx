@@ -154,7 +154,13 @@ const AcademyModule = () => {
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
         <button
-          onClick={() => navigate("/academy/learn")}
+          onClick={() => {
+            if (isMobile && !sidebarOpen) {
+              setSidebarOpen(true);
+            } else {
+              navigate("/academy/learn");
+            }
+          }}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
