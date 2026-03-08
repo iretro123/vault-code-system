@@ -1,27 +1,37 @@
 
 
-## Make Study Notes Editable for Admins
+## Plan: Full user deletion (hard delete, not soft revoke)
 
 ### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The edit button for lessons (including study notes) is hidden behind a **hover-only** pencil icon in the sidebar lesson list. On mobile/touch devices, hover doesn't work — so you literally cannot access the edit panel. Even on desktop, it's easy to miss.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Fix
+### Solution
 
-Add an inline **Edit** button directly next to the "Study Notes" heading in the main content area, visible only when Admin Mode is ON + user has `manage_content` permission. Clicking it opens the existing edit panel (reuses `editingId` state). Also show the edit button even when there are no notes yet, so admins can add notes to lessons that currently have none.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-### Changes
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**File: `src/pages/academy/AcademyModule.tsx`**
-
-1. **Add an inline edit trigger next to Study Notes** (around line 378-386):
-   - Show an "Edit Lesson" button (pencil icon) next to the lesson title area for admins
-   - This triggers the same `setEditingId` / `setEditTitle` / etc. flow that already exists
-   - Works on mobile since it's a visible button, not hover-dependent
-
-2. **Show study notes section even when empty for admins** so they can see the "Edit" affordance and add notes
-
-3. **Make the sidebar edit icons always visible on mobile** — change `opacity-0 group-hover:opacity-100` to also show on touch devices (`md:opacity-0 md:group-hover:opacity-100 opacity-100` or similar)
-
-### No database or backend changes needed — this is purely a UI discoverability fix.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

@@ -229,7 +229,7 @@ const AcademyModule = () => {
                         )}
                       </div>
                       {canManageContent && (
-                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 shrink-0">
+                        <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0">
                           <button
                             className="p-1 hover:text-foreground text-muted-foreground"
                             onClick={(e) => {
@@ -368,20 +368,42 @@ const AcademyModule = () => {
                         {activeLesson.lesson_title}
                       </h2>
                     </div>
-                    {progress[activeLesson.id] && (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md shrink-0">
-                        <CheckCircle2 className="h-3 w-3" /> Completed
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {progress[activeLesson.id] && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-md">
+                          <CheckCircle2 className="h-3 w-3" /> Completed
+                        </span>
+                      )}
+                      {canManageContent && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1.5 text-xs h-8"
+                          onClick={() => {
+                            setEditingId(activeLesson.id);
+                            setEditTitle(activeLesson.lesson_title);
+                            setEditVideoUrl(activeLesson.video_url);
+                            setEditNotes(activeLesson.notes || "");
+                            setEditVisible(activeLesson.visible !== false);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" /> Edit
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Notes */}
-                  {activeLesson.notes && (
+                  {(activeLesson.notes || canManageContent) && (
                     <div className="rounded-lg bg-muted/30 border border-border p-4 mb-6">
                       <p className="text-xs font-medium text-muted-foreground mb-2">Study Notes</p>
-                      <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
-                        {activeLesson.notes}
-                      </p>
+                      {activeLesson.notes ? (
+                        <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
+                          {activeLesson.notes}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit above to add study notes.</p>
+                      )}
                     </div>
                   )}
                 </div>
