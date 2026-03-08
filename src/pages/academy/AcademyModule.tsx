@@ -148,7 +148,7 @@ const AcademyModule = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
         <button
@@ -167,10 +167,11 @@ const AcademyModule = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 md:hidden"
+          className="h-8 px-2 md:hidden gap-1 text-xs"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          {sidebarOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          {sidebarOpen ? "Hide" : "Lessons"}
+          {sidebarOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </Button>
       </div>
 
@@ -410,8 +411,8 @@ const AcademyModule = () => {
               </div>
 
               {/* Bottom action bar */}
-              <div className="border-t border-border bg-card/50 px-6 py-4 shrink-0">
-                <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+              <div className="border-t border-border bg-card/50 px-4 md:px-6 py-3 shrink-0 mb-16 md:mb-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:pb-4">
+                <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
