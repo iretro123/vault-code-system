@@ -1,42 +1,37 @@
 
 
-## Speed Up AI Avatar Generation
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Reality check
-The main bottleneck is the AI image generation call itself (~5-15s round trip to the AI gateway). That latency cannot be eliminated. However, there are two meaningful optimizations:
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Optimizations
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. Show base64 preview instantly, upload in background (biggest win)**
+### Solution
 
-Currently the flow is: AI generates image → upload to storage → return storage URL → show preview. The upload step adds 1-3s of unnecessary wait before the user sees anything.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**Fix in `supabase/functions/generate-avatar/index.ts`:**
-- Return the base64 data URL immediately alongside the storage URL upload happening in the background
-- Actually simpler: return the base64 image immediately, and do the storage upload in a fire-and-forget pattern (using `waitUntil` or just not awaiting)
-- Since Deno edge functions don't support `waitUntil`, the practical approach is: return BOTH the base64 data URL for instant preview AND the storage URL. The frontend shows the base64 immediately.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**Fix in `src/components/settings/SettingsProfile.tsx`:**
-- In `handleGenerate`, use `data.preview` (base64) for instant display in `aiPreviewUrl`
-- Store `data.url` (storage URL) separately for saving to profile
-
-**2. Debounce rapid style clicks**
-
-When users click multiple styles quickly, each triggers a full generation. Add a debounce so only the last click within 300ms fires.
-
-**Fix in `src/components/settings/SettingsProfile.tsx`:**
-- Add a ref-based debounce to `handleGenerate` — if a new call comes in, abort/ignore the previous one
-- Use `AbortController` to cancel in-flight requests when a new style is selected
-
-### Changes summary
-
-| File | Change |
-|------|--------|
-| `generate-avatar/index.ts` | Return `{ preview: base64DataUrl, url: storageUrl }` — do upload first but also send base64 so frontend can show it faster in future iterations. Actually, restructure: return base64 immediately, upload async. |
-| `SettingsProfile.tsx` | Use base64 preview for instant display. Add AbortController to cancel stale requests. Add debounce (300ms). |
-
-### What this achieves
-- User sees the generated avatar ~2-3s faster (skipping upload wait)
-- Rapid clicking doesn't queue up 10 generation calls
-- The AI generation time itself (~5-10s) is inherent to the model and cannot be reduced
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
