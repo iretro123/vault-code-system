@@ -277,6 +277,52 @@ export function SettingsProfile() {
                 ))}
               </div>
             )}
+
+            {avatarMode === "ai" && (
+              <div className="space-y-3">
+                <div className="flex gap-1.5 flex-wrap">
+                  {AI_STYLES.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setAiStyle(s.id)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        aiStyle === s.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={generating}
+                    onClick={handleGenerate}
+                    className="gap-1.5"
+                  >
+                    {generating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : aiPreviewUrl ? (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    {generating ? "Generating…" : aiPreviewUrl ? "Regenerate" : "Generate Avatar"}
+                  </Button>
+                </div>
+
+                {aiPreviewUrl && !generating && (
+                  <p className="text-[10px] text-muted-foreground/60">
+                    Like it? Hit "Save Profile" below to keep it.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Card>
