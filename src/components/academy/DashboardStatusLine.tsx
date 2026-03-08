@@ -38,7 +38,9 @@ async function resolveStatus(userId: string): Promise<string> {
   const monday = new Date(now);
   monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
   const mondayDate = monday.toISOString().slice(0, 10);
-  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+  const endOfTomorrow = new Date(endOfToday.getTime() + 24 * 60 * 60 * 1000);
 
   const [journalRes, liveRes, weeklyRes, streakRes] = await Promise.all([
     supabase
@@ -48,9 +50,9 @@ async function resolveStatus(userId: string): Promise<string> {
       .gte("entry_date", mondayDate),
     supabase
       .from("live_sessions")
-      .select("id, title")
+      .select("id, title, session_date")
       .gte("session_date", now.toISOString())
-      .lte("session_date", tomorrow.toISOString())
+      .lte("session_date", endOfTomorrow.toISOString())
       .order("session_date", { ascending: true })
       .limit(1),
     supabase
@@ -68,11 +70,14 @@ async function resolveStatus(userId: string): Promise<string> {
 
   const messages: StatusMessage[] = [];
 
-  // Live tonight
+  // Live session
   if (liveRes.data && liveRes.data.length > 0) {
+    const sessionDate = new Date(liveRes.data[0].session_date);
+    const isToday = sessionDate <= endOfToday;
+    const label = isToday ? "Live session tonight" : "Live session tomorrow";
     messages.push({
       key: "live_tonight",
-      text: `Live session tonight: "${liveRes.data[0].title}"`,
+      text: `${label}: "${liveRes.data[0].title}"`,
       priority: 1,
     });
   }
