@@ -183,7 +183,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   return (
     <div ref={cardRef} className="vault-premium-card p-5 md:p-6 space-y-4">
       <div className="w-full flex items-center justify-between">
-        <h2 className="text-lg md:text-xl font-bold text-foreground">Your Gameplan</h2>
+        <h2 className="text-lg md:text-xl font-bold text-foreground">Your Onboarding</h2>
         {isAdmin && (
           <span className="hidden md:inline-flex">
             <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
