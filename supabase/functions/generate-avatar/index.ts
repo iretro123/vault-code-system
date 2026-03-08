@@ -26,7 +26,6 @@ serve(async (req) => {
   }
 
   try {
-    // Auth check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -59,7 +58,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Generate image via Lovable AI
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -103,23 +101,21 @@ serve(async (req) => {
       throw new Error("No image returned from AI");
     }
 
-    // Extract base64 data
     const base64Match = imageDataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
     if (!base64Match) {
       throw new Error("Invalid image data format");
     }
 
-    const imageFormat = base64Match[1]; // png, webp, etc.
+    const imageFormat = base64Match[1];
     const base64Data = base64Match[2];
 
-    // Convert base64 to Uint8Array
+    // Convert base64 to Uint8Array for upload
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // Upload to storage
     const fileName = `${userId}/ai-${styleKey}-${Date.now()}.${imageFormat === "jpeg" ? "jpg" : imageFormat}`;
 
     const serviceClient = createClient(
@@ -127,23 +123,23 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error: uploadError } = await serviceClient.storage
+    // Fire-and-forget upload — don't make the user wait for storage
+    serviceClient.storage
       .from("avatars")
       .upload(fileName, bytes, {
         contentType: `image/${imageFormat}`,
         upsert: true,
         cacheControl: "3600",
+      })
+      .then(({ error }) => {
+        if (error) console.error("Background upload error:", error);
       });
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
-      throw new Error("Failed to upload avatar");
-    }
 
     const { data: urlData } = serviceClient.storage.from("avatars").getPublicUrl(fileName);
 
+    // Return base64 preview immediately + storage URL for saving
     return new Response(
-      JSON.stringify({ url: urlData.publicUrl }),
+      JSON.stringify({ preview: imageDataUrl, url: urlData.publicUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
