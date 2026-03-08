@@ -123,11 +123,13 @@ export function SettingsProfile() {
   };
 
   const avatarUrl =
-    avatarMode === "image" && imageUrl
-      ? imageUrl
-      : avatarMode === "initials"
-        ? `initials:${avatarColor}`
-        : `icon:${avatarIcon}|${avatarColor}`;
+    (avatarMode === "ai" && aiStorageUrl)
+      ? aiStorageUrl
+      : avatarMode === "image" && imageUrl
+        ? imageUrl
+        : avatarMode === "initials"
+          ? `initials:${avatarColor}`
+          : `icon:${avatarIcon}|${avatarColor}`;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
