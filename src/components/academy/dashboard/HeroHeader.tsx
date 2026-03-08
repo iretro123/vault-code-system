@@ -222,6 +222,7 @@ function ParticleCanvas() {
 export function HeroHeader({ firstName, onCheckIn }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const { hasAccess, status, isAdminBypass } = useStudentAccess();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const statusLine = useStatusLine(user?.id);
