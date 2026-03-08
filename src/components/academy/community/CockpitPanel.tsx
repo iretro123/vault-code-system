@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useTradeLog } from "@/hooks/useTradeLog";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
   FileText, HelpCircle, Trophy,
