@@ -162,16 +162,13 @@ export function SettingsProfile() {
     }
   };
 
-  const handleGenerate = async () => {
-    if (!user) return;
+  const handleGenerate = async (styleOverride?: string) => {
+    if (!user || generating) return;
+    const chosenStyle = styleOverride || aiStyle;
     setGenerating(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      if (!accessToken) { toast.error("Session expired."); setGenerating(false); return; }
-
       const { data, error } = await supabase.functions.invoke("generate-avatar", {
-        body: { style: aiStyle },
+        body: { style: chosenStyle },
       });
 
       if (error) throw error;
@@ -182,7 +179,7 @@ export function SettingsProfile() {
 
       setAiPreviewUrl(url);
       setImageUrl(url);
-      setAvatarMode("image");
+      setAvatarMode("ai");
     } catch (e: any) {
       toast.error(e?.message || "Generation failed. Try again.");
     } finally {
