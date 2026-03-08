@@ -45,6 +45,7 @@ const AcademyModule = () => {
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
   const canManageContent = isAdminActive && hasPermission("manage_content");
+  const isMobile = useIsMobile();
 
   // Filter hidden lessons for non-admins
   const lessons = useMemo(() =>
