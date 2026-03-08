@@ -1,31 +1,37 @@
 
 
-## Upgrade SessionTimer to Premium Retro-Digital Style
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### What Changes
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-Restyle `src/components/academy/live/SessionTimer.tsx` to have a compact, luxury retro-digital look that fits the Vault dark card aesthetic:
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**Countdown (pre-session):**
-- Small inline container with `border border-blue-500/20 bg-blue-500/5 rounded-lg px-3 py-1.5`
-- Digits in `text-blue-400 font-mono tracking-widest` — retro digital feel
-- Colon separators dimmed (`text-blue-400/40`)
-- Format: `06 : 32 : 14` with small unit labels (`h`, `m`, `s`) in `text-blue-400/50 text-[10px]`
-- Drop the emoji, add a subtle `Clock` icon from lucide in `text-blue-400/60`
+### Solution
 
-**Live (during session):**
-- Same bordered container but `border-red-500/20 bg-red-500/5`
-- Pulsing red dot + "LIVE" badge stays
-- Elapsed digits in `text-red-400 font-mono tracking-widest`
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**Design rules:**
-- Compact — `mt-2` spacing, small padding, fits under the date line
-- No heavy effects, just border + subtle tinted background
-- Matches the Vault ash/blue color system
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### File
-
-| File | Change |
-|------|--------|
-| `src/components/academy/live/SessionTimer.tsx` | Restyle both states with bordered retro-digital look |
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
