@@ -8,16 +8,16 @@ const corsHeaders = {
 };
 
 const STYLE_PROMPTS: Record<string, string> = {
-  warrior: "a fierce pixel-art warrior character with a sword and shield, battle-ready stance",
-  mage: "a mystical pixel-art mage character with a glowing staff and flowing robes, arcane energy",
-  samurai: "a noble pixel-art samurai warrior with katana and traditional armor, cherry blossoms",
-  dragon: "a pixel-art dragon head with glowing eyes and sharp scales, breathing fire",
-  knight: "a pixel-art medieval knight in shining plate armor with a great helm and cape",
-  ninja: "a pixel-art ninja character in dark outfit with throwing stars and mask, stealthy pose",
-  bull: "a pixel-art bull head with golden ring and fierce glowing red eyes, powerful",
-  bear: "a pixel-art bear face with strong features and wild fur, grizzly warrior spirit",
-  phoenix: "a pixel-art phoenix bird with flaming wings and radiant golden plumage, reborn",
-  skull: "a pixel-art skull with glowing cyan eyes, dark hood, and ethereal smoke",
+  warrior: "pixel-art warrior, sword, shield, dark bg #1a1a2e",
+  mage: "pixel-art mage, glowing staff, robes, dark bg #1a1a2e",
+  samurai: "pixel-art samurai, katana, armor, dark bg #1a1a2e",
+  dragon: "pixel-art dragon head, glowing eyes, scales, dark bg #1a1a2e",
+  knight: "pixel-art knight, plate armor, helm, cape, dark bg #1a1a2e",
+  ninja: "pixel-art ninja, mask, throwing stars, dark bg #1a1a2e",
+  bull: "pixel-art bull head, golden ring, red eyes, dark bg #1a1a2e",
+  bear: "pixel-art bear face, wild fur, strong, dark bg #1a1a2e",
+  phoenix: "pixel-art phoenix, flaming wings, golden, dark bg #1a1a2e",
+  skull: "pixel-art skull, cyan eyes, dark hood, smoke, dark bg #1a1a2e",
 };
 
 serve(async (req) => {
@@ -69,7 +69,7 @@ serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: `Generate a single pixel-art avatar icon: ${styleDesc}. Style: 64x64 pixel art, dark background (#1a1a2e), retro gaming aesthetic, vibrant colors, clean edges. No text, no watermarks, just the character/creature centered in frame. Square format.`,
+            content: `64x64 avatar icon: ${styleDesc}. Retro pixel art, vibrant, centered, square, no text.`,
           },
         ],
         modalities: ["image", "text"],
@@ -109,7 +109,6 @@ serve(async (req) => {
     const imageFormat = base64Match[1];
     const base64Data = base64Match[2];
 
-    // Convert base64 to Uint8Array for upload
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -123,23 +122,23 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fire-and-forget upload — don't make the user wait for storage
-    serviceClient.storage
+    // Upload synchronously so URL is valid immediately
+    const { error: uploadError } = await serviceClient.storage
       .from("avatars")
       .upload(fileName, bytes, {
         contentType: `image/${imageFormat}`,
         upsert: true,
         cacheControl: "3600",
-      })
-      .then(({ error }) => {
-        if (error) console.error("Background upload error:", error);
       });
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+    }
 
     const { data: urlData } = serviceClient.storage.from("avatars").getPublicUrl(fileName);
 
-    // Return base64 preview immediately + storage URL for saving
     return new Response(
-      JSON.stringify({ preview: imageDataUrl, url: urlData.publicUrl }),
+      JSON.stringify({ url: urlData.publicUrl }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {

@@ -1,35 +1,37 @@
 
 
-## Why It's Slow + What We Can Do
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Root Cause
-The AI image generation model (`gemini-2.5-flash-image`) takes **10-15 seconds per generation**. This is the model's processing time and cannot be eliminated. The network logs confirm ~12s round trips.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-Additionally, the deployed edge function response shows only `{"url":"..."}` without the `preview` base64 field, meaning the user waits for **both** the AI generation AND the storage upload before seeing anything.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Optimizations (3 changes)
+### Solution
 
-**1. Simplify the AI prompt (shave ~2-4s)**
-The current prompt is verbose with many descriptive details. A shorter, simpler prompt generates faster.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-`supabase/functions/generate-avatar/index.ts`:
-- Shorten style prompts from full sentences to brief keywords (e.g., `"pixel-art warrior, sword, shield, dark bg"` instead of `"a fierce pixel-art warrior character with a sword and shield, battle-ready stance"`)
-- Shorten the system instruction to bare minimum
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**2. Ensure base64 preview actually reaches the frontend**
-The response currently only contains `url` — the `preview` field with the base64 data appears to be getting stripped. The `supabase.functions.invoke()` method may be truncating large base64 payloads. 
-
-Fix: Skip returning the massive base64 string entirely. Instead, return only the storage URL but do the upload with `await` so the URL is valid immediately. The real bottleneck is the AI call (12s), not the upload (1-2s), so this simplifies without meaningful speed loss.
-
-**3. Add a visual progress indicator**
-Replace the generic spinner with a pulsing skeleton + estimated time text so users know the system is working.
-
-`src/components/settings/SettingsProfile.tsx`:
-- Show "Generating... ~10s" text with a pulsing skeleton placeholder
-- Add a simple animated progress bar that fills over ~12s to give visual feedback
-
-### What this achieves
-- ~2-4s faster generation from simpler prompts
-- Clearer feedback so the wait feels shorter
-- No broken preview from missing base64 data
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

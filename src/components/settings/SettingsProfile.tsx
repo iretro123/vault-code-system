@@ -96,10 +96,12 @@ export function SettingsProfile() {
   const [hydrated, setHydrated] = useState(!!profile);
   const [aiStyle, setAiStyle] = useState("warrior");
   const [generating, setGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState(0);
   const [aiPreviewUrl, setAiPreviewUrl] = useState<string | null>(null);
   const [aiStorageUrl, setAiStorageUrl] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync from profile only once when it arrives (if component mounted before profile loaded)
   useEffect(() => {
@@ -171,12 +173,10 @@ export function SettingsProfile() {
     if (!user) return;
     const chosenStyle = styleOverride || aiStyle;
 
-    // Cancel any in-flight request
     if (abortRef.current) abortRef.current.abort();
-    // Clear any pending debounce
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (progressRef.current) clearInterval(progressRef.current);
 
-    // Debounce 300ms
     await new Promise<void>((resolve) => {
       debounceRef.current = setTimeout(resolve, 300);
     });
@@ -185,31 +185,44 @@ export function SettingsProfile() {
     abortRef.current = controller;
 
     setGenerating(true);
+    setGenProgress(0);
+
+    // Simulate progress over ~12s
+    const startTime = Date.now();
+    progressRef.current = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      // Ease toward 90% over 12s, never reach 100 until done
+      const pct = Math.min(90, (elapsed / 12) * 90);
+      setGenProgress(Math.round(pct));
+    }, 200);
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-avatar", {
         body: { style: chosenStyle },
       });
 
-      // If aborted, silently bail
       if (controller.signal.aborted) return;
 
       if (error) throw error;
       if (data?.error) { toast.error(data.error); setGenerating(false); return; }
 
-      // Show base64 preview instantly
-      const preview = data?.preview;
       const url = data?.url;
-      if (!preview && !url) throw new Error("No image returned");
+      if (!url) throw new Error("No image returned");
 
-      setAiPreviewUrl(preview || url);
-      setAiStorageUrl(url || null);
-      setImageUrl(url || preview);
+      setGenProgress(100);
+      setAiPreviewUrl(url);
+      setAiStorageUrl(url);
+      setImageUrl(url);
       setAvatarMode("ai");
     } catch (e: any) {
       if (controller.signal.aborted) return;
       toast.error(e?.message || "Generation failed. Try again.");
     } finally {
-      if (!controller.signal.aborted) setGenerating(false);
+      if (!controller.signal.aborted) {
+        setGenerating(false);
+        setGenProgress(0);
+      }
+      if (progressRef.current) clearInterval(progressRef.current);
     }
   };
 
@@ -237,17 +250,30 @@ export function SettingsProfile() {
   const renderAvatar = () => {
     if (avatarMode === "ai") {
       return (
-        <div className="relative h-20 w-20 rounded-2xl overflow-hidden">
-          {aiPreviewUrl ? (
-            <img src={aiPreviewUrl} alt="AI Avatar" className={`h-20 w-20 rounded-2xl object-cover ${generating ? "opacity-40" : ""}`} />
-          ) : (
-            <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20">
-              <Sparkles className="h-6 w-6 text-muted-foreground/40" />
-            </div>
-          )}
+        <div className="space-y-2">
+          <div className="relative h-20 w-20 rounded-2xl overflow-hidden">
+            {aiPreviewUrl && !generating ? (
+              <img src={aiPreviewUrl} alt="AI Avatar" className="h-20 w-20 rounded-2xl object-cover" />
+            ) : (
+              <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20 animate-pulse">
+                <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+              </div>
+            )}
+            {generating && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/40">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            )}
+          </div>
           {generating && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div className="w-20 space-y-1">
+              <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-200"
+                  style={{ width: `${genProgress}%` }}
+                />
+              </div>
+              <p className="text-[9px] text-muted-foreground text-center">~10s</p>
             </div>
           )}
         </div>
