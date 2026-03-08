@@ -210,13 +210,20 @@ export function SettingsProfile() {
 
   const renderAvatar = () => {
     if (avatarMode === "ai") {
-      if (aiPreviewUrl) {
-        return <img src={aiPreviewUrl} alt="AI Avatar" className="h-20 w-20 rounded-2xl object-cover" />;
-      }
       return (
-        <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20">
-          <Sparkles className="h-6 w-6 text-muted-foreground/40" />
-          <span className="text-[9px] text-muted-foreground/40 mt-1">Generate</span>
+        <div className="relative h-20 w-20 rounded-2xl overflow-hidden">
+          {aiPreviewUrl ? (
+            <img src={aiPreviewUrl} alt="AI Avatar" className={`h-20 w-20 rounded-2xl object-cover ${generating ? "opacity-40" : ""}`} />
+          ) : (
+            <div className="h-20 w-20 rounded-2xl flex flex-col items-center justify-center bg-muted/30 border border-dashed border-muted-foreground/20">
+              <Sparkles className="h-6 w-6 text-muted-foreground/40" />
+            </div>
+          )}
+          {generating && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          )}
         </div>
       );
     }
