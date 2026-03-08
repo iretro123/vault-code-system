@@ -593,61 +593,138 @@ const AcademyLive = () => {
               </div>
             )}
 
-            {/* ── 3 Session Type Cards ── */}
-            <section>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-5">Our Live Experiences</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {SESSION_TYPES.map((st) => (
-                  <div
-                    key={st.title}
-                    className="group/card rounded-2xl overflow-hidden border border-white/[0.07] hover:border-white/[0.16] transition-all duration-300 hover:shadow-[0_8px_40px_-12px_hsl(217_91%_60%/0.15)]"
-                    style={{
-                      background: "linear-gradient(180deg, hsl(214 22% 13%) 0%, hsl(214 24% 10%) 100%)",
-                    }}
-                  >
-                    {/* Image — taller, more cinematic */}
-                    <div className="relative h-[220px] overflow-hidden">
-                      <img
-                        src={st.image}
-                        alt={st.title}
-                        className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover/card:scale-[1.06]"
-                        loading="lazy"
-                      />
-                      {/* Cinematic gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[hsl(214,24%,10%)] via-[hsl(214,24%,10%)]/50 to-transparent" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,24%,10%)]/30 to-transparent" />
-                      {/* Label badge */}
-                      <span className="absolute top-4 left-4 text-[10px] font-bold uppercase tracking-[0.18em] text-primary bg-primary/15 border border-primary/25 rounded-lg px-3 py-1 backdrop-blur-sm">
-                        {st.label}
-                      </span>
-                    </div>
-                    {/* Content */}
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-foreground mb-1 tracking-tight">{st.title}</h3>
-                      <p className="text-[13px] text-muted-foreground mb-4">{st.subtitle}</p>
-                      <ul className="space-y-2.5 mb-5">
-                        {st.bullets.map((b) => (
-                          <li key={b} className="flex items-start gap-2.5 text-[13px] text-white/60">
-                            <CheckCircle2 className="h-4 w-4 text-primary/70 shrink-0 mt-0.5" />
-                            {b}
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="pt-4 border-t border-white/[0.06]">
-                        <p className="text-xs font-semibold text-white/50 flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5" />{st.schedule}
-                        </p>
+          </div>
+
+          {/* ─── RIGHT COLUMN (sidebar) — KEPT AS-IS + Attendance Card ─── */}
+          <div className="hidden lg:flex flex-col gap-5 w-[300px] shrink-0">
+
+            {/* Attendance Tracker */}
+            <div className="live-glass-card p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Your Attendance</p>
+              <div className="flex items-baseline gap-1.5 mb-1">
+                <span className="text-2xl font-bold text-white tabular-nums">{monthCount}</span>
+                <span className="text-xs text-white/40">/ 8 this month</span>
+              </div>
+              <Progress value={Math.min(100, (monthCount / 8) * 100)} className="h-1.5 mb-3" />
+              <div className="flex items-center justify-between text-xs text-white/35">
+                <span>{totalCount} all-time joins</span>
+                <span className={cn(
+                  "font-semibold",
+                  monthCount >= 6 ? "text-emerald-400" : monthCount >= 3 ? "text-amber-400" : "text-white/40"
+                )}>
+                  {monthCount >= 6 ? "Consistent" : monthCount >= 3 ? "Building" : "Getting started"}
+                </span>
+              </div>
+            </div>
+
+            <button className="live-btn-glass w-full justify-center py-2.5 gap-2" onClick={scrollToSchedule}>
+              <CalendarDays className="h-4 w-4" /> Full Schedule
+            </button>
+
+            {weekList.length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
+                <div className="space-y-2">
+                  {weekList.map((s) => {
+                    const d = new Date(s.session_date);
+                    return (
+                      <div key={s.id} className="live-glass-card p-4">
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-sm font-bold text-white/90">{format(d, "EEEE")}<span className="text-white/40 font-normal">. {format(d, "MMM d")}</span></span>
+                          <span className="text-xs text-white/45">{formatTime(d)} EST</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center shrink-0">
+                            {s.session_type === "office-hours" ? <Clock className="h-3 w-3 text-white/35" /> : <Radio className="h-3 w-3 text-white/35" />}
+                          </div>
+                          <span className="text-xs text-white/60 truncate flex-1">{s.title}</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-white/20 shrink-0" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {past.length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
+                <div className="space-y-2">
+                  {past.slice(0, 3).map((s) => (
+                    <div key={s.id} className="live-glass-card p-4">
+                      <p className="text-sm font-semibold text-white/85 mb-1">{s.title}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-white/40">
+                          {format(new Date(s.session_date), "EEEE, MMM d")}
+                          {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
+                        </span>
+                        {(s.replay_url || s.join_url) && (
+                          <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer">
+                            <button className="live-pill-btn text-[11px]">Watch Replay</button>
+                          </a>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </section>
+            )}
+          </div>
+        </div>
 
-            {/* This Week / Full Schedule */}
-            <section id="live-full-schedule">
-              {weekList.length > 0 && (
-                <div>
+        {/* ── 3 Session Type Cards — FULL WIDTH ── */}
+        <section className="mt-8">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-5">Our Live Experiences</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {SESSION_TYPES.map((st) => (
+              <div
+                key={st.title}
+                className="group/card rounded-2xl overflow-hidden border border-white/[0.07] hover:border-white/[0.16] transition-all duration-300 hover:shadow-[0_8px_40px_-12px_hsl(217_91%_60%/0.15)]"
+                style={{
+                  background: "linear-gradient(180deg, hsl(214 22% 13%) 0%, hsl(214 24% 10%) 100%)",
+                }}
+              >
+                {/* Image */}
+                <div className="relative h-[220px] overflow-hidden">
+                  <img
+                    src={st.image}
+                    alt={st.title}
+                    className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover/card:scale-[1.06]"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[hsl(214,24%,10%)] via-[hsl(214,24%,10%)]/50 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[hsl(214,24%,10%)]/30 to-transparent" />
+                  <span className="absolute top-4 left-4 text-[10px] font-bold uppercase tracking-[0.18em] text-primary bg-primary/15 border border-primary/25 rounded-lg px-3 py-1 backdrop-blur-sm">
+                    {st.label}
+                  </span>
+                </div>
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="text-lg font-bold text-foreground mb-1 tracking-tight">{st.title}</h3>
+                  <p className="text-[13px] text-muted-foreground mb-4">{st.subtitle}</p>
+                  <ul className="space-y-2.5 mb-5">
+                    {st.bullets.map((b) => (
+                      <li key={b} className="flex items-start gap-2.5 text-[13px] text-white/60">
+                        <CheckCircle2 className="h-4 w-4 text-primary/70 shrink-0 mt-0.5" />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="pt-4 border-t border-white/[0.06]">
+                    <p className="text-xs font-semibold text-white/50 flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />{st.schedule}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Schedule & Replays — FULL WIDTH ── */}
+        <div className="mt-8 max-w-[900px] space-y-8">
+
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
                   <div className="live-glass-card divide-y divide-white/[0.05]">
                     {weekList.map((s) => (
