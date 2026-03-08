@@ -256,8 +256,8 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-7 relative overflow-hidden">
-      {/* Animated particle network background */}
-      <ParticleCanvas />
+      {/* Animated particle network background — disabled on mobile to prevent crashes */}
+      {!isMobile && <ParticleCanvas />}
 
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 relative z-10">
         <div className="space-y-2">

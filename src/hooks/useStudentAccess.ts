@@ -72,7 +72,13 @@ export function useStudentAccess() {
 
     if (error) {
       console.error("[AccessGate] RPC error:", error.message);
-      setState((prev) => ({ ...prev, loading: false, error: error.message }));
+      // Preserve cached state on network failure to prevent AccessBlockModal from flashing
+      const fallback = readCache();
+      if (fallback) {
+        setState({ status: fallback.status, tier: fallback.tier, productKey: fallback.productKey, hasAccess: fallback.hasAccess, loading: false, error: error.message, lastUpdated: fallback.lastUpdated });
+      } else {
+        setState((prev) => ({ ...prev, loading: false, error: error.message }));
+      }
       return;
     }
 
