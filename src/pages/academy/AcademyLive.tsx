@@ -1,14 +1,14 @@
-import { PageHeader } from "@/components/layout/PageHeader";
 import { SessionTimer } from "@/components/academy/live/SessionTimer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Radio, Calendar, Clock, ExternalLink, Plus, Pencil, Trash2, Loader2,
   Bell, Link2, CalendarPlus, Play, ChevronRight, CalendarDays, Settings2,
-  Eye, EyeOff,
+  Eye, EyeOff, Monitor, Mic, Users, CheckCircle2, ArrowDown,
 } from "lucide-react";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { AdminOnly } from "@/components/admin/AdminOnly";
@@ -21,9 +21,13 @@ import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { format, isPast, isThisWeek } from "date-fns";
+import { format, isPast, isThisWeek, startOfMonth } from "date-fns";
 import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
+
+import liveSessionPrep from "@/assets/live-session-prep.jpg";
+import liveSessionTrading from "@/assets/live-session-trading.jpg";
+import liveSessionQA from "@/assets/live-session-qa.jpg";
 
 /* ── Google Calendar helper ── */
 function buildGoogleCalendarUrl(s: { title: string; session_date: string; duration_minutes: number; description: string; join_url: string }) {
@@ -83,6 +87,33 @@ function useLiveSessions() {
 
   useEffect(() => { fetch(); }, [fetch]);
   return { sessions, loading, refetch: fetch };
+}
+
+/* ── Attendance hook ── */
+function useAttendance(userId: string | undefined) {
+  const [count, setCount] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    if (!userId) return;
+    const fetchAttendance = async () => {
+      const monthStart = startOfMonth(new Date()).toISOString();
+      const { count: monthCount } = await supabase
+        .from("live_session_attendance" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("clicked_at", monthStart);
+      const { count: totalCount } = await supabase
+        .from("live_session_attendance" as any)
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      setCount(monthCount ?? 0);
+      setTotal(totalCount ?? 0);
+    };
+    fetchAttendance();
+  }, [userId]);
+
+  return { monthCount: count, totalCount: total };
 }
 
 /* ── 12h time helpers ── */
@@ -237,14 +268,57 @@ function getMockSessions(): LiveSession[] {
     return d.toISOString();
   };
   return [
-    { id: "mock-1", title: "Market Prep + Q&A", description: "Weekly market overview and open Q&A", session_date: day(1, 22, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 60, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
-    { id: "mock-2", title: "Trading Psychology Workshop", description: "", session_date: day(2, 17, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 45, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
-    { id: "mock-3", title: "Advanced Options Strategies", description: "", session_date: day(3, 19, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 60, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
-    { id: "mock-4", title: "Weekly Market Review", description: "", session_date: day(4, 9, 30), join_url: "https://zoom.us/j/123456789", session_type: "office-hours", duration_minutes: 30, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-1", title: "Sunday Market Prep", description: "Weekly market overview and game plan", session_date: day(1, 20, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 60, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-2", title: "Live Trading Room", description: "Real-time trade execution", session_date: day(2, 9, 30), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 120, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-3", title: "Weekly Pro Q&A", description: "Training & coaching session", session_date: day(3, 20, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 60, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
+    { id: "mock-4", title: "Live Trading Room", description: "", session_date: day(4, 9, 30), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 120, status: "scheduled", is_replay: false, replay_url: null, created_by: null },
     { id: "mock-r1", title: "Risk Management Essentials", description: "35 min", session_date: day(-5, 14, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 35, status: "completed", is_replay: true, replay_url: "https://zoom.us/j/123456789", created_by: null },
     { id: "mock-r2", title: "Options Risk Firewall", description: "42 min", session_date: day(-10, 15, 0), join_url: "https://zoom.us/j/123456789", session_type: "live", duration_minutes: 42, status: "completed", is_replay: true, replay_url: "https://zoom.us/j/123456789", created_by: null },
   ];
 }
+
+/* ── Session Type Cards Data ── */
+const SESSION_TYPES = [
+  {
+    title: "Sunday Market Prep",
+    subtitle: "Weekly Analysis & Game Plan",
+    image: liveSessionPrep,
+    bullets: [
+      "Weekly market breakdown",
+      "Key levels & zones",
+      "Game plan for the week",
+      "Prepare actionable setups",
+    ],
+    schedule: "Sundays @ 8 PM ET",
+    label: "PREPARE",
+  },
+  {
+    title: "Live Trading Room",
+    subtitle: "Real-Time Trade Execution",
+    image: liveSessionTrading,
+    bullets: [
+      "Live trade execution",
+      "Entries, exits, and alerts",
+      "Market commentary",
+      "Real-time decision making",
+    ],
+    schedule: "Tue & Thu @ 9:30 AM ET",
+    label: "EXECUTE",
+  },
+  {
+    title: "Weekly Pro Q&A",
+    subtitle: "Training & Coaching Session",
+    image: liveSessionQA,
+    bullets: [
+      "Trade review",
+      "Q&A and hot seats",
+      "Strategy lessons",
+      "Weekly reset and refinement",
+    ],
+    schedule: "Wednesdays @ 8 PM ET",
+    label: "REVIEW",
+  },
+];
 
 /* ═══════════════ PAGE ═══════════════ */
 const AcademyLive = () => {
@@ -254,6 +328,7 @@ const AcademyLive = () => {
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
   const canManage = isAdminActive && hasPermission("manage_live_sessions");
+  const { monthCount, totalCount } = useAttendance(user?.id);
 
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -278,6 +353,18 @@ const AcademyLive = () => {
   const weekList = thisWeek.length > 0 ? thisWeek : upcoming;
 
   const selectedSession = selectedId ? sessions.find((s) => s.id === selectedId) ?? null : null;
+
+  /* ── Track Zoom Click ── */
+  const trackZoomClick = async (session: LiveSession) => {
+    if (!user?.id) return;
+    try {
+      await supabase.from("live_session_attendance" as any).insert({
+        user_id: user.id,
+        session_title: session.title,
+        session_id: session.id,
+      });
+    } catch {}
+  };
 
   /* ── Handlers ── */
   const handleAdd = async (data: any) => {
@@ -348,152 +435,210 @@ const AcademyLive = () => {
     ok ? toast.success("Link copied") : toast.error("Failed to copy");
   };
 
+  const scrollToSchedule = () => {
+    document.getElementById("live-full-schedule")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   if (!hasAccess && !accessLoading) {
-    return (
-      <>
-        <PremiumGate status={status} pageName="Live Sessions" />
-      </>
-    );
+    return <PremiumGate status={status} pageName="Live Sessions" />;
   }
 
   if (loading && sessions.length === 0) {
     return (
-      <>
-        <div className="liveSessionsPage">
-          <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
-          <div className="px-4 md:px-6 pb-8 space-y-4 animate-pulse">
-            <div className="h-32 rounded-2xl bg-muted/30" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="h-24 rounded-xl bg-muted/20" />
-              <div className="h-24 rounded-xl bg-muted/20" />
-            </div>
+      <div className="liveSessionsPage">
+        <div className="px-4 md:px-6 pt-8 pb-8 space-y-4 animate-pulse">
+          <div className="h-10 w-48 rounded-xl bg-muted/30" />
+          <div className="h-48 rounded-2xl bg-muted/20" />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="h-64 rounded-2xl bg-muted/15" />
+            <div className="h-64 rounded-2xl bg-muted/15" />
+            <div className="h-64 rounded-2xl bg-muted/15" />
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="liveSessionsPage">
-        <div className="flex items-center justify-between px-4 md:px-6">
-          <PageHeader title="Live Sessions" subtitle="Join scheduled live events and office hours" />
-          {/* Create button only visible in admin mode */}
-          {canManage && (
-            <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
-              <Plus className="h-3.5 w-3.5" /> Create Session
-            </Button>
+    <div className="liveSessionsPage">
+      {/* Create / Edit Dialog */}
+      <Dialog open={showAdd || !!editingId} onOpenChange={(open) => { if (!open) { setShowAdd(false); setEditingId(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit Session" : "Create Live Session"}</DialogTitle>
+          </DialogHeader>
+          {editingId ? (
+            (() => {
+              const s = sessions.find((x) => x.id === editingId);
+              return s ? <SessionForm initial={s} onSave={(data) => handleUpdate(s.id, data)} onCancel={() => setEditingId(null)} saving={saving} /> : null;
+            })()
+          ) : (
+            <SessionForm onSave={handleAdd} onCancel={() => setShowAdd(false)} saving={saving} />
           )}
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* Create / Edit Dialog */}
-        <Dialog open={showAdd || !!editingId} onOpenChange={(open) => { if (!open) { setShowAdd(false); setEditingId(null); } }}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Edit Session" : "Create Live Session"}</DialogTitle>
-            </DialogHeader>
-            {editingId ? (
-              (() => {
-                const s = sessions.find((x) => x.id === editingId);
-                return s ? <SessionForm initial={s} onSave={(data) => handleUpdate(s.id, data)} onCancel={() => setEditingId(null)} saving={saving} /> : null;
-              })()
-            ) : (
-              <SessionForm onSave={handleAdd} onCancel={() => setShowAdd(false)} saving={saving} />
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Mock mode indicator */}
-        {isMockMode && realUpcoming.length === 0 && (
-          <div className="mx-4 md:mx-6 mb-4 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-300/80 bg-amber-500/10 border border-amber-500/20 inline-flex items-center gap-1.5">
-            ⚡ Dev preview — showing mock data
+      {/* ── Premium Header ── */}
+      <header className="px-4 md:px-6 pt-8 pb-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[32px] md:text-[36px] font-bold tracking-tight leading-tight text-foreground">
+              Live Sessions
+            </h1>
+            <p className="text-muted-foreground mt-1.5 text-sm md:text-base">
+              Prepare. Execute. Review. Attend live sessions to build real trading skillset.
+            </p>
           </div>
-        )}
+          <div className="flex items-center gap-2 pt-2">
+            {canManage && (
+              <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}>
+                <Plus className="h-3.5 w-3.5" /> Create
+              </Button>
+            )}
+            <button className="live-btn-glass py-2.5 px-4" onClick={scrollToSchedule}>
+              <CalendarDays className="h-4 w-4" /> Full Schedule
+            </button>
+          </div>
+        </div>
+      </header>
 
-        <div className="px-4 md:px-6 pb-8 space-y-4">
-          {/* Admin Action Bar — real actions */}
-          <AdminActionBar
-            title="Live Sessions Admin"
-            permission="manage_live_sessions"
-            actions={[
-              { label: "Create Session", icon: Plus, onClick: () => setShowAdd(true) },
-              { label: "Edit", icon: Pencil, onClick: selectedSession ? () => setEditingId(selectedSession.id) : undefined, disabled: !selectedSession },
-              { label: "Delete", icon: Trash2, onClick: selectedSession ? () => handleDelete(selectedSession.id) : undefined, disabled: !selectedSession },
-              { label: selectedSession?.status === "completed" ? "Publish" : "Unpublish", icon: selectedSession?.status === "completed" ? Eye : EyeOff, onClick: selectedSession ? () => handleTogglePublish(selectedSession) : undefined, disabled: !selectedSession },
-              { label: "Mark Replay", icon: Play, onClick: selectedSession ? () => handleMarkReplay(selectedSession) : undefined, disabled: !selectedSession },
-            ]}
-          />
+      {/* Mock mode indicator */}
+      {isMockMode && realUpcoming.length === 0 && (
+        <div className="mx-4 md:mx-6 mb-4 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-300/80 bg-amber-500/10 border border-amber-500/20 inline-flex items-center gap-1.5">
+          ⚡ Dev preview — showing mock data
+        </div>
+      )}
 
-          <div className="flex gap-6 max-w-[1200px]">
+      <div className="px-4 md:px-6 pb-8 space-y-6">
+        {/* Admin Action Bar */}
+        <AdminActionBar
+          title="Live Sessions Admin"
+          permission="manage_live_sessions"
+          actions={[
+            { label: "Create Session", icon: Plus, onClick: () => setShowAdd(true) },
+            { label: "Edit", icon: Pencil, onClick: selectedSession ? () => setEditingId(selectedSession.id) : undefined, disabled: !selectedSession },
+            { label: "Delete", icon: Trash2, onClick: selectedSession ? () => handleDelete(selectedSession.id) : undefined, disabled: !selectedSession },
+            { label: selectedSession?.status === "completed" ? "Publish" : "Unpublish", icon: selectedSession?.status === "completed" ? Eye : EyeOff, onClick: selectedSession ? () => handleTogglePublish(selectedSession) : undefined, disabled: !selectedSession },
+            { label: "Mark Replay", icon: Play, onClick: selectedSession ? () => handleMarkReplay(selectedSession) : undefined, disabled: !selectedSession },
+          ]}
+        />
 
-            {/* ─── LEFT COLUMN (main) ─── */}
-            <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex gap-6 max-w-[1200px]">
 
-              {/* Next Live Session Hero */}
-              {nextSession ? (
-                <div
-                  className={cn("live-glass-card live-glass-card--hero p-6 relative group", canManage && "cursor-pointer", selectedId === nextSession.id && canManage && "ring-1 ring-primary/40")}
-                  onClick={canManage ? () => setSelectedId(selectedId === nextSession.id ? null : nextSession.id) : undefined}
-                >
-                  <div className="flex items-start justify-between mb-1">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-white/50">Next Live Session</p>
-                    <div className="flex items-center gap-1">
-                      {canManage && (
-                        <>
-                          <button onClick={(e) => { e.stopPropagation(); setEditingId(nextSession.id); }} className="live-icon-btn"><Pencil className="h-3.5 w-3.5" /></button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDelete(nextSession.id); }} className="live-icon-btn text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
-                        </>
-                      )}
-                      <button className="live-icon-btn"><CalendarDays className="h-3.5 w-3.5" /></button>
-                      <button className="live-icon-btn"><Settings2 className="h-3.5 w-3.5" /></button>
+          {/* ─── LEFT COLUMN (main) ─── */}
+          <div className="flex-1 min-w-0 space-y-8">
+
+            {/* Next Live Session Hero */}
+            {nextSession ? (
+              <div
+                className={cn("live-glass-card live-glass-card--hero p-6 md:p-8 relative group", canManage && "cursor-pointer", selectedId === nextSession.id && canManage && "ring-1 ring-primary/40")}
+                onClick={canManage ? () => setSelectedId(selectedId === nextSession.id ? null : nextSession.id) : undefined}
+              >
+                <div className="flex items-start justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-primary/20 text-primary border border-primary/20">
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Live
+                    </span>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Next Live Session</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {canManage && (
+                      <>
+                        <button onClick={(e) => { e.stopPropagation(); setEditingId(nextSession.id); }} className="live-icon-btn"><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(nextSession.id); }} className="live-icon-btn text-red-400"><Trash2 className="h-3.5 w-3.5" /></button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-white mt-3">{nextSession.title}</h2>
+                {nextSession.description && <p className="text-sm text-white/50 mt-1">{nextSession.description}</p>}
+                <p className="text-sm font-semibold text-white mt-2">
+                  {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST
+                  {nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}
+                </p>
+                <p className="text-xs text-white/30 mt-1">Bring notebook · headphones · charts ready</p>
+
+                <div className="flex items-center gap-3 mt-6 flex-wrap">
+                  {nextSession.join_url && (
+                    <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); trackZoomClick(nextSession); }}>
+                      <button className="live-btn-primary">
+                        <ExternalLink className="h-4 w-4" /> Join Zoom
+                      </button>
+                    </a>
+                  )}
+                  {nextSession.join_url && (
+                    <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); copyLink(nextSession.join_url); }}>
+                      <Link2 className="h-3.5 w-3.5" /> Copy Link
+                    </button>
+                  )}
+                  <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); window.open(buildGoogleCalendarUrl(nextSession), '_blank'); }}>
+                    <CalendarPlus className="h-3.5 w-3.5" /> Add to Calendar
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 mt-5 pt-4 border-t border-white/[0.06]">
+                  <button className="live-btn-glass text-xs gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <Bell className="h-3.5 w-3.5" /> Notify Me
+                  </button>
+                  <SessionTimer sessionDate={nextSession.session_date} durationMinutes={nextSession.duration_minutes} />
+                </div>
+              </div>
+            ) : (
+              <div className="live-glass-card p-8 flex flex-col items-center text-center">
+                <div className="h-11 w-11 rounded-2xl bg-white/[0.06] flex items-center justify-center mb-4">
+                  <Radio className="h-5 w-5 text-white/30" />
+                </div>
+                <p className="text-sm text-white/40">No upcoming live sessions scheduled.</p>
+                {canManage && <p className="text-xs text-white/30 mt-1">Click "Create Session" to add one.</p>}
+              </div>
+            )}
+
+            {/* ── 3 Session Type Cards ── */}
+            <section>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-4">Our Live Experiences</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {SESSION_TYPES.map((st) => (
+                  <div key={st.title} className="live-glass-card overflow-hidden group/card hover:border-white/[0.14] transition-colors">
+                    {/* Image */}
+                    <div className="relative h-[180px] overflow-hidden">
+                      <img
+                        src={st.image}
+                        alt={st.title}
+                        className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-300 group-hover/card:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[hsl(214,22%,14%)] via-[hsl(214,22%,14%)]/60 to-transparent" />
+                      <span className="absolute top-3 left-3 text-[10px] font-bold uppercase tracking-[0.15em] text-primary/80 bg-primary/10 border border-primary/20 rounded-full px-2.5 py-0.5">
+                        {st.label}
+                      </span>
+                    </div>
+                    {/* Content */}
+                    <div className="p-5">
+                      <h3 className="text-base font-bold text-white mb-0.5">{st.title}</h3>
+                      <p className="text-xs text-white/40 mb-3">{st.subtitle}</p>
+                      <ul className="space-y-1.5 mb-4">
+                        {st.bullets.map((b) => (
+                          <li key={b} className="flex items-start gap-2 text-xs text-white/55">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary/60 shrink-0 mt-0.5" />
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="pt-3 border-t border-white/[0.06]">
+                        <p className="text-[11px] font-semibold text-white/50">
+                          <Clock className="h-3 w-3 inline mr-1 -mt-0.5" />{st.schedule}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <h2 className="text-2xl font-bold text-white mt-2">{nextSession.title}</h2>
-                  {nextSession.description && <p className="text-sm text-white/50 mt-1">{nextSession.description}</p>}
-                  <p className="text-sm font-semibold text-white mt-1">
-                    {format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST
-                    {nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}
-                  </p>
-                  
+                ))}
+              </div>
+            </section>
 
-                  <div className="flex items-center gap-3 mt-5 flex-wrap">
-                    {nextSession.join_url && (
-                      <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                        <button className="live-btn-primary">
-                          <ExternalLink className="h-4 w-4" /> Join Zoom
-                        </button>
-                      </a>
-                    )}
-                    {nextSession.join_url && (
-                      <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); copyLink(nextSession.join_url); }}>
-                        <Link2 className="h-3.5 w-3.5" /> Copy Link
-                      </button>
-                    )}
-                    <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); window.open(buildGoogleCalendarUrl(nextSession), '_blank'); }}>
-                      <CalendarPlus className="h-3.5 w-3.5" /> Add to Calendar
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/[0.06]">
-                    <button className="live-btn-glass text-xs gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      <Bell className="h-3.5 w-3.5" /> Notify Me
-                    </button>
-                    <SessionTimer sessionDate={nextSession.session_date} durationMinutes={nextSession.duration_minutes} />
-                  </div>
-                </div>
-              ) : (
-                <div className="live-glass-card p-8 flex flex-col items-center text-center">
-                  <div className="h-11 w-11 rounded-2xl bg-white/[0.06] flex items-center justify-center mb-4">
-                    <Radio className="h-5 w-5 text-white/30" />
-                  </div>
-                  <p className="text-sm text-white/40">No upcoming live sessions scheduled.</p>
-                  {canManage && <p className="text-xs text-white/30 mt-1">Click "Create Session" to add one.</p>}
-                </div>
-              )}
-
-              {/* This Week */}
+            {/* This Week / Full Schedule */}
+            <section id="live-full-schedule">
               {weekList.length > 0 && (
-                <section>
+                <div>
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
                   <div className="live-glass-card divide-y divide-white/[0.05]">
                     {weekList.map((s) => (
@@ -523,112 +668,132 @@ const AcademyLive = () => {
                       </div>
                     ))}
                   </div>
-                </section>
+                </div>
               )}
+            </section>
 
-              {/* Replays (past / completed sessions) */}
-              {past.length > 0 && (
-                <section>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
-                  <div className="space-y-2">
-                    {past.map((s) => (
-                      <div
-                        key={s.id}
-                        className={cn(
-                          "live-glass-card px-5 py-4 flex items-center gap-4 group/replay",
-                          canManage && "cursor-pointer",
-                          selectedId === s.id && canManage && "ring-1 ring-primary/40"
-                        )}
-                        onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}
-                      >
-                        <div className="h-10 w-10 rounded-xl bg-white/[0.05] flex items-center justify-center shrink-0">
-                          <Play className="h-4 w-4 text-white/30" />
+            {/* Replays */}
+            {past.length > 0 && (
+              <section>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
+                <div className="space-y-2">
+                  {past.map((s) => (
+                    <div
+                      key={s.id}
+                      className={cn(
+                        "live-glass-card px-5 py-4 flex items-center gap-4 group/replay",
+                        canManage && "cursor-pointer",
+                        selectedId === s.id && canManage && "ring-1 ring-primary/40"
+                      )}
+                      onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}
+                    >
+                      <div className="h-10 w-10 rounded-xl bg-white/[0.05] flex items-center justify-center shrink-0">
+                        <Play className="h-4 w-4 text-white/30" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white/85 truncate">{s.title}</p>
+                        <p className="text-xs text-white/35">
+                          {format(new Date(s.session_date), "EEEE, MMM d")}
+                          {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
+                        </p>
+                      </div>
+                      {canManage && (
+                        <>
+                          <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/replay:opacity-100"><Pencil className="h-3 w-3" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/replay:opacity-100"><Trash2 className="h-3 w-3" /></button>
+                        </>
+                      )}
+                      {(s.replay_url || s.join_url) && (
+                        <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                          <button className="live-pill-btn">Watch Replay</button>
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+
+          {/* ─── RIGHT COLUMN (sidebar) — KEPT AS-IS + Attendance Card ─── */}
+          <div className="hidden lg:flex flex-col gap-5 w-[300px] shrink-0">
+
+            {/* Attendance Tracker */}
+            <div className="live-glass-card p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Your Attendance</p>
+              <div className="flex items-baseline gap-1.5 mb-1">
+                <span className="text-2xl font-bold text-white tabular-nums">{monthCount}</span>
+                <span className="text-xs text-white/40">/ 8 this month</span>
+              </div>
+              <Progress value={Math.min(100, (monthCount / 8) * 100)} className="h-1.5 mb-3" />
+              <div className="flex items-center justify-between text-xs text-white/35">
+                <span>{totalCount} all-time joins</span>
+                <span className={cn(
+                  "font-semibold",
+                  monthCount >= 6 ? "text-emerald-400" : monthCount >= 3 ? "text-amber-400" : "text-white/40"
+                )}>
+                  {monthCount >= 6 ? "Consistent" : monthCount >= 3 ? "Building" : "Getting started"}
+                </span>
+              </div>
+            </div>
+
+            <button className="live-btn-glass w-full justify-center py-2.5 gap-2" onClick={scrollToSchedule}>
+              <CalendarDays className="h-4 w-4" /> Full Schedule
+            </button>
+
+            {weekList.length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
+                <div className="space-y-2">
+                  {weekList.map((s) => {
+                    const d = new Date(s.session_date);
+                    return (
+                      <div key={s.id} className="live-glass-card p-4">
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-sm font-bold text-white/90">{format(d, "EEEE")}<span className="text-white/40 font-normal">. {format(d, "MMM d")}</span></span>
+                          <span className="text-xs text-white/45">{formatTime(d)} EST</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white/85 truncate">{s.title}</p>
-                          <p className="text-xs text-white/35">
-                            {format(new Date(s.session_date), "EEEE, MMM d")}
-                            {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center shrink-0">
+                            {s.session_type === "office-hours" ? <Clock className="h-3 w-3 text-white/35" /> : <Radio className="h-3 w-3 text-white/35" />}
+                          </div>
+                          <span className="text-xs text-white/60 truncate flex-1">{s.title}</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-white/20 shrink-0" />
                         </div>
-                        {canManage && (
-                          <>
-                            <button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/replay:opacity-100"><Pencil className="h-3 w-3" /></button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/replay:opacity-100"><Trash2 className="h-3 w-3" /></button>
-                          </>
-                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {past.length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
+                <div className="space-y-2">
+                  {past.slice(0, 3).map((s) => (
+                    <div key={s.id} className="live-glass-card p-4">
+                      <p className="text-sm font-semibold text-white/85 mb-1">{s.title}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-white/40">
+                          {format(new Date(s.session_date), "EEEE, MMM d")}
+                          {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
+                        </span>
                         {(s.replay_url || s.join_url) && (
-                          <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                            <button className="live-pill-btn">Watch Replay</button>
+                          <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer">
+                            <button className="live-pill-btn text-[11px]">Watch Replay</button>
                           </a>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-
-            {/* ─── RIGHT COLUMN (sidebar) ─── */}
-            <div className="hidden lg:flex flex-col gap-5 w-[300px] shrink-0">
-              <button className="live-btn-glass w-full justify-center py-2.5 gap-2">
-                <CalendarDays className="h-4 w-4" /> Full Schedule
-              </button>
-
-              {weekList.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
-                  <div className="space-y-2">
-                    {weekList.map((s) => {
-                      const d = new Date(s.session_date);
-                      return (
-                        <div key={s.id} className="live-glass-card p-4">
-                          <div className="flex items-baseline justify-between mb-2">
-                            <span className="text-sm font-bold text-white/90">{format(d, "EEEE")}<span className="text-white/40 font-normal">. {format(d, "MMM d")}</span></span>
-                            <span className="text-xs text-white/45">{formatTime(d)} EST</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center shrink-0">
-                              {s.session_type === "office-hours" ? <Clock className="h-3 w-3 text-white/35" /> : <Radio className="h-3 w-3 text-white/35" />}
-                            </div>
-                            <span className="text-xs text-white/60 truncate flex-1">{s.title}</span>
-                            <ChevronRight className="h-3.5 w-3.5 text-white/20 shrink-0" />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              {past.length > 0 && (
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">Replays</p>
-                  <div className="space-y-2">
-                    {past.slice(0, 3).map((s) => (
-                      <div key={s.id} className="live-glass-card p-4">
-                        <p className="text-sm font-semibold text-white/85 mb-1">{s.title}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-white/40">
-                            {format(new Date(s.session_date), "EEEE, MMM d")}
-                            {s.duration_minutes > 0 && <span> · {s.duration_minutes} min</span>}
-                          </span>
-                          {(s.replay_url || s.join_url) && (
-                            <a href={s.replay_url || s.join_url} target="_blank" rel="noopener noreferrer">
-                              <button className="live-pill-btn text-[11px]">Watch Replay</button>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
