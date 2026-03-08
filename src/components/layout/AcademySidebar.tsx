@@ -289,7 +289,6 @@ export function AcademySidebar() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (isMobile) setOpenMobile(false);
                     handleInboxChange(!inboxOpen);
                   }}
                   aria-label="Inbox"
