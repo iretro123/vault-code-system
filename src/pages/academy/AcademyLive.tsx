@@ -407,6 +407,9 @@ const AcademyLive = () => {
                     <div className="p-4">
                       <h3 className="text-[15px] font-bold text-foreground mb-1 tracking-tight">{st.title}</h3>
                       <p className="text-[13px] text-muted-foreground mb-3">{st.subtitle}</p>
+                      <ul className="space-y-1.5 mb-3">
+                        {st.bullets.map((b) => (<li key={b} className="flex items-start gap-2 text-[12px] text-white/55"><CheckCircle2 className="h-3 w-3 text-primary/70 shrink-0 mt-0.5" />{b}</li>))}
+                      </ul>
                       <div className="pt-3 mt-auto border-t border-white/[0.06] flex items-center gap-2"><Clock className="h-4 w-4 text-primary/60" /><p className="text-sm font-bold text-white tracking-wide">{st.schedule}</p></div>
                     </div>
                   </div>
