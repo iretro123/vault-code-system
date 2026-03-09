@@ -71,38 +71,51 @@ Deno.serve(async (req) => {
       console.error("[check-membership] allowed_signups check error:", e);
     }
 
-    // --- 3. Fallback: Check Whop (direct member search by email) ---
+    // --- 3. Fallback: Check Whop (paginate ALL active members) ---
     const whopKey = Deno.env.get("WHOP_API_KEY");
     if (whopKey) {
       try {
-        // Use /api/v2/members?query={email} for direct email search
-        // This endpoint only returns active members, no pagination needed
-        const whopUrl = `https://api.whop.com/api/v2/members?query=${encodeURIComponent(normalizedEmail)}&per=50`;
-        const whopRes = await fetch(whopUrl, {
-          headers: { Authorization: `Bearer ${whopKey}` },
-        });
+        let page = 1;
+        let totalPages = 999; // will be updated from first response
+        let totalScanned = 0;
 
-        if (!whopRes.ok) {
-          const text = await whopRes.text();
-          console.error("[check-membership] Whop API error:", whopRes.status, text);
-        } else {
+        while (page <= totalPages) {
+          const whopUrl = `https://api.whop.com/api/v2/members?per=50&page=${page}`;
+          const whopRes = await fetch(whopUrl, {
+            headers: { Authorization: `Bearer ${whopKey}` },
+          });
+
+          if (!whopRes.ok) {
+            console.error("[check-membership] Whop API error on page", page, ":", whopRes.status);
+            break;
+          }
+
           const whopData = await whopRes.json();
           const members = whopData.data ?? [];
 
-          if (Array.isArray(members)) {
-            for (const m of members) {
-              const mEmail = (m.email ?? "").trim().toLowerCase();
-              if (mEmail === normalizedEmail) {
-                console.log("[check-membership] Whop active member found:", normalizedEmail);
-                return new Response(
-                  JSON.stringify({ found: true, status: "active" }),
-                  { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                );
-              }
+          // Update total pages from pagination metadata
+          if (whopData.pagination?.total_page) {
+            totalPages = whopData.pagination.total_page;
+          }
+
+          if (!Array.isArray(members) || members.length === 0) break;
+
+          totalScanned += members.length;
+
+          for (const m of members) {
+            const mEmail = (m.email ?? "").trim().toLowerCase();
+            if (mEmail === normalizedEmail) {
+              console.log(`[check-membership] Whop MATCH page ${page}/${totalPages} (scanned ${totalScanned}):`, normalizedEmail);
+              return new Response(
+                JSON.stringify({ found: true, status: "active" }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
             }
           }
-          console.log("[check-membership] No Whop match for:", normalizedEmail);
+
+          page++;
         }
+        console.log(`[check-membership] Whop scan done. ${totalScanned} members across ${totalPages} pages, no match: ${normalizedEmail}`);
       } catch (whopErr) {
         console.error("[check-membership] Whop fetch error:", whopErr);
       }
