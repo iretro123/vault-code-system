@@ -241,8 +241,14 @@ const AcademyLive = () => {
     return realSessions;
   }, [isMockMode, realUpcoming.length, realSessions]);
 
-  const upcoming = sessions.filter((s) => !isPast(new Date(s.session_date)) && s.status !== "completed");
-  const past = sessions.filter((s) => isPast(new Date(s.session_date)) || s.status === "completed");
+  const upcoming = sessions.filter((s) => {
+    const end = new Date(s.session_date).getTime() + s.duration_minutes * 60_000;
+    return Date.now() < end && s.status !== "completed";
+  });
+  const past = sessions.filter((s) => {
+    const end = new Date(s.session_date).getTime() + s.duration_minutes * 60_000;
+    return Date.now() >= end || s.status === "completed";
+  });
   const nextSession = upcoming[0] || null;
   const thisWeek = upcoming.filter((s) => isThisWeek(new Date(s.session_date), { weekStartsOn: 1 }));
   const weekList = thisWeek.length > 0 ? thisWeek : upcoming;
