@@ -356,6 +356,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const isTradeRecaps = roomSlug === "trade-recaps";
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [chatEffect, setChatEffect] = useState<ChatEffectType>(null);
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
