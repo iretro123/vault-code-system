@@ -26,10 +26,10 @@ export function useTypingIndicator(roomSlug: string, userId?: string, userName?:
         return prev;
       });
 
-      // Auto-remove after 3.5s (slightly longer than sender timeout)
+      // Auto-remove after 1.5s
       setTimeout(() => {
         setTypingUsers((prev) => prev.filter((t) => t.userId !== uid));
-      }, 3500);
+      }, 1500);
     });
 
     channel.subscribe();
