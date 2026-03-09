@@ -9,7 +9,6 @@ interface TypingUser {
 export function useTypingIndicator(roomSlug: string, userId?: string, userName?: string) {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBroadcast = useRef(0);
 
   useEffect(() => {
@@ -27,10 +26,10 @@ export function useTypingIndicator(roomSlug: string, userId?: string, userName?:
         return prev;
       });
 
-      // Auto-remove after 3.5s (slightly longer than sender timeout)
+      // Auto-remove after 1.5s
       setTimeout(() => {
         setTypingUsers((prev) => prev.filter((t) => t.userId !== uid));
-      }, 3500);
+      }, 1500);
     });
 
     channel.subscribe();
@@ -55,11 +54,6 @@ export function useTypingIndicator(roomSlug: string, userId?: string, userName?:
       payload: { userId, userName },
     });
 
-    // Clear own typing after 3s of inactivity
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      // No need to broadcast "stopped" — receivers auto-expire
-    }, 3000);
   }, [userId, userName]);
 
   const typingText = useTypingText(typingUsers);
