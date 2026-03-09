@@ -7,26 +7,35 @@ interface ChatEffectsProps {
 }
 
 const DURATIONS: Record<string, number> = {
-  shake: 500,
+  shake: 400,
   snow: 4000,
-  confetti: 3000,
-  rocket: 2000,
-  gg: 3000,
+  confetti: 3500,
+  rocket: 3000,
+  gg: 3500,
 };
 
-/* ── Snow particles ── */
+/* ── Snow — Blizzard with depth layers & sway ── */
 function SnowEffect() {
-  const flakes = useMemo(
-    () =>
-      Array.from({ length: 30 }, (_, i) => ({
+  const flakes = useMemo(() => {
+    const symbols = ["❄", "✦", "●"];
+    return Array.from({ length: 50 }, (_, i) => {
+      // 3 depth layers
+      const layer = i % 3; // 0=far(small/fast), 1=mid, 2=near(large/slow)
+      const size = layer === 0 ? 6 + Math.random() * 4 : layer === 1 ? 10 + Math.random() * 6 : 16 + Math.random() * 8;
+      const duration = layer === 0 ? 2 + Math.random() * 1 : layer === 1 ? 2.5 + Math.random() * 1.5 : 3 + Math.random() * 2;
+      const opacity = layer === 0 ? 0.3 + Math.random() * 0.2 : layer === 1 ? 0.5 + Math.random() * 0.2 : 0.7 + Math.random() * 0.3;
+      return {
         id: i,
+        symbol: symbols[layer],
         left: Math.random() * 100,
-        delay: Math.random() * 2,
-        size: 8 + Math.random() * 12,
-        duration: 2.5 + Math.random() * 2,
-      })),
-    []
-  );
+        delay: Math.random() * 2.5,
+        size,
+        duration,
+        maxOpacity: opacity,
+        swayAmount: 15 + Math.random() * 30,
+      };
+    });
+  }, []);
 
   return (
     <>
@@ -38,42 +47,48 @@ function SnowEffect() {
             left: `${f.left}%`,
             top: -20,
             fontSize: f.size,
-            animationName: "chat-snow-fall",
-            animationDuration: `${f.duration}s`,
-            animationDelay: `${f.delay}s`,
-            animationTimingFunction: "linear",
-            animationFillMode: "forwards",
+            color: f.symbol === "●" ? "rgba(255,255,255,0.6)" : undefined,
+            animationName: "chat-snow-fall, chat-snow-sway",
+            animationDuration: `${f.duration}s, ${f.duration * 0.8}s`,
+            animationDelay: `${f.delay}s, ${f.delay}s`,
+            animationTimingFunction: "linear, ease-in-out",
+            animationFillMode: "forwards, forwards",
+            animationIterationCount: "1, infinite",
             opacity: 0,
+            ["--snow-max-opacity" as string]: f.maxOpacity,
+            ["--snow-sway" as string]: `${f.swayAmount}px`,
           }}
         >
-          ❄
+          {f.symbol}
         </span>
       ))}
     </>
   );
 }
 
-/* ── Confetti burst ── */
+/* ── Confetti — Multi-wave explosion with ribbons ── */
 function ConfettiEffect({ gold }: { gold?: boolean }) {
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 40 }, (_, i) => {
-        const colors = gold
-          ? ["#FFD700", "#FFA500", "#FFEC8B", "#DAA520", "#F5DEB3"]
-          : ["#3B82F6", "#8B5CF6", "#EC4899", "#10B981", "#F59E0B", "#EF4444"];
-        return {
-          id: i,
-          color: colors[i % colors.length],
-          left: 30 + Math.random() * 40,
-          delay: Math.random() * 0.4,
-          angle: -70 + Math.random() * 140,
-          distance: 200 + Math.random() * 300,
-          rotation: Math.random() * 360,
-          size: 4 + Math.random() * 6,
-        };
-      }),
-    [gold]
-  );
+  const particles = useMemo(() => {
+    const colors = gold
+      ? ["#FFD700", "#FFA500", "#FFEC8B", "#DAA520", "#F5DEB3"]
+      : ["#3B82F6", "#8B5CF6", "#EC4899", "#10B981", "#F59E0B", "#EF4444"];
+    return Array.from({ length: 60 }, (_, i) => {
+      const isRibbon = Math.random() > 0.5;
+      const wave = i < 35 ? 0 : 1; // first 35 = wave 1, rest = wave 2
+      return {
+        id: i,
+        color: colors[i % colors.length],
+        left: 10 + Math.random() * 80,
+        delay: wave * 0.3 + Math.random() * 0.3,
+        angle: -80 + Math.random() * 160,
+        distance: 250 + Math.random() * 350,
+        rotation: Math.random() * 720 - 360,
+        width: isRibbon ? 3 + Math.random() * 2 : 4 + Math.random() * 5,
+        height: isRibbon ? 12 + Math.random() * 8 : 4 + Math.random() * 5,
+        borderRadius: isRibbon ? "1px" : "50%",
+      };
+    });
+  }, [gold]);
 
   return (
     <>
@@ -84,14 +99,14 @@ function ConfettiEffect({ gold }: { gold?: boolean }) {
           style={{
             left: `${p.left}%`,
             bottom: 0,
-            width: p.size,
-            height: p.size * (Math.random() > 0.5 ? 1 : 1.6),
+            width: p.width,
+            height: p.height,
             backgroundColor: p.color,
-            borderRadius: Math.random() > 0.5 ? "50%" : "1px",
+            borderRadius: p.borderRadius,
             animationName: "chat-confetti-burst",
-            animationDuration: "2.5s",
+            animationDuration: "3s",
             animationDelay: `${p.delay}s`,
-            animationTimingFunction: "cubic-bezier(0.2, 0.8, 0.3, 1)",
+            animationTimingFunction: "cubic-bezier(0.2, 0.6, 0.4, 1)",
             animationFillMode: "forwards",
             opacity: 0,
             ["--confetti-x" as string]: `${Math.cos((p.angle * Math.PI) / 180) * p.distance}px`,
@@ -104,24 +119,165 @@ function ConfettiEffect({ gold }: { gold?: boolean }) {
   );
 }
 
-/* ── Rocket ── */
-function RocketEffect() {
+/* ── GG — Gold celebration with floating text + sparkles ── */
+function GGEffect() {
+  const sparkles = useMemo(
+    () =>
+      Array.from({ length: 10 }, (_, i) => ({
+        id: i,
+        left: 15 + Math.random() * 70,
+        top: 20 + Math.random() * 60,
+        delay: 0.2 + Math.random() * 1.5,
+        size: 16 + Math.random() * 16,
+      })),
+    []
+  );
+
+  const ggTexts = useMemo(
+    () =>
+      Array.from({ length: 5 }, (_, i) => ({
+        id: i,
+        left: 20 + Math.random() * 60,
+        delay: Math.random() * 0.8,
+        size: 20 + Math.random() * 14,
+      })),
+    []
+  );
+
   return (
-    <span
-      className="absolute pointer-events-none select-none"
-      style={{
-        left: "50%",
-        bottom: 0,
-        fontSize: 40,
-        transform: "translateX(-50%)",
-        animationName: "chat-rocket-fly",
-        animationDuration: "1.8s",
-        animationTimingFunction: "cubic-bezier(0.2, 0, 0.3, 1)",
-        animationFillMode: "forwards",
-      }}
-    >
-      🚀
-    </span>
+    <>
+      <ConfettiEffect gold />
+      {/* Floating GG text */}
+      {ggTexts.map((g) => (
+        <span
+          key={`gg-${g.id}`}
+          className="absolute pointer-events-none select-none font-bold"
+          style={{
+            left: `${g.left}%`,
+            bottom: "10%",
+            fontSize: g.size,
+            color: "#FFD700",
+            textShadow: "0 0 8px rgba(255,215,0,0.5)",
+            animationName: "chat-gg-float",
+            animationDuration: "2.5s",
+            animationDelay: `${g.delay}s`,
+            animationTimingFunction: "ease-out",
+            animationFillMode: "forwards",
+            opacity: 0,
+          }}
+        >
+          GG
+        </span>
+      ))}
+      {/* Sparkle emojis */}
+      {sparkles.map((s) => (
+        <span
+          key={`spark-${s.id}`}
+          className="absolute pointer-events-none select-none"
+          style={{
+            left: `${s.left}%`,
+            top: `${s.top}%`,
+            fontSize: s.size,
+            animationName: "chat-spark-pop",
+            animationDuration: "0.8s",
+            animationDelay: `${s.delay}s`,
+            animationTimingFunction: "ease-out",
+            animationFillMode: "both",
+            opacity: 0,
+          }}
+        >
+          ✨
+        </span>
+      ))}
+    </>
+  );
+}
+
+/* ── Rocket Swarm ("moon") ── */
+function RocketEffect() {
+  const rockets = useMemo(
+    () =>
+      Array.from({ length: 10 }, (_, i) => ({
+        id: i,
+        left: 10 + Math.random() * 80,
+        size: 28 + Math.random() * 20,
+        duration: 1.5 + Math.random() * 1,
+        delay: Math.random() * 0.6,
+        rotation: -15 + Math.random() * 30,
+      })),
+    []
+  );
+
+  const exhaust = useMemo(
+    () =>
+      Array.from({ length: 25 }, (_, i) => {
+        const colors = ["#FF6B35", "#FFA500", "#FFD700", "#FF4500"];
+        return {
+          id: i,
+          left: 10 + Math.random() * 80,
+          delay: Math.random() * 1,
+          size: 3 + Math.random() * 4,
+          color: colors[i % colors.length],
+          duration: 0.8 + Math.random() * 0.6,
+        };
+      }),
+    []
+  );
+
+  return (
+    <>
+      {/* Screen flash */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundColor: "rgba(255,255,255,0.05)",
+          animationName: "chat-flash",
+          animationDuration: "0.3s",
+          animationTimingFunction: "ease-out",
+          animationFillMode: "forwards",
+        }}
+      />
+      {/* Exhaust particles */}
+      {exhaust.map((e) => (
+        <span
+          key={`exhaust-${e.id}`}
+          className="absolute pointer-events-none rounded-full"
+          style={{
+            left: `${e.left}%`,
+            bottom: 0,
+            width: e.size,
+            height: e.size,
+            backgroundColor: e.color,
+            animationName: "chat-rocket-exhaust",
+            animationDuration: `${e.duration}s`,
+            animationDelay: `${e.delay}s`,
+            animationTimingFunction: "ease-out",
+            animationFillMode: "forwards",
+            opacity: 0,
+          }}
+        />
+      ))}
+      {/* Rockets */}
+      {rockets.map((r) => (
+        <span
+          key={`rocket-${r.id}`}
+          className="absolute pointer-events-none select-none"
+          style={{
+            left: `${r.left}%`,
+            bottom: 0,
+            fontSize: r.size,
+            transform: `rotate(${r.rotation}deg)`,
+            animationName: "chat-rocket-fly",
+            animationDuration: `${r.duration}s`,
+            animationDelay: `${r.delay}s`,
+            animationTimingFunction: "cubic-bezier(0.2, 0, 0.3, 1)",
+            animationFillMode: "forwards",
+          }}
+        >
+          🚀
+        </span>
+      ))}
+    </>
   );
 }
 
@@ -148,7 +304,7 @@ export function ChatEffects({ activeEffect, onComplete }: ChatEffectsProps) {
       {activeEffect === "snow" && <SnowEffect />}
       {activeEffect === "confetti" && <ConfettiEffect />}
       {activeEffect === "rocket" && <RocketEffect />}
-      {activeEffect === "gg" && <ConfettiEffect gold />}
+      {activeEffect === "gg" && <GGEffect />}
     </div>
   );
 }
