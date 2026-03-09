@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { EmojiPicker } from "./chat/EmojiPicker";
+import { ChatEffects } from "./chat/ChatEffects";
+import { detectChatEffect, type ChatEffectType } from "@/lib/chatEffects";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -354,6 +356,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const isTradeRecaps = roomSlug === "trade-recaps";
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [chatEffect, setChatEffect] = useState<ChatEffectType>(null);
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -448,6 +451,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     clearSuggestions();
     shouldAutoScroll.current = true;
     const result = await sendMessage(body, attachments);
+
+    // Trigger local chat effect Easter egg
+    const effect = detectChatEffect(body);
+    if (effect) setChatEffect(effect);
 
     // Create mention notifications for all users who can mention
     if (result?.ok && canMention && user) {
@@ -857,7 +864,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   return (
     <>
-    <div className="relative flex flex-col h-full w-full bg-background">
+    <div className={cn("relative flex flex-col h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}>
+      {/* Chat effects overlay */}
+      <ChatEffects activeEffect={chatEffect} onComplete={() => setChatEffect(null)} />
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
