@@ -1,71 +1,37 @@
 
 
-## Enhanced Chat Effects — From Basic to Premium
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Current State
-- Snow: 30 snowflakes, simple fall
-- Confetti/GG: 40 particles, single burst from bottom
-- Rocket: 1 lonely rocket, straight line up
-- Shake: basic oscillation
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Enhancements
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. Rocket ("moon") — Rocket Swarm**
-- 8-12 rockets instead of 1, staggered launch from random horizontal positions
-- Each rocket has slight random rotation, different sizes (28-48px), different speeds (1.5-2.5s)
-- Add exhaust trail: small orange/yellow dots that fade behind each rocket
-- Extend duration to 3s for the swarm feel
-- Add a subtle screen flash (white overlay, 0→0.05→0 opacity over 200ms) at launch
+### Solution
 
-**2. Confetti ("W" / "lfg") — Multi-wave Explosion**
-- Increase to 60 particles
-- Two-wave burst: first wave at 0ms, second wave at 300ms delay
-- Add ribbon shapes (tall thin rectangles that tumble) mixed with circles
-- Particles spread from full width (10-90%) not just center
-- Add gentle gravity curve so particles arc and fall after peaking
-- Longer duration: 3.5s
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**3. Snow — Blizzard Upgrade**
-- 50 flakes instead of 30
-- Mix ❄ with ✦ and ● (small white dots) for depth layering
-- Add gentle horizontal sway (sinusoidal via a new keyframe)
-- Three depth layers: large/slow (foreground), medium, small/fast (background) with opacity variation
-- Duration stays 4s
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-**4. GG — Gold Celebration**
-- 60 gold particles + 5 large "GG" text elements that float up and fade
-- Add ✨ emoji sparkles (8-10) scattered with pop-in animation
-- Particles originate from center with wider spread
-
-**5. Shake ("67") — Screen Punch**
-- More aggressive shake: add slight scale pulse (1.0 → 1.01 → 1.0) mixed with translation
-- Add a brief red/orange border flash on the chat container (box-shadow glow for 300ms)
-- Faster, punchier: 400ms
-
-### Files to Change
-
-**`src/components/academy/chat/ChatEffects.tsx`** — Full rewrite of effect components:
-- `RocketEffect`: render 10 rockets with randomized props + exhaust particles
-- `ConfettiEffect`: 60 particles, ribbon shapes, two-wave timing, full-width spread
-- `SnowEffect`: 50 mixed particles, 3 depth layers, sway animation
-- `ConfettiEffect gold`: add floating "GG" text elements + sparkle emojis
-- Update durations: rocket→3000, confetti→3500
-
-**`src/index.css`** — Enhanced keyframes:
-- `chat-rocket-fly`: add wobble via slight X oscillation
-- `chat-rocket-exhaust`: small dots fading behind rockets
-- `chat-snow-fall`: add horizontal sway component
-- `chat-confetti-burst`: add gravity (y peaks then falls)
-- `chat-spark-pop`: scale 0→1→0 for sparkle emojis
-- `chat-gg-float`: "GG" text rising and fading
-- `chat-flash`: brief white overlay pulse
-
-**`tailwind.config.ts`** — Update `chat-shake` keyframe to include scale pulse
-
-**`src/lib/chatEffects.ts`** — No changes needed
-
-### Performance
-- Max ~70 DOM nodes per effect (still lightweight)
-- All animations use only `transform` + `opacity`
-- No layout thrashing, no re-renders during animation
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 

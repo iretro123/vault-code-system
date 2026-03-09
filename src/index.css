@@ -553,21 +553,64 @@ html {
   background: rgba(255, 255, 255, 0.45);
 }
 
-/* ── Chat Easter Egg Animations ── */
+/* ── Chat Easter Egg Animations — Premium ── */
+
+/* Snow: fall with depth-aware opacity */
 @keyframes chat-snow-fall {
   0% { opacity: 0; transform: translateY(0) rotate(0deg); }
-  10% { opacity: 1; }
-  90% { opacity: 0.8; }
+  8% { opacity: var(--snow-max-opacity, 0.8); }
+  85% { opacity: calc(var(--snow-max-opacity, 0.8) * 0.9); }
   100% { opacity: 0; transform: translateY(100vh) rotate(360deg); }
 }
 
-@keyframes chat-confetti-burst {
-  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
-  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-r)); }
+/* Snow: horizontal sway */
+@keyframes chat-snow-sway {
+  0%, 100% { margin-left: 0; }
+  50% { margin-left: var(--snow-sway, 20px); }
 }
 
+/* Confetti: burst with gravity arc */
+@keyframes chat-confetti-burst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  50% { opacity: 1; transform: translate(calc(var(--confetti-x) * 0.6), calc(var(--confetti-y) * 0.9)) rotate(calc(var(--confetti-r) * 0.5)); }
+  100% { opacity: 0; transform: translate(var(--confetti-x), calc(var(--confetti-y) * 0.3)) rotate(var(--confetti-r)); }
+}
+
+/* Rocket: fly up with slight wobble */
 @keyframes chat-rocket-fly {
-  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
-  60% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-110vh) rotate(-10deg); }
+  0% { opacity: 1; transform: translateY(0); }
+  25% { transform: translateY(-28vh) translateX(4px); }
+  50% { transform: translateY(-55vh) translateX(-3px); opacity: 1; }
+  75% { transform: translateY(-82vh) translateX(2px); opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-115vh) translateX(0); }
+}
+
+/* Rocket: exhaust trail particles */
+@keyframes chat-rocket-exhaust {
+  0% { opacity: 0.9; transform: translateY(0) scale(1); }
+  50% { opacity: 0.5; transform: translateY(-15vh) scale(0.6); }
+  100% { opacity: 0; transform: translateY(-30vh) scale(0.1); }
+}
+
+/* Screen flash for rocket launch */
+@keyframes chat-flash {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* GG text floating up */
+@keyframes chat-gg-float {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20% { opacity: 1; transform: translateY(-30px) scale(1.1); }
+  80% { opacity: 0.8; transform: translateY(-120px) scale(1); }
+  100% { opacity: 0; transform: translateY(-180px) scale(0.8); }
+}
+
+/* Sparkle pop in/out */
+@keyframes chat-spark-pop {
+  0% { opacity: 0; transform: scale(0) rotate(0deg); }
+  40% { opacity: 1; transform: scale(1.2) rotate(20deg); }
+  70% { opacity: 1; transform: scale(0.9) rotate(-10deg); }
+  100% { opacity: 0; transform: scale(0) rotate(0deg); }
 }
