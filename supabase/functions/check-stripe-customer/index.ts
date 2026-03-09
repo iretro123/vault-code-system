@@ -76,11 +76,11 @@ Deno.serve(async (req) => {
     if (whopKey) {
       try {
         let page = 1;
+        let totalPages = 999; // will be updated from first response
         let totalScanned = 0;
-        const PER_PAGE = 100;
 
-        while (true) {
-          const whopUrl = `https://api.whop.com/api/v2/members?per=${PER_PAGE}&page=${page}`;
+        while (page <= totalPages) {
+          const whopUrl = `https://api.whop.com/api/v2/members?per=50&page=${page}`;
           const whopRes = await fetch(whopUrl, {
             headers: { Authorization: `Bearer ${whopKey}` },
           });
@@ -93,22 +93,19 @@ Deno.serve(async (req) => {
           const whopData = await whopRes.json();
           const members = whopData.data ?? [];
 
-          // Debug: log pagination structure on first page
-          if (page === 1) {
-            console.log("[check-membership] Whop pagination keys:", JSON.stringify(whopData.pagination ?? "none"));
+          // Update total pages from pagination metadata
+          if (whopData.pagination?.total_page) {
+            totalPages = whopData.pagination.total_page;
           }
 
-          if (!Array.isArray(members) || members.length === 0) {
-            console.log(`[check-membership] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${normalizedEmail}`);
-            break;
-          }
+          if (!Array.isArray(members) || members.length === 0) break;
 
           totalScanned += members.length;
 
           for (const m of members) {
             const mEmail = (m.email ?? "").trim().toLowerCase();
             if (mEmail === normalizedEmail) {
-              console.log(`[check-membership] Whop MATCH page ${page} (scanned ${totalScanned}):`, normalizedEmail);
+              console.log(`[check-membership] Whop MATCH page ${page}/${totalPages} (scanned ${totalScanned}):`, normalizedEmail);
               return new Response(
                 JSON.stringify({ found: true, status: "active" }),
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -116,14 +113,9 @@ Deno.serve(async (req) => {
             }
           }
 
-          // If we got fewer than PER_PAGE results, we've reached the last page
-          if (members.length < PER_PAGE) {
-            console.log(`[check-membership] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${normalizedEmail}`);
-            break;
-          }
-
           page++;
         }
+        console.log(`[check-membership] Whop scan done. ${totalScanned} members across ${totalPages} pages, no match: ${normalizedEmail}`);
       } catch (whopErr) {
         console.error("[check-membership] Whop fetch error:", whopErr);
       }

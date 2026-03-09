@@ -140,11 +140,11 @@ Deno.serve(async (req) => {
 async function checkWhopMembership(email: string, whopKey: string): Promise<boolean> {
   try {
     let page = 1;
+    let totalPages = 999;
     let totalScanned = 0;
-    const PER_PAGE = 100;
 
-    while (true) {
-      const url = `https://api.whop.com/api/v2/members?per=${PER_PAGE}&page=${page}`;
+    while (page <= totalPages) {
+      const url = `https://api.whop.com/api/v2/members?per=50&page=${page}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${whopKey}` },
       });
@@ -157,28 +157,25 @@ async function checkWhopMembership(email: string, whopKey: string): Promise<bool
       const data = await res.json();
       const members = data.data ?? [];
 
-      if (!Array.isArray(members) || members.length === 0) {
-        console.log(`[provision] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${email}`);
-        break;
+      if (data.pagination?.total_page) {
+        totalPages = data.pagination.total_page;
       }
+
+      if (!Array.isArray(members) || members.length === 0) break;
 
       totalScanned += members.length;
 
       for (const m of members) {
         const mEmail = (m.email ?? "").trim().toLowerCase();
         if (mEmail === email) {
-          console.log(`[provision] Whop MATCH page ${page} (scanned ${totalScanned}):`, email);
+          console.log(`[provision] Whop MATCH page ${page}/${totalPages} (scanned ${totalScanned}):`, email);
           return true;
         }
       }
 
-      if (members.length < PER_PAGE) {
-        console.log(`[provision] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${email}`);
-        break;
-      }
-
       page++;
     }
+    console.log(`[provision] Whop scan done. ${totalScanned} members across ${totalPages} pages, no match: ${email}`);
   } catch (err) {
     console.error("[provision] Whop fetch error:", err);
   }
