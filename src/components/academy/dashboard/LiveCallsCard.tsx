@@ -30,7 +30,7 @@ export function LiveCallsCard() {
     supabase
       .from("live_sessions")
       .select("id, title, session_date, session_type")
-      .gte("session_date", new Date().toISOString())
+      .gte("session_date", new Date(Date.now() - 3 * 60 * 60_000).toISOString())
       .order("session_date", { ascending: true })
       .limit(5)
       .then(({ data }) => {

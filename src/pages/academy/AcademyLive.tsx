@@ -241,8 +241,14 @@ const AcademyLive = () => {
     return realSessions;
   }, [isMockMode, realUpcoming.length, realSessions]);
 
-  const upcoming = sessions.filter((s) => !isPast(new Date(s.session_date)) && s.status !== "completed");
-  const past = sessions.filter((s) => isPast(new Date(s.session_date)) || s.status === "completed");
+  const upcoming = sessions.filter((s) => {
+    const end = new Date(s.session_date).getTime() + s.duration_minutes * 60_000;
+    return Date.now() < end && s.status !== "completed";
+  });
+  const past = sessions.filter((s) => {
+    const end = new Date(s.session_date).getTime() + s.duration_minutes * 60_000;
+    return Date.now() >= end || s.status === "completed";
+  });
   const nextSession = upcoming[0] || null;
   const thisWeek = upcoming.filter((s) => isThisWeek(new Date(s.session_date), { weekStartsOn: 1 }));
   const weekList = thisWeek.length > 0 ? thisWeek : upcoming;
@@ -361,12 +367,28 @@ const AcademyLive = () => {
         {/* HERO + SIDEBAR */}
         <div className="flex gap-6 max-w-[1200px]">
           <div className="flex-1 min-w-0">
-            {nextSession ? (
-              <div className={cn("live-glass-card live-glass-card--hero p-6 md:p-8 relative group", canManage && "cursor-pointer", selectedId === nextSession.id && canManage && "ring-1 ring-primary/40")} onClick={canManage ? () => setSelectedId(selectedId === nextSession.id ? null : nextSession.id) : undefined}>
+            {nextSession ? (() => {
+              const isLiveNow = Date.now() >= new Date(nextSession.session_date).getTime();
+              return (
+              <div className={cn(
+                "live-glass-card live-glass-card--hero p-6 md:p-8 relative group transition-all duration-300",
+                isLiveNow && "ring-1 ring-red-500/30 shadow-[0_0_40px_-10px_rgba(239,68,68,0.2)]",
+                canManage && "cursor-pointer",
+                selectedId === nextSession.id && canManage && "ring-1 ring-primary/40"
+              )} onClick={canManage ? () => setSelectedId(selectedId === nextSession.id ? null : nextSession.id) : undefined}>
                 <div className="flex items-start justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-primary/20 text-primary border border-primary/20"><span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Live</span>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Next Live Session</p>
+                    {isLiveNow ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-red-500/15 text-red-400 border border-red-500/25">
+                        <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                        Happening Now
+                      </span>
+                    ) : (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-primary/20 text-primary border border-primary/20"><span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> Live</span>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Next Live Session</p>
+                      </>
+                    )}
                   </div>
                   {canManage && <div className="flex items-center gap-1"><button onClick={(e) => { e.stopPropagation(); setEditingId(nextSession.id); }} className="live-icon-btn"><Pencil className="h-3.5 w-3.5" /></button><button onClick={(e) => { e.stopPropagation(); handleDelete(nextSession.id); }} className="live-icon-btn text-red-400"><Trash2 className="h-3.5 w-3.5" /></button></div>}
                 </div>
@@ -375,7 +397,7 @@ const AcademyLive = () => {
                 <p className="text-sm font-semibold text-white mt-2">{format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST{nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}</p>
                 <p className="text-xs text-white/30 mt-1">Bring notebook · headphones · charts ready</p>
                 <div className="flex items-center gap-3 mt-6 flex-wrap">
-                  {nextSession.join_url && <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); trackZoomClick(nextSession); }}><button className="live-btn-primary"><ExternalLink className="h-4 w-4" /> Join Zoom</button></a>}
+                  {nextSession.join_url && <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); trackZoomClick(nextSession); }}><button className={cn("live-btn-primary", isLiveNow && "!bg-gradient-to-r !from-red-600 !to-red-500 hover:!shadow-[0_0_20px_4px_rgba(239,68,68,0.25)]")}><ExternalLink className="h-4 w-4" /> {isLiveNow ? "Join Live Now" : "Join Zoom"}</button></a>}
                   {nextSession.join_url && <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); copyLink(nextSession.join_url); }}><Link2 className="h-3.5 w-3.5" /> Copy Link</button>}
                   <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); window.open(buildGoogleCalendarUrl(nextSession), '_blank'); }}><CalendarPlus className="h-3.5 w-3.5" /> Add to Calendar</button>
                 </div>
@@ -384,7 +406,7 @@ const AcademyLive = () => {
                   <SessionTimer sessionDate={nextSession.session_date} durationMinutes={nextSession.duration_minutes} />
                 </div>
               </div>
-            ) : (
+              ); })() : (
               <div className="live-glass-card p-8 flex flex-col items-center text-center">
                 <div className="h-11 w-11 rounded-2xl bg-white/[0.06] flex items-center justify-center mb-4"><Radio className="h-5 w-5 text-white/30" /></div>
                 <p className="text-sm text-white/40">No upcoming live sessions scheduled.</p>
