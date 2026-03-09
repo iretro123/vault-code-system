@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     const gifs = (data.data ?? []).map((g: any) => ({
       id: g.id,
       title: g.title ?? "",
-      url: g.images?.original?.url ?? g.images?.downsized_medium?.url ?? "",
+      url: g.images?.downsized?.url ?? g.images?.downsized_medium?.url ?? g.images?.original?.url ?? "",
       preview_url: g.images?.fixed_height_small?.url ?? g.images?.preview_gif?.url ?? "",
       width: parseInt(g.images?.fixed_height_small?.width ?? "200", 10),
       height: parseInt(g.images?.fixed_height_small?.height ?? "150", 10),

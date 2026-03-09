@@ -1221,22 +1221,32 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-1">
                         {msg.attachments.map((att: Attachment, idx: number) =>
-                          att.type === "image" ? (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setLightboxImage({ src: att.url, alt: att.filename, filename: att.filename })}
-                              className="block text-left"
-                            >
-                              <img
-                                src={att.url}
-                                alt={att.filename}
-                                loading="lazy"
-                              className={cn("rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md transition-all cursor-pointer", compact && "max-h-[300px]")}
-                            />
-                              <span className="text-[10px] text-muted-foreground mt-0.5 block truncate max-w-full">{att.filename}</span>
-                            </button>
-                          ) : (
+                          att.type === "image" ? (() => {
+                            const isGif = att.mime === "image/gif" || att.filename === "gif";
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setLightboxImage({ src: att.url, alt: att.filename, filename: att.filename })}
+                                className="block text-left"
+                              >
+                                <img
+                                  src={att.url}
+                                  alt={att.filename}
+                                  loading="lazy"
+                                  className={cn(
+                                    "rounded-xl w-auto h-auto object-contain cursor-pointer transition-all",
+                                    isGif
+                                      ? "max-w-[240px] max-h-[200px]"
+                                      : cn("max-w-full sm:max-w-[360px] border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md", compact && "max-h-[300px]")
+                                  )}
+                                />
+                                {!isGif && (
+                                  <span className="text-[10px] text-muted-foreground mt-0.5 block truncate max-w-full">{att.filename}</span>
+                                )}
+                              </button>
+                            );
+                          })() : (
                             <a
                               key={idx}
                               href={att.url}
