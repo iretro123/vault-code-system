@@ -54,11 +54,6 @@ export function useTypingIndicator(roomSlug: string, userId?: string, userName?:
       payload: { userId, userName },
     });
 
-    // Clear own typing after 3s of inactivity
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      // No need to broadcast "stopped" — receivers auto-expire
-    }, 3000);
   }, [userId, userName]);
 
   const typingText = useTypingText(typingUsers);
