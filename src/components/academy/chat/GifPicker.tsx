@@ -46,23 +46,21 @@ export function GifPicker({ onSelect }: GifPickerProps) {
       setSearch("");
       fetchGifs();
     }
-  }, [open, fetchGifs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  // Debounced search
+  // Debounced search — only fires when search changes (not on open)
   useEffect(() => {
-    if (!open) return;
+    if (!open || search === "") return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!search.trim()) {
-      fetchGifs();
-      return;
-    }
     debounceRef.current = setTimeout(() => {
-      fetchGifs(search.trim());
+      fetchGifs(search.trim() || undefined);
     }, 300);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [search, open, fetchGifs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const handleSelect = useCallback(
     (gif: GifResult) => {
