@@ -1,37 +1,67 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## GIF Picker for Community Chat — Tenor Integration
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Overview
+Add a Discord-style GIF picker button next to the emoji picker in the chat composer. Uses Tenor API v2 for trending GIFs and search. Available in all community tabs (Chat, Announcements, Signals, Wins).
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Architecture
 
-### Solution
+**Tenor API Key**: Tenor's API key is a publishable Google Cloud key (safe for client-side use, like Discord does). We'll store it as a constant. User needs to get a free key from [Google Cloud Console > Tenor API](https://console.cloud.google.com/apis/api/tenor.googleapis.com).
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+Alternatively, we proxy through an edge function to keep the key server-side. Given this is a premium product, the edge function approach is cleaner.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+### Files to Create/Modify
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**New: `supabase/functions/tenor-search/index.ts`**
+- Edge function that proxies Tenor API v2 requests
+- Endpoints: `featured` (trending) and `search?q=term`
+- Requires `TENOR_API_KEY` secret
+- Returns array of `{ id, url, preview_url, width, height }`
+
+**New: `src/components/academy/chat/GifPicker.tsx`**
+- Popover component (same pattern as EmojiPicker)
+- Icon: a "GIF" text button or film icon, placed next to the smiley face
+- Shows trending GIFs on open, search bar at top
+- Masonry-style 2-column grid of GIF thumbnails (using preview URLs for performance)
+- Clicking a GIF calls `onSelect(gifUrl)` and closes the popover
+- Debounced search (300ms) hitting the edge function
+
+**Modified: `src/components/academy/RoomChat.tsx`**
+- Import `GifPicker` next to `EmojiPicker`
+- Add `GifPicker` button in the composer icon row (line ~1551, after EmojiPicker)
+- `onSelect` handler: sends a message with the GIF URL as an image attachment (same `Attachment` format already used)
+- GIF renders in chat using existing image rendering logic
+
+### UI Layout (Composer Bar)
+```text
+[📎 Attach] [😊 Emoji] [GIF] ─── [textarea] ─── [Send ➤]
+```
+
+The GIF button uses a small "GIF" text badge (like Discord) rather than an icon — more recognizable.
+
+### GIF Message Format
+When a user selects a GIF, it sends as an attachment:
+```json
+{
+  "type": "image",
+  "url": "https://media.tenor.com/...",
+  "filename": "gif",
+  "size": 0,
+  "mime": "image/gif"
+}
+```
+This reuses the existing attachment rendering — no changes needed to message display.
+
+### Edge Function Flow
+1. Client calls `supabase.functions.invoke("tenor-search", { body: { q, type } })`
+2. Edge function reads `TENOR_API_KEY` from secrets
+3. Calls `https://tenor.googleapis.com/v2/featured` or `/v2/search`
+4. Returns simplified results array
+
+### Steps
+1. Add `TENOR_API_KEY` secret (user provides free key from Google Cloud)
+2. Create `tenor-search` edge function
+3. Create `GifPicker` component
+4. Wire into `RoomChat` composer
 
