@@ -136,50 +136,34 @@ Deno.serve(async (req) => {
   }
 });
 
-// ── Whop membership check (paginated, server-side email match) ──
+// ── Whop membership check (direct member search by email) ──
 async function checkWhopMembership(email: string, whopKey: string): Promise<boolean> {
   try {
-    const MAX_PAGES = 10;
-    let page = 1;
-    let hasMore = true;
+    // Use /api/v2/members?query={email} for direct email search
+    // This endpoint only returns active members, no pagination needed
+    const url = `https://api.whop.com/api/v2/members?query=${encodeURIComponent(email)}&per=50`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${whopKey}` },
+    });
 
-    while (hasMore && page <= MAX_PAGES) {
-      const url = `https://api.whop.com/api/v2/memberships?per=50&page=${page}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${whopKey}` },
-      });
+    if (!res.ok) {
+      console.error("[provision] Whop API error:", res.status, await res.text());
+      return false;
+    }
 
-      if (!res.ok) {
-        console.error("[provision] Whop API error:", res.status, await res.text());
-        break;
-      }
+    const data = await res.json();
+    const members = data.data ?? [];
 
-      const data = await res.json();
-      const memberships = data.data ?? data.pagination?.data ?? [];
-
-      if (!Array.isArray(memberships) || memberships.length === 0) break;
-
-      for (const m of memberships) {
+    if (Array.isArray(members)) {
+      for (const m of members) {
         const mEmail = (m.email ?? "").trim().toLowerCase();
-        const mUserEmail = (m.user?.email ?? "").trim().toLowerCase();
-
-        if (mEmail === email || mUserEmail === email) {
-          const isActive = m.valid === true && ["active", "trialing", "completed"].includes(m.status);
-          if (isActive) return true;
-          console.log(`[provision] Whop match but inactive: valid=${m.valid}, status=${m.status}`);
-          return false;
+        if (mEmail === email) {
+          console.log("[provision] Whop active member found:", email);
+          return true;
         }
       }
-
-      const pagination = data.pagination;
-      if (pagination && pagination.current_page < pagination.last_page) {
-        page++;
-      } else if (memberships.length < 50) {
-        hasMore = false;
-      } else {
-        page++;
-      }
     }
+    console.log("[provision] No Whop match for:", email);
   } catch (err) {
     console.error("[provision] Whop fetch error:", err);
   }

@@ -1,57 +1,37 @@
 
 
-## Root Cause: Whop API Wrong Endpoint + Missing Email Permission
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-**What's happening:**
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-1. Both `check-stripe-customer` and `provision-manual-access` use `/api/v2/memberships?per=50&page=N` (capped at 10 pages = 500 records max).
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-2. **Critical flaw:** The `/api/v2/memberships` endpoint does NOT return emails unless the API key has the `member:email:read` permission scoped explicitly. Without it, `m.email` and `m.user?.email` come back as `null` on EVERY record — so the email comparison `"" === "jerelane0@gmail.com"` always fails silently. It scans 500 people, finds zero, logs "No Whop match" — and the user is blocked.
+### Solution
 
-3. Even if the permission is granted, older members like Jerome (subscribed since Oct 2025) could be beyond page 10 if Whop has 500+ historical memberships total.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**The fix (no whitelist needed):**
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-The Whop API has a dedicated `/api/v2/members?query={email}` endpoint. The docs explicitly say: *"Search members by name, username, or email."* Members listed here **have an active membership by definition** — the docs state: *"Returns a list of all your members. Members are users who have a currently active membership."*
-
-This is a server-side email filter — no pagination, no limit issues, directly targeted.
-
----
-
-### Changes Required
-
-**File 1: `supabase/functions/check-stripe-customer/index.ts`**
-
-Replace the Whop section (step 3, lines 74–132) with:
-
-```
-GET https://api.whop.com/api/v2/members?query={email}&per=50
-```
-
-- Parse `data` array from response
-- Find any entry where `entry.email.trim().toLowerCase() === normalizedEmail`
-- If found → `{ found: true, status: "active" }` (members endpoint only returns active subscribers)
-- Also add a fallback: try the username field match in case email is stored differently
-- Keep 1 API call total, no loop needed
-
-**File 2: `supabase/functions/provision-manual-access/index.ts`**
-
-Replace the `checkWhopMembership` function (lines 139–187) with the same `/api/v2/members?query={email}` approach.
-
-- One call, server-side filtered, no page limit
-- Returns `true` if any matching active member found
-
----
-
-### Summary
-
-| Before | After |
-|--------|-------|
-| Scans `/api/v2/memberships`, page 1-10 (500 records) | Calls `/api/v2/members?query={email}` (direct search) |
-| `m.email` = null due to missing permission → never matches | Server-side email filter, no permission needed for query |
-| Jerome not found, signup blocked | Jerome found instantly, signup allowed |
-
-**2 edge function files changed. No database migrations. No frontend changes.**
-
-Both functions get the same fix so that the signup gate check AND the post-signup provisioning both work reliably for all Whop members regardless of how many total memberships exist.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
