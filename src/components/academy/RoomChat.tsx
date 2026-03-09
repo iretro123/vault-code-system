@@ -1246,8 +1246,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 )}
                               </button>
                             );
-                          })()
-                          ) : (
+                          })() : (
                             <a
                               key={idx}
                               href={att.url}
