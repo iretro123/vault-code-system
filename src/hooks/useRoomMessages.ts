@@ -179,10 +179,7 @@ export function useRoomMessages(roomSlug: string) {
       if (err) {
         // Remove optimistic message on failure
         updateMessages((prev) => prev.filter((m) => m.id !== optimisticId));
-        if (err.message.includes("Rate limit")) {
-          toast.error("Please wait 3 seconds between messages.");
-        } else {
-          toast.error("Message failed to send. Try again.");
+        toast.error("Message failed to send. Try again.");
         }
 
         setSending(false);

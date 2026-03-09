@@ -9,7 +9,6 @@ interface TypingUser {
 export function useTypingIndicator(roomSlug: string, userId?: string, userName?: string) {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBroadcast = useRef(0);
 
   useEffect(() => {
