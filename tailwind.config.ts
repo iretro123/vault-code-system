@@ -103,6 +103,7 @@ export default {
         "fade-in": "fade-in 0.15s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         "slide-in-left": "slide-in-left 0.2s ease-out",
+        "chat-shake": "chat-shake 0.5s ease-in-out",
       },
     },
   },
