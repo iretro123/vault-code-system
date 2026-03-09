@@ -406,7 +406,7 @@ const AcademyLive = () => {
                   <SessionTimer sessionDate={nextSession.session_date} durationMinutes={nextSession.duration_minutes} />
                 </div>
               </div>
-            ) : (
+              ); })() : (
               <div className="live-glass-card p-8 flex flex-col items-center text-center">
                 <div className="h-11 w-11 rounded-2xl bg-white/[0.06] flex items-center justify-center mb-4"><Radio className="h-5 w-5 text-white/30" /></div>
                 <p className="text-sm text-white/40">No upcoming live sessions scheduled.</p>
