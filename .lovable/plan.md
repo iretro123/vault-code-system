@@ -1,37 +1,36 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: Keep Hero Card Visible During Live Sessions + Red "Ends In" Timer
 
 ### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+1. `upcoming` filter on line 244 uses `isPast(session_date)` — once the start time passes, the session is removed from `upcoming`, so the hero card disappears immediately when the session goes live.
+2. `SessionTimer` returns `null` after `end` time but has no "ending soon" countdown mode.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Changes
 
-### Solution
+**1. `src/pages/academy/AcademyLive.tsx`** (line 244)
+- Change the filter to include sessions that are **currently in progress** (now < start + duration):
+```
+const upcoming = sessions.filter(s => {
+  const end = new Date(s.session_date).getTime() + s.duration_minutes * 60_000;
+  return Date.now() < end && s.status !== "completed";
+});
+```
+- This keeps the hero card showing the current live session until its scheduled end time.
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**2. `src/components/academy/live/SessionTimer.tsx`**
+- When the session is live (`now >= start && now < end`), add a **second line** showing a red "Ends in" countdown (end - now) alongside the elapsed timer.
+- Luxury styling: a subtle red-gradient pill with "ENDS IN Xh Xm Xs" in a refined mono font, matching the premium aesthetic.
+- After `end` time, show a muted "Session ended" label instead of returning `null` (so the hero doesn't flicker if there's a brief delay before the next fetch).
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**3. Hero card enhancements for live state**
+- When `now >= start` for the hero session, upgrade the visual treatment:
+  - Change the badge from blue "Next Live Session" to a pulsing red "HAPPENING NOW" label.
+  - Add a subtle red border glow to the hero card.
+  - "Join Zoom" button gets a red accent to create urgency.
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+### Result
+- Hero card stays visible for the full duration of the live session.
+- Users see a luxury red "ends in" countdown so they know how much time is left.
+- After the session ends, it naturally transitions out on the next re-render/fetch.
 
