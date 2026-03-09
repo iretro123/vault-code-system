@@ -141,9 +141,10 @@ async function checkWhopMembership(email: string, whopKey: string): Promise<bool
   try {
     let page = 1;
     let totalScanned = 0;
+    const PER_PAGE = 100;
 
     while (true) {
-      const url = `https://api.whop.com/api/v2/members?per=100&page=${page}`;
+      const url = `https://api.whop.com/api/v2/members?per=${PER_PAGE}&page=${page}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${whopKey}` },
       });
@@ -157,7 +158,7 @@ async function checkWhopMembership(email: string, whopKey: string): Promise<bool
       const members = data.data ?? [];
 
       if (!Array.isArray(members) || members.length === 0) {
-        console.log(`[provision] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${email}`);
+        console.log(`[provision] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${email}`);
         break;
       }
 
@@ -166,13 +167,13 @@ async function checkWhopMembership(email: string, whopKey: string): Promise<bool
       for (const m of members) {
         const mEmail = (m.email ?? "").trim().toLowerCase();
         if (mEmail === email) {
-          console.log(`[provision] Whop match found on page ${page} (scanned ${totalScanned}):`, email);
+          console.log(`[provision] Whop MATCH page ${page} (scanned ${totalScanned}):`, email);
           return true;
         }
       }
 
-      if (!data.pagination?.next_page) {
-        console.log(`[provision] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${email}`);
+      if (members.length < PER_PAGE) {
+        console.log(`[provision] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${email}`);
         break;
       }
 
