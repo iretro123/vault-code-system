@@ -180,7 +180,6 @@ export function useRoomMessages(roomSlug: string) {
         // Remove optimistic message on failure
         updateMessages((prev) => prev.filter((m) => m.id !== optimisticId));
         toast.error("Message failed to send. Try again.");
-        }
 
         setSending(false);
         return {
