@@ -1,37 +1,26 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Remove 3-Second Message Rate Limit
 
 ### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+There is a database trigger (`trg_message_rate_limit`) on `academy_messages` that blocks users from sending more than one message every 3 seconds. This makes the chat feel sluggish.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Changes
 
-### Solution
+**1. Database migration** — Drop the rate-limit trigger and function:
+```sql
+DROP TRIGGER IF EXISTS trg_message_rate_limit ON public.academy_messages;
+DROP FUNCTION IF EXISTS public.check_message_rate_limit();
+```
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**2. `src/hooks/useRoomMessages.ts`** (line 182-183) — Remove the rate-limit-specific toast since the trigger no longer exists:
+```typescript
+// Remove: if (err.message.includes("Rate limit")) { toast.error("Please wait 3 seconds..."); }
+```
+Keep the generic error toast as fallback.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**3. `src/hooks/useTypingIndicator.ts`** — Clean up the dead 3s timeout and `timeoutRef` (lines 12, 58-62). Reduce receiver auto-remove from 3500ms to 1500ms so the typing indicator clears faster.
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+### Result
+Users can send messages back-to-back with no artificial delay. Typing indicator clears faster too.
 
