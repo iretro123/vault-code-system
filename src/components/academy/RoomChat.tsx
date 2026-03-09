@@ -1550,6 +1550,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                     </button>
                     <EmojiPicker onSelect={handleEmojiSelect} />
+                    <GifPicker onSelect={(gifUrl) => handleSend("", [{ type: "image", url: gifUrl, filename: "gif", size: 0, mime: "image/gif" }])} />
                   </div>
 
                   {/* Textarea — light input surface */}
