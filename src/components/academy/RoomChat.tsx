@@ -452,6 +452,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     shouldAutoScroll.current = true;
     const result = await sendMessage(body, attachments);
 
+    // Trigger local chat effect Easter egg
+    const effect = detectChatEffect(body);
+    if (effect) setChatEffect(effect);
+
     // Create mention notifications for all users who can mention
     if (result?.ok && canMention && user) {
       try {
