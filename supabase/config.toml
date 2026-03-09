@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.generate-avatar]
 verify_jwt = false
+
+[functions.giphy-search]
+verify_jwt = false

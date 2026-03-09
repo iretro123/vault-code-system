@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { EmojiPicker } from "./chat/EmojiPicker";
+import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
 import { detectChatEffect, type ChatEffectType } from "@/lib/chatEffects";
 import { supabase } from "@/integrations/supabase/client";
@@ -1549,6 +1550,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                     </button>
                     <EmojiPicker onSelect={handleEmojiSelect} />
+                    <GifPicker onSelect={(gifUrl) => handleSend("", [{ type: "image", url: gifUrl, filename: "gif", size: 0, mime: "image/gif" }])} />
                   </div>
 
                   {/* Textarea — light input surface */}

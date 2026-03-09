@@ -1,46 +1,37 @@
 
 
-## GIPHY GIF Picker for Community Chat
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Secret Needed
-A `GIPHY_API_KEY` is required. You can get a free one at [developers.giphy.com](https://developers.giphy.com) by creating an app (select "API" type). I'll prompt you to add it.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-### Files to Create
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-**1. `supabase/functions/giphy-search/index.ts`** — Edge function proxy
-- Reads `GIPHY_API_KEY` from secrets
-- Accepts `{ q?: string, type: "trending" | "search" }` in body
-- Calls GIPHY API v1: `/gifs/trending` or `/gifs/search`
-- Returns simplified array: `{ id, url, preview_url, width, height, title }`
-- Uses `rating=pg` to keep content clean
+### Solution
 
-**2. `src/components/academy/chat/GifPicker.tsx`** — Popover component
-- Discord-style "GIF" text button (bold, small badge) placed after the emoji picker
-- On open: fetches trending GIFs via the edge function
-- Search bar at top with 300ms debounce
-- 2-column masonry grid using small preview URLs (`fixed_height_small`)
-- Clicking a GIF calls `onSelect(gifUrl)` and closes popover
-- Loading skeleton while fetching
-- Same dark popover styling as EmojiPicker
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-**3. Update `supabase/config.toml`** — Add `[functions.giphy-search]` with `verify_jwt = false`
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-### File to Modify
-
-**4. `src/components/academy/RoomChat.tsx`** (line ~1551)
-- Import `GifPicker`
-- Add it after `<EmojiPicker>` in the icon row
-- `onSelect` handler calls `handleSend("", [{ type: "image", url: gifUrl, filename: "gif", size: 0, mime: "image/gif" }])`
-- GIF renders using existing image attachment rendering — no display changes needed
-
-### Composer Layout
-```text
-[📎] [😊] [GIF] ─── [textarea] ─── [Send ➤]
-```
-
-### Steps
-1. Add `GIPHY_API_KEY` secret
-2. Create edge function + config
-3. Create GifPicker component
-4. Wire into RoomChat composer
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
