@@ -77,9 +77,10 @@ Deno.serve(async (req) => {
       try {
         let page = 1;
         let totalScanned = 0;
+        const PER_PAGE = 100;
 
         while (true) {
-          const whopUrl = `https://api.whop.com/api/v2/members?per=100&page=${page}`;
+          const whopUrl = `https://api.whop.com/api/v2/members?per=${PER_PAGE}&page=${page}`;
           const whopRes = await fetch(whopUrl, {
             headers: { Authorization: `Bearer ${whopKey}` },
           });
@@ -92,8 +93,13 @@ Deno.serve(async (req) => {
           const whopData = await whopRes.json();
           const members = whopData.data ?? [];
 
+          // Debug: log pagination structure on first page
+          if (page === 1) {
+            console.log("[check-membership] Whop pagination keys:", JSON.stringify(whopData.pagination ?? "none"));
+          }
+
           if (!Array.isArray(members) || members.length === 0) {
-            console.log(`[check-membership] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${normalizedEmail}`);
+            console.log(`[check-membership] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${normalizedEmail}`);
             break;
           }
 
@@ -102,7 +108,7 @@ Deno.serve(async (req) => {
           for (const m of members) {
             const mEmail = (m.email ?? "").trim().toLowerCase();
             if (mEmail === normalizedEmail) {
-              console.log(`[check-membership] Whop match found on page ${page} (scanned ${totalScanned}):`, normalizedEmail);
+              console.log(`[check-membership] Whop MATCH page ${page} (scanned ${totalScanned}):`, normalizedEmail);
               return new Response(
                 JSON.stringify({ found: true, status: "active" }),
                 { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -110,8 +116,9 @@ Deno.serve(async (req) => {
             }
           }
 
-          if (!whopData.pagination?.next_page) {
-            console.log(`[check-membership] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${normalizedEmail}`);
+          // If we got fewer than PER_PAGE results, we've reached the last page
+          if (members.length < PER_PAGE) {
+            console.log(`[check-membership] Whop scan done. Pages: ${page}, Total: ${totalScanned}, no match: ${normalizedEmail}`);
             break;
           }
 
