@@ -552,3 +552,22 @@ html {
 .xp-scroll::-webkit-scrollbar-thumb:active {
   background: rgba(255, 255, 255, 0.45);
 }
+
+/* ── Chat Easter Egg Animations ── */
+@keyframes chat-snow-fall {
+  0% { opacity: 0; transform: translateY(0) rotate(0deg); }
+  10% { opacity: 1; }
+  90% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(100vh) rotate(360deg); }
+}
+
+@keyframes chat-confetti-burst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-r)); }
+}
+
+@keyframes chat-rocket-fly {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  60% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-110vh) rotate(-10deg); }
+}
