@@ -864,7 +864,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   return (
     <>
-    <div className="relative flex flex-col h-full w-full bg-background">
+    <div className={cn("relative flex flex-col h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}>
+      {/* Chat effects overlay */}
+      <ChatEffects activeEffect={chatEffect} onComplete={() => setChatEffect(null)} />
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
