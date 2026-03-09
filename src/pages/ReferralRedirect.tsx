@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { captureReferral } from "@/lib/referralCapture";
 
-const WHOP_CHECKOUT = "https://whop.com/checkout/plan_2rZoF4rd1mLMc";
+const WHOP_CHECKOUT = "https://whop.com/checkout/plan_C385Mm2Dtaquc";
 
 export default function ReferralRedirect() {
   const { userId } = useParams<{ userId: string }>();
