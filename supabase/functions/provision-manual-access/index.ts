@@ -136,34 +136,48 @@ Deno.serve(async (req) => {
   }
 });
 
-// ── Whop membership check (direct member search by email) ──
+// ── Whop membership check (paginate ALL active members) ──
 async function checkWhopMembership(email: string, whopKey: string): Promise<boolean> {
   try {
-    // Use /api/v2/members?query={email} for direct email search
-    // This endpoint only returns active members, no pagination needed
-    const url = `https://api.whop.com/api/v2/members?query=${encodeURIComponent(email)}&per=50`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${whopKey}` },
-    });
+    let page = 1;
+    let totalScanned = 0;
 
-    if (!res.ok) {
-      console.error("[provision] Whop API error:", res.status, await res.text());
-      return false;
-    }
+    while (true) {
+      const url = `https://api.whop.com/api/v2/members?per=100&page=${page}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${whopKey}` },
+      });
 
-    const data = await res.json();
-    const members = data.data ?? [];
+      if (!res.ok) {
+        console.error("[provision] Whop API error on page", page, ":", res.status);
+        return false;
+      }
 
-    if (Array.isArray(members)) {
+      const data = await res.json();
+      const members = data.data ?? [];
+
+      if (!Array.isArray(members) || members.length === 0) {
+        console.log(`[provision] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${email}`);
+        break;
+      }
+
+      totalScanned += members.length;
+
       for (const m of members) {
         const mEmail = (m.email ?? "").trim().toLowerCase();
         if (mEmail === email) {
-          console.log("[provision] Whop active member found:", email);
+          console.log(`[provision] Whop match found on page ${page} (scanned ${totalScanned}):`, email);
           return true;
         }
       }
+
+      if (!data.pagination?.next_page) {
+        console.log(`[provision] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${email}`);
+        break;
+      }
+
+      page++;
     }
-    console.log("[provision] No Whop match for:", email);
   } catch (err) {
     console.error("[provision] Whop fetch error:", err);
   }

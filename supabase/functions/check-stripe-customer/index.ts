@@ -71,37 +71,51 @@ Deno.serve(async (req) => {
       console.error("[check-membership] allowed_signups check error:", e);
     }
 
-    // --- 3. Fallback: Check Whop (direct member search by email) ---
+    // --- 3. Fallback: Check Whop (paginate ALL active members) ---
     const whopKey = Deno.env.get("WHOP_API_KEY");
     if (whopKey) {
       try {
-        // Use /api/v2/members?query={email} for direct email search
-        // This endpoint only returns active members, no pagination needed
-        const whopUrl = `https://api.whop.com/api/v2/members?query=${encodeURIComponent(normalizedEmail)}&per=50`;
-        const whopRes = await fetch(whopUrl, {
-          headers: { Authorization: `Bearer ${whopKey}` },
-        });
+        let page = 1;
+        let totalScanned = 0;
 
-        if (!whopRes.ok) {
-          const text = await whopRes.text();
-          console.error("[check-membership] Whop API error:", whopRes.status, text);
-        } else {
+        while (true) {
+          const whopUrl = `https://api.whop.com/api/v2/members?per=100&page=${page}`;
+          const whopRes = await fetch(whopUrl, {
+            headers: { Authorization: `Bearer ${whopKey}` },
+          });
+
+          if (!whopRes.ok) {
+            console.error("[check-membership] Whop API error on page", page, ":", whopRes.status);
+            break;
+          }
+
           const whopData = await whopRes.json();
           const members = whopData.data ?? [];
 
-          if (Array.isArray(members)) {
-            for (const m of members) {
-              const mEmail = (m.email ?? "").trim().toLowerCase();
-              if (mEmail === normalizedEmail) {
-                console.log("[check-membership] Whop active member found:", normalizedEmail);
-                return new Response(
-                  JSON.stringify({ found: true, status: "active" }),
-                  { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-                );
-              }
+          if (!Array.isArray(members) || members.length === 0) {
+            console.log(`[check-membership] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${normalizedEmail}`);
+            break;
+          }
+
+          totalScanned += members.length;
+
+          for (const m of members) {
+            const mEmail = (m.email ?? "").trim().toLowerCase();
+            if (mEmail === normalizedEmail) {
+              console.log(`[check-membership] Whop match found on page ${page} (scanned ${totalScanned}):`, normalizedEmail);
+              return new Response(
+                JSON.stringify({ found: true, status: "active" }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
             }
           }
-          console.log("[check-membership] No Whop match for:", normalizedEmail);
+
+          if (!whopData.pagination?.next_page) {
+            console.log(`[check-membership] Whop scan complete. Pages: ${page}, Total: ${totalScanned}, no match for: ${normalizedEmail}`);
+            break;
+          }
+
+          page++;
         }
       } catch (whopErr) {
         console.error("[check-membership] Whop fetch error:", whopErr);
