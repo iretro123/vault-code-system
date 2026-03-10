@@ -180,20 +180,25 @@ const AcademyTrade = () => {
       risk_reward: isWin ? 1 : isLoss ? -1 : 0,
       followed_rules: data.planFollowed === "Yes",
       emotional_state: 5,
-      notes: `${data.symbol} ${data.direction} | Target: ${data.targetHit} | Stop: ${data.stopRespected}`,
+      notes: `${data.symbol} ${data.direction} | Setup: ${data.setupUsed || "—"} | Target: ${data.targetHit} | Stop: ${data.stopRespected} | Oversized: ${data.oversized}${data.note ? " | " + data.note : ""}`,
+      symbol: data.symbol.toUpperCase(),
+      outcome: isWin ? "WIN" : isLoss ? "LOSS" : "BREAKEVEN",
+      trade_date: format(data.date, "yyyy-MM-dd"),
     };
 
     const { error } = await addEntry(newEntry);
-    if (!error) {
-      // Update the profile balance with the new P/L
-      if (startingBalance !== null && user) {
-        const newBalance = (trackedBalance ?? startingBalance) + (isWin ? Math.abs(pnlNum) : isLoss ? -Math.abs(pnlNum) : 0);
-        await supabase.from("profiles").update({ account_balance: newBalance }).eq("user_id", user.id);
-      }
-      setShowLogTrade(false);
-      setTodayStatus("in_progress");
-      setTimeout(() => setShowCheckIn(true), 400);
+    if (error) {
+      // Don't close sheet — form stays filled for retry
+      throw error;
     }
+    // Update the profile balance with the new P/L
+    if (startingBalance !== null && user) {
+      const newBalance = (trackedBalance ?? startingBalance) + (isWin ? Math.abs(pnlNum) : isLoss ? -Math.abs(pnlNum) : 0);
+      await supabase.from("profiles").update({ account_balance: newBalance }).eq("user_id", user.id);
+    }
+    setShowLogTrade(false);
+    setTodayStatus("in_progress");
+    setTimeout(() => setShowCheckIn(true), 400);
   };
 
   const handleCheckInComplete = () => {
