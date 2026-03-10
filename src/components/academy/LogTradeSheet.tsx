@@ -92,7 +92,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit }: LogTradeSheetPro
     const exit = parseFloat(exitPrice);
     const size = parseFloat(positionSize);
     if (!isNaN(entry) && !isNaN(exit) && !isNaN(size) && entry > 0) {
-      const raw = (exit - entry) * size;
+      const raw = (exit - entry) * size * 100;
       return raw.toFixed(2);
     }
     return "";
