@@ -879,29 +879,4 @@ function WeeklyReviewCard({ hasData }: { hasData: boolean }) {
   );
 }
 
-function WeeklyBalanceCheckCard({ value, onChange, onSave, onSkip, saved }: {
-  value: string; onChange: (v: string) => void; onSave: () => void; onSkip: () => void; saved: boolean;
-}) {
-  if (saved) {
-    return (
-      <div className="vault-glass-card p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Weekly Balance Check</h3>
-        <p className="text-sm text-emerald-400">Balance updated. Vault is now aligned with your account for this week.</p>
-      </div>
-    );
-  }
-  return (
-    <div className="vault-glass-card p-5 space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">Weekly Balance Check</h3>
-      <p className="text-sm text-muted-foreground">What does your broker balance show right now?</p>
-      <Input type="number" placeholder="$____" className="max-w-[200px]" value={value} onChange={(e) => onChange(e.target.value)} />
-      <p className="text-xs text-muted-foreground">Optional — helps keep your tracked balance accurate.</p>
-      <div className="flex gap-2">
-        <Button size="sm" onClick={onSave} disabled={!value || parseFloat(value) <= 0}>Save Balance</Button>
-        <Button size="sm" variant="outline" onClick={onSkip}>Skip for now</Button>
-      </div>
-    </div>
-  );
-}
-
 export default AcademyTrade;
