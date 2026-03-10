@@ -560,7 +560,7 @@ function TrackedBalanceCard({
 /* ── 4. AI Focus ── */
 function AIFocusCard({ hasData }: { hasData: boolean }) {
   return (
-    <div className="vault-glass-card p-6 space-y-3">
+    <div id="ai-focus-card" className="vault-glass-card p-6 space-y-3">
       <div className="flex items-center gap-2">
         <Brain className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground">AI Focus for Next Trade</h3>
