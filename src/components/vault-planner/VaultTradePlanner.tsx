@@ -20,6 +20,7 @@ import {
   Lock, Unlock, CheckCircle2, XCircle, Copy, RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 type UIState = "input" | "loading" | "results";
 const STORAGE_KEY = "vault_trade_planner_inputs";
@@ -179,6 +180,7 @@ function GuidanceChip({ label, onClick }: { label: string; onClick: () => void }
 /* ─── Main Component ─── */
 
 export function VaultTradePlanner() {
+  const { user } = useAuth();
   const saved = loadSaved();
 
   const [tier, setTier] = useState<AccountTierLabel>("Small");
@@ -196,6 +198,31 @@ export function VaultTradePlanner() {
   const [uiState, setUIState] = useState<UIState>("input");
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Auto-fill account balance from profile + trade P/L
+  useEffect(() => {
+    if (saved.accountSize || !user) return;
+    (async () => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("account_balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!profile || profile.account_balance <= 0) return;
+
+      const { data: trades } = await (supabase.from("trade_entries" as any) as any)
+        .select("risk_reward, risk_used")
+        .eq("user_id", user.id);
+
+      const totalPnl = (trades || []).reduce(
+        (sum: number, t: any) => sum + ((t.risk_reward ?? 0) * (t.risk_used ?? 0)), 0
+      );
+      const liveBalance = Math.round(profile.account_balance + totalPnl);
+      if (liveBalance > 0) {
+        setAccountSize(liveBalance.toString());
+      }
+    })();
+  }, [user]);
 
   // Auto-detect tier (always active when account size exists)
   useEffect(() => {
