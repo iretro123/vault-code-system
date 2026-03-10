@@ -121,7 +121,20 @@ export function useUnreadCounts(activeRoomSlug: string | null, userId: string | 
     if (activeRoomSlug !== null) {
       _activeSlugRef.current = activeRoomSlug;
     }
+    return () => {
+      // Only clear if THIS instance set it (community page unmounting)
+      if (activeRoomSlug !== null) {
+        _activeSlugRef.current = null;
+      }
+    };
   }, [activeRoomSlug]);
+
+  // Re-fetch the active room's count when entering community (handles stale data)
+  useEffect(() => {
+    if (activeRoomSlug && userId) {
+      _refreshRoom(activeRoomSlug, userId);
+    }
+  }, [activeRoomSlug, userId]);
 
   // Init fetch + realtime — only once per userId
   useEffect(() => {
