@@ -86,16 +86,18 @@ export function useTradeLog() {
       if (error) throw error;
 
       setEntries((prev) => [data, ...prev]);
+      writeCache([data, ...entries]);
       toast({
         title: "Trade logged",
         description: "Your trade has been recorded.",
       });
       return { error: null, data };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding trade entry:", error);
+      const msg = error?.message || error?.details || "Please try again.";
       toast({
         title: "Error logging trade",
-        description: "Please try again.",
+        description: msg,
         variant: "destructive",
       });
       return { error };

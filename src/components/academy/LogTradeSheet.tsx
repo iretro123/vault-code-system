@@ -38,7 +38,7 @@ export interface TradeFormData {
 interface LogTradeSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: TradeFormData) => void;
+  onSubmit: (data: TradeFormData) => Promise<void>;
 }
 
 function SegmentedToggle({
@@ -100,39 +100,46 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit }: LogTradeSheetPro
 
   const pnlValue = pnlOverride || calculatedPnl;
 
-  const handleSubmit = () => {
-    if (!symbol.trim()) return;
-    onSubmit({
-      symbol: symbol.toUpperCase(),
-      direction,
-      date,
-      entryPrice,
-      exitPrice,
-      positionSize,
-      resultType,
-      pnl: pnlValue,
-      targetHit,
-      stopRespected,
-      planFollowed,
-      oversized,
-      setupUsed,
-      note,
-    });
-    // Reset
-    setSymbol("");
-    setDirection("Calls");
-    setDate(new Date());
-    setEntryPrice("");
-    setExitPrice("");
-    setPositionSize("");
-    setResultType("Win");
-    setPnlOverride("");
-    setTargetHit("Yes");
-    setStopRespected("Yes");
-    setPlanFollowed("Yes");
-    setOversized("No");
-    setSetupUsed("");
-    setNote("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!symbol.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await onSubmit({
+        symbol: symbol.toUpperCase(),
+        direction,
+        date,
+        entryPrice,
+        exitPrice,
+        positionSize,
+        resultType,
+        pnl: pnlValue,
+        targetHit,
+        stopRespected,
+        planFollowed,
+        oversized,
+        setupUsed,
+        note,
+      });
+      // Only reset on success (parent closes sheet on success)
+      setSymbol("");
+      setDirection("Calls");
+      setDate(new Date());
+      setEntryPrice("");
+      setExitPrice("");
+      setPositionSize("");
+      setResultType("Win");
+      setPnlOverride("");
+      setTargetHit("Yes");
+      setStopRespected("Yes");
+      setPlanFollowed("Yes");
+      setOversized("No");
+      setSetupUsed("");
+      setNote("");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -269,8 +276,8 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit }: LogTradeSheetPro
 
         {/* Sticky footer */}
         <div className="px-6 py-4 border-t border-border flex gap-3 shrink-0">
-          <Button className="flex-1" onClick={handleSubmit} disabled={!symbol.trim()}>
-            Save Trade & Generate Review
+          <Button className="flex-1" onClick={handleSubmit} disabled={!symbol.trim() || submitting}>
+            {submitting ? "Saving…" : "Save Trade & Generate Review"}
           </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel

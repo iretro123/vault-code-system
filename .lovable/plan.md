@@ -1,46 +1,37 @@
 
-Goal: Fix the “Error logging trade” issue in /academy/trade and make trade logs reliably persist + sync balance.
 
-1) Confirmed root causes from current code + DB
-- `trade_entries` has restrictive constraints that clash with current UI payload:
-  - `risk_reward >= 0` (but code sends `-1` for losses)
-  - `risk_used <= 100` (but code uses absolute P/L, often >100)
-- A blocking DB trigger exists on `trade_entries`:
-  - `enforce_trade_permission_trigger` calls `get_vault_execution_permission(...)`
-  - This can reject journal-style logs when Vault gate conditions aren’t open.
-- UX issue: `LogTradeSheet` resets immediately before async submit succeeds, so users lose input even when insert fails.
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-2) Database fixes (migration)
-- Remove Vault execution enforcement from `trade_entries` inserts (journal logging should not be blocked by execution gate):
-  - `DROP TRIGGER IF EXISTS enforce_trade_permission_trigger ON public.trade_entries;`
-  - keep function only if referenced elsewhere, otherwise drop it too.
-- Relax `trade_entries` constraints to match actual app behavior:
-  - Drop current `trade_entries_risk_reward_check` and recreate to allow negative/positive values.
-  - Drop current `trade_entries_risk_used_check` and recreate as non-negative only (remove upper cap 100).
-- Keep RLS as-is (`auth.uid() = user_id`) so users still only write/read their own logs.
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-3) Frontend payload + sync corrections
-- `src/pages/academy/AcademyTrade.tsx`
-  - Keep using result type to set sign, but store complete trade metadata in DB insert:
-    - `trade_date` from selected date
-    - `symbol`, `outcome` (`WIN/LOSS/BREAKEVEN`), `instrument_type` (options/futures default logic)
-    - richer `notes` including setup + accountability fields
-  - Fix balance/stat math so `followed_rules` does not invert P/L sign.
-- `src/hooks/useTradeLog.ts`
-  - Remove unnecessary `as any` now that `trade_entries` exists in generated types.
-  - Return surfaced DB error message in toast (instead of generic “Please try again”) for actionable debugging.
-- `src/components/academy/LogTradeSheet.tsx`
-  - Make submit flow await parent result and only reset/close on success.
-  - Keep form filled if save fails.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-4) Validation and backward compatibility
-- Keep existing rows valid after constraint change (no destructive schema changes).
-- No auth flow changes needed; existing authenticated/RLS model remains correct.
-- Verify CSV export and weekly cards still compute correctly after sign logic fix.
+### Solution
 
-5) Verification checklist after implementation
-- Log a Win, Loss, and Breakeven from /academy/trade.
-- Confirm each insert appears in `trade_entries` immediately.
-- Confirm profile `account_balance` updates correctly for all outcomes.
-- Confirm failed insert (forced invalid case) preserves form inputs and shows precise error.
-- Confirm My Trades history + CSV export still work.
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
+
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+
