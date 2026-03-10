@@ -3,7 +3,7 @@ import { TrendingUp, MessageSquare, Sparkles, Wrench, Video } from "lucide-react
 
 const ITEMS = [
   { icon: TrendingUp, label: "Trade", route: "/academy/trade" },
-  { icon: MessageSquare, label: "Trade Floor", route: "/academy/community" },
+  { icon: MessageSquare, label: "Chat", route: "/academy/community" },
   { icon: Sparkles, label: "Ask Coach", action: "coach" },
   { icon: Wrench, label: "Toolkit", route: "/academy/resources" },
   { icon: Video, label: "Live / Replays", route: "/academy/live" },

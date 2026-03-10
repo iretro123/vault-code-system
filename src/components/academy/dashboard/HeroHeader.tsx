@@ -21,7 +21,7 @@ interface Props {
 
 const CREATE_ITEMS = [
   { icon: TrendingUp, label: "Log Trade", route: "/academy/trade" },
-  { icon: MessageSquare, label: "Trade Floor", route: "/academy/community" },
+  { icon: MessageSquare, label: "Chat", route: "/academy/community" },
   { icon: Sparkles, label: "Ask Coach", action: "coach" },
   { icon: BookOpen, label: "Lessons", route: "/academy/learn" },
   { icon: Video, label: "Live", route: "/academy/live" },
