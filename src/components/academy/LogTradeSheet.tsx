@@ -92,7 +92,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit }: LogTradeSheetPro
     const exit = parseFloat(exitPrice);
     const size = parseFloat(positionSize);
     if (!isNaN(entry) && !isNaN(exit) && !isNaN(size) && entry > 0) {
-      const raw = (exit - entry) * size;
+      const raw = (exit - entry) * size * 100;
       return raw.toFixed(2);
     }
     return "";
@@ -216,7 +216,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit }: LogTradeSheetPro
                 onChange={(e) => setPnlOverride(e.target.value)}
               />
               {calculatedPnl && !pnlOverride && (
-                <p className="text-[10px] text-muted-foreground mt-1">Auto-calculated from entry/exit × size</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Auto-calculated from (exit − entry) × contracts × 100</p>
               )}
             </Field>
 
