@@ -113,6 +113,7 @@ export type Database = {
           parent_message_id: string | null
           reply_count: number
           room_slug: string
+          seq: number
           user_id: string
           user_name: string
           user_role: string
@@ -131,6 +132,7 @@ export type Database = {
           parent_message_id?: string | null
           reply_count?: number
           room_slug: string
+          seq?: number
           user_id: string
           user_name?: string
           user_role?: string
@@ -149,6 +151,7 @@ export type Database = {
           parent_message_id?: string | null
           reply_count?: number
           room_slug?: string
+          seq?: number
           user_id?: string
           user_name?: string
           user_role?: string
