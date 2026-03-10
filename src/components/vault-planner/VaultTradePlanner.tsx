@@ -199,6 +199,31 @@ export function VaultTradePlanner() {
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Auto-fill account balance from profile + trade P/L
+  useEffect(() => {
+    if (saved.accountSize || !user) return;
+    (async () => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("account_balance")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!profile || profile.account_balance <= 0) return;
+
+      const { data: trades } = await (supabase.from("trade_entries" as any) as any)
+        .select("risk_reward, risk_used")
+        .eq("user_id", user.id);
+
+      const totalPnl = (trades || []).reduce(
+        (sum: number, t: any) => sum + ((t.risk_reward ?? 0) * (t.risk_used ?? 0)), 0
+      );
+      const liveBalance = Math.round(profile.account_balance + totalPnl);
+      if (liveBalance > 0) {
+        setAccountSize(liveBalance.toString());
+      }
+    })();
+  }, [user]);
+
   // Auto-detect tier (always active when account size exists)
   useEffect(() => {
     const size = parseFloat(accountSize);
