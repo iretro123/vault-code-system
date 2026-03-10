@@ -58,8 +58,8 @@ const AcademyCommunity = () => {
             />
           </div>
 
-          <div className="shrink-0 flex justify-center py-1 px-4">
-            <div className="flex w-full md:inline-flex md:w-auto items-center gap-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] p-0.5">
+          <div className="shrink-0 px-4 pt-1">
+            <div className="flex w-full items-center justify-center gap-1 border-b border-white/[0.06]">
               {TABS.map((tab) => {
                 const count = counts[tab.roomSlug] || 0;
                 const badge = formatBadge(count);
@@ -68,10 +68,10 @@ const AcademyCommunity = () => {
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
                     className={cn(
-                      "relative flex-1 md:flex-none px-3 md:px-5 py-1.5 text-[11px] md:text-[12px] font-semibold rounded-full transition-all duration-100",
+                      "relative flex-1 md:flex-none px-4 md:px-6 pb-2.5 pt-1.5 text-[12px] font-semibold tracking-wide transition-colors duration-150",
                       activeTab === tab.key
-                        ? "text-foreground bg-white/[0.1] border border-white/[0.08]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/[0.06] border border-transparent"
+                        ? "text-foreground after:absolute after:bottom-0 after:inset-x-3 after:h-[2px] after:rounded-full after:bg-primary after:shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                        : "text-muted-foreground hover:text-foreground/80"
                     )}
                   >
                     {tab.label}
