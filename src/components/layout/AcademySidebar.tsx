@@ -229,7 +229,17 @@ export function AcademySidebar() {
                       >
                         <span className="relative flex items-center gap-2.5">
                           <Icon className={`h-4 w-4 shrink-0${isLive ? ' text-[hsl(217,92%,68%)]' : ''}`} style={{ strokeWidth: active ? 2.2 : 1.8 }} />
+                          {collapsed && label === "Community" && communityBadge && (
+                            <span className="absolute -top-1 -right-1.5 flex items-center justify-center min-w-[15px] h-[15px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-[#0B0F14]">
+                              {communityBadge}
+                            </span>
+                          )}
                           {!collapsed && <span className="text-sm">{label}</span>}
+                          {!collapsed && label === "Community" && communityBadge && (
+                            <span className="ml-auto inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-1 ring-red-500/20">
+                              {communityBadge}
+                            </span>
+                          )}
                           {!collapsed && hiddenForMembers && (
                             <EyeOff className="h-3 w-3 text-muted-foreground/40 ml-auto" />
                           )}
