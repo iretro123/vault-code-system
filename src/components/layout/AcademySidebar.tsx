@@ -78,6 +78,9 @@ export function AcademySidebar() {
   const { isPageEnabled } = useFeatureFlags();
   const { roleName, isOperator } = useAcademyPermissions();
   const isAdmin = roleName === "CEO" || isOperator;
+  const userId = profile?.user_id || null;
+  const { totalUnread } = useUnreadCounts(null, userId);
+  const communityBadge = formatBadge(totalUnread);
 
   const displayName = profile?.display_name || "Trader";
   const avatarUrl = (profile as any)?.avatar_url || null;
