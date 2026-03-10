@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download, ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield, Sparkles } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -309,7 +310,7 @@ const AcademyTrade = () => {
           onResetInputChange={setResetInput}
           onConfirmReset={handleResetBalance}
         />
-        <AIFocusCard hasData={hasData} />
+        <AIFocusCard entries={entries} />
         <RecentTradesSection entries={entries} onExportCSV={exportCSV} />
         <WeeklyReviewCard hasData={hasData} />
         {!balanceCheckDismissed && hasData && (
@@ -557,34 +558,229 @@ function TrackedBalanceCard({
   );
 }
 
-/* ── 4. AI Focus ── */
-function AIFocusCard({ hasData }: { hasData: boolean }) {
-  return (
-    <div id="ai-focus-card" className="vault-glass-card p-6 space-y-3">
-      <div className="flex items-center gap-2">
-        <Brain className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">AI Focus for Next Trade</h3>
-      </div>
-      {hasData ? (
-        <>
-          <div className="space-y-2">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Top Mistake</p>
-              <p className="text-sm text-foreground mt-0.5">Entering before confirmation candle</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground">Focus Rule</p>
-              <p className="text-sm text-foreground mt-0.5">Wait for candle close before entry on A+ setups.</p>
-            </div>
+/* ── 4. AI Focus (Real AI) ── */
+const AI_FOCUS_CACHE = "va_cache_ai_focus";
+
+interface AIFocusResult {
+  topMistake: string;
+  focusRule: string;
+  pattern: string;
+  encouragement: string;
+  date: string;
+}
+
+function AIFocusCard({ entries }: { entries: { id: string }[] }) {
+  const [result, setResult] = useState<AIFocusResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const tradeCount = entries.length;
+  const isLocked = tradeCount < 3;
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const fetchAnalysis = useCallback(async (force = false) => {
+    // Check cache
+    if (!force) {
+      try {
+        const cached = localStorage.getItem(AI_FOCUS_CACHE);
+        if (cached) {
+          const parsed: AIFocusResult = JSON.parse(cached);
+          if (parsed.date === todayStr) {
+            setResult(parsed);
+            return;
+          }
+        }
+      } catch {}
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trade-focus`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body.error || "Analysis failed");
+      }
+
+      const data = await resp.json();
+      const cached: AIFocusResult = { ...data, date: todayStr };
+      setResult(cached);
+      try {
+        localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached));
+      } catch {}
+    } catch (e: any) {
+      setError(e.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }, [todayStr]);
+
+  useEffect(() => {
+    if (!isLocked) {
+      fetchAnalysis();
+    }
+  }, [isLocked, fetchAnalysis]);
+
+  // Locked state
+  if (isLocked) {
+    return (
+      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-6 space-y-4">
+        {/* Scan-line effect */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)",
+            backgroundSize: "100% 4px",
+            animation: "scanMove 3s linear infinite",
+          }}
+        />
+        <style>{`@keyframes scanMove { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }`}</style>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Brain className="h-5 w-5 text-primary/40" />
+            <Lock className="h-2.5 w-2.5 text-muted-foreground absolute -bottom-0.5 -right-0.5" />
           </div>
-          <p className="text-xs text-muted-foreground">Seen in 3 of your last 7 trades</p>
-          <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-primary px-0 h-auto hover:bg-transparent">
-            <Eye className="h-3 w-3" /> View reviewed trades
-          </Button>
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">Log at least 3 trades to unlock AI insights.</p>
-      )}
+          <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+          <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">LOCKED</span>
+        </div>
+
+        {/* Progress indicator */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Trades scanned</span>
+            <span className="text-xs font-mono text-primary">{tradeCount}/3</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${(tradeCount / 3) * 100}%`,
+                background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))",
+              }}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Log {3 - tradeCount} more trade{3 - tradeCount > 1 ? "s" : ""} to activate real-time AI analysis of your trading patterns.
+        </p>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 space-y-4">
+        {/* Animated border glow */}
+        <div className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{
+            background: "linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent 40%, hsl(var(--primary) / 0.08) 60%, transparent)",
+            animation: "glowPulse 2s ease-in-out infinite",
+          }}
+        />
+        <style>{`@keyframes glowPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }`}</style>
+
+        <div className="flex items-center gap-2">
+          <Brain className="h-5 w-5 text-primary animate-pulse" />
+          <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+          <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-primary/60 animate-pulse">ANALYZING...</span>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div id="ai-focus-card" className="rounded-2xl border border-destructive/20 bg-card p-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <Brain className="h-5 w-5 text-destructive" />
+          <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fetchAnalysis(true)}>
+          <RefreshCw className="h-3.5 w-3.5" /> Retry Analysis
+        </Button>
+      </div>
+    );
+  }
+
+  // Result state
+  if (!result) return null;
+
+  const sections = [
+    { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, color: "text-primary" },
+    { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, color: "text-amber-400" },
+    { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, color: "text-emerald-400" },
+  ];
+
+  return (
+    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 space-y-4">
+      {/* Subtle animated border */}
+      <div className="absolute inset-0 rounded-2xl pointer-events-none"
+        style={{
+          background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.06) 25%, transparent 50%, hsl(var(--primary) / 0.04) 75%, transparent 100%)",
+          animation: "borderSpin 8s linear infinite",
+        }}
+      />
+      <style>{`@keyframes borderSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+
+      {/* Header */}
+      <div className="relative flex items-center gap-2">
+        <div className="relative">
+          <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }} />
+          <Sparkles className="h-2.5 w-2.5 text-primary/60 absolute -top-1 -right-1" />
+        </div>
+        <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+        <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-primary/60">SYSTEM ACTIVE</span>
+      </div>
+
+      {/* Analysis sections */}
+      <div className="relative space-y-3">
+        {sections.map((s) => (
+          <div key={s.label} className="rounded-xl bg-muted/30 border border-border/50 p-3 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <s.icon className={`h-3 w-3 ${s.color}`} />
+              <span className={`text-[10px] font-mono uppercase tracking-widest ${s.color}`}>{s.label}</span>
+            </div>
+            <p className="text-sm text-foreground">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Encouragement */}
+      <div className="flex items-start gap-2 pt-2 border-t border-border/30">
+        <Zap className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" style={{ filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.3))" }} />
+        <p className="text-xs text-muted-foreground italic">{result.encouragement}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-primary px-0 h-auto hover:bg-transparent" onClick={() => fetchAnalysis(true)}>
+          <RefreshCw className="h-3 w-3" /> Refresh Analysis
+        </Button>
+      </div>
     </div>
   );
 }
