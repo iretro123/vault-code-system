@@ -131,15 +131,6 @@ const AcademyTrade = () => {
   const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
   const handleNoTradeDayComplete = () => { setShowNoTradeDay(false); setNoTradeDay(true); setTodayStatus("complete"); toast({ title: "No-trade day logged" }); };
 
-  const handleBalanceSave = async () => {
-    const val = parseFloat(brokerBalance);
-    if (!val || val <= 0 || !user) return;
-    try {
-      await supabase.from("profiles").update({ account_balance: val }).eq("user_id", user.id);
-      setBalanceSaved(true); setStartingBalance(val);
-      toast({ title: "Balance updated" });
-    } catch { toast({ title: "Error updating balance", variant: "destructive" }); }
-  };
 
   if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="My Trades" />;
 
