@@ -327,6 +327,27 @@ export type Database = {
         }
         Relationships: []
       }
+      academy_room_reads: {
+        Row: {
+          last_read_seq: number
+          room_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_read_seq?: number
+          room_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_read_seq?: number
+          room_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       academy_user_roles: {
         Row: {
           assigned_at: string
@@ -1972,6 +1993,7 @@ export type Database = {
           notify_live_events: boolean
           notify_new_modules: boolean
           session_autopause_minutes: number
+          sounds_enabled: boolean
           trading_style: string | null
           updated_at: string
           user_id: string
@@ -1984,6 +2006,7 @@ export type Database = {
           notify_live_events?: boolean
           notify_new_modules?: boolean
           session_autopause_minutes?: number
+          sounds_enabled?: boolean
           trading_style?: string | null
           updated_at?: string
           user_id: string
@@ -1996,6 +2019,7 @@ export type Database = {
           notify_live_events?: boolean
           notify_new_modules?: boolean
           session_autopause_minutes?: number
+          sounds_enabled?: boolean
           trading_style?: string | null
           updated_at?: string
           user_id?: string
