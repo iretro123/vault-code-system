@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
@@ -27,6 +27,8 @@ export interface TradeEntry {
   emotional_state: number;
   notes: string | null;
   created_at: string;
+  symbol?: string;
+  outcome?: string;
 }
 
 export interface NewTradeEntry {
@@ -35,6 +37,29 @@ export interface NewTradeEntry {
   followed_rules: boolean;
   emotional_state: number;
   notes?: string;
+  symbol?: string;
+  outcome?: string;
+  trade_date?: string;
+}
+
+export interface EquityPoint {
+  date: string;
+  balance: number;
+}
+
+export interface SymbolStat {
+  symbol: string;
+  trades: number;
+  wins: number;
+  winRate: number;
+  totalPnl: number;
+}
+
+export interface DayStat {
+  day: string;
+  trades: number;
+  wins: number;
+  winRate: number;
 }
 
 export function useTradeLog() {
@@ -70,6 +95,87 @@ export function useTradeLog() {
       setLoading(false);
     }
   }
+
+  // ── Computed metrics ──
+
+  // Fix: P/L = risk_reward * risk_used (risk_reward is +1/-1/0, risk_used is absolute $)
+  const computePnl = (e: TradeEntry) => e.risk_reward * e.risk_used;
+
+  const allTimeWinRate = useMemo(() => {
+    if (entries.length === 0) return 0;
+    const wins = entries.filter((e) => e.risk_reward > 0).length;
+    return Math.round((wins / entries.length) * 100);
+  }, [entries]);
+
+  const complianceRate = useMemo(() => {
+    if (entries.length === 0) return 0;
+    const compliant = entries.filter((e) => e.followed_rules).length;
+    return Math.round((compliant / entries.length) * 100);
+  }, [entries]);
+
+  const currentStreak = useMemo(() => {
+    // Consecutive trades (newest first) where followed_rules is true
+    let streak = 0;
+    for (const e of entries) {
+      if (e.followed_rules) streak++;
+      else break;
+    }
+    return streak;
+  }, [entries]);
+
+  const todayPnl = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return entries
+      .filter((e) => e.trade_date === todayStr)
+      .reduce((sum, e) => sum + computePnl(e), 0);
+  }, [entries]);
+
+  const totalPnl = useMemo(() => {
+    return entries.reduce((sum, e) => sum + computePnl(e), 0);
+  }, [entries]);
+
+  // Equity curve: sorted oldest-first, running balance
+  const equityCurve = useMemo((): EquityPoint[] => {
+    if (entries.length === 0) return [];
+    const sorted = [...entries].sort((a, b) => a.trade_date.localeCompare(b.trade_date) || a.created_at.localeCompare(b.created_at));
+    let running = 0;
+    return sorted.map((e) => {
+      running += computePnl(e);
+      return { date: e.trade_date, balance: running };
+    });
+  }, [entries]);
+
+  // By symbol breakdown
+  const symbolStats = useMemo((): SymbolStat[] => {
+    const map = new Map<string, { trades: number; wins: number; totalPnl: number }>();
+    for (const e of entries) {
+      const sym = (e.symbol || e.notes?.split(" ")[0] || "Unknown").toUpperCase();
+      const existing = map.get(sym) || { trades: 0, wins: 0, totalPnl: 0 };
+      existing.trades++;
+      if (e.risk_reward > 0) existing.wins++;
+      existing.totalPnl += computePnl(e);
+      map.set(sym, existing);
+    }
+    return Array.from(map.entries())
+      .map(([symbol, s]) => ({ symbol, ...s, winRate: Math.round((s.wins / s.trades) * 100) }))
+      .sort((a, b) => b.trades - a.trades);
+  }, [entries]);
+
+  // By day of week
+  const dayStats = useMemo((): DayStat[] => {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const map = new Map<number, { trades: number; wins: number }>();
+    for (const e of entries) {
+      const d = new Date(e.trade_date + "T12:00:00").getDay();
+      const existing = map.get(d) || { trades: 0, wins: 0 };
+      existing.trades++;
+      if (e.risk_reward > 0) existing.wins++;
+      map.set(d, existing);
+    }
+    return Array.from(map.entries())
+      .map(([d, s]) => ({ day: days[d], ...s, winRate: s.trades > 0 ? Math.round((s.wins / s.trades) * 100) : 0 }))
+      .sort((a, b) => days.indexOf(a.day) - days.indexOf(b.day));
+  }, [entries]);
 
   async function addEntry(entry: NewTradeEntry) {
     if (!user) return { error: new Error("Not authenticated") };
@@ -109,9 +215,9 @@ export function useTradeLog() {
 
     const headers = ["Date", "Symbol", "P/L ($)", "Win/Loss", "Plan Followed", "Emotional State", "Notes"];
     const rows = entries.map((e) => {
-      const pnl = e.risk_reward * e.risk_used;
+      const pnl = computePnl(e);
       const outcome = e.risk_reward > 0 ? "Win" : e.risk_reward < 0 ? "Loss" : "Breakeven";
-      const ticker = e.notes?.split(" ")[0] || "";
+      const ticker = e.symbol || e.notes?.split(" ")[0] || "";
       return [
         e.trade_date,
         ticker,
@@ -139,5 +245,14 @@ export function useTradeLog() {
     addEntry,
     exportCSV,
     refetch: fetchEntries,
+    // New computed metrics
+    allTimeWinRate,
+    complianceRate,
+    currentStreak,
+    todayPnl,
+    totalPnl,
+    equityCurve,
+    symbolStats,
+    dayStats,
   };
 }
