@@ -6,6 +6,7 @@ import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 const TOGGLES = [
   { key: "notifications_enabled", label: "Enable Notifications", desc: "Master toggle for all alerts." },
+  { key: "sounds_enabled", label: "Message Sounds", desc: "Play a chime for new community messages." },
   { key: "notify_announcements", label: "Announcements", desc: "Important updates from the team." },
   { key: "notify_new_modules", label: "New Module Drops", desc: "When new courses or lessons are added." },
   { key: "notify_coach_reply", label: "Coach Replies", desc: "When a coach responds to your question." },
@@ -18,6 +19,7 @@ export function SettingsNotifications() {
   const { prefs, loading, updatePrefs } = useUserPreferences();
   const [values, setValues] = useState<Record<ToggleKey, boolean>>({
     notifications_enabled: true,
+    sounds_enabled: true,
     notify_announcements: true,
     notify_new_modules: true,
     notify_coach_reply: true,
@@ -28,6 +30,7 @@ export function SettingsNotifications() {
     if (prefs) {
       setValues({
         notifications_enabled: prefs.notifications_enabled,
+        sounds_enabled: prefs.sounds_enabled,
         notify_announcements: prefs.notify_announcements,
         notify_new_modules: prefs.notify_new_modules,
         notify_coach_reply: prefs.notify_coach_reply,
