@@ -38,7 +38,7 @@ export interface TradeFormData {
 interface LogTradeSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: TradeFormData) => void;
+  onSubmit: (data: TradeFormData) => Promise<void>;
 }
 
 function SegmentedToggle({
