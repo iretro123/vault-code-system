@@ -53,9 +53,6 @@ const AcademyTrade = () => {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
   const [noTradeDay, setNoTradeDay] = useState(false);
-  const [brokerBalance, setBrokerBalance] = useState("");
-  const [balanceSaved, setBalanceSaved] = useState(false);
-  const [balanceCheckDismissed, setBalanceCheckDismissed] = useState(false);
 
   useEffect(() => {
     if (!user) { setBalanceLoading(false); return; }
