@@ -1,37 +1,92 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Elevate "My Trades" to a Premium Trading Command Center
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Current State
+The My Trades page is functional but basic: simple glass cards, flat stat blocks, a working AI focus card, and a linear trade journal list. Balance tracking works but the P/L calculation has a bug (it uses `risk_reward * risk_used * (followed_rules ? 1 : -1)` which incorrectly ties P/L sign to rule-following instead of win/loss). The `trade_entries` table already has `symbol`, `outcome`, `instrument_type`, `risk_used` (stores absolute P/L), and `risk_reward` (stores 1/-1/0 for win/loss/breakeven).
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### What This Overhaul Delivers
 
-### Solution
+**1. Fix the Balance Tracking Math (Critical)**
+- Current `trackedBalance` formula is wrong: `risk_reward * risk_used * (followed_rules ? 1 : -1)`. This means a winning trade where rules weren't followed shows as negative P/L.
+- Fix: `risk_reward * risk_used` (risk_reward is already +1/-1/0, risk_used is absolute P/L). Remove `followed_rules` from balance math entirely.
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**2. Premium HUD Strip (Top of Page)**
+Replace the plain "Today's Trade Check" with a cinematic stats HUD across the top:
+- **Account Balance** (large, primary accent, live-updating)
+- **Today's P/L** (green/red with direction arrow)
+- **Win Rate** (all-time + this week)
+- **Total Trades Logged**
+- **Rule Compliance %** (all-time)
+- **Current Streak** (consecutive rule-following days)
+- Styled with glassmorphism, subtle animated gradient borders, tabular-nums typography
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**3. Equity Curve Chart**
+- Add a Recharts `AreaChart` showing cumulative balance over time
+- X-axis: trade dates, Y-axis: running balance
+- Gradient fill (green when above starting balance, red when below)
+- Shows the user's account trajectory at a glance
+- Data derived from entries array sorted by date + starting balance
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**4. Enhanced Trade Journal Cards**
+Each trade card gets richer detail display:
+- Symbol + direction badge (Calls/Puts)
+- Entry/exit prices parsed from notes (already stored there)
+- Setup type badge
+- Accountability indicators (target hit, stop respected, plan followed, oversized) as small icon badges
+- Keep immutable — no delete, no edit
+
+**5. Performance Breakdown Section**
+New card between AI Focus and Trade Journal:
+- **By Symbol**: top traded symbols with win rate per symbol
+- **By Setup**: performance per setup type
+- **By Day of Week**: which days perform best
+- All computed client-side from entries array
+
+**6. AI Focus Card Enhancements**
+- Add a "trades analyzed" count badge
+- Show when analysis was last generated
+- Keep the existing edge function and caching logic
+- Add subtle entry animation when scrolled into view
+
+**7. Streak & Compliance Tracker**
+- Visual streak counter: consecutive days with all trades following rules
+- Compliance ring (circular progress) showing % of trades with rules followed
+- Resets visually (not data) when a violation occurs
+
+### Files to Change
+
+**`src/pages/academy/AcademyTrade.tsx`** — Major rewrite of all sub-components:
+- New `PerformanceHUD` component replacing the simple stat cards
+- New `EquityCurveCard` using Recharts
+- New `PerformanceBreakdownCard` with symbol/setup/day analysis
+- Enhanced `RecentTradesSection` with richer card design
+- Fixed balance math throughout
+- Reordered layout: HUD → Equity Curve → AI Focus → Performance Breakdown → Trade Journal → Weekly Review
+
+**`src/hooks/useTradeLog.ts`** — Add computed metrics:
+- `allTimeWinRate`, `complianceRate`, `currentStreak`, `todayPnl`, `equityCurve` (array of {date, balance} for charting)
+- Keep existing API, extend return value
+
+**`src/components/academy/LogTradeSheet.tsx`** — No structural changes needed, already comprehensive
+
+**No database changes needed** — all new metrics are computed from existing `trade_entries` data.
+
+### Layout Order (Top to Bottom)
+1. PageHeader with "Log Trade" button
+2. Getting Started Banner (only for new users)
+3. **Performance HUD** (balance, today P/L, win rate, trades, compliance, streak)
+4. **Equity Curve** (Recharts area chart)
+5. Today's Trade Check (streamlined)
+6. **AI Mentor Analysis** (existing, enhanced styling)
+7. **Performance Breakdown** (by symbol, setup, day)
+8. **Trade Journal** (enhanced cards)
+9. Weekly Review + Balance Check (existing)
+
+### Design Language
+- Consistent with existing vault-glass-card system
+- Animated gradient borders on key cards (HUD, equity curve, AI focus)
+- Tabular-nums for all numerical values
+- Primary blue accent for positive metrics, emerald for wins, red for losses, amber for breakeven
+- No full-screen blur filters (per performance architecture)
 
