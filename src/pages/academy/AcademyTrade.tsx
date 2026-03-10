@@ -564,6 +564,8 @@ interface AIFocusResult {
   focusRule: string;
   pattern: string;
   encouragement: string;
+  sizingAdvice?: string;
+  nextSessionTip?: string;
   date: string;
 }
 
