@@ -310,7 +310,7 @@ const AcademyTrade = () => {
           onResetInputChange={setResetInput}
           onConfirmReset={handleResetBalance}
         />
-        <AIFocusCard hasData={hasData} />
+        <AIFocusCard entries={entries} />
         <RecentTradesSection entries={entries} onExportCSV={exportCSV} />
         <WeeklyReviewCard hasData={hasData} />
         {!balanceCheckDismissed && hasData && (
