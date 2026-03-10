@@ -455,7 +455,7 @@ function TodayTradeCheckCard({
       {status === "complete" && (
         <>
           <p className="text-xs text-emerald-400/80">{noTradeDay ? "No-trade day tracked. Consistency maintained." : "Today's accountability is complete. Review your feedback below."}</p>
-          <Button size="sm" variant="outline" className="gap-1.5"><Eye className="h-3.5 w-3.5" /> Review today's feedback</Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={onReviewFeedback}><Eye className="h-3.5 w-3.5" /> Review today's feedback</Button>
         </>
       )}
     </div>
