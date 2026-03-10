@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import vaultVLogo from "@/assets/vault-v-logo.png";
+import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useLocation } from "react-router-dom";
 import {
   Home,
