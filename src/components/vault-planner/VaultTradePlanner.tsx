@@ -180,6 +180,7 @@ function GuidanceChip({ label, onClick }: { label: string; onClick: () => void }
 /* ─── Main Component ─── */
 
 export function VaultTradePlanner() {
+  const { user } = useAuth();
   const saved = loadSaved();
 
   const [tier, setTier] = useState<AccountTierLabel>("Small");
