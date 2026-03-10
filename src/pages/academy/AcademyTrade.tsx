@@ -292,6 +292,7 @@ const AcademyTrade = () => {
           onLogTrade={() => setShowLogTrade(true)}
           onNoTradeDay={() => setShowNoTradeDay(true)}
           onCompleteCheckIn={() => setShowCheckIn(true)}
+          onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
         />
         <WeeklyProgressCard
           tradesLogged={weekEntries.length}
