@@ -1,37 +1,88 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Production-Grade Community Notifications
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+This is a full rewrite of the unread system — moving from localStorage timestamps to a DB-backed sequence approach that syncs across devices.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+---
 
-### Solution
+### Database Changes (3 migrations)
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+**1. Add monotonic `seq` to `academy_messages`**
+- Add `seq bigint` column with a Postgres sequence as default
+- Backfill existing rows ordered by `created_at`
+- Create index on `(room_slug, seq)`
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+**2. Create `academy_room_reads` table**
+```
+academy_room_reads(
+  user_id uuid NOT NULL,
+  room_slug text NOT NULL,
+  last_read_seq bigint NOT NULL DEFAULT 0,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, room_slug)
+)
+```
+- RLS: users can SELECT/INSERT/UPDATE own rows only
+- Enable realtime publication for cross-tab sync
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**3. Add `sounds_enabled` boolean to `user_preferences`**
+- Default `true`
+
+---
+
+### Rewritten `useUnreadCounts.ts`
+
+Replace current localStorage-based system entirely:
+
+- **On mount**: Query unread count per room via `academy_messages.seq > academy_room_reads.last_read_seq` (one query per room, or a single RPC)
+- **Realtime subscriptions**:
+  - `academy_messages` INSERT → if `msg.user_id !== currentUser` and `msg.room_slug` is tracked, increment that room's count (unless room is active + user at bottom)
+  - `academy_room_reads` UPDATE (filter by current user) → re-sync counts from the updated seq (handles cross-tab/device sync)
+- **`markRead(slug)`**: Upsert `academy_room_reads` with the latest `seq` from that room. Optimistically set count to 0.
+- **Reconciliation**: On `visibilitychange` (tab focus) and Supabase channel reconnect, re-fetch all counts from DB
+- **Global store**: Keep `useSyncExternalStore` pattern — sidebar and community tabs share the same state
+- **Remove all localStorage unread logic** (`unread_ts_*` keys)
+
+---
+
+### Sound System
+
+- Store a royalty-free notification chime as a static asset (`/public/sounds/notify.mp3`)
+- In the realtime INSERT handler, after incrementing count:
+  - Check `user_preferences.sounds_enabled`
+  - Check `document.hasFocus()` — only play when app is in foreground but room is not active
+  - Use `new Audio()` with `.play().catch()` to respect autoplay policy
+  - If app is in background + browser Notification API is granted, show a web notification instead
+- No sound for own messages (already filtered)
+- No sound if the active room is the one receiving the message and user is at the bottom
+
+---
+
+### Community Page Changes (`AcademyCommunity.tsx`)
+
+- Pass a `isAtBottom` signal to the unread system (from the chat scroll container)
+- On tab switch, call `markRead(newSlug)` which now upserts to DB
+- Badge rendering stays the same (already working)
+
+---
+
+### Sidebar Changes
+
+- No structural changes needed — already consumes `useUnreadCounts(null, userId)` correctly
+
+---
+
+### Files Modified/Created
+
+| File | Action |
+|------|--------|
+| Migration: add `seq` to `academy_messages` | New |
+| Migration: create `academy_room_reads` | New |
+| Migration: add `sounds_enabled` to `user_preferences` | New |
+| `public/sounds/notify.mp3` | New (royalty-free chime) |
+| `src/hooks/useUnreadCounts.ts` | Full rewrite |
+| `src/hooks/useUserPreferences.ts` | Add `sounds_enabled` to interface |
+| `src/pages/academy/AcademyCommunity.tsx` | Minor — remove localStorage read-state logic |
+| `src/components/layout/AcademySidebar.tsx` | No changes needed |
 
