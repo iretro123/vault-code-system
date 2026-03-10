@@ -123,10 +123,6 @@ const AcademyTrade = () => {
     };
     const { error } = await addEntry(newEntry);
     if (error) throw error;
-    if (startingBalance !== null && user) {
-      const newBalance = (trackedBalance ?? startingBalance) + (isWin ? Math.abs(pnlNum) : isLoss ? -Math.abs(pnlNum) : 0);
-      await supabase.from("profiles").update({ account_balance: newBalance }).eq("user_id", user.id);
-    }
     setShowLogTrade(false);
     setTodayStatus("in_progress");
     setTimeout(() => setShowCheckIn(true), 400);
