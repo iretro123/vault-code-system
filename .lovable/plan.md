@@ -1,37 +1,23 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Fix: `profiles_discipline_status_check` constraint blocks trade logging
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### Root Cause
+The `calculate_discipline_metrics` function (called by `on_trade_entry_change` trigger on `trade_entries`) sets `discipline_status = 'locked'` on the profiles table. But the `profiles_discipline_status_check` constraint only allows `'active'` or `'inactive'` -- so the insert into `trade_entries` cascades into a profile update that violates this constraint.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Fix
+One database migration to update the check constraint to also allow `'locked'`:
 
-### Solution
+```sql
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_discipline_status_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_discipline_status_check
+  CHECK (discipline_status = ANY (ARRAY['active', 'inactive', 'locked']));
+```
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+This is the only change needed. No frontend files affected -- the existing code is correct.
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
-
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+### Technical Detail
+- The trigger `on_trade_entry_change` fires AFTER INSERT/UPDATE on `trade_entries`
+- It calls `calculate_discipline_metrics(user_id)` which computes a score and sets `discipline_status` to either `'active'` or `'locked'`
+- The value `'locked'` was never added to the constraint when the function was created, causing every trade log to fail when the score triggers a "locked" state
 
