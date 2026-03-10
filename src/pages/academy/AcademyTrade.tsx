@@ -292,6 +292,7 @@ const AcademyTrade = () => {
           onLogTrade={() => setShowLogTrade(true)}
           onNoTradeDay={() => setShowNoTradeDay(true)}
           onCompleteCheckIn={() => setShowCheckIn(true)}
+          onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
         />
         <WeeklyProgressCard
           tradesLogged={weekEntries.length}
@@ -407,10 +408,10 @@ function GettingStartedBanner({
 
 /* ── 1. Today's Trade Check ── */
 function TodayTradeCheckCard({
-  count, status, noTradeDay, onLogTrade, onNoTradeDay, onCompleteCheckIn,
+  count, status, noTradeDay, onLogTrade, onNoTradeDay, onCompleteCheckIn, onReviewFeedback,
 }: {
   count: number; status: TodayStatus; noTradeDay: boolean;
-  onLogTrade: () => void; onNoTradeDay: () => void; onCompleteCheckIn: () => void;
+  onLogTrade: () => void; onNoTradeDay: () => void; onCompleteCheckIn: () => void; onReviewFeedback: () => void;
 }) {
   const badgeMap = {
     incomplete: { text: "Incomplete", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
@@ -454,7 +455,7 @@ function TodayTradeCheckCard({
       {status === "complete" && (
         <>
           <p className="text-xs text-emerald-400/80">{noTradeDay ? "No-trade day tracked. Consistency maintained." : "Today's accountability is complete. Review your feedback below."}</p>
-          <Button size="sm" variant="outline" className="gap-1.5"><Eye className="h-3.5 w-3.5" /> Review today's feedback</Button>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={onReviewFeedback}><Eye className="h-3.5 w-3.5" /> Review today's feedback</Button>
         </>
       )}
     </div>
@@ -559,7 +560,7 @@ function TrackedBalanceCard({
 /* ── 4. AI Focus ── */
 function AIFocusCard({ hasData }: { hasData: boolean }) {
   return (
-    <div className="vault-glass-card p-6 space-y-3">
+    <div id="ai-focus-card" className="vault-glass-card p-6 space-y-3">
       <div className="flex items-center gap-2">
         <Brain className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground">AI Focus for Next Trade</h3>
