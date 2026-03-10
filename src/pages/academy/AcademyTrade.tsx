@@ -668,6 +668,8 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
     { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, color: "text-primary" },
     { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, color: "text-amber-400" },
     { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, color: "text-emerald-400" },
+    ...(result.sizingAdvice ? [{ label: "SIZING ADVICE", icon: BarChart3, value: result.sizingAdvice, color: "text-cyan-400" }] : []),
+    ...(result.nextSessionTip ? [{ label: "NEXT SESSION TIP", icon: Sparkles, value: result.nextSessionTip, color: "text-violet-400" }] : []),
   ];
 
   return (
