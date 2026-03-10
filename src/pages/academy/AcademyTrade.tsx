@@ -408,10 +408,10 @@ function GettingStartedBanner({
 
 /* ── 1. Today's Trade Check ── */
 function TodayTradeCheckCard({
-  count, status, noTradeDay, onLogTrade, onNoTradeDay, onCompleteCheckIn,
+  count, status, noTradeDay, onLogTrade, onNoTradeDay, onCompleteCheckIn, onReviewFeedback,
 }: {
   count: number; status: TodayStatus; noTradeDay: boolean;
-  onLogTrade: () => void; onNoTradeDay: () => void; onCompleteCheckIn: () => void;
+  onLogTrade: () => void; onNoTradeDay: () => void; onCompleteCheckIn: () => void; onReviewFeedback: () => void;
 }) {
   const badgeMap = {
     incomplete: { text: "Incomplete", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
