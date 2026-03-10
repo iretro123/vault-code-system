@@ -1,37 +1,41 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Discord-Style Unread Badges — Community Tabs + Sidebar
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### What We're Building
+Red notification badges (like Discord) that show unread message counts on:
+1. Each tab inside the Community page (Chat, Announcements, Signals, Wins)
+2. The "Community" item in the sidebar nav
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+When a user clicks a tab, it marks that room as read, clears the badge, and the cycle repeats as new messages arrive via realtime.
 
-### Solution
+### New File: `src/hooks/useUnreadCounts.ts`
+- Accepts `activeRoomSlug` (the currently viewed room) and the user ID
+- Tracks 4 room slugs: `trade-floor`, `announcements`, `daily-setups`, `wins-proof`
+- Stores last-read timestamp per room in `localStorage` (`unread_ts_{slug}_{userId}`)
+- On mount: queries `academy_messages` for count of unread messages per room (created_at > last-read, user_id != current user, is_deleted = false)
+- Subscribes to Supabase Realtime INSERT on `academy_messages` — increments count for messages from other users when that room isn't active
+- `markRead(slug)` — sets localStorage timestamp to now, resets that room's count to 0
+- Returns `{ counts: Record<string, number>, totalUnread: number, markRead }`
+- Display caps at "10+"
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+### Modified: `src/pages/academy/AcademyCommunity.tsx`
+- Import `useUnreadCounts`, pass `activeTab`'s mapped room slug
+- On tab change, call `markRead(roomSlug)` for the newly active tab
+- Render red pill badge next to each tab label when count > 0
+- Badge style: `bg-red-500 text-white text-[10px] font-bold min-w-[16px] h-[16px] rounded-full flex items-center justify-center`
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+### Modified: `src/components/layout/AcademySidebar.tsx`
+- Import `useUnreadCounts` at the component level
+- On the Community nav item (line 51), render the `totalUnread` badge after the label
+- When collapsed, position badge absolute on the icon
+- Badge style: red pill with `ring-2 ring-[#0B0F14]` for clean cutout on dark bg
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+### Tab-to-Room Slug Mapping
+```text
+"trade-floor"   → "trade-floor"
+"announcements" → "announcements"  
+"daily-setups"  → "daily-setups"
+"wins"          → "wins-proof"
+```
 
