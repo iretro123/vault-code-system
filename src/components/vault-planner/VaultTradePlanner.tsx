@@ -20,6 +20,7 @@ import {
   Lock, Unlock, CheckCircle2, XCircle, Copy, RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 type UIState = "input" | "loading" | "results";
 const STORAGE_KEY = "vault_trade_planner_inputs";
