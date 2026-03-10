@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet, CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download, ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield, Sparkles } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
