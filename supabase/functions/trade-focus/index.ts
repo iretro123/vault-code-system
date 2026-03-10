@@ -12,7 +12,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -29,15 +28,14 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub;
+    const userId = user.id;
 
     // Fetch last 20 trades using service role
     const admin = createClient(supabaseUrl, supabaseServiceKey);
@@ -67,12 +65,19 @@ serve(async (req) => {
     const tradeSummary = trades.map((t: any, i: number) => {
       const pnl = t.risk_reward * t.risk_used;
       const outcome = t.risk_reward > 0 ? "WIN" : t.risk_reward < 0 ? "LOSS" : "BREAKEVEN";
-      return `Trade ${i + 1}: ${t.trade_date} | ${outcome} | P/L: $${pnl.toFixed(0)} | Rules followed: ${t.followed_rules ? "Yes" : "No"} | Emotional state: ${t.emotional_state}/10 | Notes: ${t.notes || "none"}`;
+      return `Trade ${i + 1}: ${t.trade_date} | ${outcome} | P/L: $${pnl.toFixed(0)} | Rules followed: ${t.followed_rules ? "Yes" : "No"} | Emotional state: ${t.emotional_state}/10 | Symbol: ${t.symbol || "N/A"} | Notes: ${t.notes || "none"}`;
     }).join("\n");
 
-    const systemPrompt = `You are an elite trading mentor analyzing a student's recent trade log. Your job is to identify their biggest recurring mistake, give them ONE specific rule to follow on their next trade, spot a behavioral pattern, and offer genuine encouragement.
+    const wins = trades.filter((t: any) => t.risk_reward > 0).length;
+    const winRate = Math.round((wins / trades.length) * 100);
+    const compliant = trades.filter((t: any) => t.followed_rules).length;
+    const complianceRate = Math.round((compliant / trades.length) * 100);
+
+    const systemPrompt = `You are an elite trading mentor analyzing a student's recent trade log. Your job is to identify their biggest recurring mistake, give them ONE specific rule to follow on their next trade, spot a behavioral pattern, offer genuine encouragement, advise on position sizing, and give a specific tip for their next session.
 
 Be specific and reference their actual data. Don't be generic. If they're doing well, acknowledge it. If they're struggling, be honest but supportive. Keep each field to 1-2 sentences max.
+
+Stats summary: Win rate: ${winRate}%, Compliance: ${complianceRate}%, Total trades analyzed: ${trades.length}
 
 Here are their last ${trades.length} trades:
 ${tradeSummary}`;
@@ -94,7 +99,7 @@ ${tradeSummary}`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: "Analyze my recent trades and give me focused feedback for my next session." },
@@ -125,8 +130,16 @@ ${tradeSummary}`;
                       type: "string",
                       description: "One line of genuine coaching encouragement based on their data",
                     },
+                    sizingAdvice: {
+                      type: "string",
+                      description: "Advice on whether to scale up, stay flat, or reduce position size/contracts based on recent performance and discipline (1-2 sentences)",
+                    },
+                    nextSessionTip: {
+                      type: "string",
+                      description: "A specific actionable reminder or preparation tip for their next trading session (1 sentence)",
+                    },
                   },
-                  required: ["topMistake", "focusRule", "pattern", "encouragement"],
+                  required: ["topMistake", "focusRule", "pattern", "encouragement", "sizingAdvice", "nextSessionTip"],
                   additionalProperties: false,
                 },
               },

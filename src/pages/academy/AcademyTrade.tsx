@@ -53,9 +53,6 @@ const AcademyTrade = () => {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
   const [noTradeDay, setNoTradeDay] = useState(false);
-  const [brokerBalance, setBrokerBalance] = useState("");
-  const [balanceSaved, setBalanceSaved] = useState(false);
-  const [balanceCheckDismissed, setBalanceCheckDismissed] = useState(false);
 
   useEffect(() => {
     if (!user) { setBalanceLoading(false); return; }
@@ -126,10 +123,6 @@ const AcademyTrade = () => {
     };
     const { error } = await addEntry(newEntry);
     if (error) throw error;
-    if (startingBalance !== null && user) {
-      const newBalance = (trackedBalance ?? startingBalance) + (isWin ? Math.abs(pnlNum) : isLoss ? -Math.abs(pnlNum) : 0);
-      await supabase.from("profiles").update({ account_balance: newBalance }).eq("user_id", user.id);
-    }
     setShowLogTrade(false);
     setTodayStatus("in_progress");
     setTimeout(() => setShowCheckIn(true), 400);
@@ -138,15 +131,6 @@ const AcademyTrade = () => {
   const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
   const handleNoTradeDayComplete = () => { setShowNoTradeDay(false); setNoTradeDay(true); setTodayStatus("complete"); toast({ title: "No-trade day logged" }); };
 
-  const handleBalanceSave = async () => {
-    const val = parseFloat(brokerBalance);
-    if (!val || val <= 0 || !user) return;
-    try {
-      await supabase.from("profiles").update({ account_balance: val }).eq("user_id", user.id);
-      setBalanceSaved(true); setStartingBalance(val);
-      toast({ title: "Balance updated" });
-    } catch { toast({ title: "Error updating balance", variant: "destructive" }); }
-  };
 
   if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="My Trades" />;
 
@@ -239,10 +223,6 @@ const AcademyTrade = () => {
         {/* Weekly Review */}
         <WeeklyReviewCard hasData={hasData} />
 
-        {/* Weekly Balance Check */}
-        {!balanceCheckDismissed && hasData && (
-          <WeeklyBalanceCheckCard value={brokerBalance} onChange={setBrokerBalance} onSave={handleBalanceSave} onSkip={() => setBalanceCheckDismissed(true)} saved={balanceSaved} />
-        )}
       </div>
 
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
@@ -575,6 +555,8 @@ interface AIFocusResult {
   focusRule: string;
   pattern: string;
   encouragement: string;
+  sizingAdvice?: string;
+  nextSessionTip?: string;
   date: string;
 }
 
@@ -677,6 +659,8 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
     { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, color: "text-primary" },
     { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, color: "text-amber-400" },
     { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, color: "text-emerald-400" },
+    ...(result.sizingAdvice ? [{ label: "SIZING ADVICE", icon: BarChart3, value: result.sizingAdvice, color: "text-cyan-400" }] : []),
+    ...(result.nextSessionTip ? [{ label: "NEXT SESSION TIP", icon: Sparkles, value: result.nextSessionTip, color: "text-violet-400" }] : []),
   ];
 
   return (
@@ -882,31 +866,6 @@ function WeeklyReviewCard({ hasData }: { hasData: boolean }) {
       ) : (
         <><p className="text-sm text-muted-foreground">Need at least 1 week of trades.</p><Button size="sm" disabled>Generate Weekly Review</Button></>
       )}
-    </div>
-  );
-}
-
-function WeeklyBalanceCheckCard({ value, onChange, onSave, onSkip, saved }: {
-  value: string; onChange: (v: string) => void; onSave: () => void; onSkip: () => void; saved: boolean;
-}) {
-  if (saved) {
-    return (
-      <div className="vault-glass-card p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Weekly Balance Check</h3>
-        <p className="text-sm text-emerald-400">Balance updated. Vault is now aligned with your account for this week.</p>
-      </div>
-    );
-  }
-  return (
-    <div className="vault-glass-card p-5 space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">Weekly Balance Check</h3>
-      <p className="text-sm text-muted-foreground">What does your broker balance show right now?</p>
-      <Input type="number" placeholder="$____" className="max-w-[200px]" value={value} onChange={(e) => onChange(e.target.value)} />
-      <p className="text-xs text-muted-foreground">Optional — helps keep your tracked balance accurate.</p>
-      <div className="flex gap-2">
-        <Button size="sm" onClick={onSave} disabled={!value || parseFloat(value) <= 0}>Save Balance</Button>
-        <Button size="sm" variant="outline" onClick={onSkip}>Skip for now</Button>
-      </div>
     </div>
   );
 }
