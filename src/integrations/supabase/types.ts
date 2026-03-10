@@ -113,6 +113,7 @@ export type Database = {
           parent_message_id: string | null
           reply_count: number
           room_slug: string
+          seq: number
           user_id: string
           user_name: string
           user_role: string
@@ -131,6 +132,7 @@ export type Database = {
           parent_message_id?: string | null
           reply_count?: number
           room_slug: string
+          seq?: number
           user_id: string
           user_name?: string
           user_role?: string
@@ -149,6 +151,7 @@ export type Database = {
           parent_message_id?: string | null
           reply_count?: number
           room_slug?: string
+          seq?: number
           user_id?: string
           user_name?: string
           user_role?: string
@@ -321,6 +324,27 @@ export type Database = {
           id?: string
           name?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      academy_room_reads: {
+        Row: {
+          last_read_seq: number
+          room_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_read_seq?: number
+          room_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_read_seq?: number
+          room_slug?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1969,6 +1993,7 @@ export type Database = {
           notify_live_events: boolean
           notify_new_modules: boolean
           session_autopause_minutes: number
+          sounds_enabled: boolean
           trading_style: string | null
           updated_at: string
           user_id: string
@@ -1981,6 +2006,7 @@ export type Database = {
           notify_live_events?: boolean
           notify_new_modules?: boolean
           session_autopause_minutes?: number
+          sounds_enabled?: boolean
           trading_style?: string | null
           updated_at?: string
           user_id: string
@@ -1993,6 +2019,7 @@ export type Database = {
           notify_live_events?: boolean
           notify_new_modules?: boolean
           session_autopause_minutes?: number
+          sounds_enabled?: boolean
           trading_style?: string | null
           updated_at?: string
           user_id?: string

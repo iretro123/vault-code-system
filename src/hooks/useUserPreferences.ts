@@ -12,6 +12,7 @@ export interface UserPreferences {
   notify_new_modules: boolean;
   notify_coach_reply: boolean;
   notify_live_events: boolean;
+  sounds_enabled: boolean;
 }
 
 const DEFAULTS: Omit<UserPreferences, "user_id"> = {
@@ -23,6 +24,7 @@ const DEFAULTS: Omit<UserPreferences, "user_id"> = {
   notify_new_modules: true,
   notify_coach_reply: true,
   notify_live_events: true,
+  sounds_enabled: true,
 };
 
 export function useUserPreferences() {
