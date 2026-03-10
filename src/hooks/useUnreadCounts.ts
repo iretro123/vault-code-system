@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ROOM_SLUGS = ["trade-floor", "announcements", "daily-setups", "wins-proof"] as const;
@@ -20,44 +20,112 @@ function setLastRead(slug: string, userId: string) {
   } catch {}
 }
 
-export function useUnreadCounts(activeRoomSlug: string | null, userId: string | null) {
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const activeRef = useRef(activeRoomSlug);
-  activeRef.current = activeRoomSlug;
+// ── Shared global store so all hook instances stay in sync ──
+let _counts: Record<string, number> = {};
+let _listeners = new Set<() => void>();
+let _initUserId: string | null = null;
+let _channelActive = false;
 
-  // Fetch initial counts for all rooms
+function _notify() {
+  _listeners.forEach((l) => l());
+}
+
+function _setCounts(updater: (prev: Record<string, number>) => Record<string, number>) {
+  _counts = updater(_counts);
+  _notify();
+}
+
+function _getSnapshot() {
+  return _counts;
+}
+
+function _subscribe(cb: () => void) {
+  _listeners.add(cb);
+  return () => { _listeners.delete(cb); };
+}
+
+async function _fetchInitial(userId: string) {
+  const results: Record<string, number> = {};
+  await Promise.all(
+    ROOM_SLUGS.map(async (slug) => {
+      const lastRead = getLastRead(slug, userId);
+      const { count } = await supabase
+        .from("academy_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("room_slug", slug)
+        .eq("is_deleted", false)
+        .neq("user_id", userId)
+        .gt("created_at", lastRead);
+      results[slug] = Math.min(count || 0, 99);
+    })
+  );
+  _counts = results;
+  _notify();
+}
+
+function _startRealtime(userId: string, activeRef: React.MutableRefObject<string | null>) {
+  if (_channelActive) return;
+  _channelActive = true;
+
+  const channel = supabase
+    .channel("unread-counts-global")
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "academy_messages" },
+      (payload) => {
+        const msg = payload.new as any;
+        if (!msg || msg.user_id === userId || msg.is_deleted) return;
+        const slug = msg.room_slug as string;
+        if (!ROOM_SLUGS.includes(slug as RoomSlug)) return;
+
+        if (activeRef.current === slug) {
+          setLastRead(slug, userId);
+          return;
+        }
+
+        _setCounts((prev) => ({
+          ...prev,
+          [slug]: Math.min((prev[slug] || 0) + 1, 99),
+        }));
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+    _channelActive = false;
+  };
+}
+
+// Shared ref for the currently active room slug across all instances
+let _activeSlugRef = { current: null as string | null };
+
+export function useUnreadCounts(activeRoomSlug: string | null, userId: string | null) {
+  const counts = useSyncExternalStore(_subscribe, _getSnapshot, _getSnapshot);
+
+  // Keep the shared active slug ref updated
+  // The community page passes the real slug; sidebar passes null
+  useEffect(() => {
+    if (activeRoomSlug !== null) {
+      _activeSlugRef.current = activeRoomSlug;
+    }
+  }, [activeRoomSlug]);
+
+  // Init fetch + realtime — only once per userId
   useEffect(() => {
     if (!userId) return;
-    let cancelled = false;
-
-    async function fetchCounts() {
-      const results: Record<string, number> = {};
-      await Promise.all(
-        ROOM_SLUGS.map(async (slug) => {
-          const lastRead = getLastRead(slug, userId!);
-          const { count } = await supabase
-            .from("academy_messages")
-            .select("*", { count: "exact", head: true })
-            .eq("room_slug", slug)
-            .eq("is_deleted", false)
-            .neq("user_id", userId!)
-            .gt("created_at", lastRead);
-          results[slug] = Math.min(count || 0, 99);
-        })
-      );
-      if (!cancelled) setCounts(results);
-    }
-
-    fetchCounts();
-    return () => { cancelled = true; };
+    if (_initUserId === userId && _channelActive) return;
+    _initUserId = userId;
+    _fetchInitial(userId);
+    const cleanup = _startRealtime(userId, _activeSlugRef);
+    return cleanup;
   }, [userId]);
 
-  // Mark the active room as read on mount/change
   const markRead = useCallback(
     (slug: string) => {
       if (!userId) return;
       setLastRead(slug, userId);
-      setCounts((prev) => ({ ...prev, [slug]: 0 }));
+      _setCounts((prev) => ({ ...prev, [slug]: 0 }));
     },
     [userId]
   );
@@ -68,44 +136,6 @@ export function useUnreadCounts(activeRoomSlug: string | null, userId: string | 
       markRead(activeRoomSlug);
     }
   }, [activeRoomSlug, userId, markRead]);
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = supabase
-      .channel("unread-counts")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "academy_messages",
-        },
-        (payload) => {
-          const msg = payload.new as any;
-          if (!msg || msg.user_id === userId || msg.is_deleted) return;
-          const slug = msg.room_slug as string;
-          if (!ROOM_SLUGS.includes(slug as RoomSlug)) return;
-
-          // If this room is currently active, don't increment — auto-read
-          if (activeRef.current === slug) {
-            setLastRead(slug, userId);
-            return;
-          }
-
-          setCounts((prev) => ({
-            ...prev,
-            [slug]: Math.min((prev[slug] || 0) + 1, 99),
-          }));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
 
   const totalUnread = Object.values(counts).reduce((a, b) => a + b, 0);
 
