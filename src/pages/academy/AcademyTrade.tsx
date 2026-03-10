@@ -232,10 +232,6 @@ const AcademyTrade = () => {
         {/* Weekly Review */}
         <WeeklyReviewCard hasData={hasData} />
 
-        {/* Weekly Balance Check */}
-        {!balanceCheckDismissed && hasData && (
-          <WeeklyBalanceCheckCard value={brokerBalance} onChange={setBrokerBalance} onSave={handleBalanceSave} onSkip={() => setBalanceCheckDismissed(true)} saved={balanceSaved} />
-        )}
       </div>
 
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
