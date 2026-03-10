@@ -1,37 +1,57 @@
 
 
-## Plan: Full user deletion (hard delete, not soft revoke)
+## Upgrade AI Focus Card to Real AI-Powered Mentor Feedback
 
-### Problem
-The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
-- They still show in the Members list (profile exists)
-- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
-- Their account is blocked but not cleaned up
+### What Changes
+Replace the hardcoded static `AIFocusCard` with a real AI-powered component that fetches the user's trade log, sends it to an edge function, and returns personalized mentor feedback. Requires minimum 3 logged trades to activate.
 
-### Why we need an Edge Function
-The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
+### Architecture
 
-### Solution
+```text
+User logs trade → entries ≥ 3? → Edge function "trade-focus"
+                                    ├─ Reads last 20 trade_entries from DB
+                                    ├─ Builds structured summary (symbols, outcomes, P/L, notes, rules followed, emotional state)
+                                    ├─ Sends to Lovable AI (gemini-3-flash-preview)
+                                    └─ Returns structured JSON via tool calling:
+                                        { topMistake, focusRule, pattern, encouragement }
 
-**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
-- Accepts `{ target_user_id: string }` from an authenticated operator
-- Verifies the caller has the `operator` app role (via `user_roles` table check)
-- Deletes rows from (in order):
-  - `student_access` (via `students.auth_user_id` lookup)
-  - `students`
-  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
-  - `academy_user_roles`
-  - `lesson_progress`
-  - `playbook_progress`
-  - `profiles`
-- Returns `{ deleted: true }`
+Frontend AIFocusCard
+  ├─ entries.length < 3 → locked state with futuristic "scanning" UI
+  ├─ entries.length ≥ 3 → calls edge function, caches result in localStorage (1 per day)
+  └─ Renders AI response with animated futuristic styling
+```
 
-**2. Update `src/components/admin/AdminMembersTab.tsx`**
-- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
-- On success, filter the user out of local state
-- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
+### Changes
 
-### Files
-1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
-2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
+**1. New edge function: `supabase/functions/trade-focus/index.ts`**
+- Auth check (same pattern as coach-chat)
+- Reads last 20 `trade_entries` for the authenticated user using service role
+- Builds a trade summary prompt with: symbol, outcome, P/L, followed_rules, emotional_state, notes
+- Calls Lovable AI with tool calling to extract structured output: `{ topMistake, focusRule, pattern, encouragement }`
+- Returns JSON response (no streaming needed)
+
+**2. Update `supabase/config.toml`**
+- Add `[functions.trade-focus]` with `verify_jwt = false`
+
+**3. Rewrite `AIFocusCard` in `src/pages/academy/AcademyTrade.tsx`**
+- Accept `entries` prop (the full trade entries array)
+- If `entries.length < 3`: show locked state with futuristic scan animation ("3 trades required to activate AI analysis")
+- If `entries.length ≥ 3`: call `trade-focus` edge function on mount (cache result per day in localStorage)
+- Display: loading shimmer → then topMistake, focusRule, pattern, encouragement
+- Futuristic glass UI: scan-line animation, glowing primary accent, subtle pulse on the Brain icon
+- "View reviewed trades" button stays functional
+
+### UI Design (Futuristic)
+- Dark glass card with subtle animated gradient border (CSS keyframe)
+- Pulsing Brain icon with glow effect
+- Section labels styled as "SYSTEM ANALYSIS" / "PATTERN DETECTED" / "DIRECTIVE"
+- Scan-line CSS animation across the card on load
+- Locked state shows a radar/scan animation with trade count progress (e.g., "1/3 trades scanned")
+
+### Edge Function Prompt Strategy
+The system prompt instructs the AI to act as a trading mentor analyzing the student's recent trade log. It uses tool calling to return exactly:
+- `topMistake`: The most common error pattern (1 sentence)
+- `focusRule`: A specific actionable rule for their next trade (1 sentence)  
+- `pattern`: A behavioral pattern observed (e.g., "You tend to oversize on loss days")
+- `encouragement`: One line of real coaching encouragement
 
