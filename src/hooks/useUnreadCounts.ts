@@ -63,6 +63,18 @@ async function _fetchInitial(userId: string) {
   _notify();
 }
 
+async function _refreshRoom(slug: string, userId: string) {
+  const lastRead = getLastRead(slug, userId);
+  const { count } = await supabase
+    .from("academy_messages")
+    .select("*", { count: "exact", head: true })
+    .eq("room_slug", slug)
+    .eq("is_deleted", false)
+    .neq("user_id", userId)
+    .gt("created_at", lastRead);
+  _setCounts((prev) => ({ ...prev, [slug]: Math.min(count || 0, 99) }));
+}
+
 function _startRealtime(userId: string, activeRef: React.MutableRefObject<string | null>) {
   if (_channelActive) return;
   _channelActive = true;
@@ -109,7 +121,20 @@ export function useUnreadCounts(activeRoomSlug: string | null, userId: string | 
     if (activeRoomSlug !== null) {
       _activeSlugRef.current = activeRoomSlug;
     }
+    return () => {
+      // Only clear if THIS instance set it (community page unmounting)
+      if (activeRoomSlug !== null) {
+        _activeSlugRef.current = null;
+      }
+    };
   }, [activeRoomSlug]);
+
+  // Re-fetch the active room's count when entering community (handles stale data)
+  useEffect(() => {
+    if (activeRoomSlug && userId) {
+      _refreshRoom(activeRoomSlug, userId);
+    }
+  }, [activeRoomSlug, userId]);
 
   // Init fetch + realtime — only once per userId
   useEffect(() => {

@@ -1,48 +1,37 @@
 
 
-## Fix: Unread Badges Not Clearing + Smart Own-Message Filtering
+## Plan: Full user deletion (hard delete, not soft revoke)
 
-### Bug Found
-When the user **leaves the community page**, `_activeSlugRef.current` still holds the last viewed room slug (e.g. `"trade-floor"`). This means:
-- New messages to that room are silently marked as read (line 81-84 in the realtime handler) even though the user **isn't viewing it anymore**
-- When the user returns, counts are stale because `_fetchInitial` only runs once per userId session
+### Problem
+The current "Remove" action only sets `access_status = "revoked"` — it does **not** delete any records. The user's `profiles`, `students`, `student_access`, and `allowed_signups` rows all remain. This means:
+- They still show in the Members list (profile exists)
+- Re-adding them fails because `allowed_signups` is still marked `claimed: true`
+- Their account is blocked but not cleaned up
 
-The own-message filtering is already correct (`neq("user_id", userId)` in query, `msg.user_id === userId` check in realtime). No change needed there.
+### Why we need an Edge Function
+The `profiles` table has **no DELETE RLS policy** — only owners and operators can UPDATE. Deleting across `profiles`, `students`, `student_access`, `allowed_signups`, `academy_user_roles`, and `lesson_progress` requires service-role access. A single edge function handles this cleanly and securely.
 
-### Changes
+### Solution
 
-**`src/hooks/useUnreadCounts.ts`** — 3 fixes:
+**1. New Edge Function: `supabase/functions/admin-delete-user/index.ts`**
+- Accepts `{ target_user_id: string }` from an authenticated operator
+- Verifies the caller has the `operator` app role (via `user_roles` table check)
+- Deletes rows from (in order):
+  - `student_access` (via `students.auth_user_id` lookup)
+  - `students`
+  - `allowed_signups` (by email, resets `claimed` to false OR deletes)
+  - `academy_user_roles`
+  - `lesson_progress`
+  - `playbook_progress`
+  - `profiles`
+- Returns `{ deleted: true }`
 
-1. **Clear active slug on community unmount**: Add a cleanup function to the `useEffect` that updates `_activeSlugRef` — when `activeRoomSlug` changes to `null` (sidebar instance) or the community page unmounts, set `_activeSlugRef.current = null` so messages correctly increment counts when the user isn't on the community page.
+**2. Update `src/components/admin/AdminMembersTab.tsx`**
+- Replace the current `handleKick` logic with a call to `supabase.functions.invoke("admin-delete-user", { body: { target_user_id: userId } })`
+- On success, filter the user out of local state
+- Update the confirm dialog copy to say "Permanently delete" instead of "Remove"
 
-2. **Re-fetch counts when returning to community**: When the community page mounts and passes a non-null `activeRoomSlug`, re-fetch the count for that specific room from the DB to ensure accuracy (handles edge cases like messages arriving while the realtime channel had brief disconnects).
-
-3. **Add route-awareness**: Update the effect so that when `activeRoomSlug` goes from non-null to null (leaving community), the ref is cleared.
-
-### Technical Detail
-
-```typescript
-// Fix 1: cleanup on the activeSlug effect
-useEffect(() => {
-  if (activeRoomSlug !== null) {
-    _activeSlugRef.current = activeRoomSlug;
-  }
-  return () => {
-    // Only clear if THIS instance set it (community page, not sidebar)
-    if (activeRoomSlug !== null) {
-      _activeSlugRef.current = null;
-    }
-  };
-}, [activeRoomSlug]);
-
-// Fix 2: refresh counts for the active room on mount
-useEffect(() => {
-  if (activeRoomSlug && userId) {
-    // Re-query this room's actual count from DB
-    _refreshRoom(activeRoomSlug, userId);
-  }
-}, [activeRoomSlug, userId]);
-```
-
-Add a `_refreshRoom` helper that queries the single room's count and updates `_counts` — lightweight single query instead of fetching all 4 rooms.
+### Files
+1. `supabase/functions/admin-delete-user/index.ts` — new edge function for hard delete
+2. `src/components/admin/AdminMembersTab.tsx` — wire kick/remove to call the edge function
 
