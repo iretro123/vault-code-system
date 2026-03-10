@@ -63,6 +63,18 @@ async function _fetchInitial(userId: string) {
   _notify();
 }
 
+async function _refreshRoom(slug: string, userId: string) {
+  const lastRead = getLastRead(slug, userId);
+  const { count } = await supabase
+    .from("academy_messages")
+    .select("*", { count: "exact", head: true })
+    .eq("room_slug", slug)
+    .eq("is_deleted", false)
+    .neq("user_id", userId)
+    .gt("created_at", lastRead);
+  _setCounts((prev) => ({ ...prev, [slug]: Math.min(count || 0, 99) }));
+}
+
 function _startRealtime(userId: string, activeRef: React.MutableRefObject<string | null>) {
   if (_channelActive) return;
   _channelActive = true;
