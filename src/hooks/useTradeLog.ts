@@ -55,8 +55,7 @@ export function useTradeLog() {
 
   async function fetchEntries() {
     try {
-      const { data, error } = await supabase
-        .from("trade_entries")
+      const { data, error } = await (supabase.from("trade_entries" as any) as any)
         .select("*")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
@@ -76,8 +75,7 @@ export function useTradeLog() {
     if (!user) return { error: new Error("Not authenticated") };
 
     try {
-      const { data, error } = await supabase
-        .from("trade_entries")
+      const { data, error } = await (supabase.from("trade_entries" as any) as any)
         .insert({
           user_id: user.id,
           ...entry,
