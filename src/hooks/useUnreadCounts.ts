@@ -33,8 +33,8 @@ function _subscribe(cb: () => void) {
 let _activeSlugRef = { current: null as string | null };
 let _isAtBottomRef = { current: true };
 
-// ── Notification sound (lazy-loaded) ──
-let _audioInstance: HTMLAudioElement | null = null;
+// ── Notification sound (generated programmatically — no external file needed) ──
+let _audioCtx: AudioContext | null = null;
 let _userHasInteracted = false;
 
 function _ensureInteractionTracking() {
@@ -51,12 +51,24 @@ function _ensureInteractionTracking() {
 function _playNotifySound() {
   if (!_soundsEnabled || !_userHasInteracted) return;
   try {
-    if (!_audioInstance) {
-      _audioInstance = new Audio("/sounds/notify.mp3");
-      _audioInstance.volume = 0.4;
-    }
-    _audioInstance.currentTime = 0;
-    _audioInstance.play().catch(() => {});
+    if (!_audioCtx) _audioCtx = new AudioContext();
+    const ctx = _audioCtx;
+    if (ctx.state === "suspended") ctx.resume();
+
+    const now = ctx.currentTime;
+    // Two-tone chime: clean, premium feel
+    [880, 1108.73].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * 0.08);
+      gain.gain.linearRampToValueAtTime(0.15, now + i * 0.08 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.3);
+    });
   } catch {}
 }
 
