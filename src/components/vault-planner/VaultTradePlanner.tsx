@@ -78,7 +78,14 @@ export function VaultTradePlanner() {
   const { user } = useAuth();
   const { hasAccess, status: accessStatus, loading: accessLoading } = useStudentAccess();
   const { activePlan, savePlan, replaceWithNew } = useApprovedPlans();
-  const { totalPnl } = useTradeLog();
+  const { totalPnl, refetch: refetchTrades } = useTradeLog();
+  const { state: vaultState } = useVaultState();
+
+  // Leak 1 fix: refetch trade data on mount to prevent stale balance
+  useEffect(() => { refetchTrades(); }, []);
+
+  // Leak 2: vault gate — block saving when RED or paused
+  const vaultBlocked = vaultState.vault_status === "RED" || vaultState.session_paused;
 
   const [direction, setDirection] = useState<"calls" | "puts">("calls");
   const [contractPrice, setContractPrice] = useState("");
