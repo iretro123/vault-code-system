@@ -1,12 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   calculateContractChoices,
+  buildChoice,
   formatCurrency,
   type ContractChoice,
 } from "@/lib/vaultApprovalCalc";
 import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 
-// ─── Test 1: Contract Choice Calculations ───
+// ─── Contract Choice Calculations ───
 
 describe("calculateContractChoices", () => {
   it("$2,000 account, $0.50 entry — 1-2 fits, recommended exists", () => {
@@ -14,26 +15,22 @@ describe("calculateContractChoices", () => {
     expect(result.choices).toHaveLength(4);
     expect(result.allPass).toBe(false);
 
-    // 1 contract: cash = $50, should fit easily
     const c1 = result.choices[0];
     expect(c1.contracts).toBe(1);
     expect(c1.cashNeeded).toBe(50);
     expect(c1.status).toBe("fits");
 
-    // 2 contracts: cash = $100, still within comfort ($2000 * 5% = $100)
     const c2 = result.choices[1];
     expect(c2.contracts).toBe(2);
     expect(c2.cashNeeded).toBe(100);
     expect(["fits", "tight"]).toContain(c2.status);
 
-    // Exactly one recommended
     const recommended = result.choices.filter((c) => c.isRecommended);
     expect(recommended).toHaveLength(1);
   });
 
-  it("$5,000 account, $1.50 entry — verifies cash/exit/targets", () => {
+  it("$5,000 account, $1.50 entry — verifies exact precision math", () => {
     const result = calculateContractChoices(5000, 1.5);
-    // Tier: Medium (>=5000), risk 1%, comfort 5%, hard 8%
     expect(result.accountLevel).toBe("Medium");
     expect(result.riskBudget).toBe(50); // 5000 * 0.01
 
@@ -41,12 +38,14 @@ describe("calculateContractChoices", () => {
     expect(c1.cashNeeded).toBe(150); // 1.50 * 100 * 1
     // maxCutRoom = 50 / 100 = 0.50
     expect(c1.maxCutRoom).toBe(0.5);
-    // fullPremiumRiskOk: 0.50 >= 1.50? No
     expect(c1.fullPremiumRiskOk).toBe(false);
-    // suggestedExit = ceil((1.50 - 0.50) * 100) / 100 = 1.00
-    expect(c1.suggestedExit).toBe(1.0);
-    // r = 1.50 - 1.00 = 0.50
-    expect(c1.r).toBe(0.5);
+    // exitPrice = 1.50 - 0.50 = 1.00 (exact, no rounding)
+    expect(c1.exitPrice).toBe(1.0);
+    // riskPerContract = 1.50 - 1.00 = 0.50
+    expect(c1.riskPerContract).toBe(0.5);
+    // totalRisk = 0.50 * 100 * 1 = 50
+    expect(c1.totalRisk).toBe(50);
+    // Targets from exact risk
     expect(c1.tp1).toBe(2.0);  // 1.50 + 0.50
     expect(c1.tp2).toBe(2.5);  // 1.50 + 1.00
     expect(c1.tp3).toBe(3.0);  // 1.50 + 1.50
@@ -70,102 +69,81 @@ describe("calculateContractChoices", () => {
 
   it("full premium risk detected for cheap options on large accounts", () => {
     const result = calculateContractChoices(10000, 0.1);
-    // riskBudget = 10000*0.01 = 100, maxCutRoom for 1 contract = 100/100 = 1.00 >= 0.10
     const c1 = result.choices[0];
     expect(c1.fullPremiumRiskOk).toBe(true);
-    expect(c1.suggestedExit).toBeNull();
-    expect(c1.worstCaseLoss).toBe(10); // 0.10 * 100 * 1
+    expect(c1.exitPrice).toBeNull();
+    expect(c1.totalRisk).toBe(10); // 0.10 * 100 * 1
+    // riskPerContract = contractPrice when full risk
+    expect(c1.riskPerContract).toBe(0.1);
+  });
+
+  it("returns comfortMax, hardMax, and recommendedContracts", () => {
+    const result = calculateContractChoices(3000, 0.5);
+    expect(result.comfortMax).toBeGreaterThanOrEqual(0);
+    expect(result.hardMax).toBeGreaterThanOrEqual(result.comfortMax);
+    expect(result.recommendedContracts).toBeGreaterThan(0);
   });
 });
 
-// ─── Test 2: Custom Size Calculator Logic ───
+// ─── Custom Size via buildChoice ───
 
-describe("custom size calculations", () => {
-  // Replicate the custom choice math from VaultTradePlanner useMemo
-  function buildCustomChoice(
-    accountSize: number,
-    entryPremium: number,
-    customContracts: number,
-    customExit?: number
-  ): ContractChoice {
-    const result = calculateContractChoices(accountSize, entryPremium);
-    const { riskBudget, comfortBudget, hardBudget } = result;
-    const n = customContracts;
-
-    const cashNeeded = entryPremium * 100 * n;
-    const maxCutRoom = riskBudget / (100 * n);
-    const fullPremiumRiskOk = maxCutRoom >= entryPremium;
-
-    let suggestedExit: number | null;
-    let worstCaseLoss: number;
-
-    if (customExit !== undefined) {
-      suggestedExit = customExit;
-      worstCaseLoss = (entryPremium - customExit) * 100 * n;
-    } else if (fullPremiumRiskOk) {
-      suggestedExit = null;
-      worstCaseLoss = cashNeeded;
-    } else {
-      suggestedExit = Math.max(0.01, Math.ceil((entryPremium - maxCutRoom) * 100) / 100);
-      worstCaseLoss = (entryPremium - suggestedExit) * 100 * n;
-    }
-
-    let status: "fits" | "tight" | "pass";
-    if (cashNeeded <= comfortBudget && worstCaseLoss <= riskBudget) {
-      status = "fits";
-    } else if (cashNeeded <= hardBudget && worstCaseLoss <= riskBudget) {
-      status = "tight";
-    } else {
-      status = "pass";
-    }
-
-    const r = suggestedExit !== null ? entryPremium - suggestedExit : entryPremium;
-
-    return {
-      contracts: n,
-      cashNeeded,
-      maxCutRoom,
-      suggestedExit,
-      worstCaseLoss,
-      fullPremiumRiskOk,
-      tp1: Math.round((entryPremium + r) * 100) / 100,
-      tp2: Math.round((entryPremium + 2 * r) * 100) / 100,
-      tp3: Math.round((entryPremium + 3 * r) * 100) / 100,
-      r,
-      status,
-      coachingNote: "",
-      isRecommended: false,
-    };
-  }
-
+describe("buildChoice (canonical custom sizing)", () => {
   it("5 contracts at $0.30 on $3,000 account", () => {
-    const c = buildCustomChoice(3000, 0.3, 5);
+    const result = calculateContractChoices(3000, 0.3);
+    const c = buildChoice(0.3, 5, result.riskBudget, result.comfortBudget, result.hardBudget);
     expect(c.cashNeeded).toBe(150); // 0.30 * 100 * 5
-    // Small tier: comfort = 3000*0.05 = 150, hard = 300, risk = 60
-    expect(c.cashNeeded).toBeLessThanOrEqual(150); // exactly at comfort
   });
 
-  it("custom exit override: entry $1.00, exit $0.50 → worst case correct", () => {
-    const c = buildCustomChoice(5000, 1.0, 2, 0.5);
-    expect(c.suggestedExit).toBe(0.5);
-    expect(c.worstCaseLoss).toBe(100); // (1.00 - 0.50) * 100 * 2
+  it("custom exit override: entry $1.00, exit $0.50 → exact risk", () => {
+    const result = calculateContractChoices(5000, 1.0);
+    const c = buildChoice(1.0, 2, result.riskBudget, result.comfortBudget, result.hardBudget, 0.5);
+    expect(c.exitPrice).toBe(0.5);
+    expect(c.riskPerContract).toBe(0.5);
+    expect(c.totalRisk).toBe(100); // (1.00 - 0.50) * 100 * 2
   });
 
-  it("1 contract custom matches standard 1-contract card", () => {
-    const standard = calculateContractChoices(3000, 0.5);
-    const custom = buildCustomChoice(3000, 0.5, 1);
-    const s1 = standard.choices[0];
+  it("1 contract custom matches standard 1-contract card exactly", () => {
+    const result = calculateContractChoices(3000, 0.5);
+    const custom = buildChoice(0.5, 1, result.riskBudget, result.comfortBudget, result.hardBudget);
+    const s1 = result.choices[0];
 
     expect(custom.cashNeeded).toBe(s1.cashNeeded);
     expect(custom.maxCutRoom).toBe(s1.maxCutRoom);
     expect(custom.fullPremiumRiskOk).toBe(s1.fullPremiumRiskOk);
-    expect(custom.suggestedExit).toBe(s1.suggestedExit);
-    expect(custom.worstCaseLoss).toBe(s1.worstCaseLoss);
+    expect(custom.exitPrice).toBe(s1.exitPrice);
+    expect(custom.riskPerContract).toBe(s1.riskPerContract);
+    expect(custom.totalRisk).toBe(s1.totalRisk);
+    expect(custom.tp1).toBe(s1.tp1);
+    expect(custom.tp2).toBe(s1.tp2);
+    expect(custom.tp3).toBe(s1.tp3);
     expect(custom.status).toBe(s1.status);
   });
 });
 
-// ─── Test 5: Tier Detection & Budget Calculation ───
+// ─── Exact Precision Verification ───
+
+describe("exact precision (no rounding)", () => {
+  it("exit price is not rounded — uses exact maxCutRoom", () => {
+    // $3000 Small account, risk 2% = $60 budget
+    // Entry $0.77, 1 contract: maxCutRoom = 60/100 = 0.60
+    // exitPrice = 0.77 - 0.60 = 0.17 (exact, NOT rounded to 0.17 or 0.18)
+    const result = calculateContractChoices(3000, 0.77);
+    const c1 = result.choices[0];
+    expect(c1.exitPrice).toBeCloseTo(0.17, 10);
+    expect(c1.riskPerContract).toBeCloseTo(0.60, 10);
+  });
+
+  it("targets use exact riskPerContract, not rounded values", () => {
+    const result = calculateContractChoices(3000, 0.77);
+    const c1 = result.choices[0];
+    // tp1 = 0.77 + riskPerContract
+    expect(c1.tp1).toBeCloseTo(0.77 + c1.riskPerContract, 10);
+    expect(c1.tp2).toBeCloseTo(0.77 + 2 * c1.riskPerContract, 10);
+    expect(c1.tp3).toBeCloseTo(0.77 + 3 * c1.riskPerContract, 10);
+  });
+});
+
+// ─── Tier Detection & Budget Calculation ───
 
 describe("tier detection and budgets", () => {
   it("$800 → Micro", () => {
@@ -179,25 +157,25 @@ describe("tier detection and budgets", () => {
   it("$3,000 → Small with correct dollar budgets", () => {
     expect(detectTier(3000)).toBe("Small");
     const result = calculateContractChoices(3000, 1.0);
-    expect(result.riskBudget).toBe(60);      // 3000 * 0.02
-    expect(result.comfortBudget).toBe(150);   // 3000 * 0.05
-    expect(result.hardBudget).toBe(300);      // 3000 * 0.10
+    expect(result.riskBudget).toBe(60);
+    expect(result.comfortBudget).toBe(150);
+    expect(result.hardBudget).toBe(300);
   });
 
   it("$15,000 → Medium", () => {
     expect(detectTier(15000)).toBe("Medium");
     const result = calculateContractChoices(15000, 1.0);
-    expect(result.riskBudget).toBe(150);     // 15000 * 0.01
-    expect(result.comfortBudget).toBe(750);  // 15000 * 0.05
-    expect(result.hardBudget).toBe(1200);    // 15000 * 0.08
+    expect(result.riskBudget).toBe(150);
+    expect(result.comfortBudget).toBe(750);
+    expect(result.hardBudget).toBe(1200);
   });
 
   it("$50,000 → Large", () => {
     expect(detectTier(50000)).toBe("Large");
     const result = calculateContractChoices(50000, 1.0);
-    expect(result.riskBudget).toBe(500);     // 50000 * 0.01
-    expect(result.comfortBudget).toBe(2000); // 50000 * 0.04
-    expect(result.hardBudget).toBe(3000);    // 50000 * 0.06
+    expect(result.riskBudget).toBe(500);
+    expect(result.comfortBudget).toBe(2000);
+    expect(result.hardBudget).toBe(3000);
   });
 
   it("boundary: $1,000 is Small, $999 is Micro", () => {
