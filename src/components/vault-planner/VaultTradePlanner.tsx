@@ -279,11 +279,11 @@ export function VaultTradePlanner() {
                 {/* Ticker */}
                 <div className="space-y-2">
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Ticker <span className="text-muted-foreground/40">(optional)</span></Label>
-                  <Input
+                   <Input
                     placeholder="SPY, TSLA, NVDA…"
                     value={ticker}
                     onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                    className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-primary/20 rounded-xl h-11"
+                    className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-xl h-12 text-base"
                   />
                 </div>
               </div>
