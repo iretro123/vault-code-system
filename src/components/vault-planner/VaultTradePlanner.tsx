@@ -426,35 +426,34 @@ function HeroDecisionCard({
           : "linear-gradient(90deg, transparent, rgba(239,68,68,0.3), transparent)"
       }} />
 
-      <div className="p-6 space-y-5">
+      <div className="p-7 space-y-6">
         {/* Status hero */}
-        <div className={cn("text-center py-5 rounded-2xl relative overflow-hidden", sc.bg)}>
-          {/* Radial glow behind status text */}
+        <div className={cn("text-center py-7 rounded-2xl relative overflow-hidden", sc.bg)}>
           <div className="absolute inset-0" style={{
             background: choice.status === "fits"
-              ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.08), transparent 70%)"
+              ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.1), transparent 70%)"
               : choice.status === "tight"
-              ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.06), transparent 70%)"
+              ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.08), transparent 70%)"
               : "none"
           }} />
-          <p className={cn("text-4xl font-black tracking-tight relative", sc.color)} style={{
+          <p className={cn("text-5xl font-black tracking-tight relative", sc.color)} style={{
             textShadow: choice.status === "fits"
-              ? "0 0 30px rgba(52,211,153,0.25)"
+              ? "0 0 40px rgba(52,211,153,0.3)"
               : choice.status === "tight"
-              ? "0 0 30px rgba(251,191,36,0.2)"
+              ? "0 0 40px rgba(251,191,36,0.25)"
               : "none"
           }}>
             {sc.label}
           </p>
           {ticker && (
-            <p className="text-xs text-muted-foreground mt-1.5 relative">
+            <p className="text-sm text-muted-foreground mt-2 relative font-medium">
               {ticker.toUpperCase()} · {direction === "calls" ? "Calls" : "Puts"}
             </p>
           )}
         </div>
 
         {/* Details */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <HeroLine label="Buy" value={`${choice.contracts} contract${choice.contracts > 1 ? "s" : ""}`} bold />
           <HeroLine
             label="Exit if wrong"
@@ -464,43 +463,51 @@ function HeroDecisionCard({
           <HeroLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
           <HeroLine label="Max loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
 
-          <div className="pt-3 border-t border-white/[0.04] space-y-3">
+          <div className="pt-4 border-t border-white/[0.05] space-y-4">
             <HeroLine label="Take profit 1" value={formatCurrency(choice.tp1)} valueCls="text-emerald-400" />
             <HeroLine label="Take profit 2" value={formatCurrency(choice.tp2)} valueCls="text-emerald-400" />
           </div>
         </div>
 
         {/* Coaching note */}
-        <div className="flex items-start gap-2.5 rounded-2xl p-3.5" style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.08)' }}>
-          <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-          <p className="text-xs text-muted-foreground leading-relaxed">{choice.coachingNote}</p>
+        <div className="flex items-start gap-3 rounded-2xl p-4" style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.08)' }}>
+          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-[13px] text-muted-foreground leading-relaxed">{choice.coachingNote}</p>
         </div>
 
         {/* CTA */}
         <button
           className={cn(
-            "w-full h-13 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.98]",
+            "vault-cta-shine w-full h-14 rounded-2xl text-[15px] font-bold flex items-center justify-center gap-3 transition-all duration-150 active:scale-[0.97]",
             choice.status === "pass" || saving
-              ? "bg-muted/30 text-muted-foreground cursor-not-allowed"
-              : "text-white"
+              ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
+              : "text-white hover:brightness-110"
           )}
           style={choice.status !== "pass" && !saving ? {
-            background: "linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 45%))",
-            boxShadow: "0 4px 20px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+            background: "linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 42%))",
+            boxShadow: "0 6px 28px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.12)",
           } : undefined}
           disabled={choice.status === "pass" || saving}
           onClick={onUsePlan}
         >
-          {saving ? "Saving…" : (
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Saving…
+            </span>
+          ) : (
             <>
-              <Check className="h-4 w-4" /> Use This Plan
-              <ChevronRight className="h-4 w-4 ml-auto" />
+              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20">
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              </span>
+              Use This Plan
+              <ArrowRight className="h-4 w-4 opacity-60" />
             </>
           )}
         </button>
 
         {choice.status === "pass" && (
-          <p className="text-[10px] text-center text-muted-foreground/60">
+          <p className="text-[11px] text-center text-muted-foreground/50">
             This setup doesn't fit your account rules. Try a lower contract price.
           </p>
         )}
