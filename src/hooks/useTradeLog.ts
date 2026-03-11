@@ -241,10 +241,41 @@ export function useTradeLog() {
     URL.revokeObjectURL(url);
   }
 
+  async function deleteEntry(id: string) {
+    if (!user) return { error: new Error("Not authenticated") };
+
+    try {
+      const { error } = await (supabase.from("trade_entries" as any) as any)
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      const updated = entries.filter((e) => e.id !== id);
+      setEntries(updated);
+      writeCache(updated);
+      toast({
+        title: "Trade deleted",
+        description: "The trade entry has been removed.",
+      });
+      return { error: null };
+    } catch (error: any) {
+      console.error("Error deleting trade entry:", error);
+      toast({
+        title: "Error deleting trade",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+      return { error };
+    }
+  }
+
   return {
     entries,
     loading,
     addEntry,
+    deleteEntry,
     exportCSV,
     refetch: fetchEntries,
     // New computed metrics
