@@ -310,37 +310,38 @@ export function VaultTradePlanner() {
                         key={idx}
                         onClick={() => setSelectedIndex(idx)}
                         className={cn(
-                          "vault-approval-choice-card relative text-left space-y-3 transition-all duration-100 active:scale-[0.97]",
-                          isSelected && `ring-2 ${sc.ring} ${sc.glow}`,
+                          "vault-approval-choice-card relative text-left space-y-3 transition-all duration-150 active:scale-[0.97] min-h-[160px]",
+                          "hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)]",
+                          isSelected && `ring-2 ${sc.ring} ${sc.glow} scale-[1.02]`,
                           choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
-                          choice.status === "pass" && "opacity-40 saturate-50"
+                          choice.status === "pass" && "opacity-40 saturate-50 hover:translate-y-0"
                         )}
                       >
                         {/* Best badge */}
                         {choice.isRecommended && (
-                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest"
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse"
                             style={{
                               background: 'linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%))',
                               color: 'white',
-                              boxShadow: '0 2px 12px rgba(59,130,246,0.3)',
+                              boxShadow: '0 2px 16px rgba(59,130,246,0.35)',
                             }}
                           >
-                            <Star className="h-2.5 w-2.5" /> Best
+                            <Star className="h-3 w-3" /> Best
                           </div>
                         )}
 
                         <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-foreground tabular-nums">{choice.contracts}</span>
-                          <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
+                          <span className="text-3xl font-bold text-foreground tabular-nums">{choice.contracts}</span>
+                          <span className={cn("text-[11px] font-bold px-3 py-1.5 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
                             {sc.label}
                           </span>
                         </div>
 
-                        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.15em] font-medium">
+                        <p className="text-[11px] text-muted-foreground/60 uppercase tracking-[0.15em] font-medium">
                           {choice.contracts === 1 ? "contract" : "contracts"}
                         </p>
 
-                        <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+                        <div className="space-y-2.5 pt-3 border-t border-white/[0.05]">
                           <MetricLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
                           <MetricLine
                             label="Exit if wrong"
