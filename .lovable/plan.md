@@ -1,39 +1,43 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Mobile UI Fix — All Devices (Not Just iPhone 11)
 
-### What was implemented
+The issues you experienced affect **all mobile devices**, not just iPhone 11. The root causes are universal mobile browser behaviors:
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+1. **`h-screen` = `100vh`** — On every mobile browser (Safari, Chrome, Samsung Internet), `100vh` includes the browser toolbar area, pushing content below the visible viewport. This is why you had to scroll up and down. Affects all iPhones, all Android phones.
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+2. **No `overscroll-behavior`** — iOS Safari and many Android browsers rubber-band the entire page when you scroll past edges. Not device-specific.
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+3. **Sidebar not closing on tap** — The coach button uses `toggleSidebar()` instead of `setOpenMobile(false)`, and the profile/settings buttons in the sidebar footer don't close the sidebar at all on mobile. This is the "sidebar stays open after tapping a tab" bug. Affects every mobile user.
 
-### What was implemented
+## Changes
 
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
+### 1. Fix viewport height — all mobile browsers
+**File: `src/components/layout/AcademyLayout.tsx`**
+- Line 109: Change `h-screen` → `h-[100dvh]` (dynamic viewport height, supported by all modern mobile browsers)
 
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+### 2. Lock body scrolling & prevent rubber-banding
+**File: `src/index.css`**
+- Add to `html, body, #root`: `overflow: hidden; overscroll-behavior: none; height: 100dvh;`
+
+### 3. Fix sidebar not closing on mobile tap
+**File: `src/components/layout/AcademySidebar.tsx`**
+- Coach button (line 180-183): Replace `toggleSidebar()` with `setOpenMobile(false)` for immediate close
+- Profile button (line 284): Add `if (isMobile) setOpenMobile(false)` before navigating
+- Referral button (line 262): Add `if (isMobile) setOpenMobile(false)`
+
+### 4. Fix MobileNav menu button
+**File: `src/components/layout/MobileNav.tsx`**
+- Change `toggleSidebar()` to explicit `setOpenMobile(true)` so it always opens (never accidentally closes)
+
+### 5. Clean up dead CSS
+**File: `src/App.css`**
+- Remove the Vite boilerplate (`#root { max-width: 1280px; padding: 2rem; }`) — this could interfere if ever imported
+
+### Files Changed
+- `src/components/layout/AcademyLayout.tsx`
+- `src/index.css`
+- `src/components/layout/AcademySidebar.tsx`
+- `src/components/layout/MobileNav.tsx`
+- `src/App.css`
+
