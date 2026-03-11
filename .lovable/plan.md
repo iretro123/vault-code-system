@@ -1,24 +1,29 @@
 
 
-## Plan: Production-Grade Community Notifications — COMPLETED
+## Plan: Pipeline Leak Fixes — COMPLETED
 
-### What was done
+### What was fixed
 
-**Database:**
-- Added monotonic `seq bigint` column to `academy_messages` with auto-increment sequence, backfilled existing rows
-- Created `academy_room_reads` table (user_id, room_slug, last_read_seq) with RLS + realtime publication
-- Added `sounds_enabled boolean` to `user_preferences`
+**Leak 5 (Critical): Trade Log → Vault State Sync**
+- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
+- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
+- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
+- Never downgrades from RED; persists block reason
 
-**`src/hooks/useUnreadCounts.ts`** — Full rewrite:
-- DB-backed unread counts via `seq > last_read_seq` (no more localStorage)
-- Realtime subscriptions on `academy_messages` (INSERT) + `academy_room_reads` (cross-tab sync) + `user_preferences` (sounds toggle)
-- Reconciliation on `visibilitychange` + `window.focus`
-- Programmatic two-tone chime (Web Audio API, no external file)
-- `setUnreadIsAtBottom()` export for scroll-aware auto-mark-read
-- Own messages always filtered out
+**Leak 2 (High): Vault State Gate on Approval Page**
+- `VaultTradePlanner` now imports `useVaultState` and checks status
+- Shows warning banner when vault is RED or session is paused
+- Disables "Use This Plan" button when blocked
+- `HeroDecisionCard` receives `vaultBlocked` prop
 
-**`src/hooks/useUserPreferences.ts`** — Added `sounds_enabled` to interface + defaults
+**Leak 1 (Medium): Balance Drift Refetch**
+- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
+- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
 
-**`src/components/settings/SettingsNotifications.tsx`** — Added "Message Sounds" toggle
+**Leak 4 (Medium): Timezone-Safe Plan Expiry**
+- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
+- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
 
-**`src/pages/academy/AcademyCommunity.tsx`** — No structural changes needed; markRead now persists to DB
+**Leak 3 (Low): P/L Result Type Validation**
+- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
+- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
