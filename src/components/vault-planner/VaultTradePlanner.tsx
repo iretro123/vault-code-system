@@ -239,20 +239,20 @@ export function VaultTradePlanner() {
                 <div className="space-y-2">
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Direction</Label>
                   <div className="flex rounded-2xl border border-border/50 overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)' }}>
-                    {(["calls", "puts"] as const).map((d) => (
+                {(["calls", "puts"] as const).map((d) => (
                       <button
                         key={d}
                         onClick={() => setDirection(d)}
                         className={cn(
-                          "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold transition-all duration-100",
+                          "flex-1 flex items-center justify-center gap-2.5 px-4 py-4 text-[15px] font-semibold transition-all duration-150 min-h-[52px]",
                           direction === d
                             ? d === "calls"
-                              ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.4)]"
-                              : "bg-red-500/15 text-red-400 shadow-[inset_0_-2px_0_0_rgba(239,68,68,0.4)]"
-                            : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
+                              ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.5)]"
+                              : "bg-red-500/15 text-red-400 shadow-[inset_0_-2px_0_0_rgba(239,68,68,0.5)]"
+                            : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
                         )}
                       >
-                        {d === "calls" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                        {d === "calls" ? <ArrowUp className="h-5 w-5" /> : <ArrowDown className="h-5 w-5" />}
                         {d === "calls" ? "Up (Calls)" : "Down (Puts)"}
                       </button>
                     ))}
