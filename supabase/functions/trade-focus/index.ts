@@ -37,22 +37,22 @@ serve(async (req) => {
     }
     const userId = user.id;
 
-    // Fetch last 20 trades using service role
     const admin = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: trades, error: tradeErr } = await admin
-      .from("trade_entries")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(20);
 
-    if (tradeErr) {
-      console.error("Trade fetch error:", tradeErr);
-      return new Response(JSON.stringify({ error: "Failed to load trades" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // ── Fetch all pipeline data in parallel ──
+    const [tradesRes, journalRes, plansRes, vaultRes] = await Promise.all([
+      admin.from("trade_entries").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+      admin.from("journal_entries").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+      admin.from("approved_plans").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+      admin.from("vault_state").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(1),
+    ]);
+
+    const trades = tradesRes.data || [];
+    const journals = journalRes.data || [];
+    const plans = plansRes.data || [];
+    const vaultState = vaultRes.data?.[0] || null;
+
+    if (tradesRes.error) console.error("Trade fetch error:", tradesRes.error);
 
     if (!trades || trades.length < 3) {
       return new Response(
@@ -61,7 +61,7 @@ serve(async (req) => {
       );
     }
 
-    // Build trade summary for AI
+    // ── Build trade summary ──
     const tradeSummary = trades.map((t: any, i: number) => {
       const pnl = t.risk_reward * t.risk_used;
       const outcome = t.risk_reward > 0 ? "WIN" : t.risk_reward < 0 ? "LOSS" : "BREAKEVEN";
@@ -73,14 +73,58 @@ serve(async (req) => {
     const compliant = trades.filter((t: any) => t.followed_rules).length;
     const complianceRate = Math.round((compliant / trades.length) * 100);
 
-    const systemPrompt = `You are an elite trading mentor analyzing a student's recent trade log. Your job is to identify their biggest recurring mistake, give them ONE specific rule to follow on their next trade, spot a behavioral pattern, offer genuine encouragement, advise on position sizing, and give a specific tip for their next session.
+    // ── Build journal summary ──
+    let journalSummary = "No journal entries available.";
+    if (journals.length > 0) {
+      const journalCompliant = journals.filter((j: any) => j.followed_rules).length;
+      const journalComplianceRate = Math.round((journalCompliant / journals.length) * 100);
+      journalSummary = `Journal entries analyzed: ${journals.length} | Journal compliance: ${journalComplianceRate}%\n`;
+      journalSummary += journals.slice(0, 5).map((j: any, i: number) => {
+        return `Journal ${i + 1}: ${j.entry_date} | Ticker: ${j.ticker || "N/A"} | Followed rules: ${j.followed_rules ? "Yes" : "No"} | Mistake: ${j.biggest_mistake || "none"} | Lesson: ${j.lesson || "none"} | What happened: ${j.what_happened || "none"}`;
+      }).join("\n");
+    }
 
-Be specific and reference their actual data. Don't be generic. If they're doing well, acknowledge it. If they're struggling, be honest but supportive. Keep each field to 1-2 sentences max.
+    // ── Build plan execution summary ──
+    let planSummary = "No approved plans available.";
+    if (plans.length > 0) {
+      const logged = plans.filter((p: any) => p.status === "logged").length;
+      const cancelled = plans.filter((p: any) => p.status === "cancelled").length;
+      const planned = plans.filter((p: any) => p.status === "planned").length;
+      const executionRate = Math.round((logged / plans.length) * 100);
+      planSummary = `Plans analyzed: ${plans.length} | Logged: ${logged} | Cancelled: ${cancelled} | Still planned: ${planned} | Execution rate: ${executionRate}%\n`;
+      planSummary += plans.slice(0, 5).map((p: any, i: number) => {
+        return `Plan ${i + 1}: ${p.ticker || "N/A"} ${p.direction} | ${p.contracts_planned} contracts | Max loss: $${Number(p.max_loss_planned).toFixed(0)} | Status: ${p.status} | Approval: ${p.approval_status}`;
+      }).join("\n");
+    }
 
-Stats summary: Win rate: ${winRate}%, Compliance: ${complianceRate}%, Total trades analyzed: ${trades.length}
+    // ── Build vault state summary ──
+    let vaultSummary = "No vault state available for today.";
+    if (vaultState) {
+      vaultSummary = `Current vault status: ${vaultState.vault_status} | Loss streak: ${vaultState.loss_streak} | Risk remaining today: $${Number(vaultState.risk_remaining_today).toFixed(0)} | Trades remaining today: ${vaultState.trades_remaining_today} | Risk mode: ${vaultState.risk_mode} | Session paused: ${vaultState.session_paused ? "Yes" : "No"}`;
+    }
 
-Here are their last ${trades.length} trades:
-${tradeSummary}`;
+    const systemPrompt = `You are an elite trading mentor analyzing a student's complete behavioral profile. You have access to their trade log, journal reflections, trade plan execution history, and current vault/risk state. Your job is to give SPECIFIC, data-driven feedback — never generic advice.
+
+IMPORTANT RULES:
+- Reference their ACTUAL data. Cite specific trades, patterns, tickers, dates.
+- If they keep making the same mistake in their journal, call it out.
+- If they cancel plans frequently, address plan discipline.
+- If their vault is in RED or YELLOW, factor that into sizing advice.
+- If they don't follow rules consistently, be direct about it.
+- Keep each field to 1-2 sentences max. Be concise and impactful.
+
+═══ TRADE LOG (${trades.length} trades) ═══
+Stats: Win rate: ${winRate}%, Compliance: ${complianceRate}%
+${tradeSummary}
+
+═══ JOURNAL REFLECTIONS ═══
+${journalSummary}
+
+═══ PLAN EXECUTION ═══
+${planSummary}
+
+═══ VAULT STATE ═══
+${vaultSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -102,7 +146,7 @@ ${tradeSummary}`;
           model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: "Analyze my recent trades and give me focused feedback for my next session." },
+            { role: "user", content: "Analyze my complete trading profile — trades, journal, plan execution, and vault state — and give me targeted feedback for my next session." },
           ],
           tools: [
             {
@@ -110,36 +154,45 @@ ${tradeSummary}`;
               function: {
                 name: "trade_focus_analysis",
                 description:
-                  "Return structured mentor feedback based on the student's trade log.",
+                  "Return structured mentor feedback based on the student's complete behavioral profile.",
                 parameters: {
                   type: "object",
                   properties: {
                     topMistake: {
                       type: "string",
-                      description: "The most common error pattern found in their trades (1-2 sentences)",
+                      description: "The most common error pattern found across their trades AND journal entries (1-2 sentences, reference specific data)",
                     },
                     focusRule: {
                       type: "string",
-                      description: "A specific actionable rule for their next trade (1 sentence)",
+                      description: "A specific actionable rule for their next trade based on their weakest area (1 sentence)",
                     },
                     pattern: {
                       type: "string",
-                      description: "A behavioral pattern observed across their trades (1-2 sentences)",
+                      description: "A behavioral pattern observed across trades, journal, and plan execution (1-2 sentences)",
                     },
                     encouragement: {
                       type: "string",
-                      description: "One line of genuine coaching encouragement based on their data",
+                      description: "One line of genuine coaching encouragement based on their actual progress and data",
                     },
                     sizingAdvice: {
                       type: "string",
-                      description: "Advice on whether to scale up, stay flat, or reduce position size/contracts based on recent performance and discipline (1-2 sentences)",
+                      description: "Position sizing recommendation factoring in vault status, loss streak, and recent performance (1-2 sentences)",
                     },
                     nextSessionTip: {
                       type: "string",
-                      description: "A specific actionable reminder or preparation tip for their next trading session (1 sentence)",
+                      description: "A specific preparation tip for their next session based on their journal lessons and recurring mistakes (1 sentence)",
+                    },
+                    disciplineScore: {
+                      type: "string",
+                      enum: ["strong", "moderate", "weak"],
+                      description: "Overall discipline rating based on rules compliance rate, plan execution rate, and journal consistency",
+                    },
+                    riskAssessment: {
+                      type: "string",
+                      description: "1-sentence assessment of their current risk behavior based on vault state, sizing patterns, and loss streaks",
                     },
                   },
-                  required: ["topMistake", "focusRule", "pattern", "encouragement", "sizingAdvice", "nextSessionTip"],
+                  required: ["topMistake", "focusRule", "pattern", "encouragement", "sizingAdvice", "nextSessionTip", "disciplineScore", "riskAssessment"],
                   additionalProperties: false,
                 },
               },
