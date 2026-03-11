@@ -203,11 +203,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          localStorage.removeItem("va_cache_pb_chapters");
          localStorage.removeItem("va_cache_pb_progress");
          localStorage.removeItem("va_cache_scoreboard");
-         localStorage.removeItem("va_cache_live_dash");
-         localStorage.removeItem("va_cache_modules");
-         localStorage.removeItem("va_cache_lessons");
-         localStorage.removeItem("va_cache_live_sessions");
-     } catch {}
+          localStorage.removeItem("va_cache_live_dash");
+          localStorage.removeItem("va_cache_modules");
+          localStorage.removeItem("va_cache_lessons");
+          localStorage.removeItem("va_cache_live_sessions");
+          localStorage.removeItem("va_cache_trade_entries");
+          localStorage.removeItem("va_cache_student_access");
+          localStorage.removeItem("va_cache_ai_focus");
+          localStorage.removeItem("va_cache_lesson_progress");
+          localStorage.removeItem("va_cache_hot_tickers");
+      } catch {}
    }
  
    function hasRole(role: AppRole): boolean {
