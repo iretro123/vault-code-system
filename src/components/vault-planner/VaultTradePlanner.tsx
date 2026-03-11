@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
   AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
-  ChevronDown, Minus, Plus,
+  ChevronDown, Minus, Plus, Sliders,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
