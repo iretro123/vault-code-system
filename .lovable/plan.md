@@ -1,29 +1,18 @@
 
 
-## Plan: Pipeline Leak Fixes — COMPLETED
+## Plan: Sync Delete Trade Across All Systems — COMPLETED
 
-### What was fixed
+### What was implemented
 
-**Leak 5 (Critical): Trade Log → Vault State Sync**
-- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
-- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
-- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
-- Never downgrades from RED; persists block reason
+**DB Trigger: reverse_trade_entry_from_vault_state**
+- Fires AFTER DELETE on `trade_entries` for same-day trades
+- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
+- Recalculates `loss_streak` from remaining trades
+- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
+- Clears `last_block_reason` when reverting to GREEN
+- Reverts linked `approved_plans` from `'logged'` → `'planned'`
 
-**Leak 2 (High): Vault State Gate on Approval Page**
-- `VaultTradePlanner` now imports `useVaultState` and checks status
-- Shows warning banner when vault is RED or session is paused
-- Disables "Use This Plan" button when blocked
-- `HeroDecisionCard` receives `vaultBlocked` prop
-
-**Leak 1 (Medium): Balance Drift Refetch**
-- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
-- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
-
-**Leak 4 (Medium): Timezone-Safe Plan Expiry**
-- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
-- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
-
-**Leak 3 (Low): P/L Result Type Validation**
-- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
-- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
+**Frontend: AcademyTrade.tsx**
+- After successful delete, calls `refetchPlan()` to refresh active plan state
+- Vault state auto-updates via existing realtime subscription on `vault_state` table
+- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
