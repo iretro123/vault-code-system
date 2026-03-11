@@ -382,14 +382,16 @@ export function AdminBroadcastTab() {
             </div>
 
             {/* Title & Body */}
-            <div className="space-y-1.5">
-              <Label className="text-xs">Title</Label>
-              <Input
-                placeholder={mode === "motivation_ping" ? "e.g. Keep grinding 🔥" : "e.g. Important update"}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
+            {channel !== "sms" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Title</Label>
+                <Input
+                  placeholder={mode === "motivation_ping" ? "e.g. Keep grinding 🔥" : "e.g. Important update"}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">Message {mode === "motivation_ping" ? "(optional)" : ""}</Label>
               <Textarea
