@@ -81,12 +81,18 @@ export function buildChoice(
     riskPerContract = contractPrice;
     totalRisk = cashNeeded;
   } else {
-    // Exact exit from risk budget — no rounding
+    // Exact exit from risk budget
     exitPrice = contractPrice - maxCutRoom;
-    // Floor to 0.01 min (can't have negative/zero exit)
-    if (exitPrice < 0.01) exitPrice = 0.01;
-    riskPerContract = contractPrice - exitPrice;
-    totalRisk = riskPerContract * 100 * n;
+    if (exitPrice < 0.01) {
+      // Exit was clamped — actual risk is larger than maxCutRoom
+      exitPrice = 0.01;
+      riskPerContract = contractPrice - 0.01;
+      totalRisk = riskPerContract * 100 * n;
+    } else {
+      // Use source values directly — no floating-point round-trip
+      riskPerContract = maxCutRoom;
+      totalRisk = riskBudget;
+    }
   }
 
   // Status
