@@ -417,11 +417,11 @@ const AcademyResources = () => {
         <TemplatesSection />
       </div>
 
-      {/* 3) Presets */}
-      <div>
+      {/* 3) Presets — hidden for now, will be replaced */}
+      {/* <div>
         <SectionLabel icon={Sliders} label="Risk Firewall Presets" />
         <PresetsSection />
-      </div>
+      </div> */}
 
       {/* 4) Downloads */}
       <div>
