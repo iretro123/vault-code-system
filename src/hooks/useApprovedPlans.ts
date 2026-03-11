@@ -49,12 +49,16 @@ export function useApprovedPlans() {
     if (!user) { setActivePlan(null); setLoading(false); return; }
 
     try {
-      const todayStr = new Date().toISOString().slice(0, 10);
+      // Leak 4 fix: use UTC date consistently to match server-stored created_at
+      const now = new Date();
+      const todayStr = now.getUTCFullYear() + "-" +
+        String(now.getUTCMonth() + 1).padStart(2, "0") + "-" +
+        String(now.getUTCDate()).padStart(2, "0");
       const { data, error } = await (supabase.from("approved_plans" as any) as any)
         .select("*")
         .eq("user_id", user.id)
         .eq("status", "planned")
-        .gte("created_at", todayStr + "T00:00:00")
+        .gte("created_at", todayStr + "T00:00:00Z")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

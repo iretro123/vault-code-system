@@ -120,6 +120,14 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
 
   const pnlValue = pnlOverride || calculatedPnl;
 
+  // Leak 3 fix: auto-set result type from P/L sign
+  useEffect(() => {
+    const pnl = parseFloat(pnlValue);
+    if (isNaN(pnl) || pnl === 0) return;
+    if (pnl > 0 && resultType !== "Win") setResultType("Win");
+    else if (pnl < 0 && resultType !== "Loss") setResultType("Loss");
+  }, [pnlValue]);
+
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {

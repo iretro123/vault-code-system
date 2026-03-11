@@ -505,13 +505,14 @@ export function VaultTradePlanner() {
           <div className="lg:col-span-2">
             <div className="sticky top-4">
               {selectedChoice ? (
-                <HeroDecisionCard
+              <HeroDecisionCard
                   choice={selectedChoice}
                   ticker={ticker}
                   direction={direction}
                   entryPrice={priceNum}
                   saving={saving}
                   onUsePlan={handleUsePlan}
+                  vaultBlocked={vaultBlocked}
                 />
               ) : (
                 <div className="vault-premium-card p-6 text-center space-y-3">
