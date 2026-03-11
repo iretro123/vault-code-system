@@ -14,6 +14,7 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
+import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, ShieldAlert, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +36,7 @@ function AcademyLayoutInner() {
   const lastPageRef = useRef("");
   const hadUserRef = useRef(false);
   useSmartNotifications();
+  useSmartRefresh();
   usePresenceHeartbeat();
 
   const isCommunity = location.pathname.startsWith("/academy/community");
