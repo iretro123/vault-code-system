@@ -141,6 +141,21 @@ describe("exact precision (no rounding)", () => {
     expect(c1.tp2).toBeCloseTo(0.77 + 2 * c1.riskPerContract, 10);
     expect(c1.tp3).toBeCloseTo(0.77 + 3 * c1.riskPerContract, 10);
   });
+
+  it("regression: $7.50×1 and $2.50×3 get same status on ~$15,558 account (no FP round-trip error)", () => {
+    const balance = 15557.68;
+    const r1 = calculateContractChoices(balance, 7.5);
+    const r3 = calculateContractChoices(balance, 2.5);
+    const c1 = r1.choices[0]; // 1 contract at $7.50 = $750
+    const c3 = r3.choices[2]; // 3 contracts at $2.50 = $750
+    expect(c1.cashNeeded).toBe(c3.cashNeeded); // both $750
+    expect(c1.status).not.toBe("pass");
+    expect(c3.status).not.toBe("pass");
+    expect(c1.status).toBe(c3.status);
+    // totalRisk must not exceed riskBudget
+    expect(c1.totalRisk).toBeLessThanOrEqual(r1.riskBudget);
+    expect(c3.totalRisk).toBeLessThanOrEqual(r3.riskBudget);
+  });
 });
 
 // ─── Tier Detection & Budget Calculation ───
