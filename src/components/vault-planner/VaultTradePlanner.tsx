@@ -263,21 +263,6 @@ export function VaultTradePlanner() {
   return (
     <>
       <div className="space-y-3 max-w-5xl">
-        {/* ═══ VAULT STATUS GATE ═══ */}
-        {vaultBlocked && (
-          <div className="vault-premium-card p-3 flex items-center gap-2.5" style={{ borderColor: vaultState.vault_status === "RED" ? 'rgba(239,68,68,0.2)' : 'rgba(251,191,36,0.15)' }}>
-            {vaultState.vault_status === "RED" ? (
-              <Ban className="h-4 w-4 text-red-400 shrink-0" />
-            ) : (
-              <Pause className="h-4 w-4 text-amber-400 shrink-0" />
-            )}
-            <p className="text-xs text-foreground flex-1">
-              {vaultState.session_paused
-                ? "Your trading session is paused. You can check trades but can't save plans."
-                : "Your vault is RED — daily limits reached. Plans are view-only right now."}
-            </p>
-          </div>
-        )}
 
         {/* ═══ RULES STRIP ═══ */}
         <div className="flex flex-wrap gap-2">
