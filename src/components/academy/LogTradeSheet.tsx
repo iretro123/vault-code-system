@@ -35,10 +35,20 @@ export interface TradeFormData {
   note: string;
 }
 
+interface PlanPrefill {
+  symbol?: string;
+  direction?: string;
+  entryPrice?: string;
+  positionSize?: string;
+  stopPrice?: string;
+}
+
 interface LogTradeSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: TradeFormData) => Promise<void>;
+  planId?: string;
+  prefill?: PlanPrefill;
 }
 
 function SegmentedToggle({
