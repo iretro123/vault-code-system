@@ -1,29 +1,80 @@
 
 
-## Plan: Pipeline Leak Fixes — COMPLETED
+# Smart Refresh System — Wake & Reconnect
 
-### What was fixed
+## Problem
+Currently `refetchOnWindowFocus: false` is set globally, and there's no centralized wake/reconnect logic. When a user closes their laptop lid or loses WiFi and comes back, the app shows stale data — old trade entries, outdated chat messages, wrong unread counts — until they manually navigate or refresh.
 
-**Leak 5 (Critical): Trade Log → Vault State Sync**
-- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
-- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
-- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
-- Never downgrades from RED; persists block reason
+## How It Works (Discord-style)
 
-**Leak 2 (High): Vault State Gate on Approval Page**
-- `VaultTradePlanner` now imports `useVaultState` and checks status
-- Shows warning banner when vault is RED or session is paused
-- Disables "Use This Plan" button when blocked
-- `HeroDecisionCard` receives `vaultBlocked` prop
+Create a single `useSmartRefresh` hook mounted once in `AcademyLayout` that listens for two events:
+1. **Tab becomes visible** (`visibilitychange`) after being hidden for 60+ seconds
+2. **Network comes back online** (`online` event)
 
-**Leak 1 (Medium): Balance Drift Refetch**
-- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
-- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
+When either fires, it:
+- Invalidates all React Query caches (triggering background refetches for mounted queries)
+- Reconnects Supabase realtime channels that may have gone stale
+- Re-fires the presence heartbeat immediately
+- Shows a brief toast: "Syncing..." → auto-dismisses
 
-**Leak 4 (Medium): Timezone-Safe Plan Expiry**
-- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
-- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
+## Implementation
 
-**Leak 3 (Low): P/L Result Type Validation**
-- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
-- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
+### 1. New hook: `src/hooks/useSmartRefresh.ts`
+
+```typescript
+import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const STALE_THRESHOLD = 60_000; // 60s — only refresh if hidden that long
+
+export function useSmartRefresh() {
+  const queryClient = useQueryClient();
+  const hiddenAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const refresh = () => {
+      queryClient.invalidateQueries();              // background refetch all
+      supabase.realtime.setAuth(/* current token */); // reconnect channels
+      toast.info("Syncing...", { duration: 2000, id: "smart-refresh" });
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAtRef.current = Date.now();
+      } else if (document.visibilityState === "visible") {
+        const elapsed = hiddenAtRef.current 
+          ? Date.now() - hiddenAtRef.current 
+          : 0;
+        if (elapsed >= STALE_THRESHOLD) refresh();
+        hiddenAtRef.current = null;
+      }
+    };
+
+    const onOnline = () => refresh();
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [queryClient]);
+}
+```
+
+### 2. Mount in AcademyLayout
+
+Add `useSmartRefresh()` call in `AcademyLayoutInner`, next to the existing `usePresenceHeartbeat()`.
+
+### 3. Keep existing QueryClient config
+
+`refetchOnWindowFocus: false` stays — we handle it ourselves with the 60s threshold instead of React Query's aggressive every-focus refetch.
+
+## What This Fixes
+- Laptop lid close/open → all data refreshes automatically
+- WiFi drop/reconnect → immediate sync
+- Supabase realtime channels reconnect after sleep
+- No unnecessary refetches for quick alt-tabs (60s threshold)
+
