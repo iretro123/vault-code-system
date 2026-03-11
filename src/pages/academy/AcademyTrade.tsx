@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,9 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
+import { useApprovedPlans, type ApprovedPlan } from "@/hooks/useApprovedPlans";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 /* ── Types ── */
 type TodayStatus = "incomplete" | "in_progress" | "complete";
