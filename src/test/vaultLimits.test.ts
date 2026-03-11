@@ -9,22 +9,23 @@ import {
 } from "@/lib/vaultConstants";
 
 describe("computeVaultLimits", () => {
-  it("$500 STANDARD → 1 contract, 2 trades, clamped to TARGET", () => {
+  it("$500 STANDARD → survival mode (raw_per_trade < MIN_RISK_FLOOR)", () => {
     const limits = computeVaultLimits(500, "STANDARD");
-    // raw_daily = 500*0.02=10, raw_per_trade=5, clamped to max(5,30)=30, min(30,50)=30
-    expect(limits.risk_per_trade).toBe(30);
-    expect(limits.daily_loss_limit).toBe(60);
-    expect(limits.max_trades_per_day).toBe(2);
+    // raw_daily = 500*0.02=10, raw_per_trade=5, < MIN_RISK_FLOOR(20) → survival
+    expect(limits.risk_per_trade).toBe(20);
+    expect(limits.daily_loss_limit).toBe(20);
+    expect(limits.max_trades_per_day).toBe(1);
     expect(limits.max_contracts).toBe(1);
+    expect(limits.survival_mode).toBe(true);
   });
 
-  it("$500 CONSERVATIVE → overridden to STANDARD via resolveViableRiskMode", () => {
+  it("$500 CONSERVATIVE → overridden to STANDARD, still survival mode", () => {
     const resolved = resolveViableRiskMode(500, "CONSERVATIVE");
     expect(resolved.was_overridden).toBe(true);
     expect(resolved.applied_mode).toBe("STANDARD");
-    expect(resolved.limits.risk_per_trade).toBe(30);
+    expect(resolved.limits.risk_per_trade).toBe(20);
     expect(resolved.limits.max_contracts).toBe(1);
-    expect(resolved.limits.max_trades_per_day).toBe(2);
+    expect(resolved.limits.max_trades_per_day).toBe(1);
   });
 
   it("$1,500 CONSERVATIVE → overridden, same as $500", () => {
