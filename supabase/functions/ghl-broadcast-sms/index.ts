@@ -141,13 +141,14 @@ Deno.serve(async (req) => {
         });
       }
 
+      const personalizedMsg = message.trim().replace(/\{\{name\}\}/gi, profile.display_name || "there");
       const result = await sendSmsToContact(
         GHL_API_KEY,
         GHL_LOCATION_ID,
         profile.phone_number,
         profile.display_name || "",
         profile.email,
-        message.trim()
+        personalizedMsg
       );
       if (result.ok) sent++;
       else { failed++; if (result.error) errors.push(result.error); }
@@ -172,13 +173,14 @@ Deno.serve(async (req) => {
 
       for (const p of profiles) {
         if (!p.phone_number) continue;
+        const personalizedMsg = message.trim().replace(/\{\{name\}\}/gi, p.display_name || "there");
         const result = await sendSmsToContact(
           GHL_API_KEY,
           GHL_LOCATION_ID,
           p.phone_number,
           p.display_name || "",
           p.email,
-          message.trim()
+          personalizedMsg
         );
         if (result.ok) sent++;
         else { failed++; if (result.error) errors.push(result.error); }
