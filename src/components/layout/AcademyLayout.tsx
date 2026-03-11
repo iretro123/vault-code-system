@@ -106,7 +106,7 @@ function AcademyLayoutInner() {
   }
 
   return (
-    <div className="h-screen flex w-full bg-background relative overflow-hidden">
+    <div className="h-[100dvh] flex w-full bg-background relative overflow-hidden">
       {/* FluxCharts-inspired ambient background — layered radials, vignette */}
       <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true"
         style={{
