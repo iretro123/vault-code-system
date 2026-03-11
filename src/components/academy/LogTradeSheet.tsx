@@ -81,13 +81,13 @@ function SegmentedToggle({
   );
 }
 
-export function LogTradeSheet({ open, onOpenChange, onSubmit }: LogTradeSheetProps) {
-  const [symbol, setSymbol] = useState("");
-  const [direction, setDirection] = useState<string>("Calls");
+export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }: LogTradeSheetProps) {
+  const [symbol, setSymbol] = useState(prefill?.symbol || "");
+  const [direction, setDirection] = useState<string>(prefill?.direction || "Calls");
   const [date, setDate] = useState<Date>(new Date());
-  const [entryPrice, setEntryPrice] = useState("");
+  const [entryPrice, setEntryPrice] = useState(prefill?.entryPrice || "");
   const [exitPrice, setExitPrice] = useState("");
-  const [positionSize, setPositionSize] = useState("");
+  const [positionSize, setPositionSize] = useState(prefill?.positionSize || "");
   const [resultType, setResultType] = useState<string>("Win");
   const [pnlOverride, setPnlOverride] = useState("");
   const [targetHit, setTargetHit] = useState("Yes");
@@ -96,6 +96,16 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit }: LogTradeSheetPro
   const [oversized, setOversized] = useState("No");
   const [setupUsed, setSetupUsed] = useState("");
   const [note, setNote] = useState("");
+
+  // Re-apply prefill when it changes (e.g. opening from bridge card)
+  useEffect(() => {
+    if (prefill) {
+      if (prefill.symbol) setSymbol(prefill.symbol);
+      if (prefill.direction) setDirection(prefill.direction);
+      if (prefill.entryPrice) setEntryPrice(prefill.entryPrice);
+      if (prefill.positionSize) setPositionSize(prefill.positionSize);
+    }
+  }, [prefill]);
 
   const calculatedPnl = useMemo(() => {
     const entry = parseFloat(entryPrice);
