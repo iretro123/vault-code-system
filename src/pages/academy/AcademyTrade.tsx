@@ -239,10 +239,17 @@ const AcademyTrade = () => {
           <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
         )}
 
-        {/* Today's Trade Check */}
-        <TodayTradeCheckCard
-          count={todayTradeCount} status={todayStatus} noTradeDay={noTradeDay}
-          onLogTrade={() => setShowLogTrade(true)} onNoTradeDay={() => setShowNoTradeDay(true)}
+        {/* Today's VAULT Check */}
+        <TodayVaultCheckCard
+          activePlan={activePlan}
+          todayTradeCount={todayTradeCount}
+          todayStatus={todayStatus}
+          noTradeDay={noTradeDay}
+          onCheckTrade={() => navigate("/academy/vault")}
+          onLogFromPlan={handleLogFromPlan}
+          onLogUnplanned={handleLogUnplanned}
+          onCancelPlan={handleCancelPlan}
+          onNoTradeDay={() => setShowNoTradeDay(true)}
           onCompleteCheckIn={() => setShowCheckIn(true)}
           onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
         />
