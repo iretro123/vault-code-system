@@ -263,7 +263,13 @@ const AcademyTrade = () => {
         )}
 
         {/* ═══ TRADE JOURNAL ═══ */}
-        <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={deleteEntry} />
+        <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
+          const result = await deleteEntry(id);
+          if (!result.error) {
+            refetchPlan();
+          }
+          return result;
+        }} />
 
         {/* Tracked Balance / Reset */}
         <TrackedBalanceCard
