@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
   AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
-  ChevronDown, Minus, Plus, Sliders, Pause, Ban,
+  ChevronDown, Minus, Plus, Sliders, 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -84,8 +84,6 @@ export function VaultTradePlanner() {
   // Leak 1 fix: refetch trade data on mount to prevent stale balance
   useEffect(() => { refetchTrades(); }, []);
 
-  // Leak 2: vault gate — block saving when RED or paused
-  const vaultBlocked = vaultState.vault_status === "RED" || vaultState.session_paused;
 
   const [direction, setDirection] = useState<"calls" | "puts">("calls");
   const [contractPrice, setContractPrice] = useState("");
@@ -265,21 +263,6 @@ export function VaultTradePlanner() {
   return (
     <>
       <div className="space-y-3 max-w-5xl">
-        {/* ═══ VAULT STATUS GATE ═══ */}
-        {vaultBlocked && (
-          <div className="vault-premium-card p-3 flex items-center gap-2.5" style={{ borderColor: vaultState.vault_status === "RED" ? 'rgba(239,68,68,0.2)' : 'rgba(251,191,36,0.15)' }}>
-            {vaultState.vault_status === "RED" ? (
-              <Ban className="h-4 w-4 text-red-400 shrink-0" />
-            ) : (
-              <Pause className="h-4 w-4 text-amber-400 shrink-0" />
-            )}
-            <p className="text-xs text-foreground flex-1">
-              {vaultState.session_paused
-                ? "Your trading session is paused. You can check trades but can't save plans."
-                : "Your vault is RED — daily limits reached. Plans are view-only right now."}
-            </p>
-          </div>
-        )}
 
         {/* ═══ RULES STRIP ═══ */}
         <div className="flex flex-wrap gap-2">
@@ -512,7 +495,7 @@ export function VaultTradePlanner() {
                   entryPrice={priceNum}
                   saving={saving}
                   onUsePlan={handleUsePlan}
-                  vaultBlocked={vaultBlocked}
+                  
                 />
               ) : (
                 <div className="vault-premium-card p-6 text-center space-y-3">
@@ -550,7 +533,7 @@ export function VaultTradePlanner() {
 
 /* ── Hero Decision Card ── */
 function HeroDecisionCard({
-  choice, ticker, direction, entryPrice, saving, onUsePlan, vaultBlocked,
+  choice, ticker, direction, entryPrice, saving, onUsePlan,
 }: {
   choice: ContractChoice;
   ticker: string;
@@ -558,7 +541,6 @@ function HeroDecisionCard({
   entryPrice: number;
   saving: boolean;
   onUsePlan: () => void;
-  vaultBlocked?: boolean;
 }) {
   const sc = STATUS_CONFIG[choice.status];
   const hasExit = choice.suggestedExit !== null || choice.fullPremiumRiskOk;
@@ -635,15 +617,15 @@ function HeroDecisionCard({
         <button
           className={cn(
             "vault-cta-shine w-full h-11 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2.5 transition-all duration-100 active:scale-[0.97]",
-            choice.status === "pass" || saving || vaultBlocked
+            choice.status === "pass" || saving
               ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
               : "text-white hover:brightness-110"
           )}
-          style={choice.status !== "pass" && !saving && !vaultBlocked ? {
+          style={choice.status !== "pass" && !saving ? {
             background: "linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 42%))",
             boxShadow: "0 4px 20px rgba(59,130,246,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
           } : undefined}
-          disabled={choice.status === "pass" || saving || vaultBlocked}
+          disabled={choice.status === "pass" || saving}
           onClick={onUsePlan}
         >
           {saving ? (
