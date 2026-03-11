@@ -1,39 +1,21 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Remove Title for SMS + Auto-personalize Templates
 
-### What was implemented
+## Changes
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+### 1. Hide Title field when SMS channel is selected
+**File: `src/components/admin/AdminBroadcastTab.tsx`**
+- Wrap the Title input (lines 382-388) in a condition: only show when `channel !== "sms"`
+- Update `handleSend` validation (line 133): skip `title` requirement when channel is `"sms"`, require `body` instead
+- Update `executeSend` SMS path (line 151-153): send just `body.trim()` as the message (no title concatenation)
+- Update send button disabled check (line 416): when SMS, check `body` not `title`
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+### 2. Auto-prepend `{{name}}` to templates
+**File: `src/components/admin/AdminBroadcastTab.tsx`**
+- Update `applyTemplate` (line 126-128): when applying a template, prefix the body with `Hey {{name}}, ` so personalization is automatic
+- Template bodies become e.g. `"Hey {{name}}, time to review your week..."`
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+### Files Changed
+- **Edit**: `src/components/admin/AdminBroadcastTab.tsx`
 
-### What was implemented
-
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
-
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
