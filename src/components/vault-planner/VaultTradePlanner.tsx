@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
-  AlertTriangle, Wallet, Target, ChevronRight, Crosshair,
+  AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
