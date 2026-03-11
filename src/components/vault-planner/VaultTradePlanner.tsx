@@ -512,7 +512,7 @@ export function VaultTradePlanner() {
                   entryPrice={priceNum}
                   saving={saving}
                   onUsePlan={handleUsePlan}
-                  vaultBlocked={vaultBlocked}
+                  
                 />
               ) : (
                 <div className="vault-premium-card p-6 text-center space-y-3">
