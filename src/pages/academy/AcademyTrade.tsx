@@ -263,7 +263,7 @@ const AcademyTrade = () => {
         )}
 
         {/* ═══ TRADE JOURNAL ═══ */}
-        <RecentTradesSection entries={entries} onExportCSV={exportCSV} />
+        <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={deleteEntry} />
 
         {/* Tracked Balance / Reset */}
         <TrackedBalanceCard
