@@ -555,11 +555,11 @@ function HeroLine({ label, value, bold, valueCls, sub }: {
   sub?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3">
-      <span className="text-xs text-muted-foreground/70 font-medium">{label}</span>
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-sm text-muted-foreground/70 font-medium">{label}</span>
       <div className="text-right">
-        <span className={cn("text-sm tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
-        {sub && <p className="text-[10px] text-muted-foreground/50 mt-0.5 max-w-[180px]">{sub}</p>}
+        <span className={cn("text-base tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
+        {sub && <p className="text-[11px] text-muted-foreground/50 mt-0.5 max-w-[200px]">{sub}</p>}
       </div>
     </div>
   );
