@@ -1,29 +1,42 @@
 
 
-## Plan: Pipeline Leak Fixes — COMPLETED
+# Fix: Contract Cards — Better Visibility & Labeling
 
-### What was fixed
+## Problem
+The contract cards show "1" with a tiny, low-opacity sublabel "contract · Most room" at `text-[9px] text-muted-foreground/50` — nearly invisible. Users can't quickly tell what the numbers mean.
 
-**Leak 5 (Critical): Trade Log → Vault State Sync**
-- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
-- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
-- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
-- Never downgrades from RED; persists block reason
+## Fix (2 changes in `VaultTradePlanner.tsx`)
 
-**Leak 2 (High): Vault State Gate on Approval Page**
-- `VaultTradePlanner` now imports `useVaultState` and checks status
-- Shows warning banner when vault is RED or session is paused
-- Disables "Use This Plan" button when blocked
-- `HeroDecisionCard` receives `vaultBlocked` prop
+### 1. Change the big number to include "CON" suffix
+Line 382 — replace the plain number with a labeled format:
 
-**Leak 1 (Medium): Balance Drift Refetch**
-- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
-- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
+```tsx
+// Before
+<span className="text-2xl font-bold text-foreground tabular-nums leading-none">{choice.contracts}</span>
 
-**Leak 4 (Medium): Timezone-Safe Plan Expiry**
-- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
-- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
+// After  
+<span className="text-2xl font-bold text-foreground tabular-nums leading-none">
+  {choice.contracts}<span className="text-xs font-semibold text-muted-foreground ml-0.5">CON</span>
+</span>
+```
 
-**Leak 3 (Low): P/L Result Type Validation**
-- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
-- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
+### 2. Make the sublabel brighter and slightly bigger
+Line 388 — boost opacity and bump size:
+
+```tsx
+// Before
+<p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.1em] font-medium mb-2">
+  {choice.contracts === 1 ? "contract" : "contracts"} · {CARD_SUBLABELS[choice.contracts] || ""}
+</p>
+
+// After
+<p className="text-[10px] text-muted-foreground/80 uppercase tracking-[0.1em] font-medium mb-2">
+  {CARD_SUBLABELS[choice.contracts] || ""}
+</p>
+```
+
+The sublabel drops the redundant "contract(s)" word (since "CON" is now on the number) and just shows "Most room" / "Balanced" / "Tighter" / "Max size" at higher visibility.
+
+## Result
+Cards read: **1**CON · Most room, **2**CON · Balanced, etc. — immediately clear, no guessing.
+
