@@ -253,6 +253,33 @@ html {
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(59,130,246,0.08);
   }
 
+  /* CTA shimmer shine effect */
+  .vault-cta-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .vault-cta-shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255,255,255,0.08) 45%,
+      rgba(255,255,255,0.12) 50%,
+      rgba(255,255,255,0.08) 55%,
+      transparent 60%
+    );
+    background-size: 250% 100%;
+    animation: vault-cta-shimmer 4s ease-in-out infinite;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  @keyframes vault-cta-shimmer {
+    0%, 100% { background-position: 200% center; }
+    50% { background-position: -50% center; }
+  }
+
   /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .flow-dot-active,

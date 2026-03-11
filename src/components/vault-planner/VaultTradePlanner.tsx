@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
-  AlertTriangle, Wallet, Target, ChevronRight, Crosshair,
+  AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -239,20 +239,20 @@ export function VaultTradePlanner() {
                 <div className="space-y-2">
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Direction</Label>
                   <div className="flex rounded-2xl border border-border/50 overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)' }}>
-                    {(["calls", "puts"] as const).map((d) => (
+                {(["calls", "puts"] as const).map((d) => (
                       <button
                         key={d}
                         onClick={() => setDirection(d)}
                         className={cn(
-                          "flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold transition-all duration-100",
+                          "flex-1 flex items-center justify-center gap-2.5 px-4 py-4 text-[15px] font-semibold transition-all duration-150 min-h-[52px]",
                           direction === d
                             ? d === "calls"
-                              ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.4)]"
-                              : "bg-red-500/15 text-red-400 shadow-[inset_0_-2px_0_0_rgba(239,68,68,0.4)]"
-                            : "text-muted-foreground hover:text-foreground hover:bg-white/[0.03]"
+                              ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.5)]"
+                              : "bg-red-500/15 text-red-400 shadow-[inset_0_-2px_0_0_rgba(239,68,68,0.5)]"
+                            : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
                         )}
                       >
-                        {d === "calls" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                        {d === "calls" ? <ArrowUp className="h-5 w-5" /> : <ArrowDown className="h-5 w-5" />}
                         {d === "calls" ? "Up (Calls)" : "Down (Puts)"}
                       </button>
                     ))}
@@ -264,14 +264,14 @@ export function VaultTradePlanner() {
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">$</span>
-                    <Input
+                     <Input
                       type="number"
                       step="0.01"
                       min="0.01"
                       placeholder="0.00"
                       value={contractPrice}
                       onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); }}
-                      className="pl-8 text-xl font-bold tabular-nums h-14 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-primary/20 rounded-xl"
+                      className="pl-8 text-2xl font-bold tabular-nums h-16 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-xl"
                     />
                   </div>
                 </div>
@@ -279,11 +279,11 @@ export function VaultTradePlanner() {
                 {/* Ticker */}
                 <div className="space-y-2">
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Ticker <span className="text-muted-foreground/40">(optional)</span></Label>
-                  <Input
+                   <Input
                     placeholder="SPY, TSLA, NVDA…"
                     value={ticker}
                     onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                    className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-primary/20 rounded-xl h-11"
+                    className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-xl h-12 text-base"
                   />
                 </div>
               </div>
@@ -310,37 +310,38 @@ export function VaultTradePlanner() {
                         key={idx}
                         onClick={() => setSelectedIndex(idx)}
                         className={cn(
-                          "vault-approval-choice-card relative text-left space-y-3 transition-all duration-100 active:scale-[0.97]",
-                          isSelected && `ring-2 ${sc.ring} ${sc.glow}`,
+                          "vault-approval-choice-card relative text-left space-y-3 transition-all duration-150 active:scale-[0.97] min-h-[160px]",
+                          "hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)]",
+                          isSelected && `ring-2 ${sc.ring} ${sc.glow} scale-[1.02]`,
                           choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
-                          choice.status === "pass" && "opacity-40 saturate-50"
+                          choice.status === "pass" && "opacity-40 saturate-50 hover:translate-y-0"
                         )}
                       >
                         {/* Best badge */}
                         {choice.isRecommended && (
-                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest"
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse"
                             style={{
                               background: 'linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%))',
                               color: 'white',
-                              boxShadow: '0 2px 12px rgba(59,130,246,0.3)',
+                              boxShadow: '0 2px 16px rgba(59,130,246,0.35)',
                             }}
                           >
-                            <Star className="h-2.5 w-2.5" /> Best
+                            <Star className="h-3 w-3" /> Best
                           </div>
                         )}
 
                         <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-foreground tabular-nums">{choice.contracts}</span>
-                          <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
+                          <span className="text-3xl font-bold text-foreground tabular-nums">{choice.contracts}</span>
+                          <span className={cn("text-[11px] font-bold px-3 py-1.5 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
                             {sc.label}
                           </span>
                         </div>
 
-                        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.15em] font-medium">
+                        <p className="text-[11px] text-muted-foreground/60 uppercase tracking-[0.15em] font-medium">
                           {choice.contracts === 1 ? "contract" : "contracts"}
                         </p>
 
-                        <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+                        <div className="space-y-2.5 pt-3 border-t border-white/[0.05]">
                           <MetricLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
                           <MetricLine
                             label="Exit if wrong"
@@ -425,35 +426,34 @@ function HeroDecisionCard({
           : "linear-gradient(90deg, transparent, rgba(239,68,68,0.3), transparent)"
       }} />
 
-      <div className="p-6 space-y-5">
+      <div className="p-7 space-y-6">
         {/* Status hero */}
-        <div className={cn("text-center py-5 rounded-2xl relative overflow-hidden", sc.bg)}>
-          {/* Radial glow behind status text */}
+        <div className={cn("text-center py-7 rounded-2xl relative overflow-hidden", sc.bg)}>
           <div className="absolute inset-0" style={{
             background: choice.status === "fits"
-              ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.08), transparent 70%)"
+              ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.1), transparent 70%)"
               : choice.status === "tight"
-              ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.06), transparent 70%)"
+              ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.08), transparent 70%)"
               : "none"
           }} />
-          <p className={cn("text-4xl font-black tracking-tight relative", sc.color)} style={{
+          <p className={cn("text-5xl font-black tracking-tight relative", sc.color)} style={{
             textShadow: choice.status === "fits"
-              ? "0 0 30px rgba(52,211,153,0.25)"
+              ? "0 0 40px rgba(52,211,153,0.3)"
               : choice.status === "tight"
-              ? "0 0 30px rgba(251,191,36,0.2)"
+              ? "0 0 40px rgba(251,191,36,0.25)"
               : "none"
           }}>
             {sc.label}
           </p>
           {ticker && (
-            <p className="text-xs text-muted-foreground mt-1.5 relative">
+            <p className="text-sm text-muted-foreground mt-2 relative font-medium">
               {ticker.toUpperCase()} · {direction === "calls" ? "Calls" : "Puts"}
             </p>
           )}
         </div>
 
         {/* Details */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <HeroLine label="Buy" value={`${choice.contracts} contract${choice.contracts > 1 ? "s" : ""}`} bold />
           <HeroLine
             label="Exit if wrong"
@@ -463,43 +463,51 @@ function HeroDecisionCard({
           <HeroLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
           <HeroLine label="Max loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
 
-          <div className="pt-3 border-t border-white/[0.04] space-y-3">
+          <div className="pt-4 border-t border-white/[0.05] space-y-4">
             <HeroLine label="Take profit 1" value={formatCurrency(choice.tp1)} valueCls="text-emerald-400" />
             <HeroLine label="Take profit 2" value={formatCurrency(choice.tp2)} valueCls="text-emerald-400" />
           </div>
         </div>
 
         {/* Coaching note */}
-        <div className="flex items-start gap-2.5 rounded-2xl p-3.5" style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.08)' }}>
-          <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-          <p className="text-xs text-muted-foreground leading-relaxed">{choice.coachingNote}</p>
+        <div className="flex items-start gap-3 rounded-2xl p-4" style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.08)' }}>
+          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-[13px] text-muted-foreground leading-relaxed">{choice.coachingNote}</p>
         </div>
 
         {/* CTA */}
         <button
           className={cn(
-            "w-full h-13 rounded-xl text-base font-bold flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.98]",
+            "vault-cta-shine w-full h-14 rounded-2xl text-[15px] font-bold flex items-center justify-center gap-3 transition-all duration-150 active:scale-[0.97]",
             choice.status === "pass" || saving
-              ? "bg-muted/30 text-muted-foreground cursor-not-allowed"
-              : "text-white"
+              ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
+              : "text-white hover:brightness-110"
           )}
           style={choice.status !== "pass" && !saving ? {
-            background: "linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 45%))",
-            boxShadow: "0 4px 20px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+            background: "linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 42%))",
+            boxShadow: "0 6px 28px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.12)",
           } : undefined}
           disabled={choice.status === "pass" || saving}
           onClick={onUsePlan}
         >
-          {saving ? "Saving…" : (
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Saving…
+            </span>
+          ) : (
             <>
-              <Check className="h-4 w-4" /> Use This Plan
-              <ChevronRight className="h-4 w-4 ml-auto" />
+              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20">
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              </span>
+              Use This Plan
+              <ArrowRight className="h-4 w-4 opacity-60" />
             </>
           )}
         </button>
 
         {choice.status === "pass" && (
-          <p className="text-[10px] text-center text-muted-foreground/60">
+          <p className="text-[11px] text-center text-muted-foreground/50">
             This setup doesn't fit your account rules. Try a lower contract price.
           </p>
         )}
@@ -518,14 +526,14 @@ function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
 }) {
   return (
     <div className={cn(
-      "flex items-center gap-2.5 rounded-2xl px-4 py-2.5",
+      "flex items-center gap-3 rounded-2xl px-5 py-3 min-h-[48px]",
       accent ? "vault-premium-card" : "vault-glass-card"
     )}>
-      <div className="flex items-center justify-center h-6 w-6 rounded-lg bg-white/[0.04]">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-white/[0.05]">
+        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
       </div>
-      <span className="text-[11px] text-muted-foreground font-medium">{label}</span>
-      <span className={cn("text-sm font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <span className="text-xs text-muted-foreground font-medium">{label}</span>
+      <span className={cn("text-base font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
     </div>
   );
 }
@@ -533,8 +541,8 @@ function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
 function MetricLine({ label, value, valueCls }: { label: string; value: string; valueCls?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[10px] text-muted-foreground/70">{label}</span>
-      <span className={cn("text-xs font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <span className="text-[11px] text-muted-foreground/70">{label}</span>
+      <span className={cn("text-sm font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
     </div>
   );
 }
@@ -547,11 +555,11 @@ function HeroLine({ label, value, bold, valueCls, sub }: {
   sub?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3">
-      <span className="text-xs text-muted-foreground/70 font-medium">{label}</span>
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-sm text-muted-foreground/70 font-medium">{label}</span>
       <div className="text-right">
-        <span className={cn("text-sm tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
-        {sub && <p className="text-[10px] text-muted-foreground/50 mt-0.5 max-w-[180px]">{sub}</p>}
+        <span className={cn("text-base tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
+        {sub && <p className="text-[11px] text-muted-foreground/50 mt-0.5 max-w-[200px]">{sub}</p>}
       </div>
     </div>
   );
