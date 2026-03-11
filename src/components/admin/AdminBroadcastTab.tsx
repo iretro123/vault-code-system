@@ -413,9 +413,14 @@ export function AdminBroadcastTab() {
               disabled={sending || !title.trim() || (recipientType === "single" && !userId)}
               className="gap-1.5"
             >
-              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              Send
+              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : channel === "sms" ? <Smartphone className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+              {channel === "sms" ? "Send SMS" : "Send"}
             </Button>
+            {smsStatus && (
+              <p className="text-xs text-muted-foreground">
+                Last SMS: {smsStatus.sent} sent{smsStatus.failed > 0 ? `, ${smsStatus.failed} failed` : ""}
+              </p>
+            )}
           </Card>
         </TabsContent>
 
