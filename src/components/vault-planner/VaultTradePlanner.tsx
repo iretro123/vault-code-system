@@ -434,7 +434,14 @@ export function VaultTradePlanner() {
                           >
                             <Minus className="h-3 w-3 text-muted-foreground" />
                           </button>
-                          <span className="text-base font-bold tabular-nums text-foreground min-w-[2ch] text-center">{customContracts}</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={customContracts}
+                            onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setCustomContracts(v); }}
+                            onBlur={(e) => { if (!e.target.value || parseInt(e.target.value) < 1) setCustomContracts(1); }}
+                            className="w-10 text-center text-base font-bold tabular-nums text-foreground bg-transparent border-b border-white/10 outline-none focus:border-primary/50 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
                           <button
                             onClick={() => setCustomContracts(customContracts + 1)}
                             className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
