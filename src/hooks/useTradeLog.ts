@@ -259,6 +259,8 @@ export function useTradeLog() {
         title: "Trade deleted",
         description: "The trade entry has been removed.",
       });
+      // Refetch to ensure fresh data after trigger-side effects
+      await fetchEntries();
       return { error: null };
     } catch (error: any) {
       console.error("Error deleting trade entry:", error);
