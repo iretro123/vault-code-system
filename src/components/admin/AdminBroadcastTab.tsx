@@ -125,7 +125,11 @@ export function AdminBroadcastTab() {
   /* ── Apply template ── */
   const applyTemplate = (key: string) => {
     const t = TEMPLATES.find((t) => t.key === key);
-    if (t) { setTitle(t.title); setBody(t.body); setTemplateKey(key); }
+    if (t) {
+      setTitle(t.title);
+      setBody(`Hey {{name}}, ${t.body.charAt(0).toLowerCase()}${t.body.slice(1)}`);
+      setTemplateKey(key);
+    }
   };
 
   /* ── Send ── */
