@@ -1,40 +1,39 @@
 
 
-# Fix Trade Deletion Error
+## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
 
-## Root Cause
+### What was implemented
 
-The `update_discipline_on_trade` database trigger fires on INSERT, UPDATE, **and DELETE** operations. It references `NEW.user_id`, but during a DELETE operation, `NEW` is NULL — only `OLD` is populated. This causes a runtime error every time a user tries to delete a trade entry.
+**Edge Function: `trade-focus/index.ts`**
+- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
+- System prompt includes trade log, journal reflections, plan execution rate, and vault status
+- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
+- AI references actual data from all pipelines — no generic advice
 
-Additionally, the `reverse_trade_entry_from_vault_state` trigger compares `OLD.trade_date <> CURRENT_DATE::text`, but `trade_date` is a `date` type, not `text` — a type mismatch that could cause issues.
+**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
+- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
+- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
+- Shimmer gradient on "AI MENTOR" title
+- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
+- Icon glow effects matching accent colors
+- Discipline Score badge (strong/moderate/weak) in header
+- Risk Assessment section
+- Staggered fade-in animations per section
+- "Re-scan" button with spin animation
 
-## Fix
+## Plan: Sync Delete Trade Across All Systems — COMPLETED
 
-### 1. Fix the discipline trigger (database migration)
-Replace the `update_discipline_on_trade` function to handle DELETE by using `OLD.user_id` when `NEW` is null:
+### What was implemented
 
-```sql
-CREATE OR REPLACE FUNCTION update_discipline_on_trade()
-RETURNS trigger AS $$
-BEGIN
-  IF TG_OP = 'DELETE' THEN
-    PERFORM calculate_discipline_metrics(OLD.user_id);
-    RETURN OLD;
-  ELSE
-    PERFORM calculate_discipline_metrics(NEW.user_id);
-    RETURN NEW;
-  END IF;
-END;
-$$ LANGUAGE plpgsql;
-```
+**DB Trigger: reverse_trade_entry_from_vault_state**
+- Fires AFTER DELETE on `trade_entries` for same-day trades
+- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
+- Recalculates `loss_streak` from remaining trades
+- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
+- Clears `last_block_reason` when reverting to GREEN
+- Reverts linked `approved_plans` from `'logged'` → `'planned'`
 
-### 2. Fix the date comparison in reverse trigger (database migration)
-Update `reverse_trade_entry_from_vault_state` to compare `OLD.trade_date <> CURRENT_DATE` (without `::text` cast), ensuring proper date-to-date comparison.
-
-### 3. Improve client-side delete flow
-**File: `src/hooks/useTradeLog.ts`** — The `deleteEntry` function already handles errors, but ensure it calls `refetch` after successful deletion to guarantee fresh data.
-
-### Files Changed
-- **Database migration**: Fix `update_discipline_on_trade` function + fix date comparison in `reverse_trade_entry_from_vault_state`
-- **Edit**: `src/hooks/useTradeLog.ts` — add explicit refetch after delete
-
+**Frontend: AcademyTrade.tsx**
+- After successful delete, calls `refetchPlan()` to refresh active plan state
+- Vault state auto-updates via existing realtime subscription on `vault_state` table
+- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
