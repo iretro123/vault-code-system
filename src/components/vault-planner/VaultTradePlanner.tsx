@@ -90,6 +90,7 @@ export function VaultTradePlanner() {
 
   const [customOpen, setCustomOpen] = useState(false);
   const [customContracts, setCustomContracts] = useState(5);
+  const [customContractsText, setCustomContractsText] = useState("5");
   const [customExitOverride, setCustomExitOverride] = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
