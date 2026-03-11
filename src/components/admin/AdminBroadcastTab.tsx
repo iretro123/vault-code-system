@@ -418,7 +418,7 @@ export function AdminBroadcastTab() {
 
             <Button
               onClick={handleSend}
-              disabled={sending || !title.trim() || (recipientType === "single" && !userId)}
+              disabled={sending || (channel === "sms" ? !body.trim() : !title.trim()) || (recipientType === "single" && !userId)}
               className="gap-1.5"
             >
               {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : channel === "sms" ? <Smartphone className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
