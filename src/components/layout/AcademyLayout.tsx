@@ -36,6 +36,7 @@ function AcademyLayoutInner() {
   const lastPageRef = useRef("");
   const hadUserRef = useRef(false);
   useSmartNotifications();
+  useSmartRefresh();
   usePresenceHeartbeat();
 
   const isCommunity = location.pathname.startsWith("/academy/community");
