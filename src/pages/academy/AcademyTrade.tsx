@@ -835,7 +835,7 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
 const MOBILE_LIMIT = 15;
 
 function RecentTradesSection({ entries, onExportCSV }: {
-  entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string }[];
+  entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string; plan_id?: string }[];
   onExportCSV: () => void;
 }) {
   const isMobile = useIsMobile();
