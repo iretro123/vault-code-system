@@ -90,6 +90,7 @@ export function VaultTradePlanner() {
 
   const [customOpen, setCustomOpen] = useState(false);
   const [customContracts, setCustomContracts] = useState(5);
+  const [customContractsText, setCustomContractsText] = useState("5");
   const [customExitOverride, setCustomExitOverride] = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
@@ -429,7 +430,7 @@ export function VaultTradePlanner() {
                         <Label className="text-[10px] text-muted-foreground font-medium">Contracts</Label>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setCustomContracts(Math.max(1, customContracts - 1))}
+                            onClick={() => { const v = Math.max(1, customContracts - 1); setCustomContracts(v); setCustomContractsText(String(v)); }}
                             className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
                             <Minus className="h-3 w-3 text-muted-foreground" />
@@ -437,13 +438,13 @@ export function VaultTradePlanner() {
                           <input
                             type="number"
                             min={1}
-                            value={customContracts}
-                            onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setCustomContracts(v); }}
-                            onBlur={(e) => { if (!e.target.value || parseInt(e.target.value) < 1) setCustomContracts(1); }}
+                            value={customContractsText}
+                            onChange={(e) => { setCustomContractsText(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setCustomContracts(v); }}
+                            onBlur={() => { if (!customContractsText || parseInt(customContractsText) < 1) { setCustomContracts(1); setCustomContractsText("1"); } }}
                             className="w-10 text-center text-base font-bold tabular-nums text-foreground bg-transparent border-b border-white/10 outline-none focus:border-primary/50 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
-                            onClick={() => setCustomContracts(customContracts + 1)}
+                            onClick={() => { const v = customContracts + 1; setCustomContracts(v); setCustomContractsText(String(v)); }}
                             className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
                             <Plus className="h-3 w-3 text-muted-foreground" />
