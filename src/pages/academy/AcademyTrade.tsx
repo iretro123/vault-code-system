@@ -899,11 +899,11 @@ function RecentTradesSection({ entries, onExportCSV }: {
                 {/* Planned / Unplanned badge */}
                 <span className={cn(
                   "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
-                  (e as any).plan_id
+                  e.plan_id
                     ? "bg-primary/10 text-primary border-primary/20"
                     : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                 )}>
-                  {(e as any).plan_id ? "Planned" : "Unplanned"}
+                  {e.plan_id ? "Planned" : "Unplanned"}
                 </span>
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
                   {e.followed_rules ? "✅" : "❌"} Plan
