@@ -178,8 +178,8 @@ export function AcademySidebar() {
                       <SidebarMenuButton asChild>
                         <button
                           onClick={() => {
-                            if (window.innerWidth < 768) {
-                              toggleSidebar();
+                            if (isMobile) {
+                              setOpenMobile(false);
                               setTimeout(() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")), 150);
                             } else {
                               window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
