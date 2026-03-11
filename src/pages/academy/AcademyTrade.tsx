@@ -127,12 +127,45 @@ const AcademyTrade = () => {
       symbol: data.symbol.toUpperCase(),
       outcome: isWin ? "WIN" : isLoss ? "LOSS" : "BREAKEVEN",
       trade_date: format(data.date, "yyyy-MM-dd"),
+      plan_id: logPlanId,
     };
     const { error } = await addEntry(newEntry);
     if (error) throw error;
+
+    // If this trade was logged against a plan, mark it as logged
+    if (logPlanId) {
+      await markLogged(logPlanId);
+      refetchPlan();
+    }
+
     setShowLogTrade(false);
+    setLogPlanId(undefined);
+    setLogPrefill(undefined);
     setTodayStatus("in_progress");
     setTimeout(() => setShowCheckIn(true), 400);
+  };
+
+  const handleLogFromPlan = (plan: ApprovedPlan) => {
+    setLogPlanId(plan.id);
+    setLogPrefill({
+      symbol: plan.ticker || "",
+      direction: plan.direction === "calls" ? "Calls" : "Puts",
+      entryPrice: String(plan.entry_price_planned),
+      positionSize: String(plan.contracts_planned),
+    });
+    setShowLogTrade(true);
+  };
+
+  const handleLogUnplanned = () => {
+    setLogPlanId(undefined);
+    setLogPrefill(undefined);
+    setShowLogTrade(true);
+  };
+
+  const handleCancelPlan = async (planId: string) => {
+    await cancelPlan(planId);
+    refetchPlan();
+    toast({ title: "Plan cancelled" });
   };
 
   const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
