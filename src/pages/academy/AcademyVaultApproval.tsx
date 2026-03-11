@@ -63,7 +63,7 @@ const STATUS_CONFIG = {
 
 export default function AcademyVaultApproval() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const { hasAccess, status: accessStatus, loading: accessLoading } = useStudentAccess();
   const { activePlan, savePlan, replaceWithNew } = useApprovedPlans();
 
@@ -74,8 +74,20 @@ export default function AcademyVaultApproval() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [accountBalance, setAccountBalance] = useState(0);
+  const [balanceLoaded, setBalanceLoaded] = useState(false);
 
-  const accountBalance = profile?.account_balance ?? 0;
+  useEffect(() => {
+    if (!user) { setBalanceLoaded(true); return; }
+    (async () => {
+      try {
+        const { data } = await supabase.from("profiles").select("account_balance").eq("user_id", user.id).maybeSingle();
+        if (data && data.account_balance > 0) setAccountBalance(data.account_balance);
+      } catch {}
+      finally { setBalanceLoaded(true); }
+    })();
+  }, [user]);
+
   const tier = detectTier(accountBalance);
   const tierDefaults = TIER_DEFAULTS[tier];
   const tradeLossLimit = accountBalance * (tierDefaults.riskPercent / 100);
