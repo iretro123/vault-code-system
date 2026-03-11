@@ -228,6 +228,19 @@ export function VaultTradePlanner() {
 
   if (!hasAccess && !accessLoading) return <PremiumGate status={accessStatus} pageName="VAULT Approval" />;
 
+  if (!balanceLoaded || accessLoading) {
+    return (
+      <div className="space-y-3 max-w-5xl animate-pulse">
+        <div className="flex gap-2">
+          <div className="h-8 w-28 rounded-lg bg-muted/30" />
+          <div className="h-8 w-28 rounded-lg bg-muted/30" />
+          <div className="h-8 w-20 rounded-lg bg-muted/30" />
+        </div>
+        <div className="h-64 rounded-xl bg-muted/20 border border-border/30" />
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="space-y-3 max-w-5xl">

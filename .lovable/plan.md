@@ -1,40 +1,29 @@
 
 
-# Fix: VAULT Approval Flash/Glitch on Tab Navigation
+## Plan: Pipeline Leak Fixes — COMPLETED
 
-## Problem
-When navigating between tabs and landing on Trading Toolkit (`/academy/resources`), the embedded VAULT Approval component briefly flashes incorrect data ($0 balance, $0 loss limit, "Micro" tier) before the real values load. This happens because:
+### What was fixed
 
-1. The `VaultTradePlanner` renders immediately without waiting for `balanceLoaded` to be true
-2. Every tab switch remounts the component, triggering a fresh data fetch cycle
-3. During the ~200ms fetch window, users see a "$0 / Micro" state that snaps to real values
+**Leak 5 (Critical): Trade Log → Vault State Sync**
+- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
+- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
+- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
+- Never downgrades from RED; persists block reason
 
-## Fix
+**Leak 2 (High): Vault State Gate on Approval Page**
+- `VaultTradePlanner` now imports `useVaultState` and checks status
+- Shows warning banner when vault is RED or session is paused
+- Disables "Use This Plan" button when blocked
+- `HeroDecisionCard` receives `vaultBlocked` prop
 
-**Single change in `src/components/vault-planner/VaultTradePlanner.tsx`** -- add a loading gate before the main render (after the PremiumGate check on line 229):
+**Leak 1 (Medium): Balance Drift Refetch**
+- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
+- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
 
-```typescript
-if (!hasAccess && !accessLoading) return <PremiumGate status={accessStatus} pageName="VAULT Approval" />;
+**Leak 4 (Medium): Timezone-Safe Plan Expiry**
+- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
+- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
 
-// ADD: prevent flash of $0 data while balance is loading
-if (!balanceLoaded || accessLoading) {
-  return (
-    <div className="space-y-3 max-w-5xl animate-pulse">
-      <div className="flex gap-2">
-        <div className="h-8 w-28 rounded-lg bg-white/[0.04]" />
-        <div className="h-8 w-28 rounded-lg bg-white/[0.04]" />
-        <div className="h-8 w-20 rounded-lg bg-white/[0.04]" />
-      </div>
-      <div className="h-64 rounded-xl bg-white/[0.03] border border-white/[0.06]" />
-    </div>
-  );
-}
-```
-
-This shows a subtle skeleton placeholder matching the rules strip + trade check card shape, preventing any flash of incorrect financial data.
-
-## What This Fixes
-- No more "$0 balance" flash when switching to Toolkit or VAULT Approval tabs
-- No more "Micro" tier flash before the real tier loads
-- Consistent, polished loading state that matches the existing dark UI design
-
+**Leak 3 (Low): P/L Result Type Validation**
+- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
+- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
