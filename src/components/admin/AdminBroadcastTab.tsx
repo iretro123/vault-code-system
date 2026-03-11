@@ -396,15 +396,17 @@ export function AdminBroadcastTab() {
                 rows={3}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Link (optional)</Label>
-              <Input
-                placeholder="e.g. /academy/home"
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-              />
-              <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
-            </div>
+            {channel === "in_app" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Link (optional)</Label>
+                <Input
+                  placeholder="e.g. /academy/home"
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                />
+                <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
+              </div>
+            )}
 
             <Button
               onClick={handleSend}
