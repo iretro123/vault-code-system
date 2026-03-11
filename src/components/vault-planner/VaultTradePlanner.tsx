@@ -416,9 +416,9 @@ export function VaultTradePlanner() {
                 <span className="text-muted-foreground">Risk per trade</span>
                 <span className="text-foreground font-mono font-bold text-right">{safeCurrency(riskBudget)}</span>
                 <span className="text-muted-foreground">Best premium zone</span>
-                <span className="text-foreground font-mono font-bold text-right">~{safeCurrency(idealPrem)}</span>
+                <span className="text-foreground font-mono font-bold text-right">~{safeCurrency(Math.floor(idealPrem * 100) / 100)}</span>
                 <span className="text-muted-foreground">Stretch zone</span>
-                <span className="text-foreground font-mono font-bold text-right">up to {safeCurrency(aggressivePrem)}</span>
+                <span className="text-foreground font-mono font-bold text-right">up to {safeCurrency(Math.floor(aggressivePrem * 100) / 100)}</span>
                 <span className="text-muted-foreground">Max stop width</span>
                 <span className="text-foreground font-mono font-bold text-right">{safeCurrency(maxStopW)}</span>
               </div>
