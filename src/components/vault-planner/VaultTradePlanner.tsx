@@ -84,8 +84,6 @@ export function VaultTradePlanner() {
   // Leak 1 fix: refetch trade data on mount to prevent stale balance
   useEffect(() => { refetchTrades(); }, []);
 
-  // Leak 2: vault gate — block saving when RED or paused
-  const vaultBlocked = vaultState.vault_status === "RED" || vaultState.session_paused;
 
   const [direction, setDirection] = useState<"calls" | "puts">("calls");
   const [contractPrice, setContractPrice] = useState("");
