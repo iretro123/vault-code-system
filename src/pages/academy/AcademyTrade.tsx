@@ -8,7 +8,7 @@ import {
   Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet,
   CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download,
   ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield,
-  Sparkles, Flame, Target, Activity, ArrowUpRight, ArrowDownRight,
+  Sparkles, Flame, Target, Activity, ArrowUpRight, ArrowDownRight, X, Loader2,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -41,7 +41,7 @@ const AcademyTrade = () => {
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
   const {
-    entries, loading: tradesLoading, addEntry, exportCSV, refetch: refetchTrades,
+    entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
   } = useTradeLog();
   const { activePlan, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
@@ -263,7 +263,7 @@ const AcademyTrade = () => {
         )}
 
         {/* ═══ TRADE JOURNAL ═══ */}
-        <RecentTradesSection entries={entries} onExportCSV={exportCSV} />
+        <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={deleteEntry} />
 
         {/* Tracked Balance / Reset */}
         <TrackedBalanceCard
@@ -834,12 +834,16 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
    ══════════════════════════════════════════════════════════════════ */
 const MOBILE_LIMIT = 15;
 
-function RecentTradesSection({ entries, onExportCSV }: {
+function RecentTradesSection({ entries, onExportCSV, onDelete }: {
   entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string; plan_id?: string }[];
   onExportCSV: () => void;
+  onDelete: (id: string) => Promise<{ error: any }>;
 }) {
   const isMobile = useIsMobile();
   const [expanded, setExpanded] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (entries.length === 0) {
     return (
@@ -856,6 +860,14 @@ function RecentTradesSection({ entries, onExportCSV }: {
   const showToggle = entries.length > defaultLimit;
   const visibleEntries = expanded ? entries : entries.slice(0, defaultLimit);
 
+  const handleDeleteConfirm = async (id: string) => {
+    setIsDeleting(true);
+    await onDelete(id);
+    setIsDeleting(false);
+    setDeletingId(null);
+    setConfirmText("");
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -871,16 +883,27 @@ function RecentTradesSection({ entries, onExportCSV }: {
           const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
           const ticker = e.symbol || e.notes?.split(" ")[0] || "Trade";
 
-          // Parse setup/direction/accountability from notes
           const noteParts = e.notes?.split(" | ") || [];
-          const directionPart = noteParts[0]?.split(" ")[1]; // "Calls" or "Puts"
+          const directionPart = noteParts[0]?.split(" ")[1];
           const setupPart = noteParts.find((p) => p.startsWith("Setup:"))?.replace("Setup: ", "");
           const targetPart = noteParts.find((p) => p.startsWith("Target:"))?.replace("Target: ", "");
           const stopPart = noteParts.find((p) => p.startsWith("Stop:"))?.replace("Stop: ", "");
+          const isDeleteMode = deletingId === e.id;
 
           return (
-            <div key={e.id} className="vault-glass-card p-4 space-y-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div key={e.id} className="vault-glass-card p-4 space-y-2 relative group">
+              {/* X button — top right */}
+              {!isDeleteMode && (
+                <button
+                  onClick={() => { setDeletingId(e.id); setConfirmText(""); }}
+                  className="absolute top-3 right-3 h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  aria-label="Delete trade"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+
+              <div className="flex items-center justify-between gap-2 flex-wrap pr-8">
                 <div className="flex items-center gap-2 min-w-0">
                   <Icon className={`h-3.5 w-3.5 ${s.color} shrink-0`} />
                   <span className="text-sm font-bold text-foreground">{ticker}</span>
@@ -896,7 +919,6 @@ function RecentTradesSection({ entries, onExportCSV }: {
               </div>
               {/* Accountability badges */}
               <div className="flex flex-wrap gap-1.5">
-                {/* Planned / Unplanned badge */}
                 <span className={cn(
                   "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
                   e.plan_id
@@ -924,6 +946,33 @@ function RecentTradesSection({ entries, onExportCSV }: {
                   </span>
                 )}
               </div>
+
+              {/* Inline delete confirmation */}
+              {isDeleteMode && (
+                <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2 mt-1">
+                  <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">DELETE</span> to confirm</p>
+                  <p className="text-[11px] text-muted-foreground">This action is permanent and cannot be undone.</p>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      className="max-w-[120px] h-8 text-sm font-mono"
+                      placeholder="DELETE"
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={confirmText !== "DELETE" || isDeleting}
+                      onClick={() => handleDeleteConfirm(e.id)}
+                      className="h-8"
+                    >
+                      {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setDeletingId(null); setConfirmText(""); }}>Cancel</Button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
