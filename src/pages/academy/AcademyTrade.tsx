@@ -673,7 +673,7 @@ function TodayVaultCheckCard({
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   AI Focus Card (Real AI)
+   AI Focus Card (Real AI) — Premium Glassmorphism + Full Pipeline Sync
    ══════════════════════════════════════════════════════════════════ */
 const AI_FOCUS_CACHE = "va_cache_ai_focus";
 
@@ -684,13 +684,31 @@ interface AIFocusResult {
   encouragement: string;
   sizingAdvice?: string;
   nextSessionTip?: string;
+  disciplineScore?: "strong" | "moderate" | "weak";
+  riskAssessment?: string;
   date: string;
+  tradeCount: number;
 }
+
+const MENTOR_STYLES = `
+@keyframes mentorScan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+@keyframes mentorBorder { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes mentorPulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.15); } }
+@keyframes mentorShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes mentorFadeIn { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
+`;
+
+const DISCIPLINE_MAP = {
+  strong: { label: "STRONG", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25", glow: "shadow-[0_0_12px_-3px_rgba(52,211,153,0.3)]" },
+  moderate: { label: "MODERATE", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,191,36,0.3)]" },
+  weak: { label: "NEEDS WORK", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/25", glow: "shadow-[0_0_12px_-3px_rgba(248,113,113,0.3)]" },
+};
 
 function AIFocusCard({ entries }: { entries: { id: string }[] }) {
   const [result, setResult] = useState<AIFocusResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const tradeCount = entries.length;
   const isLocked = tradeCount < 3;
@@ -702,11 +720,16 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
         const cached = localStorage.getItem(AI_FOCUS_CACHE);
         if (cached) {
           const parsed: AIFocusResult = JSON.parse(cached);
-          if (parsed.date === todayStr) { setResult(parsed); return; }
+          // Bust cache if date changed OR trade count changed
+          if (parsed.date === todayStr && parsed.tradeCount === tradeCount) {
+            setResult(parsed);
+            return;
+          }
         }
       } catch {}
     }
     setLoading(true); setError(null);
+    if (force) setRefreshing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -717,119 +740,195 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
       });
       if (!resp.ok) { const body = await resp.json().catch(() => ({})); throw new Error(body.error || "Analysis failed"); }
       const data = await resp.json();
-      const cached: AIFocusResult = { ...data, date: todayStr };
+      const cached: AIFocusResult = { ...data, date: todayStr, tradeCount };
       setResult(cached);
       try { localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached)); } catch {}
     } catch (e: any) { setError(e.message || "Something went wrong"); }
-    finally { setLoading(false); }
-  }, [todayStr]);
+    finally { setLoading(false); setRefreshing(false); }
+  }, [todayStr, tradeCount]);
 
-  useEffect(() => { if (!isLocked) fetchAnalysis(); }, [isLocked, fetchAnalysis]);
+  // Auto-refresh when trade count changes (log or delete)
+  useEffect(() => {
+    if (!isLocked) fetchAnalysis();
+  }, [isLocked, fetchAnalysis, tradeCount]);
 
+  /* ── Locked State ── */
   if (isLocked) {
     return (
-      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-6 space-y-4">
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
-          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "scanMove 3s linear infinite" }}
+      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-card p-6 space-y-4">
+        <style>{MENTOR_STYLES}</style>
+        <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
+          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 3s linear infinite" }}
         />
-        <style>{`@keyframes scanMove { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }`}</style>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Brain className="h-5 w-5 text-primary/40" />
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-muted/40 border border-white/[0.06]">
+            <Brain className="h-4.5 w-4.5 text-muted-foreground/50" />
             <Lock className="h-2.5 w-2.5 text-muted-foreground absolute -bottom-0.5 -right-0.5" />
           </div>
-          <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
-          <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-muted-foreground/60">LOCKED</span>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">LOCKED</span>
+          </div>
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">Trades scanned</span>
-            <span className="text-xs font-mono text-primary">{tradeCount}/3</span>
+            <span className="text-xs font-mono text-primary tabular-nums">{tradeCount}/3</span>
           </div>
-          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(tradeCount / 3) * 100}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))" }} />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Log {3 - tradeCount} more trade{3 - tradeCount > 1 ? "s" : ""} to activate real-time AI analysis of your trading patterns.</p>
+        <p className="text-xs text-muted-foreground">Log {3 - tradeCount} more trade{3 - tradeCount > 1 ? "s" : ""} to activate real-time AI analysis of your trading patterns, journal, and vault behavior.</p>
       </div>
     );
   }
 
-  if (loading) {
+  /* ── Loading State ── */
+  if (loading && !refreshing) {
     return (
-      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-primary animate-pulse" />
-          <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
-          <span className="ml-auto text-[10px] font-mono uppercase tracking-wider text-primary/60 animate-pulse">ANALYZING...</span>
+      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card p-6 space-y-4">
+        <style>{MENTOR_STYLES}</style>
+        <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
+          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 2s linear infinite" }}
+        />
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-primary/5 border border-primary/15">
+            <Brain className="h-4.5 w-4.5 text-primary animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-primary/50 animate-pulse">SCANNING BEHAVIOR...</span>
+          </div>
         </div>
         <div className="space-y-3">
-          <Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" /><Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-12 w-3/4 rounded-xl" />
         </div>
       </div>
     );
   }
 
+  /* ── Error State ── */
   if (error) {
     return (
       <div id="ai-focus-card" className="rounded-2xl border border-destructive/20 bg-card p-6 space-y-3">
-        <div className="flex items-center gap-2"><Brain className="h-5 w-5 text-destructive" /><h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3></div>
-        <p className="text-sm text-muted-foreground">{error}</p>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fetchAnalysis(true)}><RefreshCw className="h-3.5 w-3.5" /> Retry Analysis</Button>
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-destructive/10 border border-destructive/20">
+            <Brain className="h-4.5 w-4.5 text-destructive" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+            <span className="text-[10px] text-destructive/70">{error}</span>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fetchAnalysis(true)}>
+          <RefreshCw className="h-3.5 w-3.5" /> Retry Analysis
+        </Button>
       </div>
     );
   }
 
   if (!result) return null;
 
+  const disciplineStyle = result.disciplineScore ? DISCIPLINE_MAP[result.disciplineScore] : null;
+
   const sections = [
-    { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, color: "text-primary" },
-    { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, color: "text-amber-400" },
-    { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, color: "text-emerald-400" },
-    ...(result.sizingAdvice ? [{ label: "SIZING ADVICE", icon: BarChart3, value: result.sizingAdvice, color: "text-cyan-400" }] : []),
-    ...(result.nextSessionTip ? [{ label: "NEXT SESSION TIP", icon: Sparkles, value: result.nextSessionTip, color: "text-violet-400" }] : []),
+    { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, accent: "border-l-blue-500", iconColor: "text-blue-400", labelColor: "text-blue-400/80", glowColor: "rgba(59,130,246,0.15)" },
+    { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, accent: "border-l-amber-500", iconColor: "text-amber-400", labelColor: "text-amber-400/80", glowColor: "rgba(251,191,36,0.15)" },
+    { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, accent: "border-l-emerald-500", iconColor: "text-emerald-400", labelColor: "text-emerald-400/80", glowColor: "rgba(52,211,153,0.15)" },
+    ...(result.sizingAdvice ? [{ label: "SIZING ADVICE", icon: BarChart3, value: result.sizingAdvice, accent: "border-l-cyan-400", iconColor: "text-cyan-400", labelColor: "text-cyan-400/80", glowColor: "rgba(34,211,238,0.15)" }] : []),
+    ...(result.nextSessionTip ? [{ label: "NEXT SESSION TIP", icon: Sparkles, value: result.nextSessionTip, accent: "border-l-violet-400", iconColor: "text-violet-400", labelColor: "text-violet-400/80", glowColor: "rgba(167,139,250,0.15)" }] : []),
+    ...(result.riskAssessment ? [{ label: "RISK ASSESSMENT", icon: Activity, value: result.riskAssessment, accent: "border-l-rose-400", iconColor: "text-rose-400", labelColor: "text-rose-400/80", glowColor: "rgba(251,113,133,0.15)" }] : []),
   ];
 
   return (
-    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 space-y-4">
-      <div className="absolute inset-0 rounded-2xl pointer-events-none"
-        style={{ background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.06) 25%, transparent 50%, hsl(var(--primary) / 0.04) 75%, transparent 100%)", animation: "borderSpin 8s linear infinite" }}
+    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
+      <style>{MENTOR_STYLES}</style>
+
+      {/* Rotating border glow */}
+      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-20"
+        style={{ background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 15%, transparent 30%, hsl(217 91% 60% / 0.1) 50%, transparent 65%, hsl(var(--primary) / 0.12) 80%, transparent 100%)", animation: "mentorBorder 10s linear infinite" }}
       />
-      <style>{`@keyframes borderSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
 
-      <div className="relative flex items-center gap-2">
-        <div className="relative">
-          <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }} />
-          <Sparkles className="h-2.5 w-2.5 text-primary/60 absolute -top-1 -right-1" />
-        </div>
-        <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
-        <span className="ml-auto flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-primary/60">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          SYSTEM ACTIVE · {tradeCount} trades analyzed
-        </span>
-      </div>
+      {/* Scan-line overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 4s linear infinite" }}
+      />
 
-      <div className="relative space-y-3">
-        {sections.map((s) => (
-          <div key={s.label} className="rounded-xl bg-muted/30 border border-border/50 p-3 space-y-1">
-            <div className="flex items-center gap-1.5">
-              <s.icon className={`h-3 w-3 ${s.color}`} />
-              <span className={`text-[10px] font-mono uppercase tracking-widest ${s.color}`}>{s.label}</span>
+      <div className="relative p-6 space-y-4">
+        {/* ── Header ── */}
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            {/* Pulse ring */}
+            <div className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20" style={{ animation: "mentorPulse 3s ease-in-out infinite" }} />
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+              <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.5))" }} />
             </div>
-            <p className="text-sm text-foreground">{s.value}</p>
           </div>
-        ))}
-      </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-foreground tracking-tight"
+              style={{ background: "linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary) / 0.8), hsl(var(--foreground)))", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mentorShimmer 6s linear infinite" }}
+            >
+              AI MENTOR
+            </h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.5)", animation: "mentorPulse 2s ease-in-out infinite" }} />
+              <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400/70">
+                LIVE · {tradeCount} trades scanned
+              </span>
+            </div>
+          </div>
 
-      <div className="flex items-start gap-2 pt-2 border-t border-border/30">
-        <Zap className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" style={{ filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.3))" }} />
-        <p className="text-xs text-muted-foreground italic">{result.encouragement}</p>
-      </div>
+          {/* Discipline badge */}
+          {disciplineStyle && (
+            <div className={cn("px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider", disciplineStyle.bg, disciplineStyle.border, disciplineStyle.color, disciplineStyle.glow)}>
+              {disciplineStyle.label}
+            </div>
+          )}
+        </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" className="gap-1.5 text-xs text-primary px-0 h-auto hover:bg-transparent" onClick={() => fetchAnalysis(true)}>
-          <RefreshCw className="h-3 w-3" /> Refresh Analysis
-        </Button>
+        {/* ── Insight Sections ── */}
+        <div className="space-y-2.5">
+          {sections.map((s, i) => (
+            <div
+              key={s.label}
+              className={cn("relative rounded-xl bg-white/[0.02] border border-white/[0.05] p-3.5 pl-4 border-l-2 space-y-1", s.accent)}
+              style={{ animation: `mentorFadeIn 0.3s ease-out ${i * 0.08}s both` }}
+            >
+              <div className="flex items-center gap-1.5">
+                <s.icon className={cn("h-3 w-3", s.iconColor)} style={{ filter: `drop-shadow(0 0 4px ${s.glowColor})` }} />
+                <span className={cn("text-[9px] font-mono uppercase tracking-[0.12em] font-semibold", s.labelColor)}>{s.label}</span>
+              </div>
+              <p className="text-[13px] leading-relaxed text-foreground/90">{s.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Encouragement Footer ── */}
+        <div className="relative pt-3">
+          <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.2), transparent)" }} />
+          <div className="flex items-start gap-2.5">
+            <Zap className="h-4 w-4 text-primary mt-0.5 shrink-0" style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }} />
+            <p className="text-xs text-foreground/60 italic leading-relaxed">{result.encouragement}</p>
+          </div>
+        </div>
+
+        {/* ── Re-scan Button ── */}
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs text-primary/70 hover:text-primary px-0 h-auto hover:bg-transparent transition-colors"
+            onClick={() => fetchAnalysis(true)}
+            disabled={refreshing}
+          >
+            <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
+            {refreshing ? "Scanning..." : "Re-scan"}
+          </Button>
+        </div>
       </div>
     </div>
   );
