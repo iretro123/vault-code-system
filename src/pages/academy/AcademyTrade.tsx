@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,9 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
+import { useApprovedPlans, type ApprovedPlan } from "@/hooks/useApprovedPlans";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 /* ── Types ── */
 type TodayStatus = "incomplete" | "in_progress" | "complete";
@@ -34,12 +37,14 @@ const OUTCOME_STYLES = {
 
 /* ── Page ── */
 const AcademyTrade = () => {
+  const navigate = useNavigate();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
   const {
     entries, loading: tradesLoading, addEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
   } = useTradeLog();
+  const { activePlan, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
 
   const [startingBalance, setStartingBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
@@ -49,6 +54,8 @@ const AcademyTrade = () => {
   const [resetInput, setResetInput] = useState("");
   const [resetting, setResetting] = useState(false);
   const [showLogTrade, setShowLogTrade] = useState(false);
+  const [logPlanId, setLogPlanId] = useState<string | undefined>(undefined);
+  const [logPrefill, setLogPrefill] = useState<any>(undefined);
   const [todayStatus, setTodayStatus] = useState<TodayStatus>("incomplete");
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
@@ -120,12 +127,45 @@ const AcademyTrade = () => {
       symbol: data.symbol.toUpperCase(),
       outcome: isWin ? "WIN" : isLoss ? "LOSS" : "BREAKEVEN",
       trade_date: format(data.date, "yyyy-MM-dd"),
+      plan_id: logPlanId,
     };
     const { error } = await addEntry(newEntry);
     if (error) throw error;
+
+    // If this trade was logged against a plan, mark it as logged
+    if (logPlanId) {
+      await markLogged(logPlanId);
+      refetchPlan();
+    }
+
     setShowLogTrade(false);
+    setLogPlanId(undefined);
+    setLogPrefill(undefined);
     setTodayStatus("in_progress");
     setTimeout(() => setShowCheckIn(true), 400);
+  };
+
+  const handleLogFromPlan = (plan: ApprovedPlan) => {
+    setLogPlanId(plan.id);
+    setLogPrefill({
+      symbol: plan.ticker || "",
+      direction: plan.direction === "calls" ? "Calls" : "Puts",
+      entryPrice: String(plan.entry_price_planned),
+      positionSize: String(plan.contracts_planned),
+    });
+    setShowLogTrade(true);
+  };
+
+  const handleLogUnplanned = () => {
+    setLogPlanId(undefined);
+    setLogPrefill(undefined);
+    setShowLogTrade(true);
+  };
+
+  const handleCancelPlan = async (planId: string) => {
+    await cancelPlan(planId);
+    refetchPlan();
+    toast({ title: "Plan cancelled" });
   };
 
   const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
@@ -153,9 +193,14 @@ const AcademyTrade = () => {
         title="My Trades"
         subtitle="Your trading command center — log, track, and improve."
         action={
-          <Button size="sm" className="gap-1.5" onClick={() => setShowLogTrade(true)}>
-            <Plus className="h-3.5 w-3.5" /> Log Trade
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" className="gap-1.5" onClick={handleLogUnplanned}>
+              <Plus className="h-3.5 w-3.5" /> Log Trade
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("/academy/vault")}>
+              <Shield className="h-3.5 w-3.5" /> Check a Trade
+            </Button>
+          </div>
         }
       />
       <div className="px-4 md:px-6 pb-10 space-y-5 max-w-4xl">
@@ -194,10 +239,17 @@ const AcademyTrade = () => {
           <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
         )}
 
-        {/* Today's Trade Check */}
-        <TodayTradeCheckCard
-          count={todayTradeCount} status={todayStatus} noTradeDay={noTradeDay}
-          onLogTrade={() => setShowLogTrade(true)} onNoTradeDay={() => setShowNoTradeDay(true)}
+        {/* Today's VAULT Check */}
+        <TodayVaultCheckCard
+          activePlan={activePlan}
+          todayTradeCount={todayTradeCount}
+          todayStatus={todayStatus}
+          noTradeDay={noTradeDay}
+          onCheckTrade={() => navigate("/academy/vault")}
+          onLogFromPlan={handleLogFromPlan}
+          onLogUnplanned={handleLogUnplanned}
+          onCancelPlan={handleCancelPlan}
+          onNoTradeDay={() => setShowNoTradeDay(true)}
           onCompleteCheckIn={() => setShowCheckIn(true)}
           onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
         />
@@ -226,7 +278,7 @@ const AcademyTrade = () => {
       </div>
 
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
-      <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} />
+      <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
       <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
     </>
@@ -494,52 +546,121 @@ function GettingStartedBanner({ balanceSet, onSetBalance, todayStatus }: { balan
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Today's Trade Check
+   Today's VAULT Check — Bridge Card
    ══════════════════════════════════════════════════════════════════ */
-function TodayTradeCheckCard({
-  count, status, noTradeDay, onLogTrade, onNoTradeDay, onCompleteCheckIn, onReviewFeedback,
+function TodayVaultCheckCard({
+  activePlan, todayTradeCount, todayStatus, noTradeDay,
+  onCheckTrade, onLogFromPlan, onLogUnplanned, onCancelPlan, onNoTradeDay, onCompleteCheckIn, onReviewFeedback,
 }: {
-  count: number; status: TodayStatus; noTradeDay: boolean;
-  onLogTrade: () => void; onNoTradeDay: () => void; onCompleteCheckIn: () => void; onReviewFeedback: () => void;
+  activePlan: ApprovedPlan | null;
+  todayTradeCount: number;
+  todayStatus: TodayStatus;
+  noTradeDay: boolean;
+  onCheckTrade: () => void;
+  onLogFromPlan: (plan: ApprovedPlan) => void;
+  onLogUnplanned: () => void;
+  onCancelPlan: (id: string) => void;
+  onNoTradeDay: () => void;
+  onCompleteCheckIn: () => void;
+  onReviewFeedback: () => void;
 }) {
+  // State A: No active plan, not complete
+  if (!activePlan && todayStatus === "incomplete" && !noTradeDay) {
+    return (
+      <div className="vault-glass-card p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
+          <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20">No plan</span>
+        </div>
+        <p className="text-xs text-muted-foreground">No trade approved yet today. Check a setup before you enter.</p>
+        <div className="flex gap-2">
+          <Button size="sm" className="gap-1.5" onClick={onCheckTrade}>
+            <Shield className="h-3.5 w-3.5" /> Check a Trade
+          </Button>
+          <Button size="sm" variant="outline" onClick={onNoTradeDay}>Mark No-Trade Day</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // State B: Active plan, not yet logged
+  if (activePlan && activePlan.status === "planned") {
+    const statusStyles = activePlan.approval_status === "fits"
+      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+      : activePlan.approval_status === "tight"
+        ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+        : "bg-red-500/10 text-red-400 border-red-500/20";
+    return (
+      <div className="vault-glass-card p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
+          <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Plan ready</span>
+        </div>
+        <p className="text-xs text-muted-foreground">Your approved plan is ready. Log the result after the trade.</p>
+
+        {/* Plan summary */}
+        <div className="rounded-xl bg-muted/20 border border-border/30 p-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {activePlan.ticker && <span className="text-sm font-bold text-foreground">{activePlan.ticker}</span>}
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-border/50 bg-muted/30 text-muted-foreground">
+              {activePlan.direction === "calls" ? "Calls" : "Puts"}
+            </span>
+            <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", statusStyles)}>
+              {activePlan.approval_status.toUpperCase()}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <div><span className="text-muted-foreground">Contracts</span><br /><span className="font-semibold text-foreground">{activePlan.contracts_planned}</span></div>
+            <div><span className="text-muted-foreground">Max loss</span><br /><span className="font-semibold text-red-400">${Number(activePlan.max_loss_planned).toFixed(0)}</span></div>
+            <div><span className="text-muted-foreground">Entry</span><br /><span className="font-semibold text-foreground">${Number(activePlan.entry_price_planned).toFixed(2)}</span></div>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button size="sm" className="gap-1.5" onClick={() => onLogFromPlan(activePlan)}>
+            <CheckCircle2 className="h-3.5 w-3.5" /> Log Result
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => onCancelPlan(activePlan.id)}>Cancel Plan</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // State C: Complete or in-progress
   const badgeMap = {
     incomplete: { text: "Incomplete", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
     in_progress: { text: "In progress", cls: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
     complete: { text: "Complete", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
   };
-  const badge = badgeMap[status];
+  const badge = badgeMap[todayStatus];
 
   return (
     <div className="vault-glass-card p-5 space-y-3">
       <div className="flex items-center gap-2">
-        <CalendarCheck className="h-4 w-4 text-amber-400" />
-        <h3 className="text-sm font-semibold text-foreground">Today's Trade Check</h3>
+        <Shield className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
         <span className={`ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border ${badge.cls}`}>{badge.text}</span>
       </div>
 
-      {status === "incomplete" && (
-        <>
-          <p className="text-xs text-muted-foreground">Complete today's trade check to keep your progress tracking accurate.</p>
-          <div className="flex gap-2">
-            <Button size="sm" className="gap-1.5" onClick={onLogTrade}><Plus className="h-3.5 w-3.5" /> Log today's trade</Button>
-            <Button size="sm" variant="outline" onClick={onNoTradeDay}>Mark no-trade day</Button>
-          </div>
-        </>
-      )}
-      {status === "in_progress" && (
+      {todayStatus === "in_progress" && (
         <>
           <p className="text-xs text-muted-foreground">Trade logged. Complete your check-in to finish today's accountability.</p>
           <div className="flex gap-2">
             <Button size="sm" className="gap-1.5" onClick={onCompleteCheckIn}><CheckCircle2 className="h-3.5 w-3.5" /> Complete check-in</Button>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={onLogTrade}><Plus className="h-3.5 w-3.5" /> Log another trade</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={onLogUnplanned}><Plus className="h-3.5 w-3.5" /> Log another trade</Button>
           </div>
         </>
       )}
-      {status === "complete" && (
+      {todayStatus === "complete" && (
         <>
-          <p className="text-xs text-emerald-400/80">{noTradeDay ? "No-trade day tracked. Consistency maintained." : "Today's accountability is complete. Review your feedback below."}</p>
+          <p className="text-xs text-emerald-400/80">{noTradeDay ? "No-trade day tracked. Good discipline." : "Today's accountability is complete. Review your feedback below."}</p>
           <Button size="sm" variant="outline" className="gap-1.5" onClick={onReviewFeedback}><Eye className="h-3.5 w-3.5" /> Review today's feedback</Button>
         </>
+      )}
+      {todayStatus === "incomplete" && noTradeDay && (
+        <p className="text-xs text-emerald-400/80">No-trade day tracked. Good discipline. No setup taken today.</p>
       )}
     </div>
   );
@@ -714,7 +835,7 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
 const MOBILE_LIMIT = 15;
 
 function RecentTradesSection({ entries, onExportCSV }: {
-  entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string }[];
+  entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string; plan_id?: string }[];
   onExportCSV: () => void;
 }) {
   const isMobile = useIsMobile();
@@ -775,6 +896,15 @@ function RecentTradesSection({ entries, onExportCSV }: {
               </div>
               {/* Accountability badges */}
               <div className="flex flex-wrap gap-1.5">
+                {/* Planned / Unplanned badge */}
+                <span className={cn(
+                  "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                  (e as any).plan_id
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                )}>
+                  {(e as any).plan_id ? "Planned" : "Unplanned"}
+                </span>
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
                   {e.followed_rules ? "✅" : "❌"} Plan
                 </span>

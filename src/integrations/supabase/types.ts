@@ -407,6 +407,72 @@ export type Database = {
         }
         Relationships: []
       }
+      approved_plans: {
+        Row: {
+          account_balance_snapshot: number
+          account_level_snapshot: string | null
+          approval_status: string
+          cash_needed_planned: number
+          contracts_planned: number
+          created_at: string
+          daily_left_snapshot: number | null
+          direction: string
+          entry_price_planned: number
+          id: string
+          max_loss_planned: number
+          status: string
+          stop_price_planned: number | null
+          ticker: string | null
+          tp1_planned: number | null
+          tp2_planned: number | null
+          trade_loss_limit_snapshot: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_balance_snapshot: number
+          account_level_snapshot?: string | null
+          approval_status?: string
+          cash_needed_planned: number
+          contracts_planned: number
+          created_at?: string
+          daily_left_snapshot?: number | null
+          direction?: string
+          entry_price_planned: number
+          id?: string
+          max_loss_planned: number
+          status?: string
+          stop_price_planned?: number | null
+          ticker?: string | null
+          tp1_planned?: number | null
+          tp2_planned?: number | null
+          trade_loss_limit_snapshot: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_balance_snapshot?: number
+          account_level_snapshot?: string | null
+          approval_status?: string
+          cash_needed_planned?: number
+          contracts_planned?: number
+          created_at?: string
+          daily_left_snapshot?: number | null
+          direction?: string
+          entry_price_planned?: number
+          id?: string
+          max_loss_planned?: number
+          status?: string
+          stop_price_planned?: number | null
+          ticker?: string | null
+          tp1_planned?: number | null
+          tp2_planned?: number | null
+          trade_loss_limit_snapshot?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1793,6 +1859,7 @@ export type Database = {
           instrument_type: string | null
           notes: string | null
           outcome: string | null
+          plan_id: string | null
           risk_reward: number
           risk_used: number
           symbol: string | null
@@ -1809,6 +1876,7 @@ export type Database = {
           instrument_type?: string | null
           notes?: string | null
           outcome?: string | null
+          plan_id?: string | null
           risk_reward: number
           risk_used: number
           symbol?: string | null
@@ -1825,6 +1893,7 @@ export type Database = {
           instrument_type?: string | null
           notes?: string | null
           outcome?: string | null
+          plan_id?: string | null
           risk_reward?: number
           risk_used?: number
           symbol?: string | null
@@ -1833,7 +1902,15 @@ export type Database = {
           vault_verified?: boolean
           vault_verified_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trade_entries_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "approved_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trade_intents: {
         Row: {

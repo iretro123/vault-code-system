@@ -40,6 +40,7 @@ export interface NewTradeEntry {
   symbol?: string;
   outcome?: string;
   trade_date?: string;
+  plan_id?: string;
 }
 
 export interface EquityPoint {
