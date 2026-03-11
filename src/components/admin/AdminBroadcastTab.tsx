@@ -125,12 +125,17 @@ export function AdminBroadcastTab() {
   /* ── Apply template ── */
   const applyTemplate = (key: string) => {
     const t = TEMPLATES.find((t) => t.key === key);
-    if (t) { setTitle(t.title); setBody(t.body); setTemplateKey(key); }
+    if (t) {
+      setTitle(t.title);
+      setBody(`Hey {{name}}, ${t.body.charAt(0).toLowerCase()}${t.body.slice(1)}`);
+      setTemplateKey(key);
+    }
   };
 
   /* ── Send ── */
   const handleSend = async () => {
-    if (!title.trim()) { toast.error("Title is required"); return; }
+    if (channel !== "sms" && !title.trim()) { toast.error("Title is required"); return; }
+    if (channel === "sms" && !body.trim()) { toast.error("Message is required"); return; }
     if (recipientType === "single" && !userId) { toast.error("Select a recipient"); return; }
     if (!user) return;
 
@@ -148,9 +153,7 @@ export function AdminBroadcastTab() {
 
     if (channel === "sms") {
       // Send via GHL edge function
-      const smsMessage = body.trim()
-        ? `${title.trim()}\n\n${body.trim()}`
-        : title.trim();
+      const smsMessage = body.trim();
 
       const { data, error } = await supabase.functions.invoke("ghl-broadcast-sms", {
         body: {
@@ -379,14 +382,16 @@ export function AdminBroadcastTab() {
             </div>
 
             {/* Title & Body */}
-            <div className="space-y-1.5">
-              <Label className="text-xs">Title</Label>
-              <Input
-                placeholder={mode === "motivation_ping" ? "e.g. Keep grinding 🔥" : "e.g. Important update"}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
+            {channel !== "sms" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Title</Label>
+                <Input
+                  placeholder={mode === "motivation_ping" ? "e.g. Keep grinding 🔥" : "e.g. Important update"}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs">Message {mode === "motivation_ping" ? "(optional)" : ""}</Label>
               <Textarea
@@ -413,7 +418,7 @@ export function AdminBroadcastTab() {
 
             <Button
               onClick={handleSend}
-              disabled={sending || !title.trim() || (recipientType === "single" && !userId)}
+              disabled={sending || (channel === "sms" ? !body.trim() : !title.trim()) || (recipientType === "single" && !userId)}
               className="gap-1.5"
             >
               {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : channel === "sms" ? <Smartphone className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
