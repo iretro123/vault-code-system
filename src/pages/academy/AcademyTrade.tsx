@@ -193,9 +193,14 @@ const AcademyTrade = () => {
         title="My Trades"
         subtitle="Your trading command center — log, track, and improve."
         action={
-          <Button size="sm" className="gap-1.5" onClick={() => setShowLogTrade(true)}>
-            <Plus className="h-3.5 w-3.5" /> Log Trade
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" className="gap-1.5" onClick={handleLogUnplanned}>
+              <Plus className="h-3.5 w-3.5" /> Log Trade
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("/academy/vault")}>
+              <Shield className="h-3.5 w-3.5" /> Check a Trade
+            </Button>
+          </div>
         }
       />
       <div className="px-4 md:px-6 pb-10 space-y-5 max-w-4xl">
