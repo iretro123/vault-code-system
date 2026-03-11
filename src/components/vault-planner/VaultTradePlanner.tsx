@@ -444,7 +444,7 @@ export function VaultTradePlanner() {
                             className="w-10 text-center text-base font-bold tabular-nums text-foreground bg-transparent border-b border-white/10 outline-none focus:border-primary/50 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
-                            onClick={() => setCustomContracts(customContracts + 1)}
+                            onClick={() => { const v = customContracts + 1; setCustomContracts(v); setCustomContractsText(String(v)); }}
                             className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
                             <Plus className="h-3 w-3 text-muted-foreground" />
