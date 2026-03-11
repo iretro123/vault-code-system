@@ -1,29 +1,35 @@
 
 
-## Plan: Pipeline Leak Fixes — COMPLETED
+# Sync Delete Trade Across All Systems
 
-### What was fixed
+## Problem
+The DB trigger `sync_trade_entry_to_vault_state` only fires on INSERT. When a trade is deleted, vault_state (trades remaining, risk remaining, loss streak, status) doesn't reverse. Also, if the deleted trade was linked to an approved plan (`plan_id`), that plan stays in "logged" status instead of reverting.
 
-**Leak 5 (Critical): Trade Log → Vault State Sync**
-- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
-- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
-- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
-- Never downgrades from RED; persists block reason
+## Plan
 
-**Leak 2 (High): Vault State Gate on Approval Page**
-- `VaultTradePlanner` now imports `useVaultState` and checks status
-- Shows warning banner when vault is RED or session is paused
-- Disables "Use This Plan" button when blocked
-- `HeroDecisionCard` receives `vaultBlocked` prop
+### 1. Database: Add DELETE trigger to reverse vault_state
+Create a new migration with a trigger function on `trade_entries` DELETE that:
+- Increments `trades_remaining_today` by 1
+- Adds back `risk_used` to `risk_remaining_today`
+- Recalculates `loss_streak` from remaining today's trades
+- Recalculates `vault_status` (GREEN/YELLOW/RED) based on new values
+- Only affects today's vault_state row (same-day trades)
 
-**Leak 1 (Medium): Balance Drift Refetch**
-- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
-- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
+### 2. Database: Add DELETE trigger to revert approved_plan status
+In the same migration, add logic: if the deleted trade had a `plan_id`, update `approved_plans` set `status = 'planned'` where `id = plan_id` and `status = 'logged'`.
 
-**Leak 4 (Medium): Timezone-Safe Plan Expiry**
-- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
-- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
+### 3. `useTradeLog.ts` — After successful delete, trigger connected refetches
+The `deleteEntry` function currently updates local state and cache. It needs to also signal that external systems should refresh. Add an optional `onAfterDelete` callback parameter or return a signal so the parent can refetch vault state and approved plans.
 
-**Leak 3 (Low): P/L Result Type Validation**
-- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
-- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
+### 4. `AcademyTrade.tsx` — Wire up refetches after delete
+After `onDelete` completes successfully:
+- Call `refetchPlan()` (from `useApprovedPlans`) to refresh active plan state
+- The vault state auto-updates via the realtime subscription on `vault_state` table (already wired in `VaultStateContext`)
+- All computed metrics (win rate, P/L, equity curve, streaks) already recalculate via `useMemo` when entries change
+
+### 5. `MyTradesCard` — Already reactive
+Uses `useTradeLog()` which shares the same hook instance pattern — entries update flows through.
+
+## Result
+Deleting a trade will: reverse vault limits, revert linked plan to "planned", update all metrics, and reflect across VAULT Approval, My Trades dashboard card, and the Trading Command Center.
+
