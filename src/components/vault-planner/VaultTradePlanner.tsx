@@ -549,7 +549,7 @@ export function VaultTradePlanner() {
 
 /* ── Hero Decision Card ── */
 function HeroDecisionCard({
-  choice, ticker, direction, entryPrice, saving, onUsePlan,
+  choice, ticker, direction, entryPrice, saving, onUsePlan, vaultBlocked,
 }: {
   choice: ContractChoice;
   ticker: string;
@@ -557,6 +557,7 @@ function HeroDecisionCard({
   entryPrice: number;
   saving: boolean;
   onUsePlan: () => void;
+  vaultBlocked?: boolean;
 }) {
   const sc = STATUS_CONFIG[choice.status];
   const hasExit = choice.suggestedExit !== null || choice.fullPremiumRiskOk;
