@@ -526,14 +526,14 @@ function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
 }) {
   return (
     <div className={cn(
-      "flex items-center gap-2.5 rounded-2xl px-4 py-2.5",
+      "flex items-center gap-3 rounded-2xl px-5 py-3 min-h-[48px]",
       accent ? "vault-premium-card" : "vault-glass-card"
     )}>
-      <div className="flex items-center justify-center h-6 w-6 rounded-lg bg-white/[0.04]">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-white/[0.05]">
+        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
       </div>
-      <span className="text-[11px] text-muted-foreground font-medium">{label}</span>
-      <span className={cn("text-sm font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <span className="text-xs text-muted-foreground font-medium">{label}</span>
+      <span className={cn("text-base font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
     </div>
   );
 }
