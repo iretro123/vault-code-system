@@ -178,8 +178,8 @@ export function AcademySidebar() {
                       <SidebarMenuButton asChild>
                         <button
                           onClick={() => {
-                            if (window.innerWidth < 768) {
-                              toggleSidebar();
+                            if (isMobile) {
+                              setOpenMobile(false);
                               setTimeout(() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")), 150);
                             } else {
                               window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
@@ -259,7 +259,7 @@ export function AcademySidebar() {
         {/* Share Vault Card */}
         {!collapsed && (
           <button
-            onClick={() => setReferralOpen(true)}
+            onClick={() => { if (isMobile) setOpenMobile(false); setReferralOpen(true); }}
             className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow overflow-hidden"
             style={{ background: '#0F1319' }}
           >
@@ -281,7 +281,7 @@ export function AcademySidebar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => navigate("/academy/settings")}
+                onClick={() => { if (isMobile) setOpenMobile(false); navigate("/academy/settings"); }}
                 aria-label="Profile"
                 className="sidebar-dock-btn relative shrink-0 h-9 w-9 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
