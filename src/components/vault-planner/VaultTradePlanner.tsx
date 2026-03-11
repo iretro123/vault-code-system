@@ -379,14 +379,16 @@ export function VaultTradePlanner() {
                         )}
 
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-2xl font-bold text-foreground tabular-nums leading-none">{choice.contracts}</span>
+                          <span className="text-2xl font-bold text-foreground tabular-nums leading-none">
+                            {choice.contracts}<span className="text-xs font-semibold text-muted-foreground ml-0.5">CON</span>
+                          </span>
                           <span className={cn("text-[9px] font-bold px-2 py-1 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
                             {sc.label}
                           </span>
                         </div>
 
-                        <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.1em] font-medium mb-2">
-                          {choice.contracts === 1 ? "contract" : "contracts"} · {CARD_SUBLABELS[choice.contracts] || ""}
+                        <p className="text-[10px] text-muted-foreground/80 uppercase tracking-[0.1em] font-medium mb-2">
+                          {CARD_SUBLABELS[choice.contracts] || ""}
                         </p>
 
                         <div className="space-y-1 pt-2 border-t border-white/[0.04]">
