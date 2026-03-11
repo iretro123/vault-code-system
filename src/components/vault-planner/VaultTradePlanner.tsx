@@ -438,9 +438,9 @@ export function VaultTradePlanner() {
                           <input
                             type="number"
                             min={1}
-                            value={customContracts}
-                            onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setCustomContracts(v); }}
-                            onBlur={(e) => { if (!e.target.value || parseInt(e.target.value) < 1) setCustomContracts(1); }}
+                            value={customContractsText}
+                            onChange={(e) => { setCustomContractsText(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setCustomContracts(v); }}
+                            onBlur={() => { if (!customContractsText || parseInt(customContractsText) < 1) { setCustomContracts(1); setCustomContractsText("1"); } }}
                             className="w-10 text-center text-base font-bold tabular-nums text-foreground bg-transparent border-b border-white/10 outline-none focus:border-primary/50 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
