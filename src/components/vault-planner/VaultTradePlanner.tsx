@@ -416,9 +416,9 @@ export function VaultTradePlanner() {
                 <span className="text-muted-foreground">Risk per trade</span>
                 <span className="text-foreground font-mono font-bold text-right">{safeCurrency(riskBudget)}</span>
                 <span className="text-muted-foreground">Best premium zone</span>
-                <span className="text-foreground font-mono font-bold text-right">~{safeCurrency(idealPrem)}</span>
+                <span className="text-foreground font-mono font-bold text-right">~{safeCurrency(Math.floor(idealPrem * 100) / 100)}</span>
                 <span className="text-muted-foreground">Stretch zone</span>
-                <span className="text-foreground font-mono font-bold text-right">up to {safeCurrency(aggressivePrem)}</span>
+                <span className="text-foreground font-mono font-bold text-right">up to {safeCurrency(Math.floor(aggressivePrem * 100) / 100)}</span>
                 <span className="text-muted-foreground">Max stop width</span>
                 <span className="text-foreground font-mono font-bold text-right">{safeCurrency(maxStopW)}</span>
               </div>
@@ -477,12 +477,16 @@ export function VaultTradePlanner() {
                 </span>
               )}
               <GuidanceChip label="Use Ideal" onClick={() => {
-                setEntryPremium(idealPrem.toFixed(2));
-                setStopPremium(Math.max(0.01, idealPrem - maxStopW).toFixed(2));
+                const entryRounded = Math.floor(idealPrem * 100) / 100;
+                const stopRounded = Math.max(0.01, Math.ceil((idealPrem - maxStopW) * 100) / 100);
+                setEntryPremium(entryRounded.toFixed(2));
+                setStopPremium(stopRounded.toFixed(2));
               }} />
               <GuidanceChip label="Use Max" onClick={() => {
-                setEntryPremium(aggressivePrem.toFixed(2));
-                setStopPremium(Math.max(0.01, aggressivePrem - maxStopW).toFixed(2));
+                const entryRounded = Math.floor(aggressivePrem * 100) / 100;
+                const stopRounded = Math.max(0.01, Math.ceil((aggressivePrem - maxStopW) * 100) / 100);
+                setEntryPremium(entryRounded.toFixed(2));
+                setStopPremium(stopRounded.toFixed(2));
               }} />
             </div>
           )}
