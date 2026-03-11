@@ -17,6 +17,8 @@ export interface ContractChoice {
   fullPremiumRiskOk: boolean;
   tp1: number;
   tp2: number;
+  tp3: number;
+  r: number;
   status: ApprovalStatus;
   coachingNote: string;
   isRecommended: boolean;
