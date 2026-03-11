@@ -20,7 +20,6 @@ import {
   PanelLeft,
   EyeOff,
   CalendarCheck,
-  Shield,
 } from "lucide-react";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
