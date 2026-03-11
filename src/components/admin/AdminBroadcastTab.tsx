@@ -57,7 +57,8 @@ export function AdminBroadcastTab() {
 
   /* ── Form state ── */
   const [mode] = useState<"motivation_ping">("motivation_ping");
-  const [channel] = useState("in_app");
+  const [channel, setChannel] = useState<"in_app" | "sms">("in_app");
+  const [smsStatus, setSmsStatus] = useState<{ sent: number; failed: number } | null>(null);
   const [recipientType, setRecipientType] = useState<"all" | "single">("single");
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
