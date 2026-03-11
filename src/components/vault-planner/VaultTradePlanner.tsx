@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import {
   Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
   AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
-  ChevronDown, Minus, Plus, Sliders,
+  ChevronDown, Minus, Plus, Sliders, Pause, Ban,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useApprovedPlans } from "@/hooks/useApprovedPlans";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { useTradeLog } from "@/hooks/useTradeLog";
+import { useVaultState } from "@/contexts/VaultStateContext";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
