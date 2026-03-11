@@ -1,29 +1,54 @@
 
 
-## Plan: Pipeline Leak Fixes — COMPLETED
+# Fix: Floating-Point Precision Bug in VAULT Approval Engine
 
-### What was fixed
+## What I Was Missing
 
-**Leak 5 (Critical): Trade Log → Vault State Sync**
-- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
-- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
-- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
-- Never downgrades from RED; persists block reason
+The VAULT Approval engine uses **dynamic live balance**, not `profiles.account_balance`. The live balance is:
 
-**Leak 2 (High): Vault State Gate on Approval Page**
-- `VaultTradePlanner` now imports `useVaultState` and checks status
-- Shows warning banner when vault is RED or session is paused
-- Disables "Use This Plan" button when blocked
-- `HeroDecisionCard` receives `vaultBlocked` prop
+`$13,782.34 (starting) + $1,775.34 (trade P/L) = $15,557.68`
 
-**Leak 1 (Medium): Balance Drift Refetch**
-- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
-- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
+I kept quoting $13,782 because I was reading the raw profile row instead of following the code path that adds `totalPnl`. This changes the budgets:
 
-**Leak 4 (Medium): Timezone-Safe Plan Expiry**
-- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
-- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
+- Risk budget (1%): **$155.58**
+- Comfort budget (5%): **$777.88**
+- Hard budget (8%): **$1,244.61**
 
-**Leak 3 (Low): P/L Result Type Validation**
-- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
-- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
+At this correct balance, $7.50 × 1 contract = $750 cash, which is under the $777.88 comfort budget and should show **"Fits"**. The fact that it shows "Pass" confirms the floating-point round-trip bug identified earlier.
+
+## Root Cause (same as previously diagnosed)
+
+In `buildChoice()` in `src/lib/vaultApprovalCalc.ts`, the engine derives `exitPrice` from `riskBudget`, then recomputes `riskPerContract = contractPrice - exitPrice`. In IEEE 754 floating point, `7.50 - (7.50 - 1.5558)` does not exactly equal `1.5558`. The tiny error makes `totalRisk` exceed `riskBudget` by ~1e-14, flipping the status to "pass".
+
+## Fix — One change in `src/lib/vaultApprovalCalc.ts`
+
+In the `else` branch of `buildChoice()` (the case where exit is derived from risk budget and NOT clamped to the $0.01 floor):
+
+**Before:**
+```js
+exitPrice = contractPrice - maxCutRoom;
+if (exitPrice < 0.01) exitPrice = 0.01;
+riskPerContract = contractPrice - exitPrice;
+totalRisk = riskPerContract * 100 * n;
+```
+
+**After:**
+```js
+exitPrice = contractPrice - maxCutRoom;
+if (exitPrice < 0.01) {
+  exitPrice = 0.01;
+  riskPerContract = contractPrice - 0.01;
+  totalRisk = riskPerContract * 100 * n;
+} else {
+  // Use source values directly — no floating-point round-trip
+  riskPerContract = maxCutRoom;
+  totalRisk = riskBudget;
+}
+```
+
+This is mathematically exact (not rounding): `maxCutRoom` IS `riskPerContract` by definition, and `riskBudget` IS `totalRisk` by construction.
+
+## Test Updates in `src/test/vaultApprovalCalc.test.ts`
+
+Add a regression test: for a ~$15,558 account, both $2.50 × 3 and $7.50 × 1 must return the same non-"pass" status, since both have identical $750 cash needs against the same budgets.
+
