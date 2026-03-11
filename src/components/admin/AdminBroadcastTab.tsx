@@ -333,6 +333,35 @@ export function AdminBroadcastTab() {
               )}
             </div>
 
+            {/* Channel */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Channel</Label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setChannel("in_app")}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 ${
+                    channel === "in_app"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <MessageSquare className="h-3 w-3" /> In-App
+                </button>
+                <button
+                  onClick={() => setChannel("sms")}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 ${
+                    channel === "sms"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Smartphone className="h-3 w-3" /> SMS (GHL)
+                </button>
+              </div>
+              {channel === "sms" && (
+                <p className="text-[10px] text-amber-400/80">⚡ Will send via GHL to members with phone numbers on file</p>
+              )}
+            </div>
 
             {/* Template quick-fill */}
             <div className="space-y-1.5">
