@@ -37,12 +37,14 @@ const OUTCOME_STYLES = {
 
 /* ── Page ── */
 const AcademyTrade = () => {
+  const navigate = useNavigate();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
   const {
     entries, loading: tradesLoading, addEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
   } = useTradeLog();
+  const { activePlan, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
 
   const [startingBalance, setStartingBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
@@ -52,6 +54,8 @@ const AcademyTrade = () => {
   const [resetInput, setResetInput] = useState("");
   const [resetting, setResetting] = useState(false);
   const [showLogTrade, setShowLogTrade] = useState(false);
+  const [logPlanId, setLogPlanId] = useState<string | undefined>(undefined);
+  const [logPrefill, setLogPrefill] = useState<any>(undefined);
   const [todayStatus, setTodayStatus] = useState<TodayStatus>("incomplete");
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
