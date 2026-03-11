@@ -264,14 +264,14 @@ export function VaultTradePlanner() {
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">$</span>
-                    <Input
+                     <Input
                       type="number"
                       step="0.01"
                       min="0.01"
                       placeholder="0.00"
                       value={contractPrice}
                       onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); }}
-                      className="pl-8 text-xl font-bold tabular-nums h-14 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-primary/20 rounded-xl"
+                      className="pl-8 text-2xl font-bold tabular-nums h-16 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-xl"
                     />
                   </div>
                 </div>
