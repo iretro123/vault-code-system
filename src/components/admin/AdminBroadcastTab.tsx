@@ -141,32 +141,59 @@ export function AdminBroadcastTab() {
   const executeSend = async () => {
     setConfirmOpen(false);
     setSending(true);
+    setSmsStatus(null);
 
     const targetUserId = recipientType === "single" ? userId : null;
     const linkVal = link.trim() || null;
 
-    // 1) Deliver in-app
-    if (channel === "in_app") {
+    if (channel === "sms") {
+      // Send via GHL edge function
+      const smsMessage = body.trim()
+        ? `${title.trim()}\n\n${body.trim()}`
+        : title.trim();
+
+      const { data, error } = await supabase.functions.invoke("ghl-broadcast-sms", {
+        body: {
+          recipientType,
+          userId: targetUserId,
+          message: smsMessage,
+        },
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || error?.message || "SMS send failed");
+        setSending(false);
+        return;
+      }
+
+      setSmsStatus({ sent: data.sent, failed: data.failed });
+      toast.success(`SMS sent to ${data.sent} member${data.sent !== 1 ? "s" : ""}${data.failed ? ` (${data.failed} failed)` : ""}`);
+
+      // Log to broadcast history
+      await supabase.from("broadcast_messages").insert({
+        sender_id: user!.id,
+        mode,
+        channel: "sms",
+        recipient_type: recipientType,
+        recipient_user_id: targetUserId,
+        title: title.trim(),
+        body: body.trim(),
+        template_key: templateKey,
+        status: data.failed === 0 ? "sent" : "partial",
+        sent_at: new Date().toISOString(),
+        metadata: { sent: data.sent, failed: data.failed } as any,
+      });
+    } else {
+      // In-app delivery (existing logic)
       if (mode === "motivation_ping") {
-        if (targetUserId) {
-          await supabase.from("inbox_items").insert({
-            user_id: targetUserId,
-            type: "reminder",
-            title: title.trim(),
-            body: body.trim(),
-            link: linkVal,
-            sender_id: user!.id,
-          });
-        } else {
-          await supabase.from("inbox_items").insert({
-            user_id: null,
-            type: "reminder",
-            title: title.trim(),
-            body: body.trim(),
-            link: linkVal,
-            sender_id: user!.id,
-          });
-        }
+        await supabase.from("inbox_items").insert({
+          user_id: targetUserId,
+          type: "reminder",
+          title: title.trim(),
+          body: body.trim(),
+          link: linkVal,
+          sender_id: user!.id,
+        });
       } else {
         await supabase.from("inbox_items").insert({
           user_id: targetUserId,
@@ -185,23 +212,24 @@ export function AdminBroadcastTab() {
           link_path: linkVal,
         } as any);
       }
+
+      // Log to history
+      await supabase.from("broadcast_messages").insert({
+        sender_id: user!.id,
+        mode,
+        channel: "in_app",
+        recipient_type: recipientType,
+        recipient_user_id: targetUserId,
+        title: title.trim(),
+        body: body.trim(),
+        template_key: templateKey,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+      });
+
+      toast.success("Message sent ✓");
     }
 
-    // 2) Log to history
-    await supabase.from("broadcast_messages").insert({
-      sender_id: user!.id,
-      mode,
-      channel,
-      recipient_type: recipientType,
-      recipient_user_id: targetUserId,
-      title: title.trim(),
-      body: body.trim(),
-      template_key: templateKey,
-      status: channel === "in_app" ? "sent" : "draft",
-      sent_at: channel === "in_app" ? new Date().toISOString() : null,
-    });
-
-    toast.success(channel === "in_app" ? "Message sent ✓" : "Draft saved (provider not configured)");
     setTitle(""); setBody(""); setLink(""); setUserId(""); setTemplateKey(null);
     fetchHistory();
     setSending(false);
