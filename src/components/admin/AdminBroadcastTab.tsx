@@ -153,9 +153,7 @@ export function AdminBroadcastTab() {
 
     if (channel === "sms") {
       // Send via GHL edge function
-      const smsMessage = body.trim()
-        ? `${title.trim()}\n\n${body.trim()}`
-        : title.trim();
+      const smsMessage = body.trim();
 
       const { data, error } = await supabase.functions.invoke("ghl-broadcast-sms", {
         body: {
