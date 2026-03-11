@@ -28,15 +28,15 @@ describe("computeVaultLimits", () => {
     expect(resolved.limits.max_trades_per_day).toBe(1);
   });
 
-  it("$1,500 CONSERVATIVE → overridden, same as $500", () => {
+  it("$1,500 CONSERVATIVE → overridden to STANDARD, survival mode", () => {
     // raw_daily = 1500*0.01=15, raw_per_trade=7.5 < 20 → override to STANDARD
     const resolved = resolveViableRiskMode(1500, "CONSERVATIVE");
     expect(resolved.was_overridden).toBe(true);
     expect(resolved.applied_mode).toBe("STANDARD");
-    // STANDARD: raw_daily=1500*0.02=30, raw_per_trade=15, clamped to 30
-    expect(resolved.limits.risk_per_trade).toBe(30);
+    // STANDARD: raw_daily=1500*0.02=30, raw_per_trade=15, < MIN_RISK_FLOOR → survival
+    expect(resolved.limits.risk_per_trade).toBe(20);
     expect(resolved.limits.max_contracts).toBe(1);
-    expect(resolved.limits.max_trades_per_day).toBe(2);
+    expect(resolved.limits.max_trades_per_day).toBe(1);
   });
 
   it("$2,500 CONSERVATIVE → smooth transition, still clamped", () => {
