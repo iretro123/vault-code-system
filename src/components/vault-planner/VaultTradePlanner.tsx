@@ -1,597 +1,479 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
-  PlannerInputs,
-  PlannerResult,
-  AccountTierLabel,
-  TradeDirection,
-  TradeVerdict,
-  TIER_DEFAULTS,
-  detectTier,
-  validateInputs,
-  calculatePlan,
-  buildCopyText,
-  formatCurrency,
-} from "@/lib/tradePlannerCalc";
-import { TradePlannerLoading } from "./TradePlannerLoading";
-import { TradePlannerResults } from "./TradePlannerResults";
-import { XPTooltip } from "./XPTooltip";
-import { toast } from "sonner";
-import {
-  Lock, Unlock, CheckCircle2, XCircle, Copy, RotateCcw,
+  Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
+  AlertTriangle, Wallet, Target, ChevronRight,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useApprovedPlans } from "@/hooks/useApprovedPlans";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  calculateContractChoices,
+  formatCurrency,
+  type ContractChoice,
+  type ApprovalResult,
+} from "@/lib/vaultApprovalCalc";
+import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
-type UIState = "input" | "loading" | "results";
-const STORAGE_KEY = "vault_trade_planner_inputs";
-
-function loadSaved(): Partial<PlannerInputs> {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
-}
-
-function safeCurrency(n: number | undefined | null): string {
-  if (n == null || !isFinite(n) || isNaN(n)) return "—";
-  return formatCurrency(n);
-}
-
-/* ─── Styles ─── */
-const panelBg = "hsl(220 13% 10%)";
-const panelBorder = "1px solid hsl(220 10% 18%)";
-const inputBg = "hsl(220 14% 8%)";
-const inputBorder = "1px solid hsl(220 10% 20%)";
-const rowBorder = "1px solid hsl(220 10% 14%)";
-
-/* ─── Sub-components ─── */
-
-function PanelCard({ title, help, children }: { title: string; help?: string; children: React.ReactNode }) {
-  return (
-    <div
-      className="rounded-xl p-4 md:p-5 flex flex-col gap-3"
-      style={{ background: panelBg, border: panelBorder }}
-    >
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-foreground tracking-tight">{title}</h3>
-        {help && <XPTooltip text={help} white title={title + " Guide"} />}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function FieldRow({
-  label, tooltip, children, error,
-}: { label: string; tooltip?: string; children: React.ReactNode; error?: string }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
-        {label}
-        {tooltip && <XPTooltip text={tooltip} />}
-      </label>
-      {children}
-      {error && <p className="text-[10px] text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-function FieldInput({ error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { error?: boolean }) {
-  return (
-    <input
-      className={`w-full px-3 py-2 text-sm font-mono text-foreground rounded-lg outline-none
-        transition-shadow duration-100 text-right
-        focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/40
-        ${error ? "ring-1 ring-red-500/50" : ""}
-        ${props.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-      style={{ background: inputBg, border: inputBorder }}
-      {...props}
-    />
-  );
-}
-
-function SegmentedToggle<T extends string>({
-  options, value, onChange, disabled,
-}: { options: T[]; value: T; onChange: (v: T) => void; disabled?: boolean }) {
-  return (
-    <div className={`inline-flex gap-1 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
-      {options.map((opt) => (
-        <button
-          key={opt}
-          onClick={() => !disabled && onChange(opt)}
-          disabled={disabled}
-          className={`px-3.5 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-100
-            ${disabled ? "cursor-not-allowed" : ""}
-            ${value === opt ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          style={value !== opt ? { background: panelBg, border: panelBorder } : {}}
-        >
-          {opt}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Btn({
-  children, primary, ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean }) {
-  return (
-    <button
-      className={`px-3.5 py-2 text-[11px] font-semibold rounded-lg transition-all duration-100
-        disabled:opacity-40 disabled:cursor-not-allowed
-        ${primary
-          ? "bg-primary text-white hover:brightness-110 active:scale-[0.98]"
-          : "text-foreground hover:brightness-110 active:scale-[0.98]"}`}
-      style={!primary ? { background: "hsl(220 13% 14%)", border: panelBorder } : undefined}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
-function ResultRow({ label, value, large, accent }: { label: string; value: string; large?: boolean; accent?: boolean }) {
-  return (
-    <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: rowBorder }}>
-      <span className="text-[11px] text-muted-foreground">{label}</span>
-      <span className={`font-mono ${large ? "text-xl font-black" : "text-base font-bold"} ${accent ? "text-primary" : "text-foreground"}`}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function VerdictBanner({ verdict, reason }: { verdict: TradeVerdict; reason: string }) {
-  const config = {
-    SAFE: { bg: "hsl(142 71% 45% / 0.15)", border: "hsl(142 71% 45% / 0.4)", color: "hsl(142 71% 45%)", label: "PASS", explanation: "This trade fits comfortably inside your account rules." },
-    AGGRESSIVE: { bg: "hsl(38 92% 50% / 0.12)", border: "hsl(38 92% 50% / 0.4)", color: "hsl(38 92% 50%)", label: "AGGRESSIVE", explanation: "This trade works, but it is at the top end of your size range." },
-    NO_TRADE: { bg: "hsl(0 72% 51% / 0.12)", border: "hsl(0 72% 51% / 0.4)", color: "hsl(0 72% 51%)", label: "NO TRADE", explanation: "This trade is too large for your account. Lower the premium or widen your stop." },
-  }[verdict];
-
-  return (
-    <div className="rounded-lg px-4 py-3 text-center" style={{ background: config.bg, border: `1px solid ${config.border}` }}>
-      <p className="text-xl font-black tracking-widest uppercase" style={{ color: config.color }}>{config.label}</p>
-      <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{config.explanation}</p>
-    </div>
-  );
-}
-
-function StatusCheck({ label, pass }: { label: string; pass: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold">
-      {pass
-        ? <CheckCircle2 className="w-4 h-4" style={{ color: "hsl(142 71% 45%)" }} />
-        : <XCircle className="w-4 h-4" style={{ color: "hsl(0 72% 51%)" }} />}
-      <span className="text-muted-foreground">{label}</span>
-      <span style={{ color: pass ? "hsl(142 71% 45%)" : "hsl(0 72% 51%)" }}>{pass ? "PASS" : "FAIL"}</span>
-    </span>
-  );
-}
-
-function GuidanceChip({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-2 py-0.5 text-[9px] font-semibold rounded-md text-primary/80 hover:text-primary transition-colors"
-      style={{ background: "hsl(217 91% 60% / 0.08)", border: "1px solid hsl(217 91% 60% / 0.15)" }}
-    >
-      {label}
-    </button>
-  );
-}
-
-/* ─── Main Component ─── */
+const STATUS_CONFIG = {
+  fits: {
+    label: "FITS",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
+    ring: "ring-emerald-500/30",
+    glow: "shadow-[0_0_20px_rgba(52,211,153,0.1)]",
+  },
+  tight: {
+    label: "TIGHT",
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+    ring: "ring-amber-500/30",
+    glow: "shadow-[0_0_20px_rgba(251,191,36,0.1)]",
+  },
+  pass: {
+    label: "PASS",
+    color: "text-red-400",
+    bg: "bg-red-500/10",
+    border: "border-red-500/20",
+    ring: "ring-red-500/30",
+    glow: "",
+  },
+};
 
 export function VaultTradePlanner() {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const saved = loadSaved();
+  const { hasAccess, status: accessStatus, loading: accessLoading } = useStudentAccess();
+  const { activePlan, savePlan, replaceWithNew } = useApprovedPlans();
 
-  const [tier, setTier] = useState<AccountTierLabel>("Small");
-  const [accountSize, setAccountSize] = useState(saved.accountSize?.toString() ?? "");
-  const [riskPercent, setRiskPercent] = useState(saved.riskPercent?.toString() ?? "2");
-  const [preferredSpendPercent, setPreferredSpendPercent] = useState(saved.preferredSpendPercent?.toString() ?? "5");
-  const [hardMaxSpendPercent, setHardMaxSpendPercent] = useState(saved.hardMaxSpendPercent?.toString() ?? "10");
-  const [direction, setDirection] = useState<TradeDirection>(saved.direction ?? "Long Call");
-  const [entryPremium, setEntryPremium] = useState(saved.entryPremium?.toString() ?? "");
-  const [stopPremium, setStopPremium] = useState(saved.stopPremium?.toString() ?? "");
-  const [ticker, setTicker] = useState(saved.ticker ?? "");
-  const [defaultsLocked, setDefaultsLocked] = useState(true);
-  
+  // Inputs
+  const [direction, setDirection] = useState<"calls" | "puts">("calls");
+  const [contractPrice, setContractPrice] = useState("");
+  const [ticker, setTicker] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [showReplaceDialog, setShowReplaceDialog] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [accountBalance, setAccountBalance] = useState(0);
+  const [balanceLoaded, setBalanceLoaded] = useState(false);
 
-  const [uiState, setUIState] = useState<UIState>("input");
-  const [result, setResult] = useState<PlannerResult | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Auto-fill account balance from profile + trade P/L
   useEffect(() => {
-    if (saved.accountSize || !user) return;
+    if (!user) { setBalanceLoaded(true); return; }
     (async () => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_balance")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!profile || profile.account_balance <= 0) return;
-
-      const { data: trades } = await (supabase.from("trade_entries" as any) as any)
-        .select("risk_reward, risk_used")
-        .eq("user_id", user.id);
-
-      const totalPnl = (trades || []).reduce(
-        (sum: number, t: any) => sum + ((t.risk_reward ?? 0) * (t.risk_used ?? 0)), 0
-      );
-      const liveBalance = Math.round(profile.account_balance + totalPnl);
-      if (liveBalance > 0) {
-        setAccountSize(liveBalance.toString());
-      }
+      try {
+        const { data } = await supabase.from("profiles").select("account_balance").eq("user_id", user.id).maybeSingle();
+        if (data && data.account_balance > 0) setAccountBalance(data.account_balance);
+      } catch {}
+      finally { setBalanceLoaded(true); }
     })();
   }, [user]);
 
-  // Auto-detect tier (always active when account size exists)
-  useEffect(() => {
-    const size = parseFloat(accountSize);
-    if (!size || size <= 0) {
-      // Reset to defaults when cleared
-      setTier("Small");
-      const d = TIER_DEFAULTS["Small"];
-      setRiskPercent(d.riskPercent.toString());
-      setPreferredSpendPercent(d.preferredSpendPercent.toString());
-      setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
-      setEntryPremium("");
-      setStopPremium("");
-      setTicker("");
+  const tier = detectTier(accountBalance);
+  const tierDefaults = TIER_DEFAULTS[tier];
+  const tradeLossLimit = accountBalance * (tierDefaults.riskPercent / 100);
+
+  const priceNum = parseFloat(contractPrice);
+  const hasValidPrice = !isNaN(priceNum) && priceNum > 0;
+
+  const result: ApprovalResult | null = useMemo(() => {
+    if (!hasValidPrice || accountBalance <= 0) return null;
+    return calculateContractChoices(accountBalance, priceNum);
+  }, [accountBalance, priceNum, hasValidPrice]);
+
+  const selectedChoice: ContractChoice | null = result && selectedIndex !== null ? result.choices[selectedIndex] : null;
+
+  // Auto-select recommended choice when results change
+  useMemo(() => {
+    if (result) {
+      const recIdx = result.choices.findIndex((c) => c.isRecommended);
+      if (recIdx >= 0 && selectedIndex === null) setSelectedIndex(recIdx);
+    }
+  }, [result]);
+
+  const buildPlanData = () => {
+    if (!selectedChoice) return null;
+    return {
+      ticker: ticker.toUpperCase() || undefined,
+      direction,
+      entry_price_planned: priceNum,
+      contracts_planned: selectedChoice.contracts,
+      stop_price_planned: selectedChoice.suggestedExit,
+      max_loss_planned: selectedChoice.worstCaseLoss,
+      cash_needed_planned: selectedChoice.cashNeeded,
+      tp1_planned: selectedChoice.tp1,
+      tp2_planned: selectedChoice.tp2,
+      approval_status: selectedChoice.status,
+      account_balance_snapshot: accountBalance,
+      trade_loss_limit_snapshot: tradeLossLimit,
+      account_level_snapshot: tier,
+    };
+  };
+
+  const handleUsePlan = async () => {
+    const planData = buildPlanData();
+    if (!planData || !selectedChoice) return;
+
+    setSaving(true);
+    const { data, error, hasExisting } = await savePlan(planData);
+
+    if (hasExisting) {
+      setSaving(false);
+      setShowReplaceDialog(true);
       return;
     }
-    const detected = detectTier(size);
-    setTier(detected);
-    const d = TIER_DEFAULTS[detected];
-    setRiskPercent(d.riskPercent.toString());
-    setPreferredSpendPercent(d.preferredSpendPercent.toString());
-    setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
-  }, [accountSize]);
 
-  const buildInputs = useCallback((): PlannerInputs => ({
-    accountSize: parseFloat(accountSize) || 0,
-    riskPercent: parseFloat(riskPercent) || 0,
-    preferredSpendPercent: parseFloat(preferredSpendPercent) || 0,
-    hardMaxSpendPercent: parseFloat(hardMaxSpendPercent) || 0,
-    direction,
-    entryPremium: parseFloat(entryPremium) || 0,
-    stopPremium: parseFloat(stopPremium) || 0,
-    ticker: ticker || undefined,
-  }), [accountSize, riskPercent, preferredSpendPercent, hardMaxSpendPercent, direction, entryPremium, stopPremium, ticker]);
-
-  const liveResult: PlannerResult | null = (() => {
-    const inputs = buildInputs();
-    const errs = validateInputs(inputs);
-    if (errs.length > 0) return null;
-    const r = calculatePlan(inputs);
-    if (!isFinite(r.finalContracts) || isNaN(r.totalPlannedRisk)) return null;
-    return r;
-  })();
-
-  const isValid = liveResult !== null;
-  const acctSize = parseFloat(accountSize) || 0;
-
-  // Guidance values
-  const riskBudget = acctSize * (parseFloat(riskPercent) / 100);
-  const prefBudget = acctSize * (parseFloat(preferredSpendPercent) / 100);
-  const hardBudget = acctSize * (parseFloat(hardMaxSpendPercent) / 100);
-  const idealPrem = prefBudget / 100;
-  const aggressivePrem = hardBudget / 100;
-  const maxStopW = riskBudget / 100;
-  const entryVal = parseFloat(entryPremium) || 0;
-  const lowestStop = entryVal > 0 ? Math.max(0.01, entryVal - maxStopW) : 0;
-
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(buildInputs())); } catch {}
-  }, [buildInputs]);
-
-  // Auto-clear on logout
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        localStorage.removeItem(STORAGE_KEY);
-        handleReset();
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Auto-clear on tab close
-  useEffect(() => {
-    const cleanup = () => localStorage.removeItem(STORAGE_KEY);
-    window.addEventListener('beforeunload', cleanup);
-    return () => window.removeEventListener('beforeunload', cleanup);
-  }, []);
-
-  const handleGenerate = () => {
-    const inputs = buildInputs();
-    const errs = validateInputs(inputs);
-    if (errs.length > 0) {
-      const map: Record<string, string> = {};
-      errs.forEach((e) => (map[e.field] = e.message));
-      setErrors(map);
+    if (error) {
+      setSaving(false);
+      toast({ title: "Error saving plan", description: "Please try again.", variant: "destructive" });
       return;
     }
-    setErrors({});
-    setUIState("loading");
+
+    setSaving(false);
+    toast({ title: "Plan approved", description: `${selectedChoice.contracts} contract${selectedChoice.contracts > 1 ? "s" : ""} approved. Head to My Trades to log the result.` });
+    navigate("/academy/trade");
   };
 
-  const handleLoadingComplete = useCallback(() => {
-    setResult(calculatePlan(buildInputs()));
-    setUIState("results");
-  }, [buildInputs]);
+  const handleReplacePlan = async () => {
+    const planData = buildPlanData();
+    if (!planData) return;
 
-  const handleReset = () => {
-    setAccountSize("");
-    setDirection("Long Call");
-    setEntryPremium("");
-    setStopPremium("");
-    setTicker("");
-    setErrors({});
-    setResult(null);
-    setUIState("input");
-    setDefaultsLocked(true);
+    setSaving(true);
+    setShowReplaceDialog(false);
+    const { error } = await replaceWithNew(planData);
+    setSaving(false);
+
+    if (error) {
+      toast({ title: "Error saving plan", description: "Please try again.", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Plan replaced", description: "Previous plan cancelled. New plan approved." });
+    navigate("/academy/trade");
   };
 
-  const handleLoadExample = () => {
-    
-    setAccountSize("10000");
-    setDirection("Long Call");
-    setEntryPremium("1.20");
-    setStopPremium("0.80");
-    setTicker("");
-    setErrors({});
-    toast.success("Example loaded");
-  };
-
-  const handleCopyPlan = async () => {
-    const inputs = buildInputs();
-    const errs = validateInputs(inputs);
-    if (errs.length > 0) { toast.error("Fix errors before copying"); return; }
-    const { copyToClipboard } = await import("@/lib/copyToClipboard");
-    await copyToClipboard(buildCopyText(inputs, calculatePlan(inputs)));
-    toast.success("Trade plan copied");
-  };
-
-  if (uiState === "loading") {
-    return <TradePlannerLoading onComplete={handleLoadingComplete} onCancel={() => setUIState("input")} />;
-  }
-
-  if (uiState === "results" && result) {
-    return <TradePlannerResults inputs={buildInputs()} result={result} onBack={() => setUIState("input")} />;
-  }
+  if (!hasAccess && !accessLoading) return <PremiumGate status={accessStatus} pageName="VAULT Approval" />;
 
   return (
-    <div
-      className="w-full max-w-[1400px] mx-auto rounded-2xl p-4 md:p-6 space-y-4"
-      style={{
-        background: "hsl(220 15% 7%)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        boxShadow: "0 24px 48px hsl(0 0% 0% / 0.5)",
-      }}
-    >
-      {/* Header */}
-      <div className="text-center space-y-0.5 pt-1">
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-          <span className="font-black tracking-wide">VAULT</span>{" "}
-          <span className="font-light text-muted-foreground">Trade Planner</span>
-        </h1>
-        <div className="w-24 h-px mx-auto" style={{ background: "hsl(220 10% 25%)" }} />
-        <p className="text-[11px] text-muted-foreground/50 pt-1">Long Calls / Long Puts only • Simple Mode</p>
-        <p className="text-[11px] text-muted-foreground/40">You enter the setup. VAULT builds the plan.</p>
-      </div>
-
-      {/* 3-Panel Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
-
-        {/* ═══ Account ═══ */}
-        <PanelCard title="Account" help={"Account Size — your total trading account balance\nRisk per trade — max loss if your stop gets hit\nBest premium zone — healthiest 1-contract premium range\nStretch zone — more aggressive premium range\nMax stop width — most stop room allowed for 1 contract"}>
-          <FieldRow label="Account Size" tooltip="Your total trading account balance." error={errors.accountSize}>
-            <FieldInput
-              type="number"
-              value={accountSize}
-              onChange={(e) => setAccountSize(e.target.value)}
-              error={!!errors.accountSize}
-              placeholder="$10,000"
-            />
-          </FieldRow>
-
-          <SegmentedToggle
-            options={["Micro", "Small", "Medium", "Large"] as AccountTierLabel[]}
+    <>
+      <div className="space-y-5 max-w-5xl">
+        {/* ═══ RULES STRIP ═══ */}
+        <div className="flex flex-wrap gap-3">
+          <RulesChip icon={Wallet} label="Account" value={`$${accountBalance.toLocaleString()}`} />
+          <RulesChip icon={Shield} label="Trade loss limit" value={formatCurrency(tradeLossLimit)} />
+          <RulesChip
+            icon={Target}
+            label="Account level"
             value={tier}
-            onChange={(t) => {
-              setTier(t);
-              const d = TIER_DEFAULTS[t];
-              setRiskPercent(d.riskPercent.toString());
-              setPreferredSpendPercent(d.preferredSpendPercent.toString());
-              setHardMaxSpendPercent(d.hardMaxSpendPercent.toString());
-              setDefaultsLocked(true);
-            }}
-            disabled={acctSize > 0}
+            valueCls={
+              tier === "Large" ? "text-emerald-400" :
+              tier === "Medium" ? "text-primary" :
+              tier === "Small" ? "text-amber-400" :
+              "text-red-400"
+            }
           />
+        </div>
 
-          {acctSize > 0 && (
-            <div className="rounded-lg px-3.5 py-3 space-y-2" style={{ background: inputBg, border: inputBorder }}>
-              <p className="text-[10px] font-bold text-primary/80 tracking-widest uppercase">Your Account Plan</p>
-              <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[11px]">
-                <span className="text-muted-foreground">Risk per trade</span>
-                <span className="text-foreground font-mono font-bold text-right">{safeCurrency(riskBudget)}</span>
-                <span className="text-muted-foreground">Best premium zone</span>
-                <span className="text-foreground font-mono font-bold text-right">~{safeCurrency(Math.floor(idealPrem * 100) / 100)}</span>
-                <span className="text-muted-foreground">Stretch zone</span>
-                <span className="text-foreground font-mono font-bold text-right">up to {safeCurrency(Math.floor(aggressivePrem * 100) / 100)}</span>
-                <span className="text-muted-foreground">Max stop width</span>
-                <span className="text-foreground font-mono font-bold text-right">{safeCurrency(maxStopW)}</span>
-              </div>
-              <p className="text-[9px] text-muted-foreground/50 italic">Best for 1-contract setups</p>
+        {/* No balance warning */}
+        {accountBalance <= 0 && (
+          <div className="vault-glass-card p-4 border-amber-500/20 bg-amber-500/5 flex items-start gap-3">
+            <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Set your account balance first</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Go to My Trades and set your starting balance before checking trades.</p>
             </div>
-          )}
-
-          {/* Custom overrides */}
-          {!defaultsLocked && (
-            <div className="space-y-2">
-              <FieldRow label="% I Can Lose" error={errors.riskPercent}>
-                <FieldInput type="number" step="0.1" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)} error={!!errors.riskPercent} />
-              </FieldRow>
-              <FieldRow label="Max % I Can Spend" error={errors.preferredSpendPercent}>
-                <FieldInput type="number" step="0.1" value={preferredSpendPercent} onChange={(e) => setPreferredSpendPercent(e.target.value)} error={!!errors.preferredSpendPercent} />
-              </FieldRow>
-            </div>
-          )}
-
-          <button
-            onClick={() => setDefaultsLocked(!defaultsLocked)}
-            className="inline-flex items-center gap-1 text-[10px] text-primary/70 hover:text-primary transition-colors"
-          >
-            {defaultsLocked ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
-            {defaultsLocked ? "Unlock Custom" : "Lock Defaults"}
-          </button>
-        </PanelCard>
-
-        {/* ═══ Trade ═══ */}
-        <PanelCard title="Trade" help={"Buy Price — the option premium you plan to enter at\nStop Price — where you plan to exit if wrong\nBest zone — this premium fits your account comfortably\nStretch zone — this premium is more aggressive\nSuggested stop — keeps risk inside your rules"}>
-          <SegmentedToggle
-            options={["Long Call", "Long Put"] as TradeDirection[]}
-            value={direction}
-            onChange={(v) => setDirection(v as TradeDirection)}
-          />
-
-          <FieldRow label="Option Buy Price" tooltip="Premium you pay per share (× 100 = contract cost)." error={errors.entryPremium}>
-            <FieldInput
-              type="number"
-              step="0.01"
-              value={entryPremium}
-              onChange={(e) => setEntryPremium(e.target.value)}
-              error={!!errors.entryPremium}
-              placeholder="1.20"
-            />
-          </FieldRow>
-
-          {/* Buy Price guidance */}
-          {acctSize > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap -mt-1.5">
-              {entryVal > 0 && (
-                <span className={`text-[9px] font-semibold ${
-                  entryVal <= idealPrem ? "text-green-400" : entryVal <= aggressivePrem ? "text-amber-400" : "text-red-400"
-                }`}>
-                  {entryVal <= idealPrem ? "✓ Best zone" : entryVal <= aggressivePrem ? "⚠ Stretch zone" : "✗ Too expensive for your account"}
-                </span>
-              )}
-              <GuidanceChip label="Use Ideal" onClick={() => {
-                const entryRounded = Math.floor(idealPrem * 100) / 100;
-                const stopRounded = Math.max(0.01, Math.ceil((idealPrem - maxStopW) * 100) / 100);
-                setEntryPremium(entryRounded.toFixed(2));
-                setStopPremium(stopRounded.toFixed(2));
-              }} />
-              <GuidanceChip label="Use Max" onClick={() => {
-                const entryRounded = Math.floor(aggressivePrem * 100) / 100;
-                const stopRounded = Math.max(0.01, Math.ceil((aggressivePrem - maxStopW) * 100) / 100);
-                setEntryPremium(entryRounded.toFixed(2));
-                setStopPremium(stopRounded.toFixed(2));
-              }} />
-            </div>
-          )}
-
-          <FieldRow label="Option Stop Price" tooltip="If the option drops to this price, cut the trade." error={errors.stopPremium}>
-            <FieldInput
-              type="number"
-              step="0.01"
-              value={stopPremium}
-              onChange={(e) => setStopPremium(e.target.value)}
-              error={!!errors.stopPremium}
-              placeholder="0.80"
-            />
-          </FieldRow>
-
-          {/* Stop guidance */}
-          {acctSize > 0 && entryVal > 0 ? (
-            <p className="text-[9px] text-muted-foreground/50 -mt-1.5">
-              For 1 contract — Max risk room: <span className="font-mono font-semibold text-foreground/60">${maxStopW.toFixed(2)}</span>
-              {" · "}Suggested stop: <span className="font-mono font-semibold text-foreground/60">${lowestStop.toFixed(2)} or higher</span>
-            </p>
-          ) : (
-            <p className="text-[10px] text-muted-foreground/40 -mt-1">Cut trade if option hits your stop.</p>
-          )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 pt-1 flex-wrap">
-            <Btn primary onClick={handleGenerate} disabled={!isValid}>Generate</Btn>
-            <Btn onClick={handleLoadExample}>Load Example</Btn>
-            <Btn onClick={handleCopyPlan} disabled={!isValid}>
-              <span className="flex items-center gap-1"><Copy className="w-3 h-3" />Copy Trade Plan</span>
-            </Btn>
+            <Button size="sm" variant="outline" className="shrink-0 text-xs border-amber-500/30 text-amber-400" onClick={() => navigate("/academy/trade")}>
+              Set Balance
+            </Button>
           </div>
-        </PanelCard>
+        )}
 
-        {/* ═══ Results ═══ */}
-        <PanelCard title="Results" help={"Contracts to Buy — how many your account allows\nPlanned Loss — estimated loss if you stop out\nMoney Needed — total cost to open the trade\nMain Target — 1:2 risk/reward target\nTP1 / TP2 — early and extended profit ideas"}>
-          {isValid && liveResult ? (
-            <div className="space-y-2">
-              <VerdictBanner verdict={liveResult.verdict} reason={liveResult.verdictReason} />
+        {/* ═══ TWO-COLUMN LAYOUT ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          {/* LEFT: Trade Check Card */}
+          <div className="lg:col-span-3 space-y-5">
+            <div className="vault-glass-card p-5 space-y-5">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" /> Trade Check
+              </h3>
 
-              {/* Core metrics */}
-              <div className="rounded-lg overflow-hidden" style={{ border: panelBorder }}>
-                <ResultRow
-                  label="Contracts to Buy"
-                  value={`${liveResult.finalContracts}`}
-                  large
-                  accent
-                />
-                <ResultRow label="Option Stop Price" value={safeCurrency(parseFloat(stopPremium))} />
-                <ResultRow
-                  label="Planned Loss If Stop Hits"
-                  value={liveResult.finalContracts > 0 ? `-${safeCurrency(liveResult.totalPlannedRisk)}` : "—"}
-                />
-                <ResultRow label="Money Needed to Enter" value={safeCurrency(liveResult.totalPositionCost)} />
+              {/* Direction toggle */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Direction</Label>
+                <div className="flex rounded-xl border border-border overflow-hidden">
+                  {(["calls", "puts"] as const).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDirection(d)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors duration-100",
+                        direction === d
+                          ? d === "calls"
+                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                            : "bg-red-500/15 text-red-400 border-red-500/20"
+                          : "bg-muted/20 text-muted-foreground hover:bg-muted/40"
+                      )}
+                    >
+                      {d === "calls" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+                      {d === "calls" ? "Up (Calls)" : "Down (Puts)"}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Targets */}
-              {liveResult.finalContracts > 0 && (
-                <div className="rounded-lg overflow-hidden" style={{ border: panelBorder }}>
-                  <ResultRow label="Main Target (1:2)" value={safeCurrency(liveResult.mainTarget)} accent />
-                  <ResultRow label="Quick Profit Idea (TP1)" value={safeCurrency(liveResult.tp1Premium)} />
-                  <ResultRow label="Bigger Profit Idea (TP2)" value={safeCurrency(liveResult.tp2Premium)} />
+              {/* Contract price */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Current contract price</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    placeholder="0.00"
+                    value={contractPrice}
+                    onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); }}
+                    className="pl-7 text-lg font-semibold tabular-nums h-12"
+                  />
+                </div>
+              </div>
+
+              {/* Ticker */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Ticker (optional)</Label>
+                <Input
+                  placeholder="SPY, TSLA, NVDA…"
+                  value={ticker}
+                  onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                  className="uppercase"
+                />
+              </div>
+            </div>
+
+            {/* ═══ CONTRACT CHOICE CARDS ═══ */}
+            {result && (
+              <div className="space-y-3">
+                {result.allPass && (
+                  <div className="vault-glass-card p-4 border-red-500/20 bg-red-500/5 flex items-center gap-3">
+                    <X className="h-4 w-4 text-red-400 shrink-0" />
+                    <p className="text-sm text-foreground">This contract is too expensive for your account.</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {result.choices.map((choice, idx) => {
+                    const sc = STATUS_CONFIG[choice.status];
+                    const isSelected = selectedIndex === idx;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedIndex(idx)}
+                        className={cn(
+                          "relative vault-glass-card p-4 text-left space-y-2.5 transition-all duration-100 active:scale-[0.98]",
+                          isSelected && `ring-2 ${sc.ring} ${sc.glow}`,
+                          choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
+                          choice.status === "pass" && "opacity-50"
+                        )}
+                      >
+                        {choice.isRecommended && (
+                          <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-primary/90 text-primary-foreground text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                            <Star className="h-2.5 w-2.5" /> Best
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold text-foreground tabular-nums">{choice.contracts}</span>
+                          <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", sc.bg, sc.border, sc.color)}>
+                            {sc.label}
+                          </span>
+                        </div>
+
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                          {choice.contracts === 1 ? "contract" : "contracts"}
+                        </p>
+
+                        <div className="space-y-1.5 pt-1 border-t border-border/30">
+                          <MetricLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
+                          <MetricLine
+                            label="Exit if wrong"
+                            value={choice.fullPremiumRiskOk ? "Full risk OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
+                            valueCls={choice.fullPremiumRiskOk ? "text-emerald-400" : undefined}
+                          />
+                          <MetricLine label="Worst-case loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: Hero Decision Card */}
+          <div className="lg:col-span-2">
+            <div className="vault-glass-card p-6 space-y-5 sticky top-4">
+              {selectedChoice ? (
+                <HeroDecisionCard
+                  choice={selectedChoice}
+                  ticker={ticker}
+                  direction={direction}
+                  saving={saving}
+                  onUsePlan={handleUsePlan}
+                />
+              ) : (
+                <div className="text-center py-8 space-y-3">
+                  <Shield className="h-10 w-10 text-muted-foreground/20 mx-auto" />
+                  <p className="text-sm text-muted-foreground">
+                    {hasValidPrice ? "Tap a contract choice to see the full plan." : "Enter a contract price to get started."}
+                  </p>
                 </div>
               )}
-
-              {/* Status checks */}
-              <div className="flex items-center justify-center gap-6 pt-1">
-                <StatusCheck label="Risk Check" pass={liveResult.riskCheckPass} />
-                <StatusCheck label="Debit Check" pass={liveResult.hardSpendCheckPass} />
-              </div>
             </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center py-8">
-              <p className="text-xs text-muted-foreground/40 text-center leading-relaxed">
-                Enter account size, buy price, and stop price.<br />Results appear here.
-              </p>
-            </div>
-          )}
-        </PanelCard>
+          </div>
+        </div>
       </div>
 
-      {/* Reset Button */}
-      <div className="flex justify-center">
-        <button
-          onClick={handleReset}
-           className="group inline-flex items-center gap-2 px-8 py-2.5 rounded-xl text-xs font-semibold
-             text-primary border border-primary/30 bg-transparent
-             hover:bg-primary/10 hover:border-primary/50
-             active:scale-[0.97] transition-all duration-100
-             md:w-auto justify-center"
-        >
-          <RotateCcw className="w-3.5 h-3.5 group-hover:rotate-[-90deg] transition-transform duration-200" />
-          Reset All
-        </button>
+      {/* Replace plan dialog */}
+      <AlertDialog open={showReplaceDialog} onOpenChange={setShowReplaceDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace active plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You already have an active approved plan today. Replacing it will cancel the existing one and create a new plan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Current</AlertDialogCancel>
+            <AlertDialogAction onClick={handleReplacePlan}>Replace Plan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+/* ── Hero Decision Card ── */
+function HeroDecisionCard({
+  choice, ticker, direction, saving, onUsePlan,
+}: {
+  choice: ContractChoice;
+  ticker: string;
+  direction: string;
+  saving: boolean;
+  onUsePlan: () => void;
+}) {
+  const sc = STATUS_CONFIG[choice.status];
+
+  return (
+    <>
+      {/* Status hero */}
+      <div className={cn("text-center py-4 rounded-xl", sc.bg, "border", sc.border)}>
+        <p className={cn("text-3xl font-bold tracking-tight", sc.color)}>{sc.label}</p>
+        {ticker && <p className="text-xs text-muted-foreground mt-1">{ticker.toUpperCase()} · {direction === "calls" ? "Calls" : "Puts"}</p>}
       </div>
 
-      {/* Footer */}
-      <div className="text-center space-y-1 pb-2">
-        <p className="text-[10px] text-muted-foreground/50 font-semibold">
-          Contract size is based on both your risk limit and spend cap.
+      {/* Details */}
+      <div className="space-y-3">
+        <HeroLine label="Buy" value={`${choice.contracts} contract${choice.contracts > 1 ? "s" : ""}`} bold />
+        <HeroLine
+          label="Exit if wrong"
+          value={choice.fullPremiumRiskOk ? "Full premium risk OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
+          sub={choice.fullPremiumRiskOk ? "Your risk budget covers the entire contract." : undefined}
+        />
+        <HeroLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
+        <HeroLine label="Worst-case loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
+
+        <div className="pt-2 border-t border-border/30 space-y-3">
+          <HeroLine label="Take profit 1" value={formatCurrency(choice.tp1)} valueCls="text-emerald-400" />
+          <HeroLine label="Take profit 2" value={formatCurrency(choice.tp2)} valueCls="text-emerald-400" />
+        </div>
+      </div>
+
+      {/* Coaching note */}
+      <div className="flex items-start gap-2 rounded-xl bg-muted/20 border border-border/30 p-3">
+        <Sparkles className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+        <p className="text-xs text-muted-foreground">{choice.coachingNote}</p>
+      </div>
+
+      {/* CTA */}
+      <Button
+        className="w-full h-12 text-base font-semibold gap-2"
+        disabled={choice.status === "pass" || saving}
+        onClick={onUsePlan}
+      >
+        {saving ? "Saving…" : (
+          <>
+            <Check className="h-4 w-4" /> Use This Plan
+            <ChevronRight className="h-4 w-4 ml-auto" />
+          </>
+        )}
+      </Button>
+
+      {choice.status === "pass" && (
+        <p className="text-[10px] text-center text-muted-foreground">
+          This setup doesn't fit your account rules. Try a lower contract price.
         </p>
-        <p className="text-[10px] text-muted-foreground/30 italic">
-          Cut at your stop. Planned loss is not a guarantee.
-        </p>
+      )}
+    </>
+  );
+}
+
+/* ── Shared sub-components ── */
+function RulesChip({ icon: Icon, label, value, valueCls }: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  valueCls?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl bg-card border border-border/50 px-3 py-2">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className={cn("text-sm font-semibold tabular-nums text-foreground", valueCls)}>{value}</span>
+    </div>
+  );
+}
+
+function MetricLine({ label, value, valueCls }: { label: string; value: string; valueCls?: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className={cn("text-xs font-semibold tabular-nums text-foreground", valueCls)}>{value}</span>
+    </div>
+  );
+}
+
+function HeroLine({ label, value, bold, valueCls, sub }: {
+  label: string;
+  value: string;
+  bold?: boolean;
+  valueCls?: string;
+  sub?: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="text-right">
+        <span className={cn("text-sm tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
+        {sub && <p className="text-[10px] text-muted-foreground mt-0.5 max-w-[180px]">{sub}</p>}
       </div>
     </div>
   );
