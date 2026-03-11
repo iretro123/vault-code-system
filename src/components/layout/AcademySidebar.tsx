@@ -281,7 +281,7 @@ export function AcademySidebar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => navigate("/academy/settings")}
+                onClick={() => { if (isMobile) setOpenMobile(false); navigate("/academy/settings"); }}
                 aria-label="Profile"
                 className="sidebar-dock-btn relative shrink-0 h-9 w-9 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
