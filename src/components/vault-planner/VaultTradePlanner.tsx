@@ -430,7 +430,7 @@ export function VaultTradePlanner() {
                         <Label className="text-[10px] text-muted-foreground font-medium">Contracts</Label>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setCustomContracts(Math.max(1, customContracts - 1))}
+                            onClick={() => { const v = Math.max(1, customContracts - 1); setCustomContracts(v); setCustomContractsText(String(v)); }}
                             className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
                             <Minus className="h-3 w-3 text-muted-foreground" />
