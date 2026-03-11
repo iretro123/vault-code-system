@@ -141,13 +141,14 @@ Deno.serve(async (req) => {
         });
       }
 
+      const personalizedMsg = message.trim().replace(/\{\{name\}\}/gi, profile.display_name || "there");
       const result = await sendSmsToContact(
         GHL_API_KEY,
         GHL_LOCATION_ID,
         profile.phone_number,
         profile.display_name || "",
         profile.email,
-        message.trim()
+        personalizedMsg
       );
       if (result.ok) sent++;
       else { failed++; if (result.error) errors.push(result.error); }
