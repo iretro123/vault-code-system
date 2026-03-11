@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { useApprovedPlans } from "@/hooks/useApprovedPlans";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   calculateContractChoices,
   formatCurrency,
