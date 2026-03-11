@@ -19,8 +19,8 @@ export function useAcademyPermissions() {
     roleName: "Member",
     permissions: new Set(),
     appRoles: new Set(),
-    loading: Boolean(user?.id),
-    resolved: !user?.id,
+    loading: true,
+    resolved: false,
   });
 
   useEffect(() => {
