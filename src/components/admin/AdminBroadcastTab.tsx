@@ -395,6 +395,9 @@ export function AdminBroadcastTab() {
                 onChange={(e) => setBody(e.target.value)}
                 rows={3}
               />
+              {channel === "sms" && (
+                <p className="text-[10px] text-muted-foreground">💡 Use <code className="bg-white/[0.06] px-1 rounded text-[10px]">{"{{name}}"}</code> to personalize — e.g. "Hey {"{{name}}"}, check today's setup!"</p>
+              )}
             </div>
             {channel === "in_app" && (
               <div className="space-y-1.5">
