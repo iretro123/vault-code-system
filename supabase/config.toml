@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.trade-focus]
 verify_jwt = false
+
+[functions.ghl-broadcast-sms]
+verify_jwt = false

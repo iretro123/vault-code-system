@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Send, Loader2, Clock, CheckCircle2,
   AlertTriangle, FileText, Trash2, RotateCcw,
-  Sparkles, Eye,
+  Sparkles, Eye, MessageSquare, Smartphone,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -57,7 +57,8 @@ export function AdminBroadcastTab() {
 
   /* ── Form state ── */
   const [mode] = useState<"motivation_ping">("motivation_ping");
-  const [channel] = useState("in_app");
+  const [channel, setChannel] = useState<"in_app" | "sms">("in_app");
+  const [smsStatus, setSmsStatus] = useState<{ sent: number; failed: number } | null>(null);
   const [recipientType, setRecipientType] = useState<"all" | "single">("single");
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
@@ -140,32 +141,59 @@ export function AdminBroadcastTab() {
   const executeSend = async () => {
     setConfirmOpen(false);
     setSending(true);
+    setSmsStatus(null);
 
     const targetUserId = recipientType === "single" ? userId : null;
     const linkVal = link.trim() || null;
 
-    // 1) Deliver in-app
-    if (channel === "in_app") {
+    if (channel === "sms") {
+      // Send via GHL edge function
+      const smsMessage = body.trim()
+        ? `${title.trim()}\n\n${body.trim()}`
+        : title.trim();
+
+      const { data, error } = await supabase.functions.invoke("ghl-broadcast-sms", {
+        body: {
+          recipientType,
+          userId: targetUserId,
+          message: smsMessage,
+        },
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || error?.message || "SMS send failed");
+        setSending(false);
+        return;
+      }
+
+      setSmsStatus({ sent: data.sent, failed: data.failed });
+      toast.success(`SMS sent to ${data.sent} member${data.sent !== 1 ? "s" : ""}${data.failed ? ` (${data.failed} failed)` : ""}`);
+
+      // Log to broadcast history
+      await supabase.from("broadcast_messages").insert({
+        sender_id: user!.id,
+        mode,
+        channel: "sms",
+        recipient_type: recipientType,
+        recipient_user_id: targetUserId,
+        title: title.trim(),
+        body: body.trim(),
+        template_key: templateKey,
+        status: data.failed === 0 ? "sent" : "partial",
+        sent_at: new Date().toISOString(),
+        metadata: { sent: data.sent, failed: data.failed } as any,
+      });
+    } else {
+      // In-app delivery (existing logic)
       if (mode === "motivation_ping") {
-        if (targetUserId) {
-          await supabase.from("inbox_items").insert({
-            user_id: targetUserId,
-            type: "reminder",
-            title: title.trim(),
-            body: body.trim(),
-            link: linkVal,
-            sender_id: user!.id,
-          });
-        } else {
-          await supabase.from("inbox_items").insert({
-            user_id: null,
-            type: "reminder",
-            title: title.trim(),
-            body: body.trim(),
-            link: linkVal,
-            sender_id: user!.id,
-          });
-        }
+        await supabase.from("inbox_items").insert({
+          user_id: targetUserId,
+          type: "reminder",
+          title: title.trim(),
+          body: body.trim(),
+          link: linkVal,
+          sender_id: user!.id,
+        });
       } else {
         await supabase.from("inbox_items").insert({
           user_id: targetUserId,
@@ -184,23 +212,24 @@ export function AdminBroadcastTab() {
           link_path: linkVal,
         } as any);
       }
+
+      // Log to history
+      await supabase.from("broadcast_messages").insert({
+        sender_id: user!.id,
+        mode,
+        channel: "in_app",
+        recipient_type: recipientType,
+        recipient_user_id: targetUserId,
+        title: title.trim(),
+        body: body.trim(),
+        template_key: templateKey,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+      });
+
+      toast.success("Message sent ✓");
     }
 
-    // 2) Log to history
-    await supabase.from("broadcast_messages").insert({
-      sender_id: user!.id,
-      mode,
-      channel,
-      recipient_type: recipientType,
-      recipient_user_id: targetUserId,
-      title: title.trim(),
-      body: body.trim(),
-      template_key: templateKey,
-      status: channel === "in_app" ? "sent" : "draft",
-      sent_at: channel === "in_app" ? new Date().toISOString() : null,
-    });
-
-    toast.success(channel === "in_app" ? "Message sent ✓" : "Draft saved (provider not configured)");
     setTitle(""); setBody(""); setLink(""); setUserId(""); setTemplateKey(null);
     fetchHistory();
     setSending(false);
@@ -304,6 +333,35 @@ export function AdminBroadcastTab() {
               )}
             </div>
 
+            {/* Channel */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Channel</Label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setChannel("in_app")}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 ${
+                    channel === "in_app"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <MessageSquare className="h-3 w-3" /> In-App
+                </button>
+                <button
+                  onClick={() => setChannel("sms")}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 ${
+                    channel === "sms"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Smartphone className="h-3 w-3" /> SMS (GHL)
+                </button>
+              </div>
+              {channel === "sms" && (
+                <p className="text-[10px] text-amber-400/80">⚡ Will send via GHL to members with phone numbers on file</p>
+              )}
+            </div>
 
             {/* Template quick-fill */}
             <div className="space-y-1.5">
@@ -338,24 +396,31 @@ export function AdminBroadcastTab() {
                 rows={3}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Link (optional)</Label>
-              <Input
-                placeholder="e.g. /academy/home"
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-              />
-              <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
-            </div>
+            {channel === "in_app" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Link (optional)</Label>
+                <Input
+                  placeholder="e.g. /academy/home"
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                />
+                <p className="text-[10px] text-muted-foreground">User will see a clickable link in their inbox</p>
+              </div>
+            )}
 
             <Button
               onClick={handleSend}
               disabled={sending || !title.trim() || (recipientType === "single" && !userId)}
               className="gap-1.5"
             >
-              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              Send
+              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : channel === "sms" ? <Smartphone className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+              {channel === "sms" ? "Send SMS" : "Send"}
             </Button>
+            {smsStatus && (
+              <p className="text-xs text-muted-foreground">
+                Last SMS: {smsStatus.sent} sent{smsStatus.failed > 0 ? `, ${smsStatus.failed} failed` : ""}
+              </p>
+            )}
           </Card>
         </TabsContent>
 
