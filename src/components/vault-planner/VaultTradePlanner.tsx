@@ -541,8 +541,8 @@ function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
 function MetricLine({ label, value, valueCls }: { label: string; value: string; valueCls?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[10px] text-muted-foreground/70">{label}</span>
-      <span className={cn("text-xs font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <span className="text-[11px] text-muted-foreground/70">{label}</span>
+      <span className={cn("text-sm font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
     </div>
   );
 }
