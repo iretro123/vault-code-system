@@ -1,39 +1,42 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Add SMS Broadcast via GHL to Admin Panel
 
-### What was implemented
+## What You Already Have
+- `GHL_API_KEY` and `GHL_LOCATION_ID` secrets already configured
+- `ghl-password-reset` edge function already sends SMS via GHL Conversations API (proven pattern)
+- Broadcast tab with compose UI, recipient selector, templates, and history
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+## Plan
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+### 1. New Edge Function: `ghl-broadcast-sms`
+Sends SMS to one or all members via GHL.
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+- Accepts `{ recipientType: "all" | "single", userId?: string, message: string }` from admin
+- Auth-gated: validates caller has operator role
+- If `single`: fetches phone from `profiles` → upserts GHL contact → sends SMS
+- If `all`: fetches all profiles with phone numbers → loops through each, upserts contact + sends SMS
+- Returns `{ sent: number, failed: number, errors: string[] }`
+- Uses same GHL Conversations API pattern as `ghl-password-reset`
 
-### What was implemented
+### 2. Update Broadcast Compose UI
+Add a **channel selector** to the existing compose form:
 
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
+- Toggle between "In-App" and "SMS (GHL)" channels
+- When SMS is selected, show a note: "Will send to members with phone numbers on file"
+- On send: calls `ghl-broadcast-sms` edge function instead of inserting inbox_items
+- Still logs to `broadcast_messages` table with `channel: "sms"` and status from the response
+- History tab already shows channel badge — will display "sms" automatically
 
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+### 3. Export CSV Button on Members Tab
+Quick addition to `AdminMembersTab`:
+- "Export CSV" button in the header area
+- Downloads `display_name, email, phone_number` for all members
+- Useful for manual GHL import or other tools
+
+### Files Changed
+- **New**: `supabase/functions/ghl-broadcast-sms/index.ts`
+- **Edit**: `supabase/config.toml` — add `verify_jwt = false` entry
+- **Edit**: `src/components/admin/AdminBroadcastTab.tsx` — add SMS channel option + call edge function
+- **Edit**: `src/components/admin/AdminMembersTab.tsx` — add Export CSV button
+
