@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
   AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
+  ChevronDown, Minus, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 const STATUS_CONFIG = {
   fits: {
@@ -63,6 +65,13 @@ const STATUS_CONFIG = {
   },
 };
 
+const CARD_SUBLABELS: Record<number, string> = {
+  1: "Most room",
+  2: "Balanced",
+  3: "Tighter",
+  4: "Max size",
+};
+
 export function VaultTradePlanner() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -79,6 +88,12 @@ export function VaultTradePlanner() {
   const [saving, setSaving] = useState(false);
   const [startingBalance, setStartingBalance] = useState(0);
   const [balanceLoaded, setBalanceLoaded] = useState(false);
+
+  // Custom size
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customContracts, setCustomContracts] = useState(5);
+  const [customExitOverride, setCustomExitOverride] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
 
   // Fetch starting balance from profile, then compute live balance
   useEffect(() => {
@@ -110,13 +125,76 @@ export function VaultTradePlanner() {
     return calculateContractChoices(accountBalance, priceNum);
   }, [accountBalance, priceNum, hasValidPrice]);
 
-  const selectedChoice: ContractChoice | null = result && selectedIndex !== null ? result.choices[selectedIndex] : null;
+  // Build a custom choice from the custom inputs
+  const customChoice: ContractChoice | null = useMemo(() => {
+    if (!hasValidPrice || accountBalance <= 0 || !result) return null;
+    const n = customContracts;
+    const riskBudget = result.riskBudget;
+    const comfortBudget = result.comfortBudget;
+    const hardBudget = result.hardBudget;
+
+    const cashNeeded = priceNum * 100 * n;
+    const maxCutRoom = riskBudget / (100 * n);
+    const fullPremiumRiskOk = maxCutRoom >= priceNum;
+
+    let suggestedExit: number | null;
+    let worstCaseLoss: number;
+
+    if (fullPremiumRiskOk) {
+      suggestedExit = null;
+      worstCaseLoss = cashNeeded;
+    } else {
+      suggestedExit = Math.max(0.01, Math.ceil((priceNum - maxCutRoom) * 100) / 100);
+      worstCaseLoss = (priceNum - suggestedExit) * 100 * n;
+    }
+
+    // Apply manual exit override
+    const exitOverrideNum = parseFloat(customExitOverride);
+    if (!isNaN(exitOverrideNum) && exitOverrideNum > 0 && exitOverrideNum < priceNum) {
+      suggestedExit = exitOverrideNum;
+      worstCaseLoss = (priceNum - exitOverrideNum) * 100 * n;
+    }
+
+    let status: "fits" | "tight" | "pass";
+    if (cashNeeded <= comfortBudget && worstCaseLoss <= riskBudget) {
+      status = "fits";
+    } else if (cashNeeded <= hardBudget && worstCaseLoss <= riskBudget) {
+      status = "tight";
+    } else {
+      status = "pass";
+    }
+
+    const r = suggestedExit !== null ? priceNum - suggestedExit : priceNum;
+    const tp1 = Math.round((priceNum + r) * 100) / 100;
+    const tp2 = Math.round((priceNum + 2 * r) * 100) / 100;
+    const tp3 = Math.round((priceNum + 3 * r) * 100) / 100;
+
+    let coachingNote: string;
+    if (status === "pass") coachingNote = "Too expensive for this account.";
+    else if (status === "fits") coachingNote = "Custom size fits your account.";
+    else coachingNote = "Custom size is tight. Discipline matters.";
+
+    return {
+      contracts: n, cashNeeded, maxCutRoom, suggestedExit, worstCaseLoss,
+      fullPremiumRiskOk, tp1, tp2, tp3, r, status, coachingNote, isRecommended: false,
+    };
+  }, [hasValidPrice, accountBalance, priceNum, customContracts, customExitOverride, result]);
+
+  // Determine active choice for hero
+  const selectedChoice: ContractChoice | null = useMemo(() => {
+    if (useCustom && customChoice) return customChoice;
+    if (result && selectedIndex !== null) return result.choices[selectedIndex];
+    return null;
+  }, [useCustom, customChoice, result, selectedIndex]);
 
   // Auto-select recommended choice when results change
-  useMemo(() => {
+  useEffect(() => {
     if (result) {
       const recIdx = result.choices.findIndex((c) => c.isRecommended);
-      if (recIdx >= 0 && selectedIndex === null) setSelectedIndex(recIdx);
+      if (recIdx >= 0) {
+        setSelectedIndex(recIdx);
+        setUseCustom(false);
+      }
     }
   }, [result]);
 
@@ -225,7 +303,6 @@ export function VaultTradePlanner() {
           <div className="lg:col-span-3 space-y-6">
             {/* Trade Check Input Card */}
             <div className="vault-premium-card overflow-hidden">
-              {/* Card header with gradient line */}
               <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.5), transparent)' }} />
               <div className="p-6 space-y-5">
                 <div className="flex items-center gap-2.5">
@@ -239,7 +316,7 @@ export function VaultTradePlanner() {
                 <div className="space-y-2">
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Direction</Label>
                   <div className="flex rounded-2xl border border-border/50 overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)' }}>
-                {(["calls", "puts"] as const).map((d) => (
+                    {(["calls", "puts"] as const).map((d) => (
                       <button
                         key={d}
                         onClick={() => setDirection(d)}
@@ -264,13 +341,13 @@ export function VaultTradePlanner() {
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">$</span>
-                     <Input
+                    <Input
                       type="number"
                       step="0.01"
                       min="0.01"
                       placeholder="0.00"
                       value={contractPrice}
-                      onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); }}
+                      onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); setUseCustom(false); }}
                       className="pl-8 text-2xl font-bold tabular-nums h-16 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-xl"
                     />
                   </div>
@@ -279,7 +356,7 @@ export function VaultTradePlanner() {
                 {/* Ticker */}
                 <div className="space-y-2">
                   <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Ticker <span className="text-muted-foreground/40">(optional)</span></Label>
-                   <Input
+                  <Input
                     placeholder="SPY, TSLA, NVDA…"
                     value={ticker}
                     onChange={(e) => setTicker(e.target.value.toUpperCase())}
@@ -304,29 +381,29 @@ export function VaultTradePlanner() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {result.choices.map((choice, idx) => {
                     const sc = STATUS_CONFIG[choice.status];
-                    const isSelected = selectedIndex === idx;
+                    const isSelected = selectedIndex === idx && !useCustom;
                     return (
                       <button
                         key={idx}
-                        onClick={() => setSelectedIndex(idx)}
+                        onClick={() => { setSelectedIndex(idx); setUseCustom(false); }}
                         className={cn(
-                          "vault-approval-choice-card relative text-left space-y-3 transition-all duration-150 active:scale-[0.97] min-h-[160px]",
+                          "vault-approval-choice-card relative text-left space-y-2 transition-all duration-150 active:scale-[0.97] min-h-[160px]",
                           "hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)]",
                           isSelected && `ring-2 ${sc.ring} ${sc.glow} scale-[1.02]`,
                           choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
                           choice.status === "pass" && "opacity-40 saturate-50 hover:translate-y-0"
                         )}
                       >
-                        {/* Best badge */}
+                        {/* Recommended badge */}
                         {choice.isRecommended && (
-                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse"
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
                             style={{
                               background: 'linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%))',
                               color: 'white',
                               boxShadow: '0 2px 16px rgba(59,130,246,0.35)',
                             }}
                           >
-                            <Star className="h-3 w-3" /> Best
+                            <Star className="h-3 w-3" /> Recommended
                           </div>
                         )}
 
@@ -337,8 +414,9 @@ export function VaultTradePlanner() {
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-muted-foreground/60 uppercase tracking-[0.15em] font-medium">
-                          {choice.contracts === 1 ? "contract" : "contracts"}
+                        {/* Sublabel */}
+                        <p className="text-[11px] text-muted-foreground/60 uppercase tracking-[0.12em] font-medium leading-tight">
+                          {choice.contracts === 1 ? "contract" : "contracts"} · {CARD_SUBLABELS[choice.contracts] || ""}
                         </p>
 
                         <div className="space-y-2.5 pt-3 border-t border-white/[0.05]">
@@ -354,6 +432,60 @@ export function VaultTradePlanner() {
                     );
                   })}
                 </div>
+
+                {/* ═══ CUSTOM SIZE COLLAPSIBLE ═══ */}
+                <Collapsible open={customOpen} onOpenChange={setCustomOpen}>
+                  <CollapsibleTrigger asChild>
+                    <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto py-2">
+                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", customOpen && "rotate-180")} />
+                      Need a different size?
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="vault-glass-card p-5 mt-2 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-muted-foreground font-medium">Custom contracts</Label>
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setCustomContracts(Math.max(1, customContracts - 1))}
+                            className="h-9 w-9 rounded-xl flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
+                          >
+                            <Minus className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                          <span className="text-xl font-bold tabular-nums text-foreground min-w-[2ch] text-center">{customContracts}</span>
+                          <button
+                            onClick={() => setCustomContracts(customContracts + 1)}
+                            className="h-9 w-9 rounded-xl flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
+                          >
+                            <Plus className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground font-medium">Exit override <span className="text-muted-foreground/40">(optional)</span></Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="Auto"
+                            value={customExitOverride}
+                            onChange={(e) => setCustomExitOverride(e.target.value)}
+                            className="pl-7 h-10 text-sm bg-black/20 border-white/[0.06] rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-primary/30 text-primary hover:bg-primary/10"
+                        onClick={() => { setUseCustom(true); setSelectedIndex(null); }}
+                      >
+                        Use {customContracts} contract{customContracts > 1 ? "s" : ""}
+                      </Button>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             )}
           </div>
@@ -366,6 +498,7 @@ export function VaultTradePlanner() {
                   choice={selectedChoice}
                   ticker={ticker}
                   direction={direction}
+                  entryPrice={priceNum}
                   saving={saving}
                   onUsePlan={handleUsePlan}
                 />
@@ -405,15 +538,17 @@ export function VaultTradePlanner() {
 
 /* ── Hero Decision Card ── */
 function HeroDecisionCard({
-  choice, ticker, direction, saving, onUsePlan,
+  choice, ticker, direction, entryPrice, saving, onUsePlan,
 }: {
   choice: ContractChoice;
   ticker: string;
   direction: string;
+  entryPrice: number;
   saving: boolean;
   onUsePlan: () => void;
 }) {
   const sc = STATUS_CONFIG[choice.status];
+  const hasExit = choice.suggestedExit !== null || choice.fullPremiumRiskOk;
 
   return (
     <div className={cn("vault-premium-card overflow-hidden", sc.heroGlow)}>
@@ -462,11 +597,20 @@ function HeroDecisionCard({
           />
           <HeroLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
           <HeroLine label="Max loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
+        </div>
 
-          <div className="pt-4 border-t border-white/[0.05] space-y-4">
-            <HeroLine label="Take profit 1" value={formatCurrency(choice.tp1)} valueCls="text-emerald-400" />
-            <HeroLine label="Take profit 2" value={formatCurrency(choice.tp2)} valueCls="text-emerald-400" />
-          </div>
+        {/* R-Based Targets */}
+        <div className="pt-4 border-t border-white/[0.05] space-y-3">
+          <p className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider">Profit Targets</p>
+          {hasExit && choice.r > 0 ? (
+            <div className="space-y-3">
+              <HeroLine label="TP1 · 1:1" value={formatCurrency(choice.tp1)} valueCls="text-emerald-400" />
+              <HeroLine label="TP2 · 1:2" value={formatCurrency(choice.tp2)} valueCls="text-emerald-400" />
+              <HeroLine label="TP3 · 1:3" value={formatCurrency(choice.tp3)} valueCls="text-emerald-400" />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground/50 italic">Add an exit to calculate targets</p>
+          )}
         </div>
 
         {/* Coaching note */}

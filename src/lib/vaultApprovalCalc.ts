@@ -17,6 +17,8 @@ export interface ContractChoice {
   fullPremiumRiskOk: boolean;
   tp1: number;
   tp2: number;
+  tp3: number;
+  r: number;
   status: ApprovalStatus;
   coachingNote: string;
   isRecommended: boolean;
@@ -85,18 +87,21 @@ export function calculateContractChoices(
     const r = suggestedExit !== null ? entryPremium - suggestedExit : entryPremium;
     const tp1 = Math.round((entryPremium + r) * 100) / 100;
     const tp2 = Math.round((entryPremium + 2 * r) * 100) / 100;
+    const tp3 = Math.round((entryPremium + 3 * r) * 100) / 100;
 
-    // Coaching note
+    // Coaching note — contextual per size
     let coachingNote: string;
-    if (status === "fits") {
-      coachingNote = "Fits your account.";
-    } else if (status === "tight") {
-      coachingNote = "Works, but your exit has to be tight.";
-    } else {
+    if (status === "pass") {
       coachingNote = "Too expensive for this account.";
-    }
-    if (fullPremiumRiskOk && status !== "pass") {
-      coachingNote += " Full premium risk is covered by your risk budget.";
+    } else if (status === "fits" && n === 1) {
+      coachingNote = "Fits your account.";
+    } else if (status === "fits" && fullPremiumRiskOk) {
+      coachingNote = "Fits your account. Full premium risk is covered.";
+    } else if (status === "fits") {
+      coachingNote = n <= 2 ? "Most balanced setup for this account." : "More size means a tighter exit.";
+    } else {
+      // tight
+      coachingNote = "This pushes size, so discipline matters.";
     }
 
     choices.push({
@@ -108,20 +113,33 @@ export function calculateContractChoices(
       fullPremiumRiskOk,
       tp1,
       tp2,
+      tp3,
+      r,
       status,
       coachingNote,
       isRecommended: false,
     });
   }
 
-  // Mark recommended: largest "fits", else largest "tight"
+  // Smarter recommendation: largest "fits" that still has practical exit room.
+  // If the exit is extremely tight (maxCutRoom < 20% of entry), prefer a smaller size.
   const fitsChoices = choices.filter((c) => c.status === "fits");
   const tightChoices = choices.filter((c) => c.status === "tight");
 
   if (fitsChoices.length > 0) {
-    fitsChoices[fitsChoices.length - 1].isRecommended = true;
+    // Walk backward from largest fits, prefer one with reasonable exit room
+    let recommended = fitsChoices[fitsChoices.length - 1];
+    for (let i = fitsChoices.length - 1; i >= 0; i--) {
+      const c = fitsChoices[i];
+      // Practical room: either full premium is OK, or maxCutRoom >= 20% of entry
+      if (c.fullPremiumRiskOk || c.maxCutRoom >= entryPremium * 0.2) {
+        recommended = c;
+        break;
+      }
+    }
+    recommended.isRecommended = true;
   } else if (tightChoices.length > 0) {
-    tightChoices[tightChoices.length - 1].isRecommended = true;
+    tightChoices[0].isRecommended = true; // smallest tight = safest tight
   }
 
   return {
