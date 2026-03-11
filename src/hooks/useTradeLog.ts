@@ -29,6 +29,7 @@ export interface TradeEntry {
   created_at: string;
   symbol?: string;
   outcome?: string;
+  plan_id?: string;
 }
 
 export interface NewTradeEntry {
