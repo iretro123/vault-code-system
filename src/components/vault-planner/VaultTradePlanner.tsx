@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   calculateContractChoices,
+  buildChoice,
   formatCurrency,
   type ContractChoice,
   type ApprovalResult,
@@ -84,7 +85,6 @@ export function VaultTradePlanner() {
   // Leak 1 fix: refetch trade data on mount to prevent stale balance
   useEffect(() => { refetchTrades(); }, []);
 
-
   const [direction, setDirection] = useState<"calls" | "puts">("calls");
   const [contractPrice, setContractPrice] = useState("");
   const [ticker, setTicker] = useState("");
@@ -128,57 +128,25 @@ export function VaultTradePlanner() {
     return calculateContractChoices(accountBalance, priceNum);
   }, [accountBalance, priceNum, hasValidPrice]);
 
+  // Custom size uses the same canonical buildChoice function
   const customChoice: ContractChoice | null = useMemo(() => {
     if (!hasValidPrice || accountBalance <= 0 || !result) return null;
-    const n = customContracts;
-    const riskBudget = result.riskBudget;
-    const comfortBudget = result.comfortBudget;
-    const hardBudget = result.hardBudget;
-
-    const cashNeeded = priceNum * 100 * n;
-    const maxCutRoom = riskBudget / (100 * n);
-    const fullPremiumRiskOk = maxCutRoom >= priceNum;
-
-    let suggestedExit: number | null;
-    let worstCaseLoss: number;
-
-    if (fullPremiumRiskOk) {
-      suggestedExit = null;
-      worstCaseLoss = cashNeeded;
-    } else {
-      suggestedExit = Math.max(0.01, Math.ceil((priceNum - maxCutRoom) * 100) / 100);
-      worstCaseLoss = (priceNum - suggestedExit) * 100 * n;
-    }
 
     const exitOverrideNum = parseFloat(customExitOverride);
-    if (!isNaN(exitOverrideNum) && exitOverrideNum > 0 && exitOverrideNum < priceNum) {
-      suggestedExit = exitOverrideNum;
-      worstCaseLoss = (priceNum - exitOverrideNum) * 100 * n;
-    }
+    const exitOverride = (!isNaN(exitOverrideNum) && exitOverrideNum > 0 && exitOverrideNum < priceNum)
+      ? exitOverrideNum : null;
 
-    let status: "fits" | "tight" | "pass";
-    if (cashNeeded <= comfortBudget && worstCaseLoss <= riskBudget) {
-      status = "fits";
-    } else if (cashNeeded <= hardBudget && worstCaseLoss <= riskBudget) {
-      status = "tight";
-    } else {
-      status = "pass";
-    }
+    const choice = buildChoice(
+      priceNum, customContracts,
+      result.riskBudget, result.comfortBudget, result.hardBudget,
+      exitOverride,
+    );
 
-    const r = suggestedExit !== null ? priceNum - suggestedExit : priceNum;
-    const tp1 = Math.round((priceNum + r) * 100) / 100;
-    const tp2 = Math.round((priceNum + 2 * r) * 100) / 100;
-    const tp3 = Math.round((priceNum + 3 * r) * 100) / 100;
+    // Override coaching note for custom
+    if (choice.status === "fits") choice.coachingNote = "Custom size fits your account.";
+    else if (choice.status === "tight") choice.coachingNote = "Custom size is tight. Discipline matters.";
 
-    let coachingNote: string;
-    if (status === "pass") coachingNote = "Too expensive for this account.";
-    else if (status === "fits") coachingNote = "Custom size fits your account.";
-    else coachingNote = "Custom size is tight. Discipline matters.";
-
-    return {
-      contracts: n, cashNeeded, maxCutRoom, suggestedExit, worstCaseLoss,
-      fullPremiumRiskOk, tp1, tp2, tp3, r, status, coachingNote, isRecommended: false,
-    };
+    return choice;
   }, [hasValidPrice, accountBalance, priceNum, customContracts, customExitOverride, result]);
 
   const selectedChoice: ContractChoice | null = useMemo(() => {
@@ -204,8 +172,8 @@ export function VaultTradePlanner() {
       direction,
       entry_price_planned: priceNum,
       contracts_planned: selectedChoice.contracts,
-      stop_price_planned: selectedChoice.suggestedExit,
-      max_loss_planned: selectedChoice.worstCaseLoss,
+      stop_price_planned: selectedChoice.exitPrice,
+      max_loss_planned: selectedChoice.totalRisk,
       cash_needed_planned: selectedChoice.cashNeeded,
       tp1_planned: selectedChoice.tp1,
       tp2_planned: selectedChoice.tp2,
@@ -412,10 +380,10 @@ export function VaultTradePlanner() {
                           <MetricLine label="Cash" value={formatCurrency(choice.cashNeeded)} />
                           <MetricLine
                             label="Exit"
-                            value={choice.fullPremiumRiskOk ? "Full OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
+                            value={choice.fullPremiumRiskOk ? "Full OK" : choice.exitPrice ? formatCurrency(choice.exitPrice) : "—"}
                             valueCls={choice.fullPremiumRiskOk ? "text-emerald-400" : undefined}
                           />
-                          <MetricLine label="Max loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
+                          <MetricLine label="Max loss" value={formatCurrency(choice.totalRisk)} valueCls="text-red-400" />
                         </div>
                       </button>
                     );
@@ -543,7 +511,7 @@ function HeroDecisionCard({
   onUsePlan: () => void;
 }) {
   const sc = STATUS_CONFIG[choice.status];
-  const hasExit = choice.suggestedExit !== null || choice.fullPremiumRiskOk;
+  const hasExit = choice.exitPrice !== null || choice.fullPremiumRiskOk;
 
   return (
     <div className={cn("vault-premium-card overflow-hidden", sc.heroGlow)}>
@@ -586,17 +554,17 @@ function HeroDecisionCard({
           <HeroLine label="Buy" value={`${choice.contracts} contract${choice.contracts > 1 ? "s" : ""}`} bold />
           <HeroLine
             label="Exit if wrong"
-            value={choice.fullPremiumRiskOk ? "Full risk OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
+            value={choice.fullPremiumRiskOk ? "Full risk OK" : choice.exitPrice ? formatCurrency(choice.exitPrice) : "—"}
             sub={choice.fullPremiumRiskOk ? "Risk budget covers the full contract." : undefined}
           />
           <HeroLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
-          <HeroLine label="Max loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
+          <HeroLine label="Max loss" value={formatCurrency(choice.totalRisk)} valueCls="text-red-400" />
         </div>
 
         {/* Targets */}
         <div className="pt-2 border-t border-white/[0.04] space-y-1.5">
           <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-wider">Targets</p>
-          {hasExit && choice.r > 0 ? (
+          {hasExit && choice.riskPerContract > 0 ? (
             <div className="grid grid-cols-3 gap-1.5">
               <TargetChip label="1:1" value={formatCurrency(choice.tp1)} />
               <TargetChip label="1:2" value={formatCurrency(choice.tp2)} />

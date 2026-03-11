@@ -22,8 +22,8 @@ function buildPlanData(
     direction,
     entry_price_planned: entryPremium,
     contracts_planned: choice.contracts,
-    stop_price_planned: choice.suggestedExit,
-    max_loss_planned: choice.worstCaseLoss,
+    stop_price_planned: choice.exitPrice,
+    max_loss_planned: choice.totalRisk,
     cash_needed_planned: choice.cashNeeded,
     tp1_planned: choice.tp1,
     tp2_planned: choice.tp2,
@@ -40,7 +40,6 @@ describe("plan data shape for approved_plans", () => {
     const choice = result.choices[0];
     const plan = buildPlanData(choice, result, 0.5, 3000, "calls", "spy");
 
-    // All required fields present
     expect(plan).toHaveProperty("ticker");
     expect(plan).toHaveProperty("direction");
     expect(plan).toHaveProperty("entry_price_planned");
@@ -55,7 +54,6 @@ describe("plan data shape for approved_plans", () => {
     expect(plan).toHaveProperty("trade_loss_limit_snapshot");
     expect(plan).toHaveProperty("account_level_snapshot");
 
-    // Type checks
     expect(typeof plan.entry_price_planned).toBe("number");
     expect(typeof plan.contracts_planned).toBe("number");
     expect(typeof plan.max_loss_planned).toBe("number");
@@ -90,14 +88,14 @@ describe("plan data shape for approved_plans", () => {
     const result = calculateContractChoices(5000, 1.0);
     const plan = buildPlanData(result.choices[0], result, 1.0, 5000, "puts");
     expect(plan.trade_loss_limit_snapshot).toBe(result.riskBudget);
-    expect(plan.trade_loss_limit_snapshot).toBe(50); // Medium: 5000 * 0.01
+    expect(plan.trade_loss_limit_snapshot).toBe(50);
   });
 
-  it("max_loss_planned matches choice worstCaseLoss", () => {
+  it("max_loss_planned matches choice totalRisk", () => {
     const result = calculateContractChoices(3000, 0.8);
     for (const choice of result.choices) {
       const plan = buildPlanData(choice, result, 0.8, 3000, "calls");
-      expect(plan.max_loss_planned).toBe(choice.worstCaseLoss);
+      expect(plan.max_loss_planned).toBe(choice.totalRisk);
     }
   });
 });
