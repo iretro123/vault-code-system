@@ -1,29 +1,19 @@
 
 
-## Plan: Pipeline Leak Fixes — COMPLETED
+# Remove Vault Status Gate from VAULT Approval Page
 
-### What was fixed
+## What changes
 
-**Leak 5 (Critical): Trade Log → Vault State Sync**
-- Created DB trigger `sync_trade_entry_to_vault_state` that fires on `trade_entries` INSERT
-- Decrements `trades_remaining_today`, reduces `risk_remaining_today`, updates `loss_streak`
-- Escalates `vault_status` to YELLOW (2 consecutive losses) or RED (limits exhausted)
-- Never downgrades from RED; persists block reason
+Remove the Leak 2 fix — the vault status banner and the `vaultBlocked` logic that prevents saving plans when session is paused or vault is RED. Members should be able to check and save plans freely regardless of vault state.
 
-**Leak 2 (High): Vault State Gate on Approval Page**
-- `VaultTradePlanner` now imports `useVaultState` and checks status
-- Shows warning banner when vault is RED or session is paused
-- Disables "Use This Plan" button when blocked
-- `HeroDecisionCard` receives `vaultBlocked` prop
+## Changes in `src/components/vault-planner/VaultTradePlanner.tsx`
 
-**Leak 1 (Medium): Balance Drift Refetch**
-- `VaultTradePlanner` calls `refetchTrades()` on mount via `useEffect`
-- Ensures `totalPnl` is fresh when navigating from My Trades back to approval
+1. **Remove** the `vaultBlocked` variable (line 87-88)
+2. **Remove** the vault status gate banner block (lines 268-282)
+3. **Remove** `vaultBlocked` prop from `HeroDecisionCard` usage (line 515)
+4. **Remove** `vaultBlocked` from `HeroDecisionCard` props type and all references inside it (lines 553, 561, 638, 642, 646)
+5. **Keep** the `useVaultState` import and `vaultState` — it may be used elsewhere or useful later
+6. **Remove** unused imports: `Pause`, `Ban`
 
-**Leak 4 (Medium): Timezone-Safe Plan Expiry**
-- `useApprovedPlans` now uses UTC date (`getUTCFullYear/Month/Date`) for the `created_at` filter
-- Appends `Z` suffix to ensure consistent UTC comparison with server timestamps
+No backend or database changes needed.
 
-**Leak 3 (Low): P/L Result Type Validation**
-- `LogTradeSheet` auto-sets Win/Loss from calculated P/L sign via `useEffect`
-- Positive P/L → Win, Negative P/L → Loss (user can still override manually)
