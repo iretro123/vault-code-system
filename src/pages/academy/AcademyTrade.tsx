@@ -41,7 +41,7 @@ const AcademyTrade = () => {
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
   const {
-    entries, loading: tradesLoading, addEntry, exportCSV, refetch: refetchTrades,
+    entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
   } = useTradeLog();
   const { activePlan, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
