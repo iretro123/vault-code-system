@@ -634,15 +634,15 @@ function HeroDecisionCard({
         <button
           className={cn(
             "vault-cta-shine w-full h-11 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2.5 transition-all duration-100 active:scale-[0.97]",
-            choice.status === "pass" || saving
+            choice.status === "pass" || saving || vaultBlocked
               ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
               : "text-white hover:brightness-110"
           )}
-          style={choice.status !== "pass" && !saving ? {
+          style={choice.status !== "pass" && !saving && !vaultBlocked ? {
             background: "linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 42%))",
             boxShadow: "0 4px 20px rgba(59,130,246,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
           } : undefined}
-          disabled={choice.status === "pass" || saving}
+          disabled={choice.status === "pass" || saving || vaultBlocked}
           onClick={onUsePlan}
         >
           {saving ? (
