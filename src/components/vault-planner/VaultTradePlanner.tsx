@@ -42,8 +42,8 @@ const STATUS_CONFIG = {
     bg: "bg-emerald-500/10",
     border: "border-emerald-500/20",
     ring: "ring-emerald-500/30",
-    glow: "shadow-[0_0_24px_rgba(52,211,153,0.15)]",
-    heroGlow: "shadow-[0_0_40px_rgba(52,211,153,0.12),inset_0_1px_0_rgba(52,211,153,0.1)]",
+    glow: "shadow-[0_0_16px_rgba(52,211,153,0.12)]",
+    heroGlow: "shadow-[0_0_24px_rgba(52,211,153,0.08)]",
   },
   tight: {
     label: "TIGHT",
@@ -51,8 +51,8 @@ const STATUS_CONFIG = {
     bg: "bg-amber-500/10",
     border: "border-amber-500/20",
     ring: "ring-amber-500/30",
-    glow: "shadow-[0_0_24px_rgba(251,191,36,0.12)]",
-    heroGlow: "shadow-[0_0_40px_rgba(251,191,36,0.1),inset_0_1px_0_rgba(251,191,36,0.08)]",
+    glow: "shadow-[0_0_16px_rgba(251,191,36,0.1)]",
+    heroGlow: "shadow-[0_0_24px_rgba(251,191,36,0.07)]",
   },
   pass: {
     label: "PASS",
@@ -79,7 +79,6 @@ export function VaultTradePlanner() {
   const { activePlan, savePlan, replaceWithNew } = useApprovedPlans();
   const { totalPnl } = useTradeLog();
 
-  // Inputs
   const [direction, setDirection] = useState<"calls" | "puts">("calls");
   const [contractPrice, setContractPrice] = useState("");
   const [ticker, setTicker] = useState("");
@@ -89,13 +88,11 @@ export function VaultTradePlanner() {
   const [startingBalance, setStartingBalance] = useState(0);
   const [balanceLoaded, setBalanceLoaded] = useState(false);
 
-  // Custom size
   const [customOpen, setCustomOpen] = useState(false);
   const [customContracts, setCustomContracts] = useState(5);
   const [customExitOverride, setCustomExitOverride] = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
-  // Fetch starting balance from profile, then compute live balance
   useEffect(() => {
     if (!user) { setBalanceLoaded(true); return; }
     (async () => {
@@ -107,7 +104,6 @@ export function VaultTradePlanner() {
     })();
   }, [user]);
 
-  // Live tracked balance = starting balance + total P/L from all trades
   const accountBalance = useMemo(() => {
     if (startingBalance <= 0) return 0;
     return startingBalance + totalPnl;
@@ -125,7 +121,6 @@ export function VaultTradePlanner() {
     return calculateContractChoices(accountBalance, priceNum);
   }, [accountBalance, priceNum, hasValidPrice]);
 
-  // Build a custom choice from the custom inputs
   const customChoice: ContractChoice | null = useMemo(() => {
     if (!hasValidPrice || accountBalance <= 0 || !result) return null;
     const n = customContracts;
@@ -148,7 +143,6 @@ export function VaultTradePlanner() {
       worstCaseLoss = (priceNum - suggestedExit) * 100 * n;
     }
 
-    // Apply manual exit override
     const exitOverrideNum = parseFloat(customExitOverride);
     if (!isNaN(exitOverrideNum) && exitOverrideNum > 0 && exitOverrideNum < priceNum) {
       suggestedExit = exitOverrideNum;
@@ -180,14 +174,12 @@ export function VaultTradePlanner() {
     };
   }, [hasValidPrice, accountBalance, priceNum, customContracts, customExitOverride, result]);
 
-  // Determine active choice for hero
   const selectedChoice: ContractChoice | null = useMemo(() => {
     if (useCustom && customChoice) return customChoice;
     if (result && selectedIndex !== null) return result.choices[selectedIndex];
     return null;
   }, [useCustom, customChoice, result, selectedIndex]);
 
-  // Auto-select recommended choice when results change
   useEffect(() => {
     if (result) {
       const recIdx = result.choices.findIndex((c) => c.isRecommended);
@@ -263,14 +255,14 @@ export function VaultTradePlanner() {
 
   return (
     <>
-      <div className="space-y-6 max-w-5xl">
+      <div className="space-y-3 max-w-5xl">
         {/* ═══ RULES STRIP ═══ */}
-        <div className="flex flex-wrap gap-3">
-          <RulesChip icon={Wallet} label="Live Balance" value={`$${accountBalance.toLocaleString()}`} />
-          <RulesChip icon={Shield} label="Trade Loss Limit" value={formatCurrency(tradeLossLimit)} accent />
+        <div className="flex flex-wrap gap-2">
+          <RulesChip icon={Wallet} label="Balance" value={`$${accountBalance.toLocaleString()}`} />
+          <RulesChip icon={Shield} label="Loss Limit" value={formatCurrency(tradeLossLimit)} accent />
           <RulesChip
             icon={Target}
-            label="Account Level"
+            label="Level"
             value={tier}
             valueCls={
               tier === "Large" ? "text-emerald-400" :
@@ -283,102 +275,91 @@ export function VaultTradePlanner() {
 
         {/* No balance warning */}
         {accountBalance <= 0 && (
-          <div className="vault-premium-card p-4 flex items-start gap-3" style={{ borderColor: 'rgba(251,191,36,0.15)' }}>
-            <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-amber-500/10 shrink-0">
-              <AlertTriangle className="h-4 w-4 text-amber-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">Set your account balance first</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Go to My Trades and set your starting balance before checking trades.</p>
-            </div>
-            <Button size="sm" variant="outline" className="shrink-0 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => navigate("/academy/trade")}>
+          <div className="vault-premium-card p-3 flex items-center gap-2.5" style={{ borderColor: 'rgba(251,191,36,0.15)' }}>
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+            <p className="text-xs text-foreground flex-1">Set your account balance before checking trades.</p>
+            <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => navigate("/academy/trade")}>
               Set Balance
             </Button>
           </div>
         )}
 
         {/* ═══ TWO-COLUMN LAYOUT ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* LEFT: Trade Check Card */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Trade Check Input Card */}
+          <div className="lg:col-span-3 space-y-3">
             <div className="vault-premium-card overflow-hidden">
-              <div className="h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.5), transparent)' }} />
-              <div className="p-6 space-y-5">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-primary/10 border border-primary/20">
-                    <Crosshair className="h-4 w-4 text-primary" />
+              <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.4), transparent)' }} />
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center h-6 w-6 rounded-lg bg-primary/10 border border-primary/20">
+                    <Crosshair className="h-3 w-3 text-primary" />
                   </div>
-                  <h3 className="text-sm font-semibold text-foreground tracking-tight">Trade Check</h3>
+                  <h3 className="text-xs font-semibold text-foreground tracking-tight uppercase">Trade Check</h3>
                 </div>
 
                 {/* Direction toggle */}
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Direction</Label>
-                  <div className="flex rounded-2xl border border-border/50 overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)' }}>
-                    {(["calls", "puts"] as const).map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setDirection(d)}
-                        className={cn(
-                          "flex-1 flex items-center justify-center gap-2.5 px-4 py-4 text-[15px] font-semibold transition-all duration-150 min-h-[52px]",
-                          direction === d
-                            ? d === "calls"
-                              ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.5)]"
-                              : "bg-red-500/15 text-red-400 shadow-[inset_0_-2px_0_0_rgba(239,68,68,0.5)]"
-                            : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
-                        )}
-                      >
-                        {d === "calls" ? <ArrowUp className="h-5 w-5" /> : <ArrowDown className="h-5 w-5" />}
-                        {d === "calls" ? "Up (Calls)" : "Down (Puts)"}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex rounded-xl border border-border/50 overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                  {(["calls", "puts"] as const).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDirection(d)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-[13px] font-semibold transition-all duration-100 min-h-[42px]",
+                        direction === d
+                          ? d === "calls"
+                            ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.5)]"
+                            : "bg-red-500/15 text-red-400 shadow-[inset_0_-2px_0_0_rgba(239,68,68,0.5)]"
+                          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                      )}
+                    >
+                      {d === "calls" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                      {d === "calls" ? "Calls" : "Puts"}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Contract price */}
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">$</span>
+                {/* Contract price + Ticker inline */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">$</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        placeholder="0.00"
+                        value={contractPrice}
+                        onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); setUseCustom(false); }}
+                        className="pl-7 text-lg font-bold tabular-nums h-11 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ticker <span className="text-muted-foreground/30">(opt)</span></Label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="0.00"
-                      value={contractPrice}
-                      onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); setUseCustom(false); }}
-                      className="pl-8 text-2xl font-bold tabular-nums h-16 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-xl"
+                      placeholder="SPY"
+                      value={ticker}
+                      onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                      className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg h-11 text-sm"
                     />
                   </div>
-                </div>
-
-                {/* Ticker */}
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Ticker <span className="text-muted-foreground/40">(optional)</span></Label>
-                  <Input
-                    placeholder="SPY, TSLA, NVDA…"
-                    value={ticker}
-                    onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                    className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-xl h-12 text-base"
-                  />
                 </div>
               </div>
             </div>
 
             {/* ═══ CONTRACT CHOICE CARDS ═══ */}
             {result && (
-              <div className="space-y-4">
+              <div className="space-y-2.5">
                 {result.allPass && (
-                  <div className="vault-premium-card p-4 flex items-center gap-3" style={{ borderColor: 'rgba(239,68,68,0.15)' }}>
-                    <div className="flex items-center justify-center h-8 w-8 rounded-xl bg-red-500/10 shrink-0">
-                      <X className="h-4 w-4 text-red-400" />
-                    </div>
-                    <p className="text-sm text-foreground">This contract is too expensive for your account.</p>
+                  <div className="vault-premium-card p-2.5 flex items-center gap-2" style={{ borderColor: 'rgba(239,68,68,0.15)' }}>
+                    <X className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                    <p className="text-xs text-foreground">Too expensive for your account.</p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {result.choices.map((choice, idx) => {
                     const sc = STATUS_CONFIG[choice.status];
                     const isSelected = selectedIndex === idx && !useCustom;
@@ -387,43 +368,43 @@ export function VaultTradePlanner() {
                         key={idx}
                         onClick={() => { setSelectedIndex(idx); setUseCustom(false); }}
                         className={cn(
-                          "vault-approval-choice-card relative text-left space-y-2 transition-all duration-150 active:scale-[0.97] min-h-[160px]",
-                          "hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)]",
-                          isSelected && `ring-2 ${sc.ring} ${sc.glow} scale-[1.02]`,
+                          "vault-approval-choice-card relative text-left transition-all duration-100 active:scale-[0.97]",
+                          "p-3 rounded-xl border border-white/[0.06]",
+                          "hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
+                          isSelected && `ring-2 ${sc.ring} ${sc.glow}`,
                           choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
-                          choice.status === "pass" && "opacity-40 saturate-50 hover:translate-y-0"
+                          choice.status === "pass" && "opacity-35 saturate-50 hover:translate-y-0"
                         )}
                       >
                         {/* Recommended badge */}
                         {choice.isRecommended && (
-                          <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest"
                             style={{
-                              background: 'linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%))',
+                              background: 'linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 45%))',
                               color: 'white',
-                              boxShadow: '0 2px 16px rgba(59,130,246,0.35)',
+                              boxShadow: '0 2px 10px rgba(59,130,246,0.3)',
                             }}
                           >
-                            <Star className="h-3 w-3" /> Recommended
+                            <Star className="h-2.5 w-2.5" /> Recommended
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between">
-                          <span className="text-3xl font-bold text-foreground tabular-nums">{choice.contracts}</span>
-                          <span className={cn("text-[11px] font-bold px-3 py-1.5 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-2xl font-bold text-foreground tabular-nums leading-none">{choice.contracts}</span>
+                          <span className={cn("text-[9px] font-bold px-2 py-1 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
                             {sc.label}
                           </span>
                         </div>
 
-                        {/* Sublabel */}
-                        <p className="text-[11px] text-muted-foreground/60 uppercase tracking-[0.12em] font-medium leading-tight">
+                        <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.1em] font-medium mb-2">
                           {choice.contracts === 1 ? "contract" : "contracts"} · {CARD_SUBLABELS[choice.contracts] || ""}
                         </p>
 
-                        <div className="space-y-2.5 pt-3 border-t border-white/[0.05]">
-                          <MetricLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
+                        <div className="space-y-1 pt-2 border-t border-white/[0.04]">
+                          <MetricLine label="Cash" value={formatCurrency(choice.cashNeeded)} />
                           <MetricLine
-                            label="Exit if wrong"
-                            value={choice.fullPremiumRiskOk ? "Full risk OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
+                            label="Exit"
+                            value={choice.fullPremiumRiskOk ? "Full OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
                             valueCls={choice.fullPremiumRiskOk ? "text-emerald-400" : undefined}
                           />
                           <MetricLine label="Max loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
@@ -433,56 +414,53 @@ export function VaultTradePlanner() {
                   })}
                 </div>
 
-                {/* ═══ CUSTOM SIZE COLLAPSIBLE ═══ */}
+                {/* ═══ CUSTOM SIZE ═══ */}
                 <Collapsible open={customOpen} onOpenChange={setCustomOpen}>
                   <CollapsibleTrigger asChild>
-                    <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto py-2">
-                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", customOpen && "rotate-180")} />
-                      Need a different size?
+                    <button className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors mx-auto py-1">
+                      <ChevronDown className={cn("h-3 w-3 transition-transform", customOpen && "rotate-180")} />
+                      Different size?
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className="vault-glass-card p-5 mt-2 space-y-4">
+                    <div className="vault-glass-card p-3 mt-1.5 space-y-2.5 rounded-xl">
                       <div className="flex items-center justify-between">
-                        <Label className="text-xs text-muted-foreground font-medium">Custom contracts</Label>
-                        <div className="flex items-center gap-3">
+                        <Label className="text-[10px] text-muted-foreground font-medium">Contracts</Label>
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => setCustomContracts(Math.max(1, customContracts - 1))}
-                            className="h-9 w-9 rounded-xl flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
+                            className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
-                            <Minus className="h-4 w-4 text-muted-foreground" />
+                            <Minus className="h-3 w-3 text-muted-foreground" />
                           </button>
-                          <span className="text-xl font-bold tabular-nums text-foreground min-w-[2ch] text-center">{customContracts}</span>
+                          <span className="text-base font-bold tabular-nums text-foreground min-w-[2ch] text-center">{customContracts}</span>
                           <button
                             onClick={() => setCustomContracts(customContracts + 1)}
-                            className="h-9 w-9 rounded-xl flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
+                            className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
-                            <Plus className="h-4 w-4 text-muted-foreground" />
+                            <Plus className="h-3 w-3 text-muted-foreground" />
                           </button>
                         </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground font-medium">Exit override <span className="text-muted-foreground/40">(optional)</span></Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">$</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="Auto"
-                            value={customExitOverride}
-                            onChange={(e) => setCustomExitOverride(e.target.value)}
-                            className="pl-7 h-10 text-sm bg-black/20 border-white/[0.06] rounded-lg"
-                          />
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-[10px] text-muted-foreground font-medium shrink-0">Exit $</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="Auto"
+                          value={customExitOverride}
+                          onChange={(e) => setCustomExitOverride(e.target.value)}
+                          className="pl-3 h-8 text-xs bg-black/20 border-white/[0.06] rounded-lg flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-3 text-[11px] border-primary/30 text-primary hover:bg-primary/10 shrink-0"
+                          onClick={() => { setUseCustom(true); setSelectedIndex(null); }}
+                        >
+                          Use {customContracts}
+                        </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full border-primary/30 text-primary hover:bg-primary/10"
-                        onClick={() => { setUseCustom(true); setSelectedIndex(null); }}
-                      >
-                        Use {customContracts} contract{customContracts > 1 ? "s" : ""}
-                      </Button>
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
@@ -503,12 +481,12 @@ export function VaultTradePlanner() {
                   onUsePlan={handleUsePlan}
                 />
               ) : (
-                <div className="vault-premium-card p-8 text-center space-y-4">
-                  <div className="mx-auto h-14 w-14 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-                    <Shield className="h-7 w-7 text-muted-foreground/20" />
+                <div className="vault-premium-card p-6 text-center space-y-3">
+                  <div className="mx-auto h-10 w-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-muted-foreground/20" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {hasValidPrice ? "Tap a contract choice to see the full plan." : "Enter a contract price to get started."}
+                  <p className="text-xs text-muted-foreground">
+                    {hasValidPrice ? "Tap a size to see the plan." : "Enter a price to start."}
                   </p>
                 </div>
               )}
@@ -552,107 +530,106 @@ function HeroDecisionCard({
 
   return (
     <div className={cn("vault-premium-card overflow-hidden", sc.heroGlow)}>
-      {/* Top gradient line */}
-      <div className="h-[2px]" style={{
+      <div className="h-px" style={{
         background: choice.status === "fits"
-          ? "linear-gradient(90deg, transparent, rgba(52,211,153,0.6), transparent)"
+          ? "linear-gradient(90deg, transparent, rgba(52,211,153,0.5), transparent)"
           : choice.status === "tight"
-          ? "linear-gradient(90deg, transparent, rgba(251,191,36,0.5), transparent)"
-          : "linear-gradient(90deg, transparent, rgba(239,68,68,0.3), transparent)"
+          ? "linear-gradient(90deg, transparent, rgba(251,191,36,0.4), transparent)"
+          : "linear-gradient(90deg, transparent, rgba(239,68,68,0.25), transparent)"
       }} />
 
-      <div className="p-7 space-y-6">
-        {/* Status hero */}
-        <div className={cn("text-center py-7 rounded-2xl relative overflow-hidden", sc.bg)}>
+      <div className="p-4 space-y-3">
+        {/* Status hero — compact */}
+        <div className={cn("text-center py-4 rounded-xl relative overflow-hidden", sc.bg)}>
           <div className="absolute inset-0" style={{
             background: choice.status === "fits"
-              ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.1), transparent 70%)"
+              ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.08), transparent 70%)"
               : choice.status === "tight"
-              ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.08), transparent 70%)"
+              ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.06), transparent 70%)"
               : "none"
           }} />
-          <p className={cn("text-5xl font-black tracking-tight relative", sc.color)} style={{
+          <p className={cn("text-3xl font-black tracking-tight relative", sc.color)} style={{
             textShadow: choice.status === "fits"
-              ? "0 0 40px rgba(52,211,153,0.3)"
+              ? "0 0 30px rgba(52,211,153,0.25)"
               : choice.status === "tight"
-              ? "0 0 40px rgba(251,191,36,0.25)"
+              ? "0 0 30px rgba(251,191,36,0.2)"
               : "none"
           }}>
             {sc.label}
           </p>
           {ticker && (
-            <p className="text-sm text-muted-foreground mt-2 relative font-medium">
+            <p className="text-[11px] text-muted-foreground mt-1 relative font-medium">
               {ticker.toUpperCase()} · {direction === "calls" ? "Calls" : "Puts"}
             </p>
           )}
         </div>
 
-        {/* Details */}
-        <div className="space-y-4">
+        {/* Key details */}
+        <div className="space-y-2">
           <HeroLine label="Buy" value={`${choice.contracts} contract${choice.contracts > 1 ? "s" : ""}`} bold />
           <HeroLine
             label="Exit if wrong"
-            value={choice.fullPremiumRiskOk ? "Full premium risk OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
-            sub={choice.fullPremiumRiskOk ? "Your risk budget covers the entire contract." : undefined}
+            value={choice.fullPremiumRiskOk ? "Full risk OK" : choice.suggestedExit ? formatCurrency(choice.suggestedExit) : "—"}
+            sub={choice.fullPremiumRiskOk ? "Risk budget covers the full contract." : undefined}
           />
           <HeroLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
           <HeroLine label="Max loss" value={formatCurrency(choice.worstCaseLoss)} valueCls="text-red-400" />
         </div>
 
-        {/* R-Based Targets */}
-        <div className="pt-4 border-t border-white/[0.05] space-y-3">
-          <p className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-wider">Profit Targets</p>
+        {/* Targets */}
+        <div className="pt-2 border-t border-white/[0.04] space-y-1.5">
+          <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-wider">Targets</p>
           {hasExit && choice.r > 0 ? (
-            <div className="space-y-3">
-              <HeroLine label="TP1 · 1:1" value={formatCurrency(choice.tp1)} valueCls="text-emerald-400" />
-              <HeroLine label="TP2 · 1:2" value={formatCurrency(choice.tp2)} valueCls="text-emerald-400" />
-              <HeroLine label="TP3 · 1:3" value={formatCurrency(choice.tp3)} valueCls="text-emerald-400" />
+            <div className="grid grid-cols-3 gap-1.5">
+              <TargetChip label="1:1" value={formatCurrency(choice.tp1)} />
+              <TargetChip label="1:2" value={formatCurrency(choice.tp2)} />
+              <TargetChip label="1:3" value={formatCurrency(choice.tp3)} />
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground/50 italic">Add an exit to calculate targets</p>
+            <p className="text-[11px] text-muted-foreground/40 italic">Add an exit to calculate targets</p>
           )}
         </div>
 
         {/* Coaching note */}
-        <div className="flex items-start gap-3 rounded-2xl p-4" style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.08)' }}>
-          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-          <p className="text-[13px] text-muted-foreground leading-relaxed">{choice.coachingNote}</p>
+        <div className="flex items-start gap-2 rounded-lg p-2.5" style={{ background: 'rgba(59,130,246,0.03)', border: '1px solid rgba(59,130,246,0.06)' }}>
+          <Sparkles className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+          <p className="text-[11px] text-muted-foreground leading-snug">{choice.coachingNote}</p>
         </div>
 
         {/* CTA */}
         <button
           className={cn(
-            "vault-cta-shine w-full h-14 rounded-2xl text-[15px] font-bold flex items-center justify-center gap-3 transition-all duration-150 active:scale-[0.97]",
+            "vault-cta-shine w-full h-11 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2.5 transition-all duration-100 active:scale-[0.97]",
             choice.status === "pass" || saving
               ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
               : "text-white hover:brightness-110"
           )}
           style={choice.status !== "pass" && !saving ? {
             background: "linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 42%))",
-            boxShadow: "0 6px 28px rgba(59,130,246,0.3), inset 0 1px 0 rgba(255,255,255,0.12)",
+            boxShadow: "0 4px 20px rgba(59,130,246,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
           } : undefined}
           disabled={choice.status === "pass" || saving}
           onClick={onUsePlan}
         >
           {saving ? (
             <span className="flex items-center gap-2">
-              <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Saving…
             </span>
           ) : (
             <>
-              <span className="flex items-center justify-center h-6 w-6 rounded-full bg-white/20">
-                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-white/20">
+                <Check className="h-3 w-3" strokeWidth={3} />
               </span>
               Use This Plan
-              <ArrowRight className="h-4 w-4 opacity-60" />
+              <ArrowRight className="h-3.5 w-3.5 opacity-50" />
             </>
           )}
         </button>
 
         {choice.status === "pass" && (
-          <p className="text-[11px] text-center text-muted-foreground/50">
-            This setup doesn't fit your account rules. Try a lower contract price.
+          <p className="text-[10px] text-center text-muted-foreground/40">
+            Doesn't fit your rules. Try a lower price.
           </p>
         )}
       </div>
@@ -670,14 +647,12 @@ function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
 }) {
   return (
     <div className={cn(
-      "flex items-center gap-3 rounded-2xl px-5 py-3 min-h-[48px]",
+      "flex items-center gap-2 rounded-xl px-3 py-2 min-h-[36px]",
       accent ? "vault-premium-card" : "vault-glass-card"
     )}>
-      <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-white/[0.05]">
-        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-      </div>
-      <span className="text-xs text-muted-foreground font-medium">{label}</span>
-      <span className={cn("text-base font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
+      <span className={cn("text-sm font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
     </div>
   );
 }
@@ -685,8 +660,8 @@ function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
 function MetricLine({ label, value, valueCls }: { label: string; value: string; valueCls?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[11px] text-muted-foreground/70">{label}</span>
-      <span className={cn("text-sm font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <span className="text-[10px] text-muted-foreground/60">{label}</span>
+      <span className={cn("text-xs font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
     </div>
   );
 }
@@ -699,12 +674,21 @@ function HeroLine({ label, value, bold, valueCls, sub }: {
   sub?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="text-sm text-muted-foreground/70 font-medium">{label}</span>
+    <div className="flex items-start justify-between gap-3">
+      <span className="text-xs text-muted-foreground/60 font-medium">{label}</span>
       <div className="text-right">
-        <span className={cn("text-base tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
-        {sub && <p className="text-[11px] text-muted-foreground/50 mt-0.5 max-w-[200px]">{sub}</p>}
+        <span className={cn("text-sm tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
+        {sub && <p className="text-[10px] text-muted-foreground/40 mt-px max-w-[180px]">{sub}</p>}
       </div>
+    </div>
+  );
+}
+
+function TargetChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg py-1.5 px-2 text-center" style={{ background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.08)' }}>
+      <p className="text-[9px] text-emerald-400/60 font-semibold">{label}</p>
+      <p className="text-[11px] text-emerald-400 font-bold tabular-nums">{value}</p>
     </div>
   );
 }
