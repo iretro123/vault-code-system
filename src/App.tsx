@@ -106,6 +106,7 @@ const App = () => (
               <Route path="progress" element={<AcademyProgress />} />
               <Route path="playbook" element={<AcademyPlaybook />} />
               <Route path="vault-os" element={<AcademyVaultOS />} />
+              <Route path="vault" element={<AcademyVaultApproval />} />
               <Route path="support" element={<AcademySupport />} />
               <Route path="admin" element={<AcademyAdmin />} />
               <Route path="admin/users" element={<AcademyAdminUsers />} />
