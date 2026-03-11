@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import {
   Shield, ArrowUp, ArrowDown, Check, X, Sparkles, Star,
   AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
-  ChevronDown, Minus, Plus,
+  ChevronDown, Minus, Plus, Sliders,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -417,9 +417,10 @@ export function VaultTradePlanner() {
                 {/* ═══ CUSTOM SIZE ═══ */}
                 <Collapsible open={customOpen} onOpenChange={setCustomOpen}>
                   <CollapsibleTrigger asChild>
-                    <button className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors mx-auto py-1">
-                      <ChevronDown className={cn("h-3 w-3 transition-transform", customOpen && "rotate-180")} />
-                      Different size?
+                    <button className="flex items-center gap-1.5 mx-auto px-4 py-1.5 rounded-full text-[11px] font-medium tracking-wide text-muted-foreground/70 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] hover:border-white/[0.14] hover:text-foreground/80 active:scale-[0.97] transition-all duration-150">
+                      <Sliders className="h-3 w-3" />
+                      Custom Size
+                      <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", customOpen && "rotate-180")} />
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
