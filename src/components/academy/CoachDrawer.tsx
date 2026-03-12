@@ -73,7 +73,7 @@ interface ChatMessage {
 }
 
 // Parse video recommendations from AI response
-const VIDEO_PATTERN = /📺\s*\*\*Recommended Lesson:\*\*\s*"([^"]+)"\s*in\s*(.+)/g;
+const VIDEO_PATTERN = /(?:📺\s*)?\*\*Recommended Lesson:\*\*\s*"([^"]+)"\s*in\s*(.+)/g;
 
 interface VideoRecommendation {
   lessonTitle: string;
