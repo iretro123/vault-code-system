@@ -178,6 +178,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
       setOversized("No");
       setSetupUsed("");
       setNote("");
+      setScreenshotFile(null);
     } finally {
       setSubmitting(false);
     }
