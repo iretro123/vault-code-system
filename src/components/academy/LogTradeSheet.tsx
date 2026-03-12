@@ -97,6 +97,17 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
   const [oversized, setOversized] = useState("No");
   const [setupUsed, setSetupUsed] = useState("");
   const [note, setNote] = useState("");
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Generate preview URL when file changes
+  useEffect(() => {
+    if (!screenshotFile) { setScreenshotPreview(null); return; }
+    const url = URL.createObjectURL(screenshotFile);
+    setScreenshotPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [screenshotFile]);
 
   // Re-apply prefill when it changes (e.g. opening from bridge card)
   useEffect(() => {
