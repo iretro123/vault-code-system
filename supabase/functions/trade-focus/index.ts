@@ -267,7 +267,7 @@ function buildSystemPrompt(a: Analytics): string {
 
 CRITICAL RULES:
 1. Every sentence MUST reference a specific number, percentage, or count from the data below.
-2. If dataConfidence is "low" (<10 trades), you MUST state "Insufficient data — need more trades for reliable patterns" for primaryLeak and strongestEdge.
+2. If dataConfidence is "low" (<10 trades), return brief, forward-looking copy. For primaryLeak: "Building your trading profile. More trades needed for reliable leak detection." For strongestEdge: "Early data looks promising. A few more trades will confirm your strongest patterns." Do NOT use negative phrasing like "insufficient" or "not enough data."
 3. If a confidence flag (hasRevengeSizing, hasOvertradingPattern) is false, do NOT claim that pattern exists. Say "Not enough evidence yet."
 4. NO motivational language. NO filler. NO generic advice like "stay disciplined" or "keep improving."
 5. Sound like a performance auditor reviewing a trading operation. Direct. Factual. Evidence-based.
