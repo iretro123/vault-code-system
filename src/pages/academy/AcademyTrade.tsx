@@ -698,6 +698,7 @@ function TodayVaultCheckCard({
    AI Focus Card (Real AI) — Premium Glassmorphism + Full Pipeline Sync
    ══════════════════════════════════════════════════════════════════ */
 const AI_FOCUS_CACHE = "va_cache_ai_focus";
+const AI_FOCUS_CACHE_TS = "va_cache_ai_focus_ts"; // timestamp of when cached
 
 interface AIFocusResult {
   topMistake: string;
