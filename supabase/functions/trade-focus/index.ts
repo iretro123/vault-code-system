@@ -267,7 +267,7 @@ function buildSystemPrompt(a: Analytics): string {
 
 CRITICAL RULES:
 1. Every sentence MUST reference a specific number, percentage, or count from the data below.
-2. If dataConfidence is "low" (<10 trades), you MUST state "Insufficient data — need more trades for reliable patterns" for primaryLeak and strongestEdge.
+2. If dataConfidence is "low" (<10 trades), return brief, forward-looking copy. For primaryLeak: "Building your trading profile. More trades needed for reliable leak detection." For strongestEdge: "Early data looks promising. A few more trades will confirm your strongest patterns." Do NOT use negative phrasing like "insufficient" or "not enough data."
 3. If a confidence flag (hasRevengeSizing, hasOvertradingPattern) is false, do NOT claim that pattern exists. Say "Not enough evidence yet."
 4. NO motivational language. NO filler. NO generic advice like "stay disciplined" or "keep improving."
 5. Sound like a performance auditor reviewing a trading operation. Direct. Factual. Evidence-based.
@@ -415,7 +415,7 @@ serve(async (req) => {
                   properties: {
                     primaryLeak: {
                       type: "string",
-                      description: "The #1 performance killer. Structure: WHAT is happening → WHY it matters → THE EVIDENCE (cite specific numbers) → THE FIX (exact corrective action). 3-4 sentences max. If dataConfidence is low, state 'Insufficient data to identify primary leak with confidence. Log more trades.' Do NOT invent patterns.",
+                      description: "The #1 performance killer. Structure: WHAT is happening → WHY it matters → THE EVIDENCE (cite specific numbers) → THE FIX (exact corrective action). 3-4 sentences max. If dataConfidence is low, say 'Building your trading profile. More trades needed for reliable leak detection.' Do NOT invent patterns.",
                     },
                     primaryLeakConfidence: {
                       type: "string",
@@ -424,7 +424,7 @@ serve(async (req) => {
                     },
                     strongestEdge: {
                       type: "string",
-                      description: "What is actually working for this trader, with numbers as evidence. 2-3 sentences. If dataConfidence is low, state 'Need more data to confirm edges.'",
+                      description: "What is actually working for this trader, with numbers as evidence. 2-3 sentences. If dataConfidence is low, say 'Early data looks promising. A few more trades will confirm your strongest patterns.'",
                     },
                     nextAction: {
                       type: "string",

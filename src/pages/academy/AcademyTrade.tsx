@@ -938,17 +938,21 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
   const confStyle = CONFIDENCE_MAP[result.primaryLeakConfidence] || CONFIDENCE_MAP.medium;
   const isInsufficient = result.primaryLeakConfidence === "insufficient";
 
+  if (isInsufficient) {
+    return <InsufficientDataCard result={result} gradeStyle={gradeStyle} refreshing={refreshing} onRescan={() => fetchAnalysis(true)} />;
+  }
+
   const slides = [
     {
       label: "PRIMARY LEAK",
       icon: AlertTriangle,
       value: result.primaryLeak,
       subLabel: confStyle.label,
-      accent: isInsufficient ? "from-muted/20 to-transparent" : "from-red-500/10 to-red-500/[0.02]",
-      iconColor: isInsufficient ? "text-muted-foreground/50" : "text-red-400",
-      labelColor: isInsufficient ? "text-muted-foreground/50" : "text-red-400/80",
-      glowColor: isInsufficient ? "rgba(128,128,128,0.2)" : "rgba(248,113,113,0.3)",
-      dotColor: isInsufficient ? "bg-muted-foreground/30" : "bg-red-400",
+      accent: "from-red-500/10 to-red-500/[0.02]",
+      iconColor: "text-red-400",
+      labelColor: "text-red-400/80",
+      glowColor: "rgba(248,113,113,0.3)",
+      dotColor: "bg-red-400",
       confidenceColor: confStyle.color,
     },
     {
@@ -989,6 +993,168 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
     gradeStyle={gradeStyle}
     refreshing={refreshing}
   />;
+}
+
+/* ── Insufficient Data Unlock Card ── */
+function InsufficientDataCard({ result, gradeStyle, refreshing, onRescan }: {
+  result: AIFocusResult;
+  gradeStyle: { color: string; bg: string; border: string; glow: string };
+  refreshing: boolean;
+  onRescan: () => void;
+}) {
+  const tradeCount = result.tradeCount || result.dataDepth || 0;
+  const target = 10;
+  const percent = Math.min((tradeCount / target) * 100, 100);
+  const remaining = Math.max(0, target - tradeCount);
+
+  // SVG progress ring
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percent / 100) * circumference;
+
+  const milestones = [
+    { count: 3, label: "Basic scan", unlocked: tradeCount >= 3 },
+    { count: 10, label: "Pattern detection", unlocked: tradeCount >= 10 },
+    { count: 20, label: "Full behavioral audit", unlocked: tradeCount >= 20 },
+  ];
+
+  return (
+    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
+      <style>{MENTOR_STYLES}</style>
+
+      {/* Rotating border glow */}
+      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-20"
+        style={{ background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 15%, transparent 30%, hsl(217 91% 60% / 0.1) 50%, transparent 65%, hsl(var(--primary) / 0.12) 80%, transparent 100%)", animation: "mentorBorder 10s linear infinite" }}
+      />
+
+      {/* Scan-line overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 4s linear infinite" }}
+      />
+
+      <div className="relative p-5 pb-5 space-y-5">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20" style={{ animation: "mentorPulse 3s ease-in-out infinite" }} />
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+              <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.5))" }} />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-foreground tracking-tight"
+              style={{ background: "linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary) / 0.8), hsl(var(--foreground)))", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mentorShimmer 6s linear infinite" }}
+            >
+              PERFORMANCE INTELLIGENCE
+            </h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ boxShadow: "0 0 6px rgba(251,191,36,0.5)" }} />
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                BUILDING PROFILE
+              </span>
+            </div>
+          </div>
+          {/* Dimmed Risk Grade */}
+          <div className={cn("px-3 py-1.5 rounded-lg border text-lg font-black tracking-tight opacity-30", gradeStyle.bg, gradeStyle.border, gradeStyle.color)}>
+            {result.riskGrade}
+          </div>
+        </div>
+
+        {/* Progress Ring + Headline */}
+        <div className="flex items-center gap-5">
+          <div className="relative shrink-0">
+            <svg width="96" height="96" viewBox="0 0 96 96" className="transform -rotate-90">
+              {/* Background ring */}
+              <circle cx="48" cy="48" r={radius} fill="none" stroke="hsl(var(--muted) / 0.2)" strokeWidth="5" />
+              {/* Progress ring */}
+              <circle
+                cx="48" cy="48" r={radius} fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-700 ease-out"
+                style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold text-foreground tabular-nums">{tradeCount}</span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">/{target}</span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <h4 className="text-base font-semibold text-foreground leading-snug">
+              {remaining > 0
+                ? `Log ${remaining} more trade${remaining > 1 ? "s" : ""} to unlock full analysis`
+                : "Pattern detection unlocked"
+              }
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your profile is being built. Each trade sharpens detection accuracy.
+            </p>
+          </div>
+        </div>
+
+        {/* Milestone Pills */}
+        <div className="space-y-2">
+          {milestones.map((m) => (
+            <div
+              key={m.count}
+              className={cn(
+                "flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 border transition-all",
+                m.unlocked
+                  ? "border-emerald-500/20 bg-emerald-500/[0.06]"
+                  : "border-white/[0.05] bg-white/[0.02]"
+              )}
+            >
+              <div className={cn(
+                "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
+                m.unlocked ? "bg-emerald-500/15" : "bg-muted/30"
+              )}>
+                {m.unlocked
+                  ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                  : <Lock className="h-3 w-3 text-muted-foreground/40" />
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className={cn(
+                  "text-xs font-medium",
+                  m.unlocked ? "text-emerald-400/90" : "text-muted-foreground/60"
+                )}>
+                  {m.label}
+                </span>
+              </div>
+              <span className={cn(
+                "text-[10px] font-mono tabular-nums",
+                m.unlocked ? "text-emerald-400/60" : "text-muted-foreground/40"
+              )}>
+                {m.count} trades
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full gap-1.5 rounded-xl border-primary/20 text-primary hover:bg-primary/5"
+          onClick={() => document.getElementById("log-trade-section")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+        >
+          <Plus className="h-3.5 w-3.5" /> Log a Trade
+        </Button>
+
+        {/* Refreshing indicator */}
+        {refreshing && (
+          <div className="flex items-center justify-center gap-1.5">
+            <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
+            <span className="text-[10px] font-mono text-primary/50">Recomputing...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /* ── Carousel sub-component ── */
