@@ -359,6 +359,15 @@ const AcademyTrade = () => {
   );
 };
 
+/* ── iOS Section Label ── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold pl-1">
+      {children}
+    </p>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════════
    PERFORMANCE HUD — Premium cinematic stats strip
    ══════════════════════════════════════════════════════════════════ */
