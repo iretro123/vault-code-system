@@ -397,8 +397,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }, [editingId]);
 
   useEffect(() => {
-    if (shouldAutoScroll.current) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (shouldAutoScroll.current && containerRef.current) {
+      containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages.length]);
 
