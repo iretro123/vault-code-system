@@ -1,39 +1,37 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Redesign: Insufficient Data State in Performance Intelligence
 
-### What was implemented
+## Problem
+When the AI returns `primaryLeakConfidence: "insufficient"`, the slides show grey/muted text like "NEEDS MORE DATA" and "Insufficient data to identify primary leak with confidence. Log more trades." — this feels like an error message. Users think they did something wrong instead of understanding they're on a progression path.
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+## Solution
+When `isInsufficient` is true, replace the standard 4-slide carousel with a **single progress-oriented card** that feels like a milestone tracker, not an error. Think iOS unlock screen.
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+### New Insufficient Data UI
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+Replace the carousel entirely when `isInsufficient` with a single branded card:
 
-### What was implemented
+1. **Progress ring** — circular progress indicator showing trades logged vs. 10 (the threshold for medium confidence) or 20 (for high confidence). Use `{tradeCount}/10` with a smooth arc.
 
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
+2. **Headline**: "Log {remaining} more trades to unlock full analysis" — positive, forward-looking.
 
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+3. **Mini milestone pills** showing what unlocks at each tier:
+   - `3 trades` — Basic scan (check, already unlocked)
+   - `10 trades` — Pattern detection (locked/unlocked based on count)
+   - `20 trades` — Full behavioral audit (locked)
+
+4. **Subtle CTA**: "Log a Trade" button linking to the trade logger section.
+
+5. **Keep the Risk Grade badge** visible but dimmed (shows them it exists).
+
+6. Maintain the same card chrome (border glow, scan lines) so it feels part of the system, not a fallback.
+
+### Edge function prompt update
+Update `supabase/functions/trade-focus/index.ts` — when `dataConfidence` is low, instead of returning "Insufficient data..." text, return a shorter message like "Building your profile. More trades needed for reliable detection." This way even if the UI doesn't catch the insufficient state, the text is still friendly.
+
+| File | Change |
+|---|---|
+| `src/pages/academy/AcademyTrade.tsx` | Add `InsufficientDataCard` component; render it instead of carousel when `isInsufficient`; add progress ring SVG and milestone pills |
+| `supabase/functions/trade-focus/index.ts` | Update prompt to return friendlier copy when data confidence is low |
+
