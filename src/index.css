@@ -663,3 +663,30 @@ html {
   70% { opacity: 1; transform: scale(0.9) rotate(-10deg); }
   100% { opacity: 0; transform: scale(0) rotate(0deg); }
 }
+
+/* ── Vault AI Coach Animations ── */
+
+/* Brain icon pulse */
+.vault-ai-brain-pulse {
+  animation: vault-ai-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes vault-ai-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsla(217, 91%, 60%, 0.15); }
+  50% { box-shadow: 0 0 12px 4px hsla(217, 91%, 60%, 0.08); }
+}
+
+/* Header glow line */
+.vault-ai-header-glow {
+  background: linear-gradient(90deg, transparent 0%, hsla(217, 91%, 60%, 0.3) 50%, transparent 100%);
+}
+
+/* Typing dots bounce */
+.vault-ai-dot {
+  animation: vault-ai-dot-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes vault-ai-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
