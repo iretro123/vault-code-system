@@ -751,7 +751,7 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
         const cached = localStorage.getItem(AI_FOCUS_CACHE);
         if (cached) {
           const parsed: AIFocusResult = JSON.parse(cached);
-          if (parsed.date === todayStr && parsed.tradeCount === tradeCount) {
+          if (parsed.date === todayStr && parsed.tradeCount === tradeCount && parsed.primaryLeak && parsed.riskGrade) {
             setResult(parsed);
             return;
           }
