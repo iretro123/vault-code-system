@@ -86,8 +86,10 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
   }, [parentMessage.id, ensureProfiles]);
 
   // Scroll to bottom on new replies
+  const threadContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    threadContainerRef.current?.scrollTo({ top: threadContainerRef.current.scrollHeight, behavior: "smooth" });
   }, [replies.length]);
 
   // Auto-resize textarea
