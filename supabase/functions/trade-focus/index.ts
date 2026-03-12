@@ -424,7 +424,7 @@ serve(async (req) => {
                     },
                     strongestEdge: {
                       type: "string",
-                      description: "What is actually working for this trader, with numbers as evidence. 2-3 sentences. If dataConfidence is low, state 'Need more data to confirm edges.'",
+                      description: "What is actually working for this trader, with numbers as evidence. 2-3 sentences. If dataConfidence is low, say 'Early data looks promising. A few more trades will confirm your strongest patterns.'",
                     },
                     nextAction: {
                       type: "string",
