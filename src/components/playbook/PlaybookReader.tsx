@@ -136,7 +136,7 @@ function PlaybookReaderInner({
   return (
     <div className="vault-glass-card overflow-hidden flex flex-col h-full">
       {/* Chapter header */}
-      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between" style={isMobile ? { touchAction: "manipulation" } : undefined}>
+      <div className={cn("border-b border-white/[0.06] flex items-center justify-between", isMobile ? "px-6 py-4" : "px-4 py-2.5")} style={isMobile ? { touchAction: "manipulation" } : undefined}>
         <div>
           <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-bold mb-0.5">
             {isLocked ? "Preview Mode" : "Reading"}
