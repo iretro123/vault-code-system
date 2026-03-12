@@ -859,13 +859,44 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
   const disciplineStyle = result.disciplineScore ? DISCIPLINE_MAP[result.disciplineScore] : null;
 
   const sections = [
-    { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, accent: "border-l-blue-500", iconColor: "text-blue-400", labelColor: "text-blue-400/80", glowColor: "rgba(59,130,246,0.15)" },
-    { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, accent: "border-l-amber-500", iconColor: "text-amber-400", labelColor: "text-amber-400/80", glowColor: "rgba(251,191,36,0.15)" },
-    { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, accent: "border-l-emerald-500", iconColor: "text-emerald-400", labelColor: "text-emerald-400/80", glowColor: "rgba(52,211,153,0.15)" },
-    ...(result.sizingAdvice ? [{ label: "SIZING ADVICE", icon: BarChart3, value: result.sizingAdvice, accent: "border-l-cyan-400", iconColor: "text-cyan-400", labelColor: "text-cyan-400/80", glowColor: "rgba(34,211,238,0.15)" }] : []),
-    ...(result.nextSessionTip ? [{ label: "NEXT SESSION TIP", icon: Sparkles, value: result.nextSessionTip, accent: "border-l-violet-400", iconColor: "text-violet-400", labelColor: "text-violet-400/80", glowColor: "rgba(167,139,250,0.15)" }] : []),
-    ...(result.riskAssessment ? [{ label: "RISK ASSESSMENT", icon: Activity, value: result.riskAssessment, accent: "border-l-rose-400", iconColor: "text-rose-400", labelColor: "text-rose-400/80", glowColor: "rgba(251,113,133,0.15)" }] : []),
+    { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, accent: "from-blue-500/10 to-blue-500/[0.02]", iconColor: "text-blue-400", labelColor: "text-blue-400/80", glowColor: "rgba(59,130,246,0.3)", dotColor: "bg-blue-400" },
+    { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, accent: "from-amber-500/10 to-amber-500/[0.02]", iconColor: "text-amber-400", labelColor: "text-amber-400/80", glowColor: "rgba(251,191,36,0.3)", dotColor: "bg-amber-400" },
+    { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, accent: "from-emerald-500/10 to-emerald-500/[0.02]", iconColor: "text-emerald-400", labelColor: "text-emerald-400/80", glowColor: "rgba(52,211,153,0.3)", dotColor: "bg-emerald-400" },
+    ...(result.sizingAdvice ? [{ label: "SIZING ADVICE", icon: BarChart3, value: result.sizingAdvice, accent: "from-cyan-400/10 to-cyan-400/[0.02]", iconColor: "text-cyan-400", labelColor: "text-cyan-400/80", glowColor: "rgba(34,211,238,0.3)", dotColor: "bg-cyan-400" }] : []),
+    ...(result.nextSessionTip ? [{ label: "NEXT SESSION TIP", icon: Sparkles, value: result.nextSessionTip, accent: "from-violet-400/10 to-violet-400/[0.02]", iconColor: "text-violet-400", labelColor: "text-violet-400/80", glowColor: "rgba(167,139,250,0.3)", dotColor: "bg-violet-400" }] : []),
+    ...(result.riskAssessment ? [{ label: "RISK ASSESSMENT", icon: Activity, value: result.riskAssessment, accent: "from-rose-400/10 to-rose-400/[0.02]", iconColor: "text-rose-400", labelColor: "text-rose-400/80", glowColor: "rgba(251,113,133,0.3)", dotColor: "bg-rose-400" }] : []),
+    ...(result.attendanceInsight ? [{ label: "SESSION DISCIPLINE", icon: Clock, value: result.attendanceInsight, accent: "from-indigo-400/10 to-indigo-400/[0.02]", iconColor: "text-indigo-400", labelColor: "text-indigo-400/80", glowColor: "rgba(129,140,248,0.3)", dotColor: "bg-indigo-400" }] : []),
   ];
+
+  return <AIFocusCardCarousel
+    result={result}
+    sections={sections}
+    disciplineStyle={disciplineStyle}
+    refreshing={refreshing}
+    tradeCount={tradeCount}
+    onRescan={() => fetchAnalysis(true)}
+  />;
+}
+
+/* ── Carousel sub-component ── */
+function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tradeCount, onRescan }: {
+  result: AIFocusResult;
+  sections: { label: string; icon: any; value: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string }[];
+  disciplineStyle: typeof DISCIPLINE_MAP[keyof typeof DISCIPLINE_MAP] | null;
+  refreshing: boolean;
+  tradeCount: number;
+  onRescan: () => void;
+}) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start", containScroll: "trimSnaps" });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    emblaApi.on("select", onSelect);
+    onSelect();
+    return () => { emblaApi.off("select", onSelect); };
+  }, [emblaApi]);
 
   return (
     <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
@@ -881,11 +912,10 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
         style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 4s linear infinite" }}
       />
 
-      <div className="relative p-6 space-y-4">
+      <div className="relative p-5 pb-4 space-y-3">
         {/* ── Header ── */}
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 flex items-center justify-center">
-            {/* Pulse ring */}
             <div className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20" style={{ animation: "mentorPulse 3s ease-in-out infinite" }} />
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
               <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.5))" }} />
@@ -900,12 +930,10 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.5)", animation: "mentorPulse 2s ease-in-out infinite" }} />
               <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400/70">
-                LIVE · {tradeCount} trades scanned
+                LIVE · {tradeCount} trades
               </span>
             </div>
           </div>
-
-          {/* Discipline badge */}
           {disciplineStyle && (
             <div className={cn("px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider", disciplineStyle.bg, disciplineStyle.border, disciplineStyle.color, disciplineStyle.glow)}>
               {disciplineStyle.label}
@@ -913,39 +941,67 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
           )}
         </div>
 
-        {/* ── Insight Sections ── */}
-        <div className="space-y-2.5">
-          {sections.map((s, i) => (
-            <div
-              key={s.label}
-              className={cn("relative rounded-xl bg-white/[0.02] border border-white/[0.05] p-3.5 pl-4 border-l-2 space-y-1", s.accent)}
-              style={{ animation: `mentorFadeIn 0.3s ease-out ${i * 0.08}s both` }}
-            >
-              <div className="flex items-center gap-1.5">
-                <s.icon className={cn("h-3 w-3", s.iconColor)} style={{ filter: `drop-shadow(0 0 4px ${s.glowColor})` }} />
-                <span className={cn("text-[9px] font-mono uppercase tracking-[0.12em] font-semibold", s.labelColor)}>{s.label}</span>
+        {/* ── Swipeable Carousel ── */}
+        <div className="overflow-hidden -mx-1" ref={emblaRef}>
+          <div className="flex">
+            {sections.map((s, i) => (
+              <div key={s.label} className="flex-[0_0_100%] min-w-0 px-1">
+                <div
+                  className={cn("relative rounded-xl border border-white/[0.06] p-4 min-h-[140px] flex flex-col justify-center bg-gradient-to-br", s.accent)}
+                  style={{ animation: `mentorFadeIn 0.4s ease-out ${i * 0.05}s both` }}
+                >
+                  {/* Icon with glow */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                      <s.icon className={cn("h-4 w-4", s.iconColor)} style={{ filter: `drop-shadow(0 0 6px ${s.glowColor})` }} />
+                    </div>
+                    <span className={cn("text-[10px] font-mono uppercase tracking-[0.14em] font-bold", s.labelColor)}>{s.label}</span>
+                  </div>
+                  {/* Insight text — large and readable */}
+                  <p className="text-[14px] leading-[1.6] text-foreground/90 font-medium">{s.value}</p>
+                  {/* Accent gradient line */}
+                  <div className="mt-3 h-[2px] rounded-full w-12 opacity-40" style={{ background: `linear-gradient(90deg, ${s.glowColor}, transparent)` }} />
+                </div>
               </div>
-              <p className="text-[13px] leading-relaxed text-foreground/90">{s.value}</p>
+            ))}
+            {/* Encouragement as final slide */}
+            <div className="flex-[0_0_100%] min-w-0 px-1">
+              <div className="relative rounded-xl border border-primary/10 p-4 min-h-[140px] flex flex-col justify-center bg-gradient-to-br from-primary/[0.06] to-transparent">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center">
+                    <Zap className="h-4 w-4 text-primary" style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }} />
+                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.14em] font-bold text-primary/70">COACH NOTE</span>
+                </div>
+                <p className="text-[14px] leading-[1.6] text-foreground/80 italic font-medium">{result.encouragement}</p>
+                <div className="mt-3 h-[2px] rounded-full w-12 opacity-30" style={{ background: "linear-gradient(90deg, hsl(var(--primary) / 0.5), transparent)" }} />
+              </div>
             </div>
-          ))}
-        </div>
-
-        {/* ── Encouragement Footer ── */}
-        <div className="relative pt-3">
-          <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.2), transparent)" }} />
-          <div className="flex items-start gap-2.5">
-            <Zap className="h-4 w-4 text-primary mt-0.5 shrink-0" style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }} />
-            <p className="text-xs text-foreground/60 italic leading-relaxed">{result.encouragement}</p>
           </div>
         </div>
 
-        {/* ── Re-scan Button ── */}
-        <div className="flex items-center">
+        {/* ── Dot Indicators + Re-scan ── */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-1.5">
+            {[...sections, { dotColor: "bg-primary" }].map((s, i) => (
+              <button
+                key={i}
+                className={cn(
+                  "rounded-full transition-all duration-200",
+                  i === selectedIndex
+                    ? cn("w-5 h-2", s.dotColor, "opacity-90")
+                    : "w-2 h-2 bg-white/15 hover:bg-white/25"
+                )}
+                style={i === selectedIndex ? { boxShadow: `0 0 8px ${sections[i]?.glowColor || "hsl(var(--primary) / 0.3)"}` } : undefined}
+                onClick={() => emblaApi?.scrollTo(i)}
+              />
+            ))}
+          </div>
           <Button
             variant="ghost"
             size="sm"
             className="gap-1.5 text-xs text-primary/70 hover:text-primary px-0 h-auto hover:bg-transparent transition-colors"
-            onClick={() => fetchAnalysis(true)}
+            onClick={onRescan}
             disabled={refreshing}
           >
             <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
