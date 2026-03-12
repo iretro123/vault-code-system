@@ -119,6 +119,25 @@ const AcademyTrade = () => {
     finally { setResetting(false); }
   };
 
+  const handleUpdateBalance = async () => {
+    const newBalance = parseFloat(updateBalanceInput);
+    if (isNaN(newBalance) || newBalance < 0 || !user) return;
+    setUpdatingBalance(true);
+    try {
+      const newStarting = newBalance - totalPnl;
+      const { error } = await supabase.from("profiles").update({ account_balance: newStarting }).eq("user_id", user.id);
+      if (error) throw error;
+      setStartingBalance(newStarting);
+      setShowUpdateBalance(false);
+      setUpdateBalanceInput("");
+      toast({ title: "Balance updated", description: `Now tracking from $${newBalance.toLocaleString()}.` });
+    } catch {
+      toast({ title: "Error updating balance", variant: "destructive" });
+    } finally {
+      setUpdatingBalance(false);
+    }
+  };
+
   const handleTradeSubmit = async (data: TradeFormData) => {
     const pnlNum = parseFloat(data.pnl) || 0;
     const isWin = data.resultType === "Win";
