@@ -706,6 +706,7 @@ interface AIFocusResult {
   nextSessionTip?: string;
   disciplineScore?: "strong" | "moderate" | "weak";
   riskAssessment?: string;
+  attendanceInsight?: string;
   date: string;
   tradeCount: number;
 }
