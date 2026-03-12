@@ -86,8 +86,10 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
   }, [parentMessage.id, ensureProfiles]);
 
   // Scroll to bottom on new replies
+  const threadContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    threadContainerRef.current?.scrollTo({ top: threadContainerRef.current.scrollHeight, behavior: "smooth" });
   }, [replies.length]);
 
   // Auto-resize textarea
@@ -173,7 +175,7 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
       </div>
 
       {/* Replies */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div ref={threadContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-5 w-5 text-white/30 animate-spin" />
