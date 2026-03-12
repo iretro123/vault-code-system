@@ -1862,6 +1862,7 @@ export type Database = {
           plan_id: string | null
           risk_reward: number
           risk_used: number
+          screenshot_url: string | null
           symbol: string | null
           trade_date: string
           user_id: string
@@ -1879,6 +1880,7 @@ export type Database = {
           plan_id?: string | null
           risk_reward: number
           risk_used: number
+          screenshot_url?: string | null
           symbol?: string | null
           trade_date?: string
           user_id: string
@@ -1896,6 +1898,7 @@ export type Database = {
           plan_id?: string | null
           risk_reward?: number
           risk_used?: number
+          screenshot_url?: string | null
           symbol?: string | null
           trade_date?: string
           user_id?: string
