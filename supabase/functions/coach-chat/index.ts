@@ -111,95 +111,216 @@ serve(async (req) => {
     // ── Fetch student context (service role to bypass RLS, but scoped to user) ──
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const [lessonsRes, tradesRes, rulesRes, playbookRes, profileRes] = await Promise.all([
-      // Full curriculum catalog (public educational content)
+    const [
+      modulesRes,
+      lessonsRes,
+      tradesRes,
+      rulesRes,
+      playbookChaptersRes,
+      playbookProgressRes,
+      lessonProgressRes,
+      journalRes,
+      profileRes,
+    ] = await Promise.all([
+      serviceClient
+        .from("academy_modules")
+        .select("slug, title, subtitle, sort_order")
+        .eq("visible", true)
+        .order("sort_order"),
       serviceClient
         .from("academy_lessons")
-        .select("lesson_title, module_title, module_slug, notes")
+        .select("id, lesson_title, module_title, module_slug, sort_order")
         .eq("visible", true)
         .order("module_slug")
         .order("sort_order"),
-      // User's last 10 trades
       serviceClient
         .from("trade_entries")
-        .select("ticker, direction, contracts, entry_price, exit_price, pnl, trade_date, setup_type")
+        .select("trade_date, symbol, risk_used, risk_reward, followed_rules, notes, outcome, created_at")
         .eq("user_id", user.id)
-        .order("trade_date", { ascending: false })
-        .limit(10),
-      // User's trading rules
+        .order("created_at", { ascending: false })
+        .limit(20),
       serviceClient
         .from("trading_rules")
         .select("max_risk_per_trade, max_trades_per_day, max_daily_loss, allowed_sessions, forbidden_behaviors")
         .eq("user_id", user.id)
         .maybeSingle(),
-      // Playbook chapter titles
       serviceClient
         .from("playbook_chapters")
-        .select("title, order_index")
+        .select("id, title, order_index")
         .order("order_index"),
-      // User display name
+      serviceClient
+        .from("playbook_progress")
+        .select("chapter_id, status, checkpoint_passed, last_page_viewed, updated_at")
+        .eq("user_id", user.id),
+      serviceClient
+        .from("lesson_progress")
+        .select("lesson_id, completed, completed_at")
+        .eq("user_id", user.id),
+      serviceClient
+        .from("journal_entries")
+        .select("entry_date, ticker, followed_rules, biggest_mistake, lesson")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
       serviceClient
         .from("profiles")
-        .select("display_name, account_balance, discipline_score")
+        .select("display_name, account_balance, discipline_score, academy_experience, role_level")
         .eq("user_id", user.id)
         .maybeSingle(),
     ]);
 
-    // Build curriculum context
-    let curriculumBlock = "";
-    if (lessonsRes.data && lessonsRes.data.length > 0) {
-      const grouped: Record<string, { title: string; lessons: string[] }> = {};
-      for (const l of lessonsRes.data as any[]) {
-        if (!grouped[l.module_slug]) {
-          grouped[l.module_slug] = { title: l.module_title, lessons: [] };
-        }
-        const noteSnippet = l.notes ? ` — ${(l.notes as string).slice(0, 80)}` : "";
-        grouped[l.module_slug].lessons.push(`"${l.lesson_title}"${noteSnippet}`);
-      }
-      curriculumBlock = Object.entries(grouped)
-        .map(([slug, mod]) => `Module: ${mod.title} (${slug})\n${mod.lessons.map((l) => `  • ${l}`).join("\n")}`)
-        .join("\n\n");
+    const contextErrors = [
+      modulesRes.error,
+      lessonsRes.error,
+      tradesRes.error,
+      rulesRes.error,
+      playbookChaptersRes.error,
+      playbookProgressRes.error,
+      lessonProgressRes.error,
+      journalRes.error,
+      profileRes.error,
+    ].filter(Boolean);
+
+    if (contextErrors.length > 0) {
+      console.error("[coach-chat] Context query errors:", contextErrors.map((e: any) => e.message));
     }
+
+    const modules = (modulesRes.data || []) as any[];
+    const lessons = (lessonsRes.data || []) as any[];
+    const trades = (tradesRes.data || []) as any[];
+    const rules = rulesRes.data as any;
+    const playbookChapters = (playbookChaptersRes.data || []) as any[];
+    const playbookProgress = (playbookProgressRes.data || []) as any[];
+    const lessonProgress = (lessonProgressRes.data || []) as any[];
+    const journals = (journalRes.data || []) as any[];
+    const profile = profileRes.data as any;
+
+    // Build curriculum context
+    const lessonsByModule = new Map<string, any[]>();
+    for (const lesson of lessons) {
+      const key = lesson.module_slug;
+      if (!lessonsByModule.has(key)) lessonsByModule.set(key, []);
+      lessonsByModule.get(key)!.push(lesson);
+    }
+
+    const curriculumBlock = modules.length > 0
+      ? modules.map((m) => {
+          const moduleLessons = lessonsByModule.get(m.slug) || [];
+          const lessonLines = moduleLessons.length > 0
+            ? moduleLessons.map((l) => `  • "${l.lesson_title}"`).join("\n")
+            : "  • No lessons published yet";
+          return `Module: ${m.title} (${m.slug})\n${lessonLines}`;
+        }).join("\n\n")
+      : (lessons.length > 0
+          ? lessons.map((l) => `• "${l.lesson_title}" in ${l.module_title}`).join("\n")
+          : "No lessons loaded.");
 
     // Build student context
     let studentContext = "";
-    const profile = profileRes.data as any;
+
     if (profile) {
       studentContext += `Name: ${profile.display_name || "Student"}\n`;
-      if (profile.account_balance) studentContext += `Account Balance: $${profile.account_balance}\n`;
-      if (profile.discipline_score !== undefined) studentContext += `Discipline Score: ${profile.discipline_score}/100\n`;
+      if (profile.account_balance !== null && profile.account_balance !== undefined) {
+        studentContext += `Account Balance: $${Number(profile.account_balance).toFixed(2)}\n`;
+      }
+      if (profile.discipline_score !== null && profile.discipline_score !== undefined) {
+        studentContext += `Discipline Score: ${profile.discipline_score}/100\n`;
+      }
+      if (profile.academy_experience) {
+        studentContext += `Experience Level: ${profile.academy_experience}\n`;
+      }
+      if (profile.role_level) {
+        studentContext += `Claimed Role: ${profile.role_level}\n`;
+      }
     }
 
-    if (rulesRes.data) {
-      const r = rulesRes.data as any;
-      studentContext += `Trading Rules: Max ${r.max_risk_per_trade}% risk/trade, Max ${r.max_trades_per_day} trades/day, Max ${r.max_daily_loss}% daily loss\n`;
-      if (r.allowed_sessions?.length) studentContext += `Allowed Sessions: ${r.allowed_sessions.join(", ")}\n`;
+    if (rules) {
+      studentContext += `Trading Rules: Max ${rules.max_risk_per_trade}% risk/trade, Max ${rules.max_trades_per_day} trades/day, Max ${rules.max_daily_loss}% daily loss\n`;
+      if (Array.isArray(rules.allowed_sessions) && rules.allowed_sessions.length) {
+        studentContext += `Allowed Sessions: ${rules.allowed_sessions.join(", ")}\n`;
+      }
+      if (Array.isArray(rules.forbidden_behaviors) && rules.forbidden_behaviors.length) {
+        studentContext += `Forbidden Behaviors: ${rules.forbidden_behaviors.join(", ")}\n`;
+      }
     }
 
-    if (tradesRes.data && (tradesRes.data as any[]).length > 0) {
-      const trades = tradesRes.data as any[];
-      studentContext += `\nRecent Trades (last ${trades.length}):\n`;
-      for (const t of trades) {
-        const pnl = t.pnl !== null ? `P/L: $${t.pnl}` : "Open";
-        studentContext += `  • ${t.trade_date} | ${t.ticker || "N/A"} ${t.direction || ""} | ${t.contracts}ct @ $${t.entry_price} → $${t.exit_price || "?"} | ${pnl}\n`;
+    if (trades.length > 0) {
+      const netPnl = trades.reduce((sum, t) => sum + (Number(t.risk_used || 0) * Number(t.risk_reward || 0)), 0);
+      const wins = trades.filter((t) => Number(t.risk_reward || 0) > 0).length;
+      const losses = trades.filter((t) => Number(t.risk_reward || 0) < 0).length;
+      const ruleCompliant = trades.filter((t) => t.followed_rules).length;
+      const avgRisk = trades.reduce((sum, t) => sum + Number(t.risk_used || 0), 0) / trades.length;
+      const complianceRate = Math.round((ruleCompliant / trades.length) * 100);
+
+      studentContext += `\nTrade Snapshot: ${trades.length} recent trades, ${wins} wins / ${losses} losses, Net P/L ${netPnl >= 0 ? "+" : ""}$${Math.abs(netPnl).toFixed(2)}, Rule Compliance ${complianceRate}%, Avg Risk $${avgRisk.toFixed(2)}\n`;
+      studentContext += "Recent Trades:\n";
+
+      for (const t of trades.slice(0, 10)) {
+        const pnl = Number(t.risk_used || 0) * Number(t.risk_reward || 0);
+        const outcome = t.outcome || (pnl > 0 ? "WIN" : pnl < 0 ? "LOSS" : "BREAKEVEN");
+        const symbol = t.symbol || "N/A";
+        const noteSnippet = t.notes ? String(t.notes).slice(0, 110) : "No note";
+        studentContext += `  • ${t.trade_date} | ${symbol} | ${outcome} | P/L ${pnl >= 0 ? "+" : ""}$${Math.abs(pnl).toFixed(2)} | Followed Rules: ${t.followed_rules ? "Yes" : "No"} | ${noteSnippet}\n`;
       }
     } else {
       studentContext += "\nNo trades logged yet.\n";
     }
 
-    let playbookContext = "";
-    if (playbookRes.data && (playbookRes.data as any[]).length > 0) {
-      playbookContext = (playbookRes.data as any[]).map((c) => `Ch${c.order_index + 1}: ${c.title}`).join(", ");
+    const completedLessonIds = new Set(
+      lessonProgress
+        .filter((lp) => lp.completed)
+        .map((lp) => lp.lesson_id)
+    );
+
+    if (lessons.length > 0) {
+      const completedLessonCount = completedLessonIds.size;
+      const lessonPct = Math.round((completedLessonCount / lessons.length) * 100);
+      studentContext += `\nLearning Progress: ${completedLessonCount}/${lessons.length} lessons completed (${lessonPct}%)\n`;
+
+      const completedRecent = lessonProgress
+        .filter((lp) => lp.completed && lp.completed_at)
+        .sort((a, b) => String(b.completed_at).localeCompare(String(a.completed_at)))
+        .slice(0, 5);
+
+      if (completedRecent.length > 0) {
+        studentContext += "Recently Completed Lessons:\n";
+        for (const lp of completedRecent) {
+          const lesson = lessons.find((l) => l.id === lp.lesson_id);
+          if (lesson) {
+            studentContext += `  • "${lesson.lesson_title}" in ${lesson.module_title}\n`;
+          }
+        }
+      }
+    }
+
+    if (playbookChapters.length > 0) {
+      const completedChapterIds = new Set(
+        playbookProgress
+          .filter((p) => p.checkpoint_passed || p.status === "completed")
+          .map((p) => p.chapter_id)
+      );
+
+      const playbookCompletedCount = playbookChapters.filter((c) => completedChapterIds.has(c.id)).length;
+      const nextChapter = playbookChapters.find((c) => !completedChapterIds.has(c.id));
+
+      studentContext += `\nPlaybook Progress: ${playbookCompletedCount}/${playbookChapters.length} chapters complete\n`;
+      if (nextChapter) {
+        studentContext += `Next Playbook Chapter: ${nextChapter.title}\n`;
+      }
+    }
+
+    if (journals.length > 0) {
+      studentContext += "\nRecent Journal Insights:\n";
+      for (const j of journals.slice(0, 5)) {
+        studentContext += `  • ${j.entry_date} | ${j.ticker || "N/A"} | Followed rules: ${j.followed_rules ? "Yes" : "No"} | Mistake: ${String(j.biggest_mistake || "—").slice(0, 80)} | Lesson: ${String(j.lesson || "—").slice(0, 80)}\n`;
+      }
     }
 
     // Assemble full system prompt with context
     const fullSystemPrompt = `${SYSTEM_PROMPT}
 
 [CURRICULUM — Academy Lessons Available]
-${curriculumBlock || "No lessons loaded."}
-
-[PLAYBOOK CHAPTERS]
-${playbookContext || "No playbook chapters loaded."}
+${curriculumBlock}
 
 [STUDENT CONTEXT]
 ${studentContext || "No student data available."}`;
