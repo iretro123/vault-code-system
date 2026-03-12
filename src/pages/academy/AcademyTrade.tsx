@@ -938,17 +938,21 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
   const confStyle = CONFIDENCE_MAP[result.primaryLeakConfidence] || CONFIDENCE_MAP.medium;
   const isInsufficient = result.primaryLeakConfidence === "insufficient";
 
+  if (isInsufficient) {
+    return <InsufficientDataCard result={result} gradeStyle={gradeStyle} refreshing={refreshing} onRescan={() => fetchAnalysis(true)} />;
+  }
+
   const slides = [
     {
       label: "PRIMARY LEAK",
       icon: AlertTriangle,
       value: result.primaryLeak,
       subLabel: confStyle.label,
-      accent: isInsufficient ? "from-muted/20 to-transparent" : "from-red-500/10 to-red-500/[0.02]",
-      iconColor: isInsufficient ? "text-muted-foreground/50" : "text-red-400",
-      labelColor: isInsufficient ? "text-muted-foreground/50" : "text-red-400/80",
-      glowColor: isInsufficient ? "rgba(128,128,128,0.2)" : "rgba(248,113,113,0.3)",
-      dotColor: isInsufficient ? "bg-muted-foreground/30" : "bg-red-400",
+      accent: "from-red-500/10 to-red-500/[0.02]",
+      iconColor: "text-red-400",
+      labelColor: "text-red-400/80",
+      glowColor: "rgba(248,113,113,0.3)",
+      dotColor: "bg-red-400",
       confidenceColor: confStyle.color,
     },
     {
