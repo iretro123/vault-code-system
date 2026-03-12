@@ -415,7 +415,7 @@ serve(async (req) => {
                   properties: {
                     primaryLeak: {
                       type: "string",
-                      description: "The #1 performance killer. Structure: WHAT is happening → WHY it matters → THE EVIDENCE (cite specific numbers) → THE FIX (exact corrective action). 3-4 sentences max. If dataConfidence is low, state 'Insufficient data to identify primary leak with confidence. Log more trades.' Do NOT invent patterns.",
+                      description: "The #1 performance killer. Structure: WHAT is happening → WHY it matters → THE EVIDENCE (cite specific numbers) → THE FIX (exact corrective action). 3-4 sentences max. If dataConfidence is low, say 'Building your trading profile. More trades needed for reliable leak detection.' Do NOT invent patterns.",
                     },
                     primaryLeakConfidence: {
                       type: "string",
