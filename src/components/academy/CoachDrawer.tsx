@@ -676,7 +676,7 @@ export function CoachDrawer() {
                       : [];
                     // Strip video lines from displayed content
                     const displayContent = msg.role === "assistant"
-                      ? msg.content.replace(/📺\s*\*\*Recommended Lesson:\*\*\s*"[^"]+"\s*in\s*.+/g, "").trim()
+                      ? msg.content.replace(/(?:📺\s*)?\*\*Recommended Lesson:\*\*\s*"[^"]+"\s*in\s*.+/g, "").trim()
                       : msg.content;
 
                     return (
