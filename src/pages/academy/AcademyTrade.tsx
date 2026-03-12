@@ -236,28 +236,26 @@ const AcademyTrade = () => {
       <PageHeader
         title="My Trades"
         subtitle="Your trading command center — log, track, and improve."
+        compact
         action={
-          <div className="flex gap-2">
-            <Button size="sm" className="gap-1.5" onClick={handleLogUnplanned}>
-              <Plus className="h-3.5 w-3.5" /> Log Trade
+          <div className="flex gap-1.5">
+            <Button size="sm" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={handleLogUnplanned}>
+              <Plus className="h-3 w-3" /> Log
             </Button>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("/academy/vault")}>
-              <Shield className="h-3.5 w-3.5" /> Check a Trade
+            <Button size="sm" variant="outline" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={() => navigate("/academy/vault")}>
+              <Shield className="h-3 w-3" /> Check
             </Button>
           </div>
         }
       />
-      <div className="px-4 md:px-6 pb-10 space-y-5 max-w-4xl">
+      <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
 
         {/* Balance skip reminder */}
         {balanceSkipped && startingBalance === null && (
-          <div className="vault-glass-card p-4 border-amber-500/20 bg-amber-500/5 flex items-start gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-foreground font-medium">Starting balance not set</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Your stats won't track accurately until you set your starting balance.</p>
-            </div>
-            <Button size="sm" variant="outline" className="shrink-0 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => setShowBalanceModal(true)}>Set Balance Now</Button>
+          <div className="vault-glass-card p-3 md:p-4 border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+            <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set</p>
+            <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
           </div>
         )}
 
@@ -266,74 +264,90 @@ const AcademyTrade = () => {
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
-        {/* ═══ PERFORMANCE HUD ═══ */}
+        {/* ═══ SECTION: PERFORMANCE ═══ */}
         {hasData && (
-          <PerformanceHUD
-            balance={trackedBalance}
-            todayPnl={todayPnl}
-            allTimeWinRate={allTimeWinRate}
-            totalTrades={entries.length}
-            complianceRate={complianceRate}
-            currentStreak={currentStreak}
+          <section className="space-y-2.5">
+            <SectionLabel>Performance</SectionLabel>
+            <PerformanceHUD
+              balance={trackedBalance}
+              todayPnl={todayPnl}
+              allTimeWinRate={allTimeWinRate}
+              totalTrades={entries.length}
+              complianceRate={complianceRate}
+              currentStreak={currentStreak}
+            />
+            {equityCurve.length > 1 && startingBalance !== null && (
+              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+            )}
+          </section>
+        )}
+
+        {/* ═══ SECTION: ACCOUNT ═══ */}
+        {trackedBalance !== null && (
+          <section className="space-y-2.5">
+            <SectionLabel>Account</SectionLabel>
+            <TrackedBalanceCard
+              balance={trackedBalance}
+              showResetConfirm={showResetConfirm}
+              resetInput={resetInput}
+              resetting={resetting}
+              onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+              onResetInputChange={setResetInput}
+              onConfirmReset={handleResetBalance}
+              showUpdateBalance={showUpdateBalance}
+              updateBalanceInput={updateBalanceInput}
+              updatingBalance={updatingBalance}
+              onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+              onUpdateInputChange={setUpdateBalanceInput}
+              onConfirmUpdate={handleUpdateBalance}
+            />
+          </section>
+        )}
+
+        {/* ═══ SECTION: TODAY ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Today</SectionLabel>
+          <TodayVaultCheckCard
+            activePlan={activePlan}
+            todayTradeCount={todayTradeCount}
+            todayStatus={todayStatus}
+            noTradeDay={noTradeDay}
+            onCheckTrade={() => navigate("/academy/vault")}
+            onLogFromPlan={handleLogFromPlan}
+            onLogUnplanned={handleLogUnplanned}
+            onCancelPlan={handleCancelPlan}
+            onNoTradeDay={() => setShowNoTradeDay(true)}
+            onCompleteCheckIn={() => setShowCheckIn(true)}
+            onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
           />
-        )}
+        </section>
 
-        {/* ═══ EQUITY CURVE ═══ */}
-        {hasData && equityCurve.length > 1 && startingBalance !== null && (
-          <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
-        )}
+        {/* ═══ SECTION: INTELLIGENCE ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Intelligence</SectionLabel>
+          <AIFocusCard entries={entries} />
+        </section>
 
-        {/* Tracked Balance / Update / Reset */}
-        <TrackedBalanceCard
-          balance={trackedBalance}
-          showResetConfirm={showResetConfirm}
-          resetInput={resetInput}
-          resetting={resetting}
-          onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-          onResetInputChange={setResetInput}
-          onConfirmReset={handleResetBalance}
-          showUpdateBalance={showUpdateBalance}
-          updateBalanceInput={updateBalanceInput}
-          updatingBalance={updatingBalance}
-          onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-          onUpdateInputChange={setUpdateBalanceInput}
-          onConfirmUpdate={handleUpdateBalance}
-        />
+        {/* ═══ SECTION: JOURNAL ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Journal</SectionLabel>
+          <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
+            const result = await deleteEntry(id);
+            if (!result.error) {
+              refetchPlan();
+            }
+            return result;
+          }} />
+        </section>
 
-        {/* Today's VAULT Check */}
-        <TodayVaultCheckCard
-          activePlan={activePlan}
-          todayTradeCount={todayTradeCount}
-          todayStatus={todayStatus}
-          noTradeDay={noTradeDay}
-          onCheckTrade={() => navigate("/academy/vault")}
-          onLogFromPlan={handleLogFromPlan}
-          onLogUnplanned={handleLogUnplanned}
-          onCancelPlan={handleCancelPlan}
-          onNoTradeDay={() => setShowNoTradeDay(true)}
-          onCompleteCheckIn={() => setShowCheckIn(true)}
-          onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-        />
-
-        {/* AI Mentor */}
-        <AIFocusCard entries={entries} />
-
-        {/* ═══ PERFORMANCE BREAKDOWN ═══ */}
-        {hasData && symbolStats.length > 0 && (
-          <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
-        )}
-
-        {/* ═══ TRADE JOURNAL ═══ */}
-        <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
-          const result = await deleteEntry(id);
-          if (!result.error) {
-            refetchPlan();
-          }
-          return result;
-        }} />
-
-        {/* Weekly Review */}
-        <WeeklyReviewCard hasData={hasData} />
+        {/* ═══ SECTION: REVIEW ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Review</SectionLabel>
+          {hasData && symbolStats.length > 0 && (
+            <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
+          )}
+          <WeeklyReviewCard hasData={hasData} />
+        </section>
 
       </div>
 
@@ -344,6 +358,15 @@ const AcademyTrade = () => {
     </>
   );
 };
+
+/* ── iOS Section Label ── */
+function SectionLabel({ children }: { children: import("react").ReactNode }) {
+  return (
+    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold pl-1">
+      {children}
+    </p>
+  );
+}
 
 /* ══════════════════════════════════════════════════════════════════
    PERFORMANCE HUD — Premium cinematic stats strip
@@ -408,7 +431,7 @@ function PerformanceHUD({
         {hudItems.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="bg-card px-3 py-3 md:px-4 md:py-4 flex flex-col items-center text-center gap-1">
+            <div key={item.label} className="bg-card px-2.5 py-2.5 md:px-4 md:py-4 flex flex-col items-center text-center gap-0.5">
               <Icon className={`h-3.5 w-3.5 ${item.accent} shrink-0`} />
               <span className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/70 leading-none">{item.label}</span>
               <span className={`text-base md:text-lg font-bold tabular-nums leading-none ${item.large ? item.accent : "text-foreground"}`}>
@@ -439,7 +462,7 @@ function EquityCurveCard({ equityCurve, startingBalance }: { equityCurve: { date
   const isPositive = totalChange >= 0;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-5 space-y-3">
+    <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-4 md:p-5 space-y-2.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-primary" />
@@ -449,7 +472,7 @@ function EquityCurveCard({ equityCurve, startingBalance }: { equityCurve: { date
           {isPositive ? "+" : ""}{totalChange.toFixed(0)} ({((totalChange / startingBalance) * 100).toFixed(1)}%)
         </span>
       </div>
-      <div className="h-[160px] -mx-2">
+      <div className="h-[140px] md:h-[160px] -mx-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
             <defs>
@@ -627,7 +650,7 @@ function TodayVaultCheckCard({
   // State A: No active plan, not complete
   if (!activePlan && todayStatus === "incomplete" && !noTradeDay) {
     return (
-      <div className="vault-glass-card p-5 space-y-3">
+      <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
@@ -652,7 +675,7 @@ function TodayVaultCheckCard({
         ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
         : "bg-red-500/10 text-red-400 border-red-500/20";
     return (
-      <div className="vault-glass-card p-5 space-y-3">
+      <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-emerald-400" />
           <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
@@ -697,7 +720,7 @@ function TodayVaultCheckCard({
   const badge = badgeMap[todayStatus];
 
   return (
-    <div className="vault-glass-card p-5 space-y-3">
+    <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
       <div className="flex items-center gap-2">
         <Shield className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
@@ -1299,62 +1322,74 @@ function TrackedBalanceCard({
 }) {
   if (balance === null) return null;
 
+  const isExpanded = showUpdateBalance || showResetConfirm;
+
   return (
-    <div className="vault-glass-card p-5 space-y-3">
-      <div className="flex items-center gap-2">
-        <Wallet className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Balance Management</h3>
-        <span className="ml-auto text-sm font-bold tabular-nums text-foreground">${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+    <div className="vault-glass-card overflow-hidden">
+      {/* Inline row — always visible */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+          <Wallet className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-muted-foreground/60 leading-none">Tracked Balance</p>
+          <p className="text-base font-bold tabular-nums text-foreground mt-0.5 leading-tight">${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+        </div>
         <button
           onClick={onToggleUpdate}
-          className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all duration-100"
+          className={cn(
+            "h-8 w-8 flex items-center justify-center rounded-xl transition-all duration-100",
+            showUpdateBalance ? "bg-primary/15 text-primary" : "text-muted-foreground/40 hover:text-primary hover:bg-primary/10"
+          )}
           aria-label="Update balance"
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
       </div>
-      <p className="text-xs text-muted-foreground">Based on your starting balance + logged trades.</p>
 
-      {/* Update Balance Form */}
-      {showUpdateBalance && (
-        <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
-          <p className="text-xs text-foreground font-medium">What's your actual balance right now?</p>
-          <p className="text-[11px] text-muted-foreground">We'll adjust your starting balance so the math stays accurate with your logged trades.</p>
-          <div className="flex gap-2 items-center">
-            <div className="relative max-w-[160px]">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-              <Input
-                className="pl-7 h-8 text-sm font-mono tabular-nums"
-                placeholder="0"
-                type="number"
-                min="0"
-                value={updateBalanceInput}
-                onChange={(e) => onUpdateInputChange(e.target.value)}
-              />
+      {/* Expandable forms */}
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-2">
+          {showUpdateBalance && (
+            <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+              <p className="text-xs text-foreground font-medium">What's your actual balance?</p>
+              <p className="text-[11px] text-muted-foreground">We'll adjust your starting balance to keep trade math accurate.</p>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1 max-w-[160px]">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                  <Input
+                    className="pl-7 h-8 text-sm font-mono tabular-nums"
+                    placeholder="0"
+                    type="number"
+                    min="0"
+                    value={updateBalanceInput}
+                    onChange={(e) => onUpdateInputChange(e.target.value)}
+                  />
+                </div>
+                <Button size="sm" disabled={!updateBalanceInput || isNaN(parseFloat(updateBalanceInput)) || updatingBalance} onClick={onConfirmUpdate} className="h-8 rounded-lg">
+                  {updatingBalance ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleUpdate}>Cancel</Button>
+              </div>
+              <button onClick={onToggleReset} className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors mt-1">
+                <RotateCcw className="h-2.5 w-2.5" /> Reset balance entirely
+              </button>
             </div>
-            <Button size="sm" disabled={!updateBalanceInput || isNaN(parseFloat(updateBalanceInput)) || updatingBalance} onClick={onConfirmUpdate} className="h-8">
-              {updatingBalance ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
-            </Button>
-            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleUpdate}>Cancel</Button>
-          </div>
+          )}
+
+          {showResetConfirm && (
+            <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2">
+              <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">RESET</span> to confirm</p>
+              <p className="text-[11px] text-muted-foreground">This will clear your starting balance. You'll need to set a new one.</p>
+              <div className="flex gap-2 items-center">
+                <Input className="max-w-[120px] h-8 text-sm font-mono" placeholder="RESET" value={resetInput} onChange={(e) => onResetInputChange(e.target.value.toUpperCase())} />
+                <Button size="sm" variant="destructive" disabled={resetInput !== "RESET" || resetting} onClick={onConfirmReset} className="h-8">{resetting ? "Resetting..." : "Confirm"}</Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleReset}>Cancel</Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
-
-      {!showResetConfirm && !showUpdateBalance ? (
-        <button onClick={onToggleReset} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">
-          <RotateCcw className="h-3 w-3" /> Reset Balance
-        </button>
-      ) : showResetConfirm ? (
-        <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2">
-          <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">RESET</span> to confirm</p>
-          <p className="text-[11px] text-muted-foreground">This will clear your starting balance. You'll need to set a new one.</p>
-          <div className="flex gap-2 items-center">
-            <Input className="max-w-[120px] h-8 text-sm font-mono" placeholder="RESET" value={resetInput} onChange={(e) => onResetInputChange(e.target.value.toUpperCase())} />
-            <Button size="sm" variant="destructive" disabled={resetInput !== "RESET" || resetting} onClick={onConfirmReset} className="h-8">{resetting ? "Resetting..." : "Confirm"}</Button>
-            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleReset}>Cancel</Button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
