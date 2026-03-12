@@ -766,7 +766,10 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
       const data = await resp.json();
       const cached: AIFocusResult = { ...data, date: todayStr, tradeCount };
       setResult(cached);
-      try { localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached)); } catch {}
+      try {
+        localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached));
+        localStorage.setItem(AI_FOCUS_CACHE_TS, String(Date.now()));
+      } catch {}
     } catch (e: any) { setError(e.message || "Something went wrong"); }
     finally { setLoading(false); setRefreshing(false); }
   }, [todayStr, tradeCount]);
@@ -775,6 +778,22 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
   useEffect(() => {
     if (!isLocked) fetchAnalysis();
   }, [isLocked, fetchAnalysis, tradeCount]);
+
+  // Evening auto-rescan: if cached before 6 PM and it's now 6 PM+, auto-refresh
+  useEffect(() => {
+    if (isLocked || !result) return;
+    const now = new Date();
+    if (now.getHours() < 18) return; // not evening yet
+    try {
+      const cachedTs = localStorage.getItem(AI_FOCUS_CACHE_TS);
+      if (!cachedTs) return;
+      const cachedDate = new Date(Number(cachedTs));
+      // Same day but cached before 6 PM → refresh for evening insights
+      if (cachedDate.toDateString() === now.toDateString() && cachedDate.getHours() < 18) {
+        fetchAnalysis(true);
+      }
+    } catch {}
+  }, [isLocked, result, fetchAnalysis]);
 
   /* ── Locked State ── */
   if (isLocked) {
