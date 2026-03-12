@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import useEmblaCarousel from "embla-carousel-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import {
   CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download,
   ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield,
   Sparkles, Flame, Target, Activity, ArrowUpRight, ArrowDownRight, X, Loader2,
+  Clock,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
