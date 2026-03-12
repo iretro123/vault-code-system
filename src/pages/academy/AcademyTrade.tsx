@@ -10,7 +10,7 @@ import {
   CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download,
   ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield,
   Sparkles, Flame, Target, Activity, ArrowUpRight, ArrowDownRight, X, Loader2,
-  Clock,
+  Clock, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
