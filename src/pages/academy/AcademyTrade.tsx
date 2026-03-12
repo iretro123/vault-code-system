@@ -1006,10 +1006,23 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
           </div>
         </div>
 
-        {/* ── Dot Indicators + Re-scan ── */}
-        <div className="flex items-center justify-between pt-1">
+        {/* ── Dot Indicators with Arrows ── */}
+        <div className="flex items-center justify-center gap-3 pt-1">
+          <button
+            onClick={() => emblaApi?.scrollPrev()}
+            className={cn(
+              "w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150",
+              canScrollPrev
+                ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]"
+                : "opacity-0 pointer-events-none"
+            )}
+            aria-label="Previous insight"
+          >
+            <ChevronLeft className="h-4.5 w-4.5" />
+          </button>
+
           <div className="flex items-center gap-1.5">
-            {[...sections, { dotColor: "bg-primary" }].map((s, i) => (
+            {[...sections, { dotColor: "bg-primary", glowColor: "hsl(var(--primary) / 0.3)" }].map((s, i) => (
               <button
                 key={i}
                 className={cn(
@@ -1023,17 +1036,28 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
               />
             ))}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-xs text-primary/70 hover:text-primary px-0 h-auto hover:bg-transparent transition-colors"
-            onClick={onRescan}
-            disabled={refreshing}
+
+          <button
+            onClick={() => emblaApi?.scrollNext()}
+            className={cn(
+              "w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150",
+              canScrollNext
+                ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]"
+                : "opacity-0 pointer-events-none"
+            )}
+            aria-label="Next insight"
           >
-            <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
-            {refreshing ? "Scanning..." : "Re-scan"}
-          </Button>
+            <ChevronRight className="h-4.5 w-4.5" />
+          </button>
         </div>
+
+        {/* Refreshing indicator */}
+        {refreshing && (
+          <div className="flex items-center justify-center gap-1.5 pt-0.5">
+            <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
+            <span className="text-[10px] font-mono text-primary/50">Updating insights...</span>
+          </div>
+        )}
       </div>
     </div>
   );
