@@ -161,6 +161,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
         oversized,
         setupUsed,
         note,
+        screenshotFile: screenshotFile || undefined,
       });
       // Only reset on success (parent closes sheet on success)
       setSymbol("");
