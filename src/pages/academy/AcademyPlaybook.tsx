@@ -339,9 +339,9 @@ const AcademyPlaybook = () => {
             )}
           </div>
 
-          {/* Right: Notes + Checkpoint + Progress */}
+          {/* Right: Notes + Checkpoint + Progress — hidden below xl */}
           <div
-            className={`shrink-0 border-l border-border overflow-y-auto p-4 transition-all duration-200 ease-in-out ${
+            className={`shrink-0 border-l border-border overflow-y-auto p-4 transition-all duration-200 ease-in-out hidden xl:block ${
               isExpanded ? "w-0 opacity-0 overflow-hidden p-0 border-l-0" : "w-[300px] opacity-100"
             }`}
           >
