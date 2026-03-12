@@ -33,6 +33,7 @@ export interface TradeFormData {
   oversized: string;
   setupUsed: string;
   note: string;
+  screenshotFile?: File;
 }
 
 interface PlanPrefill {
