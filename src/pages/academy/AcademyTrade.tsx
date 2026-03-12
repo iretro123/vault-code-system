@@ -894,7 +894,6 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
     disciplineStyle={disciplineStyle}
     refreshing={refreshing}
     tradeCount={tradeCount}
-    onRescan={() => fetchAnalysis(true)}
   />;
 }
 
