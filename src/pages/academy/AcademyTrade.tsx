@@ -118,7 +118,25 @@ const AcademyTrade = () => {
     const pnlNum = parseFloat(data.pnl) || 0;
     const isWin = data.resultType === "Win";
     const isLoss = data.resultType === "Loss";
-    const newEntry = {
+
+    // Upload screenshot if provided
+    let screenshotUrl: string | undefined;
+    if (data.screenshotFile && user) {
+      const ext = data.screenshotFile.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("trade-screenshots")
+        .upload(path, data.screenshotFile, { contentType: data.screenshotFile.type, upsert: false });
+      if (uploadErr) {
+        toast({ title: "Screenshot upload failed", description: uploadErr.message, variant: "destructive" });
+        // Continue without screenshot
+      } else {
+        const { data: urlData } = supabase.storage.from("trade-screenshots").getPublicUrl(path);
+        screenshotUrl = urlData.publicUrl;
+      }
+    }
+
+    const newEntry: any = {
       risk_used: Math.abs(pnlNum),
       risk_reward: isWin ? 1 : isLoss ? -1 : 0,
       followed_rules: data.planFollowed === "Yes",
@@ -129,6 +147,8 @@ const AcademyTrade = () => {
       trade_date: format(data.date, "yyyy-MM-dd"),
       plan_id: logPlanId,
     };
+    if (screenshotUrl) newEntry.screenshot_url = screenshotUrl;
+
     const { error } = await addEntry(newEntry);
     if (error) throw error;
 

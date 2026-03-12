@@ -1,35 +1,39 @@
 
 
-# Fix: Trade Log Screenshot Upload (Dead Button)
+## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
 
-## Problem
-The "Tap to attach screenshot" button in `LogTradeSheet.tsx` (line 284-290) is a **dead placeholder** — it has no `onClick` handler, no file input reference, and no upload logic. Users tap it and nothing happens.
+### What was implemented
 
-Additionally, the `trade_entries` table has **no `screenshot_url` column**, so even if upload worked, there's nowhere to store it.
+**Edge Function: `trade-focus/index.ts`**
+- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
+- System prompt includes trade log, journal reflections, plan execution rate, and vault status
+- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
+- AI references actual data from all pipelines — no generic advice
 
-## Fix
+**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
+- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
+- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
+- Shimmer gradient on "AI MENTOR" title
+- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
+- Icon glow effects matching accent colors
+- Discipline Score badge (strong/moderate/weak) in header
+- Risk Assessment section
+- Staggered fade-in animations per section
+- "Re-scan" button with spin animation
 
-### 1. Database Migration
-- Add `screenshot_url text` column to `trade_entries` (nullable, default null)
+## Plan: Sync Delete Trade Across All Systems — COMPLETED
 
-### 2. Storage Bucket
-- Create a `trade-screenshots` storage bucket (public reads, authenticated uploads)
-- RLS: users can only upload to their own folder (`user_id/...`)
+### What was implemented
 
-### 3. Wire Up Screenshot Upload in `LogTradeSheet.tsx`
-- Add a hidden `<input type="file" accept="image/*">` with a ref
-- Add state for the selected file (`screenshotFile`)
-- Connect the button's `onClick` to trigger the file input
-- Show file name + remove button when a file is selected
-- Pass the file through to the parent via `TradeFormData` (add `screenshotFile?: File` field)
+**DB Trigger: reverse_trade_entry_from_vault_state**
+- Fires AFTER DELETE on `trade_entries` for same-day trades
+- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
+- Recalculates `loss_streak` from remaining trades
+- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
+- Clears `last_block_reason` when reverting to GREEN
+- Reverts linked `approved_plans` from `'logged'` → `'planned'`
 
-### 4. Handle Upload in `AcademyTrade.tsx` (parent submit handler)
-- Before inserting into `trade_entries`, upload the file to `trade-screenshots/{user_id}/{timestamp}.{ext}`
-- Get the public URL and include `screenshot_url` in the insert
-- Display the screenshot in the trade detail/history view
-
-### Files Changed
-- **Database migration**: Add `screenshot_url` column + create storage bucket + RLS policies
-- **`src/components/academy/LogTradeSheet.tsx`**: Wire up file input, state, preview, pass file in form data
-- **`src/pages/academy/AcademyTrade.tsx`**: Upload file to storage before inserting trade entry, display screenshot in trade list
-
+**Frontend: AcademyTrade.tsx**
+- After successful delete, calls `refetchPlan()` to refresh active plan state
+- Vault state auto-updates via existing realtime subscription on `vault_state` table
+- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
