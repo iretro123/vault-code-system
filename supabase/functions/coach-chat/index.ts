@@ -220,9 +220,15 @@ serve(async (req) => {
 
     if (profile) {
       studentContext += `Name: ${profile.display_name || "Student"}\n`;
-      if (profile.account_balance !== null && profile.account_balance !== undefined) {
-        studentContext += `Account Balance: $${Number(profile.account_balance).toFixed(2)}\n`;
-      }
+      // Compute live balance: static starting balance + sum of all trade P/L
+      const startingBalance = Number(profile.account_balance || 0);
+      const tradePnlSum = trades.reduce((sum, t) => {
+        const rr = Number(t.risk_reward || 0);
+        const ru = Number(t.risk_used || 0);
+        return sum + (rr * ru);
+      }, 0);
+      const liveBalance = startingBalance + tradePnlSum;
+      studentContext += `Account Balance: $${liveBalance.toFixed(2)} (starting: $${startingBalance.toFixed(2)}, trade P/L: ${tradePnlSum >= 0 ? "+" : ""}$${tradePnlSum.toFixed(2)})\n`;
       if (profile.discipline_score !== null && profile.discipline_score !== undefined) {
         studentContext += `Discipline Score: ${profile.discipline_score}/100\n`;
       }
