@@ -462,7 +462,7 @@ function EquityCurveCard({ equityCurve, startingBalance }: { equityCurve: { date
   const isPositive = totalChange >= 0;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-5 space-y-3">
+    <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-4 md:p-5 space-y-2.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-primary" />
