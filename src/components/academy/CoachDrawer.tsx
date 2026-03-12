@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   MessageSquare, X, Loader2, Send, ChevronLeft, Image,
-  Clock, CheckCircle2, AlertCircle, Zap, History, Copy, Check,
-  ChevronDown, ChevronUp, Sparkles,
+  Clock, CheckCircle2, AlertCircle, History, Copy, Check,
+  ChevronDown, ChevronUp, Sparkles, Brain, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
 import { ImageLightbox } from "@/components/academy/community/ImageLightbox";
+import { useNavigate } from "react-router-dom";
 import supplyZoneImg from "@/assets/supply-zone-example.png";
 import demandZoneImg from "@/assets/demand-zone-example.png";
 import supplyDemandImg from "@/assets/supply-demand-zones.png";
@@ -36,13 +37,6 @@ const QUESTION_TEMPLATES: Record<string, string> = {
   "Risk / Sizing": `Account size: \nMax loss per trade: \nContract cost: \nMy plan: `,
   "Platform Help": `Broker / Platform: \nWhat I clicked: \nWhat happened: \n(Attach a screenshot if possible)`,
 };
-
-const STARTER_CHIPS = [
-  "What is a stop loss?",
-  "How do I size my trades?",
-  "Explain options like I'm 10",
-  "What does risk/reward mean?",
-] as const;
 
 interface Ticket {
   id: string;
@@ -78,6 +72,45 @@ interface ChatMessage {
   isStreaming?: boolean;
 }
 
+// Parse video recommendations from AI response
+const VIDEO_PATTERN = /📺\s*\*\*Recommended Lesson:\*\*\s*"([^"]+)"\s*in\s*(.+)/g;
+
+interface VideoRecommendation {
+  lessonTitle: string;
+  moduleTitle: string;
+  moduleSlug?: string;
+}
+
+function parseVideoRecommendations(content: string): VideoRecommendation[] {
+  const recs: VideoRecommendation[] = [];
+  let match;
+  const regex = new RegExp(VIDEO_PATTERN.source, "g");
+  while ((match = regex.exec(content)) !== null) {
+    recs.push({ lessonTitle: match[1], moduleTitle: match[2].trim() });
+  }
+  return recs;
+}
+
+function VideoCard({ rec, onClick }: { rec: VideoRecommendation; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full flex items-center gap-3 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/[0.06] to-primary/[0.02] p-3 hover:border-primary/40 hover:from-primary/[0.10] hover:to-primary/[0.04] transition-all duration-200 text-left"
+    >
+      <div className="shrink-0 h-10 w-10 rounded-lg bg-primary/15 flex items-center justify-center group-hover:bg-primary/25 transition-colors">
+        <Play className="h-4 w-4 text-primary fill-primary/30" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">{rec.lessonTitle}</p>
+        <p className="text-xs text-muted-foreground truncate">{rec.moduleTitle}</p>
+      </div>
+      <span className="shrink-0 text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+        Watch →
+      </span>
+    </button>
+  );
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -94,6 +127,16 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+function TypingDots() {
+  return (
+    <div className="flex items-center gap-1 px-1 py-1">
+      <span className="vault-ai-dot h-1.5 w-1.5 rounded-full bg-primary/60" style={{ animationDelay: "0ms" }} />
+      <span className="vault-ai-dot h-1.5 w-1.5 rounded-full bg-primary/60" style={{ animationDelay: "150ms" }} />
+      <span className="vault-ai-dot h-1.5 w-1.5 rounded-full bg-primary/60" style={{ animationDelay: "300ms" }} />
+    </div>
+  );
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
 
 type Tab = "instant" | "coach";
@@ -102,6 +145,7 @@ type CoachView = "new" | "list" | "detail";
 export function CoachDrawer() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { requestIfNeeded: requestOSPermission } = useOSNotifications();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
@@ -144,7 +188,7 @@ export function CoachDrawer() {
   const [replyText, setReplyText] = useState("");
   const [replySending, setReplySending] = useState(false);
 
-  // Chat state (replaces old instant answer)
+  // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
@@ -155,6 +199,31 @@ export function CoachDrawer() {
   const [pastLoading, setPastLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Check if user has trades for dynamic chips
+  const [hasTrades, setHasTrades] = useState(false);
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("trade_entries" as any).select("id", { count: "exact", head: true }).eq("user_id", user.id).limit(1)
+      .then(({ count }) => setHasTrades((count || 0) > 0));
+  }, [user]);
+
+  const starterChips = useMemo(() => {
+    if (hasTrades) {
+      return [
+        "How did my last trade go?",
+        "Am I following my rules?",
+        "What should I study next?",
+        "How do I size my trades?",
+      ];
+    }
+    return [
+      "What is a stop loss?",
+      "How do I size my trades?",
+      "Explain options like I'm 10",
+      "What should I study next?",
+    ];
+  }, [hasTrades]);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -216,6 +285,11 @@ export function CoachDrawer() {
   }, [showHistory, fetchPastAnswers]);
 
   if (!user) return null;
+
+  const handleVideoClick = (rec: VideoRecommendation) => {
+    setOpen(false);
+    navigate(`/academy/learn/${rec.moduleSlug || rec.moduleTitle.toLowerCase().replace(/\s+/g, "-")}`);
+  };
 
   // ── Chat send (streaming) ──
   const handleChatSend = async (overrideText?: string) => {
@@ -353,7 +427,7 @@ export function CoachDrawer() {
       }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
-      setChatMessages((prev) => prev.slice(0, -1)); // Remove the empty assistant message
+      setChatMessages((prev) => prev.slice(0, -1));
     }
 
     setChatLoading(false);
@@ -422,6 +496,8 @@ export function CoachDrawer() {
 
   if (!open) return null;
 
+  const displayName = profile?.display_name || user.email?.split("@")[0] || "Trader";
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
       {/* Backdrop */}
@@ -433,12 +509,27 @@ export function CoachDrawer() {
       {/* Modal */}
       <div className="relative w-[min(860px,calc(100vw-32px))] rounded-t-2xl md:rounded-xl border border-white/[0.10] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[85vh] flex flex-col overflow-hidden">
 
-        {/* ── Premium header ── */}
-        <div className="px-6 pt-5 pb-3 shrink-0">
+        {/* ── Premium Vault AI Header ── */}
+        <div className="px-6 pt-5 pb-3 shrink-0 relative">
+          {/* Animated glow line */}
+          <div className="absolute bottom-0 left-6 right-6 h-px vault-ai-header-glow" />
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-foreground">Ask a Coach</h2>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Chat with AI first. Coach review when you need deeper guidance.</p>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center vault-ai-brain-pulse">
+                  <Brain className="h-5 w-5 text-primary" />
+                </div>
+                <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-[#0E1218]" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  Vault AI
+                  <span className="text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    Coach
+                  </span>
+                </h2>
+                <p className="text-[13px] text-muted-foreground mt-0.5">Your personal trading mentor</p>
+              </div>
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -460,8 +551,8 @@ export function CoachDrawer() {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Sparkles className="h-3.5 w-3.5" style={{ color: tab === "instant" ? "#FACC15" : undefined }} />
-            AI Chat
+            <Brain className="h-3.5 w-3.5" style={{ color: tab === "instant" ? "hsl(var(--primary))" : undefined }} />
+            AI Coach
             <span className="text-[10px] font-normal text-muted-foreground/60 hidden sm:inline ml-0.5">Instant</span>
           </button>
           <button
@@ -549,23 +640,28 @@ export function CoachDrawer() {
               {/* Chat messages area */}
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
                 {chatMessages.length === 0 ? (
-                  /* Empty state with starter chips */
+                  /* Premium empty state */
                   <div className="flex flex-col items-center justify-center h-full py-12 space-y-6">
-                    <div className="text-center space-y-2">
-                      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                        <Sparkles className="h-6 w-6 text-primary" />
+                    <div className="text-center space-y-3">
+                      <div className="relative h-16 w-16 mx-auto">
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/15 vault-ai-brain-pulse" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Brain className="h-8 w-8 text-primary" />
+                        </div>
                       </div>
-                      <h3 className="text-base font-semibold text-foreground">Ask me anything about trading</h3>
+                      <h3 className="text-base font-semibold text-foreground">
+                        Hey {displayName} — what are you working on?
+                      </h3>
                       <p className="text-sm text-muted-foreground max-w-sm">
-                        I explain everything in simple words — no confusing jargon. I can even draw pictures to help you understand.
+                        I know your curriculum, your trades, and your rules. Ask me anything about trading — I'll keep it simple.
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center max-w-md">
-                      {STARTER_CHIPS.map((chip) => (
+                      {starterChips.map((chip) => (
                         <button
                           key={chip}
                           onClick={() => handleChatSend(chip)}
-                          className="text-sm px-4 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+                          className="text-sm px-4 py-2.5 rounded-xl border border-primary/15 bg-primary/[0.04] text-muted-foreground hover:text-foreground hover:bg-primary/[0.08] hover:border-primary/25 transition-all duration-150"
                         >
                           {chip}
                         </button>
@@ -574,51 +670,73 @@ export function CoachDrawer() {
                   </div>
                 ) : (
                   /* Message bubbles */
-                  chatMessages.map((msg, i) => (
-                    <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
-                      <div className={cn(
-                        "rounded-2xl px-4 py-3 max-w-[85%] space-y-2",
-                        msg.role === "user"
-                          ? "rounded-tr-sm bg-primary/15 border border-primary/20"
-                          : "rounded-tl-sm bg-white/[0.04] border border-white/[0.08]"
-                      )}>
-                        {msg.role === "assistant" ? (
-                          <>
-                            <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90 [&_p]:mb-2 [&_ul]:mb-2">
-                              <ReactMarkdown>{msg.content || (msg.isStreaming ? "Thinking..." : "")}</ReactMarkdown>
-                              {msg.isStreaming && msg.content && (
-                                <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom" />
+                  chatMessages.map((msg, i) => {
+                    const videoRecs = msg.role === "assistant" && !msg.isStreaming
+                      ? parseVideoRecommendations(msg.content)
+                      : [];
+                    // Strip video lines from displayed content
+                    const displayContent = msg.role === "assistant"
+                      ? msg.content.replace(/📺\s*\*\*Recommended Lesson:\*\*\s*"[^"]+"\s*in\s*.+/g, "").trim()
+                      : msg.content;
+
+                    return (
+                      <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+                        <div className={cn(
+                          "rounded-2xl px-4 py-3 max-w-[85%] space-y-2",
+                          msg.role === "user"
+                            ? "rounded-tr-sm bg-primary/15 border border-primary/20"
+                            : "rounded-tl-sm bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] shadow-[0_2px_12px_rgba(0,0,0,0.15)]"
+                        )}>
+                          {msg.role === "assistant" ? (
+                            <>
+                              <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-foreground/90 leading-relaxed [&_strong]:text-foreground [&_li]:text-foreground/90 [&_p]:mb-2 [&_ul]:mb-2">
+                                {!displayContent && msg.isStreaming ? (
+                                  <TypingDots />
+                                ) : (
+                                  <ReactMarkdown>{displayContent}</ReactMarkdown>
+                                )}
+                                {msg.isStreaming && displayContent && (
+                                  <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom" />
+                                )}
+                              </div>
+                              {/* Video recommendation cards */}
+                              {videoRecs.length > 0 && (
+                                <div className="pt-2 space-y-2">
+                                  {videoRecs.map((rec, idx) => (
+                                    <VideoCard key={idx} rec={rec} onClick={() => handleVideoClick(rec)} />
+                                  ))}
+                                </div>
                               )}
-                            </div>
-                            {/* Inline images */}
-                            {msg.images && msg.images.length > 0 && (
-                              <div className="pt-2 space-y-2">
-                                {msg.images.map((img, idx) => (
-                                  <div key={idx} className="relative rounded-lg overflow-hidden border border-white/[0.08] bg-black/20">
-                                    <img
-                                      src={img.image_url.url}
-                                      alt="AI generated educational diagram"
-                                      className="w-full max-h-[45vh] sm:max-h-[40vh] md:max-h-[38vh] object-contain cursor-pointer rounded-lg transition-opacity hover:opacity-90"
-                                      onClick={() => setLightboxSrc(img.image_url.url)}
-                                    />
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {/* Actions row (only on completed messages) */}
-                            {!msg.isStreaming && msg.content && (
-                              <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
-                                <CopyButton text={msg.content} />
-                                <span className="text-[10px] text-muted-foreground/40">Education only</span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <p className="text-sm text-foreground leading-relaxed">{msg.content}</p>
-                        )}
+                              {/* Inline images */}
+                              {msg.images && msg.images.length > 0 && (
+                                <div className="pt-2 space-y-2">
+                                  {msg.images.map((img, idx) => (
+                                    <div key={idx} className="relative rounded-lg overflow-hidden border border-white/[0.08] bg-black/20">
+                                      <img
+                                        src={img.image_url.url}
+                                        alt="AI generated educational diagram"
+                                        className="w-full max-h-[45vh] sm:max-h-[40vh] md:max-h-[38vh] object-contain cursor-pointer rounded-lg transition-opacity hover:opacity-90"
+                                        onClick={() => setLightboxSrc(img.image_url.url)}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {/* Actions row */}
+                              {!msg.isStreaming && displayContent && (
+                                <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
+                                  <CopyButton text={msg.content} />
+                                  <span className="text-[10px] text-muted-foreground/40">Education only</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-foreground leading-relaxed">{msg.content}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
 
                 {/* Coach handoff after AI messages */}
@@ -640,14 +758,11 @@ export function CoachDrawer() {
               {/* ── Composer (bottom-pinned) ── */}
               <div className="shrink-0 border-t border-white/[0.06] px-4 py-3" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <div className="flex items-end gap-2">
-                  {/* Removed AI image gen button — static chart examples are auto-inserted */}
-
                   <textarea
                     ref={chatInputRef}
                     value={chatInput}
                     onChange={(e) => {
                       setChatInput(e.target.value);
-                      // Auto-resize
                       e.target.style.height = "auto";
                       e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
                     }}
@@ -657,21 +772,20 @@ export function CoachDrawer() {
                         handleChatSend();
                       }
                     }}
-                    placeholder="Ask a trading question..."
+                    placeholder="Ask about trading, your trades, or what to study..."
                     className="flex-1 resize-none text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 min-h-[40px] max-h-[120px]"
                     rows={1}
                     maxLength={1000}
                     disabled={chatLoading}
                   />
 
-                  <Button
+                  <button
                     onClick={() => handleChatSend()}
                     disabled={!chatInput.trim() || chatLoading}
-                    size="icon"
-                    className="shrink-0 h-10 w-10 rounded-xl"
+                    className="shrink-0 h-10 w-10 rounded-xl flex items-center justify-center bg-gradient-to-b from-primary to-primary/80 text-primary-foreground hover:shadow-[0_0_16px_2px_hsl(217_91%_60%/0.2)] disabled:opacity-40 disabled:pointer-events-none transition-all duration-150 active:scale-95"
                   >
                     {chatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -708,7 +822,6 @@ export function CoachDrawer() {
                 Standard: usually within 1–2 hours
               </p>
 
-              {/* Main question */}
               <div className="space-y-2">
                 <label className="text-[13px] font-semibold text-foreground/80">Your Question</label>
                 <p className="text-[12px] text-muted-foreground">Keep it simple: what you tried + what happened + what you want.</p>
@@ -722,7 +835,6 @@ export function CoachDrawer() {
                 />
               </div>
 
-              {/* Screenshot */}
               <div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)} />
                 {screenshotFile ? (
@@ -738,7 +850,6 @@ export function CoachDrawer() {
                 )}
               </div>
 
-              {/* Show More */}
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -771,7 +882,6 @@ export function CoachDrawer() {
                 </div>
               )}
 
-              {/* Submit */}
               <div className="sticky bottom-0 pt-3 pb-1 -mx-6 px-6 border-t border-white/[0.06]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <Button onClick={handleSubmit} disabled={!question.trim() || sending} className="w-full gap-2 h-12 text-base font-semibold">
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
