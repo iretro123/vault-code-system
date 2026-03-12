@@ -431,7 +431,7 @@ function PerformanceHUD({
         {hudItems.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="bg-card px-3 py-3 md:px-4 md:py-4 flex flex-col items-center text-center gap-1">
+            <div key={item.label} className="bg-card px-2.5 py-2.5 md:px-4 md:py-4 flex flex-col items-center text-center gap-0.5">
               <Icon className={`h-3.5 w-3.5 ${item.accent} shrink-0`} />
               <span className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/70 leading-none">{item.label}</span>
               <span className={`text-base md:text-lg font-bold tabular-nums leading-none ${item.large ? item.accent : "text-foreground"}`}>
