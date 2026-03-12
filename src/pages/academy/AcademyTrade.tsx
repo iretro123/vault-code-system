@@ -899,23 +899,29 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
 }
 
 /* ── Carousel sub-component ── */
-function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tradeCount, onRescan }: {
+function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tradeCount }: {
   result: AIFocusResult;
   sections: { label: string; icon: any; value: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string }[];
   disciplineStyle: typeof DISCIPLINE_MAP[keyof typeof DISCIPLINE_MAP] | null;
   refreshing: boolean;
   tradeCount: number;
-  onRescan: () => void;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start", containScroll: "trimSnaps" });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
 
   useEffect(() => {
     if (!emblaApi) return;
-    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+      setCanScrollPrev(emblaApi.canScrollPrev());
+      setCanScrollNext(emblaApi.canScrollNext());
+    };
     emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
     onSelect();
-    return () => { emblaApi.off("select", onSelect); };
+    return () => { emblaApi.off("select", onSelect); emblaApi.off("reInit", onSelect); };
   }, [emblaApi]);
 
   return (
