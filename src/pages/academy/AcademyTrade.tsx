@@ -697,7 +697,7 @@ function TodayVaultCheckCard({
 /* ══════════════════════════════════════════════════════════════════
    AI Focus Card (Real AI) — Premium Glassmorphism + Full Pipeline Sync
    ══════════════════════════════════════════════════════════════════ */
-const AI_FOCUS_CACHE = "va_cache_ai_focus_v2";
+const AI_FOCUS_CACHE = "va_cache_ai_focus_v3";
 const AI_FOCUS_CACHE_TS = "va_cache_ai_focus_ts";
 
 interface AIFocusResult {
@@ -751,7 +751,7 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
         const cached = localStorage.getItem(AI_FOCUS_CACHE);
         if (cached) {
           const parsed: AIFocusResult = JSON.parse(cached);
-          if (parsed.date === todayStr && parsed.tradeCount === tradeCount) {
+          if (parsed.date === todayStr && parsed.tradeCount === tradeCount && parsed.primaryLeak && parsed.riskGrade) {
             setResult(parsed);
             return;
           }
