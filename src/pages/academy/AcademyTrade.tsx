@@ -10,7 +10,7 @@ import {
   CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download,
   ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield,
   Sparkles, Flame, Target, Activity, ArrowUpRight, ArrowDownRight, X, Loader2,
-  Clock, ChevronLeft, ChevronRight,
+  Clock, ChevronLeft, ChevronRight, Pencil,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -53,6 +53,9 @@ const AcademyTrade = () => {
   const [balanceSkipped, setBalanceSkipped] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showUpdateBalance, setShowUpdateBalance] = useState(false);
+  const [updateBalanceInput, setUpdateBalanceInput] = useState("");
+  const [updatingBalance, setUpdatingBalance] = useState(false);
   const [resetInput, setResetInput] = useState("");
   const [resetting, setResetting] = useState(false);
   const [showLogTrade, setShowLogTrade] = useState(false);
@@ -114,6 +117,25 @@ const AcademyTrade = () => {
       toast({ title: "Balance reset", description: "Set a new starting balance to continue tracking." });
     } catch { toast({ title: "Error resetting balance", variant: "destructive" }); }
     finally { setResetting(false); }
+  };
+
+  const handleUpdateBalance = async () => {
+    const newBalance = parseFloat(updateBalanceInput);
+    if (isNaN(newBalance) || newBalance < 0 || !user) return;
+    setUpdatingBalance(true);
+    try {
+      const newStarting = newBalance - totalPnl;
+      const { error } = await supabase.from("profiles").update({ account_balance: newStarting }).eq("user_id", user.id);
+      if (error) throw error;
+      setStartingBalance(newStarting);
+      setShowUpdateBalance(false);
+      setUpdateBalanceInput("");
+      toast({ title: "Balance updated", description: `Now tracking from $${newBalance.toLocaleString()}.` });
+    } catch {
+      toast({ title: "Error updating balance", variant: "destructive" });
+    } finally {
+      setUpdatingBalance(false);
+    }
   };
 
   const handleTradeSubmit = async (data: TradeFormData) => {
@@ -261,6 +283,23 @@ const AcademyTrade = () => {
           <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
         )}
 
+        {/* Tracked Balance / Update / Reset */}
+        <TrackedBalanceCard
+          balance={trackedBalance}
+          showResetConfirm={showResetConfirm}
+          resetInput={resetInput}
+          resetting={resetting}
+          onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+          onResetInputChange={setResetInput}
+          onConfirmReset={handleResetBalance}
+          showUpdateBalance={showUpdateBalance}
+          updateBalanceInput={updateBalanceInput}
+          updatingBalance={updatingBalance}
+          onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+          onUpdateInputChange={setUpdateBalanceInput}
+          onConfirmUpdate={handleUpdateBalance}
+        />
+
         {/* Today's VAULT Check */}
         <TodayVaultCheckCard
           activePlan={activePlan}
@@ -292,13 +331,6 @@ const AcademyTrade = () => {
           }
           return result;
         }} />
-
-        {/* Tracked Balance / Reset */}
-        <TrackedBalanceCard
-          balance={trackedBalance} showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-          onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); }}
-          onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-        />
 
         {/* Weekly Review */}
         <WeeklyReviewCard hasData={hasData} />
@@ -1258,9 +1290,12 @@ function RecentTradesSection({ entries, onExportCSV, onDelete }: {
    ══════════════════════════════════════════════════════════════════ */
 function TrackedBalanceCard({
   balance, showResetConfirm, resetInput, resetting, onToggleReset, onResetInputChange, onConfirmReset,
+  showUpdateBalance, updateBalanceInput, updatingBalance, onToggleUpdate, onUpdateInputChange, onConfirmUpdate,
 }: {
   balance: number | null; showResetConfirm: boolean; resetInput: string; resetting: boolean;
   onToggleReset: () => void; onResetInputChange: (v: string) => void; onConfirmReset: () => void;
+  showUpdateBalance: boolean; updateBalanceInput: string; updatingBalance: boolean;
+  onToggleUpdate: () => void; onUpdateInputChange: (v: string) => void; onConfirmUpdate: () => void;
 }) {
   if (balance === null) return null;
 
@@ -1269,14 +1304,47 @@ function TrackedBalanceCard({
       <div className="flex items-center gap-2">
         <Wallet className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground">Balance Management</h3>
+        <span className="ml-auto text-sm font-bold tabular-nums text-foreground">${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+        <button
+          onClick={onToggleUpdate}
+          className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-all duration-100"
+          aria-label="Update balance"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
       </div>
       <p className="text-xs text-muted-foreground">Based on your starting balance + logged trades.</p>
 
-      {!showResetConfirm ? (
+      {/* Update Balance Form */}
+      {showUpdateBalance && (
+        <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+          <p className="text-xs text-foreground font-medium">What's your actual balance right now?</p>
+          <p className="text-[11px] text-muted-foreground">We'll adjust your starting balance so the math stays accurate with your logged trades.</p>
+          <div className="flex gap-2 items-center">
+            <div className="relative max-w-[160px]">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+              <Input
+                className="pl-7 h-8 text-sm font-mono tabular-nums"
+                placeholder="0"
+                type="number"
+                min="0"
+                value={updateBalanceInput}
+                onChange={(e) => onUpdateInputChange(e.target.value)}
+              />
+            </div>
+            <Button size="sm" disabled={!updateBalanceInput || isNaN(parseFloat(updateBalanceInput)) || updatingBalance} onClick={onConfirmUpdate} className="h-8">
+              {updatingBalance ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleUpdate}>Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      {!showResetConfirm && !showUpdateBalance ? (
         <button onClick={onToggleReset} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors">
           <RotateCcw className="h-3 w-3" /> Reset Balance
         </button>
-      ) : (
+      ) : showResetConfirm ? (
         <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2">
           <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">RESET</span> to confirm</p>
           <p className="text-[11px] text-muted-foreground">This will clear your starting balance. You'll need to set a new one.</p>
@@ -1286,7 +1354,7 @@ function TrackedBalanceCard({
             <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleReset}>Cancel</Button>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
