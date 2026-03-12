@@ -10,7 +10,7 @@ import {
   CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download,
   ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield,
   Sparkles, Flame, Target, Activity, ArrowUpRight, ArrowDownRight, X, Loader2,
-  Clock,
+  Clock, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -698,6 +698,7 @@ function TodayVaultCheckCard({
    AI Focus Card (Real AI) — Premium Glassmorphism + Full Pipeline Sync
    ══════════════════════════════════════════════════════════════════ */
 const AI_FOCUS_CACHE = "va_cache_ai_focus";
+const AI_FOCUS_CACHE_TS = "va_cache_ai_focus_ts"; // timestamp of when cached
 
 interface AIFocusResult {
   topMistake: string;
@@ -765,7 +766,10 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
       const data = await resp.json();
       const cached: AIFocusResult = { ...data, date: todayStr, tradeCount };
       setResult(cached);
-      try { localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached)); } catch {}
+      try {
+        localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached));
+        localStorage.setItem(AI_FOCUS_CACHE_TS, String(Date.now()));
+      } catch {}
     } catch (e: any) { setError(e.message || "Something went wrong"); }
     finally { setLoading(false); setRefreshing(false); }
   }, [todayStr, tradeCount]);
@@ -774,6 +778,22 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
   useEffect(() => {
     if (!isLocked) fetchAnalysis();
   }, [isLocked, fetchAnalysis, tradeCount]);
+
+  // Evening auto-rescan: if cached before 6 PM and it's now 6 PM+, auto-refresh
+  useEffect(() => {
+    if (isLocked || !result) return;
+    const now = new Date();
+    if (now.getHours() < 18) return; // not evening yet
+    try {
+      const cachedTs = localStorage.getItem(AI_FOCUS_CACHE_TS);
+      if (!cachedTs) return;
+      const cachedDate = new Date(Number(cachedTs));
+      // Same day but cached before 6 PM → refresh for evening insights
+      if (cachedDate.toDateString() === now.toDateString() && cachedDate.getHours() < 18) {
+        fetchAnalysis(true);
+      }
+    } catch {}
+  }, [isLocked, result, fetchAnalysis]);
 
   /* ── Locked State ── */
   if (isLocked) {
@@ -874,28 +894,33 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
     disciplineStyle={disciplineStyle}
     refreshing={refreshing}
     tradeCount={tradeCount}
-    onRescan={() => fetchAnalysis(true)}
   />;
 }
 
 /* ── Carousel sub-component ── */
-function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tradeCount, onRescan }: {
+function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tradeCount }: {
   result: AIFocusResult;
   sections: { label: string; icon: any; value: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string }[];
   disciplineStyle: typeof DISCIPLINE_MAP[keyof typeof DISCIPLINE_MAP] | null;
   refreshing: boolean;
   tradeCount: number;
-  onRescan: () => void;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start", containScroll: "trimSnaps" });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
 
   useEffect(() => {
     if (!emblaApi) return;
-    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+      setCanScrollPrev(emblaApi.canScrollPrev());
+      setCanScrollNext(emblaApi.canScrollNext());
+    };
     emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
     onSelect();
-    return () => { emblaApi.off("select", onSelect); };
+    return () => { emblaApi.off("select", onSelect); emblaApi.off("reInit", onSelect); };
   }, [emblaApi]);
 
   return (
@@ -980,10 +1005,23 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
           </div>
         </div>
 
-        {/* ── Dot Indicators + Re-scan ── */}
-        <div className="flex items-center justify-between pt-1">
+        {/* ── Dot Indicators with Arrows ── */}
+        <div className="flex items-center justify-center gap-3 pt-1">
+          <button
+            onClick={() => emblaApi?.scrollPrev()}
+            className={cn(
+              "w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150",
+              canScrollPrev
+                ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]"
+                : "opacity-0 pointer-events-none"
+            )}
+            aria-label="Previous insight"
+          >
+            <ChevronLeft className="h-4.5 w-4.5" />
+          </button>
+
           <div className="flex items-center gap-1.5">
-            {[...sections, { dotColor: "bg-primary" }].map((s, i) => (
+            {[...sections, { dotColor: "bg-primary", glowColor: "hsl(var(--primary) / 0.3)" }].map((s, i) => (
               <button
                 key={i}
                 className={cn(
@@ -997,17 +1035,28 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
               />
             ))}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-xs text-primary/70 hover:text-primary px-0 h-auto hover:bg-transparent transition-colors"
-            onClick={onRescan}
-            disabled={refreshing}
+
+          <button
+            onClick={() => emblaApi?.scrollNext()}
+            className={cn(
+              "w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150",
+              canScrollNext
+                ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]"
+                : "opacity-0 pointer-events-none"
+            )}
+            aria-label="Next insight"
           >
-            <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
-            {refreshing ? "Scanning..." : "Re-scan"}
-          </Button>
+            <ChevronRight className="h-4.5 w-4.5" />
+          </button>
         </div>
+
+        {/* Refreshing indicator */}
+        {refreshing && (
+          <div className="flex items-center justify-center gap-1.5 pt-0.5">
+            <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
+            <span className="text-[10px] font-mono text-primary/50">Updating insights...</span>
+          </div>
+        )}
       </div>
     </div>
   );
