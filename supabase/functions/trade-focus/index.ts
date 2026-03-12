@@ -119,7 +119,20 @@ serve(async (req) => {
       }).join("\n");
     }
 
-    const systemPrompt = `You are an elite trading mentor analyzing a student's complete behavioral profile. You have access to their trade log, journal reflections, trade plan execution history, vault/risk state, and focus session attendance. Your job is to give SPECIFIC, data-driven feedback — never generic advice.
+    // ── Build daily checklist / readiness summary ──
+    let checklistSummary = "No daily readiness check-ins available.";
+    if (checklists.length > 0) {
+      const avgSleep = Math.round(checklists.reduce((s: number, c: any) => s + (c.sleep_quality || 0), 0) / checklists.length * 10) / 10;
+      const avgMental = Math.round(checklists.reduce((s: number, c: any) => s + (c.mental_state || 0), 0) / checklists.length * 10) / 10;
+      const avgEmotional = Math.round(checklists.reduce((s: number, c: any) => s + (c.emotional_control || 0), 0) / checklists.length * 10) / 10;
+      const planReviewRate = Math.round(checklists.filter((c: any) => c.plan_reviewed).length / checklists.length * 100);
+      checklistSummary = `Check-ins analyzed: ${checklists.length} | Avg sleep quality: ${avgSleep}/5 | Avg mental state: ${avgMental}/5 | Avg emotional control: ${avgEmotional}/5 | Plan review rate: ${planReviewRate}%\n`;
+      checklistSummary += checklists.slice(0, 5).map((c: any, i: number) => {
+        return `Day ${i + 1}: ${c.date} | Sleep: ${c.sleep_quality}/5 | Mental: ${c.mental_state}/5 | Emotional: ${c.emotional_control}/5 | Plan reviewed: ${c.plan_reviewed ? "Yes" : "No"}`;
+      }).join("\n");
+    }
+
+    const systemPrompt = `You are an elite trading mentor analyzing a student's complete behavioral profile. You have access to their trade log, journal reflections, trade plan execution history, vault/risk state, focus session attendance, and daily readiness check-ins. Your job is to give SPECIFIC, data-driven feedback — never generic advice.
 
 IMPORTANT RULES:
 - Reference their ACTUAL data. Cite specific trades, patterns, tickers, dates.
@@ -128,6 +141,7 @@ IMPORTANT RULES:
 - If their vault is in RED or YELLOW, factor that into sizing advice.
 - If they don't follow rules consistently, be direct about it.
 - If they abandon focus sessions or don't complete them, address session discipline.
+- If their sleep or mental state is consistently low, correlate with trading performance.
 - Keep each field to 1-2 sentences max. Be concise and impactful.
 
 ═══ TRADE LOG (${trades.length} trades) ═══
@@ -144,7 +158,10 @@ ${planSummary}
 ${vaultSummary}
 
 ═══ FOCUS SESSION ATTENDANCE ═══
-${attendanceSummary}`;
+${attendanceSummary}
+
+═══ DAILY READINESS CHECK-INS ═══
+${checklistSummary}`;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
