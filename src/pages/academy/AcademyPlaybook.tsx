@@ -264,9 +264,9 @@ const AcademyPlaybook = () => {
   // ── Desktop: 3-column layout ──
   return (
     <>
-      <div className="h-[calc(100vh-64px)] flex flex-col">
+      <div className="h-[calc(100dvh-56px)] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-border space-y-3">
+        <div className="px-6 py-3 border-b border-border space-y-2">
           <AdminActionBar
             title="Playbook Admin"
             permission="manage_content"
