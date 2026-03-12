@@ -293,15 +293,48 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
               </Select>
             </Field>
 
-            {/* Screenshot placeholder */}
+            {/* Screenshot upload */}
             <Field label="Screenshot (optional)">
-              <button
-                type="button"
-                className="w-full h-20 rounded-lg border border-dashed border-border flex items-center justify-center gap-2 text-xs text-muted-foreground hover:border-primary/40 transition-colors duration-100"
-              >
-                <ImagePlus className="h-4 w-4" />
-                Tap to attach screenshot
-              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/gif"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) {
+                    if (f.size > 15 * 1024 * 1024) {
+                      return; // silently reject >15MB
+                    }
+                    setScreenshotFile(f);
+                  }
+                  e.target.value = "";
+                }}
+              />
+              {screenshotPreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-border">
+                  <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-40 object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setScreenshotFile(null)}
+                    className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="absolute bottom-0 inset-x-0 bg-background/70 backdrop-blur-sm px-2 py-1">
+                    <p className="text-[10px] text-muted-foreground truncate">{screenshotFile?.name}</p>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-20 rounded-lg border border-dashed border-border flex items-center justify-center gap-2 text-xs text-muted-foreground hover:border-primary/40 transition-colors duration-100"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  Tap to attach screenshot
+                </button>
+              )}
             </Field>
 
             {/* Quick Note */}
