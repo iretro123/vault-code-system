@@ -1,25 +1,39 @@
 
 
-# Fix: Make Playbook Reader Taller on Desktop
+## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
 
-## Problem
-The PDF content area is too short on desktop. The space is consumed by:
-1. **Wrong height calc**: `h-[calc(100vh-64px)]` assumes 64px chrome, but the top bar is 56px (`h-14`). Also doesn't account for the fact that the page lives inside `<main class="flex-1 overflow-y-auto">` which already constrains height.
-2. **Thick playbook header**: `py-5` padding + large icon wastes ~76px of vertical space.
-3. **Reader internal chrome**: The chapter header (`px-6 py-4`) and nav footer (`px-6 py-3` + dot indicators) together consume ~120px inside the reader.
+### What was implemented
 
-## Changes
+**Edge Function: `trade-focus/index.ts`**
+- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
+- System prompt includes trade log, journal reflections, plan execution rate, and vault status
+- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
+- AI references actual data from all pipelines — no generic advice
 
-### 1. `src/pages/academy/AcademyPlaybook.tsx`
-- Change desktop container from `h-[calc(100vh-64px)]` to `h-[calc(100dvh-56px)]` to match the actual 56px header.
-- Reduce desktop header padding from `py-5` to `py-3` and shrink icon size to reclaim ~20px.
+**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
+- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
+- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
+- Shimmer gradient on "AI MENTOR" title
+- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
+- Icon glow effects matching accent colors
+- Discipline Score badge (strong/moderate/weak) in header
+- Risk Assessment section
+- Staggered fade-in animations per section
+- "Re-scan" button with spin animation
 
-### 2. `src/components/playbook/PlaybookReader.tsx` (desktop only)
-- Reduce the chapter header padding from `px-6 py-4` to `px-4 py-2.5` on desktop.
-- Reduce the nav footer padding from `px-6 py-3` to `px-4 py-2` on desktop.
-- These changes shave ~30px from internal chrome, giving it back to the PDF.
+## Plan: Sync Delete Trade Across All Systems — COMPLETED
 
-Mobile remains untouched — all reductions are conditional on `!isMobile`.
+### What was implemented
 
-**Net gain**: ~50px more vertical space for the PDF on desktop.
+**DB Trigger: reverse_trade_entry_from_vault_state**
+- Fires AFTER DELETE on `trade_entries` for same-day trades
+- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
+- Recalculates `loss_streak` from remaining trades
+- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
+- Clears `last_block_reason` when reverting to GREEN
+- Reverts linked `approved_plans` from `'logged'` → `'planned'`
 
+**Frontend: AcademyTrade.tsx**
+- After successful delete, calls `refetchPlan()` to refresh active plan state
+- Vault state auto-updates via existing realtime subscription on `vault_state` table
+- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
