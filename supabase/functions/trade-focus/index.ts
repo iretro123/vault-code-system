@@ -38,12 +38,13 @@ serve(async (req) => {
     const admin = createClient(supabaseUrl, supabaseServiceKey);
 
     // ── Fetch all pipeline data in parallel ──
-    const [tradesRes, journalRes, plansRes, vaultRes, sessionsRes] = await Promise.all([
+    const [tradesRes, journalRes, plansRes, vaultRes, sessionsRes, checklistRes] = await Promise.all([
       admin.from("trade_entries").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
       admin.from("journal_entries").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
       admin.from("approved_plans").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
       admin.from("vault_state").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(1),
       admin.from("vault_focus_sessions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+      admin.from("vault_daily_checklist").select("*").eq("user_id", userId).order("date", { ascending: false }).limit(10),
     ]);
 
     const trades = tradesRes.data || [];
@@ -51,6 +52,7 @@ serve(async (req) => {
     const plans = plansRes.data || [];
     const vaultState = vaultRes.data?.[0] || null;
     const focusSessions = sessionsRes.data || [];
+    const checklists = checklistRes.data || [];
 
     if (tradesRes.error) console.error("Trade fetch error:", tradesRes.error);
 
