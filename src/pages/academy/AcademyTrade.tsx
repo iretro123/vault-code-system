@@ -236,28 +236,26 @@ const AcademyTrade = () => {
       <PageHeader
         title="My Trades"
         subtitle="Your trading command center — log, track, and improve."
+        compact
         action={
-          <div className="flex gap-2">
-            <Button size="sm" className="gap-1.5" onClick={handleLogUnplanned}>
-              <Plus className="h-3.5 w-3.5" /> Log Trade
+          <div className="flex gap-1.5">
+            <Button size="sm" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={handleLogUnplanned}>
+              <Plus className="h-3 w-3" /> Log
             </Button>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("/academy/vault")}>
-              <Shield className="h-3.5 w-3.5" /> Check a Trade
+            <Button size="sm" variant="outline" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={() => navigate("/academy/vault")}>
+              <Shield className="h-3 w-3" /> Check
             </Button>
           </div>
         }
       />
-      <div className="px-4 md:px-6 pb-10 space-y-5 max-w-4xl">
+      <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
 
         {/* Balance skip reminder */}
         {balanceSkipped && startingBalance === null && (
-          <div className="vault-glass-card p-4 border-amber-500/20 bg-amber-500/5 flex items-start gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm text-foreground font-medium">Starting balance not set</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Your stats won't track accurately until you set your starting balance.</p>
-            </div>
-            <Button size="sm" variant="outline" className="shrink-0 text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => setShowBalanceModal(true)}>Set Balance Now</Button>
+          <div className="vault-glass-card p-3 md:p-4 border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+            <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set</p>
+            <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
           </div>
         )}
 
@@ -266,74 +264,90 @@ const AcademyTrade = () => {
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
-        {/* ═══ PERFORMANCE HUD ═══ */}
+        {/* ═══ SECTION: PERFORMANCE ═══ */}
         {hasData && (
-          <PerformanceHUD
-            balance={trackedBalance}
-            todayPnl={todayPnl}
-            allTimeWinRate={allTimeWinRate}
-            totalTrades={entries.length}
-            complianceRate={complianceRate}
-            currentStreak={currentStreak}
+          <section className="space-y-2.5">
+            <SectionLabel>Performance</SectionLabel>
+            <PerformanceHUD
+              balance={trackedBalance}
+              todayPnl={todayPnl}
+              allTimeWinRate={allTimeWinRate}
+              totalTrades={entries.length}
+              complianceRate={complianceRate}
+              currentStreak={currentStreak}
+            />
+            {equityCurve.length > 1 && startingBalance !== null && (
+              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+            )}
+          </section>
+        )}
+
+        {/* ═══ SECTION: ACCOUNT ═══ */}
+        {trackedBalance !== null && (
+          <section className="space-y-2.5">
+            <SectionLabel>Account</SectionLabel>
+            <TrackedBalanceCard
+              balance={trackedBalance}
+              showResetConfirm={showResetConfirm}
+              resetInput={resetInput}
+              resetting={resetting}
+              onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+              onResetInputChange={setResetInput}
+              onConfirmReset={handleResetBalance}
+              showUpdateBalance={showUpdateBalance}
+              updateBalanceInput={updateBalanceInput}
+              updatingBalance={updatingBalance}
+              onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+              onUpdateInputChange={setUpdateBalanceInput}
+              onConfirmUpdate={handleUpdateBalance}
+            />
+          </section>
+        )}
+
+        {/* ═══ SECTION: TODAY ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Today</SectionLabel>
+          <TodayVaultCheckCard
+            activePlan={activePlan}
+            todayTradeCount={todayTradeCount}
+            todayStatus={todayStatus}
+            noTradeDay={noTradeDay}
+            onCheckTrade={() => navigate("/academy/vault")}
+            onLogFromPlan={handleLogFromPlan}
+            onLogUnplanned={handleLogUnplanned}
+            onCancelPlan={handleCancelPlan}
+            onNoTradeDay={() => setShowNoTradeDay(true)}
+            onCompleteCheckIn={() => setShowCheckIn(true)}
+            onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
           />
-        )}
+        </section>
 
-        {/* ═══ EQUITY CURVE ═══ */}
-        {hasData && equityCurve.length > 1 && startingBalance !== null && (
-          <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
-        )}
+        {/* ═══ SECTION: INTELLIGENCE ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Intelligence</SectionLabel>
+          <AIFocusCard entries={entries} />
+        </section>
 
-        {/* Tracked Balance / Update / Reset */}
-        <TrackedBalanceCard
-          balance={trackedBalance}
-          showResetConfirm={showResetConfirm}
-          resetInput={resetInput}
-          resetting={resetting}
-          onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-          onResetInputChange={setResetInput}
-          onConfirmReset={handleResetBalance}
-          showUpdateBalance={showUpdateBalance}
-          updateBalanceInput={updateBalanceInput}
-          updatingBalance={updatingBalance}
-          onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-          onUpdateInputChange={setUpdateBalanceInput}
-          onConfirmUpdate={handleUpdateBalance}
-        />
+        {/* ═══ SECTION: JOURNAL ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Journal</SectionLabel>
+          <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
+            const result = await deleteEntry(id);
+            if (!result.error) {
+              refetchPlan();
+            }
+            return result;
+          }} />
+        </section>
 
-        {/* Today's VAULT Check */}
-        <TodayVaultCheckCard
-          activePlan={activePlan}
-          todayTradeCount={todayTradeCount}
-          todayStatus={todayStatus}
-          noTradeDay={noTradeDay}
-          onCheckTrade={() => navigate("/academy/vault")}
-          onLogFromPlan={handleLogFromPlan}
-          onLogUnplanned={handleLogUnplanned}
-          onCancelPlan={handleCancelPlan}
-          onNoTradeDay={() => setShowNoTradeDay(true)}
-          onCompleteCheckIn={() => setShowCheckIn(true)}
-          onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-        />
-
-        {/* AI Mentor */}
-        <AIFocusCard entries={entries} />
-
-        {/* ═══ PERFORMANCE BREAKDOWN ═══ */}
-        {hasData && symbolStats.length > 0 && (
-          <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
-        )}
-
-        {/* ═══ TRADE JOURNAL ═══ */}
-        <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
-          const result = await deleteEntry(id);
-          if (!result.error) {
-            refetchPlan();
-          }
-          return result;
-        }} />
-
-        {/* Weekly Review */}
-        <WeeklyReviewCard hasData={hasData} />
+        {/* ═══ SECTION: REVIEW ═══ */}
+        <section className="space-y-2.5">
+          <SectionLabel>Review</SectionLabel>
+          {hasData && symbolStats.length > 0 && (
+            <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
+          )}
+          <WeeklyReviewCard hasData={hasData} />
+        </section>
 
       </div>
 
