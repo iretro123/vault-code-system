@@ -697,19 +697,18 @@ function TodayVaultCheckCard({
 /* ══════════════════════════════════════════════════════════════════
    AI Focus Card (Real AI) — Premium Glassmorphism + Full Pipeline Sync
    ══════════════════════════════════════════════════════════════════ */
-const AI_FOCUS_CACHE = "va_cache_ai_focus";
-const AI_FOCUS_CACHE_TS = "va_cache_ai_focus_ts"; // timestamp of when cached
+const AI_FOCUS_CACHE = "va_cache_ai_focus_v2";
+const AI_FOCUS_CACHE_TS = "va_cache_ai_focus_ts";
 
 interface AIFocusResult {
-  topMistake: string;
-  focusRule: string;
-  pattern: string;
-  encouragement: string;
-  sizingAdvice?: string;
-  nextSessionTip?: string;
-  disciplineScore?: "strong" | "moderate" | "weak";
-  riskAssessment?: string;
-  attendanceInsight?: string;
+  primaryLeak: string;
+  primaryLeakConfidence: "high" | "medium" | "insufficient";
+  strongestEdge: string;
+  nextAction: string;
+  progressVerdict: string;
+  riskGrade: "A" | "B" | "C" | "D" | "F";
+  dataDepth: number;
+  dataConfidence: "high" | "medium" | "low";
   date: string;
   tradeCount: number;
 }
@@ -722,10 +721,18 @@ const MENTOR_STYLES = `
 @keyframes mentorFadeIn { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
 `;
 
-const DISCIPLINE_MAP = {
-  strong: { label: "STRONG", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25", glow: "shadow-[0_0_12px_-3px_rgba(52,211,153,0.3)]" },
-  moderate: { label: "MODERATE", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,191,36,0.3)]" },
-  weak: { label: "NEEDS WORK", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/25", glow: "shadow-[0_0_12px_-3px_rgba(248,113,113,0.3)]" },
+const RISK_GRADE_MAP: Record<string, { color: string; bg: string; border: string; glow: string }> = {
+  A: { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25", glow: "shadow-[0_0_12px_-3px_rgba(52,211,153,0.3)]" },
+  B: { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/25", glow: "shadow-[0_0_12px_-3px_rgba(96,165,250,0.3)]" },
+  C: { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,191,36,0.3)]" },
+  D: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,146,60,0.3)]" },
+  F: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/25", glow: "shadow-[0_0_12px_-3px_rgba(248,113,113,0.3)]" },
+};
+
+const CONFIDENCE_MAP: Record<string, { label: string; color: string }> = {
+  high: { label: "HIGH CONFIDENCE", color: "text-emerald-400/70" },
+  medium: { label: "EMERGING PATTERN", color: "text-amber-400/70" },
+  insufficient: { label: "NEEDS MORE DATA", color: "text-muted-foreground/50" },
 };
 
 function AIFocusCard({ entries }: { entries: { id: string }[] }) {
@@ -744,7 +751,6 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
         const cached = localStorage.getItem(AI_FOCUS_CACHE);
         if (cached) {
           const parsed: AIFocusResult = JSON.parse(cached);
-          // Bust cache if date changed OR trade count changed
           if (parsed.date === todayStr && parsed.tradeCount === tradeCount) {
             setResult(parsed);
             return;
@@ -774,21 +780,19 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
     finally { setLoading(false); setRefreshing(false); }
   }, [todayStr, tradeCount]);
 
-  // Auto-refresh when trade count changes (log or delete)
   useEffect(() => {
     if (!isLocked) fetchAnalysis();
   }, [isLocked, fetchAnalysis, tradeCount]);
 
-  // Evening auto-rescan: if cached before 6 PM and it's now 6 PM+, auto-refresh
+  // Evening auto-rescan
   useEffect(() => {
     if (isLocked || !result) return;
     const now = new Date();
-    if (now.getHours() < 18) return; // not evening yet
+    if (now.getHours() < 18) return;
     try {
       const cachedTs = localStorage.getItem(AI_FOCUS_CACHE_TS);
       if (!cachedTs) return;
       const cachedDate = new Date(Number(cachedTs));
-      // Same day but cached before 6 PM → refresh for evening insights
       if (cachedDate.toDateString() === now.toDateString() && cachedDate.getHours() < 18) {
         fetchAnalysis(true);
       }
@@ -809,7 +813,7 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
             <Lock className="h-2.5 w-2.5 text-muted-foreground absolute -bottom-0.5 -right-0.5" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">LOCKED</span>
           </div>
         </div>
@@ -822,7 +826,7 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(tradeCount / 3) * 100}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))" }} />
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Log {3 - tradeCount} more trade{3 - tradeCount > 1 ? "s" : ""} to activate real-time AI analysis of your trading patterns, journal, and vault behavior.</p>
+        <p className="text-xs text-muted-foreground">Log {3 - tradeCount} more trade{3 - tradeCount > 1 ? "s" : ""} to activate behavioral leak detection and pattern analysis.</p>
       </div>
     );
   }
@@ -840,15 +844,14 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
             <Brain className="h-4.5 w-4.5 text-primary animate-pulse" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-primary/50 animate-pulse">SCANNING BEHAVIOR...</span>
+            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-primary/50 animate-pulse">COMPUTING ANALYTICS...</span>
           </div>
         </div>
         <div className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-xl" />
           <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <Skeleton className="h-12 w-3/4 rounded-xl" />
+          <Skeleton className="h-14 w-full rounded-xl" />
         </div>
       </div>
     );
@@ -863,12 +866,12 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
             <Brain className="h-4.5 w-4.5 text-destructive" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">AI Mentor Analysis</h3>
+            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
             <span className="text-[10px] text-destructive/70">{error}</span>
           </div>
         </div>
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fetchAnalysis(true)}>
-          <RefreshCw className="h-3.5 w-3.5" /> Retry Analysis
+          <RefreshCw className="h-3.5 w-3.5" /> Retry
         </Button>
       </div>
     );
@@ -876,34 +879,69 @@ function AIFocusCard({ entries }: { entries: { id: string }[] }) {
 
   if (!result) return null;
 
-  const disciplineStyle = result.disciplineScore ? DISCIPLINE_MAP[result.disciplineScore] : null;
+  const gradeStyle = RISK_GRADE_MAP[result.riskGrade] || RISK_GRADE_MAP.C;
+  const confStyle = CONFIDENCE_MAP[result.primaryLeakConfidence] || CONFIDENCE_MAP.medium;
+  const isInsufficient = result.primaryLeakConfidence === "insufficient";
 
-  const sections = [
-    { label: "PATTERN DETECTED", icon: Crosshair, value: result.pattern, accent: "from-blue-500/10 to-blue-500/[0.02]", iconColor: "text-blue-400", labelColor: "text-blue-400/80", glowColor: "rgba(59,130,246,0.3)", dotColor: "bg-blue-400" },
-    { label: "TOP MISTAKE", icon: AlertTriangle, value: result.topMistake, accent: "from-amber-500/10 to-amber-500/[0.02]", iconColor: "text-amber-400", labelColor: "text-amber-400/80", glowColor: "rgba(251,191,36,0.3)", dotColor: "bg-amber-400" },
-    { label: "NEXT TRADE DIRECTIVE", icon: Shield, value: result.focusRule, accent: "from-emerald-500/10 to-emerald-500/[0.02]", iconColor: "text-emerald-400", labelColor: "text-emerald-400/80", glowColor: "rgba(52,211,153,0.3)", dotColor: "bg-emerald-400" },
-    ...(result.sizingAdvice ? [{ label: "SIZING ADVICE", icon: BarChart3, value: result.sizingAdvice, accent: "from-cyan-400/10 to-cyan-400/[0.02]", iconColor: "text-cyan-400", labelColor: "text-cyan-400/80", glowColor: "rgba(34,211,238,0.3)", dotColor: "bg-cyan-400" }] : []),
-    ...(result.nextSessionTip ? [{ label: "NEXT SESSION TIP", icon: Sparkles, value: result.nextSessionTip, accent: "from-violet-400/10 to-violet-400/[0.02]", iconColor: "text-violet-400", labelColor: "text-violet-400/80", glowColor: "rgba(167,139,250,0.3)", dotColor: "bg-violet-400" }] : []),
-    ...(result.riskAssessment ? [{ label: "RISK ASSESSMENT", icon: Activity, value: result.riskAssessment, accent: "from-rose-400/10 to-rose-400/[0.02]", iconColor: "text-rose-400", labelColor: "text-rose-400/80", glowColor: "rgba(251,113,133,0.3)", dotColor: "bg-rose-400" }] : []),
-    ...(result.attendanceInsight ? [{ label: "SESSION DISCIPLINE", icon: Clock, value: result.attendanceInsight, accent: "from-indigo-400/10 to-indigo-400/[0.02]", iconColor: "text-indigo-400", labelColor: "text-indigo-400/80", glowColor: "rgba(129,140,248,0.3)", dotColor: "bg-indigo-400" }] : []),
+  const slides = [
+    {
+      label: "PRIMARY LEAK",
+      icon: AlertTriangle,
+      value: result.primaryLeak,
+      subLabel: confStyle.label,
+      accent: isInsufficient ? "from-muted/20 to-transparent" : "from-red-500/10 to-red-500/[0.02]",
+      iconColor: isInsufficient ? "text-muted-foreground/50" : "text-red-400",
+      labelColor: isInsufficient ? "text-muted-foreground/50" : "text-red-400/80",
+      glowColor: isInsufficient ? "rgba(128,128,128,0.2)" : "rgba(248,113,113,0.3)",
+      dotColor: isInsufficient ? "bg-muted-foreground/30" : "bg-red-400",
+      confidenceColor: confStyle.color,
+    },
+    {
+      label: "STRONGEST EDGE",
+      icon: Crosshair,
+      value: result.strongestEdge,
+      accent: "from-emerald-500/10 to-emerald-500/[0.02]",
+      iconColor: "text-emerald-400",
+      labelColor: "text-emerald-400/80",
+      glowColor: "rgba(52,211,153,0.3)",
+      dotColor: "bg-emerald-400",
+    },
+    {
+      label: "NEXT ACTION",
+      icon: Target,
+      value: result.nextAction,
+      accent: "from-blue-500/10 to-blue-500/[0.02]",
+      iconColor: "text-blue-400",
+      labelColor: "text-blue-400/80",
+      glowColor: "rgba(59,130,246,0.3)",
+      dotColor: "bg-blue-400",
+    },
+    {
+      label: "PROGRESS",
+      icon: Activity,
+      value: result.progressVerdict,
+      accent: "from-violet-500/10 to-violet-500/[0.02]",
+      iconColor: "text-violet-400",
+      labelColor: "text-violet-400/80",
+      glowColor: "rgba(167,139,250,0.3)",
+      dotColor: "bg-violet-400",
+    },
   ];
 
   return <AIFocusCardCarousel
     result={result}
-    sections={sections}
-    disciplineStyle={disciplineStyle}
+    slides={slides}
+    gradeStyle={gradeStyle}
     refreshing={refreshing}
-    tradeCount={tradeCount}
   />;
 }
 
 /* ── Carousel sub-component ── */
-function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tradeCount }: {
+function AIFocusCardCarousel({ result, slides, gradeStyle, refreshing }: {
   result: AIFocusResult;
-  sections: { label: string; icon: any; value: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string }[];
-  disciplineStyle: typeof DISCIPLINE_MAP[keyof typeof DISCIPLINE_MAP] | null;
+  slides: { label: string; icon: any; value: string; subLabel?: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string; confidenceColor?: string }[];
+  gradeStyle: { color: string; bg: string; border: string; glow: string };
   refreshing: boolean;
-  tradeCount: number;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start", containScroll: "trimSnaps" });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -950,58 +988,49 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
             <h3 className="text-sm font-bold text-foreground tracking-tight"
               style={{ background: "linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary) / 0.8), hsl(var(--foreground)))", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mentorShimmer 6s linear infinite" }}
             >
-              AI MENTOR
+              PERFORMANCE INTELLIGENCE
             </h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.5)", animation: "mentorPulse 2s ease-in-out infinite" }} />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-400/70">
-                LIVE · {tradeCount} trades
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                Based on {result.dataDepth || result.tradeCount} trades
               </span>
             </div>
           </div>
-          {disciplineStyle && (
-            <div className={cn("px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider", disciplineStyle.bg, disciplineStyle.border, disciplineStyle.color, disciplineStyle.glow)}>
-              {disciplineStyle.label}
-            </div>
-          )}
+          {/* Risk Grade Badge */}
+          <div className={cn("px-3 py-1.5 rounded-lg border text-lg font-black tracking-tight", gradeStyle.bg, gradeStyle.border, gradeStyle.color, gradeStyle.glow)}>
+            {result.riskGrade}
+          </div>
         </div>
 
         {/* ── Swipeable Carousel ── */}
         <div className="overflow-hidden -mx-1" ref={emblaRef}>
           <div className="flex">
-            {sections.map((s, i) => (
+            {slides.map((s, i) => (
               <div key={s.label} className="flex-[0_0_100%] min-w-0 px-1">
                 <div
                   className={cn("relative rounded-xl border border-white/[0.06] p-4 min-h-[140px] flex flex-col justify-center bg-gradient-to-br", s.accent)}
                   style={{ animation: `mentorFadeIn 0.4s ease-out ${i * 0.05}s both` }}
                 >
-                  {/* Icon with glow */}
+                  {/* Label row */}
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
                       <s.icon className={cn("h-4 w-4", s.iconColor)} style={{ filter: `drop-shadow(0 0 6px ${s.glowColor})` }} />
                     </div>
-                    <span className={cn("text-[10px] font-mono uppercase tracking-[0.14em] font-bold", s.labelColor)}>{s.label}</span>
+                    <div className="flex flex-col">
+                      <span className={cn("text-[10px] font-mono uppercase tracking-[0.14em] font-bold", s.labelColor)}>{s.label}</span>
+                      {s.subLabel && (
+                        <span className={cn("text-[9px] font-mono uppercase tracking-wider", s.confidenceColor || "text-muted-foreground/50")}>{s.subLabel}</span>
+                      )}
+                    </div>
                   </div>
-                  {/* Insight text — large and readable */}
+                  {/* Insight text */}
                   <p className="text-[14px] leading-[1.6] text-foreground/90 font-medium">{s.value}</p>
-                  {/* Accent gradient line */}
+                  {/* Accent line */}
                   <div className="mt-3 h-[2px] rounded-full w-12 opacity-40" style={{ background: `linear-gradient(90deg, ${s.glowColor}, transparent)` }} />
                 </div>
               </div>
             ))}
-            {/* Encouragement as final slide */}
-            <div className="flex-[0_0_100%] min-w-0 px-1">
-              <div className="relative rounded-xl border border-primary/10 p-4 min-h-[140px] flex flex-col justify-center bg-gradient-to-br from-primary/[0.06] to-transparent">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center">
-                    <Zap className="h-4 w-4 text-primary" style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }} />
-                  </div>
-                  <span className="text-[10px] font-mono uppercase tracking-[0.14em] font-bold text-primary/70">COACH NOTE</span>
-                </div>
-                <p className="text-[14px] leading-[1.6] text-foreground/80 italic font-medium">{result.encouragement}</p>
-                <div className="mt-3 h-[2px] rounded-full w-12 opacity-30" style={{ background: "linear-gradient(90deg, hsl(var(--primary) / 0.5), transparent)" }} />
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1021,7 +1050,7 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
           </button>
 
           <div className="flex items-center gap-1.5">
-            {[...sections, { dotColor: "bg-primary", glowColor: "hsl(var(--primary) / 0.3)" }].map((s, i) => (
+            {slides.map((s, i) => (
               <button
                 key={i}
                 className={cn(
@@ -1030,7 +1059,7 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
                     ? cn("w-5 h-2", s.dotColor, "opacity-90")
                     : "w-2 h-2 bg-white/15 hover:bg-white/25"
                 )}
-                style={i === selectedIndex ? { boxShadow: `0 0 8px ${sections[i]?.glowColor || "hsl(var(--primary) / 0.3)"}` } : undefined}
+                style={i === selectedIndex ? { boxShadow: `0 0 8px ${s.glowColor}` } : undefined}
                 onClick={() => emblaApi?.scrollTo(i)}
               />
             ))}
@@ -1054,7 +1083,7 @@ function AIFocusCardCarousel({ result, sections, disciplineStyle, refreshing, tr
         {refreshing && (
           <div className="flex items-center justify-center gap-1.5 pt-0.5">
             <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
-            <span className="text-[10px] font-mono text-primary/50">Updating insights...</span>
+            <span className="text-[10px] font-mono text-primary/50">Recomputing analytics...</span>
           </div>
         )}
       </div>
