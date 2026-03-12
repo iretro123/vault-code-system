@@ -650,7 +650,7 @@ function TodayVaultCheckCard({
   // State A: No active plan, not complete
   if (!activePlan && todayStatus === "incomplete" && !noTradeDay) {
     return (
-      <div className="vault-glass-card p-5 space-y-3">
+      <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
         <div className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
