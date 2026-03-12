@@ -264,6 +264,23 @@ const AcademyTrade = () => {
           <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
         )}
 
+        {/* Tracked Balance / Update / Reset */}
+        <TrackedBalanceCard
+          balance={trackedBalance}
+          showResetConfirm={showResetConfirm}
+          resetInput={resetInput}
+          resetting={resetting}
+          onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+          onResetInputChange={setResetInput}
+          onConfirmReset={handleResetBalance}
+          showUpdateBalance={showUpdateBalance}
+          updateBalanceInput={updateBalanceInput}
+          updatingBalance={updatingBalance}
+          onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+          onUpdateInputChange={setUpdateBalanceInput}
+          onConfirmUpdate={handleUpdateBalance}
+        />
+
         {/* Today's VAULT Check */}
         <TodayVaultCheckCard
           activePlan={activePlan}
@@ -295,13 +312,6 @@ const AcademyTrade = () => {
           }
           return result;
         }} />
-
-        {/* Tracked Balance / Reset */}
-        <TrackedBalanceCard
-          balance={trackedBalance} showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-          onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); }}
-          onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-        />
 
         {/* Weekly Review */}
         <WeeklyReviewCard hasData={hasData} />
