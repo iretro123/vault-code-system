@@ -1,39 +1,47 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Upgrade: Community Right Rail — Live Data + Luxury Design
 
-### What was implemented
+## Problems
+1. **Coach Feed is fake** — hardcoded static strings ("Module 2 lesson 3 is incomplete") that never update from real data
+2. **Your Week card is plain** — flat rows with no visual energy, no progress indication
+3. **No urgency or motivation** — everything looks the same priority, nothing stands out
+4. **No real progress tracking** — metrics exist but feel dead, no visual progress bars or streaks
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+## Plan
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+### 1. Your Week Card — Progress Rings + Streak
+Replace flat text rows with mini circular progress rings for each metric and add a streak counter:
+- **Trades ring**: arc showing trades logged vs. weekly goal (default 5)
+- **Journal ring**: arc for journal entries this week
+- **Playbook ring**: arc for playbook completion %
+- Add **day streak** badge (consecutive days with at least 1 trade or journal logged) — fetched from `journal_entries` and `trade_entries`
+- Luxury styling: subtle gradient border, inner glow on rings
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+### 2. Coach Feed — Real Data from DB
+Replace hardcoded items with the same `detectStuck` + DB query pattern used in `CoachFeedCard` (the one on AcademyTrade page). Pull real signals:
+- **Missing journal** — query `journal_entries` for yesterday, show only if actually missing
+- **Broken rules** — use `detectStuck()` for real loss/rule-break detection
+- **Playbook progress** — use `usePlaybookProgress()` hook (already imported) for real next chapter
+- **Check-in status** — query `vault_daily_checklist` for today
+- **Coach replies** — query `coach_ticket_replies` for unread answers
+- Remove static items entirely; if no real nudges, show "All clear. Stay disciplined."
+- Each item gets a colored left accent bar (red for urgent, amber for nudge, blue for info)
 
-### What was implemented
+### 3. Visual Luxury Upgrade
+- Cards get gradient border effect using `background: linear-gradient(...)` on a wrapper
+- Coach Feed header: animated flame icon with CSS pulse glow
+- Urgent items get a subtle red shimmer left border
+- Progress rings use primary blue with trail glow
+- Add micro-animation: items fade in staggered (animate-fade-in with delay)
 
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
+### 4. Apply Same Changes to TradeFloorRightSidebar
+The `TradeFloorRightSidebar.tsx` has the same static coach feed — update it to use the shared real-data coach feed component, or remove it since `CockpitPanel` already replaces it on desktop.
 
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+## Files Changed
+
+| File | Change |
+|---|---|
+| `src/components/academy/community/CockpitPanel.tsx` | Rewrite YourWeekCard with progress rings + streak; rewrite CoachFeedCard with real DB queries; add luxury styling |
+| `src/components/academy/community/TradeFloorRightSidebar.tsx` | Update CoachFeedCard to use same real-data pattern |
+
