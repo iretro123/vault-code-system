@@ -8,7 +8,7 @@ import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
 import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
 import { MyTradesCard } from "@/components/academy/dashboard/MyTradesCard";
-import { PlaybookCard } from "@/components/academy/dashboard/PlaybookCard";
+
 import { CoachCard } from "@/components/academy/dashboard/CoachCard";
 import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
 import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
@@ -120,7 +120,7 @@ const AcademyHome = () => {
     <>
       <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl animate-fade-in">
         <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
-        <PlaybookCard />
+        
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
           <div className="lg:col-span-3">
