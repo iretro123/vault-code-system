@@ -1,39 +1,66 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Upgrade AI Coach to Knowledge-Aware Luxury System
 
-### What was implemented
+## What Changes
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+### 1. Edge Function: `coach-chat/index.ts` — Knowledge-Aware Context Injection
+Before calling the AI, fetch the user's education context from **safe, RLS-protected tables only**:
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+- **`academy_lessons`** — `lesson_title`, `module_title`, `module_slug`, `video_url`, `notes` (visible only). This gives the AI the full curriculum catalog so it can recommend specific lessons and videos.
+- **`trade_entries`** — user's last 10 trades for personalized coaching
+- **`trading_rules`** — user's own rules for discipline feedback
+- **`playbook_chapters`** — chapter titles for playbook references
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+All fetched using a **service-role client** scoped to the authenticated user's ID — no admin tables, no billing, no secrets.
 
-### What was implemented
+**Security guardrails added to system prompt:**
+- Hard block on discussing admin panels, billing, other users, system internals
+- If asked about non-trading topics, redirect to trading education
+- Never expose video URLs directly — only reference lesson titles naturally
 
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
+**Video recommendation logic in prompt:**
+- When the AI identifies a topic the user is struggling with or asking about, it matches to relevant `academy_lessons` and suggests them with title + module context
+- Uses a specific trigger format: `📺 **Recommended Lesson:** "Lesson Title" in Module Name` — the frontend detects this and renders it as a clickable card that navigates to the lesson
 
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+**Model upgrade:** Keep `google/gemini-3-flash-preview` (already fast and capable)
+
+### 2. Frontend: `CoachDrawer.tsx` — Luxury UI + Video Cards
+
+**Luxury visual upgrades:**
+- Header: Animated gradient border glow + "Vault AI" branding with pulsing brain icon
+- Empty state: Premium greeting using `display_name`, animated sparkle icon
+- AI message bubbles: Subtle glassmorphism with `bg-gradient-to-br from-white/[0.06] to-white/[0.02]` + soft border glow
+- Typing indicator: 3-dot bounce animation instead of "Thinking..."
+- Send button: Gradient background with hover glow effect
+- Starter chips: Context-aware (dynamic based on whether user has trades/rules)
+
+**Video recommendation cards:**
+- Parse AI responses for the `📺 **Recommended Lesson:**` pattern
+- Render as premium cards with play icon, lesson title, module name, and a "Watch Now" button
+- On click, navigate to `/academy/learn/{module_slug}` with the lesson pre-selected
+- Cards have glassmorphism styling with a subtle blue accent border
+
+**Dynamic starter chips:**
+- If user has trades → "How did my last trade go?", "Am I following my rules?"
+- If user has no trades → Keep current beginner chips
+- Always include: "What should I study next?"
+
+### 3. CSS Animations: `index.css`
+- `@keyframes vault-ai-pulse` — subtle brain icon pulse
+- `@keyframes vault-ai-glow` — rotating border gradient for the header
+- `@keyframes dot-bounce` — 3-dot typing indicator
+
+### Security — What is explicitly excluded
+- `user_roles`, `academy_user_roles`, `academy_role_permissions` — RBAC internals
+- `stripe_webhook_events`, `allowed_signups` — billing/admin
+- `audit_logs`, `system_settings`, `feature_flags` — internal config
+- `broadcast_messages` — admin broadcasts
+- Any edge function secrets, API keys, or infrastructure details
+- Other users' data — only the authenticated user's own records
+
+### Files Changed
+- `supabase/functions/coach-chat/index.ts` — Context fetching + upgraded prompt + security guardrails
+- `src/components/academy/CoachDrawer.tsx` — Luxury UI, video cards, dynamic chips, animations
+- `src/index.css` — New animation keyframes
+
