@@ -52,7 +52,7 @@ function ProgressRing({ value, max, size = 40, stroke = 3.5, color = "hsl(var(--
 /* ── Luxury Card Wrapper ── */
 function LuxuryCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("relative rounded-xl p-[1px] overflow-hidden", className)}>
+    <div className={cn("relative rounded-xl p-[1px]", className)}>
       <div
         className="absolute inset-0 rounded-xl opacity-40"
         style={{
