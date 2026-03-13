@@ -663,8 +663,8 @@ const AcademyTrade = () => {
               )}
             </div>
 
-            {/* ── RIGHT CONTROL RAIL (desktop only inline, mobile below) ── */}
-            <div className="flex-[0.9] min-w-0 p-4 md:p-5 border-t md:border-t-0 border-border/10 bg-muted/[0.02]">
+            {/* ── RIGHT CONTROL RAIL ── */}
+            <div className="flex-[0.75] min-w-0 p-3 md:p-4 border-t md:border-t-0 border-border/10">
               <OSControlRail
                 activePlan={activePlan}
                 vaultState={vaultState}
