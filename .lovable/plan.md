@@ -1,23 +1,19 @@
 
 
-## Plan: Trading OS — Priority Fix Implementation (All 3 Phases) — COMPLETED
+# Fix: Add "Log Trade" Button to Review Stage
 
-### Phase A: Functional Trust ✅
-- **QuickCheckInSheet**: Now inserts into `journal_entries` on submit with `userId` prop, loading state, double-submit prevention
-- **NoTradeDaySheet**: Now inserts into `journal_entries` on submit with `userId` prop, reason mapped to `biggest_mistake`
-- **AcademyTrade**: Passes `userId={user?.id}` to both sheets; mount query includes `todayTradeCount` dependency for correct `in_progress` detection
+## Problem
+The Review stage currently shows "Log a Trade" only when zero trades exist. Once at least one trade is logged, the only CTA is "Complete Check-In." A trader who took 3 trades but only logged 1 has no way to log the remaining trades from the Review stage — on any device.
 
-### Phase B: True Workflow ✅
-- **Today's Budget card**: Added to Plan stage top — shows Daily Risk, Per Trade Max, Trades Allowed from vault_state
-- **Execution moment**: Live stage has "Mark Executing" → "Close & Log" flow with duration timer and Planned/Executing badge
-- **Session enforcement**: SessionSetupCard exports `onPhaseChange` callback; cutoff/closed phases show amber/red warning banners
-- **Cutoff override**: Logging after cutoff shows "Override: Log After Cutoff" button; notes marked with `⚠️ Logged after cutoff`
-- **Stage guidance**: Each stage has italic guidance line ("Set your budget, build a plan..." etc.)
-- **CTA consolidation**: Review stage has single primary "Complete Check-In" CTA; removed duplicate "Log a Trade" from review
-- **TodaysLimitsSection**: Updated to `border-white/[0.06] bg-white/[0.02]` luxury styling
+## Fix
+Add a secondary "Log Another Trade" button in the Review stage that appears whenever `todayStatus !== "complete"` (i.e., the session isn't finalized). It sits below the session summary and above the "Complete Check-In" button.
 
-### Phase C: Usability & Mobile ✅
-- **Right rail hidden on mobile**: `hidden md:block` on right session rail
-- **Welcome Hero Log button**: Hidden on mobile (`hidden md:flex`)
-- **OSTabHeader**: Icon-only on mobile (no label text), increased touch target
-- **VaultTradePlanner**: Decision framing copy added below coaching note — FITS/TIGHT/PASS explained in plain English
+## File Changed
+**`src/pages/academy/AcademyTrade.tsx`** — inside the Review stage `entries.length > 0` branch (around line 782), add a secondary outline button:
+
+```
++ Log Another Trade (Plus icon, outline variant, full width)
+```
+
+Placed after the session summary stats row and before the "Complete Check-In" button. Uses `handleLogUnplanned` (already defined). Visible on all screen sizes including mobile.
+
