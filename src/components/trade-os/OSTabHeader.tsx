@@ -17,7 +17,7 @@ interface OSTabHeaderProps {
 
 export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderProps) {
   return (
-    <div className="flex items-center gap-0.5 md:gap-1 px-4 md:px-7 pt-3 md:pt-4 pb-0 border-b border-border/15">
+    <div className="flex items-center gap-1 md:gap-1.5 px-5 md:px-8 pt-4 md:pt-5 pb-0 border-b border-border/20">
       {TABS.map((tab) => {
         const status = stageStatus(tab.key);
         const isActive = activeStage === tab.key;
@@ -27,24 +27,24 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
             key={tab.key}
             onClick={() => onSelect(tab.key)}
             className={cn(
-              "relative flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-medium transition-colors duration-100",
+              "relative flex items-center gap-2 md:gap-2.5 px-4 md:px-5 py-3 md:py-3.5 text-sm md:text-sm font-medium transition-colors duration-100 rounded-t-lg",
               isActive
-                ? "text-foreground"
+                ? "text-foreground bg-muted/10"
                 : status === "completed"
-                  ? "text-emerald-400/70 hover:text-emerald-400"
-                  : "text-muted-foreground/50 hover:text-muted-foreground/80"
+                  ? "text-emerald-400/70 hover:text-emerald-400 hover:bg-muted/5"
+                  : "text-muted-foreground/50 hover:text-muted-foreground/80 hover:bg-muted/5"
             )}
           >
             {status === "completed" && !isActive ? (
               <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
             ) : (
-              <Icon className={cn("h-3.5 w-3.5 md:h-4 md:w-4 shrink-0", isActive && "text-primary")} />
+              <Icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
             )}
             <span className="sm:hidden">{tab.mobileLabel}</span>
             <span className="hidden sm:inline">{tab.label}</span>
-            {/* Active underline */}
+            {/* Active pill indicator */}
             {isActive && (
-              <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-primary" />
+              <span className="absolute bottom-0 left-2 right-2 h-[2.5px] rounded-full bg-primary" />
             )}
           </button>
         );

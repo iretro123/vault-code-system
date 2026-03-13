@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,8 @@ const AcademyTrade = () => {
   } = useTradeLog();
   const { activePlan, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
 
+  const plannerRef = useRef<HTMLDivElement>(null);
+
   const [startingBalance, setStartingBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceSkipped, setBalanceSkipped] = useState(false);
@@ -90,6 +92,13 @@ const AcademyTrade = () => {
 
   const hasData = entries.length > 0;
 
+  // ── FIX D: Initialize todayStatus from existing data ──
+  useEffect(() => {
+    if (todayTradeCount > 0 && todayStatus === "incomplete") {
+      setTodayStatus("in_progress");
+    }
+  }, [todayTradeCount]);
+
   // Session stage hook
   const { activeStage, setStage, stageStatus } = useSessionStage({
     hasActivePlan: !!activePlan,
@@ -98,7 +107,7 @@ const AcademyTrade = () => {
     sessionActive: !vaultState.session_paused,
   });
 
-  // Read cached AI result for compact preview strip (must be before early returns)
+  // Read cached AI result for compact preview strip
   const cachedAI = useMemo(() => {
     try {
       const raw = localStorage.getItem("va_cache_ai_focus_v3");
@@ -108,6 +117,17 @@ const AcademyTrade = () => {
   }, [entries.length]);
 
   const totalMaxTrades = vaultState.trades_remaining_today + todayTradeCount;
+
+  // Today's compliance for Live tab
+  const todayEntries = useMemo(() => entries.filter(e => e.trade_date === todayStr), [entries, todayStr]);
+  const todayCompliance = useMemo(() => {
+    if (todayEntries.length === 0) return 100;
+    const compliant = todayEntries.filter(e => e.followed_rules).length;
+    return Math.round((compliant / todayEntries.length) * 100);
+  }, [todayEntries]);
+
+  // Recent 5 for Review tab
+  const recentFive = useMemo(() => entries.slice(0, 5), [entries]);
 
   /* ── Handlers (identical to classic) ── */
   const handleStartingBalanceSave = async (balance: number) => {
@@ -228,8 +248,19 @@ const AcademyTrade = () => {
     toast({ title: "Plan cancelled" });
   };
 
+  // FIX B: scroll to embedded planner instead of navigating away
+  const handleScrollToPlanner = () => {
+    plannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
   const handleNoTradeDayComplete = () => { setShowNoTradeDay(false); setNoTradeDay(true); setTodayStatus("complete"); toast({ title: "No-trade day logged" }); };
+
+  const handleDeleteEntry = async (id: string) => {
+    const result = await deleteEntry(id);
+    if (!result.error) refetchPlan();
+    return result;
+  };
 
   if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="My Trades" />;
 
@@ -237,7 +268,7 @@ const AcademyTrade = () => {
     return (
       <>
         <PageHeader title="My Trades" subtitle="Loading your trade data..." />
-        <div className="px-4 md:px-6 pb-10 max-w-4xl">
+        <div className="px-4 md:px-6 pb-10 max-w-5xl">
           <div className="vault-glass-card p-8 text-center">
             <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
           </div>
@@ -317,11 +348,7 @@ const AcademyTrade = () => {
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Journal</SectionLabel>
-            <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
-              const result = await deleteEntry(id);
-              if (!result.error) refetchPlan();
-              return result;
-            }} />
+            <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} />
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Review</SectionLabel>
@@ -361,69 +388,68 @@ const AcademyTrade = () => {
     ? "bg-amber-400" : vaultState.vault_status === "RED"
     ? "bg-red-400" : "bg-muted-foreground/40";
 
-
-
+  // Whether to show metrics strip: balance set OR trades exist (FIX E)
+  const showMetrics = startingBalance !== null || hasData;
 
   return (
     <>
       {/* ══════ LAYER 1 — TOP STATUS ══════ */}
-      <div className="px-4 md:px-6 pt-5 md:pt-7 pb-1 max-w-4xl">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-tight">
+      <div className="px-4 md:px-8 pt-6 md:pt-8 pb-2 max-w-5xl">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-tight">
           {greeting}{displayName ? `, ${displayName}` : ""}
         </h1>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1.5">
           {todayStatus === "complete" ? (
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
           ) : (
             <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
           )}
-          <span className="text-[13px] text-muted-foreground">{statusLine}</span>
+          <span className="text-sm text-muted-foreground">{statusLine}</span>
         </div>
       </div>
 
-      <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
+      <div className="px-4 md:px-8 pb-10 space-y-5 md:space-y-6 max-w-5xl">
 
-        {/* ── METRICS STRIP ── */}
-        {hasData && (
-          <div className="flex items-stretch rounded-2xl border border-border/25 bg-card overflow-hidden">
-            <div className="flex-1 min-w-0 px-4 md:px-5 py-3 md:py-4 border-r border-border/15">
-              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Balance</p>
-              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-primary truncate">
-                {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}
+        {/* ── METRICS STRIP (FIX E: show when balance set OR trades exist) ── */}
+        {showMetrics && (
+          <div className="flex items-stretch rounded-2xl border border-border/30 bg-card overflow-hidden shadow-sm">
+            <div className="flex-1 min-w-0 px-4 md:px-6 py-4 md:py-5 border-r border-border/20">
+              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Balance</p>
+              <p className="text-xl md:text-2xl font-bold tabular-nums leading-none text-primary truncate">
+                {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </p>
             </div>
-            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
-              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Today P/L</p>
-              <p className={cn("text-sm md:text-base font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+ $${todayPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : `- $${Math.abs(todayPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+            <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
+              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Today P/L</p>
+              <p className={cn("text-base md:text-lg font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `-$${Math.abs(todayPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
               </p>
             </div>
-            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
-              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Trades</p>
-              <p className="text-sm md:text-base font-bold tabular-nums leading-none text-foreground flex items-center gap-1">
-                {todayTradeCount} / {totalMaxTrades}
-                {todayTradeCount > 0 && <Plus className="h-3 w-3 text-muted-foreground/40" />}
+            <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
+              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Trades</p>
+              <p className="text-base md:text-lg font-bold tabular-nums leading-none text-foreground">
+                {todayTradeCount}<span className="text-muted-foreground/40 font-normal"> / {totalMaxTrades}</span>
               </p>
             </div>
-            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
-              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Risk Left</p>
-              <p className={cn("text-sm md:text-base font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+            <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
+              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Risk Left</p>
+              <p className={cn("text-base md:text-lg font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
                 ${vaultState.risk_remaining_today.toFixed(0)}
               </p>
             </div>
             {!isMobile && (
-              <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
-                <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Streak</p>
-                <p className="text-sm md:text-base font-bold tabular-nums leading-none text-foreground">{currentStreak} Days</p>
+              <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
+                <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Streak</p>
+                <p className="text-base md:text-lg font-bold tabular-nums leading-none text-foreground">{currentStreak}</p>
               </div>
             )}
-            <div className="flex items-center px-3 md:px-5 shrink-0">
+            <div className="flex items-center px-4 md:px-6 shrink-0">
               <Button
                 size="sm"
-                className="gap-1.5 h-9 md:h-10 px-4 md:px-5 text-xs font-semibold rounded-full whitespace-nowrap"
+                className="gap-1.5 h-10 md:h-11 px-5 md:px-6 text-sm font-semibold rounded-full whitespace-nowrap"
                 onClick={handleLogUnplanned}
               >
-                <Plus className="h-3.5 w-3.5" /> Log Trade
+                <Plus className="h-4 w-4" /> Log Trade
               </Button>
             </div>
           </div>
@@ -439,28 +465,28 @@ const AcademyTrade = () => {
         )}
 
         {/* ── Getting Started ── */}
-        {!hasData && (
+        {!hasData && !showMetrics && (
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
         {/* ══════ LAYER 2 — HERO OS CARD ══════ */}
-        <div className="rounded-2xl border border-border/20 bg-card overflow-hidden shadow-sm">
+        <div className="rounded-2xl border border-border/30 bg-card overflow-hidden shadow-md">
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          <div className="p-4 md:p-7 min-h-[280px] md:min-h-[320px]">
-            {/* ── PLAN ── */}
+          <div className="p-5 md:p-8 min-h-[360px] md:min-h-[400px]">
+            {/* ── PLAN (FIX B: scroll to planner, not navigate away) ── */}
             {activeStage === "plan" && (
               <div className="space-y-5">
                 <TodayVaultCheckCard
                   activePlan={activePlan} todayTradeCount={todayTradeCount} todayStatus={todayStatus} noTradeDay={noTradeDay}
-                  onCheckTrade={() => navigate("/academy/vault")} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
+                  onCheckTrade={handleScrollToPlanner} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
                   onCancelPlan={handleCancelPlan} onNoTradeDay={() => setShowNoTradeDay(true)}
                   onCompleteCheckIn={() => setShowCheckIn(true)}
                   onReviewFeedback={() => setStage("insights")}
                 />
                 {/* Embedded VAULT Approval */}
                 {!activePlan && todayStatus !== "complete" && (
-                  <div className="pt-1">
+                  <div ref={plannerRef} className="pt-1">
                     <div className="flex items-center gap-2 mb-3">
                       <Shield className="h-3.5 w-3.5 text-primary" />
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pre-Trade Check</p>
@@ -471,28 +497,49 @@ const AcademyTrade = () => {
               </div>
             )}
 
-            {/* ── LIVE ── */}
+            {/* ── LIVE (FIX C: add today's trade summary) ── */}
             {activeStage === "live" && (
               <div className="space-y-5">
+                {/* Today's session summary */}
+                {todayTradeCount > 0 && (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-xl bg-muted/10 border border-border/20">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1">Trades Today</p>
+                      <p className="text-lg font-bold tabular-nums text-foreground">{todayTradeCount}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/10 border border-border/20">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1">Today P/L</p>
+                      <p className={cn("text-lg font-bold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                        {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/10 border border-border/20">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1">Compliance</p>
+                      <p className={cn("text-lg font-bold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
+                    </div>
+                  </div>
+                )}
+
                 <TodaysLimitsSection />
+
                 {activePlan && activePlan.status === "planned" && (
-                  <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                         <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
                         <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · Entry ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
                       </div>
-                      <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full shrink-0" onClick={() => handleLogFromPlan(activePlan)}>
-                        <CheckCircle2 className="h-3 w-3" /> Log Result
+                      <Button size="sm" className="h-9 text-xs gap-1.5 rounded-full shrink-0 px-4" onClick={() => handleLogFromPlan(activePlan)}>
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Log Result
                       </Button>
                     </div>
                   </div>
                 )}
-                {!activePlan && (
-                  <div className="text-center py-12 space-y-3">
-                    <Shield className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-                    <p className="text-sm text-muted-foreground">No active plan. Check a trade before entering.</p>
+                {!activePlan && todayTradeCount === 0 && (
+                  <div className="text-center py-10 space-y-3">
+                    <Shield className="h-8 w-8 text-muted-foreground/20 mx-auto" />
+                    <p className="text-sm text-muted-foreground/70">No active plan. Check a trade before entering.</p>
                     <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-5" onClick={() => setStage("plan")}>
                       Go to Plan
                     </Button>
@@ -501,61 +548,92 @@ const AcademyTrade = () => {
               </div>
             )}
 
-            {/* ── REVIEW ── */}
+            {/* ── REVIEW (FIX A: show recent trades when they exist) ── */}
             {activeStage === "review" && (
               <div className="space-y-5">
-                {todayStatus === "incomplete" && todayTradeCount === 0 && (
-                  <div className="text-center py-12 space-y-3">
-                    <ClipboardCheck className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-                    <p className="text-sm text-muted-foreground">No trades to review yet. Log your first trade to start.</p>
+                {/* Truly empty: no trades ever */}
+                {entries.length === 0 && (
+                  <div className="text-center py-14 space-y-3">
+                    <ClipboardCheck className="h-8 w-8 text-muted-foreground/20 mx-auto" />
+                    <p className="text-sm text-muted-foreground/70">No trades logged yet. Log your first trade to begin your review.</p>
                     <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
                       <Plus className="h-3.5 w-3.5" /> Log a Trade
                     </Button>
                   </div>
                 )}
-                {(todayStatus === "in_progress" || (todayStatus === "incomplete" && todayTradeCount > 0)) && (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-foreground mb-1">Post-Trade Ritual</h3>
-                      <p className="text-xs text-muted-foreground">{todayTradeCount} trade{todayTradeCount > 1 ? "s" : ""} logged today. Complete your review to close this session.</p>
-                    </div>
+
+                {/* Has trades: show review context + actions */}
+                {entries.length > 0 && (
+                  <>
+                    {/* Action cards: always visible */}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <button
                         onClick={handleLogUnplanned}
                         className="flex items-center gap-3 p-4 rounded-xl border border-border/30 bg-muted/5 hover:bg-muted/15 transition-colors text-left"
                       >
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                           <Plus className="h-4 w-4 text-primary" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-foreground">Log Another Trade</p>
-                          <p className="text-[11px] text-muted-foreground">Add missed or additional entries</p>
+                          <p className="text-sm font-semibold text-foreground">Log a Trade</p>
+                          <p className="text-[11px] text-muted-foreground">Record result, screenshots, and notes</p>
                         </div>
                       </button>
                       <button
                         onClick={() => setShowCheckIn(true)}
                         className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08] transition-colors text-left"
                       >
-                        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
                           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground">Complete Check-In</p>
-                          <p className="text-[11px] text-muted-foreground">Record mistakes, lessons, and close out</p>
+                          <p className="text-[11px] text-muted-foreground">Record mistakes, lessons, close session</p>
                         </div>
                       </button>
                     </div>
-                  </div>
-                )}
-                {todayStatus === "complete" && (
-                  <div className="text-center py-12 space-y-2">
-                    <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
-                    <p className="text-sm font-bold text-foreground">Session Complete</p>
-                    <p className="text-xs text-muted-foreground">Today's review is done. Check your Insights for AI feedback.</p>
-                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full mt-2" onClick={() => setStage("insights")}>
-                      View Insights
-                    </Button>
-                  </div>
+
+                    {/* Recent trades inline */}
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/50 mb-3">
+                        {todayTradeCount > 0 ? `Today's Trades (${todayTradeCount})` : "Recent Trades"}
+                      </p>
+                      <div className="space-y-1.5">
+                        {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
+                          const pnl = e.risk_reward * e.risk_used;
+                          const isWin = e.risk_reward > 0;
+                          const isLoss = e.risk_reward < 0;
+                          return (
+                            <div key={e.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted/5 border border-border/15">
+                              <span className={cn(
+                                "w-2 h-2 rounded-full shrink-0",
+                                isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/30"
+                              )} />
+                              <span className="text-sm font-semibold text-foreground min-w-[50px]">{e.symbol || "—"}</span>
+                              <span className="text-xs text-muted-foreground flex-1 truncate">
+                                {e.outcome || "—"} {e.followed_rules ? "· Rules ✓" : "· Rules ✗"}
+                              </span>
+                              <span className={cn(
+                                "text-sm font-bold tabular-nums",
+                                isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground"
+                              )}>
+                                {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Status nudge */}
+                    {todayStatus === "complete" && (
+                      <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                        <p className="text-xs text-emerald-400/80 font-medium">Session complete. Check Insights for AI feedback.</p>
+                        <Button size="sm" variant="ghost" className="ml-auto h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -572,7 +650,7 @@ const AcademyTrade = () => {
           {cachedAI && activeStage !== "insights" && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-border/15 px-4 md:px-7 py-3 flex items-center gap-3 hover:bg-muted/5 transition-colors"
+              className="w-full border-t border-border/20 px-5 md:px-8 py-3.5 flex items-center gap-3 hover:bg-muted/5 transition-colors"
             >
               <Brain className="h-4 w-4 text-primary shrink-0" />
               <p className="text-xs text-muted-foreground truncate flex-1 text-left">
@@ -596,18 +674,14 @@ const AcademyTrade = () => {
         </div>
 
         {/* ══════ LAYER 3 — LOWER ANALYTICS ══════ */}
-        <div className="space-y-3 pt-2">
+        <div className="space-y-4 pt-2">
           <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 px-1">Analytics & History</p>
 
           {hasData && equityCurve.length > 1 && startingBalance !== null && (
             <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
           )}
 
-          <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
-            const result = await deleteEntry(id);
-            if (!result.error) refetchPlan();
-            return result;
-          }} />
+          <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} />
 
           {hasData && symbolStats.length > 0 && (
             <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
