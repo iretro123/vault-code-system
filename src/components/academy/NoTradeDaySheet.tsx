@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const REASONS = [
   "No A+ setup",
@@ -24,16 +26,35 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: () => void;
+  userId?: string;
 }
 
-export function NoTradeDaySheet({ open, onOpenChange, onComplete }: Props) {
+export function NoTradeDaySheet({ open, onOpenChange, onComplete, userId }: Props) {
   const [reason, setReason] = useState<string>("");
   const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = () => {
-    setReason("");
-    setNote("");
-    onComplete();
+  const handleSubmit = async () => {
+    if (!userId) { onComplete(); return; }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("journal_entries").insert({
+        user_id: userId,
+        entry_date: format(new Date(), "yyyy-MM-dd"),
+        what_happened: "No-trade day",
+        biggest_mistake: reason,
+        lesson: note || "No trades taken — discipline day",
+        followed_rules: true,
+      });
+      if (error) throw error;
+      setReason("");
+      setNote("");
+      onComplete();
+    } catch (err) {
+      console.error("Failed to save no-trade day:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -84,8 +105,8 @@ export function NoTradeDaySheet({ open, onOpenChange, onComplete }: Props) {
             />
           </div>
 
-          <Button className="w-full" onClick={handleSubmit} disabled={!reason}>
-            Mark No-Trade Day
+          <Button className="w-full" onClick={handleSubmit} disabled={!reason || saving}>
+            {saving ? "Saving..." : "Mark No-Trade Day"}
           </Button>
         </div>
       </SheetContent>
