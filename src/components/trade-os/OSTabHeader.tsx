@@ -17,8 +17,8 @@ interface OSTabHeaderProps {
 
 export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderProps) {
   return (
-    <div className="px-3 md:px-4 pt-3 pb-1">
-      <div className="flex items-center gap-0.5 rounded-lg bg-muted/5 p-0.5">
+    <div className="px-3 md:px-5 pt-3 pb-1">
+      <div className="flex items-center gap-0.5 rounded-xl bg-black/25 p-1 border border-white/[0.04]">
         {TABS.map((tab) => {
           const status = stageStatus(tab.key);
           const isActive = activeStage === tab.key;
@@ -28,18 +28,18 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               key={tab.key}
               onClick={() => onSelect(tab.key)}
               className={cn(
-                "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] transition-all duration-100 rounded-md",
+                "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.04em] transition-all duration-100 rounded-lg",
                 isActive
-                  ? "bg-card text-foreground shadow-sm"
+                  ? "bg-white/[0.08] text-foreground shadow-sm"
                   : status === "completed"
-                    ? "text-emerald-400/60 hover:text-emerald-400/80 hover:bg-card/30"
-                    : "text-muted-foreground/35 hover:text-muted-foreground/55 hover:bg-card/30"
+                    ? "text-emerald-400/70 hover:text-emerald-400/90 hover:bg-white/[0.03]"
+                    : "text-muted-foreground/40 hover:text-muted-foreground/60 hover:bg-white/[0.03]"
               )}
             >
               {status === "completed" && !isActive ? (
                 <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 shrink-0" />
               ) : isActive ? (
-                <Icon className="h-3 w-3 shrink-0 text-primary" />
+                <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
               ) : null}
               {tab.label}
             </button>
