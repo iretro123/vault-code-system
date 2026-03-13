@@ -422,48 +422,48 @@ const AcademyTrade = () => {
         </div>
       </div>
 
-      <div className="px-4 md:px-8 pb-10 space-y-4 md:space-y-5 max-w-6xl">
+      <div className="px-4 md:px-8 pb-10 space-y-3 md:space-y-4 max-w-6xl">
 
-        {/* ══════ LAYER 1.5 — METRICS STRIP ══════ */}
+        {/* ══════ LAYER 1.5 — METRICS STATUS BAR ══════ */}
         {showMetrics && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-px rounded-2xl border border-border/20 bg-border/10 overflow-hidden shadow-sm">
+          <div className="flex items-center rounded-xl border border-border/10 bg-card divide-x divide-border/10 overflow-hidden">
             {/* Balance */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Balance</p>
-              <p className="text-lg md:text-xl font-bold tabular-nums text-primary leading-none truncate">
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Balance</p>
+              <p className="text-base font-semibold tabular-nums text-primary leading-none truncate">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </p>
             </div>
             {/* Today P/L */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Today P/L</p>
-              <p className={cn("text-lg md:text-xl font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `-$${Math.abs(todayPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Today P/L</p>
+              <p className={cn("text-base font-semibold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
               </p>
             </div>
             {/* Trades */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Trades</p>
-              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-foreground">
-                {todayTradeCount}<span className="text-muted-foreground/30 font-normal text-sm"> / {totalMaxTrades}</span>
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Trades</p>
+              <p className="text-base font-semibold tabular-nums leading-none text-foreground">
+                {todayTradeCount}<span className="text-muted-foreground/30 font-normal text-xs"> / {totalMaxTrades}</span>
               </p>
             </div>
             {/* Risk Left */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Risk Left</p>
-              <p className={cn("text-lg md:text-xl font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5 hidden sm:block">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Risk Left</p>
+              <p className={cn("text-base font-semibold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
                 ${vaultState.risk_remaining_today.toFixed(0)}
               </p>
             </div>
             {/* Streak */}
-            <div className="bg-card px-4 py-3.5 md:py-4 hidden md:block">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Streak</p>
-              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-foreground">{currentStreak}</p>
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5 hidden md:block">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Streak</p>
+              <p className="text-base font-semibold tabular-nums leading-none text-foreground">{currentStreak}</p>
             </div>
             {/* + Log Trade CTA */}
-            <div className="bg-card flex items-center justify-center px-3 py-3.5 md:py-4">
-              <Button size="sm" className="gap-1.5 h-9 md:h-10 px-4 md:px-5 text-xs md:text-sm font-bold rounded-full whitespace-nowrap w-full" onClick={handleLogUnplanned}>
-                <Plus className="h-3.5 w-3.5" /> Log Trade
+            <div className="px-3 md:px-4 py-2 md:py-2.5 shrink-0">
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 px-3.5 text-[11px] font-semibold rounded-lg whitespace-nowrap border-border/20" onClick={handleLogUnplanned}>
+                <Plus className="h-3 w-3" /> Log
               </Button>
             </div>
           </div>
