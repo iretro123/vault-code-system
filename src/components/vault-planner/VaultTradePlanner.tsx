@@ -761,6 +761,49 @@ function HeroLine({ label, value, bold, valueCls, sub }: {
   );
 }
 
+/* ── Collapsible R:R wrapper ── */
+function RRCollapsible({ choice, entryPrice, ticker, direction }: {
+  choice: ContractChoice; entryPrice: number; ticker: string; direction: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const totalRisk = choice.riskPerContract * 100 * choice.contracts;
+  const defaultProfit = totalRisk * 2; // 1:2
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="pt-1.5 border-t border-white/[0.04]">
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between py-1.5 px-1 rounded-md hover:bg-white/[0.03] transition-colors group">
+            <div className="flex items-center gap-2">
+              <Target className="h-3 w-3 text-primary shrink-0" />
+              <span className="text-[10px] font-semibold text-muted-foreground">R:R</span>
+              <span className="text-[11px] font-bold text-foreground tabular-nums">1:2</span>
+              <span className="text-[10px] text-emerald-400 font-semibold tabular-nums">→ +${defaultProfit.toFixed(0)}</span>
+            </div>
+            <ChevronDown className={cn("h-3 w-3 text-muted-foreground/50 transition-transform duration-200", open && "rotate-180")} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="pt-1">
+            <RiskRewardVisualizer
+              riskPerContract={choice.riskPerContract}
+              contractPrice={entryPrice}
+              contracts={choice.contracts}
+              tp1={choice.tp1}
+              tp2={choice.tp2}
+              tp3={choice.tp3}
+              exitPrice={choice.exitPrice}
+              ticker={ticker}
+              direction={direction}
+              fullPremiumRiskOk={choice.fullPremiumRiskOk}
+            />
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
 function TargetChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md py-1 px-1.5 text-center" style={{ background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.08)' }}>
