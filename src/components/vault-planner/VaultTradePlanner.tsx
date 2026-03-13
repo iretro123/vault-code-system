@@ -648,22 +648,14 @@ function HeroDecisionCard({
           <HeroLine label="Max loss" value={formatCurrency(choice.totalRisk)} valueCls="text-red-400" />
         </div>
 
-        {/* R:R Visualizer */}
+        {/* R:R Visualizer — Collapsible */}
         {hasExit && choice.riskPerContract > 0 ? (
-          <div className="pt-1.5 border-t border-white/[0.04]">
-            <RiskRewardVisualizer
-              riskPerContract={choice.riskPerContract}
-              contractPrice={entryPrice}
-              contracts={choice.contracts}
-              tp1={choice.tp1}
-              tp2={choice.tp2}
-              tp3={choice.tp3}
-              exitPrice={choice.exitPrice}
-              ticker={ticker}
-              direction={direction}
-              fullPremiumRiskOk={choice.fullPremiumRiskOk}
-            />
-          </div>
+          <RRCollapsible
+            choice={choice}
+            entryPrice={entryPrice}
+            ticker={ticker}
+            direction={direction}
+          />
         ) : (
           <div className="pt-1.5 border-t border-white/[0.04]">
             <p className="text-[10px] text-muted-foreground/40 italic">Add an exit to calculate targets & R:R</p>
