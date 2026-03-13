@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -470,10 +470,10 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ LAYER 2 — HERO OS CARD ══════ */}
-        <div className="rounded-2xl border border-border/30 bg-card overflow-hidden shadow-md">
+        <div className="rounded-2xl border border-border/25 bg-card overflow-hidden shadow-lg shadow-black/20">
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          <div className="p-5 md:p-8 min-h-[360px] md:min-h-[400px]">
+          <div className="p-5 md:p-8">
             {/* ── PLAN (FIX B: scroll to planner, not navigate away) ── */}
             {activeStage === "plan" && (
               <div className="space-y-5">
@@ -536,13 +536,28 @@ const AcademyTrade = () => {
                     </div>
                   </div>
                 )}
-                {!activePlan && todayTradeCount === 0 && (
-                  <div className="text-center py-10 space-y-3">
-                    <Shield className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-                    <p className="text-sm text-muted-foreground/70">No active plan. Check a trade before entering.</p>
-                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-5" onClick={() => setStage("plan")}>
-                      Go to Plan
-                    </Button>
+                {/* No active plan state — show useful context instead of dead space */}
+                {!activePlan && (
+                  <div className="rounded-xl border border-border/20 bg-muted/5 p-5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-muted/20 flex items-center justify-center shrink-0">
+                        <Shield className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">No Active Plan</p>
+                        <p className="text-[11px] text-muted-foreground/60">Go to the Plan tab to check a trade before entering.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="gap-1.5 rounded-full px-5 h-9" onClick={() => setStage("plan")}>
+                        <Calendar className="h-3.5 w-3.5" /> Go to Plan
+                      </Button>
+                      {todayTradeCount === 0 && (
+                        <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-4 h-9 text-xs" onClick={handleLogUnplanned}>
+                          <Plus className="h-3.5 w-3.5" /> Log Unplanned
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -674,8 +689,9 @@ const AcademyTrade = () => {
         </div>
 
         {/* ══════ LAYER 3 — LOWER ANALYTICS ══════ */}
-        <div className="space-y-4 pt-2">
-          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 px-1">Analytics & History</p>
+        {hasData && (
+        <div className="space-y-4 pt-4 border-t border-border/10">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/30 px-1">Performance & History</p>
 
           {hasData && equityCurve.length > 1 && startingBalance !== null && (
             <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
@@ -701,6 +717,7 @@ const AcademyTrade = () => {
 
           <WeeklyReviewCard hasData={hasData} />
         </div>
+        )}
       </div>
 
       {/* ── Modals ── */}
