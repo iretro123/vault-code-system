@@ -496,6 +496,10 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-2">
+                  {/* Session Setup / Timer */}
+                  <SessionSetupCard />
+
+                  {/* Active Plan from Plan stage */}
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
                       <div className="flex items-center gap-1.5">
@@ -505,6 +509,8 @@ const AcademyTrade = () => {
                       </div>
                       <p className="text-[10px] text-foreground/60 pl-3.5">
                         Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · {activePlan.stop_price_planned ? `Stop: $${Number(activePlan.stop_price_planned).toFixed(2)}` : "No stop set"}
+                        {activePlan.tp1_planned && ` · TP1: $${Number(activePlan.tp1_planned).toFixed(2)}`}
+                        {activePlan.tp2_planned && ` · TP2: $${Number(activePlan.tp2_planned).toFixed(2)}`}
                       </p>
                       <Button size="sm" className="h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold" onClick={() => handleLogFromPlan(activePlan)}>
                         <CheckCircle2 className="h-3 w-3" /> Log Result
