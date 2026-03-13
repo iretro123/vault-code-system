@@ -1,23 +1,30 @@
 
 
-## Plan: Trading OS — Priority Fix Implementation (All 3 Phases) — COMPLETED
+## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
-### Phase A: Functional Trust ✅
-- **QuickCheckInSheet**: Now inserts into `journal_entries` on submit with `userId` prop, loading state, double-submit prevention
-- **NoTradeDaySheet**: Now inserts into `journal_entries` on submit with `userId` prop, reason mapped to `biggest_mistake`
-- **AcademyTrade**: Passes `userId={user?.id}` to both sheets; mount query includes `todayTradeCount` dependency for correct `in_progress` detection
+### 1. Source of Truth (Unified)
+- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
+- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
+- **Trades Used**: `trade_entries` filtered by today's date
+- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
+- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
 
-### Phase B: True Workflow ✅
-- **Today's Budget card**: Added to Plan stage top — shows Daily Risk, Per Trade Max, Trades Allowed from vault_state
-- **Execution moment**: Live stage has "Mark Executing" → "Close & Log" flow with duration timer and Planned/Executing badge
-- **Session enforcement**: SessionSetupCard exports `onPhaseChange` callback; cutoff/closed phases show amber/red warning banners
-- **Cutoff override**: Logging after cutoff shows "Override: Log After Cutoff" button; notes marked with `⚠️ Logged after cutoff`
-- **Stage guidance**: Each stage has italic guidance line ("Set your budget, build a plan..." etc.)
-- **CTA consolidation**: Review stage has single primary "Complete Check-In" CTA; removed duplicate "Log a Trade" from review
-- **TodaysLimitsSection**: Updated to `border-white/[0.06] bg-white/[0.02]` luxury styling
+### 2. DayState Engine (A–E)
+- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
+- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
+- Session closed auto-suggests review via `sessionPhase` input
 
-### Phase C: Usability & Mobile ✅
-- **Right rail hidden on mobile**: `hidden md:block` on right session rail
-- **Welcome Hero Log button**: Hidden on mobile (`hidden md:flex`)
-- **OSTabHeader**: Icon-only on mobile (no label text), increased touch target
-- **VaultTradePlanner**: Decision framing copy added below coaching note — FITS/TIGHT/PASS explained in plain English
+### 3. OSControlRail Unified
+- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
+- Shows `dayStateStatus` text and `dayStateCta` button
+- Log Result only shows in `live_session` state
+
+### 4. QuickCheckInSheet Enhanced
+- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
+- All fields save to `journal_entries`
+
+### 5. CTA Logic
+- Hero shows state-driven status line
+- Each stage has single primary CTA driven by `dayState`
+- "Start Session" replaces "Go to Live Mode"
+- "Complete Review" replaces "Complete Check-In" / "Complete your Review"

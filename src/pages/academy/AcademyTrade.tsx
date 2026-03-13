@@ -844,7 +844,7 @@ const AcademyTrade = () => {
                             className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
                             onClick={() => setShowCheckIn(true)}
                           >
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Complete Review
                           </Button>
                         </div>
                       )}
