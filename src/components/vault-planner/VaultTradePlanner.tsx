@@ -423,6 +423,7 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
                             ? "border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
                             : "vault-approval-choice-card hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
                           isSelected && `ring-2 ${sc.ring} ${sc.glow}`,
+                          isSelected && autoSelectPulse && "animate-[pulse_0.5s_ease-in-out]",
                           choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
                           choice.status === "pass" && "opacity-35 saturate-50 hover:translate-y-0"
                         )}
