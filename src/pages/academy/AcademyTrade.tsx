@@ -164,11 +164,15 @@ const AcademyTrade = () => {
     }
   }, [todayTradeCount]);
 
-  const { activeStage, setStage, stageStatus } = useSessionStage({
+  const sessionTimesSet = useMemo(() => !!loadTimes(), [sessionPhase]);
+
+  const { activeStage, setStage, stageStatus, dayState, dayStateStatus, dayStateCta } = useSessionStage({
     hasActivePlan: !!activePlan,
     todayTradeCount,
     todayStatus,
     sessionActive: !vaultState.session_paused,
+    sessionTimesSet,
+    sessionPhase,
   });
 
   const cachedAI = useMemo(() => {
