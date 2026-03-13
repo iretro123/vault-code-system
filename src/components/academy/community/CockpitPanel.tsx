@@ -74,8 +74,8 @@ function YourWeekCard() {
   const { entries } = useTradeLog();
   const { user } = useAuth();
   const { pct: playbookPct } = usePlaybookProgress();
-  const [journalCount, setJournalCount] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const [attendanceCount, setAttendanceCount] = useState(0);
+  const [sessionsThisWeek, setSessionsThisWeek] = useState(0);
 
   const now = new Date();
   const day = now.getDay();
@@ -92,52 +92,25 @@ function YourWeekCard() {
 
   useEffect(() => {
     if (!user) return;
-    const startDate = monday.toISOString().slice(0, 10);
-    const endDate = sunday.toISOString().slice(0, 10);
+    const mondayISO = monday.toISOString();
+    const sundayISO = sunday.toISOString();
 
-    // Fetch journal count + recent journal dates for streak
     Promise.all([
-      supabase.from("journal_entries").select("id", { count: "exact", head: true })
-        .eq("user_id", user.id).gte("entry_date", startDate).lte("entry_date", endDate),
-      supabase.from("journal_entries").select("entry_date")
-        .eq("user_id", user.id)
-        .order("entry_date", { ascending: false })
-        .limit(30),
-    ]).then(([countRes, datesRes]) => {
-      setJournalCount(countRes.count ?? 0);
-      // Calculate streak
-      if (datesRes.data && datesRes.data.length > 0) {
-        const uniqueDates = [...new Set(datesRes.data.map((d: any) => d.entry_date))].sort().reverse();
-        let s = 0;
-        const today = new Date().toISOString().slice(0, 10);
-        let checkDate = today;
-        for (const d of uniqueDates) {
-          if (d === checkDate) {
-            s++;
-            const prev = new Date(checkDate);
-            prev.setDate(prev.getDate() - 1);
-            checkDate = prev.toISOString().slice(0, 10);
-          } else if (d < checkDate) break;
-        }
-        setStreak(s);
-      }
+      supabase.from("live_session_attendance").select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).gte("clicked_at", mondayISO).lte("clicked_at", sundayISO),
+      supabase.from("live_sessions").select("id", { count: "exact", head: true })
+        .gte("session_date", mondayISO).lte("session_date", sundayISO),
+    ]).then(([attRes, sessRes]) => {
+      setAttendanceCount(attRes.count ?? 0);
+      setSessionsThisWeek(sessRes.count ?? 0);
     });
   }, [user]);
 
   const TRADE_GOAL = 5;
-  const JOURNAL_GOAL = 3;
 
   return (
     <LuxuryCard>
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em]">Your Week</p>
-        {streak > 0 && (
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-            <Flame className="h-3 w-3 text-amber-500" />
-            <span className="text-[10px] font-bold text-amber-500">{streak}d</span>
-          </div>
-        )}
-      </div>
+      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em]">Your Week</p>
 
       <div className="flex items-center justify-around pt-1">
         <div className="flex flex-col items-center gap-1">
@@ -145,8 +118,8 @@ function YourWeekCard() {
           <span className="text-[10px] text-muted-foreground">Trades</span>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <ProgressRing value={journalCount} max={JOURNAL_GOAL} color="hsl(142, 71%, 45%)" />
-          <span className="text-[10px] text-muted-foreground">Journal</span>
+          <ProgressRing value={attendanceCount} max={Math.max(sessionsThisWeek, 1)} color="hsl(142, 71%, 45%)" />
+          <span className="text-[10px] text-muted-foreground">Attendance</span>
         </div>
         <div className="flex flex-col items-center gap-1">
           <ProgressRing value={Math.round(playbookPct / 10)} max={10} color="hsl(271, 91%, 65%)" />
