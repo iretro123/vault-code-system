@@ -225,7 +225,8 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
 
     setSaving(false);
     toast({ title: "Plan approved", description: `${selectedChoice.contracts} contract${selectedChoice.contracts > 1 ? "s" : ""} approved. Head to My Trades to log the result.` });
-    navigate("/academy/trade");
+    if (onPlanSaved) onPlanSaved();
+    else navigate("/academy/trade");
   };
 
   const handleReplacePlan = async () => {
