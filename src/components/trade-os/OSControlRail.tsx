@@ -52,7 +52,8 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Active Plan */}
       <div>
-        <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase mb-2">Active Plan</p>
+        <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase mb-0.5">Active Plan</p>
+        <p className="text-[10px] text-muted-foreground/30 mb-2">Your approved trade for this session</p>
         {activePlan ? (
           <div>
             <div className="flex items-center gap-1.5 mb-1">
@@ -68,6 +69,7 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
                 <span>Stop: <strong className="text-foreground/70">${Number(activePlan.stop_price_planned).toFixed(2)}</strong></span>
               )}
             </div>
+            <p className="text-[9px] text-muted-foreground/25 mt-1.5 pl-3">Plan saved · Updates live</p>
             {onLogFromPlan && (
               <Button size="sm" className="w-full mt-2.5 h-7 text-[11px] rounded-lg gap-1" onClick={() => onLogFromPlan(activePlan)}>
                 <CheckCircle2 className="h-3 w-3" /> Log Result
@@ -81,10 +83,11 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Risk Budget */}
       <div>
-        <div className="flex items-baseline justify-between mb-1.5">
+        <div className="flex items-baseline justify-between mb-0.5">
           <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase">Risk Budget</p>
           <span className="text-[10px] text-muted-foreground/35">of ${vaultState.daily_loss_limit.toFixed(0)}</span>
         </div>
+        <p className="text-[10px] text-muted-foreground/30 mb-1.5">How much you can lose today</p>
         <p className={cn("text-xl font-bold tabular-nums mb-1.5", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
           ${vaultState.risk_remaining_today.toFixed(0)}
         </p>
@@ -98,7 +101,8 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Trades */}
       <div>
-        <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase mb-1.5">Trades</p>
+        <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase mb-0.5">Trades</p>
+        <p className="text-[10px] text-muted-foreground/30 mb-1.5">Entries used vs. allowed</p>
         <div className="flex items-baseline gap-1 mb-2">
           <span className="text-xl font-bold tabular-nums text-foreground">{tradesUsed}</span>
           <span className="text-[10px] text-muted-foreground/35">/ {totalTrades}</span>
@@ -123,6 +127,12 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
           <p className="text-[10px] text-amber-400/70 leading-relaxed">{vaultState.last_block_reason}</p>
         </div>
       )}
+
+      {/* Synced indicator */}
+      <div className="flex items-center gap-1.5 px-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 animate-pulse" />
+        <span className="text-[9px] text-muted-foreground/25">Synced</span>
+      </div>
 
       {/* Quick Action */}
       <Button

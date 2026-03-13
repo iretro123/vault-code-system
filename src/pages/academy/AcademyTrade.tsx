@@ -35,6 +35,7 @@ import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
+import { SessionSetupCard } from "@/components/trade-os/SessionSetupCard";
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
@@ -429,7 +430,7 @@ const AcademyTrade = () => {
           <div className="flex items-center rounded-xl border border-white/[0.06] bg-card divide-x divide-white/[0.06] overflow-hidden">
             {/* Balance */}
             <div className="flex-1 px-3 md:px-4 py-2.5 md:py-3">
-              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Balance</p>
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5 flex items-center gap-1">Balance <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 animate-pulse" /></p>
               <p className="text-lg md:text-xl font-bold tabular-nums text-primary leading-none truncate">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </p>
@@ -511,6 +512,15 @@ const AcademyTrade = () => {
                           <Button size="sm" variant="ghost" className="h-7 text-[11px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
                         </div>
                       </div>
+                      <p className="text-[10px] text-muted-foreground/40 mt-1.5 pl-4">
+                        Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · Entry: ${Number(activePlan.entry_price_planned).toFixed(2)} · Ready to execute
+                      </p>
+                      {/* Stage transition CTA */}
+                      <div className="mt-2.5 pt-2 border-t border-emerald-500/10">
+                        <Button size="sm" className="h-8 text-[11px] gap-1.5 rounded-lg px-4 w-full" onClick={() => setStage("live")}>
+                          <Radio className="h-3 w-3" /> Plan approved — Go to Live Mode
+                        </Button>
+                      </div>
                     </div>
                   )}
                   {/* Embedded VaultTradePlanner — unified balance */}
@@ -528,8 +538,10 @@ const AcademyTrade = () => {
                   {todayStatus === "complete" && (
                     <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                      <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
-                      <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
+                      <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete. Review your AI insights.</p>
+                      <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>
+                        <Brain className="h-3 w-3 mr-1" /> View Insights
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -538,6 +550,9 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-4">
+                  {/* Session timing module */}
+                  <SessionSetupCard />
+
                   {/* Active Plan (prominent) */}
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-3 space-y-2.5">
@@ -546,6 +561,9 @@ const AcademyTrade = () => {
                         <span className="text-base font-semibold text-foreground">{activePlan.ticker || "—"}</span>
                         <span className="text-[11px] text-muted-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
                       </div>
+                      <p className="text-[10px] text-muted-foreground/40 pl-4">
+                        Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · {activePlan.stop_price_planned ? `Stop: $${Number(activePlan.stop_price_planned).toFixed(2)}` : "No stop set"} · Ready to execute
+                      </p>
                       <Button size="sm" className="h-8 text-[11px] gap-1.5 rounded-lg px-4" onClick={() => handleLogFromPlan(activePlan)}>
                         <CheckCircle2 className="h-3 w-3" /> Log Result
                       </Button>
@@ -554,7 +572,7 @@ const AcademyTrade = () => {
 
                   {/* Today's session metrics */}
                   {todayTradeCount > 0 && (
-                    <div className="flex items-center divide-x divide-border/10 rounded-lg border border-border/10 overflow-hidden">
+                    <div className="flex items-center divide-x divide-white/[0.06] rounded-lg border border-white/[0.06] overflow-hidden">
                       <div className="flex-1 px-3 py-2">
                         <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Trades</p>
                         <p className="text-base font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
@@ -575,16 +593,27 @@ const AcademyTrade = () => {
                   {/* Limits inline */}
                   <TodaysLimitsSection />
 
+                  {/* Stage transition: trades logged → go to review */}
+                  {todayTradeCount > 0 && todayStatus !== "complete" && (
+                    <div className="pt-1">
+                      <Button size="sm" variant="outline" className="w-full h-8 text-[11px] gap-1.5 rounded-lg border-white/[0.08]" onClick={() => setStage("review")}>
+                        <ClipboardCheck className="h-3 w-3" /> Trade logged — Complete your Review
+                      </Button>
+                    </div>
+                  )}
+
                   {/* No plan state */}
                   {!activePlan && (
-                    <div className="flex items-center gap-3 px-3.5 py-3 rounded-lg border border-border/10">
+                    <div className="flex items-center gap-3 px-3.5 py-3 rounded-lg border border-white/[0.06]">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground">No Active Plan</p>
-                        <p className="text-[11px] text-muted-foreground/50">Check a trade in the Plan tab first.</p>
+                        <p className="text-[11px] text-muted-foreground/50">Build a plan in the Plan tab first, or log a trade directly.</p>
                       </div>
                       <div className="flex gap-1.5 shrink-0">
-                        <Button size="sm" className="gap-1 rounded-lg px-3 h-7 text-[11px]" onClick={() => setStage("plan")}>Plan</Button>
-                        <Button size="sm" variant="outline" className="gap-1 rounded-lg px-3 h-7 text-[11px] border-border/20" onClick={handleLogUnplanned}>
+                        <Button size="sm" className="gap-1 rounded-lg px-3 h-7 text-[11px]" onClick={() => setStage("plan")}>
+                          <Calendar className="h-3 w-3" /> Plan
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1 rounded-lg px-3 h-7 text-[11px] border-white/[0.08]" onClick={handleLogUnplanned}>
                           <Plus className="h-3 w-3" /> Log
                         </Button>
                       </div>
@@ -652,8 +681,10 @@ const AcademyTrade = () => {
                       {todayStatus === "complete" && (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                          <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
-                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
+                          <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete. See what AI found.</p>
+                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>
+                            <Brain className="h-3 w-3 mr-1" /> View Insights
+                          </Button>
                         </div>
                       )}
                     </>
@@ -689,6 +720,9 @@ const AcademyTrade = () => {
               className="w-full border-t border-white/[0.06] hover:bg-white/[0.02] transition-colors"
             >
               <div className="flex items-center divide-x divide-white/[0.06]">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 shrink-0">
+                  <span className="text-[9px] text-muted-foreground/25">Last scan: today</span>
+                </div>
                 <div className="flex-1 px-3 py-2">
                   <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Grade</p>
                   <p className={cn("text-sm font-semibold",
