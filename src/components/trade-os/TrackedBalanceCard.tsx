@@ -28,13 +28,13 @@ export function TrackedBalanceCard({
   const isExpanded = showUpdateBalance || showResetConfirm;
 
   return (
-    <div className="vault-glass-card overflow-hidden">
+    <div className="rounded-2xl border border-white/[0.06] bg-card overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-          <Wallet className="h-4 w-4 text-primary" />
+          <Wallet className="h-3.5 w-3.5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-muted-foreground/60 leading-none">Tracked Balance</p>
+          <p className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/50 leading-none">Tracked Balance</p>
           <p className="text-base font-bold tabular-nums text-foreground mt-0.5 leading-tight">${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
         </div>
         <button

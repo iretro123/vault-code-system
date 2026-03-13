@@ -2,16 +2,16 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, X, Loader2, Download,
+  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, X, Loader2, Download, List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const OUTCOME_STYLES = {
-  win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: TrendingUp },
-  loss: { label: "Loss", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: TrendingDown },
-  breakeven: { label: "Breakeven", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Minus },
+  win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: TrendingUp, dot: "bg-emerald-400" },
+  loss: { label: "Loss", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: TrendingDown, dot: "bg-red-400" },
+  breakeven: { label: "Breakeven", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Minus, dot: "bg-muted-foreground/30" },
 };
 
 const MOBILE_LIMIT = 15;
@@ -20,20 +20,80 @@ interface RecentTradesSectionProps {
   entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string; plan_id?: string }[];
   onExportCSV: () => void;
   onDelete: (id: string) => Promise<{ error: any }>;
+  compact?: boolean;
 }
 
-export function RecentTradesSection({ entries, onExportCSV, onDelete }: RecentTradesSectionProps) {
+/* ═══ Compact transaction-list mode for analytics grid ═══ */
+function CompactTradesList({ entries, onExportCSV }: { entries: RecentTradesSectionProps["entries"]; onExportCSV: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? entries : entries.slice(0, 8);
+
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <List className="h-3.5 w-3.5 text-primary" />
+          <h3 className="text-xs font-semibold text-foreground">Recent Trades</h3>
+        </div>
+        <span className="text-[9px] text-muted-foreground/40 tabular-nums font-medium">{entries.length} total</span>
+      </div>
+
+      {entries.length === 0 ? (
+        <p className="text-[10px] text-muted-foreground/40 text-center py-4">No trades logged yet.</p>
+      ) : (
+        <div className="space-y-0 rounded-lg border border-white/[0.04] overflow-hidden">
+          {visible.map((e) => {
+            const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
+            const s = OUTCOME_STYLES[outcome];
+            const pnl = e.risk_reward * e.risk_used;
+            const ticker = e.symbol || "—";
+
+            return (
+              <div key={e.id} className="flex items-center gap-2.5 px-3 py-2 hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] last:border-b-0">
+                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", s.dot)} />
+                <span className="text-xs font-semibold text-foreground min-w-[36px]">{ticker}</span>
+                <span className="text-[10px] text-muted-foreground/40 flex-1 truncate">
+                  {format(new Date(e.trade_date), "MMM d")}
+                </span>
+                <span className={cn("text-[10px] font-semibold tabular-nums", s.color)}>
+                  {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {entries.length > 8 && (
+        <Button variant="ghost" size="sm" className="w-full text-[10px] text-primary gap-1 h-7" onClick={() => setExpanded(!expanded)}>
+          {expanded ? <><ChevronUp className="h-3 w-3" /> Show less</> : <><ChevronDown className="h-3 w-3" /> Show all {entries.length}</>}
+        </Button>
+      )}
+
+      <Button variant="ghost" size="sm" className="w-full text-[10px] text-muted-foreground/50 gap-1 h-7" onClick={onExportCSV}>
+        <Download className="h-3 w-3" /> Export CSV
+      </Button>
+    </div>
+  );
+}
+
+/* ═══ Full expanded mode (classic layout / non-compact) ═══ */
+export function RecentTradesSection({ entries, onExportCSV, onDelete, compact }: RecentTradesSectionProps) {
   const isMobile = useIsMobile();
   const [expanded, setExpanded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
+  if (compact) {
+    return <CompactTradesList entries={entries} onExportCSV={onExportCSV} />;
+  }
+
   if (entries.length === 0) {
     return (
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
-        <div className="vault-glass-card p-6 text-center">
+        <div className="rounded-2xl border border-white/[0.06] bg-card p-6 text-center">
           <p className="text-sm text-muted-foreground">No trades logged yet. Use the + Log Trade button to get started.</p>
         </div>
       </div>
@@ -75,7 +135,7 @@ export function RecentTradesSection({ entries, onExportCSV, onDelete }: RecentTr
           const isDeleteMode = deletingId === e.id;
 
           return (
-            <div key={e.id} className="vault-glass-card p-4 space-y-2 relative group">
+            <div key={e.id} className="rounded-2xl border border-white/[0.06] bg-card p-4 space-y-2 relative group">
               {!isDeleteMode && (
                 <button
                   onClick={() => { setDeletingId(e.id); setConfirmText(""); }}
@@ -91,7 +151,7 @@ export function RecentTradesSection({ entries, onExportCSV, onDelete }: RecentTr
                   <Icon className={`h-3.5 w-3.5 ${s.color} shrink-0`} />
                   <span className="text-sm font-bold text-foreground">{ticker}</span>
                   {directionPart && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-border/50 bg-muted/30 text-muted-foreground">{directionPart}</span>
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03] text-muted-foreground">{directionPart}</span>
                   )}
                   <span className="text-xs text-muted-foreground">· {format(new Date(e.trade_date), "MMM d")}</span>
                 </div>

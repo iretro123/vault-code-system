@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio, Lock, CalendarOff } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio, Lock, CalendarOff, BarChart3 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -422,36 +422,46 @@ const AcademyTrade = () => {
     <>
       <div className="px-3 md:px-5 pb-6 space-y-1.5 max-w-6xl pt-2">
 
-        {/* ══════ COMMAND BAR ══════ */}
+        {/* ══════ WELCOME HERO ══════ */}
         {showMetrics && (
-          <div className="flex items-center gap-4 px-3 h-9 rounded-lg bg-black/20">
-            {/* Status + Balance */}
-            <div className="flex items-center gap-2 shrink-0">
-              {todayStatus === "complete" ? (
-                <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-              ) : (
-                <span className={cn("w-[5px] h-[5px] rounded-full shrink-0", vaultStatusDot, activePlan && "animate-pulse")} />
-              )}
-              <span className="text-sm font-bold tabular-nums text-foreground leading-none">
-                {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
-              </span>
-            </div>
-            {/* Today P/L */}
-            <span className={cn("text-xs font-semibold tabular-nums hidden sm:block", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-muted-foreground/60")}>
-              {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
-            </span>
-            {/* Trades */}
-            <span className="text-xs tabular-nums text-muted-foreground/60 hidden md:block">
-              <span className="font-semibold text-foreground">{todayTradeCount}</span>/{totalMaxTrades} trades
-            </span>
-            {/* Risk */}
-            <span className={cn("text-xs tabular-nums hidden md:block", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
-              <span className="font-semibold text-foreground">${vaultState.risk_remaining_today.toFixed(0)}</span> risk
-            </span>
-            {/* Log CTA */}
-            <div className="ml-auto shrink-0">
-              <Button size="sm" className="gap-1 h-7 px-2.5 text-[10px] font-semibold rounded-lg" onClick={handleLogUnplanned}>
-                <Plus className="h-3 w-3" /> Log
+          <div className="rounded-2xl border border-white/[0.06] bg-card p-4 md:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/50 font-semibold">Your Trading Day</p>
+                <div className="flex items-baseline gap-2.5">
+                  <span className="text-3xl font-bold tabular-nums text-foreground tracking-tight">
+                    {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
+                  </span>
+                  {todayPnl !== 0 && (
+                    <span className={cn(
+                      "text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full",
+                      todayPnl > 0
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                        : "bg-red-500/10 text-red-400 border border-red-500/20"
+                    )}>
+                      {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-1.5">
+                    {todayStatus === "complete" ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    ) : (
+                      <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, activePlan && "animate-pulse")} />
+                    )}
+                    <span className="text-[10px] text-muted-foreground/60 font-medium">
+                      {todayTradeCount}/{totalMaxTrades} trades
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground/40">·</span>
+                  <span className={cn("text-[10px] font-medium tabular-nums", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
+                    ${vaultState.risk_remaining_today.toFixed(0)} risk left
+                  </span>
+                </div>
+              </div>
+              <Button size="sm" className="gap-1 h-8 px-3 text-[11px] font-semibold rounded-lg shrink-0" onClick={handleLogUnplanned}>
+                <Plus className="h-3 w-3" /> Log Trade
               </Button>
             </div>
           </div>
@@ -835,29 +845,40 @@ const AcademyTrade = () => {
 
         {/* ══════ LOWER ANALYTICS ══════ */}
         {hasData && (
-          <div className="space-y-2 pt-1">
-            <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/50 uppercase px-0.5">Performance & History</p>
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-2 px-0.5">
+              <BarChart3 className="h-3.5 w-3.5 text-primary/60" />
+              <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/50 uppercase">Analytics</p>
+            </div>
+
+            {/* Row 1: Equity Curve — full width */}
+            {equityCurve.length > 1 && startingBalance !== null && (
+              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+            )}
+
+            {/* Row 2: Performance Breakdown + Recent Trades */}
             <div className="grid gap-2 md:grid-cols-2">
-              {equityCurve.length > 1 && startingBalance !== null && (
-                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
-              )}
               {symbolStats.length > 0 && (
                 <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
               )}
+              <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} compact />
             </div>
-            <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} />
-            {trackedBalance !== null && (
-              <TrackedBalanceCard
-                balance={trackedBalance}
-                showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-                onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-                onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-                showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
-                onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-                onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
-              />
-            )}
-            <WeeklyReviewCard hasData={hasData} />
+
+            {/* Row 3: Tracked Balance + Weekly Review */}
+            <div className="grid gap-2 md:grid-cols-2">
+              {trackedBalance !== null && (
+                <TrackedBalanceCard
+                  balance={trackedBalance}
+                  showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
+                  onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+                  onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
+                  showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
+                  onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+                  onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+                />
+              )}
+              <WeeklyReviewCard hasData={hasData} />
+            </div>
           </div>
         )}
       </div>
