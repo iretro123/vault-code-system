@@ -495,20 +495,20 @@ const AcademyTrade = () => {
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {activePlan && activePlan.status === "planned" && (
-                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
+                    <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-3">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                          <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                          <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                          <span className="text-sm font-semibold text-foreground">{activePlan.ticker || "—"}</span>
+                          <span className="text-[11px] text-muted-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
                         </div>
-                        <div className="flex gap-2 shrink-0">
-                          <Button size="sm" className="h-8 text-xs gap-1.5 rounded-lg px-4" onClick={() => handleLogFromPlan(activePlan)}>
-                            <CheckCircle2 className="h-3 w-3" /> Log Result
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button size="sm" className="h-7 text-[11px] gap-1 rounded-lg px-3" onClick={() => handleLogFromPlan(activePlan)}>
+                            <CheckCircle2 className="h-3 w-3" /> Log
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
                         </div>
                       </div>
                     </div>
@@ -516,18 +516,14 @@ const AcademyTrade = () => {
                   {/* Embedded VaultTradePlanner */}
                   {!activePlan && todayStatus !== "complete" && (
                     <div ref={plannerRef}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Shield className="h-3.5 w-3.5 text-primary" />
-                        <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em]">Pre-Trade Approval</p>
-                      </div>
                       <VaultTradePlanner />
                     </div>
                   )}
                   {todayStatus === "complete" && (
-                    <div className="flex items-center gap-2 px-3 py-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                      <p className="text-xs text-emerald-400/80 font-medium flex-1">Session complete for today.</p>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
+                      <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
                     </div>
                   )}
                 </div>
