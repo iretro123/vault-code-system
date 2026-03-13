@@ -361,16 +361,8 @@ const AcademyTrade = () => {
     ? "bg-amber-400" : vaultState.vault_status === "RED"
     ? "bg-red-400" : "bg-muted-foreground/40";
 
-  // Read cached AI result for compact preview strip
-  const cachedAI = useMemo(() => {
-    try {
-      const raw = localStorage.getItem("va_cache_ai_focus_v3");
-      if (!raw) return null;
-      return JSON.parse(raw) as { primaryLeak?: string; riskGrade?: string; nextAction?: string; strongestEdge?: string };
-    } catch { return null; }
-  }, [entries.length]);
 
-  const totalMaxTrades = vaultState.trades_remaining_today + todayTradeCount;
+
 
   return (
     <>
