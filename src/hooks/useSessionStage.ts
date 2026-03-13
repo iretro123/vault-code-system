@@ -5,7 +5,7 @@ export type SessionStage = "plan" | "live" | "review" | "insights";
 interface UseSessionStageInput {
   hasActivePlan: boolean;
   todayTradeCount: number;
-  todayStatus: "incomplete" | "in_progress" | "complete";
+  todayStatus: string;
   sessionActive: boolean;
 }
 
