@@ -710,12 +710,6 @@ const AcademyTrade = () => {
                   )}
                 </div>
               )}
-                      </div>
-                    </div>
-                  )}
-                  <AIFocusCard entries={entries} accessToken={session?.access_token} />
-                </div>
-              )}
             </div>
 
             {/* ── RIGHT SESSION RAIL ── */}
