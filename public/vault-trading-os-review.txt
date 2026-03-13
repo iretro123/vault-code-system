@@ -1,0 +1,2291 @@
+================================================================================
+VAULT TRADING OS — FULL CODE REVIEW
+Generated: 2026-03-13
+================================================================================
+
+TABLE OF CONTENTS
+─────────────────
+PART 1: File Tree
+PART 2: Full Source Code (all files)
+PART 3: Reused Components Map
+PART 4: Feature Flag Logic
+PART 5: Tab/Stage Logic
+PART 6: Data Flow Connections
+
+================================================================================
+PART 1: FILE TREE
+================================================================================
+
+src/
+├── pages/
+│   └── academy/
+│       └── AcademyTrade.tsx              ← Main entry (classic + OS layout)
+├── hooks/
+│   ├── useSessionStage.ts                ← Stage state machine (plan/live/review/insights)
+│   └── useFeatureFlags.ts                ← Feature flag hook (trade-os toggle)
+├── components/
+│   └── trade-os/
+│       ├── OSTabHeader.tsx               ← Tab navigation for OS stages
+│       ├── AIFocusCard.tsx               ← AI Performance Intelligence carousel
+│       ├── EquityCurveCard.tsx            ← Equity curve chart (recharts)
+│       ├── GettingStartedBanner.tsx       ← Onboarding 3-step banner
+│       ├── PerformanceBreakdownCard.tsx   ← Win rate by symbol / by day
+│       ├── PerformanceHUD.tsx             ← 6-metric status strip (classic layout)
+│       ├── RecentTradesSection.tsx        ← Trade journal with delete flow
+│       ├── SectionLabel.tsx              ← Tiny uppercase section label
+│       ├── TodayVaultCheckCard.tsx        ← Today's VAULT Check card
+│       ├── TrackedBalanceCard.tsx         ← Balance display + update/reset
+│       └── WeeklyReviewCard.tsx           ← Weekly review CTA card
+│
+│   Reused from other directories:
+│   └── vault-planner/
+│       └── VaultTradePlanner.tsx          ← Embedded in Plan stage
+│   └── vault/
+│       └── TodaysLimitsSection.tsx        ← Embedded in Live stage
+│   └── academy/
+│       ├── LogTradeSheet.tsx              ← Trade logging sheet (modal)
+│       ├── QuickCheckInSheet.tsx          ← 30-sec check-in sheet
+│       ├── NoTradeDaySheet.tsx            ← No-trade day sheet
+│       ├── SetStartingBalanceModal.tsx    ← Balance setup modal
+│       └── PremiumGate.tsx               ← Access gate
+
+================================================================================
+PART 2: FULL SOURCE CODE
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/pages/academy/AcademyTrade.tsx (641 lines)
+────────────────────────────────────────────────────────────────────────────────
+
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
+import { PremiumGate } from "@/components/academy/PremiumGate";
+import { LogTradeSheet, type TradeFormData } from "@/components/academy/LogTradeSheet";
+import { SetStartingBalanceModal } from "@/components/academy/SetStartingBalanceModal";
+import { QuickCheckInSheet } from "@/components/academy/QuickCheckInSheet";
+import { NoTradeDaySheet } from "@/components/academy/NoTradeDaySheet";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
+import { useTradeLog } from "@/hooks/useTradeLog";
+import { useApprovedPlans, type ApprovedPlan } from "@/hooks/useApprovedPlans";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useSessionStage } from "@/hooks/useSessionStage";
+import { useVaultState } from "@/contexts/VaultStateContext";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
+
+// Extracted components
+import { SectionLabel } from "@/components/trade-os/SectionLabel";
+import { PerformanceHUD } from "@/components/trade-os/PerformanceHUD";
+import { EquityCurveCard } from "@/components/trade-os/EquityCurveCard";
+import { PerformanceBreakdownCard } from "@/components/trade-os/PerformanceBreakdownCard";
+import { GettingStartedBanner } from "@/components/trade-os/GettingStartedBanner";
+import { TodayVaultCheckCard } from "@/components/trade-os/TodayVaultCheckCard";
+import { AIFocusCard } from "@/components/trade-os/AIFocusCard";
+import { RecentTradesSection } from "@/components/trade-os/RecentTradesSection";
+import { TrackedBalanceCard } from "@/components/trade-os/TrackedBalanceCard";
+import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
+import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
+import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
+import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
+
+type TodayStatus = "incomplete" | "in_progress" | "complete";
+
+const AcademyTrade = () => {
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { hasAccess, status, loading: accessLoading } = useStudentAccess();
+  const { user } = useAuth();
+  const { isPageEnabled } = useFeatureFlags();
+  const { state: vaultState } = useVaultState();
+  const {
+    entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
+    allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
+  } = useTradeLog();
+  const { activePlan, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
+
+  const [startingBalance, setStartingBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceSkipped, setBalanceSkipped] = useState(false);
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showUpdateBalance, setShowUpdateBalance] = useState(false);
+  const [updateBalanceInput, setUpdateBalanceInput] = useState("");
+  const [updatingBalance, setUpdatingBalance] = useState(false);
+  const [resetInput, setResetInput] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [showLogTrade, setShowLogTrade] = useState(false);
+  const [logPlanId, setLogPlanId] = useState<string | undefined>(undefined);
+  const [logPrefill, setLogPrefill] = useState<any>(undefined);
+  const [todayStatus, setTodayStatus] = useState<TodayStatus>("incomplete");
+  const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showNoTradeDay, setShowNoTradeDay] = useState(false);
+  const [noTradeDay, setNoTradeDay] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setBalanceLoading(false); return; }
+    (async () => {
+      try {
+        const { data } = await supabase.from("profiles").select("account_balance").eq("user_id", user.id).maybeSingle();
+        if (data && data.account_balance > 0) setStartingBalance(data.account_balance);
+        else setShowBalanceModal(true);
+      } catch { setShowBalanceModal(true); }
+      finally { setBalanceLoading(false); }
+    })();
+  }, [user]);
+
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const todayTradeCount = useMemo(() => entries.filter((e) => e.trade_date === todayStr).length, [entries, todayStr]);
+  const trackedBalance = useMemo(() => {
+    if (startingBalance === null) return null;
+    return startingBalance + totalPnl;
+  }, [startingBalance, totalPnl]);
+
+  const hasData = entries.length > 0;
+
+  // Session stage hook
+  const { activeStage, setStage, stageStatus } = useSessionStage({
+    hasActivePlan: !!activePlan,
+    todayTradeCount,
+    todayStatus,
+    sessionActive: !vaultState.session_paused,
+  });
+
+  // Read cached AI result for compact preview strip (must be before early returns)
+  const cachedAI = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("va_cache_ai_focus_v3");
+      if (!raw) return null;
+      return JSON.parse(raw) as { primaryLeak?: string; riskGrade?: string; nextAction?: string; strongestEdge?: string };
+    } catch { return null; }
+  }, [entries.length]);
+
+  const totalMaxTrades = vaultState.trades_remaining_today + todayTradeCount;
+
+  /* ── Handlers (identical to classic) ── */
+  const handleStartingBalanceSave = async (balance: number) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from("profiles").update({ account_balance: balance }).eq("user_id", user.id);
+      if (error) throw error;
+      setStartingBalance(balance);
+      setShowBalanceModal(false);
+      setBalanceSkipped(false);
+      toast({ title: "Starting balance set", description: `Tracking from $${balance.toLocaleString()}.` });
+    } catch {
+      toast({ title: "Error saving balance", description: "Please try again.", variant: "destructive" });
+    }
+  };
+
+  const handleBalanceDismiss = () => { setShowBalanceModal(false); setBalanceSkipped(true); };
+
+  const handleResetBalance = async () => {
+    if (resetInput !== "RESET" || !user) return;
+    setResetting(true);
+    try {
+      const { error } = await supabase.from("profiles").update({ account_balance: 0 }).eq("user_id", user.id);
+      if (error) throw error;
+      setStartingBalance(null); setShowResetConfirm(false); setResetInput(""); setShowBalanceModal(true);
+      toast({ title: "Balance reset", description: "Set a new starting balance to continue tracking." });
+    } catch { toast({ title: "Error resetting balance", variant: "destructive" }); }
+    finally { setResetting(false); }
+  };
+
+  const handleUpdateBalance = async () => {
+    const newBalance = parseFloat(updateBalanceInput);
+    if (isNaN(newBalance) || newBalance < 0 || !user) return;
+    setUpdatingBalance(true);
+    try {
+      const newStarting = newBalance - totalPnl;
+      const { error } = await supabase.from("profiles").update({ account_balance: newStarting }).eq("user_id", user.id);
+      if (error) throw error;
+      setStartingBalance(newStarting);
+      setShowUpdateBalance(false);
+      setUpdateBalanceInput("");
+      toast({ title: "Balance updated", description: `Now tracking from $${newBalance.toLocaleString()}.` });
+    } catch {
+      toast({ title: "Error updating balance", variant: "destructive" });
+    } finally {
+      setUpdatingBalance(false);
+    }
+  };
+
+  const handleTradeSubmit = async (data: TradeFormData) => {
+    const pnlNum = parseFloat(data.pnl) || 0;
+    const isWin = data.resultType === "Win";
+    const isLoss = data.resultType === "Loss";
+
+    let screenshotUrl: string | undefined;
+    if (data.screenshotFile && user) {
+      const ext = data.screenshotFile.name.split(".").pop() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("trade-screenshots")
+        .upload(path, data.screenshotFile, { contentType: data.screenshotFile.type, upsert: false });
+      if (uploadErr) {
+        toast({ title: "Screenshot upload failed", description: uploadErr.message, variant: "destructive" });
+      } else {
+        const { data: urlData } = supabase.storage.from("trade-screenshots").getPublicUrl(path);
+        screenshotUrl = urlData.publicUrl;
+      }
+    }
+
+    const newEntry: any = {
+      risk_used: Math.abs(pnlNum),
+      risk_reward: isWin ? 1 : isLoss ? -1 : 0,
+      followed_rules: data.planFollowed === "Yes",
+      emotional_state: 5,
+      notes: `${data.symbol} ${data.direction} | Setup: ${data.setupUsed || "—"} | Target: ${data.targetHit} | Stop: ${data.stopRespected} | Oversized: ${data.oversized}${data.note ? " | " + data.note : ""}`,
+      symbol: data.symbol.toUpperCase(),
+      outcome: isWin ? "WIN" : isLoss ? "LOSS" : "BREAKEVEN",
+      trade_date: format(data.date, "yyyy-MM-dd"),
+      plan_id: logPlanId,
+    };
+    if (screenshotUrl) newEntry.screenshot_url = screenshotUrl;
+
+    const { error } = await addEntry(newEntry);
+    if (error) throw error;
+
+    if (logPlanId) {
+      await markLogged(logPlanId);
+      refetchPlan();
+    }
+
+    setShowLogTrade(false);
+    setLogPlanId(undefined);
+    setLogPrefill(undefined);
+    setTodayStatus("in_progress");
+    setTimeout(() => setShowCheckIn(true), 400);
+  };
+
+  const handleLogFromPlan = (plan: ApprovedPlan) => {
+    setLogPlanId(plan.id);
+    setLogPrefill({
+      symbol: plan.ticker || "",
+      direction: plan.direction === "calls" ? "Calls" : "Puts",
+      entryPrice: String(plan.entry_price_planned),
+      positionSize: String(plan.contracts_planned),
+    });
+    setShowLogTrade(true);
+  };
+
+  const handleLogUnplanned = () => {
+    setLogPlanId(undefined);
+    setLogPrefill(undefined);
+    setShowLogTrade(true);
+  };
+
+  const handleCancelPlan = async (planId: string) => {
+    await cancelPlan(planId);
+    refetchPlan();
+    toast({ title: "Plan cancelled" });
+  };
+
+  const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
+  const handleNoTradeDayComplete = () => { setShowNoTradeDay(false); setNoTradeDay(true); setTodayStatus("complete"); toast({ title: "No-trade day logged" }); };
+
+  if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="My Trades" />;
+
+  if (balanceLoading || tradesLoading) {
+    return (
+      <>
+        <PageHeader title="My Trades" subtitle="Loading your trade data..." />
+        <div className="px-4 md:px-6 pb-10 max-w-4xl">
+          <div className="vault-glass-card p-8 text-center">
+            <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const useOSLayout = isPageEnabled("trade-os");
+
+  // ──── CLASSIC LAYOUT (feature flag OFF) ────
+  if (!useOSLayout) {
+    return (
+      <>
+        <PageHeader
+          title="My Trades"
+          subtitle="Your trading command center — log, track, and improve."
+          compact
+          action={
+            <div className="flex gap-1.5">
+              <Button size="sm" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={handleLogUnplanned}>
+                <Plus className="h-3 w-3" /> Log
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={() => navigate("/academy/vault")}>
+                <Shield className="h-3 w-3" /> Check
+              </Button>
+            </div>
+          }
+        />
+        <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
+          {balanceSkipped && startingBalance === null && (
+            <div className="vault-glass-card p-3 md:p-4 border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+              <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set</p>
+              <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
+            </div>
+          )}
+          {!hasData && (
+            <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
+          )}
+          {hasData && (
+            <section className="space-y-2.5">
+              <SectionLabel>Performance</SectionLabel>
+              <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
+              {equityCurve.length > 1 && startingBalance !== null && (
+                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+              )}
+            </section>
+          )}
+          {trackedBalance !== null && (
+            <section className="space-y-2.5">
+              <SectionLabel>Account</SectionLabel>
+              <TrackedBalanceCard
+                balance={trackedBalance}
+                showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
+                onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+                onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
+                showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
+                onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+                onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+              />
+            </section>
+          )}
+          <section className="space-y-2.5">
+            <SectionLabel>Today</SectionLabel>
+            <TodayVaultCheckCard
+              activePlan={activePlan} todayTradeCount={todayTradeCount} todayStatus={todayStatus} noTradeDay={noTradeDay}
+              onCheckTrade={() => navigate("/academy/vault")} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
+              onCancelPlan={handleCancelPlan} onNoTradeDay={() => setShowNoTradeDay(true)}
+              onCompleteCheckIn={() => setShowCheckIn(true)}
+              onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            />
+          </section>
+          <section className="space-y-2.5">
+            <SectionLabel>Intelligence</SectionLabel>
+            <AIFocusCard entries={entries} />
+          </section>
+          <section className="space-y-2.5">
+            <SectionLabel>Journal</SectionLabel>
+            <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
+              const result = await deleteEntry(id);
+              if (!result.error) refetchPlan();
+              return result;
+            }} />
+          </section>
+          <section className="space-y-2.5">
+            <SectionLabel>Review</SectionLabel>
+            {hasData && symbolStats.length > 0 && (
+              <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
+            )}
+            <WeeklyReviewCard hasData={hasData} />
+          </section>
+        </div>
+
+        <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
+        <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
+        <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
+        <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
+      </>
+    );
+  }
+
+  // ──── OS LAYOUT (feature flag ON) ────
+  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "";
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good Morning";
+    if (h < 17) return "Good Afternoon";
+    return "Good Evening";
+  })();
+
+  const statusLine = (() => {
+    if (todayStatus === "complete") return "Today's session complete";
+    if (activePlan) return `Plan approved · ${activePlan.ticker || "—"} ${activePlan.direction}`;
+    if (todayTradeCount > 0) return `${todayTradeCount} trade${todayTradeCount > 1 ? "s" : ""} logged today`;
+    return "No plan yet — start your session";
+  })();
+
+  const vaultStatusColor = vaultState.vault_status === "GREEN"
+    ? "bg-emerald-400" : vaultState.vault_status === "YELLOW"
+    ? "bg-amber-400" : vaultState.vault_status === "RED"
+    ? "bg-red-400" : "bg-muted-foreground/40";
+
+  return (
+    <>
+      {/* ══════ LAYER 1 — TOP STATUS ══════ */}
+      <div className="px-4 md:px-6 pt-5 md:pt-7 pb-1 max-w-4xl">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-tight">
+          {greeting}{displayName ? `, ${displayName}` : ""}
+        </h1>
+        <div className="flex items-center gap-2 mt-1">
+          {todayStatus === "complete" ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+          ) : (
+            <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
+          )}
+          <span className="text-[13px] text-muted-foreground">{statusLine}</span>
+        </div>
+      </div>
+
+      <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
+
+        {/* ── METRICS STRIP ── */}
+        {hasData && (
+          <div className="flex items-stretch rounded-2xl border border-border/25 bg-card overflow-hidden">
+            <div className="flex-1 min-w-0 px-4 md:px-5 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Balance</p>
+              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-primary truncate">
+                {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}
+              </p>
+            </div>
+            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Today P/L</p>
+              <p className={cn("text-sm md:text-base font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+ $${todayPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : `- $${Math.abs(todayPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+              </p>
+            </div>
+            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Trades</p>
+              <p className="text-sm md:text-base font-bold tabular-nums leading-none text-foreground flex items-center gap-1">
+                {todayTradeCount} / {totalMaxTrades}
+                {todayTradeCount > 0 && <Plus className="h-3 w-3 text-muted-foreground/40" />}
+              </p>
+            </div>
+            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Risk Left</p>
+              <p className={cn("text-sm md:text-base font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+                ${vaultState.risk_remaining_today.toFixed(0)}
+              </p>
+            </div>
+            {!isMobile && (
+              <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+                <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Streak</p>
+                <p className="text-sm md:text-base font-bold tabular-nums leading-none text-foreground">{currentStreak} Days</p>
+              </div>
+            )}
+            <div className="flex items-center px-3 md:px-5 shrink-0">
+              <Button
+                size="sm"
+                className="gap-1.5 h-9 md:h-10 px-4 md:px-5 text-xs font-semibold rounded-full whitespace-nowrap"
+                onClick={handleLogUnplanned}
+              >
+                <Plus className="h-3.5 w-3.5" /> Log Trade
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Balance skip reminder ── */}
+        {balanceSkipped && startingBalance === null && (
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-center gap-3">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+            <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set — tracking is paused.</p>
+            <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-3 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
+          </div>
+        )}
+
+        {/* ── Getting Started ── */}
+        {!hasData && (
+          <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
+        )}
+
+        {/* ══════ LAYER 2 — HERO OS CARD ══════ */}
+        <div className="rounded-2xl border border-border/20 bg-card overflow-hidden shadow-sm">
+          <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
+
+          <div className="p-4 md:p-7 min-h-[280px] md:min-h-[320px]">
+            {/* ── PLAN ── */}
+            {activeStage === "plan" && (
+              <div className="space-y-5">
+                <TodayVaultCheckCard
+                  activePlan={activePlan} todayTradeCount={todayTradeCount} todayStatus={todayStatus} noTradeDay={noTradeDay}
+                  onCheckTrade={() => navigate("/academy/vault")} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
+                  onCancelPlan={handleCancelPlan} onNoTradeDay={() => setShowNoTradeDay(true)}
+                  onCompleteCheckIn={() => setShowCheckIn(true)}
+                  onReviewFeedback={() => setStage("insights")}
+                />
+                {/* Embedded VAULT Approval */}
+                {!activePlan && todayStatus !== "complete" && (
+                  <div className="pt-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="h-3.5 w-3.5 text-primary" />
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pre-Trade Check</p>
+                    </div>
+                    <VaultTradePlanner />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── LIVE ── */}
+            {activeStage === "live" && (
+              <div className="space-y-5">
+                <TodaysLimitsSection />
+                {activePlan && activePlan.status === "planned" && (
+                  <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
+                        <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · Entry ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
+                      </div>
+                      <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full shrink-0" onClick={() => handleLogFromPlan(activePlan)}>
+                        <CheckCircle2 className="h-3 w-3" /> Log Result
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {!activePlan && (
+                  <div className="text-center py-12 space-y-3">
+                    <Shield className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+                    <p className="text-sm text-muted-foreground">No active plan. Check a trade before entering.</p>
+                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-5" onClick={() => setStage("plan")}>
+                      Go to Plan
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── REVIEW ── */}
+            {activeStage === "review" && (
+              <div className="space-y-5">
+                {todayStatus === "incomplete" && todayTradeCount === 0 && (
+                  <div className="text-center py-12 space-y-3">
+                    <ClipboardCheck className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+                    <p className="text-sm text-muted-foreground">No trades to review yet. Log your first trade to start.</p>
+                    <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
+                      <Plus className="h-3.5 w-3.5" /> Log a Trade
+                    </Button>
+                  </div>
+                )}
+                {(todayStatus === "in_progress" || (todayStatus === "incomplete" && todayTradeCount > 0)) && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground mb-1">Post-Trade Ritual</h3>
+                      <p className="text-xs text-muted-foreground">{todayTradeCount} trade{todayTradeCount > 1 ? "s" : ""} logged today. Complete your review to close this session.</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        onClick={handleLogUnplanned}
+                        className="flex items-center gap-3 p-4 rounded-xl border border-border/30 bg-muted/5 hover:bg-muted/15 transition-colors text-left"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Plus className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">Log Another Trade</p>
+                          <p className="text-[11px] text-muted-foreground">Add missed or additional entries</p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => setShowCheckIn(true)}
+                        className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08] transition-colors text-left"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">Complete Check-In</p>
+                          <p className="text-[11px] text-muted-foreground">Record mistakes, lessons, and close out</p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {todayStatus === "complete" && (
+                  <div className="text-center py-12 space-y-2">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
+                    <p className="text-sm font-bold text-foreground">Session Complete</p>
+                    <p className="text-xs text-muted-foreground">Today's review is done. Check your Insights for AI feedback.</p>
+                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full mt-2" onClick={() => setStage("insights")}>
+                      View Insights
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── INSIGHTS ── */}
+            {activeStage === "insights" && (
+              <div className="space-y-5">
+                <AIFocusCard entries={entries} />
+              </div>
+            )}
+          </div>
+
+          {/* ── COMPACT AI PREVIEW STRIP (always visible at bottom of hero card) ── */}
+          {cachedAI && activeStage !== "insights" && (
+            <button
+              onClick={() => setStage("insights")}
+              className="w-full border-t border-border/15 px-4 md:px-7 py-3 flex items-center gap-3 hover:bg-muted/5 transition-colors"
+            >
+              <Brain className="h-4 w-4 text-primary shrink-0" />
+              <p className="text-xs text-muted-foreground truncate flex-1 text-left">
+                {cachedAI.primaryLeak ? `Leak: ${cachedAI.primaryLeak}` : "AI analysis available"}
+                {cachedAI.nextAction ? ` · Next: ${cachedAI.nextAction}` : ""}
+              </p>
+              {cachedAI.riskGrade && (
+                <span className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0",
+                  cachedAI.riskGrade === "A" ? "text-emerald-400 border-emerald-500/25 bg-emerald-500/10" :
+                  cachedAI.riskGrade === "B" ? "text-primary border-primary/25 bg-primary/10" :
+                  cachedAI.riskGrade === "C" ? "text-amber-400 border-amber-500/25 bg-amber-500/10" :
+                  "text-red-400 border-red-500/25 bg-red-500/10"
+                )}>
+                  Grade {cachedAI.riskGrade}
+                </span>
+              )}
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+            </button>
+          )}
+        </div>
+
+        {/* ══════ LAYER 3 — LOWER ANALYTICS ══════ */}
+        <div className="space-y-3 pt-2">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 px-1">Analytics & History</p>
+
+          {hasData && equityCurve.length > 1 && startingBalance !== null && (
+            <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+          )}
+
+          <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
+            const result = await deleteEntry(id);
+            if (!result.error) refetchPlan();
+            return result;
+          }} />
+
+          {hasData && symbolStats.length > 0 && (
+            <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
+          )}
+
+          {trackedBalance !== null && (
+            <TrackedBalanceCard
+              balance={trackedBalance}
+              showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
+              onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+              onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
+              showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
+              onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+              onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+            />
+          )}
+
+          <WeeklyReviewCard hasData={hasData} />
+        </div>
+      </div>
+
+      {/* ── Modals ── */}
+      <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
+      <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
+      <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
+      <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
+    </>
+  );
+};
+
+export default AcademyTrade;
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/hooks/useSessionStage.ts
+────────────────────────────────────────────────────────────────────────────────
+
+import { useState, useMemo, useCallback } from "react";
+
+export type SessionStage = "plan" | "live" | "review" | "insights";
+
+interface UseSessionStageInput {
+  hasActivePlan: boolean;
+  todayTradeCount: number;
+  todayStatus: string;
+  sessionActive: boolean;
+}
+
+export function useSessionStage({ hasActivePlan, todayTradeCount, todayStatus, sessionActive }: UseSessionStageInput) {
+  const [manualOverride, setManualOverride] = useState<SessionStage | null>(null);
+
+  const autoStage = useMemo((): SessionStage => {
+    // End of day: check-in complete
+    if (todayStatus === "complete") return "insights";
+    // Post-trade: trades logged but check-in not complete
+    if (todayTradeCount > 0 && todayStatus !== "complete") return "review";
+    // Live session: plan approved or session active
+    if (hasActivePlan || sessionActive) return "live";
+    // Default: before market / plan
+    return "plan";
+  }, [hasActivePlan, todayTradeCount, todayStatus, sessionActive]);
+
+  const activeStage = manualOverride ?? autoStage;
+
+  const setStage = useCallback((stage: SessionStage) => {
+    setManualOverride(stage);
+  }, []);
+
+  const resetToAuto = useCallback(() => {
+    setManualOverride(null);
+  }, []);
+
+  const stageStatus = useCallback((stage: SessionStage): "completed" | "active" | "upcoming" => {
+    const order: SessionStage[] = ["plan", "live", "review", "insights"];
+    const autoIdx = order.indexOf(autoStage);
+    const stageIdx = order.indexOf(stage);
+    if (stageIdx < autoIdx) return "completed";
+    if (stageIdx === autoIdx) return "active";
+    return "upcoming";
+  }, [autoStage]);
+
+  return { activeStage, autoStage, setStage, resetToAuto, stageStatus };
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/hooks/useFeatureFlags.ts
+────────────────────────────────────────────────────────────────────────────────
+
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface FeatureFlag {
+  page_key: string;
+  label: string;
+  enabled: boolean;
+}
+
+export function useFeatureFlags() {
+  const { data: flags = [], isLoading } = useQuery({
+    queryKey: ["feature-flags"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("feature_flags")
+        .select("page_key, label, enabled");
+      if (error) throw error;
+      return (data ?? []) as FeatureFlag[];
+    },
+    staleTime: 60_000,
+  });
+
+  const isPageEnabled = (pageKey: string) => {
+    const flag = flags.find((f) => f.page_key === pageKey);
+    return flag ? flag.enabled : true; // default to enabled if not found
+  };
+
+  return { flags, isPageEnabled, isLoading };
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/OSTabHeader.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { Calendar, Radio, ClipboardCheck, Brain } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { SessionStage } from "@/hooks/useSessionStage";
+
+const TABS: { key: SessionStage; label: string; mobileLabel: string; icon: typeof Calendar }[] = [
+  { key: "plan", label: "Plan", mobileLabel: "Plan", icon: Calendar },
+  { key: "live", label: "Live", mobileLabel: "Live", icon: Radio },
+  { key: "review", label: "Review", mobileLabel: "Review", icon: ClipboardCheck },
+  { key: "insights", label: "Insights", mobileLabel: "AI", icon: Brain },
+];
+
+interface OSTabHeaderProps {
+  activeStage: SessionStage;
+  stageStatus: (stage: SessionStage) => "completed" | "active" | "upcoming";
+  onSelect: (stage: SessionStage) => void;
+}
+
+export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderProps) {
+  return (
+    <div className="flex items-center gap-0.5 md:gap-1 px-4 md:px-7 pt-3 md:pt-4 pb-0 border-b border-border/15">
+      {TABS.map((tab) => {
+        const status = stageStatus(tab.key);
+        const isActive = activeStage === tab.key;
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.key}
+            onClick={() => onSelect(tab.key)}
+            className={cn(
+              "relative flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm font-medium transition-colors duration-100",
+              isActive
+                ? "text-foreground"
+                : status === "completed"
+                  ? "text-emerald-400/70 hover:text-emerald-400"
+                  : "text-muted-foreground/50 hover:text-muted-foreground/80"
+            )}
+          >
+            {status === "completed" && !isActive ? (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+            ) : (
+              <Icon className={cn("h-3.5 w-3.5 md:h-4 md:w-4 shrink-0", isActive && "text-primary")} />
+            )}
+            <span className="sm:hidden">{tab.mobileLabel}</span>
+            <span className="hidden sm:inline">{tab.label}</span>
+            {/* Active underline */}
+            {isActive && (
+              <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-primary" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/AIFocusCard.tsx (461 lines)
+────────────────────────────────────────────────────────────────────────────────
+
+import { useState, useEffect, useCallback } from "react";
+import useEmblaCarousel from "embla-carousel-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Brain, Lock, RefreshCw, AlertTriangle, Crosshair, Target, Activity,
+  Plus, CheckCircle2, ChevronLeft, ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+
+/* ── Types & Constants ── */
+const AI_FOCUS_CACHE = "va_cache_ai_focus_v3";
+const AI_FOCUS_CACHE_TS = "va_cache_ai_focus_ts";
+
+interface AIFocusResult {
+  primaryLeak: string;
+  primaryLeakConfidence: "high" | "medium" | "insufficient";
+  strongestEdge: string;
+  nextAction: string;
+  progressVerdict: string;
+  riskGrade: "A" | "B" | "C" | "D" | "F";
+  dataDepth: number;
+  dataConfidence: "high" | "medium" | "low";
+  date: string;
+  tradeCount: number;
+}
+
+const MENTOR_STYLES = `
+@keyframes mentorScan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+@keyframes mentorBorder { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes mentorPulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.15); } }
+@keyframes mentorShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes mentorFadeIn { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
+`;
+
+const RISK_GRADE_MAP: Record<string, { color: string; bg: string; border: string; glow: string }> = {
+  A: { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25", glow: "shadow-[0_0_12px_-3px_rgba(52,211,153,0.3)]" },
+  B: { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/25", glow: "shadow-[0_0_12px_-3px_rgba(96,165,250,0.3)]" },
+  C: { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,191,36,0.3)]" },
+  D: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,146,60,0.3)]" },
+  F: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/25", glow: "shadow-[0_0_12px_-3px_rgba(248,113,113,0.3)]" },
+};
+
+const CONFIDENCE_MAP: Record<string, { label: string; color: string }> = {
+  high: { label: "HIGH CONFIDENCE", color: "text-emerald-400/70" },
+  medium: { label: "EMERGING PATTERN", color: "text-amber-400/70" },
+  insufficient: { label: "NEEDS MORE DATA", color: "text-muted-foreground/50" },
+};
+
+/* ── Main Component ── */
+export function AIFocusCard({ entries }: { entries: { id: string }[] }) {
+  const [result, setResult] = useState<AIFocusResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const tradeCount = entries.length;
+  const isLocked = tradeCount < 3;
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const fetchAnalysis = useCallback(async (force = false) => {
+    if (!force) {
+      try {
+        const cached = localStorage.getItem(AI_FOCUS_CACHE);
+        if (cached) {
+          const parsed: AIFocusResult = JSON.parse(cached);
+          if (parsed.date === todayStr && parsed.tradeCount === tradeCount && parsed.primaryLeak && parsed.riskGrade) {
+            setResult(parsed);
+            return;
+          }
+        }
+      } catch {}
+    }
+    setLoading(true); setError(null);
+    if (force) setRefreshing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trade-focus`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({}),
+      });
+      if (!resp.ok) { const body = await resp.json().catch(() => ({})); throw new Error(body.error || "Analysis failed"); }
+      const data = await resp.json();
+      const cached: AIFocusResult = { ...data, date: todayStr, tradeCount };
+      setResult(cached);
+      try {
+        localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached));
+        localStorage.setItem(AI_FOCUS_CACHE_TS, String(Date.now()));
+      } catch {}
+    } catch (e: any) { setError(e.message || "Something went wrong"); }
+    finally { setLoading(false); setRefreshing(false); }
+  }, [todayStr, tradeCount]);
+
+  useEffect(() => {
+    if (!isLocked) fetchAnalysis();
+  }, [isLocked, fetchAnalysis, tradeCount]);
+
+  useEffect(() => {
+    if (isLocked || !result) return;
+    const now = new Date();
+    if (now.getHours() < 18) return;
+    try {
+      const cachedTs = localStorage.getItem(AI_FOCUS_CACHE_TS);
+      if (!cachedTs) return;
+      const cachedDate = new Date(Number(cachedTs));
+      if (cachedDate.toDateString() === now.toDateString() && cachedDate.getHours() < 18) {
+        fetchAnalysis(true);
+      }
+    } catch {}
+  }, [isLocked, result, fetchAnalysis]);
+
+  /* ── Locked State ── */
+  if (isLocked) {
+    return (
+      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-card p-6 space-y-4">
+        <style>{MENTOR_STYLES}</style>
+        <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
+          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 3s linear infinite" }}
+        />
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-muted/40 border border-white/[0.06]">
+            <Brain className="h-4.5 w-4.5 text-muted-foreground/50" />
+            <Lock className="h-2.5 w-2.5 text-muted-foreground absolute -bottom-0.5 -right-0.5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">LOCKED</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Trades scanned</span>
+            <span className="text-xs font-mono text-primary tabular-nums">{tradeCount}/3</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(tradeCount / 3) * 100}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))" }} />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">Log {3 - tradeCount} more trade{3 - tradeCount > 1 ? "s" : ""} to activate behavioral leak detection and pattern analysis.</p>
+      </div>
+    );
+  }
+
+  /* ── Loading State ── */
+  if (loading && !refreshing) {
+    return (
+      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card p-6 space-y-4">
+        <style>{MENTOR_STYLES}</style>
+        <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
+          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 2s linear infinite" }}
+        />
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-primary/5 border border-primary/15">
+            <Brain className="h-4.5 w-4.5 text-primary animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-primary/50 animate-pulse">COMPUTING ANALYTICS...</span>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-14 w-full rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Error State ── */
+  if (error) {
+    return (
+      <div id="ai-focus-card" className="rounded-2xl border border-destructive/20 bg-card p-6 space-y-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-destructive/10 border border-destructive/20">
+            <Brain className="h-4.5 w-4.5 text-destructive" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
+            <span className="text-[10px] text-destructive/70">{error}</span>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fetchAnalysis(true)}>
+          <RefreshCw className="h-3.5 w-3.5" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (!result) return null;
+
+  const gradeStyle = RISK_GRADE_MAP[result.riskGrade] || RISK_GRADE_MAP.C;
+  const confStyle = CONFIDENCE_MAP[result.primaryLeakConfidence] || CONFIDENCE_MAP.medium;
+  const isInsufficient = result.primaryLeakConfidence === "insufficient";
+
+  if (isInsufficient) {
+    return <InsufficientDataCard result={result} gradeStyle={gradeStyle} refreshing={refreshing} onRescan={() => fetchAnalysis(true)} />;
+  }
+
+  const slides = [
+    {
+      label: "PRIMARY LEAK", icon: AlertTriangle, value: result.primaryLeak,
+      subLabel: confStyle.label, accent: "from-red-500/10 to-red-500/[0.02]",
+      iconColor: "text-red-400", labelColor: "text-red-400/80", glowColor: "rgba(248,113,113,0.3)",
+      dotColor: "bg-red-400", confidenceColor: confStyle.color,
+    },
+    {
+      label: "STRONGEST EDGE", icon: Crosshair, value: result.strongestEdge,
+      accent: "from-emerald-500/10 to-emerald-500/[0.02]", iconColor: "text-emerald-400",
+      labelColor: "text-emerald-400/80", glowColor: "rgba(52,211,153,0.3)", dotColor: "bg-emerald-400",
+    },
+    {
+      label: "NEXT ACTION", icon: Target, value: result.nextAction,
+      accent: "from-blue-500/10 to-blue-500/[0.02]", iconColor: "text-blue-400",
+      labelColor: "text-blue-400/80", glowColor: "rgba(59,130,246,0.3)", dotColor: "bg-blue-400",
+    },
+    {
+      label: "PROGRESS", icon: Activity, value: result.progressVerdict,
+      accent: "from-violet-500/10 to-violet-500/[0.02]", iconColor: "text-violet-400",
+      labelColor: "text-violet-400/80", glowColor: "rgba(167,139,250,0.3)", dotColor: "bg-violet-400",
+    },
+  ];
+
+  return <AIFocusCardCarousel result={result} slides={slides} gradeStyle={gradeStyle} refreshing={refreshing} />;
+}
+
+/* ── Insufficient Data Unlock Card ── */
+function InsufficientDataCard({ result, gradeStyle, refreshing, onRescan }: {
+  result: AIFocusResult;
+  gradeStyle: { color: string; bg: string; border: string; glow: string };
+  refreshing: boolean;
+  onRescan: () => void;
+}) {
+  const tradeCount = result.tradeCount || result.dataDepth || 0;
+  const target = 10;
+  const percent = Math.min((tradeCount / target) * 100, 100);
+  const remaining = Math.max(0, target - tradeCount);
+
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (percent / 100) * circumference;
+
+  const milestones = [
+    { count: 3, label: "Basic scan", unlocked: tradeCount >= 3 },
+    { count: 10, label: "Pattern detection", unlocked: tradeCount >= 10 },
+    { count: 20, label: "Full behavioral audit", unlocked: tradeCount >= 20 },
+  ];
+
+  return (
+    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
+      <style>{MENTOR_STYLES}</style>
+      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-20"
+        style={{ background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 15%, transparent 30%, hsl(217 91% 60% / 0.1) 50%, transparent 65%, hsl(var(--primary) / 0.12) 80%, transparent 100%)", animation: "mentorBorder 10s linear infinite" }}
+      />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 4s linear infinite" }}
+      />
+
+      <div className="relative p-5 pb-5 space-y-5">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20" style={{ animation: "mentorPulse 3s ease-in-out infinite" }} />
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+              <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.5))" }} />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-foreground tracking-tight"
+              style={{ background: "linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary) / 0.8), hsl(var(--foreground)))", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mentorShimmer 6s linear infinite" }}
+            >
+              PERFORMANCE INTELLIGENCE
+            </h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ boxShadow: "0 0 6px rgba(251,191,36,0.5)" }} />
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">BUILDING PROFILE</span>
+            </div>
+          </div>
+          <div className={cn("px-3 py-1.5 rounded-lg border text-lg font-black tracking-tight opacity-30", gradeStyle.bg, gradeStyle.border, gradeStyle.color)}>
+            {result.riskGrade}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-5">
+          <div className="relative shrink-0">
+            <svg width="96" height="96" viewBox="0 0 96 96" className="transform -rotate-90">
+              <circle cx="48" cy="48" r={radius} fill="none" stroke="hsl(var(--muted) / 0.2)" strokeWidth="5" />
+              <circle cx="48" cy="48" r={radius} fill="none" stroke="hsl(var(--primary))" strokeWidth="5" strokeLinecap="round"
+                strokeDasharray={circumference} strokeDashoffset={strokeDashoffset}
+                className="transition-all duration-700 ease-out"
+                style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold text-foreground tabular-nums">{tradeCount}</span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">/{target}</span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <h4 className="text-base font-semibold text-foreground leading-snug">
+              {remaining > 0 ? `Log ${remaining} more trade${remaining > 1 ? "s" : ""} to unlock full analysis` : "Pattern detection unlocked"}
+            </h4>
+            <p className="text-xs text-muted-foreground leading-relaxed">Your profile is being built. Each trade sharpens detection accuracy.</p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {milestones.map((m) => (
+            <div key={m.count} className={cn("flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 border transition-all", m.unlocked ? "border-emerald-500/20 bg-emerald-500/[0.06]" : "border-white/[0.05] bg-white/[0.02]")}>
+              <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center shrink-0", m.unlocked ? "bg-emerald-500/15" : "bg-muted/30")}>
+                {m.unlocked ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : <Lock className="h-3 w-3 text-muted-foreground/40" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className={cn("text-xs font-medium", m.unlocked ? "text-emerald-400/90" : "text-muted-foreground/60")}>{m.label}</span>
+              </div>
+              <span className={cn("text-[10px] font-mono tabular-nums", m.unlocked ? "text-emerald-400/60" : "text-muted-foreground/40")}>{m.count} trades</span>
+            </div>
+          ))}
+        </div>
+
+        <Button size="sm" variant="outline" className="w-full gap-1.5 rounded-xl border-primary/20 text-primary hover:bg-primary/5"
+          onClick={() => document.getElementById("log-trade-section")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+        >
+          <Plus className="h-3.5 w-3.5" /> Log a Trade
+        </Button>
+
+        {refreshing && (
+          <div className="flex items-center justify-center gap-1.5">
+            <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
+            <span className="text-[10px] font-mono text-primary/50">Recomputing...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Carousel sub-component ── */
+function AIFocusCardCarousel({ result, slides, gradeStyle, refreshing }: {
+  result: AIFocusResult;
+  slides: { label: string; icon: any; value: string; subLabel?: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string; confidenceColor?: string }[];
+  gradeStyle: { color: string; bg: string; border: string; glow: string };
+  refreshing: boolean;
+}) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start", containScroll: "trimSnaps" });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap());
+      setCanScrollPrev(emblaApi.canScrollPrev());
+      setCanScrollNext(emblaApi.canScrollNext());
+    };
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    onSelect();
+    return () => { emblaApi.off("select", onSelect); emblaApi.off("reInit", onSelect); };
+  }, [emblaApi]);
+
+  return (
+    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
+      <style>{MENTOR_STYLES}</style>
+      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-20"
+        style={{ background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 15%, transparent 30%, hsl(217 91% 60% / 0.1) 50%, transparent 65%, hsl(var(--primary) / 0.12) 80%, transparent 100%)", animation: "mentorBorder 10s linear infinite" }}
+      />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 3s linear infinite" }}
+      />
+
+      <div className="relative p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20" style={{ animation: "mentorPulse 3s ease-in-out infinite" }} />
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+              <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.5))" }} />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-bold text-foreground tracking-tight"
+              style={{ background: "linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary) / 0.8), hsl(var(--foreground)))", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mentorShimmer 6s linear infinite" }}
+            >
+              PERFORMANCE INTELLIGENCE
+            </h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.5)", animation: "mentorPulse 2s ease-in-out infinite" }} />
+              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
+                Based on {result.dataDepth || result.tradeCount} trades
+              </span>
+            </div>
+          </div>
+          <div className={cn("px-3 py-1.5 rounded-lg border text-lg font-black tracking-tight", gradeStyle.bg, gradeStyle.border, gradeStyle.color, gradeStyle.glow)}>
+            {result.riskGrade}
+          </div>
+        </div>
+
+        <div className="overflow-hidden -mx-1" ref={emblaRef}>
+          <div className="flex">
+            {slides.map((s, i) => (
+              <div key={s.label} className="flex-[0_0_100%] min-w-0 px-1">
+                <div
+                  className={cn("relative rounded-xl border border-white/[0.06] p-4 min-h-[140px] flex flex-col justify-center bg-gradient-to-br", s.accent)}
+                  style={{ animation: `mentorFadeIn 0.4s ease-out ${i * 0.05}s both` }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                      <s.icon className={cn("h-4 w-4", s.iconColor)} style={{ filter: `drop-shadow(0 0 6px ${s.glowColor})` }} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={cn("text-[10px] font-mono uppercase tracking-[0.14em] font-bold", s.labelColor)}>{s.label}</span>
+                      {s.subLabel && (
+                        <span className={cn("text-[9px] font-mono uppercase tracking-wider", s.confidenceColor || "text-muted-foreground/50")}>{s.subLabel}</span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[14px] leading-[1.6] text-foreground/90 font-medium">{s.value}</p>
+                  <div className="mt-3 h-[2px] rounded-full w-12 opacity-40" style={{ background: `linear-gradient(90deg, ${s.glowColor}, transparent)` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-3 pt-1">
+          <button onClick={() => emblaApi?.scrollPrev()}
+            className={cn("w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150", canScrollPrev ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]" : "opacity-0 pointer-events-none")}
+            aria-label="Previous insight"
+          >
+            <ChevronLeft className="h-4.5 w-4.5" />
+          </button>
+          <div className="flex items-center gap-1.5">
+            {slides.map((s, i) => (
+              <button key={i}
+                className={cn("rounded-full transition-all duration-200", i === selectedIndex ? cn("w-5 h-2", s.dotColor, "opacity-90") : "w-2 h-2 bg-white/15 hover:bg-white/25")}
+                style={i === selectedIndex ? { boxShadow: `0 0 8px ${s.glowColor}` } : undefined}
+                onClick={() => emblaApi?.scrollTo(i)}
+              />
+            ))}
+          </div>
+          <button onClick={() => emblaApi?.scrollNext()}
+            className={cn("w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150", canScrollNext ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]" : "opacity-0 pointer-events-none")}
+            aria-label="Next insight"
+          >
+            <ChevronRight className="h-4.5 w-4.5" />
+          </button>
+        </div>
+
+        {refreshing && (
+          <div className="flex items-center justify-center gap-1.5 pt-0.5">
+            <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
+            <span className="text-[10px] font-mono text-primary/50">Recomputing analytics...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/EquityCurveCard.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { useMemo } from "react";
+import { Activity } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
+
+interface EquityCurveCardProps {
+  equityCurve: { date: string; balance: number }[];
+  startingBalance: number;
+}
+
+export function EquityCurveCard({ equityCurve, startingBalance }: EquityCurveCardProps) {
+  const chartData = useMemo(() => {
+    return [
+      { date: "", balance: startingBalance },
+      ...equityCurve.map((p) => ({ date: p.date, balance: startingBalance + p.balance })),
+    ];
+  }, [equityCurve, startingBalance]);
+
+  const currentBalance = chartData[chartData.length - 1]?.balance ?? startingBalance;
+  const totalChange = currentBalance - startingBalance;
+  const isPositive = totalChange >= 0;
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-4 md:p-5 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Equity Curve</h3>
+        </div>
+        <span className={`text-xs font-semibold tabular-nums ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+          {isPositive ? "+" : ""}{totalChange.toFixed(0)} ({((totalChange / startingBalance) * 100).toFixed(1)}%)
+        </span>
+      </div>
+      <div className="h-[140px] md:h-[160px] -mx-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
+            <defs>
+              <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={isPositive ? "#34d399" : "#f87171"} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={isPositive ? "#34d399" : "#f87171"} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="date" tick={false} axisLine={false} tickLine={false} />
+            <YAxis domain={["auto", "auto"]} tick={false} axisLine={false} tickLine={false} width={0} />
+            <RechartsTooltip
+              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+              labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 10 }}
+              formatter={(val: number) => [`$${val.toLocaleString()}`, "Balance"]}
+            />
+            <Area
+              type="monotone"
+              dataKey="balance"
+              stroke={isPositive ? "#34d399" : "#f87171"}
+              strokeWidth={2}
+              fill="url(#equityGrad)"
+              dot={false}
+              activeDot={{ r: 3, strokeWidth: 0, fill: isPositive ? "#34d399" : "#f87171" }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/GettingStartedBanner.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { Button } from "@/components/ui/button";
+import { Wallet, CheckCircle2 } from "lucide-react";
+
+type TodayStatus = "incomplete" | "in_progress" | "complete";
+
+interface GettingStartedBannerProps {
+  balanceSet: boolean;
+  onSetBalance: () => void;
+  todayStatus: TodayStatus;
+}
+
+export function GettingStartedBanner({ balanceSet, onSetBalance, todayStatus }: GettingStartedBannerProps) {
+  const steps = [
+    { num: 1, title: "Set your starting balance", desc: "Tell us your current account balance so we can track your progress.", done: balanceSet, active: !balanceSet },
+    { num: 2, title: "Log your first trade", desc: "After your next trade, tap the + Log Trade button above.", done: todayStatus !== "incomplete", active: balanceSet && todayStatus === "incomplete" },
+    { num: 3, title: "Complete your check-in", desc: "After logging, you'll answer 3 quick questions. Takes 30 seconds.", done: todayStatus === "complete", active: todayStatus === "in_progress" },
+  ];
+
+  return (
+    <div className="vault-glass-card p-6 space-y-5">
+      <div>
+        <h3 className="text-base font-semibold text-foreground">Get Started with My Trades</h3>
+        <p className="text-sm text-muted-foreground mt-1">Follow these three steps to begin tracking your trading performance.</p>
+      </div>
+      <div className="space-y-4">
+        {steps.map((s) => (
+          <div key={s.num} className={`flex items-start gap-4 ${!s.active && !s.done ? "opacity-40" : ""}`}>
+            <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
+              s.done ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                : s.active ? "bg-primary/20 border-primary/50 text-primary ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
+                : "bg-white/5 border-white/10 text-muted-foreground"
+            }`}>
+              {s.done ? <CheckCircle2 className="h-4 w-4" /> : s.num}
+            </div>
+            <div className="flex-1 min-w-0 pt-0.5">
+              <p className="text-sm font-semibold text-foreground">{s.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
+              {s.num === 1 && s.active && (
+                <Button size="sm" className="mt-2 gap-1.5" onClick={onSetBalance}>
+                  <Wallet className="h-3.5 w-3.5" /> Set Starting Balance
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/PerformanceHUD.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import {
+  Wallet, ArrowUpRight, ArrowDownRight, Target, Activity, Shield, Flame,
+} from "lucide-react";
+
+interface PerformanceHUDProps {
+  balance: number | null;
+  todayPnl: number;
+  allTimeWinRate: number;
+  totalTrades: number;
+  complianceRate: number;
+  currentStreak: number;
+}
+
+export function PerformanceHUD({
+  balance, todayPnl, allTimeWinRate, totalTrades, complianceRate, currentStreak,
+}: PerformanceHUDProps) {
+  const hudItems = [
+    {
+      label: "BALANCE",
+      value: balance !== null ? `$${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—",
+      icon: Wallet,
+      accent: "text-primary",
+      large: true,
+    },
+    {
+      label: "TODAY P/L",
+      value: todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`,
+      icon: todayPnl >= 0 ? ArrowUpRight : ArrowDownRight,
+      accent: todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-muted-foreground",
+    },
+    {
+      label: "WIN RATE",
+      value: `${allTimeWinRate}%`,
+      icon: Target,
+      accent: allTimeWinRate >= 50 ? "text-emerald-400" : "text-amber-400",
+    },
+    {
+      label: "TRADES",
+      value: String(totalTrades),
+      icon: Activity,
+      accent: "text-primary",
+    },
+    {
+      label: "COMPLIANCE",
+      value: `${complianceRate}%`,
+      icon: Shield,
+      accent: complianceRate >= 80 ? "text-emerald-400" : "text-amber-400",
+    },
+    {
+      label: "STREAK",
+      value: `${currentStreak}`,
+      icon: Flame,
+      accent: currentStreak >= 5 ? "text-emerald-400" : currentStreak >= 2 ? "text-amber-400" : "text-muted-foreground",
+    },
+  ];
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card p-1">
+      {/* Animated gradient border effect */}
+      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-30"
+        style={{
+          background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 20%, transparent 40%, hsl(var(--primary) / 0.1) 60%, transparent 80%)",
+          animation: "hudBorderSpin 12s linear infinite",
+        }}
+      />
+      <style>{`@keyframes hudBorderSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+
+      <div className="relative grid grid-cols-3 md:grid-cols-6 gap-px rounded-xl overflow-hidden bg-border/20">
+        {hudItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div key={item.label} className="bg-card px-2.5 py-2.5 md:px-4 md:py-4 flex flex-col items-center text-center gap-0.5">
+              <Icon className={`h-3.5 w-3.5 ${item.accent} shrink-0`} />
+              <span className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/70 leading-none">{item.label}</span>
+              <span className={`text-base md:text-lg font-bold tabular-nums leading-none ${item.large ? item.accent : "text-foreground"}`}>
+                {item.value}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/PerformanceBreakdownCard.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { useState } from "react";
+import { BarChart3 } from "lucide-react";
+
+interface PerformanceBreakdownCardProps {
+  symbolStats: { symbol: string; trades: number; wins: number; winRate: number; totalPnl: number }[];
+  dayStats: { day: string; trades: number; wins: number; winRate: number }[];
+}
+
+export function PerformanceBreakdownCard({ symbolStats, dayStats }: PerformanceBreakdownCardProps) {
+  const [tab, setTab] = useState<"symbol" | "day">("symbol");
+  const topSymbols = symbolStats.slice(0, 6);
+
+  return (
+    <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Performance Breakdown</h3>
+        </div>
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          {(["symbol", "day"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-3 py-1 text-[10px] font-medium uppercase tracking-wider transition-colors duration-100 ${
+                tab === t ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              {t === "symbol" ? "By Symbol" : "By Day"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {tab === "symbol" && (
+        <div className="space-y-2">
+          {topSymbols.map((s) => (
+            <div key={s.symbol} className="flex items-center gap-3 rounded-xl bg-muted/20 border border-border/30 px-3 py-2.5">
+              <span className="text-sm font-bold text-foreground min-w-[50px]">{s.symbol}</span>
+              <div className="flex-1 min-w-0">
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${s.winRate}%`,
+                      background: s.winRate >= 50 ? "linear-gradient(90deg, #34d399, #6ee7b7)" : "linear-gradient(90deg, #f87171, #fca5a5)",
+                    }}
+                  />
+                </div>
+              </div>
+              <span className={`text-xs font-semibold tabular-nums ${s.winRate >= 50 ? "text-emerald-400" : "text-red-400"}`}>
+                {s.winRate}%
+              </span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">{s.trades}t</span>
+              <span className={`text-xs font-semibold tabular-nums ${s.totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {s.totalPnl >= 0 ? "+" : ""}${Math.abs(s.totalPnl).toFixed(0)}
+              </span>
+            </div>
+          ))}
+          {symbolStats.length === 0 && <p className="text-xs text-muted-foreground text-center py-3">No symbol data yet.</p>}
+        </div>
+      )}
+
+      {tab === "day" && (
+        <div className="grid grid-cols-5 md:grid-cols-7 gap-2">
+          {dayStats.map((d) => (
+            <div key={d.day} className="flex flex-col items-center gap-1 rounded-xl bg-muted/20 border border-border/30 px-2 py-3">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase">{d.day}</span>
+              <span className={`text-sm font-bold tabular-nums ${d.winRate >= 50 ? "text-emerald-400" : d.trades > 0 ? "text-red-400" : "text-muted-foreground/40"}`}>
+                {d.trades > 0 ? `${d.winRate}%` : "—"}
+              </span>
+              <span className="text-[9px] text-muted-foreground/60 tabular-nums">{d.trades}t</span>
+            </div>
+          ))}
+          {dayStats.length === 0 && <p className="text-xs text-muted-foreground text-center py-3 col-span-full">No day data yet.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/RecentTradesSection.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, X, Loader2, Download,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+const OUTCOME_STYLES = {
+  win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: TrendingUp },
+  loss: { label: "Loss", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: TrendingDown },
+  breakeven: { label: "Breakeven", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Minus },
+};
+
+const MOBILE_LIMIT = 15;
+
+interface RecentTradesSectionProps {
+  entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string; plan_id?: string }[];
+  onExportCSV: () => void;
+  onDelete: (id: string) => Promise<{ error: any }>;
+}
+
+export function RecentTradesSection({ entries, onExportCSV, onDelete }: RecentTradesSectionProps) {
+  const isMobile = useIsMobile();
+  const [expanded, setExpanded] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  if (entries.length === 0) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
+        <div className="vault-glass-card p-6 text-center">
+          <p className="text-sm text-muted-foreground">No trades logged yet. Use the + Log Trade button to get started.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const defaultLimit = isMobile ? MOBILE_LIMIT : 25;
+  const showToggle = entries.length > defaultLimit;
+  const visibleEntries = expanded ? entries : entries.slice(0, defaultLimit);
+
+  const handleDeleteConfirm = async (id: string) => {
+    setIsDeleting(true);
+    await onDelete(id);
+    setIsDeleting(false);
+    setDeletingId(null);
+    setConfirmText("");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
+        <span className="text-[10px] text-muted-foreground tabular-nums">{entries.length} total trades</span>
+      </div>
+      <div className="space-y-2">
+        {visibleEntries.map((e) => {
+          const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
+          const s = OUTCOME_STYLES[outcome];
+          const Icon = s.icon;
+          const pnlNum = e.risk_reward * e.risk_used;
+          const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
+          const ticker = e.symbol || e.notes?.split(" ")[0] || "Trade";
+
+          const noteParts = e.notes?.split(" | ") || [];
+          const directionPart = noteParts[0]?.split(" ")[1];
+          const setupPart = noteParts.find((p) => p.startsWith("Setup:"))?.replace("Setup: ", "");
+          const targetPart = noteParts.find((p) => p.startsWith("Target:"))?.replace("Target: ", "");
+          const stopPart = noteParts.find((p) => p.startsWith("Stop:"))?.replace("Stop: ", "");
+          const isDeleteMode = deletingId === e.id;
+
+          return (
+            <div key={e.id} className="vault-glass-card p-4 space-y-2 relative group">
+              {!isDeleteMode && (
+                <button
+                  onClick={() => { setDeletingId(e.id); setConfirmText(""); }}
+                  className="absolute top-3 right-3 h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  aria-label="Delete trade"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+
+              <div className="flex items-center justify-between gap-2 flex-wrap pr-8">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon className={`h-3.5 w-3.5 ${s.color} shrink-0`} />
+                  <span className="text-sm font-bold text-foreground">{ticker}</span>
+                  {directionPart && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-border/50 bg-muted/30 text-muted-foreground">{directionPart}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground">· {format(new Date(e.trade_date), "MMM d")}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color}`}>{s.label}</span>
+                  <span className={`text-sm font-bold tabular-nums ${s.color}`}>{pnlStr}</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <span className={cn(
+                  "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+                  e.plan_id
+                    ? "bg-primary/10 text-primary border-primary/20"
+                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                )}>
+                  {e.plan_id ? "Planned" : "Unplanned"}
+                </span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
+                  {e.followed_rules ? "✅" : "❌"} Plan
+                </span>
+                {targetPart && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
+                    🎯 {targetPart}
+                  </span>
+                )}
+                {stopPart && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
+                    🛑 Stop: {stopPart}
+                  </span>
+                )}
+                {setupPart && setupPart !== "—" && (
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary">
+                    {setupPart}
+                  </span>
+                )}
+              </div>
+
+              {isDeleteMode && (
+                <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2 mt-1">
+                  <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">DELETE</span> to confirm</p>
+                  <p className="text-[11px] text-muted-foreground">This action is permanent and cannot be undone.</p>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      className="max-w-[120px] h-8 text-sm font-mono"
+                      placeholder="DELETE"
+                      value={confirmText}
+                      onChange={(ev) => setConfirmText(ev.target.value.toUpperCase())}
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={confirmText !== "DELETE" || isDeleting}
+                      onClick={() => handleDeleteConfirm(e.id)}
+                      className="h-8"
+                    >
+                      {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setDeletingId(null); setConfirmText(""); }}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {showToggle && (
+        <Button variant="ghost" size="sm" className="w-full text-xs text-primary gap-1.5" onClick={() => setExpanded(!expanded)}>
+          {expanded ? <><ChevronUp className="h-3 w-3" /> Show less</> : <><ChevronDown className="h-3 w-3" /> Show all {entries.length} trades</>}
+        </Button>
+      )}
+
+      <Button variant="outline" size="sm" className="w-full text-xs gap-1.5" onClick={onExportCSV}>
+        <Download className="h-3 w-3" /> Export All Trades (CSV)
+      </Button>
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/SectionLabel.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import type { ReactNode } from "react";
+
+export function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold pl-1">
+      {children}
+    </p>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/TodayVaultCheckCard.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { Button } from "@/components/ui/button";
+import { Shield, CheckCircle2, Plus, Eye } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { ApprovedPlan } from "@/hooks/useApprovedPlans";
+
+type TodayStatus = "incomplete" | "in_progress" | "complete";
+
+interface TodayVaultCheckCardProps {
+  activePlan: ApprovedPlan | null;
+  todayTradeCount: number;
+  todayStatus: TodayStatus;
+  noTradeDay: boolean;
+  onCheckTrade: () => void;
+  onLogFromPlan: (plan: ApprovedPlan) => void;
+  onLogUnplanned: () => void;
+  onCancelPlan: (id: string) => void;
+  onNoTradeDay: () => void;
+  onCompleteCheckIn: () => void;
+  onReviewFeedback: () => void;
+}
+
+export function TodayVaultCheckCard({
+  activePlan, todayTradeCount, todayStatus, noTradeDay,
+  onCheckTrade, onLogFromPlan, onLogUnplanned, onCancelPlan, onNoTradeDay, onCompleteCheckIn, onReviewFeedback,
+}: TodayVaultCheckCardProps) {
+  // State A: No active plan, not complete
+  if (!activePlan && todayStatus === "incomplete" && !noTradeDay) {
+    return (
+      <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
+          <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20">No plan</span>
+        </div>
+        <p className="text-xs text-muted-foreground">No trade approved yet today. Check a setup before you enter.</p>
+        <div className="flex gap-2">
+          <Button size="sm" className="gap-1.5" onClick={onCheckTrade}>
+            <Shield className="h-3.5 w-3.5" /> Check a Trade
+          </Button>
+          <Button size="sm" variant="outline" onClick={onNoTradeDay}>Mark No-Trade Day</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // State B: Active plan, not yet logged
+  if (activePlan && activePlan.status === "planned") {
+    const statusStyles = activePlan.approval_status === "fits"
+      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+      : activePlan.approval_status === "tight"
+        ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+        : "bg-red-500/10 text-red-400 border-red-500/20";
+    return (
+      <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
+          <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Plan ready</span>
+        </div>
+        <p className="text-xs text-muted-foreground">Your approved plan is ready. Log the result after the trade.</p>
+
+        <div className="rounded-xl bg-muted/20 border border-border/30 p-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {activePlan.ticker && <span className="text-sm font-bold text-foreground">{activePlan.ticker}</span>}
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-border/50 bg-muted/30 text-muted-foreground">
+              {activePlan.direction === "calls" ? "Calls" : "Puts"}
+            </span>
+            <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", statusStyles)}>
+              {activePlan.approval_status.toUpperCase()}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-[11px]">
+            <div><span className="text-muted-foreground">Contracts</span><br /><span className="font-semibold text-foreground">{activePlan.contracts_planned}</span></div>
+            <div><span className="text-muted-foreground">Max loss</span><br /><span className="font-semibold text-red-400">${Number(activePlan.max_loss_planned).toFixed(0)}</span></div>
+            <div><span className="text-muted-foreground">Entry</span><br /><span className="font-semibold text-foreground">${Number(activePlan.entry_price_planned).toFixed(2)}</span></div>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button size="sm" className="gap-1.5" onClick={() => onLogFromPlan(activePlan)}>
+            <CheckCircle2 className="h-3.5 w-3.5" /> Log Result
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => onCancelPlan(activePlan.id)}>Cancel Plan</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // State C: Complete or in-progress
+  const badgeMap = {
+    incomplete: { text: "Incomplete", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+    in_progress: { text: "In progress", cls: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    complete: { text: "Complete", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+  };
+  const badge = badgeMap[todayStatus];
+
+  return (
+    <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
+      <div className="flex items-center gap-2">
+        <Shield className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
+        <span className={`ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border ${badge.cls}`}>{badge.text}</span>
+      </div>
+
+      {todayStatus === "in_progress" && (
+        <>
+          <p className="text-xs text-muted-foreground">Trade logged. Complete your check-in to finish today's accountability.</p>
+          <div className="flex gap-2">
+            <Button size="sm" className="gap-1.5" onClick={onCompleteCheckIn}><CheckCircle2 className="h-3.5 w-3.5" /> Complete check-in</Button>
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={onLogUnplanned}><Plus className="h-3.5 w-3.5" /> Log another trade</Button>
+          </div>
+        </>
+      )}
+      {todayStatus === "complete" && (
+        <>
+          <p className="text-xs text-emerald-400/80">{noTradeDay ? "No-trade day tracked. Good discipline." : "Today's accountability is complete. Review your feedback below."}</p>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={onReviewFeedback}><Eye className="h-3.5 w-3.5" /> Review today's feedback</Button>
+        </>
+      )}
+      {todayStatus === "incomplete" && noTradeDay && (
+        <p className="text-xs text-emerald-400/80">No-trade day tracked. Good discipline. No setup taken today.</p>
+      )}
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/TrackedBalanceCard.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Wallet, Pencil, RotateCcw, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface TrackedBalanceCardProps {
+  balance: number | null;
+  showResetConfirm: boolean;
+  resetInput: string;
+  resetting: boolean;
+  onToggleReset: () => void;
+  onResetInputChange: (v: string) => void;
+  onConfirmReset: () => void;
+  showUpdateBalance: boolean;
+  updateBalanceInput: string;
+  updatingBalance: boolean;
+  onToggleUpdate: () => void;
+  onUpdateInputChange: (v: string) => void;
+  onConfirmUpdate: () => void;
+}
+
+export function TrackedBalanceCard({
+  balance, showResetConfirm, resetInput, resetting, onToggleReset, onResetInputChange, onConfirmReset,
+  showUpdateBalance, updateBalanceInput, updatingBalance, onToggleUpdate, onUpdateInputChange, onConfirmUpdate,
+}: TrackedBalanceCardProps) {
+  if (balance === null) return null;
+
+  const isExpanded = showUpdateBalance || showResetConfirm;
+
+  return (
+    <div className="vault-glass-card overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+          <Wallet className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-muted-foreground/60 leading-none">Tracked Balance</p>
+          <p className="text-base font-bold tabular-nums text-foreground mt-0.5 leading-tight">${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+        </div>
+        <button
+          onClick={onToggleUpdate}
+          className={cn(
+            "h-8 w-8 flex items-center justify-center rounded-xl transition-all duration-100",
+            showUpdateBalance ? "bg-primary/15 text-primary" : "text-muted-foreground/40 hover:text-primary hover:bg-primary/10"
+          )}
+          aria-label="Update balance"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-2">
+          {showUpdateBalance && (
+            <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
+              <p className="text-xs text-foreground font-medium">What's your actual balance?</p>
+              <p className="text-[11px] text-muted-foreground">We'll adjust your starting balance to keep trade math accurate.</p>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1 max-w-[160px]">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                  <Input
+                    className="pl-7 h-8 text-sm font-mono tabular-nums"
+                    placeholder="0"
+                    type="number"
+                    min="0"
+                    value={updateBalanceInput}
+                    onChange={(e) => onUpdateInputChange(e.target.value)}
+                  />
+                </div>
+                <Button size="sm" disabled={!updateBalanceInput || isNaN(parseFloat(updateBalanceInput)) || updatingBalance} onClick={onConfirmUpdate} className="h-8 rounded-lg">
+                  {updatingBalance ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleUpdate}>Cancel</Button>
+              </div>
+              <button onClick={onToggleReset} className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors mt-1">
+                <RotateCcw className="h-2.5 w-2.5" /> Reset balance entirely
+              </button>
+            </div>
+          )}
+
+          {showResetConfirm && (
+            <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2">
+              <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">RESET</span> to confirm</p>
+              <p className="text-[11px] text-muted-foreground">This will clear your starting balance. You'll need to set a new one.</p>
+              <div className="flex gap-2 items-center">
+                <Input className="max-w-[120px] h-8 text-sm font-mono" placeholder="RESET" value={resetInput} onChange={(e) => onResetInputChange(e.target.value.toUpperCase())} />
+                <Button size="sm" variant="destructive" disabled={resetInput !== "RESET" || resetting} onClick={onConfirmReset} className="h-8">{resetting ? "Resetting..." : "Confirm"}</Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleReset}>Cancel</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/trade-os/WeeklyReviewCard.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { Button } from "@/components/ui/button";
+import { BarChart3 } from "lucide-react";
+
+interface WeeklyReviewCardProps {
+  hasData: boolean;
+}
+
+export function WeeklyReviewCard({ hasData }: WeeklyReviewCardProps) {
+  return (
+    <div className="vault-glass-card p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <BarChart3 className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold text-foreground">Weekly Review</h3>
+        {hasData && <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Ready</span>}
+      </div>
+      {hasData ? (
+        <><p className="text-sm text-muted-foreground">Your weekly review is ready to generate.</p><Button size="sm">Generate Weekly Review</Button></>
+      ) : (
+        <><p className="text-sm text-muted-foreground">Need at least 1 week of trades.</p><Button size="sm" disabled>Generate Weekly Review</Button></>
+      )}
+    </div>
+  );
+}
+
+
+────────────────────────────────────────────────────────────────────────────────
+FILE: src/components/academy/QuickCheckInSheet.tsx
+────────────────────────────────────────────────────────────────────────────────
+
+import { useState } from "react";
+import { CheckCircle } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onComplete: () => void;
+}
+
+export function QuickCheckInSheet({ open, onOpenChange, onComplete }: Props) {
+  const [didWell, setDidWell] = useState("");
+  const [hurt, setHurt] = useState("");
+  const [focus, setFocus] = useState("");
+
+  const handleComplete = () => {
+    setDidWell("");
+    setHurt("");
+    setFocus("");
+    onComplete();
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="sm:max-w-md overflow-y-auto">
+        <SheetHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-primary" />
+            <SheetTitle>Trade Check-In (30 sec)</SheetTitle>
+          </div>
+          <SheetDescription>
+            Quick reflection to lock in the lesson from this trade.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className="space-y-5 pt-2">
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+              What did you do well?
+            </Label>
+            <Textarea
+              placeholder="e.g. Waited for confirmation before entering"
+              className="min-h-[60px] resize-none"
+              value={didWell}
+              onChange={(e) => setDidWell(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+              What hurt this trade most?
+            </Label>
+            <Textarea
+              placeholder="e.g. Moved stop too early"
+              className="min-h-[60px] resize-none"
+              value={hurt}
+              onChange={(e) => setHurt(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+              Next trade focus (one thing)
+            </Label>
+            <Textarea
+              placeholder="e.g. Only take A+ setups"
+              className="min-h-[60px] resize-none"
+              value={focus}
+              onChange={(e) => setFocus(e.target.value)}
+            />
+          </div>
+
+          <Button className="w-full" onClick={handleComplete}>
+            Complete Check-In
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+
+================================================================================
+PART 3: REUSED COMPONENTS MAP
+================================================================================
+
+Component                  | Where Rendered (OS Layout)
+─────────────────────────────────────────────────────────────────────
+VaultTradePlanner          | Plan stage → embedded when no active plan & not complete
+TodayVaultCheckCard        | Plan stage → always shown (vault check status)
+TodaysLimitsSection        | Live stage → always shown (daily limits display)
+LogTradeSheet              | Modal → opened by handleLogUnplanned / handleLogFromPlan
+QuickCheckInSheet          | Modal → opened after trade logged (Review stage)
+AIFocusCard                | Insights stage → full carousel card
+RecentTradesSection        | Layer 3 (lower analytics) → always shown
+EquityCurveCard            | Layer 3 → shown when equityCurve.length > 1
+PerformanceBreakdownCard   | Layer 3 → shown when symbolStats.length > 0
+TrackedBalanceCard         | Layer 3 → shown when trackedBalance !== null
+WeeklyReviewCard           | Layer 3 → always shown
+SetStartingBalanceModal    | Modal → shown when startingBalance === null
+NoTradeDaySheet            | Modal → opened by "Mark No-Trade Day" button
+
+Note: PerformanceHUD is ONLY used in the CLASSIC layout. The OS layout
+replaces it with the inline metrics strip (Balance/P&L/Trades/Risk/Streak).
+
+
+================================================================================
+PART 4: FEATURE FLAG LOGIC
+================================================================================
+
+Location: src/pages/academy/AcademyTrade.tsx, line 249
+
+  const useOSLayout = isPageEnabled("trade-os");
+
+Feature flag key: "trade-os"
+Source: feature_flags table in database, queried by useFeatureFlags() hook
+
+CLASSIC LAYOUT renders when:
+  - isPageEnabled("trade-os") returns false
+  - OR the "trade-os" row doesn't exist in feature_flags (defaults to true)
+
+OS LAYOUT renders when:
+  - isPageEnabled("trade-os") returns true
+
+FALLBACK:
+  - If the flag doesn't exist in the DB, isPageEnabled defaults to TRUE
+    (see useFeatureFlags.ts line 24: "return flag ? flag.enabled : true")
+  - This means the OS layout is the DEFAULT when no flag is set
+
+BEFORE the flag check, these gates run:
+  1. Access gate: if !hasAccess → <PremiumGate />
+  2. Loading gate: if balanceLoading || tradesLoading → loading spinner
+
+
+================================================================================
+PART 5: TAB/STAGE LOGIC
+================================================================================
+
+STAGES (in order): "plan" → "live" → "review" → "insights"
+
+AUTO-STAGE SELECTION (useSessionStage.ts):
+  1. todayStatus === "complete" → "insights"
+  2. todayTradeCount > 0 && todayStatus !== "complete" → "review"
+  3. hasActivePlan || sessionActive → "live"
+  4. default → "plan"
+
+DEFAULT ACTIVE STAGE:
+  - "plan" (when no plan, no trades, no check-in done)
+
+STATE STORAGE:
+  - manualOverride: useState<SessionStage | null>(null) — local component state
+  - activeStage = manualOverride ?? autoStage
+  - NOT persisted to DB or localStorage
+
+TAB CLICK HANDLING:
+  - OSTabHeader calls onSelect(stage) → setStage(stage) → setManualOverride(stage)
+  - Manual override persists until component unmounts or resetToAuto() is called
+
+STAGE STATUS (for tab styling):
+  - stageStatus(stage) compares stage index to autoStage index:
+    - index < autoStage → "completed" (green dot)
+    - index === autoStage → "active"
+    - index > autoStage → "upcoming" (dimmed)
+
+
+================================================================================
+PART 6: DATA FLOW CONNECTIONS
+================================================================================
+
+1. APPROVED PLAN DATA
+   - Source: useApprovedPlans() hook → { activePlan, cancelPlan, markLogged, refetch }
+   - Read in: Plan stage (TodayVaultCheckCard), Live stage (active plan display)
+   - Written: cancelPlan(id), markLogged(id) after trade logged
+
+2. TRADE LOG DATA
+   - Source: useTradeLog() hook → { entries, addEntry, deleteEntry, exportCSV, ... }
+   - Read in: metrics strip, all analytics cards, RecentTradesSection, AIFocusCard
+   - Written: handleTradeSubmit() → addEntry(newEntry)
+   - Computed values: todayPnl, totalPnl, allTimeWinRate, complianceRate,
+     currentStreak, equityCurve, symbolStats, dayStats
+
+3. BALANCE UPDATES
+   - Source: profiles.account_balance (loaded on mount)
+   - trackedBalance = startingBalance + totalPnl
+   - Updated via: handleStartingBalanceSave(), handleUpdateBalance(), handleResetBalance()
+   - All write to supabase profiles table via: supabase.from("profiles").update(...)
+
+4. AI DATA
+   - Source: AIFocusCard calls trade-focus edge function
+   - Cached in: localStorage key "va_cache_ai_focus_v3"
+   - Read for compact preview: cachedAI useMemo reads from localStorage
+   - Rendered: Insights stage (full AIFocusCard), AI preview strip (bottom of hero card)
+
+5. JOURNAL/REVIEW FLOW
+   - Triggered by: handleTradeSubmit() → sets todayStatus to "in_progress"
+     → after 400ms opens QuickCheckInSheet
+   - Check-in complete: handleCheckInComplete() → sets todayStatus to "complete"
+   - Auto-stage then shifts to "insights"
+   - No-trade day: handleNoTradeDayComplete() → sets todayStatus to "complete"
+
+6. VAULT STATE
+   - Source: useVaultState() context → { vault_status, session_paused,
+     trades_remaining_today, risk_remaining_today }
+   - Used in: metrics strip (risk left, trades), status dot color,
+     session stage input (sessionActive)
+
+================================================================================
+END OF REVIEW
+================================================================================
