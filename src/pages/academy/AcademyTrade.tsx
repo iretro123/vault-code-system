@@ -35,6 +35,7 @@ import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
+import { SessionSetupCard } from "@/components/trade-os/SessionSetupCard";
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
