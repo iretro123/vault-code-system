@@ -515,9 +515,16 @@ const AcademyTrade = () => {
                     </span>
                   </div>
                   <span className="text-[10px] text-muted-foreground/40">·</span>
-                  <span className={cn("text-[10px] font-medium tabular-nums", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
-                    ${vaultState.risk_remaining_today.toFixed(0)} risk left
-                  </span>
+                  {(() => {
+                    const hudBal = trackedBalance ?? vaultState.account_balance;
+                    const hudTier = detectTier(hudBal);
+                    const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
+                    return (
+                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
+                        ${hudRisk.toFixed(0)} risk budget
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
               {/* Hide Log button on mobile — available inside stages */}
