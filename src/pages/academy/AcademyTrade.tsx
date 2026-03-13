@@ -43,7 +43,7 @@ const AcademyTrade = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { isPageEnabled } = useFeatureFlags();
   const { state: vaultState } = useVaultState();
   const {
