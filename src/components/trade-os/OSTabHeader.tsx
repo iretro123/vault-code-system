@@ -9,12 +9,6 @@ const TABS: { key: SessionStage; label: string; icon: typeof Calendar }[] = [
   { key: "insights", label: "Insights", icon: Brain },
 ];
 
-const STAGE_GUIDANCE: Record<SessionStage, string> = {
-  plan: "Size your trade. Approve or deny based on your rules.",
-  live: "Monitor your plan. Track risk. Follow your rules.",
-  review: "Log your result. Record mistakes and lessons.",
-  insights: "AI-scanned behavior. Risk grade, leaks, next action.",
-};
 
 interface OSTabHeaderProps {
   activeStage: SessionStage;
