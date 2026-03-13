@@ -845,29 +845,40 @@ const AcademyTrade = () => {
 
         {/* ══════ LOWER ANALYTICS ══════ */}
         {hasData && (
-          <div className="space-y-2 pt-1">
-            <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/50 uppercase px-0.5">Performance & History</p>
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-2 px-0.5">
+              <BarChart3 className="h-3.5 w-3.5 text-primary/60" />
+              <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/50 uppercase">Analytics</p>
+            </div>
+
+            {/* Row 1: Equity Curve — full width */}
+            {equityCurve.length > 1 && startingBalance !== null && (
+              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+            )}
+
+            {/* Row 2: Performance Breakdown + Recent Trades */}
             <div className="grid gap-2 md:grid-cols-2">
-              {equityCurve.length > 1 && startingBalance !== null && (
-                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
-              )}
               {symbolStats.length > 0 && (
                 <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
               )}
+              <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} compact />
             </div>
-            <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} />
-            {trackedBalance !== null && (
-              <TrackedBalanceCard
-                balance={trackedBalance}
-                showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-                onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-                onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-                showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
-                onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-                onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
-              />
-            )}
-            <WeeklyReviewCard hasData={hasData} />
+
+            {/* Row 3: Tracked Balance + Weekly Review */}
+            <div className="grid gap-2 md:grid-cols-2">
+              {trackedBalance !== null && (
+                <TrackedBalanceCard
+                  balance={trackedBalance}
+                  showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
+                  onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+                  onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
+                  showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
+                  onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+                  onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+                />
+              )}
+              <WeeklyReviewCard hasData={hasData} />
+            </div>
           </div>
         )}
       </div>
