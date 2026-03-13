@@ -15,16 +15,13 @@ interface OSControlRailProps {
   onLogFromPlan?: (plan: ApprovedPlan) => void;
 }
 
-interface SessionTimes { start: string; cutoff: string; hardClose: string; }
-
 function getStorageKey() {
   const d = new Date();
   return `va_session_times_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-function loadTimes(): SessionTimes | null {
+function loadTimes() {
   try { const raw = localStorage.getItem(getStorageKey()); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
-function saveTimes(t: SessionTimes) { localStorage.setItem(getStorageKey(), JSON.stringify(t)); }
 function toMs(time: string): number {
   const [h, m] = time.split(":").map(Number);
   const now = new Date();
@@ -49,23 +46,17 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
   const quickLabel = activeStage === "plan" ? "Check Trade" : activeStage === "live" ? "Log Result" : activeStage === "review" ? "Check In" : "Refresh AI";
   const QuickIcon = activeStage === "plan" ? Shield : activeStage === "live" ? Plus : activeStage === "review" ? ClipboardCheck : RefreshCw;
 
-  const [times, setTimes] = useState<SessionTimes | null>(loadTimes);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<SessionTimes>({ start: "09:30", cutoff: "11:00", hardClose: "12:00" });
   const [now, setNow] = useState(Date.now());
-
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
 
-  const handleSaveSession = () => { saveTimes(draft); setTimes(draft); setEditing(false); };
-  const handleEditSession = () => { setDraft(times || { start: "09:30", cutoff: "11:00", hardClose: "12:00" }); setEditing(true); };
-
+  const times = loadTimes();
   const sessionPhase = useMemo(() => {
     if (!times) return null;
     const startMs = toMs(times.start); const cutoffMs = toMs(times.cutoff); const closeMs = toMs(times.hardClose);
     if (now < startMs) return { label: "Pre-session", color: "text-primary", countdown: fmtCountdown(startMs - now), countdownLabel: "Starts in" };
-    if (now < cutoffMs) return { label: "Trading window", color: "text-emerald-400", countdown: fmtCountdown(cutoffMs - now), countdownLabel: "Cutoff in" };
-    if (now < closeMs) return { label: "No new entries", color: "text-amber-400", countdown: fmtCountdown(closeMs - now), countdownLabel: "Closes in" };
-    return { label: "Session closed", color: "text-red-400", countdown: null, countdownLabel: null };
+    if (now < cutoffMs) return { label: "Trading", color: "text-emerald-400", countdown: fmtCountdown(cutoffMs - now), countdownLabel: "Cutoff in" };
+    if (now < closeMs) return { label: "No entries", color: "text-amber-400", countdown: fmtCountdown(closeMs - now), countdownLabel: "Closes in" };
+    return { label: "Closed", color: "text-red-400", countdown: null, countdownLabel: null };
   }, [times, now]);
 
   const statusDot = vaultState.vault_status === "GREEN" ? "bg-emerald-400" : vaultState.vault_status === "YELLOW" ? "bg-amber-400" : "bg-red-400";
@@ -101,7 +92,6 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
         <p className="text-[10px] text-muted-foreground/40 italic">No active plan</p>
       )}
 
-      {/* Divider */}
       <div className="h-px bg-white/[0.04]" />
 
       {/* Risk */}
@@ -131,57 +121,32 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
         ))}
       </div>
 
-      {/* Divider */}
       <div className="h-px bg-white/[0.04]" />
 
-      {/* Session */}
-      {!times && !editing ? (
-        <button onClick={handleEditSession} className="w-full flex items-center gap-2 py-1 text-left group">
-          <Clock className="h-3 w-3 text-muted-foreground/40 shrink-0" />
-          <span className="text-[10px] font-medium text-muted-foreground/50 group-hover:text-muted-foreground/70 transition-colors">Set session times</span>
-        </button>
-      ) : editing ? (
-        <div className="space-y-1.5">
-          {(["start", "cutoff", "hardClose"] as const).map(k => (
-            <div key={k} className="flex items-center justify-between gap-2">
-              <label className="text-[9px] font-medium text-muted-foreground/50 uppercase w-10">{k === "hardClose" ? "Close" : k}</label>
-              <input
-                type="time"
-                value={draft[k]}
-                onChange={(e) => setDraft(d => ({ ...d, [k]: e.target.value }))}
-                className="h-6 px-1.5 text-[10px] font-semibold bg-black/30 border border-white/[0.06] rounded-md text-foreground outline-none focus:border-primary/40"
-              />
-            </div>
-          ))}
-          <div className="flex gap-1.5 pt-0.5">
-            <Button size="sm" className="h-6 text-[10px] rounded-md px-2.5 flex-1" onClick={handleSaveSession}>Save</Button>
-            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50 px-2" onClick={() => setEditing(false)}>Cancel</Button>
-          </div>
-        </div>
-      ) : sessionPhase ? (
+      {/* Compact Session Timer (read-only, set from Live stage) */}
+      {sessionPhase ? (
         <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              {sessionPhase.label === "No new entries" ? <Ban className="h-3 w-3 text-amber-400" /> : <Clock className="h-3 w-3 text-muted-foreground/50" />}
-              <span className={cn("text-[10px] font-bold uppercase tracking-wide", sessionPhase.color)}>{sessionPhase.label}</span>
-            </div>
-            <button onClick={handleEditSession} className="text-[9px] text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors">Edit</button>
+          <div className="flex items-center gap-1.5">
+            {sessionPhase.label === "No entries" ? <Ban className="h-3 w-3 text-amber-400" /> : <Clock className="h-3 w-3 text-muted-foreground/50" />}
+            <span className={cn("text-[10px] font-bold uppercase tracking-wide", sessionPhase.color)}>{sessionPhase.label}</span>
           </div>
+          {sessionPhase.countdown && (
+            <p className={cn("text-[11px] font-bold tabular-nums", sessionPhase.color)}>
+              {sessionPhase.countdownLabel}: {sessionPhase.countdown}
+            </p>
+          )}
           <div className="flex gap-0.5 text-center">
             {(["start", "cutoff", "hardClose"] as const).map(k => (
               <div key={k} className="flex-1 rounded-md bg-white/[0.02] py-0.5">
                 <p className="text-[8px] text-muted-foreground/30 font-medium uppercase">{k === "hardClose" ? "Close" : k}</p>
-                <p className="text-[10px] font-semibold text-foreground/60 tabular-nums">{fmt12h(times![k])}</p>
+                <p className="text-[10px] font-semibold text-foreground/60 tabular-nums">{fmt12h(times[k])}</p>
               </div>
             ))}
           </div>
-          {sessionPhase.countdown && (
-            <p className={cn("text-[11px] font-bold tabular-nums text-center", sessionPhase.color)}>
-              {sessionPhase.countdownLabel}: {sessionPhase.countdown}
-            </p>
-          )}
         </div>
-      ) : null}
+      ) : (
+        <p className="text-[10px] text-muted-foreground/40 italic">No session set</p>
+      )}
 
       {/* Restrictions */}
       {vaultState.last_block_reason && (
