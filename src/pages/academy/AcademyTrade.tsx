@@ -513,10 +513,16 @@ const AcademyTrade = () => {
                       </div>
                     </div>
                   )}
-                  {/* Embedded VaultTradePlanner */}
+                  {/* Embedded VaultTradePlanner — unified balance */}
                   {!activePlan && todayStatus !== "complete" && (
                     <div ref={plannerRef}>
-                      <VaultTradePlanner />
+                      <VaultTradePlanner
+                        balanceOverride={trackedBalance}
+                        activePlanOverride={activePlan}
+                        savePlanOverride={undefined}
+                        replaceWithNewOverride={undefined}
+                        onPlanSaved={refetchPlan}
+                      />
                     </div>
                   )}
                   {todayStatus === "complete" && (
