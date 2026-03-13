@@ -553,24 +553,40 @@ const AcademyTrade = () => {
                 <div className="space-y-2">
                   <StageHeadline stage="plan" />
 
-                  {/* ═══ TODAY'S BUDGET ═══ */}
-                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
-                    <p className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-[0.1em] mb-2">Today's Budget</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="text-center">
-                        <p className="text-lg font-bold tabular-nums text-foreground">${vaultState.daily_loss_limit.toFixed(0)}</p>
-                        <p className="text-[9px] text-muted-foreground/50 font-medium">Daily Risk</p>
+                  {/* ═══ TODAY'S BUDGET (uses planner engine) ═══ */}
+                  {(() => {
+                    const bal = vaultState.account_balance;
+                    const tier = detectTier(bal);
+                    const defaults = TIER_DEFAULTS[tier];
+                    const riskBudget = bal * (defaults.riskPercent / 100);
+                    const comfortBudget = bal * (defaults.preferredSpendPercent / 100);
+                    return (
+                      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
+                        <p className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-[0.1em] mb-2">Today's Budget</p>
+                        <div className="grid grid-cols-4 gap-2">
+                          <div className="text-center">
+                            <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
+                            <p className="text-[9px] text-muted-foreground/50 font-medium">Risk Budget</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold tabular-nums text-foreground">${comfortBudget.toFixed(0)}</p>
+                            <p className="text-[9px] text-muted-foreground/50 font-medium">Comfort Spend</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_trades_per_day}</p>
+                            <p className="text-[9px] text-muted-foreground/50 font-medium">Trades Allowed</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_contracts_allowed}</p>
+                            <p className="text-[9px] text-muted-foreground/50 font-medium">Max Contracts</p>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground/40 text-center mt-2">
+                          ${bal.toLocaleString()} · {tier} tier · {defaults.riskPercent}% risk · The planner uses these same rules
+                        </p>
                       </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold tabular-nums text-foreground">${vaultState.risk_remaining_today.toFixed(0)}</p>
-                        <p className="text-[9px] text-muted-foreground/50 font-medium">Per Trade Max</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_trades_per_day}</p>
-                        <p className="text-[9px] text-muted-foreground/50 font-medium">Trades Allowed</p>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
