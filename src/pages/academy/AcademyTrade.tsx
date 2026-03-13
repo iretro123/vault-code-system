@@ -621,8 +621,8 @@ const AcademyTrade = () => {
                       <p className="text-[10px] text-foreground/60 pl-3">
                         Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · Entry: ${Number(activePlan.entry_price_planned).toFixed(2)}
                       </p>
-                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("live")}>
-                        <Radio className="h-3 w-3" /> Go to Live Mode
+                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => { setStage("live"); }}>
+                        <Radio className="h-3 w-3" /> Start Session
                       </Button>
                     </div>
                   )}
