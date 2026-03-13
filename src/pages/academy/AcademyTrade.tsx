@@ -361,7 +361,7 @@ const AcademyTrade = () => {
           {todayStatus === "complete" ? (
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
           ) : (
-            <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && todayStatus !== "complete" && "animate-pulse")} />
+            <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
           )}
           <span className="text-sm text-muted-foreground">{statusLine}</span>
         </div>
