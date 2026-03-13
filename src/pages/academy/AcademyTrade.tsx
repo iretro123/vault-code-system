@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio, Lock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -36,6 +36,8 @@ import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
+import { SessionSetupCard, loadTimes } from "@/components/trade-os/SessionSetupCard";
+import { Progress } from "@/components/ui/progress";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
@@ -494,6 +496,10 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-2">
+                  {/* Session Setup / Timer */}
+                  <SessionSetupCard />
+
+                  {/* Active Plan from Plan stage */}
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
                       <div className="flex items-center gap-1.5">
@@ -503,6 +509,8 @@ const AcademyTrade = () => {
                       </div>
                       <p className="text-[10px] text-foreground/60 pl-3.5">
                         Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · {activePlan.stop_price_planned ? `Stop: $${Number(activePlan.stop_price_planned).toFixed(2)}` : "No stop set"}
+                        {activePlan.tp1_planned && ` · TP1: $${Number(activePlan.tp1_planned).toFixed(2)}`}
+                        {activePlan.tp2_planned && ` · TP2: $${Number(activePlan.tp2_planned).toFixed(2)}`}
                       </p>
                       <Button size="sm" className="h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold" onClick={() => handleLogFromPlan(activePlan)}>
                         <CheckCircle2 className="h-3 w-3" /> Log Result
@@ -568,35 +576,45 @@ const AcademyTrade = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="grid gap-1.5 sm:grid-cols-2">
-                        <button
-                          onClick={handleLogUnplanned}
-                          className="flex items-center gap-2.5 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.12] transition-all text-left group"
-                        >
-                          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary/10 border border-primary/20 shrink-0">
-                            <Plus className="h-3.5 w-3.5 text-primary" />
+                      {/* Session Summary */}
+                      {todayTradeCount > 0 && (
+                        <div className="flex items-center divide-x divide-white/[0.08] rounded-lg border border-white/[0.08] overflow-hidden">
+                          <div className="flex-1 px-2.5 py-1.5">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Trades Today</p>
+                            <p className="text-sm font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-foreground">Log a Trade</p>
-                            <p className="text-[10px] text-muted-foreground/60">Result, screenshots, notes</p>
+                          <div className="flex-1 px-2.5 py-1.5">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">P/L</p>
+                            <p className={cn("text-sm font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                              {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
+                            </p>
                           </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
-                        </button>
-                        <button
-                          onClick={() => setShowCheckIn(true)}
-                          className="flex items-center gap-2.5 p-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] hover:bg-emerald-500/[0.06] hover:border-emerald-500/25 transition-all text-left group"
-                        >
-                          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-emerald-500/10 border border-emerald-500/20 shrink-0">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                          <div className="flex-1 px-2.5 py-1.5">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Compliance</p>
+                            <p className={cn("text-sm font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-foreground">Complete Check-In</p>
-                            <p className="text-[10px] text-muted-foreground/60">Mistakes, lessons, close</p>
-                          </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-emerald-400/60 transition-colors" />
-                        </button>
-                      </div>
+                        </div>
+                      )}
 
+                      {/* Primary Actions */}
+                      <Button
+                        className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
+                        onClick={handleLogUnplanned}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Log a Trade
+                      </Button>
+
+                      {todayStatus !== "complete" && (
+                        <Button
+                          variant="outline"
+                          className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+                          onClick={() => setShowCheckIn(true)}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
+                        </Button>
+                      )}
+
+                      {/* Recent trades */}
                       <div>
                         <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
                           {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
@@ -637,33 +655,59 @@ const AcademyTrade = () => {
               {/* INSIGHTS STAGE */}
               {activeStage === "insights" && (
                 <div className="space-y-2">
-                  {cachedAI && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Grade</p>
-                        <p className={cn("text-lg font-bold",
-                          cachedAI.riskGrade === "A" ? "text-emerald-400" :
-                          cachedAI.riskGrade === "B" ? "text-primary" :
-                          cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
-                        )}>
-                          {cachedAI.riskGrade || "—"}
+                  {entries.length < 10 ? (
+                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3 text-center">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 mx-auto">
+                        <Lock className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">AI Insights unlock at 10 trades</p>
+                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+                          Log {10 - entries.length} more trade{10 - entries.length !== 1 ? "s" : ""} to unlock personalized AI analysis of your risk behavior, leaks, and edges.
                         </p>
                       </div>
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Leak</p>
-                        <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.primaryLeak || "—"}</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-muted-foreground/60 font-medium">{entries.length} / 10 trades</span>
+                          <span className="text-primary font-semibold">{Math.round((entries.length / 10) * 100)}%</span>
+                        </div>
+                        <Progress value={(entries.length / 10) * 100} className="h-2" />
                       </div>
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Edge</p>
-                        <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.strongestEdge || "—"}</p>
-                      </div>
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Next</p>
-                        <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.nextAction || "—"}</p>
-                      </div>
+                      <Button size="sm" variant="outline" className="gap-1 rounded-lg h-8 text-[11px] border-white/[0.08]" onClick={handleLogUnplanned}>
+                        <Plus className="h-3 w-3" /> Log a Trade
+                      </Button>
                     </div>
+                  ) : (
+                    <>
+                      {cachedAI && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Grade</p>
+                            <p className={cn("text-lg font-bold",
+                              cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                              cachedAI.riskGrade === "B" ? "text-primary" :
+                              cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                            )}>
+                              {cachedAI.riskGrade || "—"}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Leak</p>
+                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.primaryLeak || "—"}</p>
+                          </div>
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Edge</p>
+                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.strongestEdge || "—"}</p>
+                          </div>
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Next</p>
+                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.nextAction || "—"}</p>
+                          </div>
+                        </div>
+                      )}
+                      <AIFocusCard entries={entries} accessToken={session?.access_token} />
+                    </>
                   )}
-                  <AIFocusCard entries={entries} accessToken={session?.access_token} />
                 </div>
               )}
             </div>
