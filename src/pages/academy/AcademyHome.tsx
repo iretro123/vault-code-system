@@ -133,10 +133,7 @@ const AcademyHome = () => {
 
         <CoachCard />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <LiveCallsCard />
-          <ToolkitCard />
-        </div>
+        <LiveCallsCard />
 
         <QuickAccessRow />
       </div>
