@@ -484,14 +484,14 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ LAYER 2 — HERO OS CARD (two-column) ══════ */}
-        <div className="rounded-xl border border-border/10 bg-card overflow-hidden shadow-md shadow-black/10">
+        <div className="rounded-xl border border-white/[0.06] border-t-white/[0.08] bg-card overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
           {/* Two-column body */}
           <div className="flex flex-col md:flex-row">
             {/* ── LEFT MAIN ZONE ── */}
-            <div className="flex-[2.5] min-w-0 p-4 md:p-5 md:border-r border-border/10">
+            <div className="flex-[2.5] min-w-0 p-4 md:p-5 md:border-r border-white/[0.06]">
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
