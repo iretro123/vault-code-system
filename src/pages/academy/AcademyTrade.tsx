@@ -717,6 +717,7 @@ const AcademyTrade = () => {
 
           <WeeklyReviewCard hasData={hasData} />
         </div>
+        )}
       </div>
 
       {/* ── Modals ── */}
