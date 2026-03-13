@@ -8,6 +8,7 @@ import {
   AlertTriangle, Wallet, Target, ArrowRight, Crosshair,
   ChevronDown, Minus, Plus, Sliders, 
 } from "lucide-react";
+import { RiskRewardVisualizer } from "./RiskRewardVisualizer";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useApprovedPlans } from "@/hooks/useApprovedPlans";
