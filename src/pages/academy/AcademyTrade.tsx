@@ -640,17 +640,29 @@ const AcademyTrade = () => {
                   {/* Session Setup / Timer with phase callback */}
                   <SessionSetupCard onPhaseChange={setSessionPhase} />
 
+                  {/* End Session button */}
+                  {sessionPhase && (
+                    <button
+                      onClick={() => setStage("review")}
+                      className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/15 transition-colors"
+                    >
+                      <Square className="h-3 w-3" /> End Session
+                    </button>
+                  )}
+
                   {/* Cutoff Warning Banners */}
-                  {sessionPhase === "No new entries" && (
+                  {sessionPhase === "No new entries" && !dismissedBanner && (
                     <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-2 flex items-center gap-2">
                       <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                      <p className="text-[11px] text-amber-400 font-medium">Cutoff reached — no new entries. Manage current risk only.</p>
+                      <p className="text-[11px] text-amber-400 font-medium flex-1">Cutoff reached — no new entries. Manage current risk only.</p>
+                      <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   )}
-                  {sessionPhase === "Session closed" && (
+                  {sessionPhase === "Session closed" && !dismissedBanner && (
                     <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-2 flex items-center gap-2">
                       <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                      <p className="text-[11px] text-red-400 font-medium">Session closed — close all positions. Move to Review.</p>
+                      <p className="text-[11px] text-red-400 font-medium flex-1">Session closed — close all positions. Move to Review.</p>
+                      <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
                     </div>
                   )}
 
