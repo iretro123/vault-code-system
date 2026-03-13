@@ -680,30 +680,30 @@ const AcademyTrade = () => {
           {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-border/10 bg-muted/[0.02] hover:bg-muted/[0.05] transition-colors"
+              className="w-full border-t border-border/10 hover:bg-muted/[0.04] transition-colors"
             >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-px">
-                <div className="px-4 py-3">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">AI Verdict</p>
-                  <p className={cn("text-sm font-bold",
+              <div className="flex items-center divide-x divide-border/10">
+                <div className="flex-1 px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Grade</p>
+                  <p className={cn("text-sm font-semibold",
                     cachedAI.riskGrade === "A" ? "text-emerald-400" :
                     cachedAI.riskGrade === "B" ? "text-primary" :
                     cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
                   )}>
-                    Grade {cachedAI.riskGrade || "—"}
+                    {cachedAI.riskGrade || "—"}
                   </p>
                 </div>
-                <div className="px-4 py-3">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Primary Leak</p>
-                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.primaryLeak || "—"}</p>
+                <div className="flex-1 px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Leak</p>
+                  <p className="text-[11px] font-medium text-foreground/60 truncate">{cachedAI.primaryLeak || "—"}</p>
                 </div>
-                <div className="px-4 py-3 hidden md:block">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Strongest Edge</p>
-                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.strongestEdge || "—"}</p>
+                <div className="flex-1 px-3 py-2 hidden md:block">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Edge</p>
+                  <p className="text-[11px] font-medium text-foreground/60 truncate">{cachedAI.strongestEdge || "—"}</p>
                 </div>
-                <div className="px-4 py-3 hidden md:block">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Next Action</p>
-                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.nextAction || "—"}</p>
+                <div className="flex-1 px-3 py-2 hidden md:block">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Next</p>
+                  <p className="text-[11px] font-medium text-foreground/60 truncate">{cachedAI.nextAction || "—"}</p>
                 </div>
               </div>
             </button>
