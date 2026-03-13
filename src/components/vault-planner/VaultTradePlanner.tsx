@@ -242,23 +242,25 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
     <>
       <div className={cn("space-y-2.5", !embedded && "max-w-5xl")}>
 
-        {/* ═══ RULES STRIP ═══ */}
-        <div className="flex flex-wrap gap-1.5">
-          <RulesChip icon={Wallet} label="Balance" value={`$${accountBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} embedded={embedded} />
-          <RulesChip icon={Shield} label="Loss Limit" value={formatCurrency(tradeLossLimit)} accent embedded={embedded} />
-          <RulesChip
-            icon={Target}
-            label="Level"
-            value={tier}
-            embedded={embedded}
-            valueCls={
-              tier === "Large" ? "text-emerald-400" :
-              tier === "Medium" ? "text-primary" :
-              tier === "Small" ? "text-amber-400" :
-              "text-red-400"
-            }
-          />
-        </div>
+        {/* ═══ RULES STRIP ═══ (hidden in embedded — redundant with command bar) */}
+        {!embedded && (
+          <div className="flex flex-wrap gap-1.5">
+            <RulesChip icon={Wallet} label="Balance" value={`$${accountBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} embedded={embedded} />
+            <RulesChip icon={Shield} label="Loss Limit" value={formatCurrency(tradeLossLimit)} accent embedded={embedded} />
+            <RulesChip
+              icon={Target}
+              label="Level"
+              value={tier}
+              embedded={embedded}
+              valueCls={
+                tier === "Large" ? "text-emerald-400" :
+                tier === "Medium" ? "text-primary" :
+                tier === "Small" ? "text-amber-400" :
+                "text-red-400"
+              }
+            />
+          </div>
+        )}
 
         {/* No balance warning */}
         {accountBalance <= 0 && (
