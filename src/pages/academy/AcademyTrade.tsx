@@ -483,6 +483,7 @@ const AcademyTrade = () => {
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="plan" />
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
