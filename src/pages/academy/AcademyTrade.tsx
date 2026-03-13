@@ -510,22 +510,27 @@ const AcademyTrade = () => {
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <div className="flex items-center gap-1.5">
-                    {todayStatus === "complete" ? (
+                    {dayState === "day_complete" ? (
                       <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                     ) : (
-                      <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, activePlan && "animate-pulse")} />
+                      <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, dayState === "live_session" && "animate-pulse")} />
                     )}
                     <span className="text-[10px] text-muted-foreground/60 font-medium">
-                      {todayTradeCount}/{totalMaxTrades} trades
+                      {dayStateStatus}
                     </span>
                   </div>
+                </div>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <span className="text-[10px] text-muted-foreground/40">
+                    {todayTradeCount}/{totalMaxTrades} trades
+                  </span>
                   <span className="text-[10px] text-muted-foreground/40">·</span>
                   {(() => {
                     const hudBal = trackedBalance ?? vaultState.account_balance;
                     const hudTier = detectTier(hudBal);
                     const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
                     return (
-                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
+                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/40")}>
                         ${hudRisk.toFixed(0)} risk budget
                       </span>
                     );
