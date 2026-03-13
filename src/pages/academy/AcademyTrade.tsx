@@ -373,21 +373,11 @@ const AcademyTrade = () => {
   }
 
   // ──── OS LAYOUT (feature flag ON) ────
-  const vaultStatusColor = vaultState.vault_status === "GREEN"
-    ? "text-emerald-400" : vaultState.vault_status === "YELLOW"
-    ? "text-amber-400" : "text-red-400";
   const vaultStatusDot = vaultState.vault_status === "GREEN"
     ? "bg-emerald-400" : vaultState.vault_status === "YELLOW"
     ? "bg-amber-400" : "bg-red-400";
 
   const showMetrics = startingBalance !== null || hasData;
-
-  const statusChip = (() => {
-    if (todayStatus === "complete") return "Session complete";
-    if (activePlan) return `${activePlan.ticker || "—"} ${activePlan.direction} active`;
-    if (todayTradeCount > 0) return `${todayTradeCount} trade${todayTradeCount > 1 ? "s" : ""} logged`;
-    return "No plan yet";
-  })();
 
   return (
     <>
