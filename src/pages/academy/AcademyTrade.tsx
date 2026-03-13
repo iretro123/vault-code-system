@@ -720,6 +720,9 @@ const AcademyTrade = () => {
               className="w-full border-t border-white/[0.06] hover:bg-white/[0.02] transition-colors"
             >
               <div className="flex items-center divide-x divide-white/[0.06]">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 shrink-0">
+                  <span className="text-[9px] text-muted-foreground/25">Last scan: today</span>
+                </div>
                 <div className="flex-1 px-3 py-2">
                   <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Grade</p>
                   <p className={cn("text-sm font-semibold",

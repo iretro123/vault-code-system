@@ -409,6 +409,13 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
                           </span>
                         </div>
 
+                        {/* Approval status explainer */}
+                        <p className="text-[10px] text-muted-foreground/40 leading-snug mb-1">
+                          {choice.status === "fits" && "Fits your risk rules. Clear to execute."}
+                          {choice.status === "tight" && "Near your limits. Proceed with caution."}
+                          {choice.status === "pass" && "Exceeds your rules. Do not take this trade."}
+                        </p>
+
                         <p className="text-[10px] text-muted-foreground/80 uppercase tracking-[0.1em] font-medium mb-2">
                           {CARD_SUBLABELS[choice.contracts] || ""}
                         </p>
