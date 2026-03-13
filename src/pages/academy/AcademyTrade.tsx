@@ -664,7 +664,7 @@ const AcademyTrade = () => {
               {/* INSIGHTS STAGE */}
               {activeStage === "insights" && (
                 <div>
-                  <AIFocusCard entries={entries} />
+                  <AIFocusCard entries={entries} accessToken={session?.access_token} />
                 </div>
               )}
             </div>
