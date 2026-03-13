@@ -536,13 +536,28 @@ const AcademyTrade = () => {
                     </div>
                   </div>
                 )}
-                {!activePlan && todayTradeCount === 0 && (
-                  <div className="text-center py-10 space-y-3">
-                    <Shield className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-                    <p className="text-sm text-muted-foreground/70">No active plan. Check a trade before entering.</p>
-                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-5" onClick={() => setStage("plan")}>
-                      Go to Plan
-                    </Button>
+                {/* No active plan state — show useful context instead of dead space */}
+                {!activePlan && (
+                  <div className="rounded-xl border border-border/20 bg-muted/5 p-5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-muted/20 flex items-center justify-center shrink-0">
+                        <Shield className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">No Active Plan</p>
+                        <p className="text-[11px] text-muted-foreground/60">Go to the Plan tab to check a trade before entering.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="gap-1.5 rounded-full px-5 h-9" onClick={() => setStage("plan")}>
+                        <Calendar className="h-3.5 w-3.5" /> Go to Plan
+                      </Button>
+                      {todayTradeCount === 0 && (
+                        <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-4 h-9 text-xs" onClick={handleLogUnplanned}>
+                          <Plus className="h-3.5 w-3.5" /> Log Unplanned
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
