@@ -681,8 +681,10 @@ const AcademyTrade = () => {
                       {todayStatus === "complete" && (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                          <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
-                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
+                          <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete. See what AI found.</p>
+                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>
+                            <Brain className="h-3 w-3 mr-1" /> View Insights
+                          </Button>
                         </div>
                       )}
                     </>
