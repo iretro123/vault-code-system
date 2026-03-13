@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -350,49 +350,74 @@ const AcademyTrade = () => {
     ? "bg-amber-400" : vaultState.vault_status === "RED"
     ? "bg-red-400" : "bg-muted-foreground/40";
 
+  // Read cached AI result for compact preview strip
+  const cachedAI = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("va_cache_ai_focus_v3");
+      if (!raw) return null;
+      return JSON.parse(raw) as { primaryLeak?: string; riskGrade?: string; nextAction?: string; strongestEdge?: string };
+    } catch { return null; }
+  }, [entries.length]);
+
+  const totalMaxTrades = vaultState.trades_remaining_today + todayTradeCount;
+
   return (
     <>
-      {/* ══════ GREETING HEADER ══════ */}
-      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-1 max-w-4xl">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+      {/* ══════ LAYER 1 — TOP STATUS ══════ */}
+      <div className="px-4 md:px-6 pt-5 md:pt-7 pb-1 max-w-4xl">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-tight">
           {greeting}{displayName ? `, ${displayName}` : ""}
         </h1>
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-1">
           {todayStatus === "complete" ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
           ) : (
             <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
           )}
-          <span className="text-sm text-muted-foreground">{statusLine}</span>
+          <span className="text-[13px] text-muted-foreground">{statusLine}</span>
         </div>
       </div>
 
-      <div className="px-4 md:px-6 pb-10 space-y-5 max-w-4xl">
+      <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
 
-        {/* ══════ METRICS STRIP ══════ */}
+        {/* ── METRICS STRIP ── */}
         {hasData && (
-          <div className="flex items-stretch rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden">
-            <MetricCell
-              label="Balance"
-              value={trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
-              hero
-            />
-            <MetricCell
-              label="Today P/L"
-              value={todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
-              color={todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : undefined}
-            />
-            <MetricCell label="Trades" value={`${todayTradeCount}/${vaultState.trades_remaining_today + todayTradeCount}`} />
-            <MetricCell
-              label="Risk Left"
-              value={`$${vaultState.risk_remaining_today.toFixed(0)}`}
-              color={vaultState.risk_remaining_today <= 0 ? "text-red-400" : undefined}
-            />
-            {!isMobile && <MetricCell label="Streak" value={`${currentStreak}d`} />}
-            <div className="flex items-center px-3 md:px-4">
+          <div className="flex items-stretch rounded-2xl border border-border/25 bg-card overflow-hidden">
+            <div className="flex-1 min-w-0 px-4 md:px-5 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Balance</p>
+              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-primary truncate">
+                {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "—"}
+              </p>
+            </div>
+            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Today P/L</p>
+              <p className={cn("text-sm md:text-base font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+ $${todayPnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : `- $${Math.abs(todayPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+              </p>
+            </div>
+            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Trades</p>
+              <p className="text-sm md:text-base font-bold tabular-nums leading-none text-foreground flex items-center gap-1">
+                {todayTradeCount} / {totalMaxTrades}
+                {todayTradeCount > 0 && <Plus className="h-3 w-3 text-muted-foreground/40" />}
+              </p>
+            </div>
+            <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+              <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Risk Left</p>
+              <p className={cn("text-sm md:text-base font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+                ${vaultState.risk_remaining_today.toFixed(0)}
+              </p>
+            </div>
+            {!isMobile && (
+              <div className="flex-1 min-w-0 px-3 md:px-4 py-3 md:py-4 border-r border-border/15">
+                <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">Streak</p>
+                <p className="text-sm md:text-base font-bold tabular-nums leading-none text-foreground">{currentStreak} Days</p>
+              </div>
+            )}
+            <div className="flex items-center px-3 md:px-5 shrink-0">
               <Button
                 size="sm"
-                className="gap-1.5 h-9 px-4 text-xs font-semibold rounded-full whitespace-nowrap shadow-[0_0_12px_2px_hsl(217_91%_60%/0.12)]"
+                className="gap-1.5 h-9 md:h-10 px-4 md:px-5 text-xs font-semibold rounded-full whitespace-nowrap"
                 onClick={handleLogUnplanned}
               >
                 <Plus className="h-3.5 w-3.5" /> Log Trade
@@ -415,12 +440,12 @@ const AcademyTrade = () => {
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
-        {/* ══════ HERO OS CARD ══════ */}
-        <div className="rounded-2xl border border-primary/10 bg-card shadow-lg shadow-primary/[0.03] overflow-hidden">
+        {/* ══════ LAYER 2 — HERO OS CARD ══════ */}
+        <div className="rounded-2xl border border-border/20 bg-card overflow-hidden shadow-sm">
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          <div className="p-5 md:p-8">
-            {/* ── PLAN TAB ── */}
+          <div className="p-4 md:p-7 min-h-[280px] md:min-h-[320px]">
+            {/* ── PLAN ── */}
             {activeStage === "plan" && (
               <div className="space-y-5">
                 <TodayVaultCheckCard
@@ -428,94 +453,148 @@ const AcademyTrade = () => {
                   onCheckTrade={() => navigate("/academy/vault")} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
                   onCancelPlan={handleCancelPlan} onNoTradeDay={() => setShowNoTradeDay(true)}
                   onCompleteCheckIn={() => setShowCheckIn(true)}
-                  onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                  onReviewFeedback={() => setStage("insights")}
                 />
-                {/* Embedded Trade Planner */}
+                {/* Embedded VAULT Approval */}
                 {!activePlan && todayStatus !== "complete" && (
-                  <div className="pt-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Pre-Trade Check</p>
+                  <div className="pt-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="h-3.5 w-3.5 text-primary" />
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pre-Trade Check</p>
+                    </div>
                     <VaultTradePlanner />
                   </div>
                 )}
               </div>
             )}
 
-            {/* ── LIVE TAB ── */}
+            {/* ── LIVE ── */}
             {activeStage === "live" && (
               <div className="space-y-5">
                 <TodaysLimitsSection />
                 {activePlan && activePlan.status === "planned" && (
                   <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <Shield className="h-4 w-4 text-emerald-400" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                         <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                        <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
+                        <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · Entry ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
                       </div>
-                      <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full" onClick={() => handleLogFromPlan(activePlan)}>
+                      <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full shrink-0" onClick={() => handleLogFromPlan(activePlan)}>
                         <CheckCircle2 className="h-3 w-3" /> Log Result
                       </Button>
                     </div>
                   </div>
                 )}
                 {!activePlan && (
-                  <div className="text-center py-10">
-                    <p className="text-sm text-muted-foreground mb-4">No active plan. Check a trade to get started.</p>
-                    <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={() => setStage("plan")}>
-                      <Shield className="h-3.5 w-3.5" /> Go to Plan
+                  <div className="text-center py-12 space-y-3">
+                    <Shield className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+                    <p className="text-sm text-muted-foreground">No active plan. Check a trade before entering.</p>
+                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-5" onClick={() => setStage("plan")}>
+                      Go to Plan
                     </Button>
                   </div>
                 )}
               </div>
             )}
 
-            {/* ── REVIEW TAB ── */}
+            {/* ── REVIEW ── */}
             {activeStage === "review" && (
               <div className="space-y-5">
                 {todayStatus === "incomplete" && todayTradeCount === 0 && (
-                  <div className="text-center py-10">
-                    <p className="text-sm text-muted-foreground mb-4">No trades logged today yet.</p>
+                  <div className="text-center py-12 space-y-3">
+                    <ClipboardCheck className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+                    <p className="text-sm text-muted-foreground">No trades to review yet. Log your first trade to start.</p>
                     <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
                       <Plus className="h-3.5 w-3.5" /> Log a Trade
                     </Button>
                   </div>
                 )}
                 {(todayStatus === "in_progress" || (todayStatus === "incomplete" && todayTradeCount > 0)) && (
-                  <div className="rounded-xl border border-border/30 bg-muted/10 p-5 space-y-3">
-                    <h3 className="text-sm font-bold text-foreground">Complete Your Session</h3>
-                    <p className="text-xs text-muted-foreground">{todayTradeCount} trade{todayTradeCount > 1 ? "s" : ""} logged. Complete your check-in to close out today.</p>
-                    <div className="flex gap-2.5">
-                      <Button size="sm" className="gap-1.5 rounded-full" onClick={() => setShowCheckIn(true)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={handleLogUnplanned}>
-                        <Plus className="h-3.5 w-3.5" /> Log Another
-                      </Button>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-foreground mb-1">Post-Trade Ritual</h3>
+                      <p className="text-xs text-muted-foreground">{todayTradeCount} trade{todayTradeCount > 1 ? "s" : ""} logged today. Complete your review to close this session.</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        onClick={handleLogUnplanned}
+                        className="flex items-center gap-3 p-4 rounded-xl border border-border/30 bg-muted/5 hover:bg-muted/15 transition-colors text-left"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Plus className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">Log Another Trade</p>
+                          <p className="text-[11px] text-muted-foreground">Add missed or additional entries</p>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => setShowCheckIn(true)}
+                        className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08] transition-colors text-left"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">Complete Check-In</p>
+                          <p className="text-[11px] text-muted-foreground">Record mistakes, lessons, and close out</p>
+                        </div>
+                      </button>
                     </div>
                   </div>
                 )}
                 {todayStatus === "complete" && (
-                  <div className="text-center py-10 space-y-2">
-                    <CheckCircle2 className="h-7 w-7 text-emerald-400 mx-auto" />
+                  <div className="text-center py-12 space-y-2">
+                    <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
                     <p className="text-sm font-bold text-foreground">Session Complete</p>
-                    <p className="text-xs text-muted-foreground">Today's accountability is done. Check your insights.</p>
+                    <p className="text-xs text-muted-foreground">Today's review is done. Check your Insights for AI feedback.</p>
+                    <Button size="sm" variant="outline" className="gap-1.5 rounded-full mt-2" onClick={() => setStage("insights")}>
+                      View Insights
+                    </Button>
                   </div>
                 )}
               </div>
             )}
 
-            {/* ── INSIGHTS TAB ── */}
+            {/* ── INSIGHTS ── */}
             {activeStage === "insights" && (
               <div className="space-y-5">
                 <AIFocusCard entries={entries} />
               </div>
             )}
           </div>
+
+          {/* ── COMPACT AI PREVIEW STRIP (always visible at bottom of hero card) ── */}
+          {cachedAI && activeStage !== "insights" && (
+            <button
+              onClick={() => setStage("insights")}
+              className="w-full border-t border-border/15 px-4 md:px-7 py-3 flex items-center gap-3 hover:bg-muted/5 transition-colors"
+            >
+              <Brain className="h-4 w-4 text-primary shrink-0" />
+              <p className="text-xs text-muted-foreground truncate flex-1 text-left">
+                {cachedAI.primaryLeak ? `Leak: ${cachedAI.primaryLeak}` : "AI analysis available"}
+                {cachedAI.nextAction ? ` · Next: ${cachedAI.nextAction}` : ""}
+              </p>
+              {cachedAI.riskGrade && (
+                <span className={cn(
+                  "text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0",
+                  cachedAI.riskGrade === "A" ? "text-emerald-400 border-emerald-500/25 bg-emerald-500/10" :
+                  cachedAI.riskGrade === "B" ? "text-primary border-primary/25 bg-primary/10" :
+                  cachedAI.riskGrade === "C" ? "text-amber-400 border-amber-500/25 bg-amber-500/10" :
+                  "text-red-400 border-red-500/25 bg-red-500/10"
+                )}>
+                  Grade {cachedAI.riskGrade}
+                </span>
+              )}
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+            </button>
+          )}
         </div>
 
-        {/* ══════ LOWER ANALYTICS ══════ */}
-        <div className="space-y-3 pt-3">
-          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/50 px-1">Analytics & History</p>
+        {/* ══════ LAYER 3 — LOWER ANALYTICS ══════ */}
+        <div className="space-y-3 pt-2">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 px-1">Analytics & History</p>
 
           {hasData && equityCurve.length > 1 && startingBalance !== null && (
             <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
@@ -555,24 +634,5 @@ const AcademyTrade = () => {
     </>
   );
 };
-
-/* ── Metric Cell ── */
-function MetricCell({ label, value, hero, color }: { label: string; value: string; hero?: boolean; color?: string }) {
-  return (
-    <div className={cn(
-      "flex-1 min-w-0 border-r border-border/15 last:border-r-0",
-      hero ? "px-4 md:px-5 py-3 md:py-4" : "px-3 md:px-4 py-3 md:py-4"
-    )}>
-      <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">{label}</p>
-      <p className={cn(
-        "font-bold tabular-nums leading-none truncate",
-        hero ? "text-lg md:text-xl text-primary" : "text-sm md:text-base",
-        color || (!hero && "text-foreground")
-      )}>
-        {value}
-      </p>
-    </div>
-  );
-}
 
 export default AcademyTrade;
