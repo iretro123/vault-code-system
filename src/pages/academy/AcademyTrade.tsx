@@ -565,11 +565,11 @@ const AcademyTrade = () => {
 
                   {/* ═══ TODAY'S BUDGET (uses planner engine) ═══ */}
                   {(() => {
-                    const bal = vaultState.account_balance;
+                    const bal = trackedBalance ?? vaultState.account_balance;
                     const tier = detectTier(bal);
                     const defaults = TIER_DEFAULTS[tier];
                     const riskBudget = bal * (defaults.riskPercent / 100);
-                    const comfortBudget = bal * (defaults.preferredSpendPercent / 100);
+                    const positionCap = bal * (defaults.preferredSpendPercent / 100);
                     return (
                       <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
                         <p className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-[0.1em] mb-2">Today's Budget</p>
@@ -579,12 +579,12 @@ const AcademyTrade = () => {
                             <p className="text-[9px] text-muted-foreground/50 font-medium">Risk Budget</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">${comfortBudget.toFixed(0)}</p>
-                            <p className="text-[9px] text-muted-foreground/50 font-medium">Comfort Spend</p>
+                            <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
+                            <p className="text-[9px] text-muted-foreground/50 font-medium">Position Cap</p>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_trades_per_day}</p>
-                            <p className="text-[9px] text-muted-foreground/50 font-medium">Trades Allowed</p>
+                            <p className="text-[9px] text-muted-foreground/50 font-medium">Trades / Session</p>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_contracts_allowed}</p>
@@ -592,7 +592,7 @@ const AcademyTrade = () => {
                           </div>
                         </div>
                         <p className="text-[9px] text-muted-foreground/40 text-center mt-2">
-                          ${bal.toLocaleString()} · {tier} tier · {defaults.riskPercent}% risk · The planner uses these same rules
+                          ${bal.toLocaleString()} · {tier} tier · {defaults.riskPercent}% risk
                         </p>
                       </div>
                     );
