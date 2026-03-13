@@ -114,6 +114,24 @@ const AcademyTrade = () => {
 
   const hasData = entries.length > 0;
 
+  // Persist todayStatus: check journal_entries for today on mount
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("journal_entries")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("entry_date", todayStr)
+        .limit(1);
+      if (data && data.length > 0) {
+        setTodayStatus("complete");
+      } else if (todayTradeCount > 0) {
+        setTodayStatus("in_progress");
+      }
+    })();
+  }, [user, todayStr]);
+
   useEffect(() => {
     if (todayTradeCount > 0 && todayStatus === "incomplete") {
       setTodayStatus("in_progress");
