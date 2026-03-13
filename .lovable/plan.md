@@ -1,23 +1,32 @@
 
 
-## Plan: Trading OS — Priority Fix Implementation (All 3 Phases) — COMPLETED
+# Replace Journal with Attendance in "Your Week" Ring
 
-### Phase A: Functional Trust ✅
-- **QuickCheckInSheet**: Now inserts into `journal_entries` on submit with `userId` prop, loading state, double-submit prevention
-- **NoTradeDaySheet**: Now inserts into `journal_entries` on submit with `userId` prop, reason mapped to `biggest_mistake`
-- **AcademyTrade**: Passes `userId={user?.id}` to both sheets; mount query includes `todayTradeCount` dependency for correct `in_progress` detection
+## What changes
 
-### Phase B: True Workflow ✅
-- **Today's Budget card**: Added to Plan stage top — shows Daily Risk, Per Trade Max, Trades Allowed from vault_state
-- **Execution moment**: Live stage has "Mark Executing" → "Close & Log" flow with duration timer and Planned/Executing badge
-- **Session enforcement**: SessionSetupCard exports `onPhaseChange` callback; cutoff/closed phases show amber/red warning banners
-- **Cutoff override**: Logging after cutoff shows "Override: Log After Cutoff" button; notes marked with `⚠️ Logged after cutoff`
-- **Stage guidance**: Each stage has italic guidance line ("Set your budget, build a plan..." etc.)
-- **CTA consolidation**: Review stage has single primary "Complete Check-In" CTA; removed duplicate "Log a Trade" from review
-- **TodaysLimitsSection**: Updated to `border-white/[0.06] bg-white/[0.02]` luxury styling
+In `src/components/academy/community/CockpitPanel.tsx`, the `YourWeekCard` component:
 
-### Phase C: Usability & Mobile ✅
-- **Right rail hidden on mobile**: `hidden md:block` on right session rail
-- **Welcome Hero Log button**: Hidden on mobile (`hidden md:flex`)
-- **OSTabHeader**: Icon-only on mobile (no label text), increased touch target
-- **VaultTradePlanner**: Decision framing copy added below coaching note — FITS/TIGHT/PASS explained in plain English
+1. **Replace Journal ring with Attendance** — Query `live_session_attendance` table for the current week (Monday–Sunday) to get the user's attendance count. Also query `live_sessions` for total sessions scheduled this week to use as the goal/max.
+
+2. **Fix Trades ring** — Already using real data from `useTradeLog()`, just ensure the goal is reasonable (keep `TRADE_GOAL = 5`).
+
+3. **Fix Playbook ring** — Already using `usePlaybookProgress()` which returns `pct`. Currently doing `Math.round(playbookPct / 10)` with max 10 which is correct (pct is 0-100, ring shows percentage). Keep as-is.
+
+4. **Remove journal-related code** — Remove the `journalCount` state, the journal query, and the streak calculation (since streak was based on journal entries).
+
+5. **Update labels** — Change "Journal" to "Attendance" under the middle ring.
+
+### File: `src/components/academy/community/CockpitPanel.tsx`
+
+**YourWeekCard changes:**
+- Remove `journalCount` state and the `useEffect` that queries `journal_entries`
+- Add `attendanceCount` and `sessionsThisWeek` state
+- New `useEffect`: query `live_session_attendance` with `user_id` filter and `clicked_at >= monday`, and query `live_sessions` for sessions this week to get the denominator
+- Middle ring: `<ProgressRing value={attendanceCount} max={Math.max(sessionsThisWeek, 1)} />` with label "Attendance"
+- Keep streak logic but base it on attendance dates instead (or remove streak since it was journal-based — simpler to remove)
+
+**Ring data sources:**
+- **Trades**: `useTradeLog().entries` filtered to current week → real data
+- **Attendance**: `live_session_attendance` table filtered to current week → real data, max = number of `live_sessions` scheduled this week
+- **Playbook**: `usePlaybookProgress().pct` → already real data (completedCount/totalCount from `playbook_progress`)
+
