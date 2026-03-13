@@ -655,29 +655,61 @@ const AcademyTrade = () => {
               {/* INSIGHTS STAGE */}
               {activeStage === "insights" && (
                 <div className="space-y-2">
-                  {cachedAI && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Grade</p>
-                        <p className={cn("text-lg font-bold",
-                          cachedAI.riskGrade === "A" ? "text-emerald-400" :
-                          cachedAI.riskGrade === "B" ? "text-primary" :
-                          cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
-                        )}>
-                          {cachedAI.riskGrade || "—"}
+                  {entries.length < 10 ? (
+                    <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3 text-center">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 mx-auto">
+                        <Lock className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">AI Insights unlock at 10 trades</p>
+                        <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+                          Log {10 - entries.length} more trade{10 - entries.length !== 1 ? "s" : ""} to unlock personalized AI analysis of your risk behavior, leaks, and edges.
                         </p>
                       </div>
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Leak</p>
-                        <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.primaryLeak || "—"}</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-muted-foreground/60 font-medium">{entries.length} / 10 trades</span>
+                          <span className="text-primary font-semibold">{Math.round((entries.length / 10) * 100)}%</span>
+                        </div>
+                        <Progress value={(entries.length / 10) * 100} className="h-2" />
                       </div>
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Edge</p>
-                        <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.strongestEdge || "—"}</p>
-                      </div>
-                      <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Next</p>
-                        <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.nextAction || "—"}</p>
+                      <Button size="sm" variant="outline" className="gap-1 rounded-lg h-8 text-[11px] border-white/[0.08]" onClick={handleLogUnplanned}>
+                        <Plus className="h-3 w-3" /> Log a Trade
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {cachedAI && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Grade</p>
+                            <p className={cn("text-lg font-bold",
+                              cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                              cachedAI.riskGrade === "B" ? "text-primary" :
+                              cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                            )}>
+                              {cachedAI.riskGrade || "—"}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Leak</p>
+                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.primaryLeak || "—"}</p>
+                          </div>
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Edge</p>
+                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.strongestEdge || "—"}</p>
+                          </div>
+                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Next</p>
+                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.nextAction || "—"}</p>
+                          </div>
+                        </div>
+                      )}
+                      <AIFocusCard entries={entries} accessToken={session?.access_token} />
+                    </>
+                  )}
+                </div>
+              )}
                       </div>
                     </div>
                   )}
