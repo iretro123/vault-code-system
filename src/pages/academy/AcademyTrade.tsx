@@ -422,36 +422,46 @@ const AcademyTrade = () => {
     <>
       <div className="px-3 md:px-5 pb-6 space-y-1.5 max-w-6xl pt-2">
 
-        {/* ══════ COMMAND BAR ══════ */}
+        {/* ══════ WELCOME HERO ══════ */}
         {showMetrics && (
-          <div className="flex items-center gap-4 px-3 h-9 rounded-lg bg-black/20">
-            {/* Status + Balance */}
-            <div className="flex items-center gap-2 shrink-0">
-              {todayStatus === "complete" ? (
-                <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-              ) : (
-                <span className={cn("w-[5px] h-[5px] rounded-full shrink-0", vaultStatusDot, activePlan && "animate-pulse")} />
-              )}
-              <span className="text-sm font-bold tabular-nums text-foreground leading-none">
-                {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
-              </span>
-            </div>
-            {/* Today P/L */}
-            <span className={cn("text-xs font-semibold tabular-nums hidden sm:block", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-muted-foreground/60")}>
-              {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
-            </span>
-            {/* Trades */}
-            <span className="text-xs tabular-nums text-muted-foreground/60 hidden md:block">
-              <span className="font-semibold text-foreground">{todayTradeCount}</span>/{totalMaxTrades} trades
-            </span>
-            {/* Risk */}
-            <span className={cn("text-xs tabular-nums hidden md:block", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
-              <span className="font-semibold text-foreground">${vaultState.risk_remaining_today.toFixed(0)}</span> risk
-            </span>
-            {/* Log CTA */}
-            <div className="ml-auto shrink-0">
-              <Button size="sm" className="gap-1 h-7 px-2.5 text-[10px] font-semibold rounded-lg" onClick={handleLogUnplanned}>
-                <Plus className="h-3 w-3" /> Log
+          <div className="rounded-2xl border border-white/[0.06] bg-card p-4 md:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/50 font-semibold">Your Trading Day</p>
+                <div className="flex items-baseline gap-2.5">
+                  <span className="text-3xl font-bold tabular-nums text-foreground tracking-tight">
+                    {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
+                  </span>
+                  {todayPnl !== 0 && (
+                    <span className={cn(
+                      "text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full",
+                      todayPnl > 0
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                        : "bg-red-500/10 text-red-400 border border-red-500/20"
+                    )}>
+                      {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-1.5">
+                    {todayStatus === "complete" ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                    ) : (
+                      <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, activePlan && "animate-pulse")} />
+                    )}
+                    <span className="text-[10px] text-muted-foreground/60 font-medium">
+                      {todayTradeCount}/{totalMaxTrades} trades
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground/40">·</span>
+                  <span className={cn("text-[10px] font-medium tabular-nums", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
+                    ${vaultState.risk_remaining_today.toFixed(0)} risk left
+                  </span>
+                </div>
+              </div>
+              <Button size="sm" className="gap-1 h-8 px-3 text-[11px] font-semibold rounded-lg shrink-0" onClick={handleLogUnplanned}>
+                <Plus className="h-3 w-3" /> Log Trade
               </Button>
             </div>
           </div>
