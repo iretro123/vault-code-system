@@ -67,7 +67,7 @@ export function MyTradesCard() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          <h2 className="text-lg font-bold text-foreground">My Trades</h2>
+          <h2 className="text-lg font-bold text-foreground">Trade OS</h2>
         </div>
         <button
           onClick={() => navigate("/academy/trade")}
