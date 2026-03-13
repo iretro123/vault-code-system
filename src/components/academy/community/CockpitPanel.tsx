@@ -462,7 +462,7 @@ async function buildNudges(userId: string): Promise<CoachNudge[]> {
 /* ── Main Cockpit Panel ── */
 export function CockpitPanel({ onSwitchTab }: { onSwitchTab?: (tab: string) => void }) {
   return (
-    <div className="flex flex-col gap-3 p-3.5 h-full overflow-y-auto">
+    <div className="flex flex-col gap-3 p-3.5 h-full overflow-y-auto vault-chat-scroll">
       <YourWeekCard />
       <QuickActionsCard onSwitchTab={onSwitchTab} />
       <RealCoachFeedCard />
