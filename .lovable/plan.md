@@ -1,39 +1,23 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+## Plan: Trading OS — Priority Fix Implementation (All 3 Phases) — COMPLETED
 
-### What was implemented
+### Phase A: Functional Trust ✅
+- **QuickCheckInSheet**: Now inserts into `journal_entries` on submit with `userId` prop, loading state, double-submit prevention
+- **NoTradeDaySheet**: Now inserts into `journal_entries` on submit with `userId` prop, reason mapped to `biggest_mistake`
+- **AcademyTrade**: Passes `userId={user?.id}` to both sheets; mount query includes `todayTradeCount` dependency for correct `in_progress` detection
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+### Phase B: True Workflow ✅
+- **Today's Budget card**: Added to Plan stage top — shows Daily Risk, Per Trade Max, Trades Allowed from vault_state
+- **Execution moment**: Live stage has "Mark Executing" → "Close & Log" flow with duration timer and Planned/Executing badge
+- **Session enforcement**: SessionSetupCard exports `onPhaseChange` callback; cutoff/closed phases show amber/red warning banners
+- **Cutoff override**: Logging after cutoff shows "Override: Log After Cutoff" button; notes marked with `⚠️ Logged after cutoff`
+- **Stage guidance**: Each stage has italic guidance line ("Set your budget, build a plan..." etc.)
+- **CTA consolidation**: Review stage has single primary "Complete Check-In" CTA; removed duplicate "Log a Trade" from review
+- **TodaysLimitsSection**: Updated to `border-white/[0.06] bg-white/[0.02]` luxury styling
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
-
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
-
-### What was implemented
-
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
-
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+### Phase C: Usability & Mobile ✅
+- **Right rail hidden on mobile**: `hidden md:block` on right session rail
+- **Welcome Hero Log button**: Hidden on mobile (`hidden md:flex`)
+- **OSTabHeader**: Icon-only on mobile (no label text), increased touch target
+- **VaultTradePlanner**: Decision framing copy added below coaching note — FITS/TIGHT/PASS explained in plain English
