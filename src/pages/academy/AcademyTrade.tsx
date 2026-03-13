@@ -391,51 +391,37 @@ const AcademyTrade = () => {
 
   return (
     <>
-      <div className="px-3 md:px-6 pb-6 space-y-2 max-w-6xl pt-3">
+      <div className="px-3 md:px-5 pb-6 space-y-1.5 max-w-6xl pt-2">
 
         {/* ══════ COMMAND BAR ══════ */}
         {showMetrics && (
-          <div className="flex items-center rounded-lg bg-black/30 border border-white/[0.08] overflow-hidden h-9">
-            {/* Status chip */}
-            <div className="flex items-center gap-1.5 px-2.5 shrink-0 border-r border-white/[0.08]">
+          <div className="flex items-center gap-4 px-3 h-9 rounded-lg bg-black/20">
+            {/* Status + Balance */}
+            <div className="flex items-center gap-2 shrink-0">
               {todayStatus === "complete" ? (
                 <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
               ) : (
                 <span className={cn("w-[5px] h-[5px] rounded-full shrink-0", vaultStatusDot, activePlan && "animate-pulse")} />
               )}
-              <span className={cn("text-[10px] font-semibold", todayStatus === "complete" ? "text-emerald-400" : vaultStatusColor)}>
-                {vaultState.vault_status}
-              </span>
-              <span className="text-[10px] text-muted-foreground/40 hidden sm:inline">· {statusChip}</span>
-            </div>
-            {/* Balance */}
-            <div className="flex items-center gap-1 px-2.5 border-r border-white/[0.08]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 animate-pulse shrink-0" />
-              <span className="text-base font-bold tabular-nums text-primary leading-none">
+              <span className="text-sm font-bold tabular-nums text-foreground leading-none">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </span>
             </div>
             {/* Today P/L */}
-            <div className="px-2.5 border-r border-white/[0.08] hidden sm:block">
-              <span className={cn("text-xs font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
-              </span>
-            </div>
+            <span className={cn("text-xs font-semibold tabular-nums hidden sm:block", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-muted-foreground/60")}>
+              {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
+            </span>
             {/* Trades */}
-            <div className="px-2.5 border-r border-white/[0.08] hidden md:block">
-              <span className="text-xs font-semibold tabular-nums text-foreground">{todayTradeCount}</span>
-              <span className="text-muted-foreground/40 text-[10px]"> / {totalMaxTrades}</span>
-            </div>
+            <span className="text-xs tabular-nums text-muted-foreground/60 hidden md:block">
+              <span className="font-semibold text-foreground">{todayTradeCount}</span>/{totalMaxTrades} trades
+            </span>
             {/* Risk */}
-            <div className="px-2.5 hidden md:block">
-              <span className={cn("text-xs font-semibold tabular-nums", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
-                ${vaultState.risk_remaining_today.toFixed(0)}
-              </span>
-              <span className="text-muted-foreground/40 text-[10px]"> risk</span>
-            </div>
+            <span className={cn("text-xs tabular-nums hidden md:block", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
+              <span className="font-semibold text-foreground">${vaultState.risk_remaining_today.toFixed(0)}</span> risk
+            </span>
             {/* Log CTA */}
-            <div className="ml-auto px-2 shrink-0">
-              <Button size="sm" className="gap-1 h-6 px-2.5 text-[10px] font-semibold rounded-md" onClick={handleLogUnplanned}>
+            <div className="ml-auto shrink-0">
+              <Button size="sm" className="gap-1 h-7 px-2.5 text-[10px] font-semibold rounded-lg" onClick={handleLogUnplanned}>
                 <Plus className="h-3 w-3" /> Log
               </Button>
             </div>
