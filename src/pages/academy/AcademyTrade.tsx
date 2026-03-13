@@ -589,55 +589,52 @@ const AcademyTrade = () => {
 
               {/* REVIEW STAGE */}
               {activeStage === "review" && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {entries.length === 0 ? (
-                    <div className="text-center py-12 space-y-3">
-                      <ClipboardCheck className="h-7 w-7 text-muted-foreground/15 mx-auto" />
-                      <p className="text-sm text-muted-foreground/50">No trades logged yet. Log your first trade to begin your review.</p>
-                      <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
-                        <Plus className="h-3.5 w-3.5" /> Log a Trade
+                    <div className="text-center py-8 space-y-2">
+                      <p className="text-sm text-muted-foreground/50">No trades logged yet.</p>
+                      <Button size="sm" variant="outline" className="gap-1.5 rounded-lg px-4 h-8 text-[11px] border-border/20" onClick={handleLogUnplanned}>
+                        <Plus className="h-3 w-3" /> Log a Trade
                       </Button>
                     </div>
                   ) : (
                     <>
-                      {/* Action cards */}
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <button onClick={handleLogUnplanned} className="flex items-center gap-3 p-3.5 rounded-xl border border-border/20 bg-muted/[0.03] hover:bg-muted/10 transition-colors text-left">
-                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <Plus className="h-4 w-4 text-primary" />
-                          </div>
+                      {/* Action row */}
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <button onClick={handleLogUnplanned} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-muted/10 transition-colors text-left group">
+                          <Plus className="h-3.5 w-3.5 text-primary shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground">Log a Trade</p>
-                            <p className="text-[10px] text-muted-foreground/50">Result, screenshots, notes</p>
+                            <p className="text-[13px] font-semibold text-foreground">Log a Trade</p>
+                            <p className="text-[10px] text-muted-foreground/40">Result, screenshots, notes</p>
                           </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
-                        <button onClick={() => setShowCheckIn(true)} className="flex items-center gap-3 p-3.5 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] hover:bg-emerald-500/[0.06] transition-colors text-left">
-                          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                          </div>
+                        <button onClick={() => setShowCheckIn(true)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-emerald-500/[0.05] transition-colors text-left group">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground">Complete Check-In</p>
-                            <p className="text-[10px] text-muted-foreground/50">Mistakes, lessons, close session</p>
+                            <p className="text-[13px] font-semibold text-foreground">Complete Check-In</p>
+                            <p className="text-[10px] text-muted-foreground/40">Mistakes, lessons, close session</p>
                           </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                       </div>
 
                       {/* Recent trades */}
                       <div>
-                        <p className="text-[9px] uppercase tracking-[0.15em] font-bold text-muted-foreground/30 mb-2.5">
-                          {todayTradeCount > 0 ? `Today's Trades (${todayTradeCount})` : "Recent Trades"}
+                        <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/30 uppercase mb-2">
+                          {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
                         </p>
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
                             const pnl = e.risk_reward * e.risk_used;
                             const isWin = e.risk_reward > 0;
                             const isLoss = e.risk_reward < 0;
                             return (
-                              <div key={e.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/[0.03] border border-border/10">
+                              <div key={e.id} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-muted/[0.05] transition-colors">
                                 <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/20")} />
-                                <span className="text-sm font-bold text-foreground min-w-[45px]">{e.symbol || "—"}</span>
-                                <span className="text-[11px] text-muted-foreground/40 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "· ✓" : "· ✗"}</span>
-                                <span className={cn("text-sm font-bold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/40")}>
+                                <span className="text-[13px] font-semibold text-foreground min-w-[40px]">{e.symbol || "—"}</span>
+                                <span className="text-[11px] text-muted-foreground/35 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
+                                <span className={cn("text-[13px] font-semibold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/30")}>
                                   {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
                                 </span>
                               </div>
@@ -647,10 +644,10 @@ const AcademyTrade = () => {
                       </div>
 
                       {todayStatus === "complete" && (
-                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                           <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
-                          <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
                         </div>
                       )}
                     </>
