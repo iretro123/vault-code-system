@@ -373,69 +373,45 @@ const AcademyTrade = () => {
   }
 
   // ──── OS LAYOUT (feature flag ON) ────
-  const vaultStatusColor = vaultState.vault_status === "GREEN"
-    ? "text-emerald-400" : vaultState.vault_status === "YELLOW"
-    ? "text-amber-400" : "text-red-400";
   const vaultStatusDot = vaultState.vault_status === "GREEN"
     ? "bg-emerald-400" : vaultState.vault_status === "YELLOW"
     ? "bg-amber-400" : "bg-red-400";
 
   const showMetrics = startingBalance !== null || hasData;
 
-  const statusChip = (() => {
-    if (todayStatus === "complete") return "Session complete";
-    if (activePlan) return `${activePlan.ticker || "—"} ${activePlan.direction} active`;
-    if (todayTradeCount > 0) return `${todayTradeCount} trade${todayTradeCount > 1 ? "s" : ""} logged`;
-    return "No plan yet";
-  })();
-
   return (
     <>
-      <div className="px-3 md:px-6 pb-6 space-y-2 max-w-6xl pt-3">
+      <div className="px-3 md:px-5 pb-6 space-y-1.5 max-w-6xl pt-2">
 
         {/* ══════ COMMAND BAR ══════ */}
         {showMetrics && (
-          <div className="flex items-center rounded-lg bg-black/30 border border-white/[0.08] overflow-hidden h-9">
-            {/* Status chip */}
-            <div className="flex items-center gap-1.5 px-2.5 shrink-0 border-r border-white/[0.08]">
+          <div className="flex items-center gap-4 px-3 h-9 rounded-lg bg-black/20">
+            {/* Status + Balance */}
+            <div className="flex items-center gap-2 shrink-0">
               {todayStatus === "complete" ? (
                 <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
               ) : (
                 <span className={cn("w-[5px] h-[5px] rounded-full shrink-0", vaultStatusDot, activePlan && "animate-pulse")} />
               )}
-              <span className={cn("text-[10px] font-semibold", todayStatus === "complete" ? "text-emerald-400" : vaultStatusColor)}>
-                {vaultState.vault_status}
-              </span>
-              <span className="text-[10px] text-muted-foreground/40 hidden sm:inline">· {statusChip}</span>
-            </div>
-            {/* Balance */}
-            <div className="flex items-center gap-1 px-2.5 border-r border-white/[0.08]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 animate-pulse shrink-0" />
-              <span className="text-base font-bold tabular-nums text-primary leading-none">
+              <span className="text-sm font-bold tabular-nums text-foreground leading-none">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </span>
             </div>
             {/* Today P/L */}
-            <div className="px-2.5 border-r border-white/[0.08] hidden sm:block">
-              <span className={cn("text-xs font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
-              </span>
-            </div>
+            <span className={cn("text-xs font-semibold tabular-nums hidden sm:block", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-muted-foreground/60")}>
+              {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
+            </span>
             {/* Trades */}
-            <div className="px-2.5 border-r border-white/[0.08] hidden md:block">
-              <span className="text-xs font-semibold tabular-nums text-foreground">{todayTradeCount}</span>
-              <span className="text-muted-foreground/40 text-[10px]"> / {totalMaxTrades}</span>
-            </div>
+            <span className="text-xs tabular-nums text-muted-foreground/60 hidden md:block">
+              <span className="font-semibold text-foreground">{todayTradeCount}</span>/{totalMaxTrades} trades
+            </span>
             {/* Risk */}
-            <div className="px-2.5 hidden md:block">
-              <span className={cn("text-xs font-semibold tabular-nums", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
-                ${vaultState.risk_remaining_today.toFixed(0)}
-              </span>
-              <span className="text-muted-foreground/40 text-[10px]"> risk</span>
-            </div>
+            <span className={cn("text-xs tabular-nums hidden md:block", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
+              <span className="font-semibold text-foreground">${vaultState.risk_remaining_today.toFixed(0)}</span> risk
+            </span>
             {/* Log CTA */}
-            <div className="ml-auto px-2 shrink-0">
-              <Button size="sm" className="gap-1 h-6 px-2.5 text-[10px] font-semibold rounded-md" onClick={handleLogUnplanned}>
+            <div className="ml-auto shrink-0">
+              <Button size="sm" className="gap-1 h-7 px-2.5 text-[10px] font-semibold rounded-lg" onClick={handleLogUnplanned}>
                 <Plus className="h-3 w-3" /> Log
               </Button>
             </div>
@@ -456,14 +432,14 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ HERO OS CARD ══════ */}
-        <div className="rounded-lg border border-white/[0.08] bg-card overflow-hidden shadow-[0_6px_24px_rgba(0,0,0,0.25)]">
+        <div className="rounded-lg bg-card overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
           {/* Two-column body */}
           <div className="flex flex-col md:flex-row">
             {/* ── LEFT MAIN ZONE ── */}
-            <div className="flex-[2.5] min-w-0 p-2.5 md:p-3 md:border-r border-white/[0.08]">
+            <div className="flex-[3] min-w-0 px-2.5 pb-2.5">
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
@@ -693,7 +669,7 @@ const AcademyTrade = () => {
             </div>
 
             {/* ── RIGHT SESSION RAIL ── */}
-            <div className="flex-[0.8] min-w-0 p-2 border-t md:border-t-0 border-white/[0.08]">
+            <div className="flex-[0.7] min-w-0 p-2 border-t md:border-t-0 md:border-l border-white/[0.04]">
               <OSControlRail
                 activePlan={activePlan}
                 vaultState={vaultState}
@@ -709,34 +685,36 @@ const AcademyTrade = () => {
           {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-white/[0.08] hover:bg-white/[0.02] transition-colors"
+              className="w-full border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
             >
-              <div className="flex items-center divide-x divide-white/[0.08]">
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 shrink-0">
+              <div className="flex items-center gap-4 px-3 py-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse" />
                   <span className="text-[9px] text-muted-foreground/40 font-medium">AI</span>
                 </div>
-                <div className="flex-1 px-2.5 py-1.5">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Grade</p>
-                  <p className={cn("text-sm font-bold",
-                    cachedAI.riskGrade === "A" ? "text-emerald-400" :
-                    cachedAI.riskGrade === "B" ? "text-primary" :
-                    cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
-                  )}>
-                    {cachedAI.riskGrade || "—"}
-                  </p>
-                </div>
-                <div className="flex-1 px-2.5 py-1.5">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Leak</p>
-                  <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.primaryLeak || "—"}</p>
-                </div>
-                <div className="flex-1 px-2.5 py-1.5 hidden md:block">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Edge</p>
-                  <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.strongestEdge || "—"}</p>
-                </div>
-                <div className="flex-1 px-2.5 py-1.5 hidden md:block">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Next</p>
-                  <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.nextAction || "—"}</p>
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div>
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Grade</p>
+                    <p className={cn("text-xs font-bold",
+                      cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                      cachedAI.riskGrade === "B" ? "text-primary" :
+                      cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                    )}>
+                      {cachedAI.riskGrade || "—"}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Leak</p>
+                    <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.primaryLeak || "—"}</p>
+                  </div>
+                  <div className="min-w-0 hidden md:block">
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Edge</p>
+                    <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.strongestEdge || "—"}</p>
+                  </div>
+                  <div className="min-w-0 hidden md:block">
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Next</p>
+                    <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.nextAction || "—"}</p>
+                  </div>
                 </div>
               </div>
             </button>

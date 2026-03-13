@@ -226,35 +226,35 @@ html {
   /* Premium glass card surface */
   .vault-glass-card {
     background: hsl(214, 22%, 14%);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.04);
     border-radius: 10px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   }
 
-  /* Premium elevated card — deeper base + inner radial glow */
+  /* Premium elevated card — deeper base + subtle glow */
   .vault-premium-card {
     background:
-      radial-gradient(ellipse 70% 200px at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 70% 200px at 50% 0%, rgba(59,130,246,0.04) 0%, transparent 70%),
       hsl(214, 24%, 11%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 10px;
     box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      0 4px 16px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
-  /* Contract choice card — frosted glass with hover glow */
+  /* Contract choice card — clean with hover glow */
   .vault-approval-choice-card {
     background: hsl(214, 22%, 13%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 10px;
-    padding: 0.625rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: box-shadow 100ms ease, border-color 100ms ease;
   }
   .vault-approval-choice-card:hover {
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(59,130,246,0.08);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(59,130,246,0.06);
   }
 
   /* CTA shimmer shine effect */
