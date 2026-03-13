@@ -14,20 +14,22 @@ import { detectStuck, type StuckSignals } from "@/lib/detectStuck";
 import { cn } from "@/lib/utils";
 
 /* ── Progress Ring ── */
-function ProgressRing({ value, max, size = 40, stroke = 3.5, color = "hsl(var(--primary))" }: {
+function ProgressRing({ value, max, size = 52, stroke = 4, color = "hsl(var(--primary))" }: {
   value: number; max: number; size?: number; stroke?: number; color?: string;
 }) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const pct = max > 0 ? Math.min(value / max, 1) : 0;
   const offset = circumference * (1 - pct);
+  const displayPct = Math.round(pct * 100);
 
   return (
-    <svg width={size} height={size} className="shrink-0 -rotate-90">
+    <svg width={size} height={size} className="shrink-0" viewBox={`0 0 ${size} ${size}`}>
       <circle
         cx={size / 2} cy={size / 2} r={radius}
         fill="none" stroke="hsl(var(--muted))" strokeWidth={stroke}
         opacity={0.25}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
       <circle
         cx={size / 2} cy={size / 2} r={radius}
@@ -35,15 +37,16 @@ function ProgressRing({ value, max, size = 40, stroke = 3.5, color = "hsl(var(--
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
         style={{ transition: "stroke-dashoffset 0.6s ease", filter: `drop-shadow(0 0 4px ${color})` }}
       />
       <text
         x={size / 2} y={size / 2}
         textAnchor="middle" dominantBaseline="central"
         className="fill-foreground"
-        style={{ fontSize: "8px", fontWeight: 700, transform: "rotate(90deg)", transformOrigin: "center" }}
+        style={{ fontSize: "11px", fontWeight: 700 }}
       >
-        {Math.round(pct * 100)}%
+        {displayPct}%
       </text>
     </svg>
   );
