@@ -408,17 +408,17 @@ const AcademyTrade = () => {
   return (
     <>
       {/* ══════ LAYER 1 — GREETING + STATUS ══════ */}
-      <div className="px-4 md:px-8 pt-6 md:pt-8 pb-1 max-w-6xl">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-tight">
+      <div className="px-4 md:px-8 pt-5 md:pt-6 pb-0.5 max-w-6xl">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
           {greeting}{displayName ? `, ${displayName}` : ""}
         </h1>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-0.5">
           {todayStatus === "complete" ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
           ) : (
-            <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
+            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
           )}
-          <span className="text-xs text-muted-foreground">{statusLine}</span>
+          <span className="text-xs text-muted-foreground/70">{statusLine}</span>
         </div>
       </div>
 
