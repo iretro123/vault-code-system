@@ -1,18 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import useEmblaCarousel from "embla-carousel-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Plus, TrendingUp, TrendingDown, Minus, Brain, BarChart3, Wallet,
-  CalendarCheck, Eye, CheckCircle2, AlertTriangle, RotateCcw, Download,
-  ChevronDown, ChevronUp, Lock, RefreshCw, Crosshair, Zap, Shield,
-  Sparkles, Flame, Target, Activity, ArrowUpRight, ArrowDownRight, X, Loader2,
-  Clock, ChevronLeft, ChevronRight, Pencil,
-} from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
+import { Plus, Shield, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -25,23 +15,36 @@ import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
 import { useApprovedPlans, type ApprovedPlan } from "@/hooks/useApprovedPlans";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useSessionStage } from "@/hooks/useSessionStage";
+import { useVaultState } from "@/contexts/VaultStateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-/* ── Types ── */
+// Extracted components
+import { SectionLabel } from "@/components/trade-os/SectionLabel";
+import { PerformanceHUD } from "@/components/trade-os/PerformanceHUD";
+import { EquityCurveCard } from "@/components/trade-os/EquityCurveCard";
+import { PerformanceBreakdownCard } from "@/components/trade-os/PerformanceBreakdownCard";
+import { GettingStartedBanner } from "@/components/trade-os/GettingStartedBanner";
+import { TodayVaultCheckCard } from "@/components/trade-os/TodayVaultCheckCard";
+import { AIFocusCard } from "@/components/trade-os/AIFocusCard";
+import { RecentTradesSection } from "@/components/trade-os/RecentTradesSection";
+import { TrackedBalanceCard } from "@/components/trade-os/TrackedBalanceCard";
+import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
+import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
+import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
+import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
+
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
-const OUTCOME_STYLES = {
-  win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: TrendingUp },
-  loss: { label: "Loss", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: TrendingDown },
-  breakeven: { label: "Breakeven", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Minus },
-};
-
-/* ── Page ── */
 const AcademyTrade = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
+  const { isPageEnabled } = useFeatureFlags();
+  const { state: vaultState } = useVaultState();
   const {
     entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
@@ -85,12 +88,17 @@ const AcademyTrade = () => {
     return startingBalance + totalPnl;
   }, [startingBalance, totalPnl]);
 
-  const startOfWeek = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0, 0, 0, 0); return d; }, []);
-  const weekEntries = useMemo(() => entries.filter((e) => new Date(e.trade_date) >= startOfWeek), [entries, startOfWeek]);
-
   const hasData = entries.length > 0;
 
-  /* ── Handlers ── */
+  // Session stage hook
+  const { activeStage, setStage, stageStatus } = useSessionStage({
+    hasActivePlan: !!activePlan,
+    todayTradeCount,
+    todayStatus,
+    sessionActive: !vaultState.session_paused,
+  });
+
+  /* ── Handlers (identical to classic) ── */
   const handleStartingBalanceSave = async (balance: number) => {
     if (!user) return;
     try {
@@ -143,7 +151,6 @@ const AcademyTrade = () => {
     const isWin = data.resultType === "Win";
     const isLoss = data.resultType === "Loss";
 
-    // Upload screenshot if provided
     let screenshotUrl: string | undefined;
     if (data.screenshotFile && user) {
       const ext = data.screenshotFile.name.split(".").pop() || "jpg";
@@ -153,7 +160,6 @@ const AcademyTrade = () => {
         .upload(path, data.screenshotFile, { contentType: data.screenshotFile.type, upsert: false });
       if (uploadErr) {
         toast({ title: "Screenshot upload failed", description: uploadErr.message, variant: "destructive" });
-        // Continue without screenshot
       } else {
         const { data: urlData } = supabase.storage.from("trade-screenshots").getPublicUrl(path);
         screenshotUrl = urlData.publicUrl;
@@ -176,7 +182,6 @@ const AcademyTrade = () => {
     const { error } = await addEntry(newEntry);
     if (error) throw error;
 
-    // If this trade was logged against a plan, mark it as logged
     if (logPlanId) {
       await markLogged(logPlanId);
       refetchPlan();
@@ -215,7 +220,6 @@ const AcademyTrade = () => {
   const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
   const handleNoTradeDayComplete = () => { setShowNoTradeDay(false); setNoTradeDay(true); setTodayStatus("complete"); toast({ title: "No-trade day logged" }); };
 
-
   if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="My Trades" />;
 
   if (balanceLoading || tradesLoading) {
@@ -231,126 +235,292 @@ const AcademyTrade = () => {
     );
   }
 
+  const useOSLayout = isPageEnabled("trade-os");
+
+  // ──── CLASSIC LAYOUT (feature flag OFF) ────
+  if (!useOSLayout) {
+    return (
+      <>
+        <PageHeader
+          title="My Trades"
+          subtitle="Your trading command center — log, track, and improve."
+          compact
+          action={
+            <div className="flex gap-1.5">
+              <Button size="sm" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={handleLogUnplanned}>
+                <Plus className="h-3 w-3" /> Log
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={() => navigate("/academy/vault")}>
+                <Shield className="h-3 w-3" /> Check
+              </Button>
+            </div>
+          }
+        />
+        <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
+          {balanceSkipped && startingBalance === null && (
+            <div className="vault-glass-card p-3 md:p-4 border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+              <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set</p>
+              <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
+            </div>
+          )}
+          {!hasData && (
+            <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
+          )}
+          {hasData && (
+            <section className="space-y-2.5">
+              <SectionLabel>Performance</SectionLabel>
+              <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
+              {equityCurve.length > 1 && startingBalance !== null && (
+                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+              )}
+            </section>
+          )}
+          {trackedBalance !== null && (
+            <section className="space-y-2.5">
+              <SectionLabel>Account</SectionLabel>
+              <TrackedBalanceCard
+                balance={trackedBalance}
+                showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
+                onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+                onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
+                showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
+                onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+                onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+              />
+            </section>
+          )}
+          <section className="space-y-2.5">
+            <SectionLabel>Today</SectionLabel>
+            <TodayVaultCheckCard
+              activePlan={activePlan} todayTradeCount={todayTradeCount} todayStatus={todayStatus} noTradeDay={noTradeDay}
+              onCheckTrade={() => navigate("/academy/vault")} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
+              onCancelPlan={handleCancelPlan} onNoTradeDay={() => setShowNoTradeDay(true)}
+              onCompleteCheckIn={() => setShowCheckIn(true)}
+              onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            />
+          </section>
+          <section className="space-y-2.5">
+            <SectionLabel>Intelligence</SectionLabel>
+            <AIFocusCard entries={entries} />
+          </section>
+          <section className="space-y-2.5">
+            <SectionLabel>Journal</SectionLabel>
+            <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
+              const result = await deleteEntry(id);
+              if (!result.error) refetchPlan();
+              return result;
+            }} />
+          </section>
+          <section className="space-y-2.5">
+            <SectionLabel>Review</SectionLabel>
+            {hasData && symbolStats.length > 0 && (
+              <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
+            )}
+            <WeeklyReviewCard hasData={hasData} />
+          </section>
+        </div>
+
+        <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
+        <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
+        <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
+        <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
+      </>
+    );
+  }
+
+  // ──── OS LAYOUT (feature flag ON) ────
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good Morning";
+    if (h < 17) return "Good Afternoon";
+    return "Good Evening";
+  })();
+
+  const statusLine = (() => {
+    if (todayStatus === "complete") return "Today's session complete";
+    if (activePlan) return `Plan approved · ${activePlan.ticker || "—"} ${activePlan.direction}`;
+    if (todayTradeCount > 0) return `${todayTradeCount} trade${todayTradeCount > 1 ? "s" : ""} logged today`;
+    return "No plan yet — start your session";
+  })();
+
   return (
     <>
-      <PageHeader
-        title="My Trades"
-        subtitle="Your trading command center — log, track, and improve."
-        compact
-        action={
-          <div className="flex gap-1.5">
-            <Button size="sm" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={handleLogUnplanned}>
-              <Plus className="h-3 w-3" /> Log
-            </Button>
-            <Button size="sm" variant="outline" className="gap-1 h-8 px-3 text-xs rounded-full" onClick={() => navigate("/academy/vault")}>
-              <Shield className="h-3 w-3" /> Check
-            </Button>
-          </div>
-        }
-      />
-      <div className="px-4 md:px-6 pb-10 space-y-4 md:space-y-5 max-w-4xl">
+      {/* ── Greeting Header ── */}
+      <div className="px-4 md:px-6 pt-4 pb-2 max-w-4xl">
+        <h1 className="text-xl md:text-2xl font-bold text-foreground">{greeting}</h1>
+        <div className="flex items-center gap-2 mt-0.5">
+          {todayStatus === "complete" ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+          ) : activePlan ? (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          ) : (
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+          )}
+          <span className="text-xs text-muted-foreground">{statusLine}</span>
+        </div>
+      </div>
 
-        {/* Balance skip reminder */}
+      <div className="px-4 md:px-6 pb-10 space-y-4 max-w-4xl">
+
+        {/* ── Compact Metrics Strip ── */}
+        {hasData && (
+          <div className="flex items-center gap-0 rounded-2xl border border-border/50 bg-card overflow-hidden">
+            <MetricCell label="Balance" value={trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"} accent />
+            <MetricCell label="Today P/L" value={todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`} color={todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : undefined} />
+            <MetricCell label="Trades" value={`${todayTradeCount}`} />
+            <MetricCell label="Risk Left" value={`$${vaultState.risk_remaining_today.toFixed(0)}`} />
+            {!isMobile && <MetricCell label="Streak" value={`${currentStreak}`} />}
+            <div className="px-3 py-2.5 flex items-center">
+              <Button size="sm" className="gap-1 h-8 px-3 text-xs rounded-full whitespace-nowrap" onClick={handleLogUnplanned}>
+                <Plus className="h-3 w-3" /> Log Trade
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Balance skip reminder ── */}
         {balanceSkipped && startingBalance === null && (
-          <div className="vault-glass-card p-3 md:p-4 border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+          <div className="vault-glass-card p-3 border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
             <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set</p>
             <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
           </div>
         )}
 
-        {/* Getting Started */}
+        {/* ── Getting Started ── */}
         {!hasData && (
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
-        {/* ═══ SECTION: PERFORMANCE ═══ */}
-        {hasData && (
-          <section className="space-y-2.5">
-            <SectionLabel>Performance</SectionLabel>
-            <PerformanceHUD
-              balance={trackedBalance}
-              todayPnl={todayPnl}
-              allTimeWinRate={allTimeWinRate}
-              totalTrades={entries.length}
-              complianceRate={complianceRate}
-              currentStreak={currentStreak}
-            />
-            {equityCurve.length > 1 && startingBalance !== null && (
-              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+        {/* ══════ HERO OS CARD ══════ */}
+        <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+          <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
+
+          <div className="p-4 md:p-6">
+            {/* ── PLAN TAB ── */}
+            {activeStage === "plan" && (
+              <div className="space-y-4">
+                <TodayVaultCheckCard
+                  activePlan={activePlan} todayTradeCount={todayTradeCount} todayStatus={todayStatus} noTradeDay={noTradeDay}
+                  onCheckTrade={() => navigate("/academy/vault")} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
+                  onCancelPlan={handleCancelPlan} onNoTradeDay={() => setShowNoTradeDay(true)}
+                  onCompleteCheckIn={() => setShowCheckIn(true)}
+                  onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                />
+              </div>
             )}
-          </section>
-        )}
 
-        {/* ═══ SECTION: ACCOUNT ═══ */}
-        {trackedBalance !== null && (
-          <section className="space-y-2.5">
-            <SectionLabel>Account</SectionLabel>
-            <TrackedBalanceCard
-              balance={trackedBalance}
-              showResetConfirm={showResetConfirm}
-              resetInput={resetInput}
-              resetting={resetting}
-              onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-              onResetInputChange={setResetInput}
-              onConfirmReset={handleResetBalance}
-              showUpdateBalance={showUpdateBalance}
-              updateBalanceInput={updateBalanceInput}
-              updatingBalance={updatingBalance}
-              onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-              onUpdateInputChange={setUpdateBalanceInput}
-              onConfirmUpdate={handleUpdateBalance}
-            />
-          </section>
-        )}
+            {/* ── LIVE TAB ── */}
+            {activeStage === "live" && (
+              <div className="space-y-4">
+                <TodaysLimitsSection />
+                {activePlan && activePlan.status === "planned" && (
+                  <div className="rounded-xl bg-muted/20 border border-border/30 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="text-sm font-semibold text-foreground">{activePlan.ticker || "—"}</span>
+                        <span className="text-[10px] text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
+                      </div>
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => handleLogFromPlan(activePlan)}>
+                        <CheckCircle2 className="h-3 w-3" /> Log Result
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {!activePlan && (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-muted-foreground mb-3">No active plan. Check a trade to get started.</p>
+                    <Button size="sm" className="gap-1.5" onClick={() => navigate("/academy/vault")}>
+                      <Shield className="h-3.5 w-3.5" /> Check a Trade
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
-        {/* ═══ SECTION: TODAY ═══ */}
-        <section className="space-y-2.5">
-          <SectionLabel>Today</SectionLabel>
-          <TodayVaultCheckCard
-            activePlan={activePlan}
-            todayTradeCount={todayTradeCount}
-            todayStatus={todayStatus}
-            noTradeDay={noTradeDay}
-            onCheckTrade={() => navigate("/academy/vault")}
-            onLogFromPlan={handleLogFromPlan}
-            onLogUnplanned={handleLogUnplanned}
-            onCancelPlan={handleCancelPlan}
-            onNoTradeDay={() => setShowNoTradeDay(true)}
-            onCompleteCheckIn={() => setShowCheckIn(true)}
-            onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-          />
-        </section>
+            {/* ── REVIEW TAB ── */}
+            {activeStage === "review" && (
+              <div className="space-y-4">
+                {todayStatus === "incomplete" && todayTradeCount === 0 && (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-muted-foreground mb-3">No trades logged today yet.</p>
+                    <Button size="sm" className="gap-1.5" onClick={handleLogUnplanned}>
+                      <Plus className="h-3.5 w-3.5" /> Log a Trade
+                    </Button>
+                  </div>
+                )}
+                {(todayStatus === "in_progress" || (todayStatus === "incomplete" && todayTradeCount > 0)) && (
+                  <div className="space-y-3">
+                    <div className="vault-glass-card p-4 space-y-2">
+                      <h3 className="text-sm font-semibold text-foreground">Complete Your Session</h3>
+                      <p className="text-xs text-muted-foreground">{todayTradeCount} trade{todayTradeCount > 1 ? "s" : ""} logged. Complete your check-in to finish today's accountability.</p>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="gap-1.5" onClick={() => setShowCheckIn(true)}>
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1.5" onClick={handleLogUnplanned}>
+                          <Plus className="h-3.5 w-3.5" /> Log Another
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {todayStatus === "complete" && (
+                  <div className="vault-glass-card p-4 text-center space-y-2">
+                    <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto" />
+                    <p className="text-sm font-semibold text-foreground">Session Complete</p>
+                    <p className="text-xs text-muted-foreground">Today's accountability is done. Check your insights below.</p>
+                  </div>
+                )}
+              </div>
+            )}
 
-        {/* ═══ SECTION: INTELLIGENCE ═══ */}
-        <section className="space-y-2.5">
-          <SectionLabel>Intelligence</SectionLabel>
-          <AIFocusCard entries={entries} />
-        </section>
+            {/* ── INSIGHTS TAB ── */}
+            {activeStage === "insights" && (
+              <div className="space-y-4">
+                <AIFocusCard entries={entries} />
+              </div>
+            )}
+          </div>
+        </div>
 
-        {/* ═══ SECTION: JOURNAL ═══ */}
-        <section className="space-y-2.5">
-          <SectionLabel>Journal</SectionLabel>
+        {/* ══════ LOWER ANALYTICS ══════ */}
+        <div className="space-y-4 pt-2">
+          <SectionLabel>Analytics & History</SectionLabel>
+
+          {hasData && equityCurve.length > 1 && startingBalance !== null && (
+            <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+          )}
+
           <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={async (id) => {
             const result = await deleteEntry(id);
-            if (!result.error) {
-              refetchPlan();
-            }
+            if (!result.error) refetchPlan();
             return result;
           }} />
-        </section>
 
-        {/* ═══ SECTION: REVIEW ═══ */}
-        <section className="space-y-2.5">
-          <SectionLabel>Review</SectionLabel>
           {hasData && symbolStats.length > 0 && (
             <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
           )}
-          <WeeklyReviewCard hasData={hasData} />
-        </section>
 
+          {trackedBalance !== null && (
+            <TrackedBalanceCard
+              balance={trackedBalance}
+              showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
+              onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+              onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
+              showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
+              onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+              onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+            />
+          )}
+
+          <WeeklyReviewCard hasData={hasData} />
+        </div>
       </div>
 
+      {/* ── Modals (shared by both layouts) ── */}
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
@@ -359,1223 +529,14 @@ const AcademyTrade = () => {
   );
 };
 
-/* ── iOS Section Label ── */
-function SectionLabel({ children }: { children: import("react").ReactNode }) {
+/* ── Metric Cell for compact strip ── */
+function MetricCell({ label, value, accent, color }: { label: string; value: string; accent?: boolean; color?: string }) {
   return (
-    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold pl-1">
-      {children}
-    </p>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   PERFORMANCE HUD — Premium cinematic stats strip
-   ══════════════════════════════════════════════════════════════════ */
-function PerformanceHUD({
-  balance, todayPnl, allTimeWinRate, totalTrades, complianceRate, currentStreak,
-}: {
-  balance: number | null; todayPnl: number; allTimeWinRate: number; totalTrades: number; complianceRate: number; currentStreak: number;
-}) {
-  const hudItems = [
-    {
-      label: "BALANCE",
-      value: balance !== null ? `$${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—",
-      icon: Wallet,
-      accent: "text-primary",
-      large: true,
-    },
-    {
-      label: "TODAY P/L",
-      value: todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`,
-      icon: todayPnl >= 0 ? ArrowUpRight : ArrowDownRight,
-      accent: todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-muted-foreground",
-    },
-    {
-      label: "WIN RATE",
-      value: `${allTimeWinRate}%`,
-      icon: Target,
-      accent: allTimeWinRate >= 50 ? "text-emerald-400" : "text-amber-400",
-    },
-    {
-      label: "TRADES",
-      value: String(totalTrades),
-      icon: Activity,
-      accent: "text-primary",
-    },
-    {
-      label: "COMPLIANCE",
-      value: `${complianceRate}%`,
-      icon: Shield,
-      accent: complianceRate >= 80 ? "text-emerald-400" : "text-amber-400",
-    },
-    {
-      label: "STREAK",
-      value: `${currentStreak}`,
-      icon: Flame,
-      accent: currentStreak >= 5 ? "text-emerald-400" : currentStreak >= 2 ? "text-amber-400" : "text-muted-foreground",
-    },
-  ];
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card p-1">
-      {/* Animated gradient border effect */}
-      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-30"
-        style={{
-          background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 20%, transparent 40%, hsl(var(--primary) / 0.1) 60%, transparent 80%)",
-          animation: "hudBorderSpin 12s linear infinite",
-        }}
-      />
-      <style>{`@keyframes hudBorderSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-
-      <div className="relative grid grid-cols-3 md:grid-cols-6 gap-px rounded-xl overflow-hidden bg-border/20">
-        {hudItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="bg-card px-2.5 py-2.5 md:px-4 md:py-4 flex flex-col items-center text-center gap-0.5">
-              <Icon className={`h-3.5 w-3.5 ${item.accent} shrink-0`} />
-              <span className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/70 leading-none">{item.label}</span>
-              <span className={`text-base md:text-lg font-bold tabular-nums leading-none ${item.large ? item.accent : "text-foreground"}`}>
-                {item.value}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   EQUITY CURVE — Recharts area chart
-   ══════════════════════════════════════════════════════════════════ */
-function EquityCurveCard({ equityCurve, startingBalance }: { equityCurve: { date: string; balance: number }[]; startingBalance: number }) {
-  // Add starting balance offset to make it absolute
-  const chartData = useMemo(() => {
-    return [
-      { date: "", balance: startingBalance },
-      ...equityCurve.map((p) => ({ date: p.date, balance: startingBalance + p.balance })),
-    ];
-  }, [equityCurve, startingBalance]);
-
-  const currentBalance = chartData[chartData.length - 1]?.balance ?? startingBalance;
-  const totalChange = currentBalance - startingBalance;
-  const isPositive = totalChange >= 0;
-
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card p-4 md:p-5 space-y-2.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Activity className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Equity Curve</h3>
-        </div>
-        <span className={`text-xs font-semibold tabular-nums ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
-          {isPositive ? "+" : ""}{totalChange.toFixed(0)} ({((totalChange / startingBalance) * 100).toFixed(1)}%)
-        </span>
-      </div>
-      <div className="h-[140px] md:h-[160px] -mx-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-            <defs>
-              <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={isPositive ? "#34d399" : "#f87171"} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={isPositive ? "#34d399" : "#f87171"} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="date" tick={false} axisLine={false} tickLine={false} />
-            <YAxis domain={["auto", "auto"]} tick={false} axisLine={false} tickLine={false} width={0} />
-            <RechartsTooltip
-              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
-              labelStyle={{ color: "hsl(var(--muted-foreground))", fontSize: 10 }}
-              formatter={(val: number) => [`$${val.toLocaleString()}`, "Balance"]}
-            />
-            <Area
-              type="monotone"
-              dataKey="balance"
-              stroke={isPositive ? "#34d399" : "#f87171"}
-              strokeWidth={2}
-              fill="url(#equityGrad)"
-              dot={false}
-              activeDot={{ r: 3, strokeWidth: 0, fill: isPositive ? "#34d399" : "#f87171" }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   PERFORMANCE BREAKDOWN — By symbol & day
-   ══════════════════════════════════════════════════════════════════ */
-function PerformanceBreakdownCard({
-  symbolStats,
-  dayStats,
-}: {
-  symbolStats: { symbol: string; trades: number; wins: number; winRate: number; totalPnl: number }[];
-  dayStats: { day: string; trades: number; wins: number; winRate: number }[];
-}) {
-  const [tab, setTab] = useState<"symbol" | "day">("symbol");
-  const topSymbols = symbolStats.slice(0, 6);
-
-  return (
-    <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Performance Breakdown</h3>
-        </div>
-        <div className="flex rounded-lg border border-border overflow-hidden">
-          {(["symbol", "day"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-3 py-1 text-[10px] font-medium uppercase tracking-wider transition-colors duration-100 ${
-                tab === t ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
-              }`}
-            >
-              {t === "symbol" ? "By Symbol" : "By Day"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {tab === "symbol" && (
-        <div className="space-y-2">
-          {topSymbols.map((s) => (
-            <div key={s.symbol} className="flex items-center gap-3 rounded-xl bg-muted/20 border border-border/30 px-3 py-2.5">
-              <span className="text-sm font-bold text-foreground min-w-[50px]">{s.symbol}</span>
-              <div className="flex-1 min-w-0">
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${s.winRate}%`,
-                      background: s.winRate >= 50 ? "linear-gradient(90deg, #34d399, #6ee7b7)" : "linear-gradient(90deg, #f87171, #fca5a5)",
-                    }}
-                  />
-                </div>
-              </div>
-              <span className={`text-xs font-semibold tabular-nums ${s.winRate >= 50 ? "text-emerald-400" : "text-red-400"}`}>
-                {s.winRate}%
-              </span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">{s.trades}t</span>
-              <span className={`text-xs font-semibold tabular-nums ${s.totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                {s.totalPnl >= 0 ? "+" : ""}${Math.abs(s.totalPnl).toFixed(0)}
-              </span>
-            </div>
-          ))}
-          {symbolStats.length === 0 && <p className="text-xs text-muted-foreground text-center py-3">No symbol data yet.</p>}
-        </div>
-      )}
-
-      {tab === "day" && (
-        <div className="grid grid-cols-5 md:grid-cols-7 gap-2">
-          {dayStats.map((d) => (
-            <div key={d.day} className="flex flex-col items-center gap-1 rounded-xl bg-muted/20 border border-border/30 px-2 py-3">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase">{d.day}</span>
-              <span className={`text-sm font-bold tabular-nums ${d.winRate >= 50 ? "text-emerald-400" : d.trades > 0 ? "text-red-400" : "text-muted-foreground/40"}`}>
-                {d.trades > 0 ? `${d.winRate}%` : "—"}
-              </span>
-              <span className="text-[9px] text-muted-foreground/60 tabular-nums">{d.trades}t</span>
-            </div>
-          ))}
-          {dayStats.length === 0 && <p className="text-xs text-muted-foreground text-center py-3 col-span-full">No day data yet.</p>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   Getting Started Banner
-   ══════════════════════════════════════════════════════════════════ */
-function GettingStartedBanner({ balanceSet, onSetBalance, todayStatus }: { balanceSet: boolean; onSetBalance: () => void; todayStatus: TodayStatus }) {
-  const steps = [
-    { num: 1, title: "Set your starting balance", desc: "Tell us your current account balance so we can track your progress.", done: balanceSet, active: !balanceSet },
-    { num: 2, title: "Log your first trade", desc: "After your next trade, tap the + Log Trade button above.", done: todayStatus !== "incomplete", active: balanceSet && todayStatus === "incomplete" },
-    { num: 3, title: "Complete your check-in", desc: "After logging, you'll answer 3 quick questions. Takes 30 seconds.", done: todayStatus === "complete", active: todayStatus === "in_progress" },
-  ];
-
-  return (
-    <div className="vault-glass-card p-6 space-y-5">
-      <div>
-        <h3 className="text-base font-semibold text-foreground">Get Started with My Trades</h3>
-        <p className="text-sm text-muted-foreground mt-1">Follow these three steps to begin tracking your trading performance.</p>
-      </div>
-      <div className="space-y-4">
-        {steps.map((s) => (
-          <div key={s.num} className={`flex items-start gap-4 ${!s.active && !s.done ? "opacity-40" : ""}`}>
-            <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
-              s.done ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
-                : s.active ? "bg-primary/20 border-primary/50 text-primary ring-2 ring-primary/20 ring-offset-2 ring-offset-background"
-                : "bg-white/5 border-white/10 text-muted-foreground"
-            }`}>
-              {s.done ? <CheckCircle2 className="h-4 w-4" /> : s.num}
-            </div>
-            <div className="flex-1 min-w-0 pt-0.5">
-              <p className="text-sm font-semibold text-foreground">{s.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
-              {s.num === 1 && s.active && (
-                <Button size="sm" className="mt-2 gap-1.5" onClick={onSetBalance}>
-                  <Wallet className="h-3.5 w-3.5" /> Set Starting Balance
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   Today's VAULT Check — Bridge Card
-   ══════════════════════════════════════════════════════════════════ */
-function TodayVaultCheckCard({
-  activePlan, todayTradeCount, todayStatus, noTradeDay,
-  onCheckTrade, onLogFromPlan, onLogUnplanned, onCancelPlan, onNoTradeDay, onCompleteCheckIn, onReviewFeedback,
-}: {
-  activePlan: ApprovedPlan | null;
-  todayTradeCount: number;
-  todayStatus: TodayStatus;
-  noTradeDay: boolean;
-  onCheckTrade: () => void;
-  onLogFromPlan: (plan: ApprovedPlan) => void;
-  onLogUnplanned: () => void;
-  onCancelPlan: (id: string) => void;
-  onNoTradeDay: () => void;
-  onCompleteCheckIn: () => void;
-  onReviewFeedback: () => void;
-}) {
-  // State A: No active plan, not complete
-  if (!activePlan && todayStatus === "incomplete" && !noTradeDay) {
-    return (
-      <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
-        <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
-          <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20">No plan</span>
-        </div>
-        <p className="text-xs text-muted-foreground">No trade approved yet today. Check a setup before you enter.</p>
-        <div className="flex gap-2">
-          <Button size="sm" className="gap-1.5" onClick={onCheckTrade}>
-            <Shield className="h-3.5 w-3.5" /> Check a Trade
-          </Button>
-          <Button size="sm" variant="outline" onClick={onNoTradeDay}>Mark No-Trade Day</Button>
-        </div>
-      </div>
-    );
-  }
-
-  // State B: Active plan, not yet logged
-  if (activePlan && activePlan.status === "planned") {
-    const statusStyles = activePlan.approval_status === "fits"
-      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-      : activePlan.approval_status === "tight"
-        ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-        : "bg-red-500/10 text-red-400 border-red-500/20";
-    return (
-      <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
-        <div className="flex items-center gap-2">
-          <Shield className="h-4 w-4 text-emerald-400" />
-          <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
-          <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">Plan ready</span>
-        </div>
-        <p className="text-xs text-muted-foreground">Your approved plan is ready. Log the result after the trade.</p>
-
-        {/* Plan summary */}
-        <div className="rounded-xl bg-muted/20 border border-border/30 p-3 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {activePlan.ticker && <span className="text-sm font-bold text-foreground">{activePlan.ticker}</span>}
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-border/50 bg-muted/30 text-muted-foreground">
-              {activePlan.direction === "calls" ? "Calls" : "Puts"}
-            </span>
-            <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", statusStyles)}>
-              {activePlan.approval_status.toUpperCase()}
-            </span>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-[11px]">
-            <div><span className="text-muted-foreground">Contracts</span><br /><span className="font-semibold text-foreground">{activePlan.contracts_planned}</span></div>
-            <div><span className="text-muted-foreground">Max loss</span><br /><span className="font-semibold text-red-400">${Number(activePlan.max_loss_planned).toFixed(0)}</span></div>
-            <div><span className="text-muted-foreground">Entry</span><br /><span className="font-semibold text-foreground">${Number(activePlan.entry_price_planned).toFixed(2)}</span></div>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button size="sm" className="gap-1.5" onClick={() => onLogFromPlan(activePlan)}>
-            <CheckCircle2 className="h-3.5 w-3.5" /> Log Result
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => onCancelPlan(activePlan.id)}>Cancel Plan</Button>
-        </div>
-      </div>
-    );
-  }
-
-  // State C: Complete or in-progress
-  const badgeMap = {
-    incomplete: { text: "Incomplete", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
-    in_progress: { text: "In progress", cls: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-    complete: { text: "Complete", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
-  };
-  const badge = badgeMap[todayStatus];
-
-  return (
-    <div className="vault-glass-card p-4 md:p-5 space-y-2.5">
-      <div className="flex items-center gap-2">
-        <Shield className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Today's VAULT Check</h3>
-        <span className={`ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border ${badge.cls}`}>{badge.text}</span>
-      </div>
-
-      {todayStatus === "in_progress" && (
-        <>
-          <p className="text-xs text-muted-foreground">Trade logged. Complete your check-in to finish today's accountability.</p>
-          <div className="flex gap-2">
-            <Button size="sm" className="gap-1.5" onClick={onCompleteCheckIn}><CheckCircle2 className="h-3.5 w-3.5" /> Complete check-in</Button>
-            <Button size="sm" variant="outline" className="gap-1.5" onClick={onLogUnplanned}><Plus className="h-3.5 w-3.5" /> Log another trade</Button>
-          </div>
-        </>
-      )}
-      {todayStatus === "complete" && (
-        <>
-          <p className="text-xs text-emerald-400/80">{noTradeDay ? "No-trade day tracked. Good discipline." : "Today's accountability is complete. Review your feedback below."}</p>
-          <Button size="sm" variant="outline" className="gap-1.5" onClick={onReviewFeedback}><Eye className="h-3.5 w-3.5" /> Review today's feedback</Button>
-        </>
-      )}
-      {todayStatus === "incomplete" && noTradeDay && (
-        <p className="text-xs text-emerald-400/80">No-trade day tracked. Good discipline. No setup taken today.</p>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   AI Focus Card (Real AI) — Premium Glassmorphism + Full Pipeline Sync
-   ══════════════════════════════════════════════════════════════════ */
-const AI_FOCUS_CACHE = "va_cache_ai_focus_v3";
-const AI_FOCUS_CACHE_TS = "va_cache_ai_focus_ts";
-
-interface AIFocusResult {
-  primaryLeak: string;
-  primaryLeakConfidence: "high" | "medium" | "insufficient";
-  strongestEdge: string;
-  nextAction: string;
-  progressVerdict: string;
-  riskGrade: "A" | "B" | "C" | "D" | "F";
-  dataDepth: number;
-  dataConfidence: "high" | "medium" | "low";
-  date: string;
-  tradeCount: number;
-}
-
-const MENTOR_STYLES = `
-@keyframes mentorScan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
-@keyframes mentorBorder { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes mentorPulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.15); } }
-@keyframes mentorShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-@keyframes mentorFadeIn { 0% { opacity: 0; transform: translateY(6px); } 100% { opacity: 1; transform: translateY(0); } }
-`;
-
-const RISK_GRADE_MAP: Record<string, { color: string; bg: string; border: string; glow: string }> = {
-  A: { color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/25", glow: "shadow-[0_0_12px_-3px_rgba(52,211,153,0.3)]" },
-  B: { color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/25", glow: "shadow-[0_0_12px_-3px_rgba(96,165,250,0.3)]" },
-  C: { color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,191,36,0.3)]" },
-  D: { color: "text-orange-400", bg: "bg-orange-500/10", border: "border-orange-500/25", glow: "shadow-[0_0_12px_-3px_rgba(251,146,60,0.3)]" },
-  F: { color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/25", glow: "shadow-[0_0_12px_-3px_rgba(248,113,113,0.3)]" },
-};
-
-const CONFIDENCE_MAP: Record<string, { label: string; color: string }> = {
-  high: { label: "HIGH CONFIDENCE", color: "text-emerald-400/70" },
-  medium: { label: "EMERGING PATTERN", color: "text-amber-400/70" },
-  insufficient: { label: "NEEDS MORE DATA", color: "text-muted-foreground/50" },
-};
-
-function AIFocusCard({ entries }: { entries: { id: string }[] }) {
-  const [result, setResult] = useState<AIFocusResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const tradeCount = entries.length;
-  const isLocked = tradeCount < 3;
-  const todayStr = new Date().toISOString().slice(0, 10);
-
-  const fetchAnalysis = useCallback(async (force = false) => {
-    if (!force) {
-      try {
-        const cached = localStorage.getItem(AI_FOCUS_CACHE);
-        if (cached) {
-          const parsed: AIFocusResult = JSON.parse(cached);
-          if (parsed.date === todayStr && parsed.tradeCount === tradeCount && parsed.primaryLeak && parsed.riskGrade) {
-            setResult(parsed);
-            return;
-          }
-        }
-      } catch {}
-    }
-    setLoading(true); setError(null);
-    if (force) setRefreshing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trade-focus`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({}),
-      });
-      if (!resp.ok) { const body = await resp.json().catch(() => ({})); throw new Error(body.error || "Analysis failed"); }
-      const data = await resp.json();
-      const cached: AIFocusResult = { ...data, date: todayStr, tradeCount };
-      setResult(cached);
-      try {
-        localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached));
-        localStorage.setItem(AI_FOCUS_CACHE_TS, String(Date.now()));
-      } catch {}
-    } catch (e: any) { setError(e.message || "Something went wrong"); }
-    finally { setLoading(false); setRefreshing(false); }
-  }, [todayStr, tradeCount]);
-
-  useEffect(() => {
-    if (!isLocked) fetchAnalysis();
-  }, [isLocked, fetchAnalysis, tradeCount]);
-
-  // Evening auto-rescan
-  useEffect(() => {
-    if (isLocked || !result) return;
-    const now = new Date();
-    if (now.getHours() < 18) return;
-    try {
-      const cachedTs = localStorage.getItem(AI_FOCUS_CACHE_TS);
-      if (!cachedTs) return;
-      const cachedDate = new Date(Number(cachedTs));
-      if (cachedDate.toDateString() === now.toDateString() && cachedDate.getHours() < 18) {
-        fetchAnalysis(true);
-      }
-    } catch {}
-  }, [isLocked, result, fetchAnalysis]);
-
-  /* ── Locked State ── */
-  if (isLocked) {
-    return (
-      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-card p-6 space-y-4">
-        <style>{MENTOR_STYLES}</style>
-        <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
-          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 3s linear infinite" }}
-        />
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-muted/40 border border-white/[0.06]">
-            <Brain className="h-4.5 w-4.5 text-muted-foreground/50" />
-            <Lock className="h-2.5 w-2.5 text-muted-foreground absolute -bottom-0.5 -right-0.5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">LOCKED</span>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Trades scanned</span>
-            <span className="text-xs font-mono text-primary tabular-nums">{tradeCount}/3</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(tradeCount / 3) * 100}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))" }} />
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground">Log {3 - tradeCount} more trade{3 - tradeCount > 1 ? "s" : ""} to activate behavioral leak detection and pattern analysis.</p>
-      </div>
-    );
-  }
-
-  /* ── Loading State ── */
-  if (loading && !refreshing) {
-    return (
-      <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card p-6 space-y-4">
-        <style>{MENTOR_STYLES}</style>
-        <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
-          style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 2s linear infinite" }}
-        />
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-primary/5 border border-primary/15">
-            <Brain className="h-4.5 w-4.5 text-primary animate-pulse" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-primary/50 animate-pulse">COMPUTING ANALYTICS...</span>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-xl" />
-          <Skeleton className="h-16 w-full rounded-xl" />
-          <Skeleton className="h-14 w-full rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  /* ── Error State ── */
-  if (error) {
-    return (
-      <div id="ai-focus-card" className="rounded-2xl border border-destructive/20 bg-card p-6 space-y-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-destructive/10 border border-destructive/20">
-            <Brain className="h-4.5 w-4.5 text-destructive" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">Performance Intelligence</h3>
-            <span className="text-[10px] text-destructive/70">{error}</span>
-          </div>
-        </div>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => fetchAnalysis(true)}>
-          <RefreshCw className="h-3.5 w-3.5" /> Retry
-        </Button>
-      </div>
-    );
-  }
-
-  if (!result) return null;
-
-  const gradeStyle = RISK_GRADE_MAP[result.riskGrade] || RISK_GRADE_MAP.C;
-  const confStyle = CONFIDENCE_MAP[result.primaryLeakConfidence] || CONFIDENCE_MAP.medium;
-  const isInsufficient = result.primaryLeakConfidence === "insufficient";
-
-  if (isInsufficient) {
-    return <InsufficientDataCard result={result} gradeStyle={gradeStyle} refreshing={refreshing} onRescan={() => fetchAnalysis(true)} />;
-  }
-
-  const slides = [
-    {
-      label: "PRIMARY LEAK",
-      icon: AlertTriangle,
-      value: result.primaryLeak,
-      subLabel: confStyle.label,
-      accent: "from-red-500/10 to-red-500/[0.02]",
-      iconColor: "text-red-400",
-      labelColor: "text-red-400/80",
-      glowColor: "rgba(248,113,113,0.3)",
-      dotColor: "bg-red-400",
-      confidenceColor: confStyle.color,
-    },
-    {
-      label: "STRONGEST EDGE",
-      icon: Crosshair,
-      value: result.strongestEdge,
-      accent: "from-emerald-500/10 to-emerald-500/[0.02]",
-      iconColor: "text-emerald-400",
-      labelColor: "text-emerald-400/80",
-      glowColor: "rgba(52,211,153,0.3)",
-      dotColor: "bg-emerald-400",
-    },
-    {
-      label: "NEXT ACTION",
-      icon: Target,
-      value: result.nextAction,
-      accent: "from-blue-500/10 to-blue-500/[0.02]",
-      iconColor: "text-blue-400",
-      labelColor: "text-blue-400/80",
-      glowColor: "rgba(59,130,246,0.3)",
-      dotColor: "bg-blue-400",
-    },
-    {
-      label: "PROGRESS",
-      icon: Activity,
-      value: result.progressVerdict,
-      accent: "from-violet-500/10 to-violet-500/[0.02]",
-      iconColor: "text-violet-400",
-      labelColor: "text-violet-400/80",
-      glowColor: "rgba(167,139,250,0.3)",
-      dotColor: "bg-violet-400",
-    },
-  ];
-
-  return <AIFocusCardCarousel
-    result={result}
-    slides={slides}
-    gradeStyle={gradeStyle}
-    refreshing={refreshing}
-  />;
-}
-
-/* ── Insufficient Data Unlock Card ── */
-function InsufficientDataCard({ result, gradeStyle, refreshing, onRescan }: {
-  result: AIFocusResult;
-  gradeStyle: { color: string; bg: string; border: string; glow: string };
-  refreshing: boolean;
-  onRescan: () => void;
-}) {
-  const tradeCount = result.tradeCount || result.dataDepth || 0;
-  const target = 10;
-  const percent = Math.min((tradeCount / target) * 100, 100);
-  const remaining = Math.max(0, target - tradeCount);
-
-  // SVG progress ring
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percent / 100) * circumference;
-
-  const milestones = [
-    { count: 3, label: "Basic scan", unlocked: tradeCount >= 3 },
-    { count: 10, label: "Pattern detection", unlocked: tradeCount >= 10 },
-    { count: 20, label: "Full behavioral audit", unlocked: tradeCount >= 20 },
-  ];
-
-  return (
-    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
-      <style>{MENTOR_STYLES}</style>
-
-      {/* Rotating border glow */}
-      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-20"
-        style={{ background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 15%, transparent 30%, hsl(217 91% 60% / 0.1) 50%, transparent 65%, hsl(var(--primary) / 0.12) 80%, transparent 100%)", animation: "mentorBorder 10s linear infinite" }}
-      />
-
-      {/* Scan-line overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 4s linear infinite" }}
-      />
-
-      <div className="relative p-5 pb-5 space-y-5">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20" style={{ animation: "mentorPulse 3s ease-in-out infinite" }} />
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
-              <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.5))" }} />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-foreground tracking-tight"
-              style={{ background: "linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary) / 0.8), hsl(var(--foreground)))", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mentorShimmer 6s linear infinite" }}
-            >
-              PERFORMANCE INTELLIGENCE
-            </h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ boxShadow: "0 0 6px rgba(251,191,36,0.5)" }} />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
-                BUILDING PROFILE
-              </span>
-            </div>
-          </div>
-          {/* Dimmed Risk Grade */}
-          <div className={cn("px-3 py-1.5 rounded-lg border text-lg font-black tracking-tight opacity-30", gradeStyle.bg, gradeStyle.border, gradeStyle.color)}>
-            {result.riskGrade}
-          </div>
-        </div>
-
-        {/* Progress Ring + Headline */}
-        <div className="flex items-center gap-5">
-          <div className="relative shrink-0">
-            <svg width="96" height="96" viewBox="0 0 96 96" className="transform -rotate-90">
-              {/* Background ring */}
-              <circle cx="48" cy="48" r={radius} fill="none" stroke="hsl(var(--muted) / 0.2)" strokeWidth="5" />
-              {/* Progress ring */}
-              <circle
-                cx="48" cy="48" r={radius} fill="none"
-                stroke="hsl(var(--primary))"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-700 ease-out"
-                style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.4))" }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-bold text-foreground tabular-nums">{tradeCount}</span>
-              <span className="text-[10px] text-muted-foreground/60 font-mono">/{target}</span>
-            </div>
-          </div>
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <h4 className="text-base font-semibold text-foreground leading-snug">
-              {remaining > 0
-                ? `Log ${remaining} more trade${remaining > 1 ? "s" : ""} to unlock full analysis`
-                : "Pattern detection unlocked"
-              }
-            </h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Your profile is being built. Each trade sharpens detection accuracy.
-            </p>
-          </div>
-        </div>
-
-        {/* Milestone Pills */}
-        <div className="space-y-2">
-          {milestones.map((m) => (
-            <div
-              key={m.count}
-              className={cn(
-                "flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 border transition-all",
-                m.unlocked
-                  ? "border-emerald-500/20 bg-emerald-500/[0.06]"
-                  : "border-white/[0.05] bg-white/[0.02]"
-              )}
-            >
-              <div className={cn(
-                "w-6 h-6 rounded-lg flex items-center justify-center shrink-0",
-                m.unlocked ? "bg-emerald-500/15" : "bg-muted/30"
-              )}>
-                {m.unlocked
-                  ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                  : <Lock className="h-3 w-3 text-muted-foreground/40" />
-                }
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className={cn(
-                  "text-xs font-medium",
-                  m.unlocked ? "text-emerald-400/90" : "text-muted-foreground/60"
-                )}>
-                  {m.label}
-                </span>
-              </div>
-              <span className={cn(
-                "text-[10px] font-mono tabular-nums",
-                m.unlocked ? "text-emerald-400/60" : "text-muted-foreground/40"
-              )}>
-                {m.count} trades
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <Button
-          size="sm"
-          variant="outline"
-          className="w-full gap-1.5 rounded-xl border-primary/20 text-primary hover:bg-primary/5"
-          onClick={() => document.getElementById("log-trade-section")?.scrollIntoView({ behavior: "smooth", block: "center" })}
-        >
-          <Plus className="h-3.5 w-3.5" /> Log a Trade
-        </Button>
-
-        {/* Refreshing indicator */}
-        {refreshing && (
-          <div className="flex items-center justify-center gap-1.5">
-            <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
-            <span className="text-[10px] font-mono text-primary/50">Recomputing...</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── Carousel sub-component ── */
-function AIFocusCardCarousel({ result, slides, gradeStyle, refreshing }: {
-  result: AIFocusResult;
-  slides: { label: string; icon: any; value: string; subLabel?: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string; confidenceColor?: string }[];
-  gradeStyle: { color: string; bg: string; border: string; glow: string };
-  refreshing: boolean;
-}) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start", containScroll: "trimSnaps" });
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    const onSelect = () => {
-      setSelectedIndex(emblaApi.selectedScrollSnap());
-      setCanScrollPrev(emblaApi.canScrollPrev());
-      setCanScrollNext(emblaApi.canScrollNext());
-    };
-    emblaApi.on("select", onSelect);
-    emblaApi.on("reInit", onSelect);
-    onSelect();
-    return () => { emblaApi.off("select", onSelect); emblaApi.off("reInit", onSelect); };
-  }, [emblaApi]);
-
-  return (
-    <div id="ai-focus-card" className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card">
-      <style>{MENTOR_STYLES}</style>
-
-      {/* Rotating border glow */}
-      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-20"
-        style={{ background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 15%, transparent 30%, hsl(217 91% 60% / 0.1) 50%, transparent 65%, hsl(var(--primary) / 0.12) 80%, transparent 100%)", animation: "mentorBorder 10s linear infinite" }}
-      />
-
-      {/* Scan-line overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, hsl(var(--primary)) 2px, hsl(var(--primary)) 3px)", backgroundSize: "100% 4px", animation: "mentorScan 4s linear infinite" }}
-      />
-
-      <div className="relative p-5 pb-4 space-y-3">
-        {/* ── Header ── */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/20" style={{ animation: "mentorPulse 3s ease-in-out infinite" }} />
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
-              <Brain className="h-5 w-5 text-primary" style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.5))" }} />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-foreground tracking-tight"
-              style={{ background: "linear-gradient(90deg, hsl(var(--foreground)), hsl(var(--primary) / 0.8), hsl(var(--foreground)))", backgroundSize: "200% 100%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", animation: "mentorShimmer 6s linear infinite" }}
-            >
-              PERFORMANCE INTELLIGENCE
-            </h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.5)", animation: "mentorPulse 2s ease-in-out infinite" }} />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/60">
-                Based on {result.dataDepth || result.tradeCount} trades
-              </span>
-            </div>
-          </div>
-          {/* Risk Grade Badge */}
-          <div className={cn("px-3 py-1.5 rounded-lg border text-lg font-black tracking-tight", gradeStyle.bg, gradeStyle.border, gradeStyle.color, gradeStyle.glow)}>
-            {result.riskGrade}
-          </div>
-        </div>
-
-        {/* ── Swipeable Carousel ── */}
-        <div className="overflow-hidden -mx-1" ref={emblaRef}>
-          <div className="flex">
-            {slides.map((s, i) => (
-              <div key={s.label} className="flex-[0_0_100%] min-w-0 px-1">
-                <div
-                  className={cn("relative rounded-xl border border-white/[0.06] p-4 min-h-[140px] flex flex-col justify-center bg-gradient-to-br", s.accent)}
-                  style={{ animation: `mentorFadeIn 0.4s ease-out ${i * 0.05}s both` }}
-                >
-                  {/* Label row */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                      <s.icon className={cn("h-4 w-4", s.iconColor)} style={{ filter: `drop-shadow(0 0 6px ${s.glowColor})` }} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className={cn("text-[10px] font-mono uppercase tracking-[0.14em] font-bold", s.labelColor)}>{s.label}</span>
-                      {s.subLabel && (
-                        <span className={cn("text-[9px] font-mono uppercase tracking-wider", s.confidenceColor || "text-muted-foreground/50")}>{s.subLabel}</span>
-                      )}
-                    </div>
-                  </div>
-                  {/* Insight text */}
-                  <p className="text-[14px] leading-[1.6] text-foreground/90 font-medium">{s.value}</p>
-                  {/* Accent line */}
-                  <div className="mt-3 h-[2px] rounded-full w-12 opacity-40" style={{ background: `linear-gradient(90deg, ${s.glowColor}, transparent)` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Dot Indicators with Arrows ── */}
-        <div className="flex items-center justify-center gap-3 pt-1">
-          <button
-            onClick={() => emblaApi?.scrollPrev()}
-            className={cn(
-              "w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150",
-              canScrollPrev
-                ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]"
-                : "opacity-0 pointer-events-none"
-            )}
-            aria-label="Previous insight"
-          >
-            <ChevronLeft className="h-4.5 w-4.5" />
-          </button>
-
-          <div className="flex items-center gap-1.5">
-            {slides.map((s, i) => (
-              <button
-                key={i}
-                className={cn(
-                  "rounded-full transition-all duration-200",
-                  i === selectedIndex
-                    ? cn("w-5 h-2", s.dotColor, "opacity-90")
-                    : "w-2 h-2 bg-white/15 hover:bg-white/25"
-                )}
-                style={i === selectedIndex ? { boxShadow: `0 0 8px ${s.glowColor}` } : undefined}
-                onClick={() => emblaApi?.scrollTo(i)}
-              />
-            ))}
-          </div>
-
-          <button
-            onClick={() => emblaApi?.scrollNext()}
-            className={cn(
-              "w-7 h-7 flex items-center justify-center rounded-full transition-all duration-150",
-              canScrollNext
-                ? "text-white/40 hover:text-white/70 hover:bg-white/[0.06]"
-                : "opacity-0 pointer-events-none"
-            )}
-            aria-label="Next insight"
-          >
-            <ChevronRight className="h-4.5 w-4.5" />
-          </button>
-        </div>
-
-        {/* Refreshing indicator */}
-        {refreshing && (
-          <div className="flex items-center justify-center gap-1.5 pt-0.5">
-            <RefreshCw className="h-3 w-3 text-primary/50 animate-spin" />
-            <span className="text-[10px] font-mono text-primary/50">Recomputing analytics...</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   Recent Trades (Enhanced)
-   ══════════════════════════════════════════════════════════════════ */
-const MOBILE_LIMIT = 15;
-
-function RecentTradesSection({ entries, onExportCSV, onDelete }: {
-  entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string; plan_id?: string }[];
-  onExportCSV: () => void;
-  onDelete: (id: string) => Promise<{ error: any }>;
-}) {
-  const isMobile = useIsMobile();
-  const [expanded, setExpanded] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmText, setConfirmText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  if (entries.length === 0) {
-    return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
-        <div className="vault-glass-card p-6 text-center">
-          <p className="text-sm text-muted-foreground">No trades logged yet. Use the + Log Trade button to get started.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const defaultLimit = isMobile ? MOBILE_LIMIT : 25;
-  const showToggle = entries.length > defaultLimit;
-  const visibleEntries = expanded ? entries : entries.slice(0, defaultLimit);
-
-  const handleDeleteConfirm = async (id: string) => {
-    setIsDeleting(true);
-    await onDelete(id);
-    setIsDeleting(false);
-    setDeletingId(null);
-    setConfirmText("");
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
-        <span className="text-[10px] text-muted-foreground tabular-nums">{entries.length} total trades</span>
-      </div>
-      <div className="space-y-2">
-        {visibleEntries.map((e) => {
-          const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
-          const s = OUTCOME_STYLES[outcome];
-          const Icon = s.icon;
-          const pnlNum = e.risk_reward * e.risk_used;
-          const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
-          const ticker = e.symbol || e.notes?.split(" ")[0] || "Trade";
-
-          const noteParts = e.notes?.split(" | ") || [];
-          const directionPart = noteParts[0]?.split(" ")[1];
-          const setupPart = noteParts.find((p) => p.startsWith("Setup:"))?.replace("Setup: ", "");
-          const targetPart = noteParts.find((p) => p.startsWith("Target:"))?.replace("Target: ", "");
-          const stopPart = noteParts.find((p) => p.startsWith("Stop:"))?.replace("Stop: ", "");
-          const isDeleteMode = deletingId === e.id;
-
-          return (
-            <div key={e.id} className="vault-glass-card p-4 space-y-2 relative group">
-              {/* X button — top right */}
-              {!isDeleteMode && (
-                <button
-                  onClick={() => { setDeletingId(e.id); setConfirmText(""); }}
-                  className="absolute top-3 right-3 h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label="Delete trade"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-
-              <div className="flex items-center justify-between gap-2 flex-wrap pr-8">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Icon className={`h-3.5 w-3.5 ${s.color} shrink-0`} />
-                  <span className="text-sm font-bold text-foreground">{ticker}</span>
-                  {directionPart && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-border/50 bg-muted/30 text-muted-foreground">{directionPart}</span>
-                  )}
-                  <span className="text-xs text-muted-foreground">· {format(new Date(e.trade_date), "MMM d")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color}`}>{s.label}</span>
-                  <span className={`text-sm font-bold tabular-nums ${s.color}`}>{pnlStr}</span>
-                </div>
-              </div>
-              {/* Accountability badges */}
-              <div className="flex flex-wrap gap-1.5">
-                <span className={cn(
-                  "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
-                  e.plan_id
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                )}>
-                  {e.plan_id ? "Planned" : "Unplanned"}
-                </span>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
-                  {e.followed_rules ? "✅" : "❌"} Plan
-                </span>
-                {targetPart && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
-                    🎯 {targetPart}
-                  </span>
-                )}
-                {stopPart && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
-                    🛑 Stop: {stopPart}
-                  </span>
-                )}
-                {setupPart && setupPart !== "—" && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary">
-                    {setupPart}
-                  </span>
-                )}
-              </div>
-
-              {/* Inline delete confirmation */}
-              {isDeleteMode && (
-                <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2 mt-1">
-                  <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">DELETE</span> to confirm</p>
-                  <p className="text-[11px] text-muted-foreground">This action is permanent and cannot be undone.</p>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      className="max-w-[120px] h-8 text-sm font-mono"
-                      placeholder="DELETE"
-                      value={confirmText}
-                      onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={confirmText !== "DELETE" || isDeleting}
-                      onClick={() => handleDeleteConfirm(e.id)}
-                      className="h-8"
-                    >
-                      {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setDeletingId(null); setConfirmText(""); }}>Cancel</Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {showToggle && (
-        <Button variant="ghost" size="sm" className="w-full text-xs text-primary gap-1.5" onClick={() => setExpanded(!expanded)}>
-          {expanded ? <><ChevronUp className="h-3 w-3" /> Show less</> : <><ChevronDown className="h-3 w-3" /> Show all {entries.length} trades</>}
-        </Button>
-      )}
-
-      <Button variant="outline" size="sm" className="w-full text-xs gap-1.5" onClick={onExportCSV}>
-        <Download className="h-3 w-3" /> Export All Trades (CSV)
-      </Button>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   Tracked Balance Card
-   ══════════════════════════════════════════════════════════════════ */
-function TrackedBalanceCard({
-  balance, showResetConfirm, resetInput, resetting, onToggleReset, onResetInputChange, onConfirmReset,
-  showUpdateBalance, updateBalanceInput, updatingBalance, onToggleUpdate, onUpdateInputChange, onConfirmUpdate,
-}: {
-  balance: number | null; showResetConfirm: boolean; resetInput: string; resetting: boolean;
-  onToggleReset: () => void; onResetInputChange: (v: string) => void; onConfirmReset: () => void;
-  showUpdateBalance: boolean; updateBalanceInput: string; updatingBalance: boolean;
-  onToggleUpdate: () => void; onUpdateInputChange: (v: string) => void; onConfirmUpdate: () => void;
-}) {
-  if (balance === null) return null;
-
-  const isExpanded = showUpdateBalance || showResetConfirm;
-
-  return (
-    <div className="vault-glass-card overflow-hidden">
-      {/* Inline row — always visible */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-          <Wallet className="h-4 w-4 text-primary" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-muted-foreground/60 leading-none">Tracked Balance</p>
-          <p className="text-base font-bold tabular-nums text-foreground mt-0.5 leading-tight">${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-        </div>
-        <button
-          onClick={onToggleUpdate}
-          className={cn(
-            "h-8 w-8 flex items-center justify-center rounded-xl transition-all duration-100",
-            showUpdateBalance ? "bg-primary/15 text-primary" : "text-muted-foreground/40 hover:text-primary hover:bg-primary/10"
-          )}
-          aria-label="Update balance"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {/* Expandable forms */}
-      {isExpanded && (
-        <div className="px-4 pb-4 space-y-2">
-          {showUpdateBalance && (
-            <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
-              <p className="text-xs text-foreground font-medium">What's your actual balance?</p>
-              <p className="text-[11px] text-muted-foreground">We'll adjust your starting balance to keep trade math accurate.</p>
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1 max-w-[160px]">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-                  <Input
-                    className="pl-7 h-8 text-sm font-mono tabular-nums"
-                    placeholder="0"
-                    type="number"
-                    min="0"
-                    value={updateBalanceInput}
-                    onChange={(e) => onUpdateInputChange(e.target.value)}
-                  />
-                </div>
-                <Button size="sm" disabled={!updateBalanceInput || isNaN(parseFloat(updateBalanceInput)) || updatingBalance} onClick={onConfirmUpdate} className="h-8 rounded-lg">
-                  {updatingBalance ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
-                </Button>
-                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleUpdate}>Cancel</Button>
-              </div>
-              <button onClick={onToggleReset} className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors mt-1">
-                <RotateCcw className="h-2.5 w-2.5" /> Reset balance entirely
-              </button>
-            </div>
-          )}
-
-          {showResetConfirm && (
-            <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2">
-              <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">RESET</span> to confirm</p>
-              <p className="text-[11px] text-muted-foreground">This will clear your starting balance. You'll need to set a new one.</p>
-              <div className="flex gap-2 items-center">
-                <Input className="max-w-[120px] h-8 text-sm font-mono" placeholder="RESET" value={resetInput} onChange={(e) => onResetInputChange(e.target.value.toUpperCase())} />
-                <Button size="sm" variant="destructive" disabled={resetInput !== "RESET" || resetting} onClick={onConfirmReset} className="h-8">{resetting ? "Resetting..." : "Confirm"}</Button>
-                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onToggleReset}>Cancel</Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   Weekly Review & Balance Check
-   ══════════════════════════════════════════════════════════════════ */
-function WeeklyReviewCard({ hasData }: { hasData: boolean }) {
-  return (
-    <div className="vault-glass-card p-5 space-y-3">
-      <div className="flex items-center gap-2">
-        <BarChart3 className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold text-foreground">Weekly Review</h3>
-        {hasData && <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Ready</span>}
-      </div>
-      {hasData ? (
-        <><p className="text-sm text-muted-foreground">Your weekly review is ready to generate.</p><Button size="sm">Generate Weekly Review</Button></>
-      ) : (
-        <><p className="text-sm text-muted-foreground">Need at least 1 week of trades.</p><Button size="sm" disabled>Generate Weekly Review</Button></>
-      )}
+    <div className="flex-1 px-3 py-2.5 border-r border-border/30 last:border-r-0">
+      <p className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/60 leading-none">{label}</p>
+      <p className={cn("text-sm md:text-base font-bold tabular-nums leading-tight mt-0.5", color || (accent ? "text-primary" : "text-foreground"))}>
+        {value}
+      </p>
     </div>
   );
 }
