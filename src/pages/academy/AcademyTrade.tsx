@@ -37,6 +37,7 @@ import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 import { SessionSetupCard, loadTimes } from "@/components/trade-os/SessionSetupCard";
+import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
