@@ -695,6 +695,7 @@ const AcademyTrade = () => {
               {/* INSIGHTS STAGE */}
               {activeStage === "insights" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="insights" />
                   {entries.length < 10 ? (
                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3 text-center">
                       <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 mx-auto">
