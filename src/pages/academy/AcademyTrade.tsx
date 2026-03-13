@@ -20,6 +20,7 @@ import { useSessionStage } from "@/hooks/useSessionStage";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 
 // Extracted components
 import { SectionLabel } from "@/components/trade-os/SectionLabel";
