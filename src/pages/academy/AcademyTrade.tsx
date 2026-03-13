@@ -263,7 +263,19 @@ const AcademyTrade = () => {
     return result;
   };
 
-  if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="My Trades" />;
+  // Quick action handler for the rail (must be before early returns)
+  const handleQuickAction = useCallback(() => {
+    if (activeStage === "plan") handleScrollToPlanner();
+    else if (activeStage === "live") {
+      if (activePlan) handleLogFromPlan(activePlan);
+      else handleLogUnplanned();
+    }
+    else if (activeStage === "review") setShowCheckIn(true);
+    else if (activeStage === "insights") {
+      document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [activeStage, activePlan, handleLogFromPlan, handleLogUnplanned, handleScrollToPlanner]);
+
 
   if (balanceLoading || tradesLoading) {
     return (
@@ -392,19 +404,6 @@ const AcademyTrade = () => {
   // Whether to show metrics strip: balance set OR trades exist (FIX E)
   const showMetrics = startingBalance !== null || hasData;
 
-  // Quick action handler for the rail
-  const handleQuickAction = useCallback(() => {
-    if (activeStage === "plan") handleScrollToPlanner();
-    else if (activeStage === "live") {
-      if (activePlan) handleLogFromPlan(activePlan);
-      else handleLogUnplanned();
-    }
-    else if (activeStage === "review") setShowCheckIn(true);
-    else if (activeStage === "insights") {
-      // Trigger AI refresh by switching away and back
-      document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [activeStage, activePlan, handleLogFromPlan, handleLogUnplanned, handleScrollToPlanner]);
 
   return (
     <>
