@@ -606,6 +606,7 @@ const AcademyTrade = () => {
               {/* REVIEW STAGE */}
               {activeStage === "review" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="review" />
                   {entries.length === 0 ? (
                     <div className="text-center py-6 space-y-2">
                       <p className="text-xs text-muted-foreground/60">No trades logged yet.</p>
