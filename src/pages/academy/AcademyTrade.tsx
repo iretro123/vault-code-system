@@ -626,7 +626,7 @@ const AcademyTrade = () => {
                       </Button>
                     </div>
                   )}
-                  {!activePlan && todayStatus !== "complete" && (
+                  {!activePlan && todayStatus !== "complete" && dayState === "no_plan" && (
                     <div ref={plannerRef}>
                       <VaultTradePlanner
                         balanceOverride={trackedBalance}
