@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio, Lock } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio, Lock, CalendarOff } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -37,9 +37,28 @@ import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 import { SessionSetupCard, loadTimes } from "@/components/trade-os/SessionSetupCard";
+import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
+
+const STAGE_HEADLINES: Record<string, { title: string; subtitle: string }> = {
+  plan: { title: "Pre-Market Plan", subtitle: "Build your trade. Size it. Get approved." },
+  live: { title: "Live Session", subtitle: "Follow your plan. Track your limits." },
+  review: { title: "Session Review", subtitle: "Log results. Record what happened." },
+  insights: { title: "Performance Intelligence", subtitle: "AI-scanned behavior across your trades." },
+};
+
+function StageHeadline({ stage }: { stage: string }) {
+  const h = STAGE_HEADLINES[stage];
+  if (!h) return null;
+  return (
+    <div className="px-0.5 pt-2 pb-1">
+      <h2 className="text-base font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
+      <p className="text-[11px] text-muted-foreground/60 font-medium mt-0.5">{h.subtitle}</p>
+    </div>
+  );
+}
 
 const AcademyTrade = () => {
   const navigate = useNavigate();
@@ -94,6 +113,24 @@ const AcademyTrade = () => {
   }, [startingBalance, totalPnl]);
 
   const hasData = entries.length > 0;
+
+  // Persist todayStatus: check journal_entries for today on mount
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("journal_entries")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("entry_date", todayStr)
+        .limit(1);
+      if (data && data.length > 0) {
+        setTodayStatus("complete");
+      } else if (todayTradeCount > 0) {
+        setTodayStatus("in_progress");
+      }
+    })();
+  }, [user, todayStr]);
 
   useEffect(() => {
     if (todayTradeCount > 0 && todayStatus === "incomplete") {
@@ -446,6 +483,7 @@ const AcademyTrade = () => {
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="plan" />
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
@@ -496,6 +534,7 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="live" />
                   {/* Session Setup / Timer */}
                   <SessionSetupCard />
 
@@ -561,12 +600,31 @@ const AcademyTrade = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Session-end auto-transition CTA */}
+                  {(() => {
+                    const t = loadTimes();
+                    if (!t) return null;
+                    const [h, m] = t.hardClose.split(":").map(Number);
+                    const closeMs = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), h, m, 0).getTime();
+                    if (Date.now() < closeMs) return null;
+                    return (
+                      <Button
+                        className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                        variant="outline"
+                        onClick={() => setStage("review")}
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5" /> Session ended — Review your trades
+                      </Button>
+                    );
+                  })()}
                 </div>
               )}
 
               {/* REVIEW STAGE */}
               {activeStage === "review" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="review" />
                   {entries.length === 0 ? (
                     <div className="text-center py-6 space-y-2">
                       <p className="text-xs text-muted-foreground/60">No trades logged yet.</p>
@@ -614,7 +672,16 @@ const AcademyTrade = () => {
                         </Button>
                       )}
 
-                      {/* Recent trades */}
+                      {todayTradeCount === 0 && todayStatus !== "complete" && !noTradeDay && (
+                        <Button
+                          variant="ghost"
+                          className="w-full h-8 gap-1.5 rounded-lg text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
+                          onClick={() => setShowNoTradeDay(true)}
+                        >
+                          <CalendarOff className="h-3.5 w-3.5" /> Mark No-Trade Day
+                        </Button>
+                      )}
+
                       <div>
                         <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
                           {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
@@ -655,6 +722,7 @@ const AcademyTrade = () => {
               {/* INSIGHTS STAGE */}
               {activeStage === "insights" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="insights" />
                   {entries.length < 10 ? (
                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3 text-center">
                       <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 mx-auto">
