@@ -512,6 +512,15 @@ const AcademyTrade = () => {
                           <Button size="sm" variant="ghost" className="h-7 text-[11px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
                         </div>
                       </div>
+                      <p className="text-[10px] text-muted-foreground/40 mt-1.5 pl-4">
+                        Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · Entry: ${Number(activePlan.entry_price_planned).toFixed(2)} · Ready to execute
+                      </p>
+                      {/* Stage transition CTA */}
+                      <div className="mt-2.5 pt-2 border-t border-emerald-500/10">
+                        <Button size="sm" className="h-8 text-[11px] gap-1.5 rounded-lg px-4 w-full" onClick={() => setStage("live")}>
+                          <Radio className="h-3 w-3" /> Plan approved — Go to Live Mode
+                        </Button>
+                      </div>
                     </div>
                   )}
                   {/* Embedded VaultTradePlanner — unified balance */}
@@ -529,8 +538,10 @@ const AcademyTrade = () => {
                   {todayStatus === "complete" && (
                     <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                      <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
-                      <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
+                      <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete. Review your AI insights.</p>
+                      <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>
+                        <Brain className="h-3 w-3 mr-1" /> View Insights
+                      </Button>
                     </div>
                   )}
                 </div>
