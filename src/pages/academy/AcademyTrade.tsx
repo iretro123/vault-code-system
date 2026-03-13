@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio, Lock, CalendarOff, BarChart3 } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio, Lock, CalendarOff, BarChart3, Wallet, Target, Zap } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -38,15 +38,32 @@ import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner"
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 import { SessionSetupCard, loadTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
+import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
-const STAGE_HEADLINES: Record<string, { title: string; subtitle: string }> = {
-  plan: { title: "Pre-Market Plan", subtitle: "Build your trade. Size it. Get approved." },
-  live: { title: "Live Session", subtitle: "Follow your plan. Track your limits." },
-  review: { title: "Session Review", subtitle: "Log results. Record what happened." },
-  insights: { title: "Performance Intelligence", subtitle: "AI-scanned behavior across your trades." },
+const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidance: string }> = {
+  plan: {
+    title: "Pre-Market Plan",
+    subtitle: "Build your trade. Size it. Get approved.",
+    guidance: "Set your budget, build a plan, get it approved. Then move to Live.",
+  },
+  live: {
+    title: "Live Session",
+    subtitle: "Follow your plan. Track your limits.",
+    guidance: "Your plan is active. Monitor limits. Log when done.",
+  },
+  review: {
+    title: "Session Review",
+    subtitle: "Log results. Record what happened.",
+    guidance: "Log all trades, complete your check-in, then see what AI found.",
+  },
+  insights: {
+    title: "Performance Intelligence",
+    subtitle: "AI-scanned behavior across your trades.",
+    guidance: "AI scans your last 50 trades for leaks, edges, and patterns.",
+  },
 };
 
 function StageHeadline({ stage }: { stage: string }) {
@@ -56,6 +73,7 @@ function StageHeadline({ stage }: { stage: string }) {
     <div className="px-0.5 pt-2 pb-1">
       <h2 className="text-base font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
       <p className="text-[11px] text-muted-foreground/60 font-medium mt-0.5">{h.subtitle}</p>
+      <p className="text-[10px] text-muted-foreground/40 mt-1 italic">{h.guidance}</p>
     </div>
   );
 }
@@ -92,6 +110,10 @@ const AcademyTrade = () => {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
   const [noTradeDay, setNoTradeDay] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [executionStart, setExecutionStart] = useState<number | null>(null);
+  const [sessionPhase, setSessionPhase] = useState<SessionPhaseLabel>(null);
+  const [cutoffOverride, setCutoffOverride] = useState(false);
 
   useEffect(() => {
     if (!user) { setBalanceLoading(false); return; }
@@ -130,7 +152,7 @@ const AcademyTrade = () => {
         setTodayStatus("in_progress");
       }
     })();
-  }, [user, todayStr]);
+  }, [user, todayStr, todayTradeCount]);
 
   useEffect(() => {
     if (todayTradeCount > 0 && todayStatus === "incomplete") {
@@ -163,6 +185,24 @@ const AcademyTrade = () => {
   }, [todayEntries]);
 
   const recentFive = useMemo(() => entries.slice(0, 5), [entries]);
+
+  // Cutoff enforcement
+  const isCutoffOrClosed = sessionPhase === "No new entries" || sessionPhase === "Session closed";
+
+  // Execution timer
+  const [execElapsed, setExecElapsed] = useState(0);
+  useEffect(() => {
+    if (!executing || !executionStart) return;
+    const id = setInterval(() => setExecElapsed(Date.now() - executionStart), 1000);
+    return () => clearInterval(id);
+  }, [executing, executionStart]);
+
+  const fmtExecTime = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${String(sec).padStart(2, "0")}`;
+  };
 
   /* ── Handlers ── */
   const handleStartingBalanceSave = async (balance: number) => {
@@ -237,7 +277,7 @@ const AcademyTrade = () => {
       risk_reward: isWin ? 1 : isLoss ? -1 : 0,
       followed_rules: data.planFollowed === "Yes",
       emotional_state: 5,
-      notes: `${data.symbol} ${data.direction} | Setup: ${data.setupUsed || "—"} | Target: ${data.targetHit} | Stop: ${data.stopRespected} | Oversized: ${data.oversized}${data.note ? " | " + data.note : ""}`,
+      notes: `${data.symbol} ${data.direction} | Setup: ${data.setupUsed || "—"} | Target: ${data.targetHit} | Stop: ${data.stopRespected} | Oversized: ${data.oversized}${data.note ? " | " + data.note : ""}${cutoffOverride ? " | ⚠️ Logged after cutoff" : ""}`,
       symbol: data.symbol.toUpperCase(),
       outcome: isWin ? "WIN" : isLoss ? "LOSS" : "BREAKEVEN",
       trade_date: format(data.date, "yyyy-MM-dd"),
@@ -257,6 +297,9 @@ const AcademyTrade = () => {
     setLogPlanId(undefined);
     setLogPrefill(undefined);
     setTodayStatus("in_progress");
+    setExecuting(false);
+    setExecutionStart(null);
+    setCutoffOverride(false);
     setTimeout(() => setShowCheckIn(true), 400);
   };
 
@@ -296,17 +339,30 @@ const AcademyTrade = () => {
     return result;
   };
 
+  const handleMarkExecuting = () => {
+    setExecuting(true);
+    setExecutionStart(Date.now());
+  };
+
+  const handleLogWithCutoffCheck = (plan?: ApprovedPlan) => {
+    if (isCutoffOrClosed) {
+      setCutoffOverride(true);
+    }
+    if (plan) handleLogFromPlan(plan);
+    else handleLogUnplanned();
+  };
+
   const handleQuickAction = useCallback(() => {
     if (activeStage === "plan") handleScrollToPlanner();
     else if (activeStage === "live") {
-      if (activePlan) handleLogFromPlan(activePlan);
-      else handleLogUnplanned();
+      if (activePlan) handleLogWithCutoffCheck(activePlan);
+      else handleLogWithCutoffCheck();
     }
     else if (activeStage === "review") setShowCheckIn(true);
     else if (activeStage === "insights") {
       document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [activeStage, activePlan, handleLogFromPlan, handleLogUnplanned, handleScrollToPlanner]);
+  }, [activeStage, activePlan]);
 
   if (balanceLoading || tradesLoading) {
     return (
@@ -405,8 +461,8 @@ const AcademyTrade = () => {
 
         <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
         <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
-        <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
-        <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
+        <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
+        <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
       </>
     );
   }
@@ -460,7 +516,8 @@ const AcademyTrade = () => {
                   </span>
                 </div>
               </div>
-              <Button size="sm" className="gap-1 h-8 px-3 text-[11px] font-semibold rounded-lg shrink-0" onClick={handleLogUnplanned}>
+              {/* Hide Log button on mobile — available inside stages */}
+              <Button size="sm" className="gap-1 h-8 px-3 text-[11px] font-semibold rounded-lg shrink-0 hidden md:flex" onClick={handleLogUnplanned}>
                 <Plus className="h-3 w-3" /> Log Trade
               </Button>
             </div>
@@ -494,6 +551,26 @@ const AcademyTrade = () => {
               {activeStage === "plan" && (
                 <div className="space-y-2">
                   <StageHeadline stage="plan" />
+
+                  {/* ═══ TODAY'S BUDGET ═══ */}
+                  <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
+                    <p className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-[0.1em] mb-2">Today's Budget</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center">
+                        <p className="text-lg font-bold tabular-nums text-foreground">${vaultState.daily_loss_limit.toFixed(0)}</p>
+                        <p className="text-[9px] text-muted-foreground/50 font-medium">Daily Risk</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-bold tabular-nums text-foreground">${vaultState.risk_remaining_today.toFixed(0)}</p>
+                        <p className="text-[9px] text-muted-foreground/50 font-medium">Per Trade Max</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_trades_per_day}</p>
+                        <p className="text-[9px] text-muted-foreground/50 font-medium">Trades Allowed</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
@@ -502,12 +579,7 @@ const AcademyTrade = () => {
                           <span className="text-xs font-bold text-foreground">{activePlan.ticker || "—"}</span>
                           <span className="text-[10px] text-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
                         </div>
-                        <div className="flex gap-1 shrink-0">
-                          <Button size="sm" className="h-6 text-[10px] gap-1 rounded-md px-2" onClick={() => handleLogFromPlan(activePlan)}>
-                            <CheckCircle2 className="h-3 w-3" /> Log
-                          </Button>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
-                        </div>
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
                       </div>
                       <p className="text-[10px] text-foreground/60 pl-3">
                         Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · Entry: ${Number(activePlan.entry_price_planned).toFixed(2)}
@@ -545,25 +617,70 @@ const AcademyTrade = () => {
               {activeStage === "live" && (
                 <div className="space-y-2">
                   <StageHeadline stage="live" />
-                  {/* Session Setup / Timer */}
-                  <SessionSetupCard />
+                  {/* Session Setup / Timer with phase callback */}
+                  <SessionSetupCard onPhaseChange={setSessionPhase} />
 
-                  {/* Active Plan from Plan stage */}
+                  {/* Cutoff Warning Banners */}
+                  {sessionPhase === "No new entries" && (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-2 flex items-center gap-2">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <p className="text-[11px] text-amber-400 font-medium">Cutoff reached — no new entries. Manage current risk only.</p>
+                    </div>
+                  )}
+                  {sessionPhase === "Session closed" && (
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-2 flex items-center gap-2">
+                      <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                      <p className="text-[11px] text-red-400 font-medium">Session closed — close all positions. Move to Review.</p>
+                    </div>
+                  )}
+
+                  {/* Active Plan — Execution Flow */}
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+                        <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]", executing ? "bg-amber-400 animate-pulse" : "bg-emerald-400 animate-pulse")} />
                         <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
                         <span className="text-[10px] text-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
                       </div>
+
+                      {/* Execution state indicator */}
+                      <div className="flex items-center gap-1.5 pl-3.5">
+                        <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full",
+                          executing
+                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+                            : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                        )}>
+                          {executing ? "Executing" : "Planned"}
+                        </span>
+                        {executing && executionStart && (
+                          <span className="text-[10px] text-muted-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
+                        )}
+                      </div>
+
                       <p className="text-[10px] text-foreground/60 pl-3.5">
                         Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · {activePlan.stop_price_planned ? `Stop: $${Number(activePlan.stop_price_planned).toFixed(2)}` : "No stop set"}
                         {activePlan.tp1_planned && ` · TP1: $${Number(activePlan.tp1_planned).toFixed(2)}`}
                         {activePlan.tp2_planned && ` · TP2: $${Number(activePlan.tp2_planned).toFixed(2)}`}
                       </p>
-                      <Button size="sm" className="h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold" onClick={() => handleLogFromPlan(activePlan)}>
-                        <CheckCircle2 className="h-3 w-3" /> Log Result
-                      </Button>
+
+                      {/* Single primary CTA */}
+                      {!executing ? (
+                        <Button size="sm" className="h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold" onClick={handleMarkExecuting} disabled={isCutoffOrClosed && !cutoffOverride}>
+                          <Zap className="h-3 w-3" /> Mark Executing
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className={cn("h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold",
+                            isCutoffOrClosed && "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                          )}
+                          variant={isCutoffOrClosed ? "outline" : "default"}
+                          onClick={() => handleLogWithCutoffCheck(activePlan)}
+                        >
+                          <CheckCircle2 className="h-3 w-3" />
+                          {isCutoffOrClosed ? "Override: Log After Cutoff" : "Close & Log Result"}
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -604,7 +721,7 @@ const AcademyTrade = () => {
                         <Button size="sm" className="gap-1 rounded-md px-2.5 h-7 text-[10px]" onClick={() => setStage("plan")}>
                           <Calendar className="h-3 w-3" /> Plan
                         </Button>
-                        <Button size="sm" variant="outline" className="gap-1 rounded-md px-2.5 h-7 text-[10px] border-white/[0.08]" onClick={handleLogUnplanned}>
+                        <Button size="sm" variant="outline" className="gap-1 rounded-md px-2.5 h-7 text-[10px] border-white/[0.08]" onClick={() => handleLogWithCutoffCheck()}>
                           <Plus className="h-3 w-3" /> Log
                         </Button>
                       </div>
@@ -664,18 +781,10 @@ const AcademyTrade = () => {
                         </div>
                       )}
 
-                      {/* Primary Actions */}
-                      <Button
-                        className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
-                        onClick={handleLogUnplanned}
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Log a Trade
-                      </Button>
-
+                      {/* Single primary CTA for review */}
                       {todayStatus !== "complete" && (
                         <Button
-                          variant="outline"
-                          className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+                          className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
                           onClick={() => setShowCheckIn(true)}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
@@ -790,8 +899,8 @@ const AcademyTrade = () => {
               )}
             </div>
 
-            {/* ── RIGHT SESSION RAIL ── */}
-            <div className="flex-[0.7] min-w-0 p-2 border-t md:border-t-0 md:border-l border-white/[0.04]">
+            {/* ── RIGHT SESSION RAIL — hidden on mobile ── */}
+            <div className="hidden md:block flex-[0.7] min-w-0 p-2 border-l border-white/[0.04]">
               <OSControlRail
                 activePlan={activePlan}
                 vaultState={vaultState}
@@ -886,8 +995,8 @@ const AcademyTrade = () => {
       {/* Modals */}
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
-      <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
-      <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} />
+      <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
+      <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
     </>
   );
 };
