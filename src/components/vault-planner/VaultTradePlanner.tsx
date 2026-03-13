@@ -244,7 +244,8 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
     }
 
     toast({ title: "Plan replaced", description: "Previous plan cancelled. New plan approved." });
-    navigate("/academy/trade");
+    if (onPlanSaved) onPlanSaved();
+    else navigate("/academy/trade");
   };
 
   if (!hasAccess && !accessLoading) return <PremiumGate status={accessStatus} pageName="VAULT Approval" />;
