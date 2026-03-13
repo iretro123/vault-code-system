@@ -49,7 +49,7 @@ const CONFIDENCE_MAP: Record<string, { label: string; color: string }> = {
 };
 
 /* ── Main Component ── */
-export function AIFocusCard({ entries }: { entries: { id: string }[] }) {
+export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[]; accessToken?: string }) {
   const [result, setResult] = useState<AIFocusResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
