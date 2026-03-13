@@ -361,16 +361,17 @@ const AcademyTrade = () => {
   };
 
   const handleQuickAction = useCallback(() => {
-    if (activeStage === "plan") handleScrollToPlanner();
-    else if (activeStage === "live") {
-      if (activePlan) handleLogWithCutoffCheck(activePlan);
-      else handleLogWithCutoffCheck();
+    switch (dayState) {
+      case "no_plan": handleScrollToPlanner(); break;
+      case "plan_approved": setStage("live"); break;
+      case "live_session":
+        if (activePlan) handleLogWithCutoffCheck(activePlan);
+        else handleLogWithCutoffCheck();
+        break;
+      case "review_pending": setShowCheckIn(true); break;
+      case "day_complete": setStage("insights"); break;
     }
-    else if (activeStage === "review") setShowCheckIn(true);
-    else if (activeStage === "insights") {
-      document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [activeStage, activePlan]);
+  }, [dayState, activePlan]);
 
   if (balanceLoading || tradesLoading) {
     return (
