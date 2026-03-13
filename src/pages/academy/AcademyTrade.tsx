@@ -600,6 +600,24 @@ const AcademyTrade = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Session-end auto-transition CTA */}
+                  {(() => {
+                    const t = loadTimes();
+                    if (!t) return null;
+                    const [h, m] = t.hardClose.split(":").map(Number);
+                    const closeMs = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), h, m, 0).getTime();
+                    if (Date.now() < closeMs) return null;
+                    return (
+                      <Button
+                        className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                        variant="outline"
+                        onClick={() => setStage("review")}
+                      >
+                        <ClipboardCheck className="h-3.5 w-3.5" /> Session ended — Review your trades
+                      </Button>
+                    );
+                  })()}
                 </div>
               )}
 
