@@ -576,35 +576,45 @@ const AcademyTrade = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="grid gap-1.5 sm:grid-cols-2">
-                        <button
-                          onClick={handleLogUnplanned}
-                          className="flex items-center gap-2.5 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.12] transition-all text-left group"
-                        >
-                          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary/10 border border-primary/20 shrink-0">
-                            <Plus className="h-3.5 w-3.5 text-primary" />
+                      {/* Session Summary */}
+                      {todayTradeCount > 0 && (
+                        <div className="flex items-center divide-x divide-white/[0.08] rounded-lg border border-white/[0.08] overflow-hidden">
+                          <div className="flex-1 px-2.5 py-1.5">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Trades Today</p>
+                            <p className="text-sm font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-foreground">Log a Trade</p>
-                            <p className="text-[10px] text-muted-foreground/60">Result, screenshots, notes</p>
+                          <div className="flex-1 px-2.5 py-1.5">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">P/L</p>
+                            <p className={cn("text-sm font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                              {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
+                            </p>
                           </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors" />
-                        </button>
-                        <button
-                          onClick={() => setShowCheckIn(true)}
-                          className="flex items-center gap-2.5 p-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] hover:bg-emerald-500/[0.06] hover:border-emerald-500/25 transition-all text-left group"
-                        >
-                          <div className="flex items-center justify-center h-7 w-7 rounded-md bg-emerald-500/10 border border-emerald-500/20 shrink-0">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                          <div className="flex-1 px-2.5 py-1.5">
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Compliance</p>
+                            <p className={cn("text-sm font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-foreground">Complete Check-In</p>
-                            <p className="text-[10px] text-muted-foreground/60">Mistakes, lessons, close</p>
-                          </div>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-emerald-400/60 transition-colors" />
-                        </button>
-                      </div>
+                        </div>
+                      )}
 
+                      {/* Primary Actions */}
+                      <Button
+                        className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
+                        onClick={handleLogUnplanned}
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Log a Trade
+                      </Button>
+
+                      {todayStatus !== "complete" && (
+                        <Button
+                          variant="outline"
+                          className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
+                          onClick={() => setShowCheckIn(true)}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
+                        </Button>
+                      )}
+
+                      {/* Recent trades */}
                       <div>
                         <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
                           {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
