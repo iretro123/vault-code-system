@@ -672,7 +672,16 @@ const AcademyTrade = () => {
                         </Button>
                       )}
 
-                      {/* Recent trades */}
+                      {todayTradeCount === 0 && todayStatus !== "complete" && !noTradeDay && (
+                        <Button
+                          variant="ghost"
+                          className="w-full h-8 gap-1.5 rounded-lg text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
+                          onClick={() => setShowNoTradeDay(true)}
+                        >
+                          <CalendarOff className="h-3.5 w-3.5" /> Mark No-Trade Day
+                        </Button>
+                      )}
+
                       <div>
                         <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
                           {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
