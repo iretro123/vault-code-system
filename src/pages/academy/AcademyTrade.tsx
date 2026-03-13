@@ -470,10 +470,10 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ LAYER 2 — HERO OS CARD ══════ */}
-        <div className="rounded-2xl border border-border/30 bg-card overflow-hidden shadow-md">
+        <div className="rounded-2xl border border-border/25 bg-card overflow-hidden shadow-lg shadow-black/20">
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          <div className="p-5 md:p-8 min-h-[360px] md:min-h-[400px]">
+          <div className="p-5 md:p-8">
             {/* ── PLAN (FIX B: scroll to planner, not navigate away) ── */}
             {activeStage === "plan" && (
               <div className="space-y-5">
