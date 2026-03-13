@@ -679,7 +679,7 @@ const AcademyTrade = () => {
             </div>
 
             {/* ── RIGHT SESSION RAIL ── */}
-            <div className="flex-[0.8] min-w-0 p-2 border-t md:border-t-0 border-white/[0.08]">
+            <div className="flex-[0.7] min-w-0 p-2 border-t md:border-t-0 md:border-l border-white/[0.04]">
               <OSControlRail
                 activePlan={activePlan}
                 vaultState={vaultState}
