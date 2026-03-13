@@ -2,7 +2,6 @@ import React from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 
 function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"]): string {
-  // Use persisted block reason if available
   if (vault.last_block_reason) return vault.last_block_reason;
   if (vault.risk_remaining_today <= 0) return "Daily loss limit reached";
   if (vault.trades_remaining_today <= 0) return "Trade limit reached";
@@ -27,23 +26,23 @@ export function TodaysLimitsSection() {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-3">
-        <div className="p-3 rounded-lg bg-muted/20 border border-border">
-          <p className="text-xs text-muted-foreground mb-1">Risk Left</p>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+          <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Risk Left</p>
           <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
             ${vaultState.risk_remaining_today.toFixed(0)}
           </p>
         </div>
 
-        <div className="p-3 rounded-lg bg-muted/20 border border-border">
-          <p className="text-xs text-muted-foreground mb-1">Trades Left</p>
+        <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+          <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Trades Left</p>
           <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
             {vaultState.trades_remaining_today} / {vaultState.max_trades_per_day}
           </p>
         </div>
 
-        <div className="p-3 rounded-lg bg-muted/20 border border-border">
-          <p className="text-xs text-muted-foreground mb-1">Max Contracts</p>
+        <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+          <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Max Contracts</p>
           <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
             {vaultState.max_contracts_allowed}
           </p>
@@ -51,14 +50,14 @@ export function TodaysLimitsSection() {
       </div>
 
       {/* Last Restriction */}
-      <div className="p-3 rounded-lg bg-muted/10 border border-border">
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Last Restriction</p>
-        <p className={`text-xs font-medium ${hasRestriction ? "text-amber-400" : "text-muted-foreground"}`}>
+      <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60 font-medium mb-1">Last Restriction</p>
+        <p className={`text-xs font-medium ${hasRestriction ? "text-amber-400" : "text-muted-foreground/60"}`}>
           {lastRestriction}
         </p>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center pt-1">
+      <p className="text-[10px] text-muted-foreground/40 text-center pt-1">
         Limits are set by Vault State.
       </p>
     </div>

@@ -669,6 +669,15 @@ function HeroDecisionCard({
           <p className="text-[10px] text-muted-foreground leading-snug">{choice.coachingNote}</p>
         </div>
 
+        {/* Decision framing */}
+        <div className="rounded-lg p-2 bg-white/[0.02] border border-white/[0.04]">
+          <p className="text-[10px] text-muted-foreground/70 leading-snug">
+            {choice.status === "fits" && "✓ This trade fits your rules. You're cleared to execute."}
+            {choice.status === "tight" && "⚠ Near your risk limit. Stick to your stop — discipline matters."}
+            {choice.status === "pass" && "✗ Exceeds your risk rules. Reduce size or find a lower entry."}
+          </p>
+        </div>
+
         {/* CTA */}
         <button
           className={cn(

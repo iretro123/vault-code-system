@@ -5,6 +5,8 @@ import { Clock, Play, Ban, AlertTriangle } from "lucide-react";
 
 interface SessionTimes { start: string; cutoff: string; hardClose: string; }
 
+export type SessionPhaseLabel = "Pre-session" | "Trading window" | "No new entries" | "Session closed" | null;
+
 function getStorageKey() {
   const d = new Date();
   return `va_session_times_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -30,9 +32,10 @@ function fmt12h(t: string): string {
 
 interface SessionSetupCardProps {
   onSessionStarted?: () => void;
+  onPhaseChange?: (phase: SessionPhaseLabel) => void;
 }
 
-export function SessionSetupCard({ onSessionStarted }: SessionSetupCardProps) {
+export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSetupCardProps) {
   const [times, setTimes] = useState<SessionTimes | null>(loadTimes);
   const [draft, setDraft] = useState<SessionTimes>({ start: "09:30", cutoff: "11:00", hardClose: "12:00" });
   const [now, setNow] = useState(Date.now());
@@ -53,11 +56,16 @@ export function SessionSetupCard({ onSessionStarted }: SessionSetupCardProps) {
   const sessionPhase = useMemo(() => {
     if (!times) return null;
     const startMs = toMs(times.start); const cutoffMs = toMs(times.cutoff); const closeMs = toMs(times.hardClose);
-    if (now < startMs) return { label: "Pre-session", color: "text-primary", bg: "bg-primary/10", countdown: fmtCountdown(startMs - now), countdownLabel: "Starts in" };
-    if (now < cutoffMs) return { label: "Trading window", color: "text-emerald-400", bg: "bg-emerald-500/10", countdown: fmtCountdown(cutoffMs - now), countdownLabel: "Cutoff in" };
-    if (now < closeMs) return { label: "No new entries", color: "text-amber-400", bg: "bg-amber-500/10", countdown: fmtCountdown(closeMs - now), countdownLabel: "Hard close in" };
-    return { label: "Session closed", color: "text-red-400", bg: "bg-red-500/10", countdown: null, countdownLabel: null };
+    if (now < startMs) return { label: "Pre-session" as const, color: "text-primary", bg: "bg-primary/10", countdown: fmtCountdown(startMs - now), countdownLabel: "Starts in" };
+    if (now < cutoffMs) return { label: "Trading window" as const, color: "text-emerald-400", bg: "bg-emerald-500/10", countdown: fmtCountdown(cutoffMs - now), countdownLabel: "Cutoff in" };
+    if (now < closeMs) return { label: "No new entries" as const, color: "text-amber-400", bg: "bg-amber-500/10", countdown: fmtCountdown(closeMs - now), countdownLabel: "Hard close in" };
+    return { label: "Session closed" as const, color: "text-red-400", bg: "bg-red-500/10", countdown: null, countdownLabel: null };
   }, [times, now]);
+
+  // Notify parent of phase changes
+  useEffect(() => {
+    onPhaseChange?.(sessionPhase?.label ?? null);
+  }, [sessionPhase?.label]);
 
   // Not set — show setup form
   if (!times) {

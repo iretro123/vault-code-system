@@ -10,23 +10,44 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete: () => void;
+  userId?: string;
 }
 
-export function QuickCheckInSheet({ open, onOpenChange, onComplete }: Props) {
+export function QuickCheckInSheet({ open, onOpenChange, onComplete, userId }: Props) {
   const [didWell, setDidWell] = useState("");
   const [hurt, setHurt] = useState("");
   const [focus, setFocus] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleComplete = () => {
-    setDidWell("");
-    setHurt("");
-    setFocus("");
-    onComplete();
+  const handleComplete = async () => {
+    if (!userId) { onComplete(); return; }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("journal_entries").insert({
+        user_id: userId,
+        entry_date: format(new Date(), "yyyy-MM-dd"),
+        what_happened: didWell || "Check-in completed",
+        biggest_mistake: hurt || "None noted",
+        lesson: focus || "No specific focus",
+        followed_rules: true,
+      });
+      if (error) throw error;
+      setDidWell("");
+      setHurt("");
+      setFocus("");
+      onComplete();
+    } catch (err) {
+      console.error("Failed to save check-in:", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -79,8 +100,8 @@ export function QuickCheckInSheet({ open, onOpenChange, onComplete }: Props) {
             />
           </div>
 
-          <Button className="w-full" onClick={handleComplete}>
-            Complete Check-In
+          <Button className="w-full" onClick={handleComplete} disabled={saving}>
+            {saving ? "Saving..." : "Complete Check-In"}
           </Button>
         </div>
       </SheetContent>
