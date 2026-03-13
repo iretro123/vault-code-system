@@ -75,16 +75,16 @@ const CARD_SUBLABELS: Record<number, string> = {
 };
 
 interface VaultTradePlannerProps {
-  /** When provided, skip internal balance fetch and use this value */
   balanceOverride?: number | null;
-  /** When provided from parent, skip internal useApprovedPlans */
   activePlanOverride?: any;
   savePlanOverride?: any;
   replaceWithNewOverride?: any;
   onPlanSaved?: () => void;
+  /** When true, strips card wrappers and compresses for embedding inside OS */
+  embedded?: boolean;
 }
 
-export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved }: VaultTradePlannerProps = {}) {
+export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved, embedded = false }: VaultTradePlannerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasAccess, status: accessStatus, loading: accessLoading } = useStudentAccess();
@@ -92,13 +92,11 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
   const internalTradeLog = useTradeLog();
   const { state: vaultState } = useVaultState();
 
-  // Use parent-provided data when available, otherwise fall back to internal hooks
   const activePlan = activePlanOverride !== undefined ? activePlanOverride : internalPlans.activePlan;
   const savePlan = savePlanOverride || internalPlans.savePlan;
   const replaceWithNew = replaceWithNewOverride || internalPlans.replaceWithNew;
   const totalPnl = internalTradeLog.totalPnl;
 
-  // Leak 1 fix: refetch trade data on mount to prevent stale balance (only when no override)
   useEffect(() => { if (balanceOverride === undefined) internalTradeLog.refetch(); }, []);
 
   const [direction, setDirection] = useState<"calls" | "puts">("calls");
@@ -116,7 +114,6 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
   const [customExitOverride, setCustomExitOverride] = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
-  // Only fetch balance internally when no override provided
   useEffect(() => {
     if (balanceOverride !== undefined) { setBalanceLoaded(true); return; }
     if (!user) { setBalanceLoaded(true); return; }
@@ -130,7 +127,6 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
   }, [user, balanceOverride]);
 
   const accountBalance = useMemo(() => {
-    // Use override when available
     if (balanceOverride !== undefined && balanceOverride !== null) return balanceOverride;
     if (startingBalance <= 0) return 0;
     return startingBalance + totalPnl;
@@ -148,24 +144,14 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
     return calculateContractChoices(accountBalance, priceNum);
   }, [accountBalance, priceNum, hasValidPrice]);
 
-  // Custom size uses the same canonical buildChoice function
   const customChoice: ContractChoice | null = useMemo(() => {
     if (!hasValidPrice || accountBalance <= 0 || !result) return null;
-
     const exitOverrideNum = parseFloat(customExitOverride);
     const exitOverride = (!isNaN(exitOverrideNum) && exitOverrideNum > 0 && exitOverrideNum < priceNum)
       ? exitOverrideNum : null;
-
-    const choice = buildChoice(
-      priceNum, customContracts,
-      result.riskBudget, result.comfortBudget, result.hardBudget,
-      exitOverride,
-    );
-
-    // Override coaching note for custom
+    const choice = buildChoice(priceNum, customContracts, result.riskBudget, result.comfortBudget, result.hardBudget, exitOverride);
     if (choice.status === "fits") choice.coachingNote = "Custom size fits your account.";
     else if (choice.status === "tight") choice.coachingNote = "Custom size is tight. Discipline matters.";
-
     return choice;
   }, [hasValidPrice, accountBalance, priceNum, customContracts, customExitOverride, result]);
 
@@ -178,10 +164,7 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
   useEffect(() => {
     if (result) {
       const recIdx = result.choices.findIndex((c) => c.isRecommended);
-      if (recIdx >= 0) {
-        setSelectedIndex(recIdx);
-        setUseCustom(false);
-      }
+      if (recIdx >= 0) { setSelectedIndex(recIdx); setUseCustom(false); }
     }
   }, [result]);
 
@@ -207,24 +190,12 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
   const handleUsePlan = async () => {
     const planData = buildPlanData();
     if (!planData || !selectedChoice) return;
-
     setSaving(true);
     const { data, error, hasExisting } = await savePlan(planData);
-
-    if (hasExisting) {
-      setSaving(false);
-      setShowReplaceDialog(true);
-      return;
-    }
-
-    if (error) {
-      setSaving(false);
-      toast({ title: "Error saving plan", description: "Please try again.", variant: "destructive" });
-      return;
-    }
-
+    if (hasExisting) { setSaving(false); setShowReplaceDialog(true); return; }
+    if (error) { setSaving(false); toast({ title: "Error saving plan", description: "Please try again.", variant: "destructive" }); return; }
     setSaving(false);
-    toast({ title: "Plan approved", description: `${selectedChoice.contracts} contract${selectedChoice.contracts > 1 ? "s" : ""} approved. Head to My Trades to log the result.` });
+    toast({ title: "Plan approved", description: `${selectedChoice.contracts} contract${selectedChoice.contracts > 1 ? "s" : ""} approved.` });
     if (onPlanSaved) onPlanSaved();
     else navigate("/academy/trade");
   };
@@ -232,17 +203,11 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
   const handleReplacePlan = async () => {
     const planData = buildPlanData();
     if (!planData) return;
-
     setSaving(true);
     setShowReplaceDialog(false);
     const { error } = await replaceWithNew(planData);
     setSaving(false);
-
-    if (error) {
-      toast({ title: "Error saving plan", description: "Please try again.", variant: "destructive" });
-      return;
-    }
-
+    if (error) { toast({ title: "Error saving plan", description: "Please try again.", variant: "destructive" }); return; }
     toast({ title: "Plan replaced", description: "Previous plan cancelled. New plan approved." });
     if (onPlanSaved) onPlanSaved();
     else navigate("/academy/trade");
@@ -254,27 +219,38 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
     return (
       <div className="space-y-3 max-w-5xl animate-pulse">
         <div className="flex gap-2">
-          <div className="h-8 w-28 rounded-lg bg-muted/30" />
-          <div className="h-8 w-28 rounded-lg bg-muted/30" />
-          <div className="h-8 w-20 rounded-lg bg-muted/30" />
+          <div className="h-7 w-24 rounded-lg bg-muted/30" />
+          <div className="h-7 w-24 rounded-lg bg-muted/30" />
+          <div className="h-7 w-16 rounded-lg bg-muted/30" />
         </div>
-        <div className="h-64 rounded-xl bg-muted/20 border border-border/30" />
+        <div className="h-48 rounded-lg bg-muted/20 border border-border/30" />
       </div>
     );
   }
 
+  // Shared sizing classes based on embedded mode
+  const cardRadius = embedded ? "rounded-lg" : "rounded-xl";
+  const inputHeight = embedded ? "h-9" : "h-11";
+  const dirMinH = embedded ? "min-h-[36px]" : "min-h-[42px]";
+  const dirPy = embedded ? "py-1.5" : "py-2.5";
+  const dirText = embedded ? "text-xs" : "text-[13px]";
+  const gridGap = embedded ? "gap-2" : "gap-4";
+  const choicePad = embedded ? "p-2" : "p-3";
+  const choiceNumText = embedded ? "text-lg" : "text-2xl";
+
   return (
     <>
-      <div className="space-y-3 max-w-5xl">
+      <div className={cn("space-y-2.5", !embedded && "max-w-5xl")}>
 
         {/* ═══ RULES STRIP ═══ */}
-        <div className="flex flex-wrap gap-2">
-          <RulesChip icon={Wallet} label="Balance" value={`$${accountBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
-          <RulesChip icon={Shield} label="Loss Limit" value={formatCurrency(tradeLossLimit)} accent />
+        <div className="flex flex-wrap gap-1.5">
+          <RulesChip icon={Wallet} label="Balance" value={`$${accountBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} embedded={embedded} />
+          <RulesChip icon={Shield} label="Loss Limit" value={formatCurrency(tradeLossLimit)} accent embedded={embedded} />
           <RulesChip
             icon={Target}
             label="Level"
             value={tier}
+            embedded={embedded}
             valueCls={
               tier === "Large" ? "text-emerald-400" :
               tier === "Medium" ? "text-primary" :
@@ -286,37 +262,31 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
 
         {/* No balance warning */}
         {accountBalance <= 0 && (
-          <div className="vault-premium-card p-3 flex items-center gap-2.5" style={{ borderColor: 'rgba(251,191,36,0.15)' }}>
-            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-            <p className="text-xs text-foreground flex-1">Set your account balance before checking trades.</p>
-            <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => navigate("/academy/trade")}>
+          <div className={cn("p-2.5 flex items-center gap-2", embedded ? "rounded-lg border border-amber-500/15 bg-amber-500/[0.04]" : "vault-premium-card")} style={!embedded ? { borderColor: 'rgba(251,191,36,0.15)' } : undefined}>
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <p className="text-[11px] text-foreground flex-1">Set your account balance before checking trades.</p>
+            <Button size="sm" variant="outline" className="shrink-0 text-[10px] h-6 px-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10" onClick={() => navigate("/academy/trade")}>
               Set Balance
             </Button>
           </div>
         )}
 
         {/* ═══ TWO-COLUMN LAYOUT ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* LEFT: Trade Check Card */}
-          <div className="lg:col-span-3 space-y-3">
-            <div className="vault-premium-card overflow-hidden">
-              <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.4), transparent)' }} />
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center justify-center h-6 w-6 rounded-lg bg-primary/10 border border-primary/20">
-                    <Crosshair className="h-3 w-3 text-primary" />
-                  </div>
-                  <h3 className="text-xs font-semibold text-foreground tracking-tight uppercase">Trade Check</h3>
-                </div>
-
+        <div className={cn("grid grid-cols-1 lg:grid-cols-5", gridGap)}>
+          {/* LEFT: Trade Check */}
+          <div className="lg:col-span-3 space-y-2">
+            {embedded ? (
+              /* Embedded: flat, no card wrapper */
+              <div className="space-y-2">
                 {/* Direction toggle */}
-                <div className="flex rounded-xl border border-border/50 overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                <div className={cn("flex rounded-lg border border-border/50 overflow-hidden")} style={{ background: 'rgba(0,0,0,0.2)' }}>
                   {(["calls", "puts"] as const).map((d) => (
                     <button
                       key={d}
                       onClick={() => setDirection(d)}
                       className={cn(
-                        "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-[13px] font-semibold transition-all duration-100 min-h-[42px]",
+                        "flex-1 flex items-center justify-center gap-1.5 px-2.5 text-xs font-semibold transition-all duration-100",
+                        dirMinH, dirPy,
                         direction === d
                           ? d === "calls"
                             ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.5)]"
@@ -324,53 +294,107 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
                           : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
                       )}
                     >
-                      {d === "calls" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                      {d === "calls" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
                       {d === "calls" ? "Calls" : "Puts"}
                     </button>
                   ))}
                 </div>
 
-                {/* Contract price + Ticker inline */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
+                {/* Inputs */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div className="col-span-2 space-y-0.5">
+                    <Label className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">$</span>
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">$</span>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        placeholder="0.00"
+                        type="number" step="0.01" min="0.01" placeholder="0.00"
                         value={contractPrice}
                         onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); setUseCustom(false); }}
-                        className="pl-7 text-lg font-bold tabular-nums h-11 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg"
+                        className={cn("pl-6 text-base font-bold tabular-nums bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg", inputHeight)}
                       />
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ticker <span className="text-muted-foreground/30">(opt)</span></Label>
+                  <div className="space-y-0.5">
+                    <Label className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">Ticker</Label>
                     <Input
                       placeholder="SPY"
                       value={ticker}
                       onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                      className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg h-11 text-sm"
+                      className={cn("uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg text-sm", inputHeight)}
                     />
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Standalone: full card wrapper */
+              <div className="vault-premium-card overflow-hidden">
+                <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, hsl(217 91% 60% / 0.4), transparent)' }} />
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center h-6 w-6 rounded-lg bg-primary/10 border border-primary/20">
+                      <Crosshair className="h-3 w-3 text-primary" />
+                    </div>
+                    <h3 className="text-xs font-semibold text-foreground tracking-tight uppercase">Trade Check</h3>
+                  </div>
+
+                  <div className="flex rounded-xl border border-border/50 overflow-hidden" style={{ background: 'rgba(0,0,0,0.2)' }}>
+                    {(["calls", "puts"] as const).map((d) => (
+                      <button
+                        key={d}
+                        onClick={() => setDirection(d)}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-[13px] font-semibold transition-all duration-100 min-h-[42px]",
+                          direction === d
+                            ? d === "calls"
+                              ? "bg-emerald-500/15 text-emerald-400 shadow-[inset_0_-2px_0_0_rgba(52,211,153,0.5)]"
+                              : "bg-red-500/15 text-red-400 shadow-[inset_0_-2px_0_0_rgba(239,68,68,0.5)]"
+                            : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                        )}
+                      >
+                        {d === "calls" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                        {d === "calls" ? "Calls" : "Puts"}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Contract Price</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">$</span>
+                        <Input
+                          type="number" step="0.01" min="0.01" placeholder="0.00"
+                          value={contractPrice}
+                          onChange={(e) => { setContractPrice(e.target.value); setSelectedIndex(null); setUseCustom(false); }}
+                          className="pl-7 text-lg font-bold tabular-nums h-11 bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ticker <span className="text-muted-foreground/30">(opt)</span></Label>
+                      <Input
+                        placeholder="SPY"
+                        value={ticker}
+                        onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                        className="uppercase bg-black/20 border-white/[0.06] focus:border-primary/40 focus:ring-2 focus:ring-primary/20 rounded-lg h-11 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ═══ CONTRACT CHOICE CARDS ═══ */}
             {result && (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {result.allPass && (
-                  <div className="vault-premium-card p-2.5 flex items-center gap-2" style={{ borderColor: 'rgba(239,68,68,0.15)' }}>
-                    <X className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                    <p className="text-xs text-foreground">Too expensive for your account.</p>
+                  <div className={cn("p-2 flex items-center gap-2 rounded-lg border border-red-500/15 bg-red-500/[0.04]", !embedded && "vault-premium-card")} style={!embedded ? { borderColor: 'rgba(239,68,68,0.15)' } : undefined}>
+                    <X className="h-3 w-3 text-red-400 shrink-0" />
+                    <p className="text-[11px] text-foreground">Too expensive for your account.</p>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
                   {result.choices.map((choice, idx) => {
                     const sc = STATUS_CONFIG[choice.status];
                     const isSelected = selectedIndex === idx && !useCustom;
@@ -379,48 +403,51 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
                         key={idx}
                         onClick={() => { setSelectedIndex(idx); setUseCustom(false); }}
                         className={cn(
-                          "vault-approval-choice-card relative text-left transition-all duration-100 active:scale-[0.97]",
-                          "p-3 rounded-xl border border-white/[0.06]",
-                          "hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
+                          "relative text-left transition-all duration-100 active:scale-[0.97]",
+                          choicePad, cardRadius,
+                          embedded
+                            ? "border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
+                            : "vault-approval-choice-card hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
                           isSelected && `ring-2 ${sc.ring} ${sc.glow}`,
                           choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
                           choice.status === "pass" && "opacity-35 saturate-50 hover:translate-y-0"
                         )}
                       >
-                        {/* Recommended badge */}
                         {choice.isRecommended && (
-                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest"
+                          <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest"
                             style={{
                               background: 'linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 45%))',
                               color: 'white',
-                              boxShadow: '0 2px 10px rgba(59,130,246,0.3)',
+                              boxShadow: '0 2px 8px rgba(59,130,246,0.3)',
                             }}
                           >
-                            <Star className="h-2.5 w-2.5" /> Recommended
+                            <Star className="h-2 w-2" /> Best
                           </div>
                         )}
 
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-2xl font-bold text-foreground tabular-nums leading-none">
-                            {choice.contracts}<span className="text-xs font-semibold text-muted-foreground ml-0.5">CON</span>
+                          <span className={cn("font-bold text-foreground tabular-nums leading-none", choiceNumText)}>
+                            {choice.contracts}<span className="text-[9px] font-semibold text-muted-foreground ml-0.5">CON</span>
                           </span>
-                          <span className={cn("text-[9px] font-bold px-2 py-1 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
+                          <span className={cn("text-[8px] font-bold px-1.5 py-0.5 rounded-full border tracking-wider", sc.bg, sc.border, sc.color)}>
                             {sc.label}
                           </span>
                         </div>
 
-                        {/* Approval status explainer */}
-                        <p className="text-[10px] text-muted-foreground/40 leading-snug mb-1">
-                          {choice.status === "fits" && "Fits your risk rules. Clear to execute."}
-                          {choice.status === "tight" && "Near your limits. Proceed with caution."}
-                          {choice.status === "pass" && "Exceeds your rules. Do not take this trade."}
-                        </p>
+                        {!embedded && (
+                          <>
+                            <p className="text-[10px] text-muted-foreground/40 leading-snug mb-0.5">
+                              {choice.status === "fits" && "Fits your risk rules."}
+                              {choice.status === "tight" && "Near your limits."}
+                              {choice.status === "pass" && "Exceeds your rules."}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/80 uppercase tracking-[0.1em] font-medium mb-1.5">
+                              {CARD_SUBLABELS[choice.contracts] || ""}
+                            </p>
+                          </>
+                        )}
 
-                        <p className="text-[10px] text-muted-foreground/80 uppercase tracking-[0.1em] font-medium mb-2">
-                          {CARD_SUBLABELS[choice.contracts] || ""}
-                        </p>
-
-                        <div className="space-y-1 pt-2 border-t border-white/[0.04]">
+                        <div className={cn("space-y-0.5", embedded ? "pt-1 border-t border-white/[0.04]" : "pt-2 border-t border-white/[0.04]")}>
                           <MetricLine label="Cash" value={formatCurrency(choice.cashNeeded)} />
                           <MetricLine
                             label="Exit"
@@ -437,53 +464,49 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
                 {/* ═══ CUSTOM SIZE ═══ */}
                 <Collapsible open={customOpen} onOpenChange={setCustomOpen}>
                   <CollapsibleTrigger asChild>
-                    <button className="flex items-center gap-1.5 mx-auto px-4 py-1.5 rounded-full text-[11px] font-medium tracking-wide text-muted-foreground/70 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] hover:border-white/[0.14] hover:text-foreground/80 active:scale-[0.97] transition-all duration-150">
-                      <Sliders className="h-3 w-3" />
+                    <button className="flex items-center gap-1.5 mx-auto px-3 py-1 rounded-full text-[10px] font-medium tracking-wide text-muted-foreground/70 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] hover:border-white/[0.14] hover:text-foreground/80 active:scale-[0.97] transition-all duration-150">
+                      <Sliders className="h-2.5 w-2.5" />
                       Custom Size
-                      <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", customOpen && "rotate-180")} />
+                      <ChevronDown className={cn("h-2.5 w-2.5 transition-transform duration-200", customOpen && "rotate-180")} />
                     </button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <div className="vault-glass-card p-3 mt-1.5 space-y-2.5 rounded-xl">
+                    <div className={cn("mt-1.5 space-y-2", embedded ? "rounded-lg border border-white/[0.06] bg-white/[0.02] p-2" : "vault-glass-card p-3 rounded-lg")}>
                       <div className="flex items-center justify-between">
                         <Label className="text-[10px] text-muted-foreground font-medium">Contracts</Label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => { const v = Math.max(1, customContracts - 1); setCustomContracts(v); setCustomContractsText(String(v)); }}
-                            className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
+                            className="h-6 w-6 rounded-md flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
-                            <Minus className="h-3 w-3 text-muted-foreground" />
+                            <Minus className="h-2.5 w-2.5 text-muted-foreground" />
                           </button>
                           <input
-                            type="number"
-                            min={1}
+                            type="number" min={1}
                             value={customContractsText}
                             onChange={(e) => { setCustomContractsText(e.target.value); const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1) setCustomContracts(v); }}
                             onBlur={() => { if (!customContractsText || parseInt(customContractsText) < 1) { setCustomContracts(1); setCustomContractsText("1"); } }}
-                            className="w-10 text-center text-base font-bold tabular-nums text-foreground bg-transparent border-b border-white/10 outline-none focus:border-primary/50 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-8 text-center text-sm font-bold tabular-nums text-foreground bg-transparent border-b border-white/10 outline-none focus:border-primary/50 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
                             onClick={() => { const v = customContracts + 1; setCustomContracts(v); setCustomContractsText(String(v)); }}
-                            className="h-7 w-7 rounded-lg flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
+                            className="h-6 w-6 rounded-md flex items-center justify-center border border-white/[0.08] hover:bg-white/[0.04] transition-colors"
                           >
-                            <Plus className="h-3 w-3 text-muted-foreground" />
+                            <Plus className="h-2.5 w-2.5 text-muted-foreground" />
                           </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-[10px] text-muted-foreground font-medium shrink-0">Exit $</Label>
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-[9px] text-muted-foreground font-medium shrink-0">Exit $</Label>
                         <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="Auto"
+                          type="number" step="0.01" placeholder="Auto"
                           value={customExitOverride}
                           onChange={(e) => setCustomExitOverride(e.target.value)}
-                          className="pl-3 h-8 text-xs bg-black/20 border-white/[0.06] rounded-lg flex-1"
+                          className="pl-2.5 h-7 text-xs bg-black/20 border-white/[0.06] rounded-md flex-1"
                         />
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 px-3 text-[11px] border-primary/30 text-primary hover:bg-primary/10 shrink-0"
+                          variant="outline" size="sm"
+                          className="h-7 px-2.5 text-[10px] border-primary/30 text-primary hover:bg-primary/10 shrink-0"
                           onClick={() => { setUseCustom(true); setSelectedIndex(null); }}
                         >
                           Use {customContracts}
@@ -507,14 +530,14 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
                   entryPrice={priceNum}
                   saving={saving}
                   onUsePlan={handleUsePlan}
-                  
+                  embedded={embedded}
                 />
               ) : (
-                <div className="vault-premium-card p-6 text-center space-y-3">
-                  <div className="mx-auto h-10 w-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center">
-                    <Shield className="h-5 w-5 text-muted-foreground/20" />
+                <div className={cn(embedded ? "rounded-lg border border-white/[0.06] bg-white/[0.02] p-4" : "vault-premium-card p-6", "text-center space-y-2")}>
+                  <div className={cn("mx-auto rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center", embedded ? "h-8 w-8" : "h-10 w-10")}>
+                    <Shield className={cn("text-muted-foreground/20", embedded ? "h-4 w-4" : "h-5 w-5")} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground">
                     {hasValidPrice ? "Tap a size to see the plan." : "Enter a price to start."}
                   </p>
                 </div>
@@ -524,7 +547,6 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
         </div>
       </div>
 
-      {/* Replace plan dialog */}
       <AlertDialog open={showReplaceDialog} onOpenChange={setShowReplaceDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -545,7 +567,7 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
 
 /* ── Hero Decision Card ── */
 function HeroDecisionCard({
-  choice, ticker, direction, entryPrice, saving, onUsePlan,
+  choice, ticker, direction, entryPrice, saving, onUsePlan, embedded = false,
 }: {
   choice: ContractChoice;
   ticker: string;
@@ -553,82 +575,90 @@ function HeroDecisionCard({
   entryPrice: number;
   saving: boolean;
   onUsePlan: () => void;
+  embedded?: boolean;
 }) {
   const sc = STATUS_CONFIG[choice.status];
   const hasExit = choice.exitPrice !== null || choice.fullPremiumRiskOk;
 
   return (
-    <div className={cn("vault-premium-card overflow-hidden", sc.heroGlow)}>
-      <div className="h-px" style={{
-        background: choice.status === "fits"
-          ? "linear-gradient(90deg, transparent, rgba(52,211,153,0.5), transparent)"
-          : choice.status === "tight"
-          ? "linear-gradient(90deg, transparent, rgba(251,191,36,0.4), transparent)"
-          : "linear-gradient(90deg, transparent, rgba(239,68,68,0.25), transparent)"
-      }} />
+    <div className={cn(
+      embedded ? "rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden" : cn("vault-premium-card overflow-hidden", sc.heroGlow)
+    )}>
+      {!embedded && (
+        <div className="h-px" style={{
+          background: choice.status === "fits"
+            ? "linear-gradient(90deg, transparent, rgba(52,211,153,0.5), transparent)"
+            : choice.status === "tight"
+            ? "linear-gradient(90deg, transparent, rgba(251,191,36,0.4), transparent)"
+            : "linear-gradient(90deg, transparent, rgba(239,68,68,0.25), transparent)"
+        }} />
+      )}
 
-      <div className="p-4 space-y-3">
-        {/* Status hero — compact */}
-        <div className={cn("text-center py-4 rounded-xl relative overflow-hidden", sc.bg)}>
-          <div className="absolute inset-0" style={{
-            background: choice.status === "fits"
-              ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.08), transparent 70%)"
-              : choice.status === "tight"
-              ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.06), transparent 70%)"
-              : "none"
-          }} />
-          <p className={cn("text-3xl font-black tracking-tight relative", sc.color)} style={{
+      <div className={cn("space-y-2.5", embedded ? "p-3" : "p-4 space-y-3")}>
+        {/* Status hero */}
+        <div className={cn("text-center rounded-lg relative overflow-hidden", sc.bg, embedded ? "py-2.5" : "py-4")}>
+          {!embedded && (
+            <div className="absolute inset-0" style={{
+              background: choice.status === "fits"
+                ? "radial-gradient(circle at 50% 50%, rgba(52,211,153,0.08), transparent 70%)"
+                : choice.status === "tight"
+                ? "radial-gradient(circle at 50% 50%, rgba(251,191,36,0.06), transparent 70%)"
+                : "none"
+            }} />
+          )}
+          <p className={cn("font-black tracking-tight relative", sc.color, embedded ? "text-2xl" : "text-3xl")} style={!embedded ? {
             textShadow: choice.status === "fits"
               ? "0 0 30px rgba(52,211,153,0.25)"
               : choice.status === "tight"
               ? "0 0 30px rgba(251,191,36,0.2)"
               : "none"
-          }}>
+          } : undefined}>
             {sc.label}
           </p>
           {ticker && (
-            <p className="text-[11px] text-muted-foreground mt-1 relative font-medium">
+            <p className="text-[10px] text-muted-foreground mt-0.5 relative font-medium">
               {ticker.toUpperCase()} · {direction === "calls" ? "Calls" : "Puts"}
             </p>
           )}
         </div>
 
         {/* Key details */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <HeroLine label="Buy" value={`${choice.contracts} contract${choice.contracts > 1 ? "s" : ""}`} bold />
           <HeroLine
             label="Exit if wrong"
             value={choice.fullPremiumRiskOk ? "Full risk OK" : choice.exitPrice ? formatCurrency(choice.exitPrice) : "—"}
-            sub={choice.fullPremiumRiskOk ? "Risk budget covers the full contract." : undefined}
+            sub={choice.fullPremiumRiskOk ? "Risk budget covers full contract." : undefined}
           />
           <HeroLine label="Cash needed" value={formatCurrency(choice.cashNeeded)} />
           <HeroLine label="Max loss" value={formatCurrency(choice.totalRisk)} valueCls="text-red-400" />
         </div>
 
         {/* Targets */}
-        <div className="pt-2 border-t border-white/[0.04] space-y-1.5">
+        <div className="pt-1.5 border-t border-white/[0.04] space-y-1">
           <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-wider">Targets</p>
           {hasExit && choice.riskPerContract > 0 ? (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-1">
               <TargetChip label="1:1" value={formatCurrency(choice.tp1)} />
               <TargetChip label="1:2" value={formatCurrency(choice.tp2)} />
               <TargetChip label="1:3" value={formatCurrency(choice.tp3)} />
             </div>
           ) : (
-            <p className="text-[11px] text-muted-foreground/40 italic">Add an exit to calculate targets</p>
+            <p className="text-[10px] text-muted-foreground/40 italic">Add an exit to calculate targets</p>
           )}
         </div>
 
         {/* Coaching note */}
-        <div className="flex items-start gap-2 rounded-lg p-2.5" style={{ background: 'rgba(59,130,246,0.03)', border: '1px solid rgba(59,130,246,0.06)' }}>
+        <div className="flex items-start gap-1.5 rounded-lg p-2" style={{ background: 'rgba(59,130,246,0.03)', border: '1px solid rgba(59,130,246,0.06)' }}>
           <Sparkles className="h-3 w-3 text-primary mt-0.5 shrink-0" />
-          <p className="text-[11px] text-muted-foreground leading-snug">{choice.coachingNote}</p>
+          <p className="text-[10px] text-muted-foreground leading-snug">{choice.coachingNote}</p>
         </div>
 
         {/* CTA */}
         <button
           className={cn(
-            "vault-cta-shine w-full h-11 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2.5 transition-all duration-100 active:scale-[0.97]",
+            "vault-cta-shine w-full rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.97]",
+            embedded ? "h-9" : "h-11",
             choice.status === "pass" || saving
               ? "bg-muted/20 text-muted-foreground/50 cursor-not-allowed"
               : "text-white hover:brightness-110"
@@ -642,16 +672,16 @@ function HeroDecisionCard({
         >
           {saving ? (
             <span className="flex items-center gap-2">
-              <span className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Saving…
             </span>
           ) : (
             <>
-              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-white/20">
-                <Check className="h-3 w-3" strokeWidth={3} />
+              <span className="flex items-center justify-center h-4.5 w-4.5 rounded-full bg-white/20">
+                <Check className="h-2.5 w-2.5" strokeWidth={3} />
               </span>
               Use This Plan
-              <ArrowRight className="h-3.5 w-3.5 opacity-50" />
+              <ArrowRight className="h-3 w-3 opacity-50" />
             </>
           )}
         </button>
@@ -667,21 +697,24 @@ function HeroDecisionCard({
 }
 
 /* ── Sub-components ── */
-function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
+function RulesChip({ icon: Icon, label, value, valueCls, accent, embedded }: {
   icon: React.ElementType;
   label: string;
   value: string;
   valueCls?: string;
   accent?: boolean;
+  embedded?: boolean;
 }) {
   return (
     <div className={cn(
-      "flex items-center gap-2 rounded-xl px-3 py-2 min-h-[36px]",
-      accent ? "vault-premium-card" : "vault-glass-card"
+      "flex items-center gap-1.5",
+      embedded
+        ? "rounded-lg px-2 py-1 min-h-[28px] border border-white/[0.06] bg-white/[0.02]"
+        : cn("rounded-xl px-3 py-2 min-h-[36px]", accent ? "vault-premium-card" : "vault-glass-card")
     )}>
-      <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-      <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
-      <span className={cn("text-sm font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <Icon className={cn("shrink-0", embedded ? "h-3 w-3 text-muted-foreground/60" : "h-3.5 w-3.5 text-muted-foreground")} />
+      <span className={cn("font-medium text-muted-foreground", embedded ? "text-[9px]" : "text-[10px]")}>{label}</span>
+      <span className={cn("font-bold tabular-nums text-foreground", valueCls, embedded ? "text-xs" : "text-sm")}>{value}</span>
     </div>
   );
 }
@@ -689,8 +722,8 @@ function RulesChip({ icon: Icon, label, value, valueCls, accent }: {
 function MetricLine({ label, value, valueCls }: { label: string; value: string; valueCls?: string }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[10px] text-muted-foreground/60">{label}</span>
-      <span className={cn("text-xs font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
+      <span className="text-[9px] text-muted-foreground/60">{label}</span>
+      <span className={cn("text-[11px] font-bold tabular-nums text-foreground", valueCls)}>{value}</span>
     </div>
   );
 }
@@ -704,10 +737,10 @@ function HeroLine({ label, value, bold, valueCls, sub }: {
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <span className="text-xs text-muted-foreground/60 font-medium">{label}</span>
+      <span className="text-[11px] text-muted-foreground/60 font-medium">{label}</span>
       <div className="text-right">
-        <span className={cn("text-sm tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
-        {sub && <p className="text-[10px] text-muted-foreground/40 mt-px max-w-[180px]">{sub}</p>}
+        <span className={cn("text-xs tabular-nums text-foreground", bold && "font-bold", valueCls)}>{value}</span>
+        {sub && <p className="text-[9px] text-muted-foreground/40 mt-px max-w-[160px]">{sub}</p>}
       </div>
     </div>
   );
@@ -715,9 +748,9 @@ function HeroLine({ label, value, bold, valueCls, sub }: {
 
 function TargetChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg py-1.5 px-2 text-center" style={{ background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.08)' }}>
-      <p className="text-[9px] text-emerald-400/60 font-semibold">{label}</p>
-      <p className="text-[11px] text-emerald-400 font-bold tabular-nums">{value}</p>
+    <div className="rounded-md py-1 px-1.5 text-center" style={{ background: 'rgba(52,211,153,0.05)', border: '1px solid rgba(52,211,153,0.08)' }}>
+      <p className="text-[8px] text-emerald-400/60 font-semibold">{label}</p>
+      <p className="text-[10px] text-emerald-400 font-bold tabular-nums">{value}</p>
     </div>
   );
 }

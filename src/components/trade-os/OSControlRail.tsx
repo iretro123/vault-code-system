@@ -1,4 +1,4 @@
-import { Shield, AlertTriangle, CheckCircle2, Plus, RefreshCw, Calendar, ClipboardCheck, Clock, Ban, Settings2 } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle2, Plus, RefreshCw, Calendar, ClipboardCheck, Clock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
@@ -21,7 +21,6 @@ const STATUS_META: Record<string, { dot: string; label: string; text: string; bg
   RED: { dot: "bg-red-400", label: "text-red-400", text: "Trading blocked", bg: "bg-red-500/[0.08]" },
 };
 
-// ── Session timing (inline in rail) ──
 interface SessionTimes { start: string; cutoff: string; hardClose: string; }
 
 function getStorageKey() {
@@ -58,7 +57,6 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
   const quickLabel = activeStage === "plan" ? "Check Trade" : activeStage === "live" ? "Log Result" : activeStage === "review" ? "Check In" : "Refresh AI";
   const QuickIcon = activeStage === "plan" ? Shield : activeStage === "live" ? Plus : activeStage === "review" ? ClipboardCheck : RefreshCw;
 
-  // Session timing state
   const [times, setTimes] = useState<SessionTimes | null>(loadTimes);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<SessionTimes>({ start: "09:30", cutoff: "11:00", hardClose: "12:00" });
@@ -79,9 +77,9 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
   }, [times, now]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Vault Status */}
-      <div className={cn("flex items-center gap-2.5 px-3 py-2.5 rounded-lg", sm.bg)}>
+      <div className={cn("flex items-center gap-2 px-2.5 py-2 rounded-lg", sm.bg)}>
         <span className={cn(
           "w-[6px] h-[6px] rounded-full shrink-0",
           sm.dot,
@@ -95,44 +93,38 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Active Plan */}
       <div>
-        <p className="text-[11px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1">Active Plan</p>
+        <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1">Active Plan</p>
         {activePlan ? (
-          <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] p-2.5 space-y-1.5">
+          <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] p-2 space-y-1">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="text-[13px] font-bold text-foreground">{activePlan.ticker || "—"}</span>
-              <span className="text-[11px] text-muted-foreground/60">{activePlan.direction} · {activePlan.contracts_planned}ct</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="text-xs font-bold text-foreground">{activePlan.ticker || "—"}</span>
+              <span className="text-[10px] text-muted-foreground/60">{activePlan.direction} · {activePlan.contracts_planned}ct</span>
             </div>
-            <div className="text-[10px] text-muted-foreground/40 space-y-0.5 pl-3.5">
-              <p>Entry: <strong className="text-foreground/70">${Number(activePlan.entry_price_planned).toFixed(2)}</strong></p>
-              <p>Max loss: <strong className="text-foreground/70">${Number(activePlan.max_loss_planned).toFixed(0)}</strong></p>
-              {activePlan.stop_price_planned && (
-                <p>Stop: <strong className="text-foreground/70">${Number(activePlan.stop_price_planned).toFixed(2)}</strong></p>
-              )}
+            <div className="text-[10px] text-muted-foreground/40 space-y-0.5 pl-3">
+              <p>Entry: <strong className="text-foreground/70">${Number(activePlan.entry_price_planned).toFixed(2)}</strong> · Max loss: <strong className="text-foreground/70">${Number(activePlan.max_loss_planned).toFixed(0)}</strong></p>
             </div>
-            <p className="text-[10px] text-muted-foreground/40 pl-3.5">Plan saved · Live data</p>
             {onLogFromPlan && (
-              <Button size="sm" className="w-full mt-1 h-8 text-[11px] rounded-lg gap-1" onClick={() => onLogFromPlan(activePlan)}>
+              <Button size="sm" className="w-full h-7 text-[10px] rounded-md gap-1" onClick={() => onLogFromPlan(activePlan)}>
                 <CheckCircle2 className="h-3 w-3" /> Log Result
               </Button>
             )}
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground/40">No plan active</p>
+          <p className="text-[10px] text-muted-foreground/40">No plan active</p>
         )}
       </div>
 
       {/* Risk Budget */}
       <div>
-        <div className="flex items-baseline justify-between mb-1">
-          <p className="text-[11px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase">Risk Budget</p>
+        <div className="flex items-baseline justify-between mb-0.5">
+          <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase">Risk Budget</p>
           <span className="text-[10px] text-muted-foreground/40">of ${vaultState.daily_loss_limit.toFixed(0)}</span>
         </div>
-        <p className="text-[10px] text-muted-foreground/40 mb-1">How much you can lose today</p>
-        <p className={cn("text-xl font-bold tabular-nums mb-2", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+        <p className={cn("text-lg font-bold tabular-nums mb-1.5", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
           ${vaultState.risk_remaining_today.toFixed(0)}
         </p>
-        <div className="h-2 rounded-full bg-white/[0.08] overflow-hidden">
+        <div className="h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
           <div
             className={cn("h-full rounded-full transition-all", riskPct > 50 ? "bg-emerald-400/80" : riskPct > 20 ? "bg-amber-400/80" : "bg-red-400/80")}
             style={{ width: `${riskPct}%` }}
@@ -142,15 +134,14 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Trades */}
       <div>
-        <p className="text-[11px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1">Trades</p>
-        <p className="text-[10px] text-muted-foreground/40 mb-1">Entries used vs. allowed</p>
-        <div className="flex items-baseline gap-1 mb-2">
-          <span className="text-xl font-bold tabular-nums text-foreground">{tradesUsed}</span>
-          <span className="text-[11px] text-muted-foreground/40">/ {totalTrades}</span>
+        <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-0.5">Trades</p>
+        <div className="flex items-baseline gap-1 mb-1.5">
+          <span className="text-lg font-bold tabular-nums text-foreground">{tradesUsed}</span>
+          <span className="text-[10px] text-muted-foreground/40">/ {totalTrades}</span>
         </div>
         <div className="flex gap-1">
           {Array.from({ length: totalTrades }).map((_, i) => (
-            <div key={i} className={cn("flex-1 h-2.5 rounded-full", i < tradesUsed ? "bg-primary/80" : "bg-white/[0.08]")} />
+            <div key={i} className={cn("flex-1 h-2 rounded-full", i < tradesUsed ? "bg-primary/80" : "bg-white/[0.08]")} />
           ))}
         </div>
       </div>
@@ -158,54 +149,54 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
       {/* Session Timing */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-[11px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase">Session</p>
+          <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase">Session</p>
           {times && !editing && (
             <button onClick={handleEditSession} className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors">Edit</button>
           )}
         </div>
 
         {!times && !editing ? (
-          <button onClick={handleEditSession} className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border border-dashed border-white/[0.08] hover:border-white/[0.15] hover:bg-white/[0.02] transition-all text-left">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+          <button onClick={handleEditSession} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg border border-dashed border-white/[0.08] hover:border-white/[0.15] hover:bg-white/[0.02] transition-all text-left">
+            <Clock className="h-3 w-3 text-muted-foreground/40 shrink-0" />
             <div>
-              <p className="text-[11px] font-semibold text-foreground/70">Set session times</p>
-              <p className="text-[10px] text-muted-foreground/40">Start, cutoff, close</p>
+              <p className="text-[10px] font-semibold text-foreground/70">Set session times</p>
+              <p className="text-[9px] text-muted-foreground/40">Start, cutoff, close</p>
             </div>
           </button>
         ) : editing ? (
-          <div className="space-y-2 rounded-lg border border-primary/15 bg-primary/[0.03] p-2.5">
+          <div className="space-y-1.5 rounded-lg border border-primary/15 bg-primary/[0.03] p-2">
             {(["start", "cutoff", "hardClose"] as const).map(k => (
               <div key={k} className="flex items-center justify-between gap-2">
-                <label className="text-[10px] font-medium text-muted-foreground/60 uppercase w-14">{k === "hardClose" ? "Close" : k}</label>
+                <label className="text-[9px] font-medium text-muted-foreground/60 uppercase w-12">{k === "hardClose" ? "Close" : k}</label>
                 <input
                   type="time"
                   value={draft[k]}
                   onChange={(e) => setDraft(d => ({ ...d, [k]: e.target.value }))}
-                  className="h-7 px-2 text-[11px] font-semibold bg-black/30 border border-white/[0.08] rounded-md text-foreground outline-none focus:border-primary/40"
+                  className="h-6 px-1.5 text-[10px] font-semibold bg-black/30 border border-white/[0.08] rounded-md text-foreground outline-none focus:border-primary/40"
                 />
               </div>
             ))}
-            <div className="flex gap-1.5 pt-1">
-              <Button size="sm" className="h-7 text-[10px] rounded-md px-3 flex-1" onClick={handleSaveSession}>Save</Button>
-              <Button size="sm" variant="ghost" className="h-7 text-[10px] text-muted-foreground/50 px-2" onClick={() => setEditing(false)}>Cancel</Button>
+            <div className="flex gap-1.5 pt-0.5">
+              <Button size="sm" className="h-6 text-[10px] rounded-md px-2.5 flex-1" onClick={handleSaveSession}>Save</Button>
+              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50 px-2" onClick={() => setEditing(false)}>Cancel</Button>
             </div>
           </div>
         ) : sessionPhase ? (
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
               {sessionPhase.label === "No new entries" ? <Ban className="h-3 w-3 text-amber-400" /> : <Clock className="h-3 w-3 text-primary" />}
-              <span className={cn("text-[11px] font-bold uppercase tracking-wide", sessionPhase.color)}>{sessionPhase.label}</span>
+              <span className={cn("text-[10px] font-bold uppercase tracking-wide", sessionPhase.color)}>{sessionPhase.label}</span>
             </div>
-            <div className="grid grid-cols-3 gap-1 text-center">
+            <div className="grid grid-cols-3 gap-0.5 text-center">
               {(["start", "cutoff", "hardClose"] as const).map(k => (
-                <div key={k} className="rounded-md bg-white/[0.03] py-1">
-                  <p className="text-[9px] text-muted-foreground/40 font-medium uppercase">{k === "hardClose" ? "Close" : k}</p>
+                <div key={k} className="rounded-md bg-white/[0.03] py-0.5">
+                  <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">{k === "hardClose" ? "Close" : k}</p>
                   <p className="text-[10px] font-semibold text-foreground/70 tabular-nums">{fmt12h(times![k])}</p>
                 </div>
               ))}
             </div>
             {sessionPhase.countdown && (
-              <p className={cn("text-[13px] font-bold tabular-nums text-center", sessionPhase.color)}>
+              <p className={cn("text-xs font-bold tabular-nums text-center", sessionPhase.color)}>
                 {sessionPhase.countdownLabel}: {sessionPhase.countdown}
               </p>
             )}
@@ -215,25 +206,25 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Restrictions */}
       {vaultState.last_block_reason && (
-        <div className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-amber-500/[0.06]">
-          <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-amber-400/80 leading-relaxed">{vaultState.last_block_reason}</p>
+        <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-amber-500/[0.06]">
+          <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-[10px] text-amber-400/80 leading-snug">{vaultState.last_block_reason}</p>
         </div>
       )}
 
       {/* Synced */}
       <div className="flex items-center gap-1.5 px-1">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 animate-pulse" />
-        <span className="text-[10px] text-muted-foreground/40">Synced</span>
+        <span className="text-[9px] text-muted-foreground/40">Synced</span>
       </div>
 
       {/* Quick Action */}
       <Button
         size="sm"
-        className="w-full h-9 text-[11px] font-semibold rounded-lg gap-1.5"
+        className="w-full h-8 text-[11px] font-semibold rounded-lg gap-1.5"
         onClick={onQuickAction}
       >
-        <QuickIcon className="h-3.5 w-3.5" /> {quickLabel}
+        <QuickIcon className="h-3 w-3" /> {quickLabel}
       </Button>
     </div>
   );
