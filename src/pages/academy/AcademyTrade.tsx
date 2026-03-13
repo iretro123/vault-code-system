@@ -357,7 +357,7 @@ const AcademyTrade = () => {
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Intelligence</SectionLabel>
-            <AIFocusCard entries={entries} />
+            <AIFocusCard entries={entries} accessToken={session?.access_token} />
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Journal</SectionLabel>
