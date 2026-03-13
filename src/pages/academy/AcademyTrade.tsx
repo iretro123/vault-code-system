@@ -43,7 +43,7 @@ const AcademyTrade = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { isPageEnabled } = useFeatureFlags();
   const { state: vaultState } = useVaultState();
   const {
@@ -357,7 +357,7 @@ const AcademyTrade = () => {
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Intelligence</SectionLabel>
-            <AIFocusCard entries={entries} />
+            <AIFocusCard entries={entries} accessToken={session?.access_token} />
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Journal</SectionLabel>
@@ -513,10 +513,16 @@ const AcademyTrade = () => {
                       </div>
                     </div>
                   )}
-                  {/* Embedded VaultTradePlanner */}
+                  {/* Embedded VaultTradePlanner — unified balance */}
                   {!activePlan && todayStatus !== "complete" && (
                     <div ref={plannerRef}>
-                      <VaultTradePlanner />
+                      <VaultTradePlanner
+                        balanceOverride={trackedBalance}
+                        activePlanOverride={activePlan}
+                        savePlanOverride={undefined}
+                        replaceWithNewOverride={undefined}
+                        onPlanSaved={refetchPlan}
+                      />
                     </div>
                   )}
                   {todayStatus === "complete" && (
@@ -658,7 +664,7 @@ const AcademyTrade = () => {
               {/* INSIGHTS STAGE */}
               {activeStage === "insights" && (
                 <div>
-                  <AIFocusCard entries={entries} />
+                  <AIFocusCard entries={entries} accessToken={session?.access_token} />
                 </div>
               )}
             </div>
