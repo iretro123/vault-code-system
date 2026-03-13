@@ -48,10 +48,9 @@ import {
 const coreNav = [
   { icon: Home, label: "Dashboard", path: "/academy/home", pageKey: "dashboard" },
   { icon: BookOpen, label: "Learn", path: "/academy/learn", pageKey: "learn" },
-  { icon: TrendingUp, label: "My Trades", path: "/academy/trade", pageKey: "trade" },
+  { icon: TrendingUp, label: "Trade OS", path: "/academy/trade", pageKey: "trade" },
   { icon: Users, label: "Community", path: "/academy/community", pageKey: "community" },
   { icon: Radio, label: "Live", path: "/academy/live", isLive: true, pageKey: "live" },
-  { icon: Wrench, label: "Trading Toolkit", path: "/academy/resources", pageKey: "resources" },
   { icon: LayoutGrid, label: "Vault OS", path: "/academy/vault-os", pageKey: "vault-os" },
   { icon: CalendarCheck, label: "Schedule 1:1", path: "/academy/support", pageKey: "support" },
   { icon: Settings, label: "Settings", path: "/academy/settings" },
