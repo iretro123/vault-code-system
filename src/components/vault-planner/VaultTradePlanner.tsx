@@ -269,7 +269,7 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
 
         {/* ═══ RULES STRIP ═══ */}
         <div className="flex flex-wrap gap-2">
-          <RulesChip icon={Wallet} label="Balance" value={`$${accountBalance.toLocaleString()}`} />
+          <RulesChip icon={Wallet} label="Balance" value={`$${accountBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
           <RulesChip icon={Shield} label="Loss Limit" value={formatCurrency(tradeLossLimit)} accent />
           <RulesChip
             icon={Target}
