@@ -430,7 +430,7 @@ const AcademyTrade = () => {
           <div className="flex items-center rounded-xl border border-white/[0.06] bg-card divide-x divide-white/[0.06] overflow-hidden">
             {/* Balance */}
             <div className="flex-1 px-3 md:px-4 py-2.5 md:py-3">
-              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Balance</p>
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5 flex items-center gap-1">Balance <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/60 animate-pulse" /></p>
               <p className="text-lg md:text-xl font-bold tabular-nums text-primary leading-none truncate">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </p>
