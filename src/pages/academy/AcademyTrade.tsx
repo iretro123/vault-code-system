@@ -712,9 +712,9 @@ const AcademyTrade = () => {
 
         {/* ══════ LAYER 3 — LOWER ANALYTICS (quieter) ══════ */}
         {hasData && (
-          <div className="space-y-4 pt-2">
-            <p className="text-[9px] uppercase tracking-[0.18em] font-bold text-muted-foreground/25 px-1">Performance & History</p>
-            <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3 pt-1">
+            <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/25 uppercase px-0.5">Performance & History</p>
+            <div className="grid gap-3 md:grid-cols-2">
               {equityCurve.length > 1 && startingBalance !== null && (
                 <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
               )}
