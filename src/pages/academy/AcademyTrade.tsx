@@ -534,6 +534,7 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-2">
+                  <StageHeadline stage="live" />
                   {/* Session Setup / Timer */}
                   <SessionSetupCard />
 
