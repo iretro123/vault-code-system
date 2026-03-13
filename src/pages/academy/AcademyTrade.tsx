@@ -330,6 +330,7 @@ const AcademyTrade = () => {
   }
 
   // ──── OS LAYOUT (feature flag ON) ────
+  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "";
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return "Good Morning";
@@ -344,36 +345,57 @@ const AcademyTrade = () => {
     return "No plan yet — start your session";
   })();
 
+  const vaultStatusColor = vaultState.vault_status === "GREEN"
+    ? "bg-emerald-400" : vaultState.vault_status === "YELLOW"
+    ? "bg-amber-400" : vaultState.vault_status === "RED"
+    ? "bg-red-400" : "bg-muted-foreground/40";
+
   return (
     <>
-      {/* ── Greeting Header ── */}
-      <div className="px-4 md:px-6 pt-4 pb-2 max-w-4xl">
-        <h1 className="text-xl md:text-2xl font-bold text-foreground">{greeting}</h1>
-        <div className="flex items-center gap-2 mt-0.5">
+      {/* ══════ GREETING HEADER ══════ */}
+      <div className="px-4 md:px-6 pt-6 md:pt-8 pb-1 max-w-4xl">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
+          {greeting}{displayName ? `, ${displayName}` : ""}
+        </h1>
+        <div className="flex items-center gap-2 mt-1.5">
           {todayStatus === "complete" ? (
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-          ) : activePlan ? (
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
           ) : (
-            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+            <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && todayStatus !== "complete" && "animate-pulse")} />
           )}
-          <span className="text-xs text-muted-foreground">{statusLine}</span>
+          <span className="text-sm text-muted-foreground">{statusLine}</span>
         </div>
       </div>
 
-      <div className="px-4 md:px-6 pb-10 space-y-4 max-w-4xl">
+      <div className="px-4 md:px-6 pb-10 space-y-5 max-w-4xl">
 
-        {/* ── Compact Metrics Strip ── */}
+        {/* ══════ METRICS STRIP ══════ */}
         {hasData && (
-          <div className="flex items-center gap-0 rounded-2xl border border-border/50 bg-card overflow-hidden">
-            <MetricCell label="Balance" value={trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"} accent />
-            <MetricCell label="Today P/L" value={todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`} color={todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : undefined} />
-            <MetricCell label="Trades" value={`${todayTradeCount}`} />
-            <MetricCell label="Risk Left" value={`$${vaultState.risk_remaining_today.toFixed(0)}`} />
-            {!isMobile && <MetricCell label="Streak" value={`${currentStreak}`} />}
-            <div className="px-3 py-2.5 flex items-center">
-              <Button size="sm" className="gap-1 h-8 px-3 text-xs rounded-full whitespace-nowrap" onClick={handleLogUnplanned}>
-                <Plus className="h-3 w-3" /> Log Trade
+          <div className="flex items-stretch rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm overflow-hidden">
+            <MetricCell
+              label="Balance"
+              value={trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
+              hero
+            />
+            <MetricCell
+              label="Today P/L"
+              value={todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
+              color={todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : undefined}
+            />
+            <MetricCell label="Trades" value={`${todayTradeCount}/${vaultState.trades_remaining_today + todayTradeCount}`} />
+            <MetricCell
+              label="Risk Left"
+              value={`$${vaultState.risk_remaining_today.toFixed(0)}`}
+              color={vaultState.risk_remaining_today <= 0 ? "text-red-400" : undefined}
+            />
+            {!isMobile && <MetricCell label="Streak" value={`${currentStreak}d`} />}
+            <div className="flex items-center px-3 md:px-4">
+              <Button
+                size="sm"
+                className="gap-1.5 h-9 px-4 text-xs font-semibold rounded-full whitespace-nowrap shadow-[0_0_12px_2px_hsl(217_91%_60%/0.12)]"
+                onClick={handleLogUnplanned}
+              >
+                <Plus className="h-3.5 w-3.5" /> Log Trade
               </Button>
             </div>
           </div>
@@ -381,10 +403,10 @@ const AcademyTrade = () => {
 
         {/* ── Balance skip reminder ── */}
         {balanceSkipped && startingBalance === null && (
-          <div className="vault-glass-card p-3 border-amber-500/20 bg-amber-500/5 flex items-center gap-3">
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-center gap-3">
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-            <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set</p>
-            <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
+            <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set — tracking is paused.</p>
+            <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-3 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
           </div>
         )}
 
@@ -394,13 +416,13 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ HERO OS CARD ══════ */}
-        <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+        <div className="rounded-2xl border border-primary/10 bg-card shadow-lg shadow-primary/[0.03] overflow-hidden">
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          <div className="p-4 md:p-6">
+          <div className="p-5 md:p-8">
             {/* ── PLAN TAB ── */}
             {activeStage === "plan" && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <TodayVaultCheckCard
                   activePlan={activePlan} todayTradeCount={todayTradeCount} todayStatus={todayStatus} noTradeDay={noTradeDay}
                   onCheckTrade={() => navigate("/academy/vault")} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
@@ -408,32 +430,39 @@ const AcademyTrade = () => {
                   onCompleteCheckIn={() => setShowCheckIn(true)}
                   onReviewFeedback={() => document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth", block: "center" })}
                 />
+                {/* Embedded Trade Planner */}
+                {!activePlan && todayStatus !== "complete" && (
+                  <div className="pt-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Pre-Trade Check</p>
+                    <VaultTradePlanner />
+                  </div>
+                )}
               </div>
             )}
 
             {/* ── LIVE TAB ── */}
             {activeStage === "live" && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <TodaysLimitsSection />
                 {activePlan && activePlan.status === "planned" && (
-                  <div className="rounded-xl bg-muted/20 border border-border/30 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-sm font-semibold text-foreground">{activePlan.ticker || "—"}</span>
-                        <span className="text-[10px] text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
+                  <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <Shield className="h-4 w-4 text-emerald-400" />
+                        <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
+                        <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
                       </div>
-                      <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={() => handleLogFromPlan(activePlan)}>
+                      <Button size="sm" className="h-8 text-xs gap-1.5 rounded-full" onClick={() => handleLogFromPlan(activePlan)}>
                         <CheckCircle2 className="h-3 w-3" /> Log Result
                       </Button>
                     </div>
                   </div>
                 )}
                 {!activePlan && (
-                  <div className="text-center py-6">
-                    <p className="text-sm text-muted-foreground mb-3">No active plan. Check a trade to get started.</p>
-                    <Button size="sm" className="gap-1.5" onClick={() => navigate("/academy/vault")}>
-                      <Shield className="h-3.5 w-3.5" /> Check a Trade
+                  <div className="text-center py-10">
+                    <p className="text-sm text-muted-foreground mb-4">No active plan. Check a trade to get started.</p>
+                    <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={() => setStage("plan")}>
+                      <Shield className="h-3.5 w-3.5" /> Go to Plan
                     </Button>
                   </div>
                 )}
@@ -442,36 +471,34 @@ const AcademyTrade = () => {
 
             {/* ── REVIEW TAB ── */}
             {activeStage === "review" && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {todayStatus === "incomplete" && todayTradeCount === 0 && (
-                  <div className="text-center py-6">
-                    <p className="text-sm text-muted-foreground mb-3">No trades logged today yet.</p>
-                    <Button size="sm" className="gap-1.5" onClick={handleLogUnplanned}>
+                  <div className="text-center py-10">
+                    <p className="text-sm text-muted-foreground mb-4">No trades logged today yet.</p>
+                    <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
                       <Plus className="h-3.5 w-3.5" /> Log a Trade
                     </Button>
                   </div>
                 )}
                 {(todayStatus === "in_progress" || (todayStatus === "incomplete" && todayTradeCount > 0)) && (
-                  <div className="space-y-3">
-                    <div className="vault-glass-card p-4 space-y-2">
-                      <h3 className="text-sm font-semibold text-foreground">Complete Your Session</h3>
-                      <p className="text-xs text-muted-foreground">{todayTradeCount} trade{todayTradeCount > 1 ? "s" : ""} logged. Complete your check-in to finish today's accountability.</p>
-                      <div className="flex gap-2">
-                        <Button size="sm" className="gap-1.5" onClick={() => setShowCheckIn(true)}>
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
-                        </Button>
-                        <Button size="sm" variant="outline" className="gap-1.5" onClick={handleLogUnplanned}>
-                          <Plus className="h-3.5 w-3.5" /> Log Another
-                        </Button>
-                      </div>
+                  <div className="rounded-xl border border-border/30 bg-muted/10 p-5 space-y-3">
+                    <h3 className="text-sm font-bold text-foreground">Complete Your Session</h3>
+                    <p className="text-xs text-muted-foreground">{todayTradeCount} trade{todayTradeCount > 1 ? "s" : ""} logged. Complete your check-in to close out today.</p>
+                    <div className="flex gap-2.5">
+                      <Button size="sm" className="gap-1.5 rounded-full" onClick={() => setShowCheckIn(true)}>
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1.5 rounded-full" onClick={handleLogUnplanned}>
+                        <Plus className="h-3.5 w-3.5" /> Log Another
+                      </Button>
                     </div>
                   </div>
                 )}
                 {todayStatus === "complete" && (
-                  <div className="vault-glass-card p-4 text-center space-y-2">
-                    <CheckCircle2 className="h-6 w-6 text-emerald-400 mx-auto" />
-                    <p className="text-sm font-semibold text-foreground">Session Complete</p>
-                    <p className="text-xs text-muted-foreground">Today's accountability is done. Check your insights below.</p>
+                  <div className="text-center py-10 space-y-2">
+                    <CheckCircle2 className="h-7 w-7 text-emerald-400 mx-auto" />
+                    <p className="text-sm font-bold text-foreground">Session Complete</p>
+                    <p className="text-xs text-muted-foreground">Today's accountability is done. Check your insights.</p>
                   </div>
                 )}
               </div>
@@ -479,7 +506,7 @@ const AcademyTrade = () => {
 
             {/* ── INSIGHTS TAB ── */}
             {activeStage === "insights" && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <AIFocusCard entries={entries} />
               </div>
             )}
@@ -487,8 +514,8 @@ const AcademyTrade = () => {
         </div>
 
         {/* ══════ LOWER ANALYTICS ══════ */}
-        <div className="space-y-4 pt-2">
-          <SectionLabel>Analytics & History</SectionLabel>
+        <div className="space-y-3 pt-3">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/50 px-1">Analytics & History</p>
 
           {hasData && equityCurve.length > 1 && startingBalance !== null && (
             <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
@@ -520,7 +547,7 @@ const AcademyTrade = () => {
         </div>
       </div>
 
-      {/* ── Modals (shared by both layouts) ── */}
+      {/* ── Modals ── */}
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
@@ -529,12 +556,19 @@ const AcademyTrade = () => {
   );
 };
 
-/* ── Metric Cell for compact strip ── */
-function MetricCell({ label, value, accent, color }: { label: string; value: string; accent?: boolean; color?: string }) {
+/* ── Metric Cell ── */
+function MetricCell({ label, value, hero, color }: { label: string; value: string; hero?: boolean; color?: string }) {
   return (
-    <div className="flex-1 px-3 py-2.5 border-r border-border/30 last:border-r-0">
-      <p className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/60 leading-none">{label}</p>
-      <p className={cn("text-sm md:text-base font-bold tabular-nums leading-tight mt-0.5", color || (accent ? "text-primary" : "text-foreground"))}>
+    <div className={cn(
+      "flex-1 min-w-0 border-r border-border/15 last:border-r-0",
+      hero ? "px-4 md:px-5 py-3 md:py-4" : "px-3 md:px-4 py-3 md:py-4"
+    )}>
+      <p className="text-[9px] uppercase tracking-[0.12em] font-medium text-muted-foreground/50 leading-none mb-1">{label}</p>
+      <p className={cn(
+        "font-bold tabular-nums leading-none truncate",
+        hero ? "text-lg md:text-xl text-primary" : "text-sm md:text-base",
+        color || (!hero && "text-foreground")
+      )}>
         {value}
       </p>
     </div>
