@@ -115,7 +115,10 @@ const AcademyTrade = () => {
   const [executionStart, setExecutionStart] = useState<number | null>(null);
   const [sessionPhase, setSessionPhase] = useState<SessionPhaseLabel>(null);
   const [cutoffOverride, setCutoffOverride] = useState(false);
+  const [dismissedBanner, setDismissedBanner] = useState(false);
 
+  // Reset banner dismissal when phase changes
+  useEffect(() => { setDismissedBanner(false); }, [sessionPhase]);
   useEffect(() => {
     if (!user) { setBalanceLoading(false); return; }
     (async () => {
