@@ -1,5 +1,10 @@
 import React from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
+import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
+
+interface TodaysLimitsSectionProps {
+  balanceOverride?: number;
+}
 
 function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"]): string {
   if (vault.last_block_reason) return vault.last_block_reason;
@@ -9,7 +14,7 @@ function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"])
   return "No restrictions today";
 }
 
-export function TodaysLimitsSection() {
+export function TodaysLimitsSection({ balanceOverride }: TodaysLimitsSectionProps) {
   const { state: vaultState, loading } = useVaultState();
 
   if (loading) {
@@ -21,6 +26,11 @@ export function TodaysLimitsSection() {
     );
   }
 
+  const bal = balanceOverride ?? vaultState.account_balance;
+  const tier = detectTier(bal);
+  const defaults = TIER_DEFAULTS[tier];
+  const riskBudget = bal * (defaults.riskPercent / 100);
+
   const lastRestriction = deriveLastRestriction(vaultState);
   const hasRestriction = lastRestriction !== "No restrictions today";
 
@@ -28,14 +38,14 @@ export function TodaysLimitsSection() {
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
         <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-          <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Risk Left</p>
+          <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Risk Budget</p>
           <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
-            ${vaultState.risk_remaining_today.toFixed(0)}
+            ${riskBudget.toFixed(0)}
           </p>
         </div>
 
         <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
-          <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Trades Left</p>
+          <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Trades / Session</p>
           <p className="text-lg font-mono font-semibold text-foreground tabular-nums">
             {vaultState.trades_remaining_today} / {vaultState.max_trades_per_day}
           </p>
@@ -58,7 +68,7 @@ export function TodaysLimitsSection() {
       </div>
 
       <p className="text-[10px] text-muted-foreground/40 text-center pt-1">
-        Limits are set by Vault State.
+        Based on your balance and tier.
       </p>
     </div>
   );

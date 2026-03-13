@@ -742,7 +742,7 @@ const AcademyTrade = () => {
                     </div>
                   )}
 
-                  <TodaysLimitsSection />
+                  <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
 
                   {todayTradeCount > 0 && todayStatus !== "complete" && (
                     <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("review")}>
