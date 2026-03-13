@@ -961,9 +961,15 @@ const AcademyTrade = () => {
             <div className="hidden md:block flex-[0.7] min-w-0 p-2 border-l border-white/[0.04]">
               <OSControlRail
                 activePlan={activePlan}
-                vaultState={vaultState}
+                trackedBalance={trackedBalance}
+                vaultAccountBalance={vaultState.account_balance}
                 todayTradeCount={todayTradeCount}
-                activeStage={activeStage}
+                maxTradesPerDay={vaultState.max_trades_per_day}
+                vaultStatus={vaultState.vault_status}
+                lastBlockReason={vaultState.last_block_reason}
+                dayState={dayState}
+                dayStateStatus={dayStateStatus}
+                dayStateCta={dayStateCta}
                 onQuickAction={handleQuickAction}
                 onLogFromPlan={handleLogFromPlan}
               />
