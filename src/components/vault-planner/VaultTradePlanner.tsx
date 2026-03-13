@@ -637,19 +637,27 @@ function HeroDecisionCard({
           <HeroLine label="Max loss" value={formatCurrency(choice.totalRisk)} valueCls="text-red-400" />
         </div>
 
-        {/* Targets */}
-        <div className="pt-1.5 border-t border-white/[0.04] space-y-1">
-          <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-wider">Targets</p>
-          {hasExit && choice.riskPerContract > 0 ? (
-            <div className="grid grid-cols-3 gap-1">
-              <TargetChip label="1:1" value={formatCurrency(choice.tp1)} />
-              <TargetChip label="1:2" value={formatCurrency(choice.tp2)} />
-              <TargetChip label="1:3" value={formatCurrency(choice.tp3)} />
-            </div>
-          ) : (
-            <p className="text-[10px] text-muted-foreground/40 italic">Add an exit to calculate targets</p>
-          )}
-        </div>
+        {/* R:R Visualizer */}
+        {hasExit && choice.riskPerContract > 0 ? (
+          <div className="pt-1.5 border-t border-white/[0.04]">
+            <RiskRewardVisualizer
+              riskPerContract={choice.riskPerContract}
+              contractPrice={entryPrice}
+              contracts={choice.contracts}
+              tp1={choice.tp1}
+              tp2={choice.tp2}
+              tp3={choice.tp3}
+              exitPrice={choice.exitPrice}
+              ticker={ticker}
+              direction={direction}
+              fullPremiumRiskOk={choice.fullPremiumRiskOk}
+            />
+          </div>
+        ) : (
+          <div className="pt-1.5 border-t border-white/[0.04]">
+            <p className="text-[10px] text-muted-foreground/40 italic">Add an exit to calculate targets & R:R</p>
+          </div>
+        )}
 
         {/* Coaching note */}
         <div className="flex items-start gap-1.5 rounded-lg p-2" style={{ background: 'rgba(59,130,246,0.03)', border: '1px solid rgba(59,130,246,0.06)' }}>
