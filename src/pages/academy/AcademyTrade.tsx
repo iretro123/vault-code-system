@@ -754,9 +754,9 @@ const AcademyTrade = () => {
 
                   <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
 
-                  {todayTradeCount > 0 && todayStatus !== "complete" && (
+                   {todayTradeCount > 0 && todayStatus !== "complete" && (
                     <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("review")}>
-                      <ClipboardCheck className="h-3 w-3" /> Complete your Review
+                      <ClipboardCheck className="h-3 w-3" /> Complete Review
                     </Button>
                   )}
 
