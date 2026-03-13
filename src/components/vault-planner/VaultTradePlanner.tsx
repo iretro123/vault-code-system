@@ -74,16 +74,32 @@ const CARD_SUBLABELS: Record<number, string> = {
   4: "Max size",
 };
 
-export function VaultTradePlanner() {
+interface VaultTradePlannerProps {
+  /** When provided, skip internal balance fetch and use this value */
+  balanceOverride?: number | null;
+  /** When provided from parent, skip internal useApprovedPlans */
+  activePlanOverride?: any;
+  savePlanOverride?: any;
+  replaceWithNewOverride?: any;
+  onPlanSaved?: () => void;
+}
+
+export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved }: VaultTradePlannerProps = {}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasAccess, status: accessStatus, loading: accessLoading } = useStudentAccess();
-  const { activePlan, savePlan, replaceWithNew } = useApprovedPlans();
-  const { totalPnl, refetch: refetchTrades } = useTradeLog();
+  const internalPlans = useApprovedPlans();
+  const internalTradeLog = useTradeLog();
   const { state: vaultState } = useVaultState();
 
-  // Leak 1 fix: refetch trade data on mount to prevent stale balance
-  useEffect(() => { refetchTrades(); }, []);
+  // Use parent-provided data when available, otherwise fall back to internal hooks
+  const activePlan = activePlanOverride !== undefined ? activePlanOverride : internalPlans.activePlan;
+  const savePlan = savePlanOverride || internalPlans.savePlan;
+  const replaceWithNew = replaceWithNewOverride || internalPlans.replaceWithNew;
+  const totalPnl = internalTradeLog.totalPnl;
+
+  // Leak 1 fix: refetch trade data on mount to prevent stale balance (only when no override)
+  useEffect(() => { if (balanceOverride === undefined) internalTradeLog.refetch(); }, []);
 
   const [direction, setDirection] = useState<"calls" | "puts">("calls");
   const [contractPrice, setContractPrice] = useState("");
@@ -92,7 +108,7 @@ export function VaultTradePlanner() {
   const [showReplaceDialog, setShowReplaceDialog] = useState(false);
   const [saving, setSaving] = useState(false);
   const [startingBalance, setStartingBalance] = useState(0);
-  const [balanceLoaded, setBalanceLoaded] = useState(false);
+  const [balanceLoaded, setBalanceLoaded] = useState(balanceOverride !== undefined);
 
   const [customOpen, setCustomOpen] = useState(false);
   const [customContracts, setCustomContracts] = useState(5);
@@ -100,7 +116,9 @@ export function VaultTradePlanner() {
   const [customExitOverride, setCustomExitOverride] = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
+  // Only fetch balance internally when no override provided
   useEffect(() => {
+    if (balanceOverride !== undefined) { setBalanceLoaded(true); return; }
     if (!user) { setBalanceLoaded(true); return; }
     (async () => {
       try {
@@ -109,12 +127,14 @@ export function VaultTradePlanner() {
       } catch {}
       finally { setBalanceLoaded(true); }
     })();
-  }, [user]);
+  }, [user, balanceOverride]);
 
   const accountBalance = useMemo(() => {
+    // Use override when available
+    if (balanceOverride !== undefined && balanceOverride !== null) return balanceOverride;
     if (startingBalance <= 0) return 0;
     return startingBalance + totalPnl;
-  }, [startingBalance, totalPnl]);
+  }, [balanceOverride, startingBalance, totalPnl]);
 
   const tier = detectTier(accountBalance);
   const tierDefaults = TIER_DEFAULTS[tier];

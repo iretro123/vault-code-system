@@ -75,11 +75,28 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
     setLoading(true); setError(null);
     if (force) setRefreshing(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      let token = accessToken;
+      if (!token) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          // Retry once after a brief wait (auth race condition fix)
+          await new Promise(r => setTimeout(r, 1000));
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          if (!retrySession) {
+            // Last resort: try refreshing the session
+            const { data: refreshData } = await supabase.auth.refreshSession();
+            if (!refreshData.session) throw new Error("Not authenticated");
+            token = refreshData.session.access_token;
+          } else {
+            token = retrySession.access_token;
+          }
+        } else {
+          token = session.access_token;
+        }
+      }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trade-focus`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({}),
       });
       if (!resp.ok) { const body = await resp.json().catch(() => ({})); throw new Error(body.error || "Analysis failed"); }
