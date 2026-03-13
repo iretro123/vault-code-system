@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle2, Brain, ChevronRight, ClipboardCheck, Calendar, Radio } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -35,6 +35,7 @@ import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
+import { OSControlRail } from "@/components/trade-os/OSControlRail";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
@@ -391,336 +392,367 @@ const AcademyTrade = () => {
   // Whether to show metrics strip: balance set OR trades exist (FIX E)
   const showMetrics = startingBalance !== null || hasData;
 
+  // Quick action handler for the rail
+  const handleQuickAction = useCallback(() => {
+    if (activeStage === "plan") handleScrollToPlanner();
+    else if (activeStage === "live") {
+      if (activePlan) handleLogFromPlan(activePlan);
+      else handleLogUnplanned();
+    }
+    else if (activeStage === "review") setShowCheckIn(true);
+    else if (activeStage === "insights") {
+      // Trigger AI refresh by switching away and back
+      document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [activeStage, activePlan, handleLogFromPlan, handleLogUnplanned, handleScrollToPlanner]);
+
   return (
     <>
-      {/* ══════ LAYER 1 — TOP STATUS ══════ */}
-      <div className="px-4 md:px-8 pt-6 md:pt-8 pb-2 max-w-5xl">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-tight">
+      {/* ══════ LAYER 1 — GREETING + STATUS ══════ */}
+      <div className="px-4 md:px-8 pt-6 md:pt-8 pb-1 max-w-6xl">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-tight">
           {greeting}{displayName ? `, ${displayName}` : ""}
         </h1>
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-1">
           {todayStatus === "complete" ? (
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
           ) : (
             <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
           )}
-          <span className="text-sm text-muted-foreground">{statusLine}</span>
+          <span className="text-xs text-muted-foreground">{statusLine}</span>
         </div>
       </div>
 
-      <div className="px-4 md:px-8 pb-10 space-y-5 md:space-y-6 max-w-5xl">
+      <div className="px-4 md:px-8 pb-10 space-y-4 md:space-y-5 max-w-6xl">
 
-        {/* ── METRICS STRIP (FIX E: show when balance set OR trades exist) ── */}
+        {/* ══════ LAYER 1.5 — METRICS STRIP ══════ */}
         {showMetrics && (
-          <div className="flex items-stretch rounded-2xl border border-border/30 bg-card overflow-hidden shadow-sm">
-            <div className="flex-1 min-w-0 px-4 md:px-6 py-4 md:py-5 border-r border-border/20">
-              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Balance</p>
-              <p className="text-xl md:text-2xl font-bold tabular-nums leading-none text-primary truncate">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-px rounded-2xl border border-border/20 bg-border/10 overflow-hidden shadow-sm">
+            {/* Balance */}
+            <div className="bg-card px-4 py-3.5 md:py-4">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Balance</p>
+              <p className="text-lg md:text-xl font-bold tabular-nums text-primary leading-none truncate">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </p>
             </div>
-            <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
-              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Today P/L</p>
-              <p className={cn("text-base md:text-lg font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+            {/* Today P/L */}
+            <div className="bg-card px-4 py-3.5 md:py-4">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Today P/L</p>
+              <p className={cn("text-lg md:text-xl font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
                 {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `-$${Math.abs(todayPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
               </p>
             </div>
-            <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
-              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Trades</p>
-              <p className="text-base md:text-lg font-bold tabular-nums leading-none text-foreground">
-                {todayTradeCount}<span className="text-muted-foreground/40 font-normal"> / {totalMaxTrades}</span>
+            {/* Trades */}
+            <div className="bg-card px-4 py-3.5 md:py-4">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Trades</p>
+              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-foreground">
+                {todayTradeCount}<span className="text-muted-foreground/30 font-normal text-sm"> / {totalMaxTrades}</span>
               </p>
             </div>
-            <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
-              <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Risk Left</p>
-              <p className={cn("text-base md:text-lg font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+            {/* Risk Left */}
+            <div className="bg-card px-4 py-3.5 md:py-4">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Risk Left</p>
+              <p className={cn("text-lg md:text-xl font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
                 ${vaultState.risk_remaining_today.toFixed(0)}
               </p>
             </div>
-            {!isMobile && (
-              <div className="flex-1 min-w-0 px-4 md:px-5 py-4 md:py-5 border-r border-border/20">
-                <p className="text-[10px] uppercase tracking-[0.12em] font-medium text-muted-foreground/60 leading-none mb-1.5">Streak</p>
-                <p className="text-base md:text-lg font-bold tabular-nums leading-none text-foreground">{currentStreak}</p>
-              </div>
-            )}
-            <div className="flex items-center px-4 md:px-6 shrink-0">
-              <Button
-                size="sm"
-                className="gap-1.5 h-10 md:h-11 px-5 md:px-6 text-sm font-semibold rounded-full whitespace-nowrap"
-                onClick={handleLogUnplanned}
-              >
-                <Plus className="h-4 w-4" /> Log Trade
+            {/* Streak */}
+            <div className="bg-card px-4 py-3.5 md:py-4 hidden md:block">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Streak</p>
+              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-foreground">{currentStreak}</p>
+            </div>
+            {/* + Log Trade CTA */}
+            <div className="bg-card flex items-center justify-center px-3 py-3.5 md:py-4">
+              <Button size="sm" className="gap-1.5 h-9 md:h-10 px-4 md:px-5 text-xs md:text-sm font-bold rounded-full whitespace-nowrap w-full" onClick={handleLogUnplanned}>
+                <Plus className="h-3.5 w-3.5" /> Log Trade
               </Button>
             </div>
           </div>
         )}
 
-        {/* ── Balance skip reminder ── */}
+        {/* Balance skip reminder */}
         {balanceSkipped && startingBalance === null && (
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-center gap-3">
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-            <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set — tracking is paused.</p>
+            <p className="text-xs text-foreground font-medium flex-1 min-w-0">Starting balance not set — tracking paused.</p>
             <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-3 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
           </div>
         )}
 
-        {/* ── Getting Started ── */}
+        {/* Getting Started (only when truly empty) */}
         {!hasData && !showMetrics && (
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
-        {/* ══════ LAYER 2 — HERO OS CARD ══════ */}
-        <div className="rounded-2xl border border-border/25 bg-card overflow-hidden shadow-lg shadow-black/20">
+        {/* ══════ LAYER 2 — HERO OS CARD (two-column) ══════ */}
+        <div className="rounded-2xl border border-border/20 bg-card overflow-hidden shadow-lg shadow-black/15">
+          {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          <div className="p-5 md:p-8">
-            {/* ── PLAN (FIX B: scroll to planner, not navigate away) ── */}
-            {activeStage === "plan" && (
-              <div className="space-y-5">
-                <TodayVaultCheckCard
-                  activePlan={activePlan} todayTradeCount={todayTradeCount} todayStatus={todayStatus} noTradeDay={noTradeDay}
-                  onCheckTrade={handleScrollToPlanner} onLogFromPlan={handleLogFromPlan} onLogUnplanned={handleLogUnplanned}
-                  onCancelPlan={handleCancelPlan} onNoTradeDay={() => setShowNoTradeDay(true)}
-                  onCompleteCheckIn={() => setShowCheckIn(true)}
-                  onReviewFeedback={() => setStage("insights")}
-                />
-                {/* Embedded VAULT Approval */}
-                {!activePlan && todayStatus !== "complete" && (
-                  <div ref={plannerRef} className="pt-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Shield className="h-3.5 w-3.5 text-primary" />
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pre-Trade Check</p>
-                    </div>
-                    <VaultTradePlanner />
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Two-column body */}
+          <div className="flex flex-col md:flex-row">
+            {/* ── LEFT MAIN ZONE ── */}
+            <div className="flex-[2.2] min-w-0 p-5 md:p-7 md:border-r border-border/10">
 
-            {/* ── LIVE (FIX C: add today's trade summary) ── */}
-            {activeStage === "live" && (
-              <div className="space-y-5">
-                {/* Today's session summary */}
-                {todayTradeCount > 0 && (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 rounded-xl bg-muted/10 border border-border/20">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1">Trades Today</p>
-                      <p className="text-lg font-bold tabular-nums text-foreground">{todayTradeCount}</p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-muted/10 border border-border/20">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1">Today P/L</p>
-                      <p className={cn("text-lg font-bold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                        {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-muted/10 border border-border/20">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1">Compliance</p>
-                      <p className={cn("text-lg font-bold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
-                    </div>
-                  </div>
-                )}
-
-                <TodaysLimitsSection />
-
-                {activePlan && activePlan.status === "planned" && (
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                        <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                        <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · Entry ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
+              {/* PLAN STAGE */}
+              {activeStage === "plan" && (
+                <div className="space-y-5">
+                  {activePlan && activePlan.status === "planned" && (
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                          <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
+                          <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <Button size="sm" className="h-8 text-xs gap-1.5 rounded-lg px-4" onClick={() => handleLogFromPlan(activePlan)}>
+                            <CheckCircle2 className="h-3 w-3" /> Log Result
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
+                        </div>
                       </div>
-                      <Button size="sm" className="h-9 text-xs gap-1.5 rounded-full shrink-0 px-4" onClick={() => handleLogFromPlan(activePlan)}>
+                    </div>
+                  )}
+                  {/* Embedded VaultTradePlanner */}
+                  {!activePlan && todayStatus !== "complete" && (
+                    <div ref={plannerRef}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Shield className="h-3.5 w-3.5 text-primary" />
+                        <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em]">Pre-Trade Approval</p>
+                      </div>
+                      <VaultTradePlanner />
+                    </div>
+                  )}
+                  {todayStatus === "complete" && (
+                    <div className="flex items-center gap-2 px-3 py-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <p className="text-xs text-emerald-400/80 font-medium flex-1">Session complete for today.</p>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* LIVE STAGE */}
+              {activeStage === "live" && (
+                <div className="space-y-5">
+                  {/* Active Plan (prominent) */}
+                  {activePlan && activePlan.status === "planned" && (
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 space-y-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span className="text-lg font-bold text-foreground">{activePlan.ticker || "—"}</span>
+                        <span className="text-sm text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · Entry ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
+                      </div>
+                      <Button size="sm" className="h-9 text-xs gap-1.5 rounded-lg px-5" onClick={() => handleLogFromPlan(activePlan)}>
                         <CheckCircle2 className="h-3.5 w-3.5" /> Log Result
                       </Button>
                     </div>
-                  </div>
-                )}
-                {/* No active plan state — show useful context instead of dead space */}
-                {!activePlan && (
-                  <div className="rounded-xl border border-border/20 bg-muted/5 p-5 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-muted/20 flex items-center justify-center shrink-0">
-                        <Shield className="h-5 w-5 text-muted-foreground/40" />
+                  )}
+
+                  {/* Today's session metrics */}
+                  {todayTradeCount > 0 && (
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 rounded-xl bg-muted/[0.06] border border-border/15">
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Trades Today</p>
+                        <p className="text-xl font-bold tabular-nums text-foreground">{todayTradeCount}</p>
                       </div>
-                      <div>
+                      <div className="p-3 rounded-xl bg-muted/[0.06] border border-border/15">
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Today P/L</p>
+                        <p className={cn("text-xl font-bold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                          {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-muted/[0.06] border border-border/15">
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Compliance</p>
+                        <p className={cn("text-xl font-bold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Limits inline */}
+                  <TodaysLimitsSection />
+
+                  {/* No plan state */}
+                  {!activePlan && (
+                    <div className="rounded-xl border border-border/15 bg-muted/[0.03] p-4 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-muted/10 flex items-center justify-center shrink-0">
+                        <Shield className="h-5 w-5 text-muted-foreground/30" />
+                      </div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground">No Active Plan</p>
-                        <p className="text-[11px] text-muted-foreground/60">Go to the Plan tab to check a trade before entering.</p>
+                        <p className="text-[10px] text-muted-foreground/50">Check a trade in the Plan tab before entering.</p>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="gap-1.5 rounded-full px-5 h-9" onClick={() => setStage("plan")}>
-                        <Calendar className="h-3.5 w-3.5" /> Go to Plan
-                      </Button>
-                      {todayTradeCount === 0 && (
-                        <Button size="sm" variant="outline" className="gap-1.5 rounded-full px-4 h-9 text-xs" onClick={handleLogUnplanned}>
-                          <Plus className="h-3.5 w-3.5" /> Log Unplanned
+                      <div className="flex gap-2 shrink-0">
+                        <Button size="sm" className="gap-1.5 rounded-lg px-4 h-8 text-xs" onClick={() => setStage("plan")}>
+                          <Calendar className="h-3 w-3" /> Plan
                         </Button>
+                        <Button size="sm" variant="outline" className="gap-1 rounded-lg px-3 h-8 text-xs" onClick={handleLogUnplanned}>
+                          <Plus className="h-3 w-3" /> Log
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* REVIEW STAGE */}
+              {activeStage === "review" && (
+                <div className="space-y-5">
+                  {entries.length === 0 ? (
+                    <div className="text-center py-12 space-y-3">
+                      <ClipboardCheck className="h-7 w-7 text-muted-foreground/15 mx-auto" />
+                      <p className="text-sm text-muted-foreground/50">No trades logged yet. Log your first trade to begin your review.</p>
+                      <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
+                        <Plus className="h-3.5 w-3.5" /> Log a Trade
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Action cards */}
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button onClick={handleLogUnplanned} className="flex items-center gap-3 p-3.5 rounded-xl border border-border/20 bg-muted/[0.03] hover:bg-muted/10 transition-colors text-left">
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <Plus className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground">Log a Trade</p>
+                            <p className="text-[10px] text-muted-foreground/50">Result, screenshots, notes</p>
+                          </div>
+                        </button>
+                        <button onClick={() => setShowCheckIn(true)} className="flex items-center gap-3 p-3.5 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] hover:bg-emerald-500/[0.06] transition-colors text-left">
+                          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground">Complete Check-In</p>
+                            <p className="text-[10px] text-muted-foreground/50">Mistakes, lessons, close session</p>
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* Recent trades */}
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.15em] font-bold text-muted-foreground/30 mb-2.5">
+                          {todayTradeCount > 0 ? `Today's Trades (${todayTradeCount})` : "Recent Trades"}
+                        </p>
+                        <div className="space-y-1">
+                          {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
+                            const pnl = e.risk_reward * e.risk_used;
+                            const isWin = e.risk_reward > 0;
+                            const isLoss = e.risk_reward < 0;
+                            return (
+                              <div key={e.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/[0.03] border border-border/10">
+                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/20")} />
+                                <span className="text-sm font-bold text-foreground min-w-[45px]">{e.symbol || "—"}</span>
+                                <span className="text-[11px] text-muted-foreground/40 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "· ✓" : "· ✗"}</span>
+                                <span className={cn("text-sm font-bold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/40")}>
+                                  {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {todayStatus === "complete" && (
+                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                          <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
+                        </div>
                       )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                    </>
+                  )}
+                </div>
+              )}
 
-            {/* ── REVIEW (FIX A: show recent trades when they exist) ── */}
-            {activeStage === "review" && (
-              <div className="space-y-5">
-                {/* Truly empty: no trades ever */}
-                {entries.length === 0 && (
-                  <div className="text-center py-14 space-y-3">
-                    <ClipboardCheck className="h-8 w-8 text-muted-foreground/20 mx-auto" />
-                    <p className="text-sm text-muted-foreground/70">No trades logged yet. Log your first trade to begin your review.</p>
-                    <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
-                      <Plus className="h-3.5 w-3.5" /> Log a Trade
-                    </Button>
-                  </div>
-                )}
+              {/* INSIGHTS STAGE */}
+              {activeStage === "insights" && (
+                <div>
+                  <AIFocusCard entries={entries} />
+                </div>
+              )}
+            </div>
 
-                {/* Has trades: show review context + actions */}
-                {entries.length > 0 && (
-                  <>
-                    {/* Action cards: always visible */}
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <button
-                        onClick={handleLogUnplanned}
-                        className="flex items-center gap-3 p-4 rounded-xl border border-border/30 bg-muted/5 hover:bg-muted/15 transition-colors text-left"
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Plus className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-foreground">Log a Trade</p>
-                          <p className="text-[11px] text-muted-foreground">Record result, screenshots, and notes</p>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setShowCheckIn(true)}
-                        className="flex items-center gap-3 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08] transition-colors text-left"
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-foreground">Complete Check-In</p>
-                          <p className="text-[11px] text-muted-foreground">Record mistakes, lessons, close session</p>
-                        </div>
-                      </button>
-                    </div>
-
-                    {/* Recent trades inline */}
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/50 mb-3">
-                        {todayTradeCount > 0 ? `Today's Trades (${todayTradeCount})` : "Recent Trades"}
-                      </p>
-                      <div className="space-y-1.5">
-                        {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
-                          const pnl = e.risk_reward * e.risk_used;
-                          const isWin = e.risk_reward > 0;
-                          const isLoss = e.risk_reward < 0;
-                          return (
-                            <div key={e.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-muted/5 border border-border/15">
-                              <span className={cn(
-                                "w-2 h-2 rounded-full shrink-0",
-                                isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/30"
-                              )} />
-                              <span className="text-sm font-semibold text-foreground min-w-[50px]">{e.symbol || "—"}</span>
-                              <span className="text-xs text-muted-foreground flex-1 truncate">
-                                {e.outcome || "—"} {e.followed_rules ? "· Rules ✓" : "· Rules ✗"}
-                              </span>
-                              <span className={cn(
-                                "text-sm font-bold tabular-nums",
-                                isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground"
-                              )}>
-                                {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Status nudge */}
-                    {todayStatus === "complete" && (
-                      <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                        <p className="text-xs text-emerald-400/80 font-medium">Session complete. Check Insights for AI feedback.</p>
-                        <Button size="sm" variant="ghost" className="ml-auto h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* ── INSIGHTS ── */}
-            {activeStage === "insights" && (
-              <div className="space-y-5">
-                <AIFocusCard entries={entries} />
-              </div>
-            )}
+            {/* ── RIGHT CONTROL RAIL (desktop only inline, mobile below) ── */}
+            <div className="flex-[0.9] min-w-0 p-4 md:p-5 border-t md:border-t-0 border-border/10 bg-muted/[0.02]">
+              <OSControlRail
+                activePlan={activePlan}
+                vaultState={vaultState}
+                todayTradeCount={todayTradeCount}
+                activeStage={activeStage}
+                onQuickAction={handleQuickAction}
+                onLogFromPlan={handleLogFromPlan}
+              />
+            </div>
           </div>
 
-          {/* ── COMPACT AI PREVIEW STRIP (always visible at bottom of hero card) ── */}
-          {cachedAI && activeStage !== "insights" && (
+          {/* ── INTELLIGENCE STRIP (bottom of hero card) ── */}
+          {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-border/20 px-5 md:px-8 py-3.5 flex items-center gap-3 hover:bg-muted/5 transition-colors"
+              className="w-full border-t border-border/10 bg-muted/[0.02] hover:bg-muted/[0.05] transition-colors"
             >
-              <Brain className="h-4 w-4 text-primary shrink-0" />
-              <p className="text-xs text-muted-foreground truncate flex-1 text-left">
-                {cachedAI.primaryLeak ? `Leak: ${cachedAI.primaryLeak}` : "AI analysis available"}
-                {cachedAI.nextAction ? ` · Next: ${cachedAI.nextAction}` : ""}
-              </p>
-              {cachedAI.riskGrade && (
-                <span className={cn(
-                  "text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0",
-                  cachedAI.riskGrade === "A" ? "text-emerald-400 border-emerald-500/25 bg-emerald-500/10" :
-                  cachedAI.riskGrade === "B" ? "text-primary border-primary/25 bg-primary/10" :
-                  cachedAI.riskGrade === "C" ? "text-amber-400 border-amber-500/25 bg-amber-500/10" :
-                  "text-red-400 border-red-500/25 bg-red-500/10"
-                )}>
-                  Grade {cachedAI.riskGrade}
-                </span>
-              )}
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px">
+                <div className="px-4 py-3">
+                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">AI Verdict</p>
+                  <p className={cn("text-sm font-bold",
+                    cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                    cachedAI.riskGrade === "B" ? "text-primary" :
+                    cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                  )}>
+                    Grade {cachedAI.riskGrade || "—"}
+                  </p>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Primary Leak</p>
+                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.primaryLeak || "—"}</p>
+                </div>
+                <div className="px-4 py-3 hidden md:block">
+                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Strongest Edge</p>
+                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.strongestEdge || "—"}</p>
+                </div>
+                <div className="px-4 py-3 hidden md:block">
+                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Next Action</p>
+                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.nextAction || "—"}</p>
+                </div>
+              </div>
             </button>
           )}
         </div>
 
-        {/* ══════ LAYER 3 — LOWER ANALYTICS ══════ */}
+        {/* ══════ LAYER 3 — LOWER ANALYTICS (quieter) ══════ */}
         {hasData && (
-        <div className="space-y-4 pt-4 border-t border-border/10">
-          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/30 px-1">Performance & History</p>
-
-          {hasData && equityCurve.length > 1 && startingBalance !== null && (
-            <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
-          )}
-
-          <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} />
-
-          {hasData && symbolStats.length > 0 && (
-            <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
-          )}
-
-          {trackedBalance !== null && (
-            <TrackedBalanceCard
-              balance={trackedBalance}
-              showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-              onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-              onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-              showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
-              onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-              onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
-            />
-          )}
-
-          <WeeklyReviewCard hasData={hasData} />
-        </div>
+          <div className="space-y-4 pt-2">
+            <p className="text-[9px] uppercase tracking-[0.18em] font-bold text-muted-foreground/25 px-1">Performance & History</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {equityCurve.length > 1 && startingBalance !== null && (
+                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+              )}
+              {symbolStats.length > 0 && (
+                <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
+              )}
+            </div>
+            <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} />
+            {trackedBalance !== null && (
+              <TrackedBalanceCard
+                balance={trackedBalance}
+                showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
+                onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
+                onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
+                showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
+                onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
+                onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+              />
+            )}
+            <WeeklyReviewCard hasData={hasData} />
+          </div>
         )}
       </div>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} />
