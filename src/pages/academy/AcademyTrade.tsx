@@ -442,14 +442,14 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ HERO OS CARD ══════ */}
-        <div className="rounded-lg border border-white/[0.08] bg-card overflow-hidden shadow-[0_6px_24px_rgba(0,0,0,0.25)]">
+        <div className="rounded-lg bg-card overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
           {/* Two-column body */}
           <div className="flex flex-col md:flex-row">
             {/* ── LEFT MAIN ZONE ── */}
-            <div className="flex-[2.5] min-w-0 p-2.5 md:p-3 md:border-r border-white/[0.08]">
+            <div className="flex-[3] min-w-0 px-2.5 pb-2.5">
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
