@@ -42,6 +42,24 @@ import { Progress } from "@/components/ui/progress";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
+const STAGE_HEADLINES: Record<string, { title: string; subtitle: string }> = {
+  plan: { title: "Pre-Market Plan", subtitle: "Build your trade. Size it. Get approved." },
+  live: { title: "Live Session", subtitle: "Follow your plan. Track your limits." },
+  review: { title: "Session Review", subtitle: "Log results. Record what happened." },
+  insights: { title: "Performance Intelligence", subtitle: "AI-scanned behavior across your trades." },
+};
+
+function StageHeadline({ stage }: { stage: string }) {
+  const h = STAGE_HEADLINES[stage];
+  if (!h) return null;
+  return (
+    <div className="px-0.5 pt-2 pb-1">
+      <h2 className="text-base font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
+      <p className="text-[11px] text-muted-foreground/60 font-medium mt-0.5">{h.subtitle}</p>
+    </div>
+  );
+}
+
 const AcademyTrade = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
