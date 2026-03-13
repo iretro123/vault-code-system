@@ -408,62 +408,62 @@ const AcademyTrade = () => {
   return (
     <>
       {/* ══════ LAYER 1 — GREETING + STATUS ══════ */}
-      <div className="px-4 md:px-8 pt-6 md:pt-8 pb-1 max-w-6xl">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground leading-tight">
+      <div className="px-4 md:px-8 pt-5 md:pt-6 pb-0.5 max-w-6xl">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
           {greeting}{displayName ? `, ${displayName}` : ""}
         </h1>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-0.5">
           {todayStatus === "complete" ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
           ) : (
-            <span className={cn("w-2 h-2 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
+            <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", vaultStatusColor, activePlan && "animate-pulse")} />
           )}
-          <span className="text-xs text-muted-foreground">{statusLine}</span>
+          <span className="text-xs text-muted-foreground/70">{statusLine}</span>
         </div>
       </div>
 
-      <div className="px-4 md:px-8 pb-10 space-y-4 md:space-y-5 max-w-6xl">
+      <div className="px-4 md:px-8 pb-10 space-y-3 md:space-y-4 max-w-6xl">
 
-        {/* ══════ LAYER 1.5 — METRICS STRIP ══════ */}
+        {/* ══════ LAYER 1.5 — METRICS STATUS BAR ══════ */}
         {showMetrics && (
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-px rounded-2xl border border-border/20 bg-border/10 overflow-hidden shadow-sm">
+          <div className="flex items-center rounded-xl border border-border/10 bg-card divide-x divide-border/10 overflow-hidden">
             {/* Balance */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Balance</p>
-              <p className="text-lg md:text-xl font-bold tabular-nums text-primary leading-none truncate">
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Balance</p>
+              <p className="text-base font-semibold tabular-nums text-primary leading-none truncate">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </p>
             </div>
             {/* Today P/L */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Today P/L</p>
-              <p className={cn("text-lg md:text-xl font-bold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : `-$${Math.abs(todayPnl).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Today P/L</p>
+              <p className={cn("text-base font-semibold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
               </p>
             </div>
             {/* Trades */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Trades</p>
-              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-foreground">
-                {todayTradeCount}<span className="text-muted-foreground/30 font-normal text-sm"> / {totalMaxTrades}</span>
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Trades</p>
+              <p className="text-base font-semibold tabular-nums leading-none text-foreground">
+                {todayTradeCount}<span className="text-muted-foreground/30 font-normal text-xs"> / {totalMaxTrades}</span>
               </p>
             </div>
             {/* Risk Left */}
-            <div className="bg-card px-4 py-3.5 md:py-4">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Risk Left</p>
-              <p className={cn("text-lg md:text-xl font-bold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5 hidden sm:block">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Risk Left</p>
+              <p className={cn("text-base font-semibold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
                 ${vaultState.risk_remaining_today.toFixed(0)}
               </p>
             </div>
             {/* Streak */}
-            <div className="bg-card px-4 py-3.5 md:py-4 hidden md:block">
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 mb-1">Streak</p>
-              <p className="text-lg md:text-xl font-bold tabular-nums leading-none text-foreground">{currentStreak}</p>
+            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5 hidden md:block">
+              <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Streak</p>
+              <p className="text-base font-semibold tabular-nums leading-none text-foreground">{currentStreak}</p>
             </div>
             {/* + Log Trade CTA */}
-            <div className="bg-card flex items-center justify-center px-3 py-3.5 md:py-4">
-              <Button size="sm" className="gap-1.5 h-9 md:h-10 px-4 md:px-5 text-xs md:text-sm font-bold rounded-full whitespace-nowrap w-full" onClick={handleLogUnplanned}>
-                <Plus className="h-3.5 w-3.5" /> Log Trade
+            <div className="px-3 md:px-4 py-2 md:py-2.5 shrink-0">
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 px-3.5 text-[11px] font-semibold rounded-lg whitespace-nowrap border-border/20" onClick={handleLogUnplanned}>
+                <Plus className="h-3 w-3" /> Log
               </Button>
             </div>
           </div>
@@ -484,31 +484,31 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ LAYER 2 — HERO OS CARD (two-column) ══════ */}
-        <div className="rounded-2xl border border-border/20 bg-card overflow-hidden shadow-lg shadow-black/15">
+        <div className="rounded-xl border border-border/10 bg-card overflow-hidden shadow-md shadow-black/10">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
           {/* Two-column body */}
           <div className="flex flex-col md:flex-row">
             {/* ── LEFT MAIN ZONE ── */}
-            <div className="flex-[2.2] min-w-0 p-5 md:p-7 md:border-r border-border/10">
+            <div className="flex-[2.5] min-w-0 p-4 md:p-5 md:border-r border-border/10">
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {activePlan && activePlan.status === "planned" && (
-                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4">
+                    <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-3">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                          <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                          <span className="text-xs text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                          <span className="text-sm font-semibold text-foreground">{activePlan.ticker || "—"}</span>
+                          <span className="text-[11px] text-muted-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
                         </div>
-                        <div className="flex gap-2 shrink-0">
-                          <Button size="sm" className="h-8 text-xs gap-1.5 rounded-lg px-4" onClick={() => handleLogFromPlan(activePlan)}>
-                            <CheckCircle2 className="h-3 w-3" /> Log Result
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button size="sm" className="h-7 text-[11px] gap-1 rounded-lg px-3" onClick={() => handleLogFromPlan(activePlan)}>
+                            <CheckCircle2 className="h-3 w-3" /> Log
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-8 text-xs text-muted-foreground" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
                         </div>
                       </div>
                     </div>
@@ -516,18 +516,14 @@ const AcademyTrade = () => {
                   {/* Embedded VaultTradePlanner */}
                   {!activePlan && todayStatus !== "complete" && (
                     <div ref={plannerRef}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Shield className="h-3.5 w-3.5 text-primary" />
-                        <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em]">Pre-Trade Approval</p>
-                      </div>
                       <VaultTradePlanner />
                     </div>
                   )}
                   {todayStatus === "complete" && (
-                    <div className="flex items-center gap-2 px-3 py-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                      <p className="text-xs text-emerald-400/80 font-medium flex-1">Session complete for today.</p>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
+                      <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
                     </div>
                   )}
                 </div>
@@ -535,37 +531,37 @@ const AcademyTrade = () => {
 
               {/* LIVE STAGE */}
               {activeStage === "live" && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {/* Active Plan (prominent) */}
                   {activePlan && activePlan.status === "planned" && (
-                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 space-y-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                        <span className="text-lg font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                        <span className="text-sm text-muted-foreground">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · Entry ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
+                    <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-3 space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span className="text-base font-semibold text-foreground">{activePlan.ticker || "—"}</span>
+                        <span className="text-[11px] text-muted-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
                       </div>
-                      <Button size="sm" className="h-9 text-xs gap-1.5 rounded-lg px-5" onClick={() => handleLogFromPlan(activePlan)}>
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Log Result
+                      <Button size="sm" className="h-8 text-[11px] gap-1.5 rounded-lg px-4" onClick={() => handleLogFromPlan(activePlan)}>
+                        <CheckCircle2 className="h-3 w-3" /> Log Result
                       </Button>
                     </div>
                   )}
 
                   {/* Today's session metrics */}
                   {todayTradeCount > 0 && (
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="p-3 rounded-xl bg-muted/[0.06] border border-border/15">
-                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Trades Today</p>
-                        <p className="text-xl font-bold tabular-nums text-foreground">{todayTradeCount}</p>
+                    <div className="flex items-center divide-x divide-border/10 rounded-lg border border-border/10 overflow-hidden">
+                      <div className="flex-1 px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Trades</p>
+                        <p className="text-base font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
                       </div>
-                      <div className="p-3 rounded-xl bg-muted/[0.06] border border-border/15">
-                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Today P/L</p>
-                        <p className={cn("text-xl font-bold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
+                      <div className="flex-1 px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">P/L</p>
+                        <p className={cn("text-base font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
                           {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
                         </p>
                       </div>
-                      <div className="p-3 rounded-xl bg-muted/[0.06] border border-border/15">
-                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Compliance</p>
-                        <p className={cn("text-xl font-bold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
+                      <div className="flex-1 px-3 py-2">
+                        <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Compliance</p>
+                        <p className={cn("text-base font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
                       </div>
                     </div>
                   )}
@@ -575,19 +571,14 @@ const AcademyTrade = () => {
 
                   {/* No plan state */}
                   {!activePlan && (
-                    <div className="rounded-xl border border-border/15 bg-muted/[0.03] p-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-muted/10 flex items-center justify-center shrink-0">
-                        <Shield className="h-5 w-5 text-muted-foreground/30" />
-                      </div>
+                    <div className="flex items-center gap-3 px-3.5 py-3 rounded-lg border border-border/10">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground">No Active Plan</p>
-                        <p className="text-[10px] text-muted-foreground/50">Check a trade in the Plan tab before entering.</p>
+                        <p className="text-[11px] text-muted-foreground/50">Check a trade in the Plan tab first.</p>
                       </div>
-                      <div className="flex gap-2 shrink-0">
-                        <Button size="sm" className="gap-1.5 rounded-lg px-4 h-8 text-xs" onClick={() => setStage("plan")}>
-                          <Calendar className="h-3 w-3" /> Plan
-                        </Button>
-                        <Button size="sm" variant="outline" className="gap-1 rounded-lg px-3 h-8 text-xs" onClick={handleLogUnplanned}>
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button size="sm" className="gap-1 rounded-lg px-3 h-7 text-[11px]" onClick={() => setStage("plan")}>Plan</Button>
+                        <Button size="sm" variant="outline" className="gap-1 rounded-lg px-3 h-7 text-[11px] border-border/20" onClick={handleLogUnplanned}>
                           <Plus className="h-3 w-3" /> Log
                         </Button>
                       </div>
@@ -598,55 +589,52 @@ const AcademyTrade = () => {
 
               {/* REVIEW STAGE */}
               {activeStage === "review" && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {entries.length === 0 ? (
-                    <div className="text-center py-12 space-y-3">
-                      <ClipboardCheck className="h-7 w-7 text-muted-foreground/15 mx-auto" />
-                      <p className="text-sm text-muted-foreground/50">No trades logged yet. Log your first trade to begin your review.</p>
-                      <Button size="sm" className="gap-1.5 rounded-full px-5" onClick={handleLogUnplanned}>
-                        <Plus className="h-3.5 w-3.5" /> Log a Trade
+                    <div className="text-center py-8 space-y-2">
+                      <p className="text-sm text-muted-foreground/50">No trades logged yet.</p>
+                      <Button size="sm" variant="outline" className="gap-1.5 rounded-lg px-4 h-8 text-[11px] border-border/20" onClick={handleLogUnplanned}>
+                        <Plus className="h-3 w-3" /> Log a Trade
                       </Button>
                     </div>
                   ) : (
                     <>
-                      {/* Action cards */}
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <button onClick={handleLogUnplanned} className="flex items-center gap-3 p-3.5 rounded-xl border border-border/20 bg-muted/[0.03] hover:bg-muted/10 transition-colors text-left">
-                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <Plus className="h-4 w-4 text-primary" />
-                          </div>
+                      {/* Action row */}
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <button onClick={handleLogUnplanned} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-muted/10 transition-colors text-left group">
+                          <Plus className="h-3.5 w-3.5 text-primary shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground">Log a Trade</p>
-                            <p className="text-[10px] text-muted-foreground/50">Result, screenshots, notes</p>
+                            <p className="text-[13px] font-semibold text-foreground">Log a Trade</p>
+                            <p className="text-[10px] text-muted-foreground/40">Result, screenshots, notes</p>
                           </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
-                        <button onClick={() => setShowCheckIn(true)} className="flex items-center gap-3 p-3.5 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.03] hover:bg-emerald-500/[0.06] transition-colors text-left">
-                          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                          </div>
+                        <button onClick={() => setShowCheckIn(true)} className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg hover:bg-emerald-500/[0.05] transition-colors text-left group">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground">Complete Check-In</p>
-                            <p className="text-[10px] text-muted-foreground/50">Mistakes, lessons, close session</p>
+                            <p className="text-[13px] font-semibold text-foreground">Complete Check-In</p>
+                            <p className="text-[10px] text-muted-foreground/40">Mistakes, lessons, close session</p>
                           </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/20 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                       </div>
 
                       {/* Recent trades */}
                       <div>
-                        <p className="text-[9px] uppercase tracking-[0.15em] font-bold text-muted-foreground/30 mb-2.5">
-                          {todayTradeCount > 0 ? `Today's Trades (${todayTradeCount})` : "Recent Trades"}
+                        <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/30 uppercase mb-2">
+                          {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
                         </p>
-                        <div className="space-y-1">
+                        <div className="space-y-0.5">
                           {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
                             const pnl = e.risk_reward * e.risk_used;
                             const isWin = e.risk_reward > 0;
                             const isLoss = e.risk_reward < 0;
                             return (
-                              <div key={e.id} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/[0.03] border border-border/10">
+                              <div key={e.id} className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-md hover:bg-muted/[0.05] transition-colors">
                                 <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/20")} />
-                                <span className="text-sm font-bold text-foreground min-w-[45px]">{e.symbol || "—"}</span>
-                                <span className="text-[11px] text-muted-foreground/40 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "· ✓" : "· ✗"}</span>
-                                <span className={cn("text-sm font-bold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/40")}>
+                                <span className="text-[13px] font-semibold text-foreground min-w-[40px]">{e.symbol || "—"}</span>
+                                <span className="text-[11px] text-muted-foreground/35 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
+                                <span className={cn("text-[13px] font-semibold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/30")}>
                                   {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
                                 </span>
                               </div>
@@ -656,10 +644,10 @@ const AcademyTrade = () => {
                       </div>
 
                       {todayStatus === "complete" && (
-                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
                           <p className="text-xs text-emerald-400/70 font-medium flex-1">Session complete.</p>
-                          <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400 px-3" onClick={() => setStage("insights")}>View Insights</Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-[11px] text-emerald-400 px-2.5" onClick={() => setStage("insights")}>Insights →</Button>
                         </div>
                       )}
                     </>
@@ -675,8 +663,8 @@ const AcademyTrade = () => {
               )}
             </div>
 
-            {/* ── RIGHT CONTROL RAIL (desktop only inline, mobile below) ── */}
-            <div className="flex-[0.9] min-w-0 p-4 md:p-5 border-t md:border-t-0 border-border/10 bg-muted/[0.02]">
+            {/* ── RIGHT CONTROL RAIL ── */}
+            <div className="flex-[0.75] min-w-0 p-3 md:p-4 border-t md:border-t-0 border-border/10">
               <OSControlRail
                 activePlan={activePlan}
                 vaultState={vaultState}
@@ -692,30 +680,30 @@ const AcademyTrade = () => {
           {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-border/10 bg-muted/[0.02] hover:bg-muted/[0.05] transition-colors"
+              className="w-full border-t border-border/10 hover:bg-muted/[0.04] transition-colors"
             >
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-px">
-                <div className="px-4 py-3">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">AI Verdict</p>
-                  <p className={cn("text-sm font-bold",
+              <div className="flex items-center divide-x divide-border/10">
+                <div className="flex-1 px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Grade</p>
+                  <p className={cn("text-sm font-semibold",
                     cachedAI.riskGrade === "A" ? "text-emerald-400" :
                     cachedAI.riskGrade === "B" ? "text-primary" :
                     cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
                   )}>
-                    Grade {cachedAI.riskGrade || "—"}
+                    {cachedAI.riskGrade || "—"}
                   </p>
                 </div>
-                <div className="px-4 py-3">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Primary Leak</p>
-                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.primaryLeak || "—"}</p>
+                <div className="flex-1 px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Leak</p>
+                  <p className="text-[11px] font-medium text-foreground/60 truncate">{cachedAI.primaryLeak || "—"}</p>
                 </div>
-                <div className="px-4 py-3 hidden md:block">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Strongest Edge</p>
-                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.strongestEdge || "—"}</p>
+                <div className="flex-1 px-3 py-2 hidden md:block">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Edge</p>
+                  <p className="text-[11px] font-medium text-foreground/60 truncate">{cachedAI.strongestEdge || "—"}</p>
                 </div>
-                <div className="px-4 py-3 hidden md:block">
-                  <p className="text-[8px] uppercase tracking-[0.2em] font-bold text-muted-foreground/30 mb-0.5">Next Action</p>
-                  <p className="text-[11px] font-medium text-foreground/70 truncate">{cachedAI.nextAction || "—"}</p>
+                <div className="flex-1 px-3 py-2 hidden md:block">
+                  <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Next</p>
+                  <p className="text-[11px] font-medium text-foreground/60 truncate">{cachedAI.nextAction || "—"}</p>
                 </div>
               </div>
             </button>
@@ -724,9 +712,9 @@ const AcademyTrade = () => {
 
         {/* ══════ LAYER 3 — LOWER ANALYTICS (quieter) ══════ */}
         {hasData && (
-          <div className="space-y-4 pt-2">
-            <p className="text-[9px] uppercase tracking-[0.18em] font-bold text-muted-foreground/25 px-1">Performance & History</p>
-            <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-3 pt-1">
+            <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/25 uppercase px-0.5">Performance & History</p>
+            <div className="grid gap-3 md:grid-cols-2">
               {equityCurve.length > 1 && startingBalance !== null && (
                 <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
               )}

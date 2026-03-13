@@ -17,7 +17,7 @@ interface OSTabHeaderProps {
 
 export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderProps) {
   return (
-    <div className="flex items-center gap-1 px-4 md:px-6 bg-muted/[0.03] border-b border-border/10">
+    <div className="flex items-center gap-0.5 px-3 md:px-4 pt-1 pb-0">
       {TABS.map((tab) => {
         const status = stageStatus(tab.key);
         const isActive = activeStage === tab.key;
@@ -27,22 +27,22 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
             key={tab.key}
             onClick={() => onSelect(tab.key)}
             className={cn(
-              "relative flex items-center gap-2 px-4 md:px-5 py-3.5 md:py-4 text-[12px] md:text-[13px] font-bold uppercase tracking-[0.08em] transition-colors duration-75 rounded-t-lg",
+              "relative flex items-center gap-1.5 px-3 md:px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.06em] transition-colors duration-75 rounded-md",
               isActive
-                ? "text-foreground"
+                ? "text-foreground bg-muted/10"
                 : status === "completed"
-                  ? "text-emerald-400/50 hover:text-emerald-400/80"
-                  : "text-muted-foreground/30 hover:text-muted-foreground/60"
+                  ? "text-emerald-400/50 hover:text-emerald-400/70"
+                  : "text-muted-foreground/30 hover:text-muted-foreground/50"
             )}
           >
             {status === "completed" && !isActive ? (
-              <span className="w-[6px] h-[6px] rounded-full bg-emerald-400 shrink-0" />
-            ) : (
-              <Icon className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-primary" : "opacity-50")} />
-            )}
+              <span className="w-[5px] h-[5px] rounded-full bg-emerald-400 shrink-0" />
+            ) : isActive ? (
+              <Icon className="h-3 w-3 shrink-0 text-primary" />
+            ) : null}
             {tab.label}
             {isActive && (
-              <span className="absolute bottom-0 left-2 right-2 h-[2.5px] rounded-t-full bg-primary" />
+              <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-t-full bg-primary" />
             )}
           </button>
         );
