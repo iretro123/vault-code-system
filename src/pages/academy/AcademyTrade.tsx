@@ -695,34 +695,36 @@ const AcademyTrade = () => {
           {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-white/[0.08] hover:bg-white/[0.02] transition-colors"
+              className="w-full border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
             >
-              <div className="flex items-center divide-x divide-white/[0.08]">
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 shrink-0">
+              <div className="flex items-center gap-4 px-3 py-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse" />
                   <span className="text-[9px] text-muted-foreground/40 font-medium">AI</span>
                 </div>
-                <div className="flex-1 px-2.5 py-1.5">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Grade</p>
-                  <p className={cn("text-sm font-bold",
-                    cachedAI.riskGrade === "A" ? "text-emerald-400" :
-                    cachedAI.riskGrade === "B" ? "text-primary" :
-                    cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
-                  )}>
-                    {cachedAI.riskGrade || "—"}
-                  </p>
-                </div>
-                <div className="flex-1 px-2.5 py-1.5">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Leak</p>
-                  <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.primaryLeak || "—"}</p>
-                </div>
-                <div className="flex-1 px-2.5 py-1.5 hidden md:block">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Edge</p>
-                  <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.strongestEdge || "—"}</p>
-                </div>
-                <div className="flex-1 px-2.5 py-1.5 hidden md:block">
-                  <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Next</p>
-                  <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.nextAction || "—"}</p>
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div>
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Grade</p>
+                    <p className={cn("text-xs font-bold",
+                      cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                      cachedAI.riskGrade === "B" ? "text-primary" :
+                      cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                    )}>
+                      {cachedAI.riskGrade || "—"}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Leak</p>
+                    <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.primaryLeak || "—"}</p>
+                  </div>
+                  <div className="min-w-0 hidden md:block">
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Edge</p>
+                    <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.strongestEdge || "—"}</p>
+                  </div>
+                  <div className="min-w-0 hidden md:block">
+                    <p className="text-[8px] text-muted-foreground/40 font-medium uppercase">Next</p>
+                    <p className="text-[10px] font-semibold text-foreground/70 truncate">{cachedAI.nextAction || "—"}</p>
+                  </div>
                 </div>
               </div>
             </button>
