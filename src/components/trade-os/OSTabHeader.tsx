@@ -11,7 +11,7 @@ const TABS: { key: SessionStage; label: string; icon: typeof Calendar; step: num
 
 const STAGE_GUIDANCE: Record<SessionStage, string> = {
   plan: "Size your trade. The calculator approves or denies based on your account rules.",
-  live: "Session active. Monitor your plan, track risk, follow your rules. Log when done.",
+  live: "Session active. Monitor your plan, track risk, follow your rules.",
   review: "Log your result. Record mistakes, lessons, and complete today's check-in.",
   insights: "AI scanned your behavior. See your risk grade, biggest leak, and next action.",
 };
@@ -24,8 +24,8 @@ interface OSTabHeaderProps {
 
 export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderProps) {
   return (
-    <div className="px-3 md:px-4 pt-3 pb-2 space-y-2">
-      <div className="flex items-center gap-1 rounded-xl bg-black/40 p-1">
+    <div className="px-2.5 md:px-3 pt-2 pb-1 space-y-1">
+      <div className="flex items-center gap-0.5 rounded-lg bg-black/40 p-0.5">
         {TABS.map((tab) => {
           const status = stageStatus(tab.key);
           const isActive = activeStage === tab.key;
@@ -36,7 +36,7 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               key={tab.key}
               onClick={() => onSelect(tab.key)}
               className={cn(
-                "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold tracking-tight transition-all duration-100 rounded-lg",
+                "relative flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold tracking-tight transition-all duration-100 rounded-md",
                 isActive
                   ? "bg-primary/15 text-primary shadow-[inset_0_-2px_0_0_hsl(var(--primary))]"
                   : isCompleted
@@ -45,13 +45,13 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               )}
             >
               {isCompleted && !isActive ? (
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 shrink-0">
-                  <Check className="h-2.5 w-2.5 text-emerald-400" strokeWidth={3} />
+                <span className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 shrink-0">
+                  <Check className="h-2 w-2 text-emerald-400" strokeWidth={3} />
                 </span>
               ) : isActive ? (
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className="h-3.5 w-3.5 shrink-0" />
               ) : (
-                <span className="text-[11px] font-bold text-muted-foreground/30 shrink-0">
+                <span className="text-[10px] font-bold text-muted-foreground/30 shrink-0">
                   {tab.step}
                 </span>
               )}
@@ -60,7 +60,7 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
           );
         })}
       </div>
-      <p className="text-[13px] text-foreground/60 font-medium leading-snug px-1">
+      <p className="text-[11px] text-foreground/50 font-medium leading-snug px-0.5">
         {STAGE_GUIDANCE[activeStage]}
       </p>
     </div>
