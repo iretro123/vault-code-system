@@ -162,11 +162,22 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
     return null;
   }, [useCustom, customChoice, result, selectedIndex]);
 
+  const [autoSelectPulse, setAutoSelectPulse] = useState(false);
+
   useEffect(() => {
-    if (result) {
-      const recIdx = result.choices.findIndex((c) => c.isRecommended);
-      if (recIdx >= 0) { setSelectedIndex(recIdx); setUseCustom(false); }
+    if (!result) return;
+    // Smart auto-select: recommended first, else first non-pass
+    const recIdx = result.choices.findIndex((c) => c.isRecommended);
+    if (recIdx >= 0) {
+      setSelectedIndex(recIdx); setUseCustom(false);
+    } else {
+      const firstFit = result.choices.findIndex((c) => c.status !== "pass");
+      if (firstFit >= 0) { setSelectedIndex(firstFit); setUseCustom(false); }
     }
+    // Trigger pulse animation on auto-select
+    setAutoSelectPulse(true);
+    const t = setTimeout(() => setAutoSelectPulse(false), 600);
+    return () => clearTimeout(t);
   }, [result]);
 
   const buildPlanData = () => {
