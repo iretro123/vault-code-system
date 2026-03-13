@@ -98,6 +98,17 @@ const AcademyTrade = () => {
     sessionActive: !vaultState.session_paused,
   });
 
+  // Read cached AI result for compact preview strip (must be before early returns)
+  const cachedAI = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("va_cache_ai_focus_v3");
+      if (!raw) return null;
+      return JSON.parse(raw) as { primaryLeak?: string; riskGrade?: string; nextAction?: string; strongestEdge?: string };
+    } catch { return null; }
+  }, [entries.length]);
+
+  const totalMaxTrades = vaultState.trades_remaining_today + todayTradeCount;
+
   /* ── Handlers (identical to classic) ── */
   const handleStartingBalanceSave = async (balance: number) => {
     if (!user) return;
