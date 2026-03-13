@@ -550,6 +550,9 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-4">
+                  {/* Session timing module */}
+                  <SessionSetupCard />
+
                   {/* Active Plan (prominent) */}
                   {activePlan && activePlan.status === "planned" && (
                     <div className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] px-3.5 py-3 space-y-2.5">
@@ -558,6 +561,9 @@ const AcademyTrade = () => {
                         <span className="text-base font-semibold text-foreground">{activePlan.ticker || "—"}</span>
                         <span className="text-[11px] text-muted-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
                       </div>
+                      <p className="text-[10px] text-muted-foreground/40 pl-4">
+                        Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · {activePlan.stop_price_planned ? `Stop: $${Number(activePlan.stop_price_planned).toFixed(2)}` : "No stop set"} · Ready to execute
+                      </p>
                       <Button size="sm" className="h-8 text-[11px] gap-1.5 rounded-lg px-4" onClick={() => handleLogFromPlan(activePlan)}>
                         <CheckCircle2 className="h-3 w-3" /> Log Result
                       </Button>
@@ -566,7 +572,7 @@ const AcademyTrade = () => {
 
                   {/* Today's session metrics */}
                   {todayTradeCount > 0 && (
-                    <div className="flex items-center divide-x divide-border/10 rounded-lg border border-border/10 overflow-hidden">
+                    <div className="flex items-center divide-x divide-white/[0.06] rounded-lg border border-white/[0.06] overflow-hidden">
                       <div className="flex-1 px-3 py-2">
                         <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Trades</p>
                         <p className="text-base font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
@@ -587,16 +593,27 @@ const AcademyTrade = () => {
                   {/* Limits inline */}
                   <TodaysLimitsSection />
 
+                  {/* Stage transition: trades logged → go to review */}
+                  {todayTradeCount > 0 && todayStatus !== "complete" && (
+                    <div className="pt-1">
+                      <Button size="sm" variant="outline" className="w-full h-8 text-[11px] gap-1.5 rounded-lg border-white/[0.08]" onClick={() => setStage("review")}>
+                        <ClipboardCheck className="h-3 w-3" /> Trade logged — Complete your Review
+                      </Button>
+                    </div>
+                  )}
+
                   {/* No plan state */}
                   {!activePlan && (
-                    <div className="flex items-center gap-3 px-3.5 py-3 rounded-lg border border-border/10">
+                    <div className="flex items-center gap-3 px-3.5 py-3 rounded-lg border border-white/[0.06]">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-foreground">No Active Plan</p>
-                        <p className="text-[11px] text-muted-foreground/50">Check a trade in the Plan tab first.</p>
+                        <p className="text-[11px] text-muted-foreground/50">Build a plan in the Plan tab first, or log a trade directly.</p>
                       </div>
                       <div className="flex gap-1.5 shrink-0">
-                        <Button size="sm" className="gap-1 rounded-lg px-3 h-7 text-[11px]" onClick={() => setStage("plan")}>Plan</Button>
-                        <Button size="sm" variant="outline" className="gap-1 rounded-lg px-3 h-7 text-[11px] border-border/20" onClick={handleLogUnplanned}>
+                        <Button size="sm" className="gap-1 rounded-lg px-3 h-7 text-[11px]" onClick={() => setStage("plan")}>
+                          <Calendar className="h-3 w-3" /> Plan
+                        </Button>
+                        <Button size="sm" variant="outline" className="gap-1 rounded-lg px-3 h-7 text-[11px] border-white/[0.08]" onClick={handleLogUnplanned}>
                           <Plus className="h-3 w-3" /> Log
                         </Button>
                       </div>
