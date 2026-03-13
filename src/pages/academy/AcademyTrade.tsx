@@ -426,43 +426,43 @@ const AcademyTrade = () => {
 
         {/* ══════ LAYER 1.5 — METRICS STATUS BAR ══════ */}
         {showMetrics && (
-          <div className="flex items-center rounded-xl border border-border/10 bg-card divide-x divide-border/10 overflow-hidden">
+          <div className="flex items-center rounded-xl border border-white/[0.06] bg-card divide-x divide-white/[0.06] overflow-hidden">
             {/* Balance */}
-            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+            <div className="flex-1 px-3 md:px-4 py-2.5 md:py-3">
               <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Balance</p>
-              <p className="text-base font-semibold tabular-nums text-primary leading-none truncate">
+              <p className="text-lg md:text-xl font-bold tabular-nums text-primary leading-none truncate">
                 {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
               </p>
             </div>
             {/* Today P/L */}
-            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+            <div className="flex-1 px-3 md:px-4 py-2.5 md:py-3">
               <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Today P/L</p>
               <p className={cn("text-base font-semibold tabular-nums leading-none", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
                 {todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
               </p>
             </div>
             {/* Trades */}
-            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5">
+            <div className="flex-1 px-3 md:px-4 py-2.5 md:py-3">
               <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Trades</p>
               <p className="text-base font-semibold tabular-nums leading-none text-foreground">
                 {todayTradeCount}<span className="text-muted-foreground/30 font-normal text-xs"> / {totalMaxTrades}</span>
               </p>
             </div>
             {/* Risk Left */}
-            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5 hidden sm:block">
+            <div className="flex-1 px-3 md:px-4 py-2.5 md:py-3 hidden sm:block">
               <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Risk Left</p>
               <p className={cn("text-base font-semibold tabular-nums leading-none", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
                 ${vaultState.risk_remaining_today.toFixed(0)}
               </p>
             </div>
             {/* Streak */}
-            <div className="flex-1 px-3 md:px-4 py-2 md:py-2.5 hidden md:block">
+            <div className="flex-1 px-3 md:px-4 py-2.5 md:py-3 hidden md:block">
               <p className="text-[10px] text-muted-foreground/50 font-medium mb-0.5">Streak</p>
               <p className="text-base font-semibold tabular-nums leading-none text-foreground">{currentStreak}</p>
             </div>
             {/* + Log Trade CTA */}
-            <div className="px-3 md:px-4 py-2 md:py-2.5 shrink-0">
-              <Button size="sm" variant="outline" className="gap-1.5 h-8 px-3.5 text-[11px] font-semibold rounded-lg whitespace-nowrap border-border/20" onClick={handleLogUnplanned}>
+            <div className="px-3 md:px-4 py-2.5 md:py-3 shrink-0">
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 px-3.5 text-[11px] font-semibold rounded-lg whitespace-nowrap border-white/[0.08] hover:bg-white/[0.04]" onClick={handleLogUnplanned}>
                 <Plus className="h-3 w-3" /> Log
               </Button>
             </div>
@@ -484,14 +484,14 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ LAYER 2 — HERO OS CARD (two-column) ══════ */}
-        <div className="rounded-xl border border-border/10 bg-card overflow-hidden shadow-md shadow-black/10">
+        <div className="rounded-xl border border-white/[0.06] border-t-white/[0.08] bg-card overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
           {/* Two-column body */}
           <div className="flex flex-col md:flex-row">
             {/* ── LEFT MAIN ZONE ── */}
-            <div className="flex-[2.5] min-w-0 p-4 md:p-5 md:border-r border-border/10">
+            <div className="flex-[2.5] min-w-0 p-4 md:p-5 md:border-r border-white/[0.06]">
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
@@ -670,7 +670,7 @@ const AcademyTrade = () => {
             </div>
 
             {/* ── RIGHT CONTROL RAIL ── */}
-            <div className="flex-[0.75] min-w-0 p-3 md:p-4 border-t md:border-t-0 border-border/10">
+            <div className="flex-[0.75] min-w-0 p-3 md:p-4 border-t md:border-t-0 border-white/[0.06]">
               <OSControlRail
                 activePlan={activePlan}
                 vaultState={vaultState}
@@ -686,9 +686,9 @@ const AcademyTrade = () => {
           {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-border/10 hover:bg-muted/[0.04] transition-colors"
+              className="w-full border-t border-white/[0.06] hover:bg-white/[0.02] transition-colors"
             >
-              <div className="flex items-center divide-x divide-border/10">
+              <div className="flex items-center divide-x divide-white/[0.06]">
                 <div className="flex-1 px-3 py-2">
                   <p className="text-[9px] text-muted-foreground/35 font-medium mb-0.5">Grade</p>
                   <p className={cn("text-sm font-semibold",
@@ -719,7 +719,7 @@ const AcademyTrade = () => {
         {/* ══════ LAYER 3 — LOWER ANALYTICS (quieter) ══════ */}
         {hasData && (
           <div className="space-y-3 pt-1">
-            <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/25 uppercase px-0.5">Performance & History</p>
+            <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/40 uppercase px-0.5">Performance & History</p>
             <div className="grid gap-3 md:grid-cols-2">
               {equityCurve.length > 1 && startingBalance !== null && (
                 <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />

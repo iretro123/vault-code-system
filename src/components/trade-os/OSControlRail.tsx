@@ -32,11 +32,19 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
   const QuickIcon = activeStage === "plan" ? Shield : activeStage === "live" ? Plus : activeStage === "review" ? ClipboardCheck : RefreshCw;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Vault Status */}
-      <div className="flex items-center gap-2">
-        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", sm.dot)} />
-        <span className={cn("text-[11px] font-bold uppercase tracking-wide", sm.label)}>
+      <div className={cn(
+        "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+        vaultState.vault_status === "GREEN" ? "bg-emerald-500/[0.06]" :
+        vaultState.vault_status === "YELLOW" ? "bg-amber-500/[0.06]" : "bg-red-500/[0.06]"
+      )}>
+        <span className={cn(
+          "w-3 h-3 rounded-full shrink-0",
+          sm.dot,
+          vaultState.vault_status === "GREEN" && "shadow-[0_0_8px_rgba(52,211,153,0.4)]"
+        )} />
+        <span className={cn("text-xs font-bold uppercase tracking-wide", sm.label)}>
           {vaultState.vault_status}
         </span>
         <span className="text-[10px] text-muted-foreground/40 ml-auto">{sm.text}</span>
@@ -44,7 +52,7 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Active Plan */}
       <div>
-        <p className="text-[10px] tracking-[0.1em] font-medium text-muted-foreground/30 uppercase mb-2">Active Plan</p>
+        <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase mb-2">Active Plan</p>
         {activePlan ? (
           <div>
             <div className="flex items-center gap-1.5 mb-1">
@@ -67,22 +75,22 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
             )}
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground/30">No plan active</p>
+          <p className="text-[11px] text-muted-foreground/35">No plan active</p>
         )}
       </div>
 
       {/* Risk Budget */}
       <div>
         <div className="flex items-baseline justify-between mb-1.5">
-          <p className="text-[10px] tracking-[0.1em] font-medium text-muted-foreground/30 uppercase">Risk Budget</p>
-          <span className="text-[10px] text-muted-foreground/30">of ${vaultState.daily_loss_limit.toFixed(0)}</span>
+          <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase">Risk Budget</p>
+          <span className="text-[10px] text-muted-foreground/35">of ${vaultState.daily_loss_limit.toFixed(0)}</span>
         </div>
-        <p className={cn("text-lg font-bold tabular-nums mb-1", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
+        <p className={cn("text-xl font-bold tabular-nums mb-1.5", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
           ${vaultState.risk_remaining_today.toFixed(0)}
         </p>
-        <div className="h-1 rounded-full bg-muted/15 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
           <div
-            className={cn("h-full rounded-full transition-all", riskPct > 50 ? "bg-emerald-400/60" : riskPct > 20 ? "bg-amber-400/60" : "bg-red-400/60")}
+            className={cn("h-full rounded-full transition-all", riskPct > 50 ? "bg-emerald-400/70" : riskPct > 20 ? "bg-amber-400/70" : "bg-red-400/70")}
             style={{ width: `${riskPct}%` }}
           />
         </div>
@@ -90,18 +98,18 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Trades */}
       <div>
-        <p className="text-[10px] tracking-[0.1em] font-medium text-muted-foreground/30 uppercase mb-1.5">Trades</p>
-        <div className="flex items-baseline gap-1 mb-1.5">
-          <span className="text-lg font-bold tabular-nums text-foreground">{tradesUsed}</span>
-          <span className="text-[10px] text-muted-foreground/30">/ {totalTrades}</span>
+        <p className="text-[11px] tracking-[0.08em] font-medium text-muted-foreground/50 uppercase mb-1.5">Trades</p>
+        <div className="flex items-baseline gap-1 mb-2">
+          <span className="text-xl font-bold tabular-nums text-foreground">{tradesUsed}</span>
+          <span className="text-[10px] text-muted-foreground/35">/ {totalTrades}</span>
         </div>
         <div className="flex gap-0.5">
           {Array.from({ length: totalTrades }).map((_, i) => (
             <div
               key={i}
               className={cn(
-                "flex-1 h-1 rounded-full",
-                i < tradesUsed ? "bg-primary/70" : "bg-muted/15"
+                "flex-1 h-1.5 rounded-full",
+                i < tradesUsed ? "bg-primary/70" : "bg-white/[0.06]"
               )}
             />
           ))}
@@ -110,7 +118,7 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       {/* Restrictions */}
       {vaultState.last_block_reason && (
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 px-2 py-2 rounded-lg bg-amber-500/[0.04]">
           <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" />
           <p className="text-[10px] text-amber-400/70 leading-relaxed">{vaultState.last_block_reason}</p>
         </div>
@@ -119,10 +127,10 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
       {/* Quick Action */}
       <Button
         size="sm"
-        className="w-full h-8 text-[11px] font-semibold rounded-lg gap-1.5"
+        className="w-full h-9 text-xs font-semibold rounded-lg gap-1.5"
         onClick={onQuickAction}
       >
-        <QuickIcon className="h-3 w-3" /> {quickLabel}
+        <QuickIcon className="h-3.5 w-3.5" /> {quickLabel}
       </Button>
     </div>
   );
