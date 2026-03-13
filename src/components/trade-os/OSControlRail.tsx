@@ -1,16 +1,22 @@
-import { Shield, AlertTriangle, CheckCircle2, Plus, RefreshCw, ClipboardCheck, Clock, Ban } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
+import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 import type { ApprovedPlan } from "@/hooks/useApprovedPlans";
-import type { VaultState } from "@/contexts/VaultStateContext";
-import type { SessionStage } from "@/hooks/useSessionStage";
+import type { DayState } from "@/hooks/useSessionStage";
 
 interface OSControlRailProps {
   activePlan: ApprovedPlan | null;
-  vaultState: VaultState;
+  trackedBalance: number | null;
+  vaultAccountBalance: number;
   todayTradeCount: number;
-  activeStage: SessionStage;
+  maxTradesPerDay: number;
+  vaultStatus: string;
+  lastBlockReason: string | null;
+  dayState: DayState;
+  dayStateStatus: string;
+  dayStateCta: string;
   onQuickAction: () => void;
   onLogFromPlan?: (plan: ApprovedPlan) => void;
 }
@@ -37,14 +43,16 @@ function fmt12h(t: string): string {
   return `${h === 0 ? 12 : h > 12 ? h - 12 : h}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
-export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeStage, onQuickAction, onLogFromPlan }: OSControlRailProps) {
-  const totalTrades = vaultState.trades_remaining_today + todayTradeCount;
-  const riskPct = vaultState.daily_loss_limit > 0
-    ? Math.max(0, Math.min(100, (vaultState.risk_remaining_today / vaultState.daily_loss_limit) * 100))
-    : 0;
-
-  const quickLabel = activeStage === "plan" ? "Check Trade" : activeStage === "live" ? "Log Result" : activeStage === "review" ? "Check In" : "Refresh AI";
-  const QuickIcon = activeStage === "plan" ? Shield : activeStage === "live" ? Plus : activeStage === "review" ? ClipboardCheck : RefreshCw;
+export function OSControlRail({
+  activePlan, trackedBalance, vaultAccountBalance, todayTradeCount, maxTradesPerDay,
+  vaultStatus, lastBlockReason, dayState, dayStateStatus, dayStateCta,
+  onQuickAction, onLogFromPlan,
+}: OSControlRailProps) {
+  // Unified risk from trackedBalance + TIER_DEFAULTS
+  const bal = trackedBalance ?? vaultAccountBalance;
+  const tier = detectTier(bal);
+  const defaults = TIER_DEFAULTS[tier];
+  const riskBudget = bal * (defaults.riskPercent / 100);
 
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
@@ -59,15 +67,18 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
     return { label: "Closed", color: "text-red-400", countdown: null, countdownLabel: null };
   }, [times, now]);
 
-  const statusDot = vaultState.vault_status === "GREEN" ? "bg-emerald-400" : vaultState.vault_status === "YELLOW" ? "bg-amber-400" : "bg-red-400";
-  const statusText = vaultState.vault_status === "GREEN" ? "Clear" : vaultState.vault_status === "YELLOW" ? "Caution" : "Blocked";
-  const statusColor = vaultState.vault_status === "GREEN" ? "text-emerald-400" : vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400";
+  const statusDot = vaultStatus === "GREEN" ? "bg-emerald-400" : vaultStatus === "YELLOW" ? "bg-amber-400" : "bg-red-400";
+  const statusText = vaultStatus === "GREEN" ? "Clear" : vaultStatus === "YELLOW" ? "Caution" : "Blocked";
+  const statusColor = vaultStatus === "GREEN" ? "text-emerald-400" : vaultStatus === "YELLOW" ? "text-amber-400" : "text-red-400";
 
   return (
     <div className="space-y-2.5">
-      {/* Status */}
+      {/* Day State Status Line */}
+      <p className="text-[10px] text-muted-foreground/60 font-medium leading-snug">{dayStateStatus}</p>
+
+      {/* Vault Status */}
       <div className="flex items-center gap-2">
-        <span className={cn("w-[6px] h-[6px] rounded-full shrink-0", statusDot, vaultState.vault_status === "GREEN" && "shadow-[0_0_8px_rgba(52,211,153,0.5)]")} />
+        <span className={cn("w-[6px] h-[6px] rounded-full shrink-0", statusDot, vaultStatus === "GREEN" && "shadow-[0_0_8px_rgba(52,211,153,0.5)]")} />
         <span className={cn("text-[11px] font-bold", statusColor)}>{statusText}</span>
       </div>
 
@@ -82,7 +93,7 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
           <p className="text-[10px] text-muted-foreground/50 pl-3">
             ${Number(activePlan.entry_price_planned).toFixed(2)} · Max ${Number(activePlan.max_loss_planned).toFixed(0)}
           </p>
-          {onLogFromPlan && (
+          {onLogFromPlan && dayState === "live_session" && (
             <Button size="sm" className="w-full h-7 text-[10px] rounded-lg gap-1" onClick={() => onLogFromPlan(activePlan)}>
               <CheckCircle2 className="h-3 w-3" /> Log Result
             </Button>
@@ -94,36 +105,31 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
 
       <div className="h-px bg-white/[0.04]" />
 
-      {/* Risk */}
+      {/* Risk — unified source */}
       <div>
         <div className="flex items-baseline justify-between">
-          <span className={cn("text-base font-bold tabular-nums", vaultState.risk_remaining_today <= 0 ? "text-red-400" : "text-foreground")}>
-            ${vaultState.risk_remaining_today.toFixed(0)}
+          <span className={cn("text-base font-bold tabular-nums", riskBudget <= 0 ? "text-red-400" : "text-foreground")}>
+            ${riskBudget.toFixed(0)}
           </span>
-          <span className="text-[9px] text-muted-foreground/40">/ ${vaultState.daily_loss_limit.toFixed(0)}</span>
+          <span className="text-[9px] text-muted-foreground/40">risk budget</span>
         </div>
-        <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden mt-1">
-          <div
-            className={cn("h-full rounded-full transition-all", riskPct > 50 ? "bg-emerald-400/70" : riskPct > 20 ? "bg-amber-400/70" : "bg-red-400/70")}
-            style={{ width: `${riskPct}%` }}
-          />
-        </div>
+        <p className="text-[9px] text-muted-foreground/30 mt-0.5">{tier} · {defaults.riskPercent}%</p>
       </div>
 
       {/* Trades */}
       <div className="flex items-baseline gap-1">
         <span className="text-base font-bold tabular-nums text-foreground">{todayTradeCount}</span>
-        <span className="text-[10px] text-muted-foreground/40">/ {totalTrades} trades</span>
+        <span className="text-[10px] text-muted-foreground/40">/ {maxTradesPerDay} trades</span>
       </div>
       <div className="flex gap-0.5">
-        {Array.from({ length: totalTrades }).map((_, i) => (
+        {Array.from({ length: maxTradesPerDay }).map((_, i) => (
           <div key={i} className={cn("flex-1 h-1.5 rounded-full", i < todayTradeCount ? "bg-primary/70" : "bg-white/[0.06]")} />
         ))}
       </div>
 
       <div className="h-px bg-white/[0.04]" />
 
-      {/* Compact Session Timer (read-only, set from Live stage) */}
+      {/* Compact Session Timer */}
       {sessionPhase ? (
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
@@ -149,20 +155,20 @@ export function OSControlRail({ activePlan, vaultState, todayTradeCount, activeS
       )}
 
       {/* Restrictions */}
-      {vaultState.last_block_reason && (
+      {lastBlockReason && (
         <div className="flex items-start gap-1.5 py-1">
           <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-amber-400/70 leading-snug">{vaultState.last_block_reason}</p>
+          <p className="text-[10px] text-amber-400/70 leading-snug">{lastBlockReason}</p>
         </div>
       )}
 
-      {/* Quick Action */}
+      {/* Primary CTA — driven by DayState */}
       <Button
         size="sm"
         className="w-full h-7 text-[10px] font-semibold rounded-lg gap-1.5"
         onClick={onQuickAction}
       >
-        <QuickIcon className="h-3 w-3" /> {quickLabel}
+        {dayStateCta}
       </Button>
     </div>
   );

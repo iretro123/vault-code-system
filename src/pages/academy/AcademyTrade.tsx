@@ -164,11 +164,15 @@ const AcademyTrade = () => {
     }
   }, [todayTradeCount]);
 
-  const { activeStage, setStage, stageStatus } = useSessionStage({
+  const sessionTimesSet = useMemo(() => !!loadTimes(), [sessionPhase]);
+
+  const { activeStage, setStage, stageStatus, dayState, dayStateStatus, dayStateCta } = useSessionStage({
     hasActivePlan: !!activePlan,
     todayTradeCount,
     todayStatus,
     sessionActive: !vaultState.session_paused,
+    sessionTimesSet,
+    sessionPhase,
   });
 
   const cachedAI = useMemo(() => {
@@ -357,16 +361,17 @@ const AcademyTrade = () => {
   };
 
   const handleQuickAction = useCallback(() => {
-    if (activeStage === "plan") handleScrollToPlanner();
-    else if (activeStage === "live") {
-      if (activePlan) handleLogWithCutoffCheck(activePlan);
-      else handleLogWithCutoffCheck();
+    switch (dayState) {
+      case "no_plan": handleScrollToPlanner(); break;
+      case "plan_approved": setStage("live"); break;
+      case "live_session":
+        if (activePlan) handleLogWithCutoffCheck(activePlan);
+        else handleLogWithCutoffCheck();
+        break;
+      case "review_pending": setShowCheckIn(true); break;
+      case "day_complete": setStage("insights"); break;
     }
-    else if (activeStage === "review") setShowCheckIn(true);
-    else if (activeStage === "insights") {
-      document.getElementById("ai-focus-card")?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [activeStage, activePlan]);
+  }, [dayState, activePlan]);
 
   if (balanceLoading || tradesLoading) {
     return (
@@ -505,22 +510,27 @@ const AcademyTrade = () => {
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <div className="flex items-center gap-1.5">
-                    {todayStatus === "complete" ? (
+                    {dayState === "day_complete" ? (
                       <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                     ) : (
-                      <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, activePlan && "animate-pulse")} />
+                      <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, dayState === "live_session" && "animate-pulse")} />
                     )}
                     <span className="text-[10px] text-muted-foreground/60 font-medium">
-                      {todayTradeCount}/{totalMaxTrades} trades
+                      {dayStateStatus}
                     </span>
                   </div>
+                </div>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <span className="text-[10px] text-muted-foreground/40">
+                    {todayTradeCount}/{totalMaxTrades} trades
+                  </span>
                   <span className="text-[10px] text-muted-foreground/40">·</span>
                   {(() => {
                     const hudBal = trackedBalance ?? vaultState.account_balance;
                     const hudTier = detectTier(hudBal);
                     const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
                     return (
-                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/60")}>
+                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/40")}>
                         ${hudRisk.toFixed(0)} risk budget
                       </span>
                     );
@@ -611,12 +621,12 @@ const AcademyTrade = () => {
                       <p className="text-[10px] text-foreground/60 pl-3">
                         Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · Entry: ${Number(activePlan.entry_price_planned).toFixed(2)}
                       </p>
-                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("live")}>
-                        <Radio className="h-3 w-3" /> Go to Live Mode
+                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => { setStage("live"); }}>
+                        <Radio className="h-3 w-3" /> Start Session
                       </Button>
                     </div>
                   )}
-                  {!activePlan && todayStatus !== "complete" && (
+                  {!activePlan && todayStatus !== "complete" && dayState === "no_plan" && (
                     <div ref={plannerRef}>
                       <VaultTradePlanner
                         balanceOverride={trackedBalance}
@@ -744,9 +754,9 @@ const AcademyTrade = () => {
 
                   <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
 
-                  {todayTradeCount > 0 && todayStatus !== "complete" && (
+                   {todayTradeCount > 0 && todayStatus !== "complete" && (
                     <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("review")}>
-                      <ClipboardCheck className="h-3 w-3" /> Complete your Review
+                      <ClipboardCheck className="h-3 w-3" /> Complete Review
                     </Button>
                   )}
 
@@ -834,7 +844,7 @@ const AcademyTrade = () => {
                             className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
                             onClick={() => setShowCheckIn(true)}
                           >
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Complete Check-In
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Complete Review
                           </Button>
                         </div>
                       )}
@@ -951,9 +961,15 @@ const AcademyTrade = () => {
             <div className="hidden md:block flex-[0.7] min-w-0 p-2 border-l border-white/[0.04]">
               <OSControlRail
                 activePlan={activePlan}
-                vaultState={vaultState}
+                trackedBalance={trackedBalance}
+                vaultAccountBalance={vaultState.account_balance}
                 todayTradeCount={todayTradeCount}
-                activeStage={activeStage}
+                maxTradesPerDay={vaultState.max_trades_per_day}
+                vaultStatus={vaultState.vault_status}
+                lastBlockReason={vaultState.last_block_reason}
+                dayState={dayState}
+                dayStateStatus={dayStateStatus}
+                dayStateCta={dayStateCta}
                 onQuickAction={handleQuickAction}
                 onLogFromPlan={handleLogFromPlan}
               />
