@@ -1,30 +1,23 @@
 
 
-## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
+# Fix: Consistent Balance Formatting Across the Page
 
-### 1. Source of Truth (Unified)
-- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
-- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
-- **Trades Used**: `trade_entries` filtered by today's date
-- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
-- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
+## The Problem
 
-### 2. DayState Engine (A–E)
-- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
-- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
-- Session closed auto-suggests review via `sessionPhase` input
+Both "Your Trading Day" and the Analytics equity curve display the **same exact value** (`trackedBalance = startingBalance + totalPnl`). They are NOT different sources of truth — they're the same number formatted differently:
 
-### 3. OSControlRail Unified
-- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
-- Shows `dayStateStatus` text and `dayStateCta` button
-- Log Result only shows in `live_session` state
+- **Hero** (line 498): `toLocaleString(undefined, { maximumFractionDigits: 0 })` → rounds to `$15,601`
+- **Equity Curve** (line 62): `toLocaleString()` with no options → shows cents: `$15,600.68`
 
-### 4. QuickCheckInSheet Enhanced
-- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
-- All fields save to `journal_entries`
+So `$15,601` vs `$15,600.68` is just a rounding display difference, not a data mismatch.
 
-### 5. CTA Logic
-- Hero shows state-driven status line
-- Each stage has single primary CTA driven by `dayState`
-- "Start Session" replaces "Go to Live Mode"
-- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
+## The Fix
+
+Standardize all balance displays to use **whole dollars** (no cents) everywhere for consistency and trust. One small change:
+
+### File: `src/components/trade-os/EquityCurveCard.tsx`
+- **Line 62**: Change `${currentBalance.toLocaleString()}` to `${currentBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` 
+- **Line 67**: `totalChange.toFixed(0)` is already whole-dollar — no change needed
+
+This is a single-line formatting fix. No data, logic, or layout changes.
+
