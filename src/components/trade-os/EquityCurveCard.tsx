@@ -59,7 +59,7 @@ export function EquityCurveCard({ equityCurve, startingBalance }: EquityCurveCar
       {/* Header */}
       <div className="relative px-4 pt-4 pb-1 md:px-5 md:pt-5 space-y-1">
         <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
-          ${currentBalance.toLocaleString()}
+          ${currentBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
         </p>
         <div className="flex items-center gap-2">
           <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${isPositive ? "bg-status-active/15 text-status-active" : "bg-destructive/15 text-destructive"}`}>
