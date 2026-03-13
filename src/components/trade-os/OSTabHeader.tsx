@@ -18,7 +18,7 @@ interface OSTabHeaderProps {
 
 export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderProps) {
   return (
-    <div className="px-2.5 pt-2 pb-0">
+    <div className="px-2.5 pt-2.5 pb-0">
       <div className="flex items-center rounded-[10px] bg-black/30 p-[3px]">
         {TABS.map((tab) => {
           const status = stageStatus(tab.key);
@@ -30,7 +30,7 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               key={tab.key}
               onClick={() => onSelect(tab.key)}
               className={cn(
-                "relative flex-1 flex items-center justify-center gap-1.5 px-2 py-[7px] text-[11px] font-semibold tracking-tight transition-all duration-100 rounded-[8px]",
+                "relative flex-1 flex items-center justify-center gap-1.5 px-2 py-[9px] text-[11px] font-semibold tracking-tight transition-all duration-100 rounded-[8px]",
                 isActive
                   ? "bg-white/[0.1] text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)]"
                   : isCompleted
@@ -50,9 +50,6 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
           );
         })}
       </div>
-      <p className="text-[10px] text-muted-foreground/50 font-medium leading-snug px-1 pt-1.5 pb-1">
-        {STAGE_GUIDANCE[activeStage]}
-      </p>
     </div>
   );
 }
