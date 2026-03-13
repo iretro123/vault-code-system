@@ -1,47 +1,39 @@
 
 
-# Compact Hero Card + Smart Auto-Select
+## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
 
-## Problem
-The Hero Decision Card is too tall — Status + Details + R:R Visualizer (3 cards) + Summary Row + Broker Guide (3 steps) + Coaching Note + CTA = massive vertical scroll. The R:R section alone is ~300px.
+### What was implemented
 
-## Solution
+**Edge Function: `trade-focus/index.ts`**
+- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
+- System prompt includes trade log, journal reflections, plan execution rate, and vault status
+- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
+- AI references actual data from all pipelines — no generic advice
 
-### 1. Collapsible R:R Section
-The R:R Visualizer + Broker Guide become a **collapsible section** inside the Hero Decision Card — collapsed by default, showing a compact 1-line summary:
+**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
+- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
+- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
+- Shimmer gradient on "AI MENTOR" title
+- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
+- Icon glow effects matching accent colors
+- Discipline Score badge (strong/moderate/weak) in header
+- Risk Assessment section
+- Staggered fade-in animations per section
+- "Re-scan" button with spin animation
 
-```text
-┌──────────────────────────┐
-│        FITS              │
-│  Buy 2 contracts         │
-│  Exit if wrong   $0.42   │
-│  Cash needed    $240     │
-│  Max loss       $156     │
-├──────────────────────────┤
-│  R:R  1:2 → +$312  ▼    │  ← collapsed: tappable to expand
-├──────────────────────────┤
-│  ✨ Coaching note        │
-│  [Use This Plan →]       │
-└──────────────────────────┘
-```
+## Plan: Sync Delete Trade Across All Systems — COMPLETED
 
-When expanded, shows the full 3 ratio cards + summary + broker guide. This cuts ~250px from default view.
+### What was implemented
 
-**Implementation:** Wrap the R:R Visualizer in a `Collapsible` with a compact trigger row showing selected ratio + profit preview. `RiskRewardVisualizer` stays unchanged — just wrapped.
+**DB Trigger: reverse_trade_entry_from_vault_state**
+- Fires AFTER DELETE on `trade_entries` for same-day trades
+- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
+- Recalculates `loss_streak` from remaining trades
+- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
+- Clears `last_block_reason` when reverting to GREEN
+- Reverts linked `approved_plans` from `'logged'` → `'planned'`
 
-### 2. Smarter Auto-Select
-The `useEffect` at line 165 already auto-selects the recommended choice. Two improvements:
-- When `contractPrice` changes and `result` recalculates, auto-select fires. Add a brief visual pulse/highlight on the selected card to make it obvious.
-- If only ONE choice fits (others are "pass"), select it immediately without needing "Best" badge logic.
-
-## Files Changed
-1. **`src/components/vault-planner/VaultTradePlanner.tsx`** — Wrap R:R section in `Collapsible` inside `HeroDecisionCard`, add compact trigger row, improve auto-select logic
-2. **`src/components/vault-planner/RiskRewardVisualizer.tsx`** — No changes (stays as-is, just wrapped)
-
-## What Does NOT Change
-- All approval calc logic
-- Plan save/replace pipeline
-- R:R Visualizer component internals
-- Contract choice cards
-- Standalone mode appearance
-
+**Frontend: AcademyTrade.tsx**
+- After successful delete, calls `refetchPlan()` to refresh active plan state
+- Vault state auto-updates via existing realtime subscription on `vault_state` table
+- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`

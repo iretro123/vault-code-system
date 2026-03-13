@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -162,11 +162,22 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
     return null;
   }, [useCustom, customChoice, result, selectedIndex]);
 
+  const [autoSelectPulse, setAutoSelectPulse] = useState(false);
+
   useEffect(() => {
-    if (result) {
-      const recIdx = result.choices.findIndex((c) => c.isRecommended);
-      if (recIdx >= 0) { setSelectedIndex(recIdx); setUseCustom(false); }
+    if (!result) return;
+    // Smart auto-select: recommended first, else first non-pass
+    const recIdx = result.choices.findIndex((c) => c.isRecommended);
+    if (recIdx >= 0) {
+      setSelectedIndex(recIdx); setUseCustom(false);
+    } else {
+      const firstFit = result.choices.findIndex((c) => c.status !== "pass");
+      if (firstFit >= 0) { setSelectedIndex(firstFit); setUseCustom(false); }
     }
+    // Trigger pulse animation on auto-select
+    setAutoSelectPulse(true);
+    const t = setTimeout(() => setAutoSelectPulse(false), 600);
+    return () => clearTimeout(t);
   }, [result]);
 
   const buildPlanData = () => {
@@ -412,6 +423,7 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
                             ? "border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
                             : "vault-approval-choice-card hover:-translate-y-px hover:shadow-[0_4px_16px_rgba(0,0,0,0.3)]",
                           isSelected && `ring-2 ${sc.ring} ${sc.glow}`,
+                          isSelected && autoSelectPulse && "animate-[pulse_0.5s_ease-in-out]",
                           choice.isRecommended && !isSelected && "ring-1 ring-primary/30",
                           choice.status === "pass" && "opacity-35 saturate-50 hover:translate-y-0"
                         )}
@@ -637,22 +649,14 @@ function HeroDecisionCard({
           <HeroLine label="Max loss" value={formatCurrency(choice.totalRisk)} valueCls="text-red-400" />
         </div>
 
-        {/* R:R Visualizer */}
+        {/* R:R Visualizer — Collapsible */}
         {hasExit && choice.riskPerContract > 0 ? (
-          <div className="pt-1.5 border-t border-white/[0.04]">
-            <RiskRewardVisualizer
-              riskPerContract={choice.riskPerContract}
-              contractPrice={entryPrice}
-              contracts={choice.contracts}
-              tp1={choice.tp1}
-              tp2={choice.tp2}
-              tp3={choice.tp3}
-              exitPrice={choice.exitPrice}
-              ticker={ticker}
-              direction={direction}
-              fullPremiumRiskOk={choice.fullPremiumRiskOk}
-            />
-          </div>
+          <RRCollapsible
+            choice={choice}
+            entryPrice={entryPrice}
+            ticker={ticker}
+            direction={direction}
+          />
         ) : (
           <div className="pt-1.5 border-t border-white/[0.04]">
             <p className="text-[10px] text-muted-foreground/40 italic">Add an exit to calculate targets & R:R</p>
@@ -754,6 +758,49 @@ function HeroLine({ label, value, bold, valueCls, sub }: {
         {sub && <p className="text-[9px] text-muted-foreground/40 mt-px max-w-[160px]">{sub}</p>}
       </div>
     </div>
+  );
+}
+
+/* ── Collapsible R:R wrapper ── */
+function RRCollapsible({ choice, entryPrice, ticker, direction }: {
+  choice: ContractChoice; entryPrice: number; ticker: string; direction: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const totalRisk = choice.riskPerContract * 100 * choice.contracts;
+  const defaultProfit = totalRisk * 2; // 1:2
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="pt-1.5 border-t border-white/[0.04]">
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between py-1.5 px-1 rounded-md hover:bg-white/[0.03] transition-colors group">
+            <div className="flex items-center gap-2">
+              <Target className="h-3 w-3 text-primary shrink-0" />
+              <span className="text-[10px] font-semibold text-muted-foreground">R:R</span>
+              <span className="text-[11px] font-bold text-foreground tabular-nums">1:2</span>
+              <span className="text-[10px] text-emerald-400 font-semibold tabular-nums">→ +${defaultProfit.toFixed(0)}</span>
+            </div>
+            <ChevronDown className={cn("h-3 w-3 text-muted-foreground/50 transition-transform duration-200", open && "rotate-180")} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="pt-1">
+            <RiskRewardVisualizer
+              riskPerContract={choice.riskPerContract}
+              contractPrice={entryPrice}
+              contracts={choice.contracts}
+              tp1={choice.tp1}
+              tp2={choice.tp2}
+              tp3={choice.tp3}
+              exitPrice={choice.exitPrice}
+              ticker={ticker}
+              direction={direction}
+              fullPremiumRiskOk={choice.fullPremiumRiskOk}
+            />
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }
 
