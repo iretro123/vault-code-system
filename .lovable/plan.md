@@ -1,39 +1,62 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Plan: Premium Visual Upgrade for Trading OS Layout
 
-### What was implemented
+## Problem
+The current OS layout is structurally correct (tabs, metrics strip, hero card) but visually identical to the old layout — just the same components shuffled into tabs. It doesn't match the premium, Robinhood-inspired mockup at all.
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+## What Needs to Change
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+### 1. Greeting Header — make it premium
+- Larger, bolder typography (`text-2xl md:text-3xl`)
+- Status line with a subtle animated dot for active session
+- Remove cramped spacing, add breathing room
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+### 2. Metrics Strip — match the mockup's compact luxury feel
+- Larger balance number as hero number (`text-xl md:text-2xl font-bold`)
+- Cleaner cell separation with subtle dividers
+- P/L color-coded (green/red) with larger weight
+- The `+ Log Trade` button as a premium pill CTA on the right
+- On mobile: horizontal scroll or 2-row compact layout
 
-### What was implemented
+### 3. Hero OS Card — the main upgrade
+- Larger card with more padding (`p-5 md:p-8`)
+- Tab header styled as premium pill-style tabs with subtle background highlight on active
+- Active tab content has more visual breathing room
+- Plan tab: embed VaultTradePlanner directly (not just a "Check a Trade" link to another page)
+- Each tab's empty state should have premium, clear messaging
 
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
+### 4. Lower Analytics — quieter
+- Reduce visual weight: smaller section label, tighter cards
+- Slightly muted borders compared to hero card
 
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+### 5. Mobile polish
+- Larger balance hero treatment
+- Tab icons more prominent
+- Single dominant CTA always visible
+
+## Files to Change
+
+| File | Change |
+|---|---|
+| `src/pages/academy/AcademyTrade.tsx` | Restyle OS layout section: larger greeting, premium metrics strip, better hero card padding, embed VaultTradePlanner in Plan tab |
+| `src/components/trade-os/OSTabHeader.tsx` | Restyle tabs to premium pill/underline style with better spacing and icons |
+
+## Files NOT Touched
+All hooks, all extracted components, all existing logic, all modals, classic layout fallback, database, edge functions.
+
+## Key Visual Changes (Code-Level)
+
+**Greeting**: `text-2xl md:text-3xl font-bold tracking-tight` with larger status line
+
+**Metrics Strip**: Each cell gets `py-3 md:py-4`, balance gets `text-lg md:text-xl`, clean `border-r border-border/20` dividers
+
+**Hero Card**: `rounded-2xl border border-primary/10 bg-card` with `p-5 md:p-8` inner padding. Tab header gets a subtle background bar. Active tab gets blue underline or background pill.
+
+**Plan Tab**: Directly embed `<VaultTradePlanner />` so users don't leave the page. Keep `TodayVaultCheckCard` for active plan status.
+
+**Tab Header**: Pill-shaped active state with `bg-primary/10 text-primary` instead of just an underline. Completed tabs show a green dot. Better mobile sizing.
+
+## Implementation Scope
+This is a visual-only upgrade to the existing OS layout code. No new components needed. No data changes. No hook changes. Just restyling the JSX that's already there and embedding VaultTradePlanner in the Plan tab.
+
