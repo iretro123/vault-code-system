@@ -9,11 +9,11 @@ const TABS: { key: SessionStage; label: string; icon: typeof Calendar; step: num
   { key: "insights", label: "Insights", icon: Brain, step: 4 },
 ];
 
-const STAGE_DESCRIPTIONS: Record<SessionStage, string> = {
-  plan: "Build your trade plan. Enter ticker, direction, entry, stop, and target — the calculator sizes and approves.",
-  live: "Session active. Monitor your plan, track risk, follow your rules. Log the result when the trade closes.",
-  review: "Log your trade result, record mistakes and lessons, and complete your daily check-in.",
-  insights: "AI analyzes your trading behavior. See your risk grade, biggest leak, strongest edge, and next action.",
+const STAGE_GUIDANCE: Record<SessionStage, string> = {
+  plan: "Size your trade. The calculator approves or denies based on your account rules.",
+  live: "Session active. Monitor your plan, track risk, follow your rules. Log when done.",
+  review: "Log your result. Record mistakes, lessons, and complete today's check-in.",
+  insights: "AI scanned your behavior. See your risk grade, biggest leak, and next action.",
 };
 
 interface OSTabHeaderProps {
@@ -24,8 +24,8 @@ interface OSTabHeaderProps {
 
 export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderProps) {
   return (
-    <div className="px-3 md:px-5 pt-3 pb-1 space-y-1.5">
-      <div className="flex items-center gap-0.5 rounded-xl bg-black/25 p-1 border border-white/[0.04]">
+    <div className="px-3 md:px-4 pt-3 pb-2 space-y-2">
+      <div className="flex items-center gap-1 rounded-xl bg-black/40 p-1">
         {TABS.map((tab) => {
           const status = stageStatus(tab.key);
           const isActive = activeStage === tab.key;
@@ -36,31 +36,32 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               key={tab.key}
               onClick={() => onSelect(tab.key)}
               className={cn(
-                "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold uppercase tracking-[0.04em] transition-all duration-100 rounded-lg",
+                "relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-[13px] font-semibold tracking-tight transition-all duration-100 rounded-lg",
                 isActive
-                  ? "bg-white/[0.08] text-foreground shadow-sm"
+                  ? "bg-primary/15 text-primary shadow-[inset_0_-2px_0_0_hsl(var(--primary))]"
                   : isCompleted
-                    ? "text-emerald-400/70 hover:text-emerald-400/90 hover:bg-white/[0.03]"
-                    : "text-muted-foreground/40 hover:text-muted-foreground/60 hover:bg-white/[0.03]"
+                    ? "text-emerald-400/80 hover:text-emerald-400 hover:bg-white/[0.04]"
+                    : "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-white/[0.04]"
               )}
             >
               {isCompleted && !isActive ? (
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/15 shrink-0">
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 shrink-0">
                   <Check className="h-2.5 w-2.5 text-emerald-400" strokeWidth={3} />
                 </span>
               ) : isActive ? (
-                <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <Icon className="h-4 w-4 shrink-0" />
               ) : (
-                <span className="text-[10px] font-bold text-muted-foreground/25 shrink-0">{tab.step}</span>
+                <span className="text-[11px] font-bold text-muted-foreground/30 shrink-0">
+                  {tab.step}
+                </span>
               )}
               {tab.label}
             </button>
           );
         })}
       </div>
-      {/* Stage description microcopy */}
-      <p className="text-[11px] text-muted-foreground/50 leading-relaxed px-1">
-        {STAGE_DESCRIPTIONS[activeStage]}
+      <p className="text-[13px] text-foreground/60 font-medium leading-snug px-1">
+        {STAGE_GUIDANCE[activeStage]}
       </p>
     </div>
   );
