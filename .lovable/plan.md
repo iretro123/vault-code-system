@@ -1,39 +1,40 @@
 
 
-## Plan: AI Mentor Analysis — Full Pipeline Sync + Premium UI — COMPLETED
+# Equity Curve — Premium Robinhood-Style Upgrade
 
-### What was implemented
+## Current State
+Basic area chart with a single header row (icon + title + change %). Minimal info, no stats, generic tooltip. Looks functional but flat.
 
-**Edge Function: `trade-focus/index.ts`**
-- Now fetches from 4 tables in parallel: `trade_entries` (20), `journal_entries` (10), `approved_plans` (10), `vault_state` (today)
-- System prompt includes trade log, journal reflections, plan execution rate, and vault status
-- Two new output fields: `disciplineScore` (strong/moderate/weak) and `riskAssessment`
-- AI references actual data from all pipelines — no generic advice
+## Design
 
-**Frontend: `AcademyTrade.tsx` (AIFocusCard)**
-- Cache key now includes `tradeCount` — any trade add/delete auto-busts cache and re-triggers analysis
-- Premium glassmorphism UI with rotating border glow, scan-line overlay, animated pulse ring on brain icon
-- Shimmer gradient on "AI MENTOR" title
-- Each insight section has color-coded left accent bar (blue/amber/emerald/cyan/violet/rose)
-- Icon glow effects matching accent colors
-- Discipline Score badge (strong/moderate/weak) in header
-- Risk Assessment section
-- Staggered fade-in animations per section
-- "Re-scan" button with spin animation
+Robinhood-style equity curve with:
 
-## Plan: Sync Delete Trade Across All Systems — COMPLETED
+### Header Section
+- **Large balance number** (`$12,450`) as the hero element — text-2xl font-bold tabular-nums
+- **Change pill** below it: colored badge showing `+$350 (2.8%) ↑ All Time` in emerald/red
+- **Time range selector**: `1W / 1M / 3M / All` — small segmented control (like Robinhood) — purely visual for now since data is all-time, but sets up the UI pattern
+- Remove the small icon + "Equity Curve" title — the balance IS the title
 
-### What was implemented
+### Chart
+- Taller chart: `h-[200px] md:h-[220px]`
+- Smoother curve: `type="natural"` instead of `monotone`
+- Subtle animated crosshair on hover (Recharts `cursor` line)
+- Gradient fill with higher opacity at top (0.4 → 0.02)
+- No axis lines, no grid — pure Robinhood minimalism
+- Custom tooltip: just the date and balance on a single line, no box border
 
-**DB Trigger: reverse_trade_entry_from_vault_state**
-- Fires AFTER DELETE on `trade_entries` for same-day trades
-- Restores `trades_remaining_today` and `risk_remaining_today` (capped at max)
-- Recalculates `loss_streak` from remaining trades
-- Recalculates `vault_status` (GREEN/YELLOW/RED) — unlike INSERT trigger, DELETE CAN downgrade from RED
-- Clears `last_block_reason` when reverting to GREEN
-- Reverts linked `approved_plans` from `'logged'` → `'planned'`
+### Stats Row (below chart)
+A 3-column grid of key metrics:
+- **High** — highest balance point
+- **Low** — lowest balance point  
+- **Drawdown** — max peak-to-trough %
 
-**Frontend: AcademyTrade.tsx**
-- After successful delete, calls `refetchPlan()` to refresh active plan state
-- Vault state auto-updates via existing realtime subscription on `vault_state` table
-- All computed metrics (win rate, P/L, equity curve, streaks) recalculate via `useMemo`
+Each: 10px uppercase label + text-sm bold value. Separated by subtle vertical dividers.
+
+### Styling
+- Card: `rounded-2xl border border-white/[0.06] bg-card` — matches the luxury fintech standard
+- Inner glow gradient at top for depth
+
+## File Changed
+**`src/components/trade-os/EquityCurveCard.tsx`** — full rewrite of the component with new layout, stats computation, and styling. No other files affected.
+
