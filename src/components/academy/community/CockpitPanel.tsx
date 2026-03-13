@@ -41,9 +41,9 @@ function ProgressRing({ value, max, size = 40, stroke = 3.5, color = "hsl(var(--
         x={size / 2} y={size / 2}
         textAnchor="middle" dominantBaseline="central"
         className="fill-foreground"
-        style={{ fontSize: "9px", fontWeight: 700, transform: "rotate(90deg)", transformOrigin: "center" }}
+        style={{ fontSize: "8px", fontWeight: 700, transform: "rotate(90deg)", transformOrigin: "center" }}
       >
-        {value}
+        {Math.round(pct * 100)}%
       </text>
     </svg>
   );
