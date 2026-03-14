@@ -1159,6 +1159,15 @@ const AcademyTrade = () => {
         )}
       </div>
 
+      {/* Mobile CTA Bar */}
+      {isMobile && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-3 pb-[env(safe-area-inset-bottom,0px)]">
+          <Button className="w-full h-11 rounded-xl text-sm font-semibold shadow-lg" onClick={handleQuickAction}>
+            {dayStateCta}
+          </Button>
+        </div>
+      )}
+
       {/* Modals */}
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
