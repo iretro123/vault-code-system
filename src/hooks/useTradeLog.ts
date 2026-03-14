@@ -86,7 +86,14 @@ export function useTradeLog() {
 
   useEffect(() => {
     if (user) {
-      fetchEntries();
+      // Always fetch on user change; if cache exists, do background refresh if stale
+      if (cached && !isCacheStale()) {
+        setLoading(false);
+        // Still do a background refresh to stay fresh
+        fetchEntries();
+      } else {
+        fetchEntries();
+      }
     } else {
       setEntries([]);
       setLoading(false);
