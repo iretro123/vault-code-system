@@ -14,7 +14,7 @@ function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"])
   return "No restrictions today";
 }
 
-export function TodaysLimitsSection({ balanceOverride }: TodaysLimitsSectionProps) {
+export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectionProps>(function TodaysLimitsSection({ balanceOverride }, ref) {
   const { state: vaultState, loading } = useVaultState();
 
   if (loading) {
