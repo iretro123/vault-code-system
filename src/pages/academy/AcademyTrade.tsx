@@ -594,11 +594,11 @@ const AcademyTrade = () => {
                             <p className="text-[9px] text-muted-foreground/50 font-medium">Position Cap</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_trades_per_day}</p>
+                            <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
                             <p className="text-[9px] text-muted-foreground/50 font-medium">Trades / Session</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_contracts_allowed}</p>
+                            <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
                             <p className="text-[9px] text-muted-foreground/50 font-medium">Max Contracts</p>
                           </div>
                         </div>
