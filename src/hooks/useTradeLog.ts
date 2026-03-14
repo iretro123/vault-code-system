@@ -120,11 +120,7 @@ export function useTradeLog() {
 
   // ── Computed metrics ──
 
-  // Backward-compatible P/L: legacy entries stored ±1 or 0 as multiplier, new entries store signed dollar P/L directly
-  const computePnl = (e: TradeEntry) =>
-    (e.risk_reward === 1 || e.risk_reward === -1 || e.risk_reward === 0)
-      ? e.risk_reward * e.risk_used   // legacy ±1/0 format
-      : e.risk_reward;                 // new direct dollar format
+  const pnl = computePnl;
 
   const allTimeWinRate = useMemo(() => {
     if (entries.length === 0) return 0;
