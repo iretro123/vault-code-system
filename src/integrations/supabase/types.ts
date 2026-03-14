@@ -1855,14 +1855,20 @@ export type Database = {
       }
       trade_entries: {
         Row: {
+          actual_pnl: number | null
+          contracts: number | null
           created_at: string
           emotional_state: number
+          entry_price: number | null
+          exit_price: number | null
           followed_rules: boolean
           id: string
           instrument_type: string | null
+          is_oversized: boolean
           notes: string | null
           outcome: string | null
           plan_id: string | null
+          planned_risk_dollars: number | null
           risk_reward: number
           risk_used: number
           screenshot_url: string | null
@@ -1873,14 +1879,20 @@ export type Database = {
           vault_verified_at: string | null
         }
         Insert: {
+          actual_pnl?: number | null
+          contracts?: number | null
           created_at?: string
           emotional_state: number
+          entry_price?: number | null
+          exit_price?: number | null
           followed_rules: boolean
           id?: string
           instrument_type?: string | null
+          is_oversized?: boolean
           notes?: string | null
           outcome?: string | null
           plan_id?: string | null
+          planned_risk_dollars?: number | null
           risk_reward: number
           risk_used: number
           screenshot_url?: string | null
@@ -1891,14 +1903,20 @@ export type Database = {
           vault_verified_at?: string | null
         }
         Update: {
+          actual_pnl?: number | null
+          contracts?: number | null
           created_at?: string
           emotional_state?: number
+          entry_price?: number | null
+          exit_price?: number | null
           followed_rules?: boolean
           id?: string
           instrument_type?: string | null
+          is_oversized?: boolean
           notes?: string | null
           outcome?: string | null
           plan_id?: string | null
+          planned_risk_dollars?: number | null
           risk_reward?: number
           risk_used?: number
           screenshot_url?: string | null
@@ -1989,6 +2007,36 @@ export type Database = {
           max_risk_per_trade?: number
           max_trades_per_day?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trading_sessions: {
+        Row: {
+          created_at: string
+          cutoff_time: string
+          hard_close_time: string
+          id: string
+          session_date: string
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          cutoff_time: string
+          hard_close_time: string
+          id?: string
+          session_date: string
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          cutoff_time?: string
+          hard_close_time?: string
+          id?: string
+          session_date?: string
+          start_time?: string
           user_id?: string
         }
         Relationships: []

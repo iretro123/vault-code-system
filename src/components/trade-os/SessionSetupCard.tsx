@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Clock, Play, Ban, AlertTriangle, RotateCcw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SessionTimes { start: string; cutoff: string; hardClose: string; }
 
@@ -50,16 +52,64 @@ interface SessionSetupCardProps {
 }
 
 export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSetupCardProps) {
+  const { user } = useAuth();
   const yesterday = loadYesterdayTimes();
   const [times, setTimes] = useState<SessionTimes | null>(loadTimes);
   const [draft, setDraft] = useState<SessionTimes>(yesterday || { start: "09:30", cutoff: "11:00", hardClose: "12:00" });
   const [now, setNow] = useState(Date.now());
+  const [dbLoaded, setDbLoaded] = useState(false);
 
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
+
+  // Load from DB on mount (overrides localStorage if found)
+  useEffect(() => {
+    if (!user || dbLoaded) return;
+    (async () => {
+      try {
+        const todayDate = new Date().toISOString().slice(0, 10);
+        const { data } = await (supabase.from("trading_sessions" as any) as any)
+          .select("start_time, cutoff_time, hard_close_time")
+          .eq("user_id", user.id)
+          .eq("session_date", todayDate)
+          .maybeSingle();
+        if (data) {
+          const dbTimes: SessionTimes = {
+            start: data.start_time.slice(0, 5),
+            cutoff: data.cutoff_time.slice(0, 5),
+            hardClose: data.hard_close_time.slice(0, 5),
+          };
+          setTimes(dbTimes);
+          saveTimes(dbTimes); // sync to localStorage
+        }
+      } catch (err) {
+        console.error("Error loading session times:", err);
+      } finally {
+        setDbLoaded(true);
+      }
+    })();
+  }, [user, dbLoaded]);
+
+  const persistToDB = useCallback(async (t: SessionTimes) => {
+    if (!user) return;
+    try {
+      const todayDate = new Date().toISOString().slice(0, 10);
+      await (supabase.from("trading_sessions" as any) as any)
+        .upsert({
+          user_id: user.id,
+          session_date: todayDate,
+          start_time: t.start + ":00",
+          cutoff_time: t.cutoff + ":00",
+          hard_close_time: t.hardClose + ":00",
+        }, { onConflict: "user_id,session_date" });
+    } catch (err) {
+      console.error("Error saving session times to DB:", err);
+    }
+  }, [user]);
 
   const handleStart = () => {
     saveTimes(draft);
     setTimes(draft);
+    persistToDB(draft);
     onSessionStarted?.();
   };
 
@@ -67,6 +117,7 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
     if (!yesterday) return;
     saveTimes(yesterday);
     setTimes(yesterday);
+    persistToDB(yesterday);
     onSessionStarted?.();
   };
 

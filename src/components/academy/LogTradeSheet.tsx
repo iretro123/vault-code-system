@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, ImagePlus, X, ChevronDown } from "lucide-react";
+import { CalendarIcon, ImagePlus, X, ChevronDown, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +50,7 @@ interface LogTradeSheetProps {
   onSubmit: (data: TradeFormData) => Promise<void>;
   planId?: string;
   prefill?: PlanPrefill;
+  onLogAnother?: () => void;
 }
 
 function SegmentedToggle({
@@ -82,8 +83,9 @@ function SegmentedToggle({
   );
 }
 
-export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }: LogTradeSheetProps) {
+export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, onLogAnother }: LogTradeSheetProps) {
   const [quickMode, setQuickMode] = useState(true);
+  const [justSaved, setJustSaved] = useState(false);
   const [symbol, setSymbol] = useState(prefill?.symbol || "");
   const [direction, setDirection] = useState<string>(prefill?.direction || "Calls");
 
@@ -183,13 +185,36 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
     return true;
   }, [symbol, pnlValue, resultType, validationError]);
 
+  const resetForm = (keepPrefills = false) => {
+    if (!keepPrefills) {
+      setSymbol("");
+      setDirection("Calls");
+    }
+    setDate(new Date());
+    setEntryPrice("");
+    setExitPrice("");
+    setPositionSize("");
+    setResultType("Win");
+    setPnlOverride("");
+    setTargetHit("Yes");
+    setStopRespected("Yes");
+    setPlanFollowed("Yes");
+    setOversized("No");
+    setSetupUsed("");
+    setNote("");
+    setScreenshotFile(null);
+    setQuickMode(true);
+  };
+
   const handleSubmit = async () => {
     if (!isFormValid || submitting) return;
     setSubmitting(true);
     try {
+      const savedSymbol = symbol.toUpperCase();
+      const savedDirection = direction;
       await onSubmit({
-        symbol: symbol.toUpperCase(),
-        direction,
+        symbol: savedSymbol,
+        direction: savedDirection,
         date,
         entryPrice,
         exitPrice,
@@ -205,28 +230,26 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
         screenshotFile: screenshotFile || undefined,
       });
       // Remember last ticker
-      try { localStorage.setItem("va_last_ticker", symbol.toUpperCase()); } catch {}
-      // Reset on success
-      setSymbol("");
-      setDirection("Calls");
-      setDate(new Date());
-      setEntryPrice("");
-      setExitPrice("");
-      setPositionSize("");
-      setResultType("Win");
-      setPnlOverride("");
-      setTargetHit("Yes");
-      setStopRespected("Yes");
-      setPlanFollowed("Yes");
-      setOversized("No");
-      setSetupUsed("");
-      setNote("");
-      setScreenshotFile(null);
-      setQuickMode(true);
+      try { localStorage.setItem("va_last_ticker", savedSymbol); } catch {}
+      // Keep symbol + direction for "Log Another"
+      resetForm(true);
+      setSymbol(savedSymbol);
+      setDirection(savedDirection);
+      setJustSaved(true);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleLogAnother = () => {
+    setJustSaved(false);
+    onLogAnother?.();
+  };
+
+  // Reset justSaved when sheet closes
+  useEffect(() => {
+    if (!open) setJustSaved(false);
+  }, [open]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -430,12 +453,25 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
 
         {/* Sticky footer */}
         <div className="px-6 py-4 border-t border-border flex gap-3 shrink-0">
-          <Button className="flex-1" onClick={handleSubmit} disabled={!isFormValid || submitting}>
-            {submitting ? "Saving…" : "Save Trade & Generate Review"}
-          </Button>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
+          {justSaved ? (
+            <>
+              <Button className="flex-1 gap-1.5" onClick={handleLogAnother}>
+                <Plus className="h-3 w-3" /> Log Another
+              </Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Done
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button className="flex-1" onClick={handleSubmit} disabled={!isFormValid || submitting}>
+                {submitting ? "Saving…" : "Save Trade & Generate Review"}
+              </Button>
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+            </>
+          )}
         </div>
       </SheetContent>
     </Sheet>

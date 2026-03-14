@@ -94,7 +94,7 @@ const AcademyTrade = () => {
     entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
   } = useTradeLog();
-  const { activePlan, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
+  const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
 
   const plannerRef = useRef<HTMLDivElement>(null);
 
@@ -274,6 +274,23 @@ const AcademyTrade = () => {
     const pnlNum = parseFloat(data.pnl) || 0;
     const isWin = data.resultType === "Win";
     const isLoss = data.resultType === "Loss";
+    const contractsNum = parseInt(data.positionSize) || undefined;
+    const entryNum = parseFloat(data.entryPrice) || undefined;
+    const exitNum = parseFloat(data.exitPrice) || undefined;
+
+    // Compute planned risk: contracts × (entry - stop) × 100 if plan exists
+    let plannedRisk: number | undefined;
+    let isOversized = false;
+    if (logPlanId && activePlan) {
+      const stopDist = activePlan.stop_price_planned
+        ? Math.abs(activePlan.entry_price_planned - Number(activePlan.stop_price_planned))
+        : 0;
+      plannedRisk = activePlan.contracts_planned * stopDist * 100;
+      // Auto-detect oversized: actual contracts > planned contracts
+      if (contractsNum && contractsNum > activePlan.contracts_planned) {
+        isOversized = true;
+      }
+    }
 
     let screenshotUrl: string | undefined;
     if (data.screenshotFile && user) {
@@ -295,11 +312,18 @@ const AcademyTrade = () => {
       risk_reward: pnlNum,  // store actual signed dollar P/L
       followed_rules: data.planFollowed === "Yes",
       emotional_state: 5,
-      notes: `${data.symbol} ${data.direction} | Setup: ${data.setupUsed || "—"} | Target: ${data.targetHit} | Stop: ${data.stopRespected} | Oversized: ${data.oversized}${data.note ? " | " + data.note : ""}${cutoffOverride ? " | ⚠️ Logged after cutoff" : ""}`,
+      notes: `${data.symbol} ${data.direction} | Setup: ${data.setupUsed || "—"} | Target: ${data.targetHit} | Stop: ${data.stopRespected} | Oversized: ${isOversized || data.oversized === "Yes" ? "Yes" : "No"}${data.note ? " | " + data.note : ""}${cutoffOverride ? " | ⚠️ Logged after cutoff" : ""}`,
       symbol: data.symbol.toUpperCase(),
       outcome: isWin ? "WIN" : isLoss ? "LOSS" : "BREAKEVEN",
       trade_date: format(data.date, "yyyy-MM-dd"),
       plan_id: logPlanId,
+      // Structured options fields
+      actual_pnl: pnlNum,
+      contracts: contractsNum,
+      entry_price: entryNum,
+      exit_price: exitNum,
+      planned_risk_dollars: plannedRisk,
+      is_oversized: isOversized || data.oversized === "Yes",
     };
     if (screenshotUrl) newEntry.screenshot_url = screenshotUrl;
 
@@ -311,7 +335,7 @@ const AcademyTrade = () => {
       refetchPlan();
     }
 
-    setShowLogTrade(false);
+    // Don't close sheet — let "Log Another" handle it
     setLogPlanId(undefined);
     setLogPrefill(undefined);
     setTodayStatus("in_progress");
@@ -319,12 +343,6 @@ const AcademyTrade = () => {
     setExecutionStart(null);
     try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
     setCutoffOverride(false);
-    // Auto-transition to review if session closed
-    if (sessionPhase === "Session closed") {
-      setTimeout(() => { setStage("review"); setShowCheckIn(true); }, 400);
-    } else {
-      setTimeout(() => setShowCheckIn(true), 400);
-    }
   };
 
   const handleLogFromPlan = (plan: ApprovedPlan) => {
@@ -490,7 +508,7 @@ const AcademyTrade = () => {
         </div>
 
         <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
-        <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
+        <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} onLogAnother={() => { setLogPlanId(undefined); setLogPrefill(undefined); }} />
         <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
         <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
       </>
@@ -829,7 +847,31 @@ const AcademyTrade = () => {
                         </div>
                       )}
 
-                      {/* CTAs for review */}
+                      {/* Today's Plan History */}
+                      {todayPlans.length > 0 && (
+                        <div>
+                          <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
+                            Today's Plans ({todayPlans.length})
+                          </p>
+                          <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
+                            {todayPlans.map(p => {
+                              const statusColor = p.status === "planned" ? "text-primary" : p.status === "logged" ? "text-emerald-400" : "text-muted-foreground/40";
+                              const statusDot = p.status === "planned" ? "bg-primary" : p.status === "logged" ? "bg-emerald-400" : "bg-muted-foreground/30";
+                              return (
+                                <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
+                                  <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDot)} />
+                                  <span className="text-xs font-semibold text-foreground min-w-[36px]">{p.ticker || "—"}</span>
+                                  <span className="text-[10px] text-muted-foreground/50 flex-1 truncate">
+                                    {p.direction === "calls" ? "Calls" : "Puts"} · {p.contracts_planned}ct · ${Number(p.max_loss_planned).toFixed(0)} risk
+                                  </span>
+                                  <span className={cn("text-[10px] font-semibold capitalize", statusColor)}>{p.status}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {todayStatus !== "complete" && (
                         <div className="flex flex-col gap-1.5">
                           <Button
@@ -1085,7 +1127,7 @@ const AcademyTrade = () => {
 
       {/* Modals */}
       <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} />
-      <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} />
+      <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} onLogAnother={() => { setLogPlanId(undefined); setLogPrefill(undefined); }} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
       <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
     </>

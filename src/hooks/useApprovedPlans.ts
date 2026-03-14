@@ -43,31 +43,37 @@ export interface NewPlanData {
 export function useApprovedPlans() {
   const { user } = useAuth();
   const [activePlan, setActivePlan] = useState<ApprovedPlan | null>(null);
+  const [todayPlans, setTodayPlans] = useState<ApprovedPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getTodayStr = () => {
+    const now = new Date();
+    return now.getUTCFullYear() + "-" +
+      String(now.getUTCMonth() + 1).padStart(2, "0") + "-" +
+      String(now.getUTCDate()).padStart(2, "0");
+  };
+
   const fetchActivePlan = useCallback(async () => {
-    if (!user) { setActivePlan(null); setLoading(false); return; }
+    if (!user) { setActivePlan(null); setTodayPlans([]); setLoading(false); return; }
 
     try {
-      // Leak 4 fix: use UTC date consistently to match server-stored created_at
-      const now = new Date();
-      const todayStr = now.getUTCFullYear() + "-" +
-        String(now.getUTCMonth() + 1).padStart(2, "0") + "-" +
-        String(now.getUTCDate()).padStart(2, "0");
-      const { data, error } = await (supabase.from("approved_plans" as any) as any)
+      const todayStr = getTodayStr();
+      // Fetch ALL today's plans (for history) in one query
+      const { data: allToday, error } = await (supabase.from("approved_plans" as any) as any)
         .select("*")
         .eq("user_id", user.id)
-        .eq("status", "planned")
         .gte("created_at", todayStr + "T00:00:00Z")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setActivePlan(data || null);
+      const plans = allToday || [];
+      setTodayPlans(plans);
+      // Active plan = first one still in "planned" status
+      setActivePlan(plans.find((p: ApprovedPlan) => p.status === "planned") || null);
     } catch (err) {
       console.error("Error fetching active plan:", err);
       setActivePlan(null);
+      setTodayPlans([]);
     } finally {
       setLoading(false);
     }
@@ -158,6 +164,7 @@ export function useApprovedPlans() {
 
   return {
     activePlan,
+    todayPlans,
     loading,
     savePlan,
     cancelPlan,
