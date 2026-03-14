@@ -115,8 +115,12 @@ const AcademyTrade = () => {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
   const [noTradeDay, setNoTradeDay] = useState(false);
-  const [executing, setExecuting] = useState(false);
-  const [executionStart, setExecutionStart] = useState<number | null>(null);
+  const [executing, setExecuting] = useState(() => {
+    try { const d = format(new Date(), "yyyy-MM-dd"); return localStorage.getItem("va_executing_today") === d; } catch { return false; }
+  });
+  const [executionStart, setExecutionStart] = useState<number | null>(() => {
+    try { const v = localStorage.getItem("va_execution_start"); return v ? Number(v) : null; } catch { return null; }
+  });
   const [sessionPhase, setSessionPhase] = useState<SessionPhaseLabel>(null);
   const [cutoffOverride, setCutoffOverride] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
@@ -144,18 +148,20 @@ const AcademyTrade = () => {
 
   const hasData = entries.length > 0;
 
-  // Persist todayStatus: check journal_entries for today on mount
+  // Persist todayStatus + noTradeDay: check journal_entries for today on mount
   useEffect(() => {
     if (!user) return;
     (async () => {
       const { data } = await supabase
         .from("journal_entries")
-        .select("id")
+        .select("id, what_happened")
         .eq("user_id", user.id)
         .eq("entry_date", todayStr)
         .limit(1);
       if (data && data.length > 0) {
         setTodayStatus("complete");
+        // Detect no-trade day from journal (no trades logged today + journal exists)
+        if (todayTradeCount === 0) setNoTradeDay(true);
       } else if (todayTradeCount > 0) {
         setTodayStatus("in_progress");
       }
@@ -311,6 +317,7 @@ const AcademyTrade = () => {
     setTodayStatus("in_progress");
     setExecuting(false);
     setExecutionStart(null);
+    try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
     setCutoffOverride(false);
     // Auto-transition to review if session closed
     if (sessionPhase === "Session closed") {
@@ -358,7 +365,12 @@ const AcademyTrade = () => {
 
   const handleMarkExecuting = () => {
     setExecuting(true);
-    setExecutionStart(Date.now());
+    const now = Date.now();
+    setExecutionStart(now);
+    try {
+      localStorage.setItem("va_executing_today", todayStr);
+      localStorage.setItem("va_execution_start", String(now));
+    } catch {}
   };
 
   const handleLogWithCutoffCheck = (plan?: ApprovedPlan) => {

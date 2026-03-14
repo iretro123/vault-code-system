@@ -84,9 +84,15 @@ function SegmentedToggle({
 
 export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }: LogTradeSheetProps) {
   const [quickMode, setQuickMode] = useState(true);
-  const lastTicker = useMemo(() => { try { return localStorage.getItem("va_last_ticker") || ""; } catch { return ""; } }, []);
-  const [symbol, setSymbol] = useState(prefill?.symbol || lastTicker);
+  const [symbol, setSymbol] = useState(prefill?.symbol || "");
   const [direction, setDirection] = useState<string>(prefill?.direction || "Calls");
+
+  // Pre-fill last ticker on every open (not just mount)
+  useEffect(() => {
+    if (open && !prefill?.symbol && !symbol) {
+      try { const last = localStorage.getItem("va_last_ticker"); if (last) setSymbol(last); } catch {}
+    }
+  }, [open]);
   const [date, setDate] = useState<Date>(new Date());
   const [entryPrice, setEntryPrice] = useState(prefill?.entryPrice || "");
   const [exitPrice, setExitPrice] = useState("");

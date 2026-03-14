@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 
@@ -14,7 +14,7 @@ function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"])
   return "No restrictions today";
 }
 
-export function TodaysLimitsSection({ balanceOverride }: TodaysLimitsSectionProps) {
+export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectionProps>(function TodaysLimitsSection({ balanceOverride }, ref) {
   const { state: vaultState, loading } = useVaultState();
 
   if (loading) {
@@ -35,7 +35,7 @@ export function TodaysLimitsSection({ balanceOverride }: TodaysLimitsSectionProp
   const hasRestriction = lastRestriction !== "No restrictions today";
 
   return (
-    <div className="space-y-3">
+    <div ref={ref} className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
         <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
           <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Risk Budget</p>
@@ -72,4 +72,4 @@ export function TodaysLimitsSection({ balanceOverride }: TodaysLimitsSectionProp
       </p>
     </div>
   );
-}
+});
