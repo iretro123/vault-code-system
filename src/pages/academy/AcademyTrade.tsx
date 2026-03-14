@@ -21,6 +21,7 @@ import { useVaultState } from "@/contexts/VaultStateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
+import { MAX_LOSSES_PER_DAY, computeVaultLimits } from "@/lib/vaultConstants";
 
 // Extracted components
 import { SectionLabel } from "@/components/trade-os/SectionLabel";
@@ -183,7 +184,7 @@ const AcademyTrade = () => {
     } catch { return null; }
   }, [entries.length]);
 
-  const totalMaxTrades = vaultState.trades_remaining_today + todayTradeCount;
+  const totalMaxTrades = MAX_LOSSES_PER_DAY;
 
   const todayEntries = useMemo(() => entries.filter(e => e.trade_date === todayStr), [entries, todayStr]);
   const todayCompliance = useMemo(() => {
@@ -593,11 +594,11 @@ const AcademyTrade = () => {
                             <p className="text-[9px] text-muted-foreground/50 font-medium">Position Cap</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_trades_per_day}</p>
+                            <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
                             <p className="text-[9px] text-muted-foreground/50 font-medium">Trades / Session</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">{vaultState.max_contracts_allowed}</p>
+                            <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
                             <p className="text-[9px] text-muted-foreground/50 font-medium">Max Contracts</p>
                           </div>
                         </div>
