@@ -141,9 +141,42 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
   }, [pnlValue]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Validate P/L vs result type
+  useEffect(() => {
+    const pnl = parseFloat(pnlValue);
+    if (!pnlValue || pnlValue === "") {
+      setValidationError(null); // will be caught on submit
+      return;
+    }
+    if (isNaN(pnl)) {
+      setValidationError("P/L must be a valid number.");
+      return;
+    }
+    if (resultType === "Win" && pnl <= 0) {
+      setValidationError("Win trades must have a positive P/L.");
+      return;
+    }
+    if (resultType === "Loss" && pnl >= 0) {
+      setValidationError("Loss trades must have a negative P/L.");
+      return;
+    }
+    setValidationError(null);
+  }, [pnlValue, resultType]);
+
+  const isFormValid = useMemo(() => {
+    if (!symbol.trim()) return false;
+    const pnl = parseFloat(pnlValue);
+    if (!pnlValue || isNaN(pnl)) return false;
+    if (resultType === "Win" && pnl <= 0) return false;
+    if (resultType === "Loss" && pnl >= 0) return false;
+    if (validationError) return false;
+    return true;
+  }, [symbol, pnlValue, resultType, validationError]);
 
   const handleSubmit = async () => {
-    if (!symbol.trim() || submitting) return;
+    if (!isFormValid || submitting) return;
     setSubmitting(true);
     try {
       await onSubmit({
