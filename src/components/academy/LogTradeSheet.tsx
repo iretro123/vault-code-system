@@ -198,6 +198,8 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
         note,
         screenshotFile: screenshotFile || undefined,
       });
+      // Remember last ticker
+      try { localStorage.setItem("va_last_ticker", symbol.toUpperCase()); } catch {}
       // Reset on success
       setSymbol("");
       setDirection("Calls");
