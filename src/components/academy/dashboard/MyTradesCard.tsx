@@ -1,65 +1,33 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Plus, ArrowRight, Wallet, CheckCircle2, Circle } from "lucide-react";
+import { TrendingUp, Plus, ArrowRight, Wallet, CheckCircle2, Circle, ArrowUpRight, ArrowDownRight, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
 
 export function MyTradesCard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { entries } = useTradeLog();
+  const { profile } = useAuth();
+  const {
+    entries,
+    refetch,
+    allTimeWinRate,
+    todayPnl,
+    totalPnl,
+    complianceRate,
+  } = useTradeLog();
 
-  const [accountBalance, setAccountBalance] = useState<number>(0);
-
-  // Fetch real balance from profiles
+  // Refetch on mount to ensure fresh data when navigating back from Trade OS
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("account_balance")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setAccountBalance(data.account_balance);
-      });
-  }, [user]);
-
-  const balanceSet = accountBalance > 0;
-
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const todayTrades = useMemo(
-    () => entries.filter((e) => e.trade_date === todayStr).length,
-    [entries, todayStr]
-  );
-
-  const startOfWeek = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - d.getDay());
-    d.setHours(0, 0, 0, 0);
-    return d;
+    refetch();
   }, []);
 
-  const weekEntries = useMemo(
-    () => entries.filter((e) => new Date(e.trade_date) >= startOfWeek),
-    [entries, startOfWeek]
-  );
+  const accountBalance = profile?.account_balance ?? 0;
+  const balanceSet = accountBalance > 0;
+  const trackedBalance = accountBalance + totalPnl;
 
-  const tradesThisWeek = weekEntries.length;
-
-  const winRate = useMemo(() => {
-    if (weekEntries.length === 0) return "—";
-    const wins = weekEntries.filter((e) => e.risk_reward > 0).length;
-    return `${Math.round((wins / weekEntries.length) * 100)}%`;
-  }, [weekEntries]);
-
-  const pnl = useMemo(() => {
-    if (weekEntries.length === 0) return "—";
-    const total = weekEntries.reduce((s, e) => s + e.risk_reward * e.risk_used, 0);
-    return total >= 0 ? `+$${total.toFixed(0)}` : `-$${Math.abs(total).toFixed(0)}`;
-  }, [weekEntries]);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayTrades = entries.filter((e) => e.trade_date === todayStr).length;
 
   return (
     <div className="vault-premium-card p-5 space-y-3 h-full flex flex-col">
@@ -77,14 +45,26 @@ export function MyTradesCard() {
         </button>
       </div>
 
-      {/* 3 Metrics */}
+      {/* 3 Metrics — aligned with Trade OS HUD */}
       <div className="grid grid-cols-3 gap-2">
-        <MetricMini label="This Week" value={String(tradesThisWeek)} />
-        <MetricMini label="Win Rate" value={winRate} />
-        <MetricMini label="P/L" value={pnl} />
+        <MetricMini
+          label="Today P/L"
+          value={todayPnl === 0 ? "$0" : todayPnl > 0 ? `+$${todayPnl.toFixed(0)}` : `-$${Math.abs(todayPnl).toFixed(0)}`}
+          accent={todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : undefined}
+        />
+        <MetricMini
+          label="Win Rate"
+          value={entries.length > 0 ? `${allTimeWinRate}%` : "—"}
+          accent={allTimeWinRate >= 50 ? "text-emerald-400" : "text-amber-400"}
+        />
+        <MetricMini
+          label="Compliance"
+          value={entries.length > 0 ? `${complianceRate}%` : "—"}
+          accent={complianceRate >= 80 ? "text-emerald-400" : "text-amber-400"}
+        />
       </div>
 
-      {/* Balance */}
+      {/* Balance — uses same formula as Trade OS */}
       <div
         className="rounded-xl px-4 py-3 flex items-center justify-between"
         style={{
@@ -100,7 +80,7 @@ export function MyTradesCard() {
         </div>
         {balanceSet ? (
           <span className="text-sm font-semibold text-foreground">
-            ${accountBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            ${trackedBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
         ) : (
           <button
@@ -141,7 +121,7 @@ export function MyTradesCard() {
   );
 }
 
-function MetricMini({ label, value }: { label: string; value: string }) {
+function MetricMini({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
     <div
       className="rounded-xl px-3 py-2 text-center"
@@ -153,7 +133,7 @@ function MetricMini({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-muted-foreground/60 mb-1">
         {label}
       </p>
-      <p className="text-base font-bold text-foreground/90">{value}</p>
+      <p className={`text-base font-bold ${accent || "text-foreground/90"}`}>{value}</p>
     </div>
   );
 }
