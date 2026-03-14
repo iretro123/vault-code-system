@@ -220,9 +220,11 @@ export function useTradeLog() {
 
       setEntries((prev) => [data, ...prev]);
       writeCache([data, ...entries]);
+      const sym = entry.symbol || "Trade";
+      const pnlVal = computePnl(data);
       toast({
         title: "Trade logged",
-        description: "Your trade has been recorded.",
+        description: `${sym} · ${pnlVal >= 0 ? "+" : "-"}$${Math.abs(pnlVal).toFixed(0)}`,
       });
       return { error: null, data };
     } catch (error: any) {

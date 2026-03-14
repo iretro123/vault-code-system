@@ -84,7 +84,8 @@ function SegmentedToggle({
 
 export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }: LogTradeSheetProps) {
   const [quickMode, setQuickMode] = useState(true);
-  const [symbol, setSymbol] = useState(prefill?.symbol || "");
+  const lastTicker = useMemo(() => { try { return localStorage.getItem("va_last_ticker") || ""; } catch { return ""; } }, []);
+  const [symbol, setSymbol] = useState(prefill?.symbol || lastTicker);
   const [direction, setDirection] = useState<string>(prefill?.direction || "Calls");
   const [date, setDate] = useState<Date>(new Date());
   const [entryPrice, setEntryPrice] = useState(prefill?.entryPrice || "");
