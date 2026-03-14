@@ -50,6 +50,7 @@ interface LogTradeSheetProps {
   onSubmit: (data: TradeFormData) => Promise<void>;
   planId?: string;
   prefill?: PlanPrefill;
+  onLogAnother?: () => void;
 }
 
 function SegmentedToggle({
