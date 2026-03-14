@@ -930,8 +930,8 @@ const AcademyTrade = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
                           <Popover>
                             <PopoverTrigger asChild>
-                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
-                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Grade</p>
+                              <button className="group rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.97]">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5 tracking-widest">Grade</p>
                                 <p className={cn("text-lg font-bold",
                                   cachedAI.riskGrade === "A" ? "text-emerald-400" :
                                   cachedAI.riskGrade === "B" ? "text-primary" :
@@ -941,55 +941,90 @@ const AcademyTrade = () => {
                                 </p>
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Grade</p>
-                              <p className={cn("text-2xl font-bold mb-1",
-                                cachedAI.riskGrade === "A" ? "text-emerald-400" :
-                                cachedAI.riskGrade === "B" ? "text-primary" :
-                                cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
-                              )}>
-                                {cachedAI.riskGrade || "—"}
-                              </p>
-                              <p className="text-xs text-foreground/70">Risk management grade based on your recent trading behavior.</p>
+                            <PopoverContent side="top" sideOffset={8} className="vault-intel-popover w-[240px] p-0 border-0 rounded-2xl overflow-hidden shadow-[0_8px_40px_-8px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] animate-scale-in">
+                              <div className="relative p-4" style={{ background: "linear-gradient(160deg, rgba(16,16,20,0.97) 0%, rgba(10,10,14,0.99) 100%)", backdropFilter: "blur(24px)" }}>
+                                <div className="absolute inset-0 rounded-2xl" style={{ background: `radial-gradient(circle at 50% 0%, ${cachedAI.riskGrade === "A" ? "rgba(52,211,153,0.08)" : cachedAI.riskGrade === "B" ? "rgba(59,130,246,0.08)" : cachedAI.riskGrade === "C" ? "rgba(251,191,36,0.08)" : "rgba(239,68,68,0.08)"} 0%, transparent 70%)` }} />
+                                <div className="relative">
+                                  <p className="text-[9px] text-muted-foreground/50 font-semibold uppercase tracking-[0.15em] mb-2">Risk Grade</p>
+                                  <div className="flex items-baseline gap-2 mb-2.5">
+                                    <span className={cn("text-4xl font-black tracking-tight",
+                                      cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                                      cachedAI.riskGrade === "B" ? "text-primary" :
+                                      cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                                    )}>
+                                      {cachedAI.riskGrade || "—"}
+                                    </span>
+                                    <span className="text-[10px] text-foreground/40 font-medium">
+                                      {cachedAI.riskGrade === "A" ? "Excellent" : cachedAI.riskGrade === "B" ? "Good" : cachedAI.riskGrade === "C" ? "Needs Work" : "Critical"}
+                                    </span>
+                                  </div>
+                                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.06] to-transparent mb-2.5" />
+                                  <p className="text-[11px] text-foreground/60 leading-[1.5]">Based on your recent risk management, rule compliance, and trading discipline.</p>
+                                </div>
+                              </div>
                             </PopoverContent>
                           </Popover>
 
                           <Popover>
                             <PopoverTrigger asChild>
-                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
-                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Leak</p>
+                              <button className="group rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.97]">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5 tracking-widest">Leak</p>
                                 <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.primaryLeak || "—"}</p>
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Primary Leak</p>
-                              <p className="text-xs text-foreground/90 leading-relaxed">{cachedAI.primaryLeak || "—"}</p>
+                            <PopoverContent side="top" sideOffset={8} className="vault-intel-popover w-[240px] p-0 border-0 rounded-2xl overflow-hidden shadow-[0_8px_40px_-8px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] animate-scale-in">
+                              <div className="relative p-4" style={{ background: "linear-gradient(160deg, rgba(16,16,20,0.97) 0%, rgba(10,10,14,0.99) 100%)", backdropFilter: "blur(24px)" }}>
+                                <div className="absolute inset-0 rounded-2xl" style={{ background: "radial-gradient(circle at 50% 0%, rgba(239,68,68,0.06) 0%, transparent 70%)" }} />
+                                <div className="relative">
+                                  <div className="flex items-center gap-1.5 mb-2.5">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-red-400/70" />
+                                    <p className="text-[9px] text-muted-foreground/50 font-semibold uppercase tracking-[0.15em]">Primary Leak</p>
+                                  </div>
+                                  <p className="text-[13px] text-foreground/90 font-medium leading-[1.6]">{cachedAI.primaryLeak || "—"}</p>
+                                </div>
+                              </div>
                             </PopoverContent>
                           </Popover>
 
                           <Popover>
                             <PopoverTrigger asChild>
-                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
-                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Edge</p>
+                              <button className="group rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.97]">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5 tracking-widest">Edge</p>
                                 <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.strongestEdge || "—"}</p>
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Strongest Edge</p>
-                              <p className="text-xs text-foreground/90 leading-relaxed">{cachedAI.strongestEdge || "—"}</p>
+                            <PopoverContent side="top" sideOffset={8} className="vault-intel-popover w-[240px] p-0 border-0 rounded-2xl overflow-hidden shadow-[0_8px_40px_-8px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] animate-scale-in">
+                              <div className="relative p-4" style={{ background: "linear-gradient(160deg, rgba(16,16,20,0.97) 0%, rgba(10,10,14,0.99) 100%)", backdropFilter: "blur(24px)" }}>
+                                <div className="absolute inset-0 rounded-2xl" style={{ background: "radial-gradient(circle at 50% 0%, rgba(52,211,153,0.06) 0%, transparent 70%)" }} />
+                                <div className="relative">
+                                  <div className="flex items-center gap-1.5 mb-2.5">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/70" />
+                                    <p className="text-[9px] text-muted-foreground/50 font-semibold uppercase tracking-[0.15em]">Strongest Edge</p>
+                                  </div>
+                                  <p className="text-[13px] text-foreground/90 font-medium leading-[1.6]">{cachedAI.strongestEdge || "—"}</p>
+                                </div>
+                              </div>
                             </PopoverContent>
                           </Popover>
 
                           <Popover>
                             <PopoverTrigger asChild>
-                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
-                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Next</p>
+                              <button className="group rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-all duration-200 active:scale-[0.97]">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5 tracking-widest">Next</p>
                                 <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.nextAction || "—"}</p>
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Next Action</p>
-                              <p className="text-xs text-foreground/90 leading-relaxed">{cachedAI.nextAction || "—"}</p>
+                            <PopoverContent side="top" sideOffset={8} className="vault-intel-popover w-[240px] p-0 border-0 rounded-2xl overflow-hidden shadow-[0_8px_40px_-8px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] animate-scale-in">
+                              <div className="relative p-4" style={{ background: "linear-gradient(160deg, rgba(16,16,20,0.97) 0%, rgba(10,10,14,0.99) 100%)", backdropFilter: "blur(24px)" }}>
+                                <div className="absolute inset-0 rounded-2xl" style={{ background: "radial-gradient(circle at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 70%)" }} />
+                                <div className="relative">
+                                  <div className="flex items-center gap-1.5 mb-2.5">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary/70" />
+                                    <p className="text-[9px] text-muted-foreground/50 font-semibold uppercase tracking-[0.15em]">Next Action</p>
+                                  </div>
+                                  <p className="text-[13px] text-foreground/90 font-medium leading-[1.6]">{cachedAI.nextAction || "—"}</p>
+                                </div>
+                              </div>
                             </PopoverContent>
                           </Popover>
                         </div>
