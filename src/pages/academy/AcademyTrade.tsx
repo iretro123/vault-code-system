@@ -116,7 +116,7 @@ const AcademyTrade = () => {
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
   const [noTradeDay, setNoTradeDay] = useState(false);
   const [executing, setExecuting] = useState(() => {
-    try { return localStorage.getItem("va_executing_today") === todayStr; } catch { return false; }
+    try { const d = format(new Date(), "yyyy-MM-dd"); return localStorage.getItem("va_executing_today") === d; } catch { return false; }
   });
   const [executionStart, setExecutionStart] = useState<number | null>(() => {
     try { const v = localStorage.getItem("va_execution_start"); return v ? Number(v) : null; } catch { return null; }
