@@ -1,29 +1,30 @@
 
 
-# Fix: Equity Curve Color & Working Range Selector
+## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
-## Problem 1: Grey Chart
-The chart stroke uses `hsl(var(--status-active))` but this CSS variable **does not exist**. The defined variables are `--status-success`, `--status-warning`, and `--status-danger`. Since the variable is undefined, the browser renders the stroke as transparent/grey.
+### 1. Source of Truth (Unified)
+- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
+- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
+- **Trades Used**: `trade_entries` filtered by today's date
+- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
+- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
 
-**Fix**: Replace all `hsl(var(--status-active))` references with direct emerald/red hex colors that match the design system (emerald-400 for positive, rose-400 for negative). This also fixes the Tailwind classes `bg-status-active/15` and `text-status-active` which similarly resolve to nothing.
+### 2. DayState Engine (A–E)
+- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
+- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
+- Session closed auto-suggests review via `sessionPhase` input
 
-## Problem 2: Range Selector Does Nothing
-The 1W/1M/3M/All buttons set `range` state but `chartData` always shows all data. The range is never used to filter.
+### 3. OSControlRail Unified
+- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
+- Shows `dayStateStatus` text and `dayStateCta` button
+- Log Result only shows in `live_session` state
 
-**Fix**: Filter `chartData` based on the selected range by computing a cutoff date (7 days for 1W, 30 for 1M, 90 for 3M, no filter for All). Recalculate the change pill (P/L and %) relative to the filtered window, and update the "All Time" label to match (e.g., "Past Week", "Past Month").
+### 4. QuickCheckInSheet Enhanced
+- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
+- All fields save to `journal_entries`
 
-## Problem 3: Tooltip Shows Cents
-The tooltip still uses raw `toLocaleString()` — should be whole dollars.
-
-## File: `src/components/trade-os/EquityCurveCard.tsx`
-
-Changes:
-1. Replace `hsl(var(--status-active))` → `#34d399` (emerald-400) and `hsl(var(--destructive))` → `#fb7185` (rose-400) for reliable color rendering
-2. Add `filteredData` memo that slices `chartData` based on `range` using date cutoffs
-3. Compute `rangeChange` and `rangePct` from `filteredData` instead of always using all-time
-4. Update the label next to the change pill to reflect the active range ("Past Week", "Past Month", etc.)
-5. Recalculate High/Low/Drawdown stats from `filteredData`
-6. Fix tooltip to use whole-dollar formatting
-
-No other files need changes. No database changes.
-
+### 5. CTA Logic
+- Hero shows state-driven status line
+- Each stage has single primary CTA driven by `dayState`
+- "Start Session" replaces "Go to Live Mode"
+- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
