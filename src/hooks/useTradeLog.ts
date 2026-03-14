@@ -4,6 +4,8 @@ import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 
 const CACHE_KEY = "va_cache_trade_entries";
+const CACHE_TS_KEY = "va_cache_trade_entries_ts";
+const STALE_MS = 30_000; // 30 seconds
 
 function readCache(): TradeEntry[] | null {
   try {
@@ -14,7 +16,18 @@ function readCache(): TradeEntry[] | null {
 }
 
 function writeCache(data: TradeEntry[]) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+  } catch {}
+}
+
+function isCacheStale(): boolean {
+  try {
+    const ts = localStorage.getItem(CACHE_TS_KEY);
+    if (!ts) return true;
+    return Date.now() - Number(ts) > STALE_MS;
+  } catch { return true; }
 }
 
 export interface TradeEntry {
@@ -73,7 +86,14 @@ export function useTradeLog() {
 
   useEffect(() => {
     if (user) {
-      fetchEntries();
+      // Always fetch on user change; if cache exists, do background refresh if stale
+      if (cached && !isCacheStale()) {
+        setLoading(false);
+        // Still do a background refresh to stay fresh
+        fetchEntries();
+      } else {
+        fetchEntries();
+      }
     } else {
       setEntries([]);
       setLoading(false);
