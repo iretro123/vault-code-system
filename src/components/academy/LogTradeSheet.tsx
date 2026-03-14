@@ -289,9 +289,16 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
                 placeholder={calculatedPnl ? `Auto: $${calculatedPnl}` : "$0.00"}
                 value={pnlOverride}
                 onChange={(e) => setPnlOverride(e.target.value)}
+                className={cn(validationError && "border-destructive")}
               />
-              {calculatedPnl && !pnlOverride && (
+              {validationError && (
+                <p className="text-[10px] text-destructive mt-1">{validationError}</p>
+              )}
+              {!validationError && calculatedPnl && !pnlOverride && (
                 <p className="text-[10px] text-muted-foreground mt-1">Auto-calculated from (exit − entry) × contracts × 100</p>
+              )}
+              {!validationError && !pnlValue && (
+                <p className="text-[10px] text-muted-foreground/60 mt-1">Required — enter your actual dollar P/L for this trade.</p>
               )}
             </Field>
 
