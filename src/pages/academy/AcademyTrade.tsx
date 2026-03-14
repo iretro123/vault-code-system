@@ -585,30 +585,52 @@ const AcademyTrade = () => {
                     const riskBudget = bal * (defaults.riskPercent / 100);
                     const positionCap = bal * (defaults.preferredSpendPercent / 100);
                     return (
+                      <TooltipProvider delayDuration={200}>
                       <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
                         <p className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-[0.1em] mb-2">Today's Budget</p>
                         <div className="grid grid-cols-4 gap-2">
                           <div className="text-center">
                             <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
-                            <p className="text-[9px] text-muted-foreground/50 font-medium">Risk Budget</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Risk Budget <HelpCircle className="h-2.5 w-2.5" /></p>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades. Based on your balance and tier.</TooltipContent>
+                            </Tooltip>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
-                            <p className="text-[9px] text-muted-foreground/50 font-medium">Position Cap</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Position Cap <HelpCircle className="h-2.5 w-2.5" /></p>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">The max dollar amount you should spend on a single options position.</TooltipContent>
+                            </Tooltip>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
-                            <p className="text-[9px] text-muted-foreground/50 font-medium">Trades / Session</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Trades / Session <HelpCircle className="h-2.5 w-2.5" /></p>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">How many losing trades you're allowed before the system locks you out for the day.</TooltipContent>
+                            </Tooltip>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
-                            <p className="text-[9px] text-muted-foreground/50 font-medium">Max Contracts</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most contracts you can hold in one position based on your risk budget.</TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
                         <p className="text-[9px] text-muted-foreground/40 text-center mt-2">
                           ${bal.toLocaleString()} · {tier} tier · {defaults.riskPercent}% risk
                         </p>
                       </div>
+                      </TooltipProvider>
                     );
                   })()}
 
