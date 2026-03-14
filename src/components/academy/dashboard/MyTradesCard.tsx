@@ -22,7 +22,7 @@ export function MyTradesCard() {
     refetch();
   }, []);
 
-  const accountBalance = profile?.account_balance ?? 0;
+  const accountBalance = (profile as any)?.account_balance ?? 0;
   const balanceSet = accountBalance > 0;
   const trackedBalance = accountBalance + totalPnl;
 
