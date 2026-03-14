@@ -35,7 +35,8 @@ const roomMessageCache = new Map<string, Message[]>();
 
 export function useRoomMessages(roomSlug: string) {
   const { user, profile, userRole } = useAuth();
-  const cached = roomMessageCache.get(roomSlug);
+  const cachedRef = useRef(roomMessageCache.get(roomSlug));
+  const cached = cachedRef.current;
   const [messages, setMessages] = useState<Message[]>(cached ?? []);
   // If we have cached messages, skip loading state entirely
   const [loading, setLoading] = useState(!cached);
@@ -43,6 +44,7 @@ export function useRoomMessages(roomSlug: string) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const oldestRef = useRef<string | null>(cached?.length ? cached[0].created_at : null);
+  const hasFetchedRef = useRef(false);
 
   const castMessages = (data: any[]): Message[] =>
     data.map((d) => ({
@@ -67,7 +69,7 @@ export function useRoomMessages(roomSlug: string) {
 
   // Initial fetch (background refresh if cached)
   const fetchMessages = useCallback(async () => {
-    if (!cached) setLoading(true);
+    if (!cachedRef.current) setLoading(true);
 
     const { data, error: err } = await supabase
       .from("academy_messages")
@@ -95,7 +97,7 @@ export function useRoomMessages(roomSlug: string) {
     setHasMore((data?.length ?? 0) >= PAGE_SIZE);
     oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
     setLoading(false);
-  }, [roomSlug, cached, updateMessages]);
+  }, [roomSlug, updateMessages]);
 
   // Load older messages
   const loadMore = useCallback(async () => {
@@ -287,8 +289,14 @@ export function useRoomMessages(roomSlug: string) {
     [user, messages, userRole, updateMessages]
   );
 
-  // Initial load
+  // Initial load — run once per roomSlug
   useEffect(() => {
+    hasFetchedRef.current = false;
+  }, [roomSlug]);
+
+  useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchMessages();
   }, [fetchMessages]);
 
