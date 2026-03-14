@@ -289,8 +289,14 @@ export function useRoomMessages(roomSlug: string) {
     [user, messages, userRole, updateMessages]
   );
 
-  // Initial load
+  // Initial load — run once per roomSlug
   useEffect(() => {
+    hasFetchedRef.current = false;
+  }, [roomSlug]);
+
+  useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     fetchMessages();
   }, [fetchMessages]);
 
