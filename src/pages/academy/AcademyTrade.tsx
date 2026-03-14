@@ -928,28 +928,70 @@ const AcademyTrade = () => {
                     <>
                       {cachedAI && (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Grade</p>
-                            <p className={cn("text-lg font-bold",
-                              cachedAI.riskGrade === "A" ? "text-emerald-400" :
-                              cachedAI.riskGrade === "B" ? "text-primary" :
-                              cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
-                            )}>
-                              {cachedAI.riskGrade || "—"}
-                            </p>
-                          </div>
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Leak</p>
-                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.primaryLeak || "—"}</p>
-                          </div>
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Edge</p>
-                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.strongestEdge || "—"}</p>
-                          </div>
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Next</p>
-                            <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.nextAction || "—"}</p>
-                          </div>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Grade</p>
+                                <p className={cn("text-lg font-bold",
+                                  cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                                  cachedAI.riskGrade === "B" ? "text-primary" :
+                                  cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                                )}>
+                                  {cachedAI.riskGrade || "—"}
+                                </p>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
+                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Grade</p>
+                              <p className={cn("text-2xl font-bold mb-1",
+                                cachedAI.riskGrade === "A" ? "text-emerald-400" :
+                                cachedAI.riskGrade === "B" ? "text-primary" :
+                                cachedAI.riskGrade === "C" ? "text-amber-400" : "text-red-400"
+                              )}>
+                                {cachedAI.riskGrade || "—"}
+                              </p>
+                              <p className="text-xs text-foreground/70">Risk management grade based on your recent trading behavior.</p>
+                            </PopoverContent>
+                          </Popover>
+
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Leak</p>
+                                <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.primaryLeak || "—"}</p>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
+                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Primary Leak</p>
+                              <p className="text-xs text-foreground/90 leading-relaxed">{cachedAI.primaryLeak || "—"}</p>
+                            </PopoverContent>
+                          </Popover>
+
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Edge</p>
+                                <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.strongestEdge || "—"}</p>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
+                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Strongest Edge</p>
+                              <p className="text-xs text-foreground/90 leading-relaxed">{cachedAI.strongestEdge || "—"}</p>
+                            </PopoverContent>
+                          </Popover>
+
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2 text-center w-full cursor-pointer hover:bg-white/[0.04] transition-colors">
+                                <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-0.5">Next</p>
+                                <p className="text-[10px] font-semibold text-foreground/80 truncate">{cachedAI.nextAction || "—"}</p>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="top" className="bg-black/90 backdrop-blur-md border-white/10 rounded-xl p-3 max-w-[220px] w-auto">
+                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase mb-1">Next Action</p>
+                              <p className="text-xs text-foreground/90 leading-relaxed">{cachedAI.nextAction || "—"}</p>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                       )}
                       <AIFocusCard entries={entries} accessToken={session?.access_token} />
