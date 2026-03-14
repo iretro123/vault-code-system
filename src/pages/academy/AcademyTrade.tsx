@@ -148,18 +148,20 @@ const AcademyTrade = () => {
 
   const hasData = entries.length > 0;
 
-  // Persist todayStatus: check journal_entries for today on mount
+  // Persist todayStatus + noTradeDay: check journal_entries for today on mount
   useEffect(() => {
     if (!user) return;
     (async () => {
       const { data } = await supabase
         .from("journal_entries")
-        .select("id")
+        .select("id, what_happened")
         .eq("user_id", user.id)
         .eq("entry_date", todayStr)
         .limit(1);
       if (data && data.length > 0) {
         setTodayStatus("complete");
+        // Detect no-trade day from journal (no trades logged today + journal exists)
+        if (todayTradeCount === 0) setNoTradeDay(true);
       } else if (todayTradeCount > 0) {
         setTodayStatus("in_progress");
       }
