@@ -847,7 +847,31 @@ const AcademyTrade = () => {
                         </div>
                       )}
 
-                      {/* CTAs for review */}
+                      {/* Today's Plan History */}
+                      {todayPlans.length > 0 && (
+                        <div>
+                          <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
+                            Today's Plans ({todayPlans.length})
+                          </p>
+                          <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
+                            {todayPlans.map(p => {
+                              const statusColor = p.status === "planned" ? "text-primary" : p.status === "logged" ? "text-emerald-400" : "text-muted-foreground/40";
+                              const statusDot = p.status === "planned" ? "bg-primary" : p.status === "logged" ? "bg-emerald-400" : "bg-muted-foreground/30";
+                              return (
+                                <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
+                                  <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDot)} />
+                                  <span className="text-xs font-semibold text-foreground min-w-[36px]">{p.ticker || "—"}</span>
+                                  <span className="text-[10px] text-muted-foreground/50 flex-1 truncate">
+                                    {p.direction === "calls" ? "Calls" : "Puts"} · {p.contracts_planned}ct · ${Number(p.max_loss_planned).toFixed(0)} risk
+                                  </span>
+                                  <span className={cn("text-[10px] font-semibold capitalize", statusColor)}>{p.status}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {todayStatus !== "complete" && (
                         <div className="flex flex-col gap-1.5">
                           <Button
