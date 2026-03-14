@@ -141,9 +141,42 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
   }, [pnlValue]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Validate P/L vs result type
+  useEffect(() => {
+    const pnl = parseFloat(pnlValue);
+    if (!pnlValue || pnlValue === "") {
+      setValidationError(null); // will be caught on submit
+      return;
+    }
+    if (isNaN(pnl)) {
+      setValidationError("P/L must be a valid number.");
+      return;
+    }
+    if (resultType === "Win" && pnl <= 0) {
+      setValidationError("Win trades must have a positive P/L.");
+      return;
+    }
+    if (resultType === "Loss" && pnl >= 0) {
+      setValidationError("Loss trades must have a negative P/L.");
+      return;
+    }
+    setValidationError(null);
+  }, [pnlValue, resultType]);
+
+  const isFormValid = useMemo(() => {
+    if (!symbol.trim()) return false;
+    const pnl = parseFloat(pnlValue);
+    if (!pnlValue || isNaN(pnl)) return false;
+    if (resultType === "Win" && pnl <= 0) return false;
+    if (resultType === "Loss" && pnl >= 0) return false;
+    if (validationError) return false;
+    return true;
+  }, [symbol, pnlValue, resultType, validationError]);
 
   const handleSubmit = async () => {
-    if (!symbol.trim() || submitting) return;
+    if (!isFormValid || submitting) return;
     setSubmitting(true);
     try {
       await onSubmit({
@@ -256,9 +289,16 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
                 placeholder={calculatedPnl ? `Auto: $${calculatedPnl}` : "$0.00"}
                 value={pnlOverride}
                 onChange={(e) => setPnlOverride(e.target.value)}
+                className={cn(validationError && "border-destructive")}
               />
-              {calculatedPnl && !pnlOverride && (
+              {validationError && (
+                <p className="text-[10px] text-destructive mt-1">{validationError}</p>
+              )}
+              {!validationError && calculatedPnl && !pnlOverride && (
                 <p className="text-[10px] text-muted-foreground mt-1">Auto-calculated from (exit − entry) × contracts × 100</p>
+              )}
+              {!validationError && !pnlValue && (
+                <p className="text-[10px] text-muted-foreground/60 mt-1">Required — enter your actual dollar P/L for this trade.</p>
               )}
             </Field>
 
@@ -351,7 +391,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
 
         {/* Sticky footer */}
         <div className="px-6 py-4 border-t border-border flex gap-3 shrink-0">
-          <Button className="flex-1" onClick={handleSubmit} disabled={!symbol.trim() || submitting}>
+          <Button className="flex-1" onClick={handleSubmit} disabled={!isFormValid || submitting}>
             {submitting ? "Saving…" : "Save Trade & Generate Review"}
           </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
