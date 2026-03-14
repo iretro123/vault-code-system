@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 
