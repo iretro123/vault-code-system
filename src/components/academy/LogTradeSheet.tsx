@@ -185,13 +185,36 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
     return true;
   }, [symbol, pnlValue, resultType, validationError]);
 
+  const resetForm = (keepPrefills = false) => {
+    if (!keepPrefills) {
+      setSymbol("");
+      setDirection("Calls");
+    }
+    setDate(new Date());
+    setEntryPrice("");
+    setExitPrice("");
+    setPositionSize("");
+    setResultType("Win");
+    setPnlOverride("");
+    setTargetHit("Yes");
+    setStopRespected("Yes");
+    setPlanFollowed("Yes");
+    setOversized("No");
+    setSetupUsed("");
+    setNote("");
+    setScreenshotFile(null);
+    setQuickMode(true);
+  };
+
   const handleSubmit = async () => {
     if (!isFormValid || submitting) return;
     setSubmitting(true);
     try {
+      const savedSymbol = symbol.toUpperCase();
+      const savedDirection = direction;
       await onSubmit({
-        symbol: symbol.toUpperCase(),
-        direction,
+        symbol: savedSymbol,
+        direction: savedDirection,
         date,
         entryPrice,
         exitPrice,
@@ -207,28 +230,26 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
         screenshotFile: screenshotFile || undefined,
       });
       // Remember last ticker
-      try { localStorage.setItem("va_last_ticker", symbol.toUpperCase()); } catch {}
-      // Reset on success
-      setSymbol("");
-      setDirection("Calls");
-      setDate(new Date());
-      setEntryPrice("");
-      setExitPrice("");
-      setPositionSize("");
-      setResultType("Win");
-      setPnlOverride("");
-      setTargetHit("Yes");
-      setStopRespected("Yes");
-      setPlanFollowed("Yes");
-      setOversized("No");
-      setSetupUsed("");
-      setNote("");
-      setScreenshotFile(null);
-      setQuickMode(true);
+      try { localStorage.setItem("va_last_ticker", savedSymbol); } catch {}
+      // Keep symbol + direction for "Log Another"
+      resetForm(true);
+      setSymbol(savedSymbol);
+      setDirection(savedDirection);
+      setJustSaved(true);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const handleLogAnother = () => {
+    setJustSaved(false);
+    onLogAnother?.();
+  };
+
+  // Reset justSaved when sheet closes
+  useEffect(() => {
+    if (!open) setJustSaved(false);
+  }, [open]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
