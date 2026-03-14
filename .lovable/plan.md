@@ -50,3 +50,34 @@
 - Exported `computePnl` from `useTradeLog.ts` as standalone function
 - Review stage trade list now uses `computePnl(e)` instead of `e.risk_reward * e.risk_used`
 - Backward-compatible with legacy ±1 format entries
+
+## Phase 3 — Options Day Trader Optimization — COMPLETED
+
+### 1. Cockpit-Mode Live Stage
+- Removed StageHeadline from Live stage, removed trade summary strip (duplicate of hero data)
+- Active plan shows as single-row cockpit: ticker + direction + contracts + status badge
+- SessionCountdownLine component shows inline timer + trades remaining
+- TodaysLimitsSection, SessionSetupCard, End Session moved behind collapsible "Session Details"
+- No-plan state compressed to single row with Plan + Log buttons
+
+### 2. OSControlRail De-duplicated
+- Removed risk budget, trade count, and session timer sections (already in hero + main view)
+- Rail now shows only: Vault Status, Active Plan summary, Restrictions, Day State CTA
+
+### 3. Auto-Default Session Times
+- Pre-fills draft from yesterday's localStorage key (`va_session_times_YYYY-MM-DD`)
+- "Same as yesterday" one-tap button saves and starts session immediately
+
+### 4. Auto-Review After Session Close
+- `handleTradeSubmit` auto-transitions to review stage + opens check-in when `sessionPhase === "Session closed"`
+
+### 5. Specific Trade Toast
+- `useTradeLog.addEntry` toast now shows symbol + signed P/L instead of generic message
+
+### 6. Smart Log Defaults
+- `planFollowed` already defaults to "Yes"
+- Last-used ticker remembered in `localStorage` (`va_last_ticker`) and pre-filled
+
+### 7. Inline AI Insights
+- Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
+- 2×2 grid, each card shows label + value + description without clicking
