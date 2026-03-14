@@ -284,7 +284,7 @@ const AcademyTrade = () => {
 
     const newEntry: any = {
       risk_used: Math.abs(pnlNum),
-      risk_reward: isWin ? 1 : isLoss ? -1 : 0,
+      risk_reward: pnlNum,  // store actual signed dollar P/L
       followed_rules: data.planFollowed === "Yes",
       emotional_state: 5,
       notes: `${data.symbol} ${data.direction} | Setup: ${data.setupUsed || "—"} | Target: ${data.targetHit} | Stop: ${data.stopRespected} | Oversized: ${data.oversized}${data.note ? " | " + data.note : ""}${cutoffOverride ? " | ⚠️ Logged after cutoff" : ""}`,
