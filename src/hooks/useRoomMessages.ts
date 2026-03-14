@@ -35,7 +35,8 @@ const roomMessageCache = new Map<string, Message[]>();
 
 export function useRoomMessages(roomSlug: string) {
   const { user, profile, userRole } = useAuth();
-  const cached = roomMessageCache.get(roomSlug);
+  const cachedRef = useRef(roomMessageCache.get(roomSlug));
+  const cached = cachedRef.current;
   const [messages, setMessages] = useState<Message[]>(cached ?? []);
   // If we have cached messages, skip loading state entirely
   const [loading, setLoading] = useState(!cached);
@@ -43,6 +44,7 @@ export function useRoomMessages(roomSlug: string) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const oldestRef = useRef<string | null>(cached?.length ? cached[0].created_at : null);
+  const hasFetchedRef = useRef(false);
 
   const castMessages = (data: any[]): Message[] =>
     data.map((d) => ({
