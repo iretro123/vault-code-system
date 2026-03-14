@@ -1,18 +1,22 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Clock, Play, Ban, AlertTriangle } from "lucide-react";
+import { Clock, Play, Ban, AlertTriangle, RotateCcw } from "lucide-react";
 
 interface SessionTimes { start: string; cutoff: string; hardClose: string; }
 
 export type SessionPhaseLabel = "Pre-session" | "Trading window" | "No new entries" | "Session closed" | null;
 
-function getStorageKey() {
+function getStorageKey(dateOffset = 0) {
   const d = new Date();
+  d.setDate(d.getDate() + dateOffset);
   return `va_session_times_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function loadTimes(): SessionTimes | null {
   try { const raw = localStorage.getItem(getStorageKey()); return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
+function loadYesterdayTimes(): SessionTimes | null {
+  try { const raw = localStorage.getItem(getStorageKey(-1)); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
 function saveTimes(t: SessionTimes) { localStorage.setItem(getStorageKey(), JSON.stringify(t)); }
 function toMs(time: string): number {
@@ -30,14 +34,25 @@ function fmt12h(t: string): string {
   return `${h === 0 ? 12 : h > 12 ? h - 12 : h}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
+/** Compute session phase from times + now — shared helper */
+function computePhase(times: SessionTimes | null, now: number) {
+  if (!times) return null;
+  const startMs = toMs(times.start); const cutoffMs = toMs(times.cutoff); const closeMs = toMs(times.hardClose);
+  if (now < startMs) return { label: "Pre-session" as const, color: "text-primary", bg: "bg-primary/10", countdown: fmtCountdown(startMs - now), countdownLabel: "Starts in" };
+  if (now < cutoffMs) return { label: "Trading window" as const, color: "text-emerald-400", bg: "bg-emerald-500/10", countdown: fmtCountdown(cutoffMs - now), countdownLabel: "Cutoff in" };
+  if (now < closeMs) return { label: "No new entries" as const, color: "text-amber-400", bg: "bg-amber-500/10", countdown: fmtCountdown(closeMs - now), countdownLabel: "Hard close in" };
+  return { label: "Session closed" as const, color: "text-red-400", bg: "bg-red-500/10", countdown: null, countdownLabel: null };
+}
+
 interface SessionSetupCardProps {
   onSessionStarted?: () => void;
   onPhaseChange?: (phase: SessionPhaseLabel) => void;
 }
 
 export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSetupCardProps) {
+  const yesterday = loadYesterdayTimes();
   const [times, setTimes] = useState<SessionTimes | null>(loadTimes);
-  const [draft, setDraft] = useState<SessionTimes>({ start: "09:30", cutoff: "11:00", hardClose: "12:00" });
+  const [draft, setDraft] = useState<SessionTimes>(yesterday || { start: "09:30", cutoff: "11:00", hardClose: "12:00" });
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
@@ -48,19 +63,19 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
     onSessionStarted?.();
   };
 
+  const handleSameAsYesterday = () => {
+    if (!yesterday) return;
+    saveTimes(yesterday);
+    setTimes(yesterday);
+    onSessionStarted?.();
+  };
+
   const handleEdit = () => {
-    setDraft(times || { start: "09:30", cutoff: "11:00", hardClose: "12:00" });
+    setDraft(times || yesterday || { start: "09:30", cutoff: "11:00", hardClose: "12:00" });
     setTimes(null);
   };
 
-  const sessionPhase = useMemo(() => {
-    if (!times) return null;
-    const startMs = toMs(times.start); const cutoffMs = toMs(times.cutoff); const closeMs = toMs(times.hardClose);
-    if (now < startMs) return { label: "Pre-session" as const, color: "text-primary", bg: "bg-primary/10", countdown: fmtCountdown(startMs - now), countdownLabel: "Starts in" };
-    if (now < cutoffMs) return { label: "Trading window" as const, color: "text-emerald-400", bg: "bg-emerald-500/10", countdown: fmtCountdown(cutoffMs - now), countdownLabel: "Cutoff in" };
-    if (now < closeMs) return { label: "No new entries" as const, color: "text-amber-400", bg: "bg-amber-500/10", countdown: fmtCountdown(closeMs - now), countdownLabel: "Hard close in" };
-    return { label: "Session closed" as const, color: "text-red-400", bg: "bg-red-500/10", countdown: null, countdownLabel: null };
-  }, [times, now]);
+  const sessionPhase = useMemo(() => computePhase(times, now), [times, now]);
 
   // Notify parent of phase changes
   useEffect(() => {
@@ -80,6 +95,18 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
             <p className="text-[10px] text-muted-foreground/60">Define when you trade, when to stop entries, and when to close.</p>
           </div>
         </div>
+
+        {/* Same as yesterday — one-tap */}
+        {yesterday && (
+          <Button
+            variant="outline"
+            className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-primary/20 text-primary hover:bg-primary/10"
+            onClick={handleSameAsYesterday}
+          >
+            <RotateCcw className="h-3 w-3" />
+            Same as yesterday ({fmt12h(yesterday.start)} – {fmt12h(yesterday.hardClose)})
+          </Button>
+        )}
 
         <div className="grid grid-cols-3 gap-2">
           {([
@@ -153,6 +180,23 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
         </div>
       </div>
     </div>
+  );
+}
+
+/** Compact inline countdown — for cockpit mode */
+export function SessionCountdownLine({ className }: { className?: string }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
+  const times = loadTimes();
+  const phase = useMemo(() => computePhase(times, now), [times, now]);
+
+  if (!phase) return <span className={cn("text-[10px] text-muted-foreground/40 italic", className)}>No session set</span>;
+
+  return (
+    <span className={cn("text-[10px] font-bold tabular-nums", phase.color, className)}>
+      {phase.label}
+      {phase.countdown && <> · {phase.countdownLabel}: {phase.countdown}</>}
+    </span>
   );
 }
 
