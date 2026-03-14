@@ -391,7 +391,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
 
         {/* Sticky footer */}
         <div className="px-6 py-4 border-t border-border flex gap-3 shrink-0">
-          <Button className="flex-1" onClick={handleSubmit} disabled={!symbol.trim() || submitting}>
+          <Button className="flex-1" onClick={handleSubmit} disabled={!isFormValid || submitting}>
             {submitting ? "Saving…" : "Save Trade & Generate Review"}
           </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>

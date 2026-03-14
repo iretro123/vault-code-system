@@ -120,8 +120,11 @@ export function useTradeLog() {
 
   // ── Computed metrics ──
 
-  // Fix: P/L = risk_reward * risk_used (risk_reward is +1/-1/0, risk_used is absolute $)
-  const computePnl = (e: TradeEntry) => e.risk_reward * e.risk_used;
+  // Backward-compatible P/L: legacy entries use ±1 multiplier, new entries store signed dollar P/L directly
+  const computePnl = (e: TradeEntry) =>
+    Math.abs(e.risk_reward) <= 1
+      ? e.risk_reward * e.risk_used   // legacy ±1 format
+      : e.risk_reward;                 // new direct dollar format
 
   const allTimeWinRate = useMemo(() => {
     if (entries.length === 0) return 0;

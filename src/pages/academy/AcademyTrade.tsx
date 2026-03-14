@@ -137,7 +137,7 @@ const AcademyTrade = () => {
   const todayTradeCount = useMemo(() => entries.filter((e) => e.trade_date === todayStr).length, [entries, todayStr]);
   const trackedBalance = useMemo(() => {
     if (startingBalance === null) return null;
-    return startingBalance + totalPnl;
+    return Math.max(0, startingBalance + totalPnl);
   }, [startingBalance, totalPnl]);
 
   const hasData = entries.length > 0;
