@@ -684,66 +684,34 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-2">
-                  <StageHeadline stage="live" />
-                  {/* Session Setup / Timer with phase callback */}
-                  <SessionSetupCard onPhaseChange={setSessionPhase} />
-
-                  {/* End Session button */}
-                  {sessionPhase && (
-                    <button
-                      onClick={() => setStage("review")}
-                      className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/15 transition-colors"
-                    >
-                      <Square className="h-3 w-3" /> End Session
-                    </button>
-                  )}
-
-                  {/* Cutoff Warning Banners */}
-                  {sessionPhase === "No new entries" && !dismissedBanner && (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-2 flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                      <p className="text-[11px] text-amber-400 font-medium flex-1">Cutoff reached — no new entries. Manage current risk only.</p>
-                      <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
-                    </div>
-                  )}
-                  {sessionPhase === "Session closed" && !dismissedBanner && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-2 flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                      <p className="text-[11px] text-red-400 font-medium flex-1">Session closed — close all positions. Move to Review.</p>
-                      <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
-                    </div>
-                  )}
-
-                  {/* Active Plan — Execution Flow */}
-                  {activePlan && activePlan.status === "planned" && (
+                  {/* ── Cockpit: Plan line + timer + trades remaining ── */}
+                  {activePlan && activePlan.status === "planned" ? (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
                       <div className="flex items-center gap-1.5">
                         <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]", executing ? "bg-amber-400 animate-pulse" : "bg-emerald-400 animate-pulse")} />
                         <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
                         <span className="text-[10px] text-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
-                      </div>
-
-                      {/* Execution state indicator */}
-                      <div className="flex items-center gap-1.5 pl-3.5">
-                        <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full",
+                        <span className={cn("ml-auto text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full",
                           executing
                             ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
                             : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
                         )}>
                           {executing ? "Executing" : "Planned"}
                         </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 pl-3.5">
+                        <SessionCountdownLine />
+                        <span className="text-[10px] text-muted-foreground/40">·</span>
+                        <span className="text-[10px] text-muted-foreground/50 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
                         {executing && executionStart && (
-                          <span className="text-[10px] text-muted-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
+                          <>
+                            <span className="text-[10px] text-muted-foreground/40">·</span>
+                            <span className="text-[10px] text-muted-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
+                          </>
                         )}
                       </div>
 
-                      <p className="text-[10px] text-foreground/60 pl-3.5">
-                        Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · {activePlan.stop_price_planned ? `Stop: $${Number(activePlan.stop_price_planned).toFixed(2)}` : "No stop set"}
-                        {activePlan.tp1_planned && ` · TP1: $${Number(activePlan.tp1_planned).toFixed(2)}`}
-                        {activePlan.tp2_planned && ` · TP2: $${Number(activePlan.tp2_planned).toFixed(2)}`}
-                      </p>
-
-                      {/* Single primary CTA */}
                       {!executing ? (
                         <Button size="sm" className="h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold" onClick={handleMarkExecuting} disabled={isCutoffOrClosed && !cutoffOverride}>
                           <Zap className="h-3 w-3" /> Mark Executing
@@ -762,69 +730,57 @@ const AcademyTrade = () => {
                         </Button>
                       )}
                     </div>
-                  )}
-
-                  {todayTradeCount > 0 && (
-                    <div className="flex items-center divide-x divide-white/[0.08] rounded-lg border border-white/[0.08] overflow-hidden">
-                      <div className="flex-1 px-2.5 py-1.5">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Trades</p>
-                        <p className="text-sm font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
-                      </div>
-                      <div className="flex-1 px-2.5 py-1.5">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">P/L</p>
-                        <p className={cn("text-sm font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                          {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
-                        </p>
-                      </div>
-                      <div className="flex-1 px-2.5 py-1.5">
-                        <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Compliance</p>
-                        <p className={cn("text-sm font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
-                      </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02]">
+                      <SessionCountdownLine className="flex-1" />
+                      <span className="text-[10px] text-muted-foreground/40 tabular-nums">{todayTradeCount}/{totalMaxTrades}</span>
+                      <Button size="sm" className="gap-1 rounded-md px-2.5 h-7 text-[10px]" onClick={() => setStage("plan")}>
+                        <Calendar className="h-3 w-3" /> Plan
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1 rounded-md px-2.5 h-7 text-[10px] border-white/[0.08]" onClick={() => handleLogWithCutoffCheck()}>
+                        <Plus className="h-3 w-3" /> Log
+                      </Button>
                     </div>
                   )}
 
-                  <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
+                  {sessionPhase === "No new entries" && !dismissedBanner && (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-2 flex items-center gap-2">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <p className="text-[11px] text-amber-400 font-medium flex-1">Cutoff reached — no new entries.</p>
+                      <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  )}
+                  {sessionPhase === "Session closed" && !dismissedBanner && (
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-2 flex items-center gap-2">
+                      <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
+                      <p className="text-[11px] text-red-400 font-medium flex-1">Session closed — move to Review.</p>
+                      <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  )}
 
-                   {todayTradeCount > 0 && todayStatus !== "complete" && (
+                  {todayTradeCount > 0 && todayStatus !== "complete" && (
                     <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("review")}>
                       <ClipboardCheck className="h-3 w-3" /> Complete Review
                     </Button>
                   )}
 
-                  {!activePlan && (
-                    <div className="flex items-center gap-2.5 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02]">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-foreground">No Active Plan</p>
-                        <p className="text-[10px] text-muted-foreground/60">Build a plan first, or log directly.</p>
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button size="sm" className="gap-1 rounded-md px-2.5 h-7 text-[10px]" onClick={() => setStage("plan")}>
-                          <Calendar className="h-3 w-3" /> Plan
-                        </Button>
-                        <Button size="sm" variant="outline" className="gap-1 rounded-md px-2.5 h-7 text-[10px] border-white/[0.08]" onClick={() => handleLogWithCutoffCheck()}>
-                          <Plus className="h-3 w-3" /> Log
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Session-end auto-transition CTA */}
-                  {(() => {
-                    const t = loadTimes();
-                    if (!t) return null;
-                    const [h, m] = t.hardClose.split(":").map(Number);
-                    const closeMs = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate(), h, m, 0).getTime();
-                    if (Date.now() < closeMs) return null;
-                    return (
-                      <Button
-                        className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-                        variant="outline"
-                        onClick={() => setStage("review")}
-                      >
-                        <ClipboardCheck className="h-3.5 w-3.5" /> Session ended — Review your trades
-                      </Button>
-                    );
-                  })()}
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors font-medium w-full py-1">
+                      <ChevronDown className="h-3 w-3" /> Session Details
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-2 pt-1">
+                      <SessionSetupCard onPhaseChange={setSessionPhase} />
+                      <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
+                      {sessionPhase && (
+                        <button
+                          onClick={() => setStage("review")}
+                          className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/15 transition-colors"
+                        >
+                          <Square className="h-3 w-3" /> End Session
+                        </button>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
               )}
 
