@@ -315,6 +315,7 @@ const AcademyTrade = () => {
     setTodayStatus("in_progress");
     setExecuting(false);
     setExecutionStart(null);
+    try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
     setCutoffOverride(false);
     // Auto-transition to review if session closed
     if (sessionPhase === "Session closed") {
