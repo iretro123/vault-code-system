@@ -183,7 +183,11 @@ const AcademyTrade = () => {
     } catch { return null; }
   }, [entries.length]);
 
-  const totalMaxTrades = vaultState.trades_remaining_today + todayTradeCount;
+  const totalMaxTrades = (() => {
+    const bal = profile?.account_balance ?? 0;
+    const t = detectTier(bal);
+    return TIER_DEFAULTS[t].maxLosingTrades;
+  })();
 
   const todayEntries = useMemo(() => entries.filter(e => e.trade_date === todayStr), [entries, todayStr]);
   const todayCompliance = useMemo(() => {
