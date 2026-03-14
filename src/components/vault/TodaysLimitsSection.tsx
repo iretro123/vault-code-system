@@ -72,4 +72,4 @@ export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectio
       </p>
     </div>
   );
-}
+});
