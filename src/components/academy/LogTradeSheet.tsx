@@ -83,8 +83,9 @@ function SegmentedToggle({
   );
 }
 
-export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }: LogTradeSheetProps) {
+export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, onLogAnother }: LogTradeSheetProps) {
   const [quickMode, setQuickMode] = useState(true);
+  const [justSaved, setJustSaved] = useState(false);
   const [symbol, setSymbol] = useState(prefill?.symbol || "");
   const [direction, setDirection] = useState<string>(prefill?.direction || "Calls");
 
