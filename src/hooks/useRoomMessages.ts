@@ -73,6 +73,8 @@ export function useRoomMessages(roomSlug: string) {
       .from("academy_messages")
       .select("*")
       .eq("room_slug", roomSlug)
+      .is("parent_message_id", null)
+      .eq("is_deleted", false)
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE);
 
