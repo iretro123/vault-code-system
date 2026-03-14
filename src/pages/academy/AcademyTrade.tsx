@@ -1027,7 +1027,7 @@ const AcademyTrade = () => {
 
             {/* Row 1: Equity Curve — full width */}
             {equityCurve.length > 1 && startingBalance !== null && (
-              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} />
+              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} winRate={allTimeWinRate} totalTrades={entries.length} />
             )}
 
             {/* Row 2: Performance Breakdown + Recent Trades */}
