@@ -362,7 +362,12 @@ const AcademyTrade = () => {
 
   const handleMarkExecuting = () => {
     setExecuting(true);
-    setExecutionStart(Date.now());
+    const now = Date.now();
+    setExecutionStart(now);
+    try {
+      localStorage.setItem("va_executing_today", todayStr);
+      localStorage.setItem("va_execution_start", String(now));
+    } catch {}
   };
 
   const handleLogWithCutoffCheck = (plan?: ApprovedPlan) => {
