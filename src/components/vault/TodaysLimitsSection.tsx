@@ -35,7 +35,7 @@ export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectio
   const hasRestriction = lastRestriction !== "No restrictions today";
 
   return (
-    <div className="space-y-3">
+    <div ref={ref} className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
         <div className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.06]">
           <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-wider mb-1">Risk Budget</p>
