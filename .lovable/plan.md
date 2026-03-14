@@ -1,30 +1,25 @@
 
 
-## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
+# Fix: Tap-to-Reveal Popover for Performance Intelligence Cards on Mobile
 
-### 1. Source of Truth (Unified)
-- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
-- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
-- **Trades Used**: `trade_entries` filtered by today's date
-- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
-- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
+## Approach
+Instead of expanding the cards or adding more vertical space, make each summary card (Grade, Leak, Edge, Next) **tappable**. On tap, a small **Popover** appears showing the full text — keeping the grid compact and the design tight.
 
-### 2. DayState Engine (A–E)
-- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
-- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
-- Session closed auto-suggests review via `sessionPhase` input
+## Changes
 
-### 3. OSControlRail Unified
-- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
-- Shows `dayStateStatus` text and `dayStateCta` button
-- Log Result only shows in `live_session` state
+### `src/pages/academy/AcademyTrade.tsx` (lines ~929-952)
 
-### 4. QuickCheckInSheet Enhanced
-- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
-- All fields save to `journal_entries`
+1. Import `Popover, PopoverTrigger, PopoverContent` from `@/components/ui/popover`
+2. Wrap each of the 4 grid cells in a `Popover`:
+   - The existing card becomes the `PopoverTrigger` (keep `truncate`, keep current sizing)
+   - `PopoverContent`: dark glassmorphic mini-card (`bg-black/90 backdrop-blur border-white/10 rounded-xl p-3 max-w-[220px]`) showing:
+     - Label (e.g., "Leak") in uppercase muted text
+     - Full untruncated text below in `text-xs text-foreground/90`
+   - `side="top"` so it floats above the card without pushing content down
+3. Grade card gets a slightly different popover — show the letter grade large + a one-line explanation if available
 
-### 5. CTA Logic
-- Hero shows state-driven status line
-- Each stage has single primary CTA driven by `dayState`
-- "Start Session" replaces "Go to Live Mode"
-- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
+No layout changes, no extra height, no new components. Uses the existing Popover primitive which already handles touch dismiss and portal rendering.
+
+### Files
+- `src/pages/academy/AcademyTrade.tsx` — wrap 4 summary cells in Popover
+
