@@ -183,11 +183,7 @@ const AcademyTrade = () => {
     } catch { return null; }
   }, [entries.length]);
 
-  const totalMaxTrades = (() => {
-    const bal = profile?.account_balance ?? 0;
-    const t = detectTier(bal);
-    return TIER_DEFAULTS[t].maxLosingTrades;
-  })();
+  const totalMaxTrades = MAX_LOSSES_PER_DAY;
 
   const todayEntries = useMemo(() => entries.filter(e => e.trade_date === todayStr), [entries, todayStr]);
   const todayCompliance = useMemo(() => {
