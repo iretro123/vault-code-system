@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, ImagePlus, X } from "lucide-react";
+import { CalendarIcon, ImagePlus, X, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +83,7 @@ function SegmentedToggle({
 }
 
 export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }: LogTradeSheetProps) {
+  const [quickMode, setQuickMode] = useState(true);
   const [symbol, setSymbol] = useState(prefill?.symbol || "");
   const [direction, setDirection] = useState<string>(prefill?.direction || "Calls");
   const [date, setDate] = useState<Date>(new Date());
@@ -109,7 +110,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
     return () => URL.revokeObjectURL(url);
   }, [screenshotFile]);
 
-  // Re-apply prefill when it changes (e.g. opening from bridge card)
+  // Re-apply prefill when it changes
   useEffect(() => {
     if (prefill) {
       if (prefill.symbol) setSymbol(prefill.symbol);
@@ -132,7 +133,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
 
   const pnlValue = pnlOverride || calculatedPnl;
 
-  // Leak 3 fix: auto-set result type from P/L sign
+  // Auto-set result type from P/L sign
   useEffect(() => {
     const pnl = parseFloat(pnlValue);
     if (isNaN(pnl) || pnl === 0) return;
@@ -147,7 +148,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
   useEffect(() => {
     const pnl = parseFloat(pnlValue);
     if (!pnlValue || pnlValue === "") {
-      setValidationError(null); // will be caught on submit
+      setValidationError(null);
       return;
     }
     if (isNaN(pnl)) {
@@ -196,7 +197,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
         note,
         screenshotFile: screenshotFile || undefined,
       });
-      // Only reset on success (parent closes sheet on success)
+      // Reset on success
       setSymbol("");
       setDirection("Calls");
       setDate(new Date());
@@ -212,6 +213,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
       setSetupUsed("");
       setNote("");
       setScreenshotFile(null);
+      setQuickMode(true);
     } finally {
       setSubmitting(false);
     }
@@ -221,12 +223,23 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col bg-background border-border">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
-          <SheetTitle className="text-foreground">Log Trade</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-foreground">{quickMode ? "Quick Log" : "Log Trade"}</SheetTitle>
+            <button
+              type="button"
+              onClick={() => setQuickMode(!quickMode)}
+              className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              {quickMode ? "Full Mode" : "Quick Mode"}
+            </button>
+          </div>
         </SheetHeader>
 
         <ScrollArea className="flex-1 px-6">
           <div className="space-y-5 py-5">
-            {/* Symbol */}
+            {/* ── QUICK MODE: 5 essential fields ── */}
+
+            {/* Symbol — always shown */}
             <Field label="Symbol">
               <Input
                 placeholder="SPY, TSLA, NVDA…"
@@ -236,53 +249,17 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
               />
             </Field>
 
-            {/* Direction */}
+            {/* Direction — always shown */}
             <Field label="Direction">
               <SegmentedToggle options={DIRECTION_OPTIONS} value={direction} onChange={setDirection} />
             </Field>
 
-            {/* Date */}
-            <Field label="Date / Time">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP p") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(d) => d && setDate(d)}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </Field>
-
-            {/* Price row */}
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Entry Price">
-                <Input type="number" placeholder="0.00" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
-              </Field>
-              <Field label="Exit Price">
-                <Input type="number" placeholder="0.00" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} />
-              </Field>
-            </div>
-
-            {/* Position Size */}
-            <Field label="Position Size">
-              <Input type="number" placeholder="Contracts / shares" value={positionSize} onChange={(e) => setPositionSize(e.target.value)} />
-            </Field>
-
-            {/* Result Type */}
+            {/* Result — always shown */}
             <Field label="Result">
               <SegmentedToggle options={RESULT_OPTIONS} value={resultType} onChange={setResultType} />
             </Field>
 
-            {/* P/L */}
+            {/* P/L — always shown */}
             <Field label="P/L ($)">
               <Input
                 type="number"
@@ -302,90 +279,143 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill }:
               )}
             </Field>
 
-            {/* Accountability */}
-            <div className="space-y-3 pt-2">
-              <p className="text-xs font-semibold text-foreground tracking-wide uppercase">Accountability</p>
-              <Field label="Did you hit your target?">
-                <SegmentedToggle options={TARGET_OPTIONS} value={targetHit} onChange={setTargetHit} />
-              </Field>
-              <Field label="Did you respect your stop?">
-                <SegmentedToggle options={YES_NO} value={stopRespected} onChange={setStopRespected} />
-              </Field>
-              <Field label="Did you follow your plan?">
-                <SegmentedToggle options={YES_NO} value={planFollowed} onChange={setPlanFollowed} />
-              </Field>
-              <Field label="Did you oversize this trade?">
-                <SegmentedToggle options={YES_NO} value={oversized} onChange={setOversized} />
-              </Field>
-            </div>
-
-            {/* Setup Used */}
-            <Field label="Setup Used">
-              <Select value={setupUsed} onValueChange={setSetupUsed}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select setup…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SETUP_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Rules Followed — always shown */}
+            <Field label="Did you follow your plan?">
+              <SegmentedToggle options={YES_NO} value={planFollowed} onChange={setPlanFollowed} />
             </Field>
 
-            {/* Screenshot upload */}
-            <Field label="Screenshot (optional)">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/gif"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) {
-                    if (f.size > 15 * 1024 * 1024) {
-                      return; // silently reject >15MB
-                    }
-                    setScreenshotFile(f);
-                  }
-                  e.target.value = "";
-                }}
-              />
-              {screenshotPreview ? (
-                <div className="relative rounded-lg overflow-hidden border border-border">
-                  <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-40 object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setScreenshotFile(null)}
-                    className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                  <div className="absolute bottom-0 inset-x-0 bg-background/70 backdrop-blur-sm px-2 py-1">
-                    <p className="text-[10px] text-muted-foreground truncate">{screenshotFile?.name}</p>
-                  </div>
+            {/* ── ADD DETAILS (expand to full mode) ── */}
+            {quickMode && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full h-9 text-xs text-muted-foreground gap-1.5"
+                onClick={() => setQuickMode(false)}
+              >
+                <ChevronDown className="h-3.5 w-3.5" /> Add Details
+              </Button>
+            )}
+
+            {/* ── FULL MODE: additional fields ── */}
+            {!quickMode && (
+              <>
+                {/* Date */}
+                <Field label="Date / Time">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP p") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(d) => d && setDate(d)}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </Field>
+
+                {/* Price row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Entry Price">
+                    <Input type="number" placeholder="0.00" value={entryPrice} onChange={(e) => setEntryPrice(e.target.value)} />
+                  </Field>
+                  <Field label="Exit Price">
+                    <Input type="number" placeholder="0.00" value={exitPrice} onChange={(e) => setExitPrice(e.target.value)} />
+                  </Field>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-20 rounded-lg border border-dashed border-border flex items-center justify-center gap-2 text-xs text-muted-foreground hover:border-primary/40 transition-colors duration-100"
-                >
-                  <ImagePlus className="h-4 w-4" />
-                  Tap to attach screenshot
-                </button>
-              )}
-            </Field>
 
-            {/* Quick Note */}
-            <Field label="Quick Note (optional)">
-              <Textarea
-                placeholder="Trade rationale, observations…"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-              />
-            </Field>
+                {/* Position Size */}
+                <Field label="Position Size">
+                  <Input type="number" placeholder="Contracts" value={positionSize} onChange={(e) => setPositionSize(e.target.value)} />
+                </Field>
+
+                {/* Accountability */}
+                <div className="space-y-3 pt-2">
+                  <p className="text-xs font-semibold text-foreground tracking-wide uppercase">Accountability</p>
+                  <Field label="Did you hit your target?">
+                    <SegmentedToggle options={TARGET_OPTIONS} value={targetHit} onChange={setTargetHit} />
+                  </Field>
+                  <Field label="Did you respect your stop?">
+                    <SegmentedToggle options={YES_NO} value={stopRespected} onChange={setStopRespected} />
+                  </Field>
+                  <Field label="Did you oversize this trade?">
+                    <SegmentedToggle options={YES_NO} value={oversized} onChange={setOversized} />
+                  </Field>
+                </div>
+
+                {/* Setup Used */}
+                <Field label="Setup Used">
+                  <Select value={setupUsed} onValueChange={setSetupUsed}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select setup…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SETUP_OPTIONS.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                {/* Screenshot upload */}
+                <Field label="Screenshot (optional)">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/gif"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        if (f.size > 15 * 1024 * 1024) return;
+                        setScreenshotFile(f);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  {screenshotPreview ? (
+                    <div className="relative rounded-lg overflow-hidden border border-border">
+                      <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-40 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setScreenshotFile(null)}
+                        className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="absolute bottom-0 inset-x-0 bg-background/70 backdrop-blur-sm px-2 py-1">
+                        <p className="text-[10px] text-muted-foreground truncate">{screenshotFile?.name}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full h-20 rounded-lg border border-dashed border-border flex items-center justify-center gap-2 text-xs text-muted-foreground hover:border-primary/40 transition-colors duration-100"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      Tap to attach screenshot
+                    </button>
+                  )}
+                </Field>
+
+                {/* Quick Note */}
+                <Field label="Quick Note (optional)">
+                  <Textarea
+                    placeholder="Trade rationale, observations…"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    rows={3}
+                  />
+                </Field>
+              </>
+            )}
           </div>
         </ScrollArea>
 
