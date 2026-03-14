@@ -69,7 +69,7 @@ export function useRoomMessages(roomSlug: string) {
 
   // Initial fetch (background refresh if cached)
   const fetchMessages = useCallback(async () => {
-    if (!cached) setLoading(true);
+    if (!cachedRef.current) setLoading(true);
 
     const { data, error: err } = await supabase
       .from("academy_messages")
@@ -97,7 +97,7 @@ export function useRoomMessages(roomSlug: string) {
     setHasMore((data?.length ?? 0) >= PAGE_SIZE);
     oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
     setLoading(false);
-  }, [roomSlug, cached, updateMessages]);
+  }, [roomSlug, updateMessages]);
 
   // Load older messages
   const loadMore = useCallback(async () => {
