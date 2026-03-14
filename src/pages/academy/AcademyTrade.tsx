@@ -115,8 +115,12 @@ const AcademyTrade = () => {
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showNoTradeDay, setShowNoTradeDay] = useState(false);
   const [noTradeDay, setNoTradeDay] = useState(false);
-  const [executing, setExecuting] = useState(false);
-  const [executionStart, setExecutionStart] = useState<number | null>(null);
+  const [executing, setExecuting] = useState(() => {
+    try { return localStorage.getItem("va_executing_today") === todayStr; } catch { return false; }
+  });
+  const [executionStart, setExecutionStart] = useState<number | null>(() => {
+    try { const v = localStorage.getItem("va_execution_start"); return v ? Number(v) : null; } catch { return null; }
+  });
   const [sessionPhase, setSessionPhase] = useState<SessionPhaseLabel>(null);
   const [cutoffOverride, setCutoffOverride] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
