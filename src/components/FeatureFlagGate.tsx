@@ -17,6 +17,9 @@ export function FeatureFlagGate({ pageKey, children }: FeatureFlagGateProps) {
 
   const enabled = isPageEnabled(pageKey);
 
+  // vault-os is hard-blocked for everyone, including admins
+  const hardBlocked = pageKey === "vault-os" && !enabled;
+
   useEffect(() => {
     if (!isLoading && !enabled && !isAdmin && !toastShown.current) {
       toastShown.current = true;
@@ -25,7 +28,7 @@ export function FeatureFlagGate({ pageKey, children }: FeatureFlagGateProps) {
   }, [isLoading, enabled, isAdmin]);
 
   if (isLoading) return null;
-  if (!enabled && !isAdmin) return <Navigate to="/academy/home" replace />;
+  if (hardBlocked || (!enabled && !isAdmin)) return <Navigate to="/academy/home" replace />;
 
   return <>{children}</>;
 }

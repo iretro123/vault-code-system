@@ -21,8 +21,9 @@ export function useFeatureFlags() {
   });
 
   const isPageEnabled = (pageKey: string) => {
+    if (isLoading) return false;
     const flag = flags.find((f) => f.page_key === pageKey);
-    return flag ? flag.enabled : true; // default to enabled if not found
+    return flag ? flag.enabled : true;
   };
 
   return { flags, isPageEnabled, isLoading };
