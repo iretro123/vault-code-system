@@ -312,7 +312,12 @@ const AcademyTrade = () => {
     setExecuting(false);
     setExecutionStart(null);
     setCutoffOverride(false);
-    setTimeout(() => setShowCheckIn(true), 400);
+    // Auto-transition to review if session closed
+    if (sessionPhase === "Session closed") {
+      setTimeout(() => { setStage("review"); setShowCheckIn(true); }, 400);
+    } else {
+      setTimeout(() => setShowCheckIn(true), 400);
+    }
   };
 
   const handleLogFromPlan = (plan: ApprovedPlan) => {
