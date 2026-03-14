@@ -891,7 +891,7 @@ const AcademyTrade = () => {
                         </p>
                         <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
                           {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
-                            const pnl = e.risk_reward * e.risk_used;
+                            const pnl = computePnl(e);
                             const isWin = e.risk_reward > 0;
                             const isLoss = e.risk_reward < 0;
                             return (
