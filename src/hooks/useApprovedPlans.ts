@@ -164,6 +164,7 @@ export function useApprovedPlans() {
 
   return {
     activePlan,
+    todayPlans,
     loading,
     savePlan,
     cancelPlan,

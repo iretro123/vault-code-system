@@ -43,6 +43,12 @@ export interface TradeEntry {
   symbol?: string;
   outcome?: string;
   plan_id?: string;
+  contracts?: number | null;
+  actual_pnl?: number | null;
+  planned_risk_dollars?: number | null;
+  entry_price?: number | null;
+  exit_price?: number | null;
+  is_oversized?: boolean;
 }
 
 export interface NewTradeEntry {
@@ -55,6 +61,12 @@ export interface NewTradeEntry {
   outcome?: string;
   trade_date?: string;
   plan_id?: string;
+  contracts?: number;
+  actual_pnl?: number;
+  planned_risk_dollars?: number;
+  entry_price?: number;
+  exit_price?: number;
+  is_oversized?: boolean;
 }
 
 export interface EquityPoint {
