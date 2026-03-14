@@ -1,83 +1,94 @@
 
 
-## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
+# Phase 4 — Structured Options Logging
 
-### 1. Source of Truth (Unified)
-- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
-- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
-- **Trades Used**: `trade_entries` filtered by today's date
-- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
-- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
+## 1. New Fields on `trade_entries`
 
-### 2. DayState Engine (A–E)
-- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
-- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
-- Session closed auto-suggests review via `sessionPhase` input
+Add 5 nullable columns (additive, no existing data affected):
 
-### 3. OSControlRail Unified
-- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
-- Shows `dayStateStatus` text and `dayStateCta` button
-- Log Result only shows in `live_session` state
+| Column | Type | Default | Purpose |
+|---|---|---|---|
+| `contracts` | `integer` | `null` | Actual contracts traded |
+| `actual_pnl` | `numeric` | `null` | Clean signed dollar P/L |
+| `planned_risk_dollars` | `numeric` | `null` | Risk budget committed to this trade |
+| `entry_price` | `numeric` | `null` | Option premium at entry |
+| `exit_price` | `numeric` | `null` | Option premium at exit |
+| `is_oversized` | `boolean` | `false` | Computed: actual contracts > planned contracts |
 
-### 4. QuickCheckInSheet Enhanced
-- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
-- All fields save to `journal_entries`
+All nullable so every existing row remains valid. Legacy reads still use `risk_reward` / `risk_used` via `computePnl()` — that function already handles both formats.
 
-### 5. CTA Logic
-- Hero shows state-driven status line
-- Each stage has single primary CTA driven by `dayState`
-- "Start Session" replaces "Go to Live Mode"
-- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
+## 2. New Table: `trading_sessions`
 
-## Phase 2 — Simplify the Current Flow — COMPLETED
+Persists session times to DB instead of localStorage-only:
 
-### 1. Budget Tooltips
-- Added beginner-friendly tooltips (with ?) to all 4 budget metrics: Risk Budget, Position Cap, Trades/Session, Max Contracts
-- Wrapped in TooltipProvider for consistent delay
+| Column | Type |
+|---|---|
+| `id` | uuid PK |
+| `user_id` | uuid |
+| `session_date` | date (unique per user) |
+| `start_time` | time |
+| `cutoff_time` | time |
+| `hard_close_time` | time |
+| `created_at` | timestamptz |
 
-### 2. Mobile CTA Bar
-- Fixed bottom bar on mobile showing `dayStateCta` button
-- Positioned above MobileNav (bottom-16), respects safe-area-inset-bottom
-- Calls `handleQuickAction` for state-driven action
+RLS: users manage own rows. `SessionSetupCard` writes to DB on save, reads on mount (falling back to localStorage for offline).
 
-### 3. Quick-Log Mode
-- LogTradeSheet defaults to Quick mode: Symbol, Direction, Result, P/L, Rules Followed
-- "Add Details" expands to full mode with Date, Entry/Exit, Position Size, Accountability, Setup, Screenshot, Note
-- Toggle between Quick Mode / Full Mode in header
-- Fixed "Contracts / shares" → "Contracts" placeholder
+## 3. Old Fields — Backward Compatibility
 
-### 4. P/L Calculation Fix
-- Exported `computePnl` from `useTradeLog.ts` as standalone function
-- Review stage trade list now uses `computePnl(e)` instead of `e.risk_reward * e.risk_used`
-- Backward-compatible with legacy ±1 format entries
+| Field | Status |
+|---|---|
+| `risk_reward` | Kept. Still written (signed P/L) for legacy `computePnl()` compatibility |
+| `risk_used` | Kept. Still written but no longer the source of truth — `planned_risk_dollars` replaces it semantically |
+| `outcome` | Kept. Still the signal for new-format entries in `computePnl()` |
+| `notes` | Kept. Still written with pipe-delimited metadata string |
 
-## Phase 3 — Options Day Trader Optimization — COMPLETED
+No columns renamed or removed. Legacy entries (no `outcome` field) continue to use the multiplier formula.
 
-### 1. Cockpit-Mode Live Stage
-- Removed StageHeadline from Live stage, removed trade summary strip (duplicate of hero data)
-- Active plan shows as single-row cockpit: ticker + direction + contracts + status badge
-- SessionCountdownLine component shows inline timer + trades remaining
-- TodaysLimitsSection, SessionSetupCard, End Session moved behind collapsible "Session Details"
-- No-plan state compressed to single row with Plan + Log buttons
+## 4. How Existing Legacy Data Still Works
 
-### 2. OSControlRail De-duplicated
-- Removed risk budget, trade count, and session timer sections (already in hero + main view)
-- Rail now shows only: Vault Status, Active Plan summary, Restrictions, Day State CTA
+`computePnl()` checks for `outcome` presence:
+- **Has `outcome`**: returns `risk_reward` directly (dollar P/L) — unchanged
+- **No `outcome`**: returns `risk_reward * risk_used` (legacy multiplier) — unchanged
 
-### 3. Auto-Default Session Times
-- Pre-fills draft from yesterday's localStorage key (`va_session_times_YYYY-MM-DD`)
-- "Same as yesterday" one-tap button saves and starts session immediately
+New entries also populate `actual_pnl` for clean reads. Analytics can migrate to `actual_pnl` over time while `computePnl()` remains the universal fallback.
 
-### 4. Auto-Review After Session Close
-- `handleTradeSubmit` auto-transitions to review stage + opens check-in when `sessionPhase === "Session closed"`
+## 5. Files Changed
 
-### 5. Specific Trade Toast
-- `useTradeLog.addEntry` toast now shows symbol + signed P/L instead of generic message
+| File | Change |
+|---|---|
+| **DB migration** | Add 6 columns to `trade_entries`, create `trading_sessions` table |
+| `src/pages/academy/AcademyTrade.tsx` | `handleTradeSubmit`: populate new fields, compute `is_oversized` from plan, add "Log Another" flow state |
+| `src/components/academy/LogTradeSheet.tsx` | Add "Log Another" button in footer after save, keep prefills on "Log Another" |
+| `src/hooks/useApprovedPlans.ts` | Add `todayPlans` query (all statuses for today) alongside existing `activePlan` |
+| `src/hooks/useTradeLog.ts` | Update `TradeEntry` / `NewTradeEntry` interfaces with new fields |
+| `src/components/trade-os/SessionSetupCard.tsx` | Read/write `trading_sessions` table on save/mount, localStorage as fallback |
 
-### 6. Smart Log Defaults
-- `planFollowed` already defaults to "Yes"
-- Last-used ticker remembered in `localStorage` (`va_last_ticker`) and pre-filled
+## 6. User-Facing Behavior After This Phase
 
-### 7. Inline AI Insights
-- Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
-- 2×2 grid, each card shows label + value + description without clicking
+**Logging a trade:**
+- Same UI, same fields — no visual changes
+- Behind the scenes: `contracts`, `actual_pnl`, `planned_risk_dollars`, `entry_price`, `exit_price` are stored as clean structured data
+- If logged from a plan and contracts > planned contracts → `is_oversized = true` automatically (no self-report needed)
+
+**After saving:**
+- Footer shows **"Log Another"** button alongside Cancel
+- Tapping "Log Another" resets the form but keeps symbol + direction pre-filled
+- Sheet stays open for fast multi-trade logging
+
+**Review stage:**
+- New "Today's Plans" section shows all plans created today (planned, logged, cancelled) with status badges
+- Gives full daily context instead of only showing the active plan
+
+**Session times:**
+- Saved to DB on "Start Session" — survives device switch and refresh
+- On mount, checks DB first, then localStorage fallback
+
+## 7. Why This Makes Trade OS Stronger
+
+- **Structural correctness**: contracts, P/L, risk, and prices are real typed columns instead of buried in notes strings or overloaded fields
+- **Computed trust**: oversized detection is automatic, not self-reported — traders can trust the system caught their deviation
+- **Faster logging**: "Log Another" eliminates re-opening the sheet for multi-trade days
+- **Daily context**: seeing all plans (not just active) gives traders a complete picture in Review
+- **Cross-device reliability**: session times persist to DB, eliminating the "lost my session window" problem
+- **Zero visual complexity added**: no new screens, no new tabs, no redesign — just cleaner data and faster flows
+
