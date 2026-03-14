@@ -59,6 +59,33 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
   const isLocked = tradeCount < 3;
   const todayStr = new Date().toISOString().slice(0, 10);
 
+  // Load from DB cache on mount (fallback for localStorage miss)
+  useEffect(() => {
+    if (isLocked) return;
+    const loadDbCache = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const { data } = await supabase
+          .from("profiles")
+          .select("ai_focus_cache")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (data?.ai_focus_cache) {
+          const dbCached = data.ai_focus_cache as unknown as AIFocusResult;
+          if (dbCached.primaryLeak && dbCached.riskGrade) {
+            // Write to localStorage as well so subsequent reads are fast
+            try { localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(dbCached)); } catch {}
+            if (!result) setResult(dbCached);
+          }
+        }
+      } catch {}
+    };
+    // Only load from DB if localStorage has no valid cache
+    const localCached = localStorage.getItem(AI_FOCUS_CACHE);
+    if (!localCached) loadDbCache();
+  }, [isLocked]);
+
   const fetchAnalysis = useCallback(async (force = false) => {
     if (!force) {
       try {
@@ -75,24 +102,13 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
     setLoading(true); setError(null);
     if (force) setRefreshing(true);
     try {
-      let token = accessToken;
+      // Trust the accessToken prop; no retry loop
+      const token = accessToken;
       if (!token) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          // Retry once after a brief wait (auth race condition fix)
-          await new Promise(r => setTimeout(r, 1000));
-          const { data: { session: retrySession } } = await supabase.auth.getSession();
-          if (!retrySession) {
-            // Last resort: try refreshing the session
-            const { data: refreshData } = await supabase.auth.refreshSession();
-            if (!refreshData.session) throw new Error("Not authenticated");
-            token = refreshData.session.access_token;
-          } else {
-            token = retrySession.access_token;
-          }
-        } else {
-          token = session.access_token;
-        }
+        setError("Sign in to view AI analysis");
+        setLoading(false);
+        setRefreshing(false);
+        return;
       }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trade-focus`, {
         method: "POST",
@@ -103,13 +119,21 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
       const data = await resp.json();
       const cached: AIFocusResult = { ...data, date: todayStr, tradeCount };
       setResult(cached);
+      // Persist to localStorage
       try {
         localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached));
         localStorage.setItem(AI_FOCUS_CACHE_TS, String(Date.now()));
       } catch {}
+      // Persist to DB for cross-device reliability
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase.from("profiles").update({ ai_focus_cache: cached as any }).eq("user_id", session.user.id);
+        }
+      } catch {}
     } catch (e: any) { setError(e.message || "Something went wrong"); }
     finally { setLoading(false); setRefreshing(false); }
-  }, [todayStr, tradeCount]);
+  }, [todayStr, tradeCount, accessToken]);
 
   useEffect(() => {
     if (!isLocked) fetchAnalysis();
