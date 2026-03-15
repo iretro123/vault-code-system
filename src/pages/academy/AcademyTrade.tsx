@@ -733,7 +733,7 @@ const AcademyTrade = () => {
                                 <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Size <HelpCircle className="h-2.5 w-2.5" /></p>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most contracts you can hold in one position based on your risk budget.</TooltipContent>
                                 </Tooltip>
