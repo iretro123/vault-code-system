@@ -802,7 +802,7 @@ const AcademyTrade = () => {
                         <span className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", vaultDotColor)} />
                         <span className="text-[11px] font-bold text-foreground">LIVE</span>
                         {activePlan && <span className="text-[10px] text-muted-foreground/60">· {activePlan.ticker} {activePlan.direction === "calls" ? "Calls" : "Puts"} {activePlan.contracts_planned}ct</span>}
-                        <span className="text-[10px] text-muted-foreground/50 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} risk left</span>
+                        <span className="text-[10px] text-foreground/60 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} left</span>
                       </div>
                     );
                   })()}
