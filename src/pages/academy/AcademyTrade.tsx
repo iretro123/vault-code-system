@@ -82,6 +82,23 @@ function StageHeadline({ stage }: { stage: string }) {
   );
 }
 
+function InsightMiniCard({ label, dotColor, text }: { label: string; dotColor: string; text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const truncated = text.length > 60 ? text.slice(0, 60) + "…" : text;
+  return (
+    <div
+      className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5 cursor-pointer hover:bg-white/[0.04] transition-colors"
+      onClick={() => setExpanded(!expanded)}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <div className={cn("h-1.5 w-1.5 rounded-full", dotColor)} />
+        <p className="text-[9px] text-muted-foreground/60 font-semibold uppercase tracking-widest">{label}</p>
+      </div>
+      <p className="text-[12px] text-foreground/80 font-medium leading-snug">{expanded ? text : truncated}</p>
+    </div>
+  );
+}
+
 const AcademyTrade = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -538,7 +555,7 @@ const AcademyTrade = () => {
           <div className="vault-os-card p-4 md:p-5" style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.06), transparent 70%), hsl(var(--card))" }}>
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/50 font-semibold">Your Trading Day</p>
+                <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/60 font-semibold">Your Trading Day</p>
                 <div className="flex items-baseline gap-2.5">
                     <span className="text-4xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                       {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
@@ -592,54 +609,40 @@ const AcademyTrade = () => {
                     </>
                   );
                 })()}
-                {/* 14-day streak dots */}
-                {entries.length > 0 && (() => {
-                  const dots: Array<"green" | "amber" | "gray"> = [];
-                  for (let i = 13; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    const ds = d.toISOString().slice(0, 10);
-                    const dayEntries = entries.filter((e) => e.trade_date === ds);
-                    if (dayEntries.length === 0) dots.push("gray");
-                    else if (dayEntries.every((e) => e.followed_rules)) dots.push("green");
-                    else dots.push("amber");
-                  }
-                  return (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {dots.map((c, i) => (
-                        <span key={i} className={cn("w-2 h-2 rounded-full transition-all",
-                          c === "green" ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.4)]" : c === "amber" ? "bg-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.3)]" : "bg-white/[0.08]"
-                        )} />
-                      ))}
-                      {bestStreak > 0 && (
-                        <span className="text-[9px] text-muted-foreground/40 ml-1">Best: {bestStreak}d</span>
-                      )}
-                    </div>
-                  );
-                })()}
                 {/* Luminous divider */}
                 <div className="h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent mt-2 mb-0.5" />
                 <div className="flex items-center gap-3 mt-0.5">
-                  <span className="text-[10px] text-muted-foreground/40">
+                  <span className="text-[10px] text-muted-foreground/50">
                     {todayTradeCount}/{totalMaxTrades} trades
                   </span>
-                  <span className="text-[10px] text-muted-foreground/40">·</span>
+                  <span className="text-[10px] text-muted-foreground/50">·</span>
                   {(() => {
                     const hudBal = trackedBalance ?? vaultState.account_balance;
                     const hudTier = detectTier(hudBal);
                     const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
                     return (
-                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/40")}>
+                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/50")}>
                         ${hudRisk.toFixed(0)} risk budget
                       </span>
                     );
                   })()}
                 </div>
               </div>
-              {/* Hide Log button on mobile — available inside stages */}
-              <Button size="sm" className="gap-1 h-8 px-3 text-[11px] font-semibold rounded-lg shrink-0 hidden md:flex" onClick={handleLogUnplanned}>
-                <Plus className="h-3 w-3" /> Log Trade
-              </Button>
+              {/* Compliance Ring */}
+              <div className="flex flex-col items-center shrink-0">
+                <svg width="48" height="48" viewBox="0 0 48 48" className="transform -rotate-90">
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted) / 0.15)" strokeWidth="3" />
+                  <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(142 71% 45%)" strokeWidth="3" strokeLinecap="round"
+                    strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 - (weeklyComplianceRate / 100) * 2 * Math.PI * 20}
+                    className="transition-all duration-500"
+                    style={{ filter: "drop-shadow(0 0 4px rgba(52,211,153,0.4))" }}
+                  />
+                </svg>
+                <div className="absolute mt-[10px] flex flex-col items-center justify-center w-12 h-12">
+                  <span className="text-sm font-bold tabular-nums text-foreground">{weeklyComplianceRate}%</span>
+                </div>
+                <span className="text-[8px] text-muted-foreground/50 font-medium mt-0.5">This week</span>
+              </div>
             </div>
           </div>
         )}
@@ -672,7 +675,7 @@ const AcademyTrade = () => {
                 <div className="space-y-2">
                   <StageHeadline stage="plan" />
 
-                  {/* ═══ TODAY'S BUDGET (uses planner engine) ═══ */}
+                  {/* ═══ TODAY'S BUDGET — collapsible summary ═══ */}
                   {(() => {
                     const bal = trackedBalance ?? vaultState.account_balance;
                     const tier = detectTier(bal);
@@ -680,52 +683,61 @@ const AcademyTrade = () => {
                     const riskBudget = bal * (defaults.riskPercent / 100);
                     const positionCap = bal * (defaults.preferredSpendPercent / 100);
                     return (
-                      <TooltipProvider delayDuration={200}>
-                      <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5">
-                        <p className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-[0.1em] mb-2">Today's Budget</p>
-                        <div className="grid grid-cols-4 gap-2">
-                          <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Risk Budget <HelpCircle className="h-2.5 w-2.5" /></p>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades. Based on your balance and tier.</TooltipContent>
-                            </Tooltip>
+                      <Collapsible>
+                        <CollapsibleTrigger className="flex items-center gap-2 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 hover:bg-white/[0.04] transition-colors">
+                          <span className="text-[10px] font-semibold text-muted-foreground/60 flex-1 text-left">
+                            ${riskBudget.toFixed(0)} risk · ${positionCap.toFixed(0)} cap · {MAX_LOSSES_PER_DAY} trades
+                          </span>
+                          <ChevronDown className="h-3 w-3 text-muted-foreground/40" />
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <TooltipProvider delayDuration={200}>
+                          <div className="pt-2 pb-1 px-0.5">
+                            <div className="grid grid-cols-4 gap-2">
+                              <div className="text-center">
+                                <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Risk Budget <HelpCircle className="h-2.5 w-2.5" /></p>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades. Based on your balance and tier.</TooltipContent>
+                                </Tooltip>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Position Cap <HelpCircle className="h-2.5 w-2.5" /></p>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The max dollar amount you should spend on a single options position.</TooltipContent>
+                                </Tooltip>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Trades / Session <HelpCircle className="h-2.5 w-2.5" /></p>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">How many losing trades you're allowed before the system locks you out for the day.</TooltipContent>
+                                </Tooltip>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most contracts you can hold in one position based on your risk budget.</TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                            <p className="text-[9px] text-muted-foreground/50 text-center mt-2">
+                              ${bal.toLocaleString()} · {tier} tier · {defaults.riskPercent}% risk
+                            </p>
                           </div>
-                          <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Position Cap <HelpCircle className="h-2.5 w-2.5" /></p>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">The max dollar amount you should spend on a single options position.</TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Trades / Session <HelpCircle className="h-2.5 w-2.5" /></p>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">How many losing trades you're allowed before the system locks you out for the day.</TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <div className="text-center">
-                            <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <p className="text-[9px] text-muted-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most contracts you can hold in one position based on your risk budget.</TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </div>
-                        <p className="text-[9px] text-muted-foreground/40 text-center mt-2">
-                          ${bal.toLocaleString()} · {tier} tier · {defaults.riskPercent}% risk
-                        </p>
-                      </div>
-                      </TooltipProvider>
+                          </TooltipProvider>
+                        </CollapsibleContent>
+                      </Collapsible>
                     );
                   })()}
 
@@ -762,10 +774,7 @@ const AcademyTrade = () => {
                   {todayStatus === "complete" && (
                     <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15">
                       <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                      <p className="text-xs text-emerald-400/80 font-medium flex-1">Session complete.</p>
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-emerald-400 px-2" onClick={() => setStage("insights")}>
-                        <Brain className="h-3 w-3 mr-1" /> Insights
-                      </Button>
+                      <p className="text-xs text-muted-foreground/60 font-medium">✓ Today's session is done. Come back tomorrow.</p>
                     </div>
                   )}
                 </div>
@@ -774,9 +783,29 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-2">
-                  {/* ── Cockpit: Plan line + timer + trades remaining ── */}
+                  {/* ── Live Status Bar ── */}
+                  {(() => {
+                    const hudBal = trackedBalance ?? vaultState.account_balance;
+                    const hudTier = detectTier(hudBal);
+                    const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
+                    const vaultDotColor = vaultState.vault_status === "GREEN" ? "bg-emerald-400" : vaultState.vault_status === "YELLOW" ? "bg-amber-400" : "bg-red-400";
+                    return (
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02]">
+                        <span className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", vaultDotColor)} />
+                        <span className="text-[11px] font-bold text-foreground">LIVE</span>
+                        {activePlan && <span className="text-[10px] text-muted-foreground/60">· {activePlan.ticker} {activePlan.direction === "calls" ? "Calls" : "Puts"} {activePlan.contracts_planned}ct</span>}
+                        <span className="text-[10px] text-muted-foreground/50 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} risk left</span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Cockpit: Plan card ── */}
                   {activePlan && activePlan.status === "planned" ? (
-                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
+                    <div className={cn("rounded-lg p-2 space-y-1.5 border-l-[3px]",
+                      vaultState.vault_status === "GREEN" ? "border-l-emerald-400 border border-emerald-500/20 bg-emerald-500/[0.05]" :
+                      vaultState.vault_status === "YELLOW" ? "border-l-amber-400 border border-amber-500/20 bg-amber-500/[0.05]" :
+                      "border-l-red-400 border border-red-500/20 bg-red-500/[0.05]"
+                    )}>
                       <div className="flex items-center gap-1.5">
                         <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]", executing ? "bg-amber-400 animate-pulse" : "bg-emerald-400 animate-pulse")} />
                         <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
@@ -834,17 +863,25 @@ const AcademyTrade = () => {
                   )}
 
                   {sessionPhase === "No new entries" && !dismissedBanner && (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-2 flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                      <p className="text-[11px] text-amber-400 font-medium flex-1">Cutoff reached — no new entries.</p>
-                      <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                        <p className="text-xs font-bold text-amber-400 flex-1">Cutoff reached</p>
+                        <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/60 pl-6">No new entries allowed. Review your session or override if needed.</p>
                     </div>
                   )}
                   {sessionPhase === "Session closed" && !dismissedBanner && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-2 flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                      <p className="text-[11px] text-red-400 font-medium flex-1">Session closed — move to Review.</p>
-                      <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
+                        <p className="text-xs font-bold text-red-400 flex-1">Session closed</p>
+                        <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold ml-0" onClick={() => setStage("review")}>
+                        <ClipboardCheck className="h-3 w-3" /> Complete Review Now
+                      </Button>
                     </div>
                   )}
 
@@ -901,7 +938,7 @@ const AcademyTrade = () => {
                             </p>
                           </div>
                           <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Compliance</p>
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Rules</p>
                             <p className={cn("text-sm font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
                           </div>
                         </div>
@@ -911,7 +948,7 @@ const AcademyTrade = () => {
                       {todayPlans.length > 0 && (
                         <div>
                           <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
-                            Today's Plans ({todayPlans.length})
+                            Plans ({todayPlans.length})
                           </p>
                           <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
                             {todayPlans.map(p => {
@@ -921,7 +958,7 @@ const AcademyTrade = () => {
                                 <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
                                   <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDot)} />
                                   <span className="text-xs font-semibold text-foreground min-w-[36px]">{p.ticker || "—"}</span>
-                                  <span className="text-[10px] text-muted-foreground/50 flex-1 truncate">
+                          <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">
                                     {p.direction === "calls" ? "Calls" : "Puts"} · {p.contracts_planned}ct · ${Number(p.max_loss_planned).toFixed(0)} risk
                                   </span>
                                   <span className={cn("text-[10px] font-semibold capitalize", statusColor)}>{p.status}</span>
@@ -973,7 +1010,7 @@ const AcademyTrade = () => {
                               <div key={e.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
                                 <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/20")} />
                                 <span className="text-xs font-semibold text-foreground min-w-[36px]">{e.symbol || "—"}</span>
-                                <span className="text-[10px] text-muted-foreground/50 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
+                                <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
                                 <span className={cn("text-xs font-semibold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/40")}>
                                   {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
                                 </span>
@@ -1049,7 +1086,7 @@ const AcademyTrade = () => {
                         <div className="grid grid-cols-2 gap-1.5">
                           {/* Grade */}
                           <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest mb-1">Grade</p>
+                            <p className="text-[9px] text-muted-foreground/60 font-semibold uppercase tracking-widest mb-1">Grade</p>
                             <p className={cn("text-2xl font-black",
                               cachedAI.riskGrade === "A" ? "text-emerald-400" :
                               cachedAI.riskGrade === "B" ? "text-primary" :
@@ -1063,31 +1100,13 @@ const AcademyTrade = () => {
                           </div>
 
                           {/* Leak */}
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="h-1.5 w-1.5 rounded-full bg-red-400/70" />
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest">Leak</p>
-                            </div>
-                            <p className="text-[12px] text-foreground/80 font-medium leading-snug">{cachedAI.primaryLeak || "—"}</p>
-                          </div>
+                          <InsightMiniCard label="Leak" dotColor="bg-red-400/70" text={cachedAI.primaryLeak || "—"} />
 
                           {/* Edge */}
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/70" />
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest">Edge</p>
-                            </div>
-                            <p className="text-[12px] text-foreground/80 font-medium leading-snug">{cachedAI.strongestEdge || "—"}</p>
-                          </div>
+                          <InsightMiniCard label="Edge" dotColor="bg-emerald-400/70" text={cachedAI.strongestEdge || "—"} />
 
                           {/* Next */}
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="h-1.5 w-1.5 rounded-full bg-primary/70" />
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest">Next</p>
-                            </div>
-                            <p className="text-[12px] text-foreground/80 font-medium leading-snug">{cachedAI.nextAction || "—"}</p>
-                          </div>
+                          <InsightMiniCard label="Next" dotColor="bg-primary/70" text={cachedAI.nextAction || "—"} />
                         </div>
                       )}
                       <AIFocusCard entries={entries} accessToken={session?.access_token} />
@@ -1161,7 +1180,7 @@ const AcademyTrade = () => {
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-2 px-0.5">
               <BarChart3 className="h-3.5 w-3.5 text-primary/60" />
-              <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/50 uppercase">Analytics</p>
+              <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/60 uppercase">Analytics</p>
             </div>
 
             {/* Row 1: Equity Curve — full width */}

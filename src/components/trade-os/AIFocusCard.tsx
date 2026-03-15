@@ -378,6 +378,44 @@ function InsufficientDataCard({ result, gradeStyle, refreshing, onRescan }: {
   );
 }
 
+/* ── Slide text with truncation ── */
+function SlideText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const sentences = text.split(/(?<=\.)\s+/);
+  const summary = sentences[0] || text;
+  const hasMore = sentences.length > 1;
+
+  // Bold actionable phrases
+  const boldText = (t: string) => {
+    return t.replace(/(stop|cease|avoid|always|never|focus on|increase|decrease|reduce|limit)\s+[^,.]+/gi, (match) => `**${match}**`);
+  };
+
+  const renderText = (t: string) => {
+    const parts = boldText(t).split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) =>
+      part.startsWith("**") && part.endsWith("**")
+        ? <strong key={i} className="text-foreground font-bold">{part.slice(2, -2)}</strong>
+        : <span key={i}>{part}</span>
+    );
+  };
+
+  return (
+    <div>
+      <p className="text-[14px] leading-[1.6] text-foreground/90 font-medium">
+        {expanded ? renderText(text) : renderText(summary)}
+      </p>
+      {hasMore && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          className="text-[11px] text-primary/70 hover:text-primary font-medium mt-1 transition-colors"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ── Carousel sub-component ── */
 function AIFocusCardCarousel({ result, slides, gradeStyle, refreshing }: {
   result: AIFocusResult;
@@ -458,7 +496,7 @@ function AIFocusCardCarousel({ result, slides, gradeStyle, refreshing }: {
                       )}
                     </div>
                   </div>
-                  <p className="text-[14px] leading-[1.6] text-foreground/90 font-medium">{s.value}</p>
+                  <SlideText text={s.value} />
                   <div className="mt-3 h-[2px] rounded-full w-12 opacity-40" style={{ background: `linear-gradient(90deg, ${s.glowColor}, transparent)` }} />
                 </div>
               </div>
