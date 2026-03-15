@@ -356,7 +356,7 @@ export function useTradeLog() {
     deleteEntry,
     exportCSV,
     refetch: fetchEntries,
-    // New computed metrics
+    // Computed metrics
     allTimeWinRate,
     complianceRate,
     currentStreak,
@@ -365,5 +365,10 @@ export function useTradeLog() {
     equityCurve,
     symbolStats,
     dayStats,
+    // Anti-churn rolling metrics
+    last10WinRate,
+    weeklyComplianceRate,
+    bestStreak,
+    allTimeHigh,
   };
 }
