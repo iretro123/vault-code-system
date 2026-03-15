@@ -646,7 +646,7 @@ const AcademyTrade = () => {
                     style={{ filter: "drop-shadow(0 0 4px rgba(52,211,153,0.4))" }}
                   />
                 </svg>
-                <div className="absolute mt-[10px] flex flex-col items-center justify-center w-12 h-12">
+                <div className="absolute inset-0 flex items-center justify-center w-12 h-12">
                   <span className="text-sm font-bold tabular-nums text-foreground">{weeklyComplianceRate}%</span>
                 </div>
                 <span className="text-[8px] text-foreground/60 font-medium mt-0.5">This week</span>
