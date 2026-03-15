@@ -567,6 +567,57 @@ const AcademyTrade = () => {
                     </span>
                   </div>
                 </div>
+                {/* Yesterday recap + rolling stats */}
+                {(() => {
+                  const yesterdayDate = new Date();
+                  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+                  const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
+                  const yesterdayEntries = entries.filter((e) => e.trade_date === yesterdayStr);
+                  const yesterdayPnl = yesterdayEntries.reduce((s, e) => s + computePnl(e), 0);
+                  const isATH = trackedBalance !== null && allTimeHigh > 0 && trackedBalance >= allTimeHigh && entries.length > 1;
+                  return (
+                    <>
+                      {isATH && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                          ★ New Personal Best
+                        </span>
+                      )}
+                      {entries.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground/50">
+                          Yesterday: {yesterdayEntries.length > 0
+                            ? `${yesterdayPnl >= 0 ? "+" : "-"}$${Math.abs(yesterdayPnl).toFixed(0)} · ${yesterdayEntries.length} trade${yesterdayEntries.length !== 1 ? "s" : ""}`
+                            : "No trades"}
+                          {entries.length >= 3 && <> · Last 10: {last10WinRate}% win · Week: {weeklyComplianceRate}% compliance</>}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+                {/* 14-day streak dots */}
+                {entries.length > 0 && (() => {
+                  const dots: Array<"green" | "amber" | "gray"> = [];
+                  for (let i = 13; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const ds = d.toISOString().slice(0, 10);
+                    const dayEntries = entries.filter((e) => e.trade_date === ds);
+                    if (dayEntries.length === 0) dots.push("gray");
+                    else if (dayEntries.every((e) => e.followed_rules)) dots.push("green");
+                    else dots.push("amber");
+                  }
+                  return (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {dots.map((c, i) => (
+                        <span key={i} className={cn("w-[6px] h-[6px] rounded-full",
+                          c === "green" ? "bg-emerald-400" : c === "amber" ? "bg-amber-400" : "bg-white/[0.08]"
+                        )} />
+                      ))}
+                      {bestStreak > 0 && (
+                        <span className="text-[9px] text-muted-foreground/40 ml-1">Best: {bestStreak}d</span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center gap-3 mt-0.5">
                   <span className="text-[10px] text-muted-foreground/40">
                     {todayTradeCount}/{totalMaxTrades} trades
