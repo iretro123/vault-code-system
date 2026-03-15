@@ -637,17 +637,19 @@ const AcademyTrade = () => {
                 </div>
               </div>
               {/* Compliance Ring */}
-              <div className="relative flex flex-col items-center shrink-0">
-                <svg width="48" height="48" viewBox="0 0 48 48" className="transform -rotate-90">
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted) / 0.15)" strokeWidth="3" />
-                  <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(142 71% 45%)" strokeWidth="3" strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 - (weeklyComplianceRate / 100) * 2 * Math.PI * 20}
-                    className="transition-all duration-500"
-                    style={{ filter: "drop-shadow(0 0 4px rgba(52,211,153,0.4))" }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center w-12 h-12">
-                  <span className="text-sm font-bold tabular-nums text-foreground">{weeklyComplianceRate}%</span>
+              <div className="flex flex-col items-center shrink-0">
+                <div className="relative w-12 h-12">
+                  <svg width="48" height="48" viewBox="0 0 48 48" className="transform -rotate-90">
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted) / 0.15)" strokeWidth="3" />
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(142 71% 45%)" strokeWidth="3" strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 - (weeklyComplianceRate / 100) * 2 * Math.PI * 20}
+                      className="transition-all duration-500"
+                      style={{ filter: "drop-shadow(0 0 4px rgba(52,211,153,0.4))" }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold tabular-nums text-foreground">{weeklyComplianceRate}%</span>
+                  </div>
                 </div>
                 <span className="text-[8px] text-foreground/60 font-medium mt-0.5">This week</span>
               </div>
