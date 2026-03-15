@@ -1021,7 +1021,7 @@ const AcademyTrade = () => {
                       {todayPlans.length > 0 && (
                         <div>
                           <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
-                            Today's Plans ({todayPlans.length})
+                            Plans ({todayPlans.length})
                           </p>
                           <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
                             {todayPlans.map(p => {
