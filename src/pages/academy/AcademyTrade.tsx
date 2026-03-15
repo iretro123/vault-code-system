@@ -652,7 +652,7 @@ const AcademyTrade = () => {
           </div>
         )}
 
-        {!hasData && !showMetrics && (
+        {!hasData && (
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
