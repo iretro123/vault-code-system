@@ -535,7 +535,7 @@ const AcademyTrade = () => {
 
         {/* ══════ WELCOME HERO ══════ */}
         {showMetrics && (
-          <div className="rounded-2xl border border-white/[0.06] bg-card p-4 md:p-5">
+          <div className="vault-os-card p-4 md:p-5" style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.06), transparent 70%), hsl(var(--card))" }}>
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/50 font-semibold">Your Trading Day</p>
