@@ -833,8 +833,8 @@ const AcademyTrade = () => {
                         <span className="text-[10px] text-foreground/60 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
                         {executing && executionStart && (
                           <>
-                            <span className="text-[10px] text-muted-foreground/40">·</span>
-                            <span className="text-[10px] text-muted-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
+                            <span className="text-[10px] text-foreground/30">·</span>
+                            <span className="text-[10px] text-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
                           </>
                         )}
                       </div>
