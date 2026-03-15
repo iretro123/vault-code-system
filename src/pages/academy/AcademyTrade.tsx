@@ -900,7 +900,7 @@ const AcademyTrade = () => {
                   )}
 
                   <Collapsible>
-                    <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors font-medium w-full py-1">
+                    <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-foreground/40 hover:text-foreground/60 transition-colors font-medium w-full py-1">
                       <ChevronDown className="h-3 w-3" /> Session Details
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-2 pt-1">
