@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, ImagePlus, X, ChevronDown, Plus } from "lucide-react";
+import { CalendarIcon, ImagePlus, X, ChevronDown, Plus, Check } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -260,9 +260,14 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
             <button
               type="button"
               onClick={() => setQuickMode(!quickMode)}
-              className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
+              className={cn(
+                "text-[10px] font-semibold px-2.5 py-1 rounded-full transition-colors",
+                quickMode
+                  ? "bg-primary/15 text-primary border border-primary/20"
+                  : "bg-muted/40 text-muted-foreground hover:bg-muted/60 border border-border"
+              )}
             >
-              {quickMode ? "Full Mode" : "Quick Mode"}
+              {quickMode ? "⚡ Quick" : "Full Mode"}
             </button>
           </div>
         </SheetHeader>
@@ -454,18 +459,23 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
         {/* Sticky footer */}
         <div className="px-6 py-4 border-t border-border flex gap-3 shrink-0">
           {justSaved ? (
-            <>
-              <Button className="flex-1 gap-1.5" onClick={handleLogAnother}>
-                <Plus className="h-3 w-3" /> Log Another
-              </Button>
+            <div className="flex-1 flex gap-3 vault-fade-up">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="vault-check-pop w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                  <Check className="h-4 w-4 text-emerald-400" />
+                </span>
+                <Button className="flex-1 gap-1.5" onClick={handleLogAnother}>
+                  <Plus className="h-3 w-3" /> Log Another
+                </Button>
+              </div>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Done
               </Button>
-            </>
+            </div>
           ) : (
             <>
               <Button className="flex-1" onClick={handleSubmit} disabled={!isFormValid || submitting}>
-                {submitting ? "Saving…" : "Save Trade & Generate Review"}
+                {submitting ? "Saving…" : "Save"}
               </Button>
               <Button variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel

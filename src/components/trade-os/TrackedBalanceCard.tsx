@@ -28,7 +28,7 @@ export function TrackedBalanceCard({
   const isExpanded = showUpdateBalance || showResetConfirm;
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-card overflow-hidden">
+    <div className="vault-os-card overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
           <Wallet className="h-3.5 w-3.5 text-primary" />

@@ -1,115 +1,122 @@
+## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
+### 1. Source of Truth (Unified)
+- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
+- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
+- **Trades Used**: `trade_entries` filtered by today's date
+- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
+- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
 
-# Premium Enhancement — Trade OS
+### 2. DayState Engine (A–E)
+- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
+- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
+- Session closed auto-suggests review via `sessionPhase` input
 
-Make Trade OS feel luxury, fast, and simple for day traders. Focus on tactile feedback, visual polish, and reducing friction without adding complexity.
+### 3. OSControlRail Unified
+- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
+- Shows `dayStateStatus` text and `dayStateCta` button
+- Log Result only shows in `live_session` state
 
----
+### 4. QuickCheckInSheet Enhanced
+- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
+- All fields save to `journal_entries`
 
-## Changes
+### 5. CTA Logic
+- Hero shows state-driven status line
+- Each stage has single primary CTA driven by `dayState`
+- "Start Session" replaces "Go to Live Mode"
+- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
 
-### 1. Premium Hero Card — Glassmorphic Upgrade
-**File:** `src/pages/academy/AcademyTrade.tsx` (lines 539-643)
+## Phase 2 — Simplify the Current Flow — COMPLETED
 
-Upgrade the hero card surface:
-- Add subtle radial gradient glow at top (`radial-gradient(ellipse at 50% 0%, primary/0.06, transparent 70%)`)
-- Balance number: larger (text-4xl), with a subtle text-shadow for depth
-- When ATH is hit, add a gold shimmer animation on the "★ New Personal Best" badge using CSS `@keyframes`
-- P/L pill: slightly larger, add a subtle glow shadow matching its color (emerald glow for green, red glow for red)
-- Streak dots: increase to 8px, add a subtle outer glow on green dots (`shadow-[0_0_4px_rgba(52,211,153,0.4)]`)
-- Add a thin luminous divider between balance area and stats area
+### 1. Budget Tooltips
+- Added beginner-friendly tooltips (with ?) to all 4 budget metrics: Risk Budget, Position Cap, Trades/Session, Max Contracts
+- Wrapped in TooltipProvider for consistent delay
 
-### 2. Tab Bar — Labels on Mobile + Premium Feel
-**File:** `src/components/trade-os/OSTabHeader.tsx`
+### 2. Mobile CTA Bar
+- Fixed bottom bar on mobile showing `dayStateCta` button
+- Positioned above MobileNav (bottom-16), respects safe-area-inset-bottom
+- Calls `handleQuickAction` for state-driven action
 
-- Show labels on mobile (remove the `!isMobile &&` gate on line 52)
-- Reduce font to `text-[10px]` on mobile to fit
-- Add a subtle bottom highlight bar on the active tab (2px primary gradient line)
-- Active tab: add a very subtle blue glow (`shadow-[0_0_8px_rgba(59,130,246,0.15)]`)
+### 3. Quick-Log Mode
+- LogTradeSheet defaults to Quick mode: Symbol, Direction, Result, P/L, Rules Followed
+- "Add Details" expands to full mode with Date, Entry/Exit, Position Size, Accountability, Setup, Screenshot, Note
+- Toggle between Quick Mode / Full Mode in header
+- Fixed "Contracts / shares" → "Contracts" placeholder
 
-### 3. Performance HUD — Richer Cells
-**File:** `src/components/trade-os/PerformanceHUD.tsx`
+### 4. P/L Calculation Fix
+- Exported `computePnl` from `useTradeLog.ts` as standalone function
+- Review stage trade list now uses `computePnl(e)` instead of `e.risk_reward * e.risk_used`
+- Backward-compatible with legacy ±1 format entries
 
-- Remove the spinning conic gradient animation (line 60-66) — it feels gimmicky, not luxury
-- Replace with a clean, static `border-primary/10` with a subtle `shadow-[0_0_20px_rgba(59,130,246,0.06)]` outer glow
-- Add a subtle hover effect on each cell: `hover:bg-white/[0.03]` transition
-- STREAK cell: add a tiny flame emoji or colored indicator when streak ≥ 5
+## Phase 3 — Options Day Trader Optimization — COMPLETED
 
-### 4. Log Trade Sheet — Faster + More Polished
-**File:** `src/components/academy/LogTradeSheet.tsx`
+### 1. Cockpit-Mode Live Stage
+- Removed StageHeadline from Live stage, removed trade summary strip (duplicate of hero data)
+- Active plan shows as single-row cockpit: ticker + direction + contracts + status badge
+- SessionCountdownLine component shows inline timer + trades remaining
+- TodaysLimitsSection, SessionSetupCard, End Session moved behind collapsible "Session Details"
+- No-plan state compressed to single row with Plan + Log buttons
 
-- Success state ("Just Saved"): add a brief green checkmark animation (scale-in + fade) before showing "Log Another"
-- "Save Trade" button: rename to just "Save" — shorter, faster feel
-- Add haptic-style visual feedback: button briefly flashes emerald on successful save
-- Quick Mode toggle: style as a pill/badge in the header instead of plain text link
+### 2. OSControlRail De-duplicated
+- Removed risk budget, trade count, and session timer sections (already in hero + main view)
+- Rail now shows only: Vault Status, Active Plan summary, Restrictions, Day State CTA
 
-### 5. Mobile CTA Bar — Premium Floating Pill
-**File:** `src/pages/academy/AcademyTrade.tsx` (lines 1199-1204)
+### 3. Auto-Default Session Times
+- Pre-fills draft from yesterday's localStorage key (`va_session_times_YYYY-MM-DD`)
+- "Same as yesterday" one-tap button saves and starts session immediately
 
-- Change from full-width to a centered floating pill: `max-w-xs mx-auto`
-- Add a subtle backdrop blur and shadow: `backdrop-blur-sm shadow-[0_4px_20px_rgba(0,0,0,0.3)]`
-- Add a subtle glow matching primary color: `shadow-[0_0_12px_rgba(59,130,246,0.15)]`
-- Slightly rounded: `rounded-2xl`
+### 4. Auto-Review After Session Close
+- `handleTradeSubmit` auto-transitions to review stage + opens check-in when `sessionPhase === "Session closed"`
 
-### 6. Intelligence Strip — Richer Glow
-**File:** `src/pages/academy/AcademyTrade.tsx` (lines 1118-1155)
+### 5. Specific Trade Toast
+- `useTradeLog.addEntry` toast now shows symbol + signed P/L instead of generic message
 
-- Add a subtle left-border accent: `border-l-2 border-primary/30`
-- AI dot: make it slightly larger (2px → 2.5px) with a richer glow
-- On hover, the strip should lift slightly: `hover:-translate-y-px transition-transform`
+### 6. Smart Log Defaults
+- `planFollowed` already defaults to "Yes"
+- Last-used ticker remembered in `localStorage` (`va_last_ticker`) and pre-filled
 
-### 7. Card Surfaces — Consistent Premium Layer
-**File:** `src/index.css`
+### 7. Inline AI Insights
+- Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
+- 2×2 grid, each card shows label + value + description without clicking
 
-- Add a new utility class `.vault-os-card` that combines:
-  - `background: radial-gradient(ellipse 80% 150px at 50% 0%, rgba(59,130,246,0.03) 0%, transparent 70%), hsl(214, 22%, 14%)`
-  - `border: 1px solid rgba(255,255,255,0.06)`
-  - `border-radius: 12px`
-  - `box-shadow: 0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.03)`
-- Apply to the hero OS card (line 660), Weekly Review card, and Tracked Balance card for consistent depth
+## Anti-Churn Phase — All 10 Improvements — COMPLETED
 
-### 8. Weekly Review Card — Premium Summary
-**File:** `src/components/trade-os/WeeklyReviewCard.tsx`
+### 1. Fix First-Visit Experience ✅
+- `GettingStartedBanner` now shows whenever `!hasData`, regardless of `showMetrics` flag
+- New users with balance set but no trades still see the 3-step guidance
 
-- Generated summary: add a subtle fade-in animation when results appear
-- Stats grid cells: use the `.vault-os-card` background instead of `bg-muted/20`
-- "Generate Weekly Review" button: add a subtle shimmer effect (the existing `.vault-cta-shine` pattern)
-- Best/Worst day cards: slightly thicker left border for color accent
+### 2. Lower AI Insights Gate: 10 → 3 ✅
+- Insights stage gate changed from `entries.length < 10` to `< 3`
+- All copy updated: progress bar, counter text, denominator
 
-### 9. Stage Headlines — Cleaner Typography
-**File:** `src/pages/academy/AcademyTrade.tsx` (StageHeadline component, lines 74-83)
+### 3. Add Rolling Win Rate + Weekly Compliance ✅
+- `useTradeLog` now exports `last10WinRate`, `weeklyComplianceRate`, `bestStreak`, `allTimeHigh`
+- Hero card shows "Last 10: X% win · Week: Y% compliance" inline
 
-- Remove the italic guidance line (line 81) — it's cluttered. The subtitle is enough.
-- Title: bump to `text-lg` with `font-bold tracking-tight`
-- Subtitle: `text-[11px]` stays but with slightly more opacity (`text-muted-foreground/70`)
+### 4. Decrement Risk Budget After Each Trade Loss ✅
+- Created `decrement_risk_budget` RPC (SECURITY DEFINER, atomic GREATEST(0, ...))
+- Called in `handleTradeSubmit` after loss trades
 
-### 10. Micro-Animations
-**File:** `src/index.css`
+### 5. Add Yesterday's Recap to Hero ✅
+- Hero card shows "Yesterday: +$85 · 2 trades" or "No trades yesterday"
 
-Add CSS keyframes:
-- `.vault-save-flash`: brief emerald border flash (0.3s)
-- `.vault-ath-shimmer`: subtle gold shimmer sweep for ATH badge
-- `.vault-fade-up`: 0.2s translateY(8px) → 0 for card content reveals
+### 6. Wire Weekly Review to Actually Work ✅
+- `WeeklyReviewCard` now accepts `entries`, computes weekly summary on click
+- Shows total P/L, win rate, compliance %, green/red days, best/worst day
 
-Apply `vault-fade-up` to stage content transitions. Apply `vault-ath-shimmer` to the personal best badge.
+### 7. Add Streak Visualization (14-day dot row) ✅
+- 14 colored dots in hero: green (compliant), amber (broke rule), gray (no trades)
+- Shows "Best: Xd" streak count
 
----
+### 8. Add Beginner Insights (Rule-Based, Pre-AI) ✅
+- Below the lock, when 1-2 trades exist: shows rules followed, most traded symbol, avg P/L
+- Fills the dead space with real data before AI unlocks
 
-## Files Changed
+### 9. Quick Import (Batch Log) ✅
+- `LogTradeSheet` already has Quick Mode with 5-field form + "Log Another" flow
+- No changes needed — was already implemented in Phase 2
 
-| File | Changes |
-|---|---|
-| `src/index.css` | Add `.vault-os-card`, `.vault-save-flash`, `.vault-ath-shimmer`, `.vault-fade-up` utilities |
-| `src/pages/academy/AcademyTrade.tsx` | Hero card premium surface, mobile CTA pill, intelligence strip polish, stage headline cleanup |
-| `src/components/trade-os/OSTabHeader.tsx` | Show labels on mobile, active tab glow |
-| `src/components/trade-os/PerformanceHUD.tsx` | Remove spinning animation, add static glow + hover states |
-| `src/components/academy/LogTradeSheet.tsx` | Save button rename, success animation, quick mode pill |
-| `src/components/trade-os/WeeklyReviewCard.tsx` | Fade-in animation, premium cell backgrounds, shimmer CTA |
-
-## What Does NOT Change
-- No new pages, routes, or features
-- No data model changes
-- No new dependencies
-- All existing functionality preserved
-- Color system unchanged (blue primary, emerald success, amber warning, red danger)
-
+### 10. Personal Best Markers ✅
+- `allTimeHigh` computed from equity curve
+- Gold "★ New Personal Best" badge appears in hero when balance ≥ ATH

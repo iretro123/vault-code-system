@@ -76,9 +76,8 @@ function StageHeadline({ stage }: { stage: string }) {
   if (!h) return null;
   return (
     <div className="px-0.5 pt-2 pb-1">
-      <h2 className="text-base font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
-      <p className="text-[11px] text-muted-foreground/60 font-medium mt-0.5">{h.subtitle}</p>
-      <p className="text-[10px] text-muted-foreground/40 mt-1 italic">{h.guidance}</p>
+      <h2 className="text-lg font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
+      <p className="text-[11px] text-muted-foreground/70 font-medium mt-0.5">{h.subtitle}</p>
     </div>
   );
 }
@@ -536,24 +535,24 @@ const AcademyTrade = () => {
 
         {/* ══════ WELCOME HERO ══════ */}
         {showMetrics && (
-          <div className="rounded-2xl border border-white/[0.06] bg-card p-4 md:p-5">
+          <div className="vault-os-card p-4 md:p-5" style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.06), transparent 70%), hsl(var(--card))" }}>
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/50 font-semibold">Your Trading Day</p>
                 <div className="flex items-baseline gap-2.5">
-                  <span className="text-3xl font-bold tabular-nums text-foreground tracking-tight">
-                    {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
-                  </span>
-                  {todayPnl !== 0 && (
-                    <span className={cn(
-                      "text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full",
-                      todayPnl > 0
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                        : "bg-red-500/10 text-red-400 border border-red-500/20"
-                    )}>
-                      {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
+                    <span className="text-4xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                      {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
                     </span>
-                  )}
+                    {todayPnl !== 0 && (
+                      <span className={cn(
+                        "text-xs font-semibold tabular-nums px-2.5 py-0.5 rounded-full",
+                        todayPnl > 0
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_8px_rgba(52,211,153,0.15)]"
+                          : "bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.15)]"
+                      )}>
+                        {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
+                      </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <div className="flex items-center gap-1.5">
@@ -578,7 +577,7 @@ const AcademyTrade = () => {
                   return (
                     <>
                       {isATH && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                        <span className="vault-ath-shimmer inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-0.5 shadow-[0_0_10px_rgba(251,191,36,0.12)]">
                           ★ New Personal Best
                         </span>
                       )}
@@ -608,8 +607,8 @@ const AcademyTrade = () => {
                   return (
                     <div className="flex items-center gap-1 mt-0.5">
                       {dots.map((c, i) => (
-                        <span key={i} className={cn("w-[6px] h-[6px] rounded-full",
-                          c === "green" ? "bg-emerald-400" : c === "amber" ? "bg-amber-400" : "bg-white/[0.08]"
+                        <span key={i} className={cn("w-2 h-2 rounded-full transition-all",
+                          c === "green" ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.4)]" : c === "amber" ? "bg-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.3)]" : "bg-white/[0.08]"
                         )} />
                       ))}
                       {bestStreak > 0 && (
@@ -618,6 +617,8 @@ const AcademyTrade = () => {
                     </div>
                   );
                 })()}
+                {/* Luminous divider */}
+                <div className="h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent mt-2 mb-0.5" />
                 <div className="flex items-center gap-3 mt-0.5">
                   <span className="text-[10px] text-muted-foreground/40">
                     {todayTradeCount}/{totalMaxTrades} trades
@@ -657,7 +658,7 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ HERO OS CARD ══════ */}
-        <div className="rounded-lg bg-card overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+        <div className="vault-os-card overflow-hidden">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
@@ -1119,11 +1120,11 @@ const AcademyTrade = () => {
           {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
+              className="w-full border-t border-white/[0.04] border-l-2 border-l-primary/30 hover:bg-white/[0.02] hover:-translate-y-px transition-all duration-100"
             >
               <div className="flex items-center gap-4 px-3 py-1.5">
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-primary/60 animate-pulse shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
                   <span className="text-[9px] text-muted-foreground/40 font-medium">AI</span>
                 </div>
                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -1197,8 +1198,11 @@ const AcademyTrade = () => {
 
       {/* Mobile CTA Bar */}
       {isMobile && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-3 pb-[env(safe-area-inset-bottom,0px)]">
-          <Button className="w-full h-11 rounded-xl text-sm font-semibold shadow-lg" onClick={handleQuickAction}>
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-[env(safe-area-inset-bottom,0px)] flex justify-center">
+          <Button
+            className="w-full max-w-xs h-11 rounded-2xl text-sm font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_12px_rgba(59,130,246,0.15)] backdrop-blur-sm vault-cta-shine"
+            onClick={handleQuickAction}
+          >
             {dayStateCta}
           </Button>
         </div>

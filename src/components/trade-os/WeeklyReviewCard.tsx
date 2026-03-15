@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { BarChart3, TrendingUp, TrendingDown, CheckCircle2, XCircle } from "lucide-react";
+import { BarChart3, TrendingUp, TrendingDown } from "lucide-react";
 import type { TradeEntry } from "@/hooks/useTradeLog";
 import { computePnl } from "@/hooks/useTradeLog";
 
@@ -36,7 +36,6 @@ function computeWeeklySummary(entries: TradeEntry[]): WeeklySummary {
   const compliant = recent.filter((e) => e.followed_rules).length;
   const compliance = Math.round((compliant / recent.length) * 100);
 
-  // Group by day
   const dayMap = new Map<string, number>();
   for (const e of recent) {
     dayMap.set(e.trade_date, (dayMap.get(e.trade_date) || 0) + computePnl(e));
@@ -60,7 +59,7 @@ export function WeeklyReviewCard({ hasData, entries }: WeeklyReviewCardProps) {
   const summary = useMemo(() => generated ? computeWeeklySummary(entries) : null, [generated, entries]);
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-card p-4 space-y-3">
+    <div className="vault-os-card p-4 space-y-3">
       <div className="flex items-center gap-2">
         <BarChart3 className="h-3.5 w-3.5 text-primary" />
         <h3 className="text-xs font-semibold text-foreground">Weekly Review</h3>
@@ -72,7 +71,7 @@ export function WeeklyReviewCard({ hasData, entries }: WeeklyReviewCardProps) {
       </div>
 
       {generated && summary ? (
-        <div className="space-y-3">
+        <div className="space-y-3 vault-fade-up">
           {/* P/L + win rate */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -89,15 +88,15 @@ export function WeeklyReviewCard({ hasData, entries }: WeeklyReviewCardProps) {
 
           {/* Stats grid */}
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-lg bg-muted/20 p-2">
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
               <p className="text-sm font-bold tabular-nums text-foreground">{summary.tradeCount}</p>
               <p className="text-[9px] text-muted-foreground/60">Trades</p>
             </div>
-            <div className="rounded-lg bg-muted/20 p-2">
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
               <p className="text-sm font-bold tabular-nums text-foreground">{summary.compliance}%</p>
-              <p className="text-[9px] text-muted-foreground/60">Compliance</p>
+              <p className="text-[9px] text-muted-foreground/60">Rules Followed</p>
             </div>
-            <div className="rounded-lg bg-muted/20 p-2">
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
               <p className="text-sm font-bold tabular-nums text-foreground">
                 <span className="text-emerald-400">{summary.greenDays}</span>
                 <span className="text-muted-foreground/40">/</span>
@@ -110,7 +109,7 @@ export function WeeklyReviewCard({ hasData, entries }: WeeklyReviewCardProps) {
           {/* Best / worst day */}
           <div className="flex gap-2">
             {summary.bestDay && (
-              <div className="flex-1 flex items-center gap-1.5 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/10 px-2 py-1.5">
+              <div className="flex-1 flex items-center gap-1.5 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/10 border-l-2 border-l-emerald-500/40 px-2 py-1.5">
                 <TrendingUp className="h-3 w-3 text-emerald-400 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[9px] text-muted-foreground/50">Best Day</p>
@@ -119,7 +118,7 @@ export function WeeklyReviewCard({ hasData, entries }: WeeklyReviewCardProps) {
               </div>
             )}
             {summary.worstDay && summary.worstDay.pnl < 0 && (
-              <div className="flex-1 flex items-center gap-1.5 rounded-lg bg-red-500/[0.06] border border-red-500/10 px-2 py-1.5">
+              <div className="flex-1 flex items-center gap-1.5 rounded-lg bg-red-500/[0.06] border border-red-500/10 border-l-2 border-l-red-500/40 px-2 py-1.5">
                 <TrendingDown className="h-3 w-3 text-red-400 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-[9px] text-muted-foreground/50">Worst Day</p>
@@ -136,7 +135,7 @@ export function WeeklyReviewCard({ hasData, entries }: WeeklyReviewCardProps) {
       ) : hasData ? (
         <>
           <p className="text-[11px] text-muted-foreground/60">Your weekly review is ready to generate.</p>
-          <Button size="sm" className="h-8 text-[11px] rounded-lg w-full" onClick={() => setGenerated(true)}>Generate Weekly Review</Button>
+          <Button size="sm" className="h-8 text-[11px] rounded-lg w-full vault-cta-shine" onClick={() => setGenerated(true)}>Generate Weekly Review</Button>
         </>
       ) : (
         <>
