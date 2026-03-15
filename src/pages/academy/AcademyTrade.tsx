@@ -511,7 +511,7 @@ const AcademyTrade = () => {
             {hasData && symbolStats.length > 0 && (
               <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
             )}
-            <WeeklyReviewCard hasData={hasData} />
+            <WeeklyReviewCard hasData={hasData} entries={entries} />
           </section>
         </div>
 
