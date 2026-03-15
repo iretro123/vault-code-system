@@ -93,6 +93,7 @@ const AcademyTrade = () => {
   const {
     entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
+    last10WinRate, weeklyComplianceRate, bestStreak, allTimeHigh,
   } = useTradeLog();
   const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
 
