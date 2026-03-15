@@ -564,6 +564,80 @@ html {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+
+  /* ═══ Premium OS Card Surface ═══ */
+  .vault-os-card {
+    background:
+      radial-gradient(ellipse 80% 150px at 50% 0%, hsl(var(--primary) / 0.04) 0%, transparent 70%),
+      hsl(var(--card));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  /* ═══ Save flash — emerald border pulse ═══ */
+  .vault-save-flash {
+    animation: vault-save-flash-anim 0.4s ease-out;
+  }
+  @keyframes vault-save-flash-anim {
+    0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+    50% { box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.25); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+  }
+
+  /* ═══ ATH shimmer sweep — gold ═══ */
+  .vault-ath-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .vault-ath-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgba(251, 191, 36, 0.18) 42%,
+      rgba(251, 191, 36, 0.28) 50%,
+      rgba(251, 191, 36, 0.18) 58%,
+      transparent 65%
+    );
+    background-size: 300% 100%;
+    animation: vault-ath-sweep 3s ease-in-out infinite;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  @keyframes vault-ath-sweep {
+    0%, 100% { background-position: 200% center; }
+    50% { background-position: -100% center; }
+  }
+
+  /* ═══ Fade up — card content reveals ═══ */
+  .vault-fade-up {
+    animation: vault-fade-up-anim 0.25s ease-out both;
+  }
+  @keyframes vault-fade-up-anim {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══ Success checkmark scale-in ═══ */
+  .vault-check-pop {
+    animation: vault-check-pop-anim 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes vault-check-pop-anim {
+    0% { opacity: 0; transform: scale(0.3); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vault-save-flash,
+    .vault-ath-shimmer::after,
+    .vault-fade-up,
+    .vault-check-pop { animation: none; }
+  }
 }
 
 /* ─── Referral modal backdrop override ─── */

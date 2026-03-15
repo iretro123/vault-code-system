@@ -55,26 +55,23 @@ export function PerformanceHUD({
   ];
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card p-1">
-      {/* Animated gradient border effect */}
-      <div className="absolute inset-0 rounded-2xl pointer-events-none opacity-30"
-        style={{
-          background: "conic-gradient(from 0deg, transparent 0%, hsl(var(--primary) / 0.15) 20%, transparent 40%, hsl(var(--primary) / 0.1) 60%, transparent 80%)",
-          animation: "hudBorderSpin 12s linear infinite",
-        }}
-      />
-      <style>{`@keyframes hudBorderSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-
+    <div className="vault-os-card overflow-hidden p-1">
       <div className="relative grid grid-cols-3 md:grid-cols-6 gap-px rounded-xl overflow-hidden bg-border/20">
         {hudItems.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="bg-card px-2.5 py-2.5 md:px-4 md:py-4 flex flex-col items-center text-center gap-0.5">
+            <div
+              key={item.label}
+              className="bg-card px-2.5 py-2.5 md:px-4 md:py-4 flex flex-col items-center text-center gap-0.5 transition-colors duration-100 hover:bg-white/[0.03]"
+            >
               <Icon className={`h-3.5 w-3.5 ${item.accent} shrink-0`} />
               <span className="text-[9px] uppercase tracking-[0.1em] font-medium text-muted-foreground/70 leading-none">{item.label}</span>
               <span className={`text-base md:text-lg font-bold tabular-nums leading-none ${item.large ? item.accent : "text-foreground"}`}>
                 {item.value}
               </span>
+              {item.label === "STREAK" && currentStreak >= 5 && (
+                <span className="text-[8px] text-emerald-400/80 font-medium">🔥 On fire</span>
+              )}
             </div>
           );
         })}
