@@ -157,7 +157,11 @@ function computeAnalytics(trades: any[], userRules: any): Analytics {
       symbol,
       count: arr.length,
       winRate: winRate(arr),
-      avgR: Math.round(avgField(arr, "risk_reward") * 100) / 100,
+      avgR: Math.round((arr.reduce((s, t) => {
+        const ru = Number(t.risk_used) || 0;
+        const rr = Number(t.risk_reward) || 0;
+        return s + (ru > 0 ? rr / ru : 0);
+      }, 0) / arr.length) * 100) / 100,
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
