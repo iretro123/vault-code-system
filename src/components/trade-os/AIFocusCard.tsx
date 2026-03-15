@@ -235,11 +235,6 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
 
   const gradeStyle = RISK_GRADE_MAP[result.riskGrade] || RISK_GRADE_MAP.C;
   const confStyle = CONFIDENCE_MAP[result.primaryLeakConfidence] || CONFIDENCE_MAP.medium;
-  const isInsufficient = result.primaryLeakConfidence === "insufficient";
-
-  if (isInsufficient) {
-    return <InsufficientDataCard result={result} gradeStyle={gradeStyle} refreshing={refreshing} onRescan={() => fetchAnalysis(true)} />;
-  }
 
   const slides = [
     {

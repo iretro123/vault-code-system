@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, X, Loader2, Download, List,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, isThisWeek, isSameWeek, subWeeks } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-// Backward-compatible P/L calc (mirrors useTradeLog.computePnl without requiring full TradeEntry)
+// Backward-compatible P/L calc
 const computePnl = (e: { risk_reward: number; risk_used: number; outcome?: string }) =>
   e.outcome ? e.risk_reward : e.risk_reward * e.risk_used;
 
@@ -18,17 +19,60 @@ const OUTCOME_STYLES = {
   breakeven: { label: "Breakeven", color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Minus, dot: "bg-muted-foreground/30" },
 };
 
-const MOBILE_LIMIT = 15;
+type TradeEntry = {
+  id: string; trade_date: string; risk_used: number; risk_reward: number;
+  followed_rules: boolean; notes: string | null; created_at: string;
+  symbol?: string; outcome?: string; plan_id?: string;
+};
 
 interface RecentTradesSectionProps {
-  entries: { id: string; trade_date: string; risk_used: number; risk_reward: number; followed_rules: boolean; notes: string | null; created_at: string; symbol?: string; outcome?: string; plan_id?: string }[];
+  entries: TradeEntry[];
   onExportCSV: () => void;
   onDelete: (id: string) => Promise<{ error: any }>;
   compact?: boolean;
 }
 
+/* ── Week grouping helper ── */
+interface WeekGroup {
+  key: string;
+  label: string;
+  entries: TradeEntry[];
+  pnl: number;
+  isCurrentWeek: boolean;
+}
+
+function groupByWeek(entries: TradeEntry[]): WeekGroup[] {
+  const groups = new Map<string, { entries: TradeEntry[]; weekStart: Date }>();
+
+  for (const e of entries) {
+    const d = new Date(e.trade_date);
+    const ws = startOfWeek(d, { weekStartsOn: 1 });
+    const key = ws.toISOString().slice(0, 10);
+    if (!groups.has(key)) groups.set(key, { entries: [], weekStart: ws });
+    groups.get(key)!.entries.push(e);
+  }
+
+  const now = new Date();
+  const lastWeekDate = subWeeks(now, 1);
+
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, { entries: weekEntries, weekStart }]) => {
+      const we = endOfWeek(weekStart, { weekStartsOn: 1 });
+      const current = isThisWeek(weekStart, { weekStartsOn: 1 });
+      const isLastWeek = isSameWeek(weekStart, lastWeekDate, { weekStartsOn: 1 });
+      const label = current
+        ? "This Week"
+        : isLastWeek
+        ? "Last Week"
+        : `${format(weekStart, "MMM d")} – ${format(we, "MMM d")}`;
+      const pnl = weekEntries.reduce((sum, e) => sum + computePnl(e), 0);
+      return { key, label, entries: weekEntries, pnl, isCurrentWeek: current };
+    });
+}
+
 /* ═══ Compact transaction-list mode for analytics grid ═══ */
-function CompactTradesList({ entries, onExportCSV }: { entries: RecentTradesSectionProps["entries"]; onExportCSV: () => void }) {
+function CompactTradesList({ entries, onExportCSV }: { entries: TradeEntry[]; onExportCSV: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? entries : entries.slice(0, 8);
 
@@ -81,13 +125,179 @@ function CompactTradesList({ entries, onExportCSV }: { entries: RecentTradesSect
   );
 }
 
-/* ═══ Full expanded mode (classic layout / non-compact) ═══ */
+/* ═══ Single Trade Card ═══ */
+function TradeCard({ e, deletingId, setDeletingId, confirmText, setConfirmText, isDeleting, handleDeleteConfirm }: {
+  e: TradeEntry;
+  deletingId: string | null;
+  setDeletingId: (id: string | null) => void;
+  confirmText: string;
+  setConfirmText: (v: string) => void;
+  isDeleting: boolean;
+  handleDeleteConfirm: (id: string) => void;
+}) {
+  const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
+  const s = OUTCOME_STYLES[outcome];
+  const Icon = s.icon;
+  const pnlNum = computePnl(e);
+  const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
+  const ticker = e.symbol || e.notes?.split(" ")[0] || "Trade";
+
+  const noteParts = e.notes?.split(" | ") || [];
+  const directionPart = noteParts[0]?.split(" ")[1];
+  const setupPart = noteParts.find((p) => p.startsWith("Setup:"))?.replace("Setup: ", "");
+  const targetPart = noteParts.find((p) => p.startsWith("Target:"))?.replace("Target: ", "");
+  const stopPart = noteParts.find((p) => p.startsWith("Stop:"))?.replace("Stop: ", "");
+  const isDeleteMode = deletingId === e.id;
+
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-card p-4 space-y-2 relative group">
+      {!isDeleteMode && (
+        <button
+          onClick={() => { setDeletingId(e.id); setConfirmText(""); }}
+          className="absolute top-3 right-3 h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
+          aria-label="Delete trade"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
+
+      <div className="flex items-center justify-between gap-2 flex-wrap pr-8">
+        <div className="flex items-center gap-2 min-w-0">
+          <Icon className={`h-3.5 w-3.5 ${s.color} shrink-0`} />
+          <span className="text-sm font-bold text-foreground">{ticker}</span>
+          {directionPart && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03] text-muted-foreground">{directionPart}</span>
+          )}
+          <span className="text-xs text-muted-foreground">· {format(new Date(e.trade_date), "MMM d")}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color}`}>{s.label}</span>
+          <span className={`text-sm font-bold tabular-nums ${s.color}`}>{pnlStr}</span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        <span className={cn(
+          "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
+          e.plan_id
+            ? "bg-primary/10 text-primary border-primary/20"
+            : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+        )}>
+          {e.plan_id ? "Planned" : "Unplanned"}
+        </span>
+        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
+          {e.followed_rules ? "✅" : "❌"} Plan
+        </span>
+        {targetPart && (
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
+            🎯 {targetPart}
+          </span>
+        )}
+        {stopPart && (
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
+            🛑 Stop: {stopPart}
+          </span>
+        )}
+        {setupPart && setupPart !== "—" && (
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary">
+            {setupPart}
+          </span>
+        )}
+      </div>
+
+      {isDeleteMode && (
+        <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2 mt-1">
+          <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">DELETE</span> to confirm</p>
+          <p className="text-[11px] text-muted-foreground">This action is permanent and cannot be undone.</p>
+          <div className="flex gap-2 items-center">
+            <Input
+              className="max-w-[120px] h-8 text-sm font-mono"
+              placeholder="DELETE"
+              value={confirmText}
+              onChange={(ev) => setConfirmText(ev.target.value.toUpperCase())}
+              autoFocus
+            />
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={confirmText !== "DELETE" || isDeleting}
+              onClick={() => handleDeleteConfirm(e.id)}
+              className="h-8"
+            >
+              {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setDeletingId(null); setConfirmText(""); }}>Cancel</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══ Week Section (collapsible) ═══ */
+function WeekSection({ group, deletingId, setDeletingId, confirmText, setConfirmText, isDeleting, handleDeleteConfirm }: {
+  group: WeekGroup;
+  deletingId: string | null;
+  setDeletingId: (id: string | null) => void;
+  confirmText: string;
+  setConfirmText: (v: string) => void;
+  isDeleting: boolean;
+  handleDeleteConfirm: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(group.isCurrentWeek);
+  const wins = group.entries.filter(e => e.risk_reward > 0).length;
+  const losses = group.entries.filter(e => e.risk_reward < 0).length;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-white/[0.06] bg-card hover:bg-white/[0.02] transition-colors group/week">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {open ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />}
+            <span className="text-xs font-bold text-foreground">{group.label}</span>
+            <span className="text-[10px] text-muted-foreground/40 tabular-nums">{group.entries.length} trade{group.entries.length !== 1 ? "s" : ""}</span>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-emerald-400/70 tabular-nums">{wins}W</span>
+              <span className="text-[10px] text-muted-foreground/30">·</span>
+              <span className="text-[10px] text-red-400/70 tabular-nums">{losses}L</span>
+            </div>
+            <span className={cn(
+              "text-xs font-bold tabular-nums",
+              group.pnl >= 0 ? "text-emerald-400" : "text-red-400"
+            )}>
+              {group.pnl >= 0 ? "+" : "-"}${Math.abs(group.pnl).toFixed(0)}
+            </span>
+          </div>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="space-y-2 pt-2 pl-2">
+          {group.entries.map((e) => (
+            <TradeCard
+              key={e.id}
+              e={e}
+              deletingId={deletingId}
+              setDeletingId={setDeletingId}
+              confirmText={confirmText}
+              setConfirmText={setConfirmText}
+              isDeleting={isDeleting}
+              handleDeleteConfirm={handleDeleteConfirm}
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/* ═══ Main Export ═══ */
 export function RecentTradesSection({ entries, onExportCSV, onDelete, compact }: RecentTradesSectionProps) {
-  const isMobile = useIsMobile();
-  const [expanded, setExpanded] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const weekGroups = useMemo(() => groupByWeek(entries), [entries]);
 
   if (compact) {
     return <CompactTradesList entries={entries} onExportCSV={onExportCSV} />;
@@ -104,10 +314,6 @@ export function RecentTradesSection({ entries, onExportCSV, onDelete, compact }:
     );
   }
 
-  const defaultLimit = isMobile ? MOBILE_LIMIT : 25;
-  const showToggle = entries.length > defaultLimit;
-  const visibleEntries = expanded ? entries : entries.slice(0, defaultLimit);
-
   const handleDeleteConfirm = async (id: string) => {
     setIsDeleting(true);
     await onDelete(id);
@@ -122,112 +328,21 @@ export function RecentTradesSection({ entries, onExportCSV, onDelete, compact }:
         <h3 className="text-sm font-semibold text-foreground">Trade Journal</h3>
         <span className="text-[10px] text-muted-foreground tabular-nums">{entries.length} total trades</span>
       </div>
+
       <div className="space-y-2">
-        {visibleEntries.map((e) => {
-          const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
-          const s = OUTCOME_STYLES[outcome];
-          const Icon = s.icon;
-          const pnlNum = computePnl(e);
-          const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
-          const ticker = e.symbol || e.notes?.split(" ")[0] || "Trade";
-
-          const noteParts = e.notes?.split(" | ") || [];
-          const directionPart = noteParts[0]?.split(" ")[1];
-          const setupPart = noteParts.find((p) => p.startsWith("Setup:"))?.replace("Setup: ", "");
-          const targetPart = noteParts.find((p) => p.startsWith("Target:"))?.replace("Target: ", "");
-          const stopPart = noteParts.find((p) => p.startsWith("Stop:"))?.replace("Stop: ", "");
-          const isDeleteMode = deletingId === e.id;
-
-          return (
-            <div key={e.id} className="rounded-2xl border border-white/[0.06] bg-card p-4 space-y-2 relative group">
-              {!isDeleteMode && (
-                <button
-                  onClick={() => { setDeletingId(e.id); setConfirmText(""); }}
-                  className="absolute top-3 right-3 h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                  aria-label="Delete trade"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-
-              <div className="flex items-center justify-between gap-2 flex-wrap pr-8">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Icon className={`h-3.5 w-3.5 ${s.color} shrink-0`} />
-                  <span className="text-sm font-bold text-foreground">{ticker}</span>
-                  {directionPart && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03] text-muted-foreground">{directionPart}</span>
-                  )}
-                  <span className="text-xs text-muted-foreground">· {format(new Date(e.trade_date), "MMM d")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color}`}>{s.label}</span>
-                  <span className={`text-sm font-bold tabular-nums ${s.color}`}>{pnlStr}</span>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <span className={cn(
-                  "text-[10px] font-semibold px-2 py-0.5 rounded-full border",
-                  e.plan_id
-                    ? "bg-primary/10 text-primary border-primary/20"
-                    : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                )}>
-                  {e.plan_id ? "Planned" : "Unplanned"}
-                </span>
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
-                  {e.followed_rules ? "✅" : "❌"} Plan
-                </span>
-                {targetPart && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
-                    🎯 {targetPart}
-                  </span>
-                )}
-                {stopPart && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-white/[0.06] bg-white/[0.03] text-muted-foreground">
-                    🛑 Stop: {stopPart}
-                  </span>
-                )}
-                {setupPart && setupPart !== "—" && (
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5 text-primary">
-                    {setupPart}
-                  </span>
-                )}
-              </div>
-
-              {isDeleteMode && (
-                <div className="p-3 rounded-xl border border-destructive/20 bg-destructive/5 space-y-2 mt-1">
-                  <p className="text-xs text-foreground font-medium">Type <span className="font-mono text-destructive">DELETE</span> to confirm</p>
-                  <p className="text-[11px] text-muted-foreground">This action is permanent and cannot be undone.</p>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      className="max-w-[120px] h-8 text-sm font-mono"
-                      placeholder="DELETE"
-                      value={confirmText}
-                      onChange={(ev) => setConfirmText(ev.target.value.toUpperCase())}
-                      autoFocus
-                    />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={confirmText !== "DELETE" || isDeleting}
-                      onClick={() => handleDeleteConfirm(e.id)}
-                      className="h-8"
-                    >
-                      {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setDeletingId(null); setConfirmText(""); }}>Cancel</Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {weekGroups.map((group) => (
+          <WeekSection
+            key={group.key}
+            group={group}
+            deletingId={deletingId}
+            setDeletingId={setDeletingId}
+            confirmText={confirmText}
+            setConfirmText={setConfirmText}
+            isDeleting={isDeleting}
+            handleDeleteConfirm={handleDeleteConfirm}
+          />
+        ))}
       </div>
-
-      {showToggle && (
-        <Button variant="ghost" size="sm" className="w-full text-xs text-primary gap-1.5" onClick={() => setExpanded(!expanded)}>
-          {expanded ? <><ChevronUp className="h-3 w-3" /> Show less</> : <><ChevronDown className="h-3 w-3" /> Show all {entries.length} trades</>}
-        </Button>
-      )}
 
       <Button variant="outline" size="sm" className="w-full text-xs gap-1.5" onClick={onExportCSV}>
         <Download className="h-3 w-3" /> Export All Trades (CSV)
