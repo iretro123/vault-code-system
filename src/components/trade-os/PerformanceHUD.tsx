@@ -41,7 +41,7 @@ export function PerformanceHUD({
       accent: "text-primary",
     },
     {
-      label: "COMPLIANCE",
+      label: "RULES",
       value: `${complianceRate}%`,
       icon: Shield,
       accent: complianceRate >= 80 ? "text-emerald-400" : "text-amber-400",
