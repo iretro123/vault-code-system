@@ -331,6 +331,13 @@ const AcademyTrade = () => {
     const { error } = await addEntry(newEntry);
     if (error) throw error;
 
+    // #4: Decrement risk budget after a loss
+    if (isLoss && user) {
+      try {
+        await supabase.rpc('decrement_risk_budget' as any, { p_user_id: user.id, p_amount: Math.abs(pnlNum) });
+      } catch (e) { console.warn("Risk budget decrement failed:", e); }
+    }
+
     if (logPlanId) {
       await markLogged(logPlanId);
       refetchPlan();
