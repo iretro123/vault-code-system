@@ -7,6 +7,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { computePnl } from "@/hooks/useTradeLog";
 
 const OUTCOME_STYLES = {
   win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: TrendingUp, dot: "bg-emerald-400" },
