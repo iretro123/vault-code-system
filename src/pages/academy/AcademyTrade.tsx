@@ -1173,31 +1173,13 @@ const AcademyTrade = () => {
                           </div>
 
                           {/* Leak */}
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="h-1.5 w-1.5 rounded-full bg-red-400/70" />
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest">Leak</p>
-                            </div>
-                            <p className="text-[12px] text-foreground/80 font-medium leading-snug">{cachedAI.primaryLeak || "—"}</p>
-                          </div>
+                          <InsightMiniCard label="Leak" dotColor="bg-red-400/70" text={cachedAI.primaryLeak || "—"} />
 
                           {/* Edge */}
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="h-1.5 w-1.5 rounded-full bg-emerald-400/70" />
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest">Edge</p>
-                            </div>
-                            <p className="text-[12px] text-foreground/80 font-medium leading-snug">{cachedAI.strongestEdge || "—"}</p>
-                          </div>
+                          <InsightMiniCard label="Edge" dotColor="bg-emerald-400/70" text={cachedAI.strongestEdge || "—"} />
 
                           {/* Next */}
-                          <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <div className="h-1.5 w-1.5 rounded-full bg-primary/70" />
-                              <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest">Next</p>
-                            </div>
-                            <p className="text-[12px] text-foreground/80 font-medium leading-snug">{cachedAI.nextAction || "—"}</p>
-                          </div>
+                          <InsightMiniCard label="Next" dotColor="bg-primary/70" text={cachedAI.nextAction || "—"} />
                         </div>
                       )}
                       <AIFocusCard entries={entries} accessToken={session?.access_token} />
