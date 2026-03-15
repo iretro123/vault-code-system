@@ -1265,6 +1265,7 @@ const AcademyTrade = () => {
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} onLogAnother={() => { setLogPlanId(undefined); setLogPrefill(undefined); }} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
       <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
+      <CoachingNudgeModal open={showNudge} triggerType={nudge.triggerType} onDismiss={() => { setShowNudge(false); nudge.dismiss(); }} />
 
     </>
   );
