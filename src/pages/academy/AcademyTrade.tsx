@@ -658,7 +658,7 @@ const AcademyTrade = () => {
         )}
 
         {/* ══════ HERO OS CARD ══════ */}
-        <div className="rounded-lg bg-card overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+        <div className="vault-os-card overflow-hidden">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
