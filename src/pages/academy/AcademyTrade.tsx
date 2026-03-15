@@ -599,30 +599,38 @@ const AcademyTrade = () => {
                         </span>
                       )}
                       {entries.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground/50">
-                          Yesterday: {yesterdayEntries.length > 0
-                            ? `${yesterdayPnl >= 0 ? "+" : "-"}$${Math.abs(yesterdayPnl).toFixed(0)} · ${yesterdayEntries.length} trade${yesterdayEntries.length !== 1 ? "s" : ""}`
-                            : "No trades"}
-                          {entries.length >= 3 && <> · Last 10: {last10WinRate}% win · Week: {weeklyComplianceRate}% compliance</>}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
+                          <span className="text-foreground/70">Yesterday: {yesterdayEntries.length > 0
+                            ? <><span className={yesterdayPnl >= 0 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>{yesterdayPnl >= 0 ? "+" : "-"}${Math.abs(yesterdayPnl).toFixed(0)}</span> · {yesterdayEntries.length} trade{yesterdayEntries.length !== 1 ? "s" : ""}</>
+                            : <span className="text-foreground/50">No trades</span>}
+                          </span>
+                          {entries.length >= 3 && (
+                            <>
+                              <span className="text-foreground/30">·</span>
+                              <span className="text-foreground/70">Win rate <span className="text-foreground font-semibold">{last10WinRate}%</span></span>
+                              <span className="text-foreground/30">·</span>
+                              <span className="text-foreground/70">Rules <span className="text-foreground font-semibold">{weeklyComplianceRate}%</span></span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </>
                   );
                 })()}
                 {/* Luminous divider */}
                 <div className="h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent mt-2 mb-0.5" />
-                <div className="flex items-center gap-3 mt-0.5">
-                  <span className="text-[10px] text-muted-foreground/50">
-                    {todayTradeCount}/{totalMaxTrades} trades
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] text-foreground/60 font-medium">
+                    {todayTradeCount}/{totalMaxTrades} trades left
                   </span>
-                  <span className="text-[10px] text-muted-foreground/50">·</span>
+                  <span className="text-[10px] text-foreground/20">·</span>
                   {(() => {
                     const hudBal = trackedBalance ?? vaultState.account_balance;
                     const hudTier = detectTier(hudBal);
                     const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
                     return (
-                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/50")}>
-                        ${hudRisk.toFixed(0)} risk budget
+                      <span className={cn("text-[10px] font-semibold tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-foreground/60")}>
+                        ${hudRisk.toFixed(0)} max loss today
                       </span>
                     );
                   })()}
