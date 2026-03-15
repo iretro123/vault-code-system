@@ -543,16 +543,16 @@ const AcademyTrade = () => {
                     <span className="text-4xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                       {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
                     </span>
-                  {todayPnl !== 0 && (
-                    <span className={cn(
-                      "text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full",
-                      todayPnl > 0
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                        : "bg-red-500/10 text-red-400 border border-red-500/20"
-                    )}>
-                      {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
-                    </span>
-                  )}
+                    {todayPnl !== 0 && (
+                      <span className={cn(
+                        "text-xs font-semibold tabular-nums px-2.5 py-0.5 rounded-full",
+                        todayPnl > 0
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_8px_rgba(52,211,153,0.15)]"
+                          : "bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.15)]"
+                      )}>
+                        {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
+                      </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <div className="flex items-center gap-1.5">
