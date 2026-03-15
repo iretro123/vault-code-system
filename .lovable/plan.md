@@ -1,53 +1,122 @@
+## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
+### 1. Source of Truth (Unified)
+- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
+- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
+- **Trades Used**: `trade_entries` filtered by today's date
+- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
+- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
 
-# Smart Coaching Nudge — Navigate to Schedule 1:1 Page
+### 2. DayState Engine (A–E)
+- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
+- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
+- Session closed auto-suggests review via `sessionPhase` input
 
-## What We're Building
+### 3. OSControlRail Unified
+- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
+- Shows `dayStateStatus` text and `dayStateCta` button
+- Log Result only shows in `live_session` state
 
-A one-time-per-trigger coaching nudge modal that appears after logging a trade when the system detects the user is struggling. Instead of linking to an external Calendly URL, the primary CTA navigates to the existing **Schedule 1:1** sidebar page (`/academy/support`) which already has the full booking experience.
+### 4. QuickCheckInSheet Enhanced
+- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
+- All fields save to `journal_entries`
 
-## Trigger Conditions (any one fires the modal)
+### 5. CTA Logic
+- Hero shows state-driven status line
+- Each stage has single primary CTA driven by `dayState`
+- "Start Session" replaces "Go to Live Mode"
+- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
 
-1. **3+ consecutive losses** — losing streak from trade entries
-2. **Drawdown > 10%** — `totalPnl / startingBalance < -0.10`
-3. **Compliance < 40%** with 5+ trades
-4. **3+ emotional trades** (`emotional_state >= 3`) in the last 5 entries
+## Phase 2 — Simplify the Current Flow — COMPLETED
 
-## Cooldown & One-Time Logic
+### 1. Budget Tooltips
+- Added beginner-friendly tooltips (with ?) to all 4 budget metrics: Risk Budget, Position Cap, Trades/Session, Max Contracts
+- Wrapped in TooltipProvider for consistent delay
 
-- `localStorage` key per trigger type: `va_coaching_nudge_{type}_{timestamp}`
-- 7-day cooldown per trigger — won't refire for same trigger within a week
-- Different triggers are independent
+### 2. Mobile CTA Bar
+- Fixed bottom bar on mobile showing `dayStateCta` button
+- Positioned above MobileNav (bottom-16), respects safe-area-inset-bottom
+- Calls `handleQuickAction` for state-driven action
 
-## Files
+### 3. Quick-Log Mode
+- LogTradeSheet defaults to Quick mode: Symbol, Direction, Result, P/L, Rules Followed
+- "Add Details" expands to full mode with Date, Entry/Exit, Position Size, Accountability, Setup, Screenshot, Note
+- Toggle between Quick Mode / Full Mode in header
+- Fixed "Contracts / shares" → "Contracts" placeholder
 
-### New: `src/hooks/useCoachingNudge.ts`
-- Takes `entries`, `totalPnl`, `startingBalance`, `complianceRate` from existing hooks
-- Checks all 4 trigger conditions
-- Returns `{ shouldShow, triggerType, dismiss }`
-- `dismiss()` writes cooldown timestamp to localStorage
+### 4. P/L Calculation Fix
+- Exported `computePnl` from `useTradeLog.ts` as standalone function
+- Review stage trade list now uses `computePnl(e)` instead of `e.risk_reward * e.risk_used`
+- Backward-compatible with legacy ±1 format entries
 
-### New: `src/components/academy/CoachingNudgeModal.tsx`
-- Dialog with contextual headline per trigger:
-  - Streak → "Rough stretch. Let's fix this together."
-  - Drawdown → "Your account needs attention."
-  - Compliance → "Rules keep breaking. Let's talk about why."
-  - Emotional → "Trading on tilt? A fresh perspective helps."
-- Supportive body copy (1-2 lines, not salesy)
-- **Primary CTA**: "Schedule Your 1:1" → `navigate("/academy/support")` + closes modal
-- **Secondary**: "Not now" → dismiss with cooldown
-- Dark premium styling matching the app's design system
+## Phase 3 — Options Day Trader Optimization — COMPLETED
 
-### Edit: `src/pages/academy/AcademyTrade.tsx`
-- Import and use `useCoachingNudge` with existing trade data
-- After successful `addEntry` (line ~360), set a flag
-- Show `CoachingNudgeModal` with 1.5s delay after trade log success
-- Wire dismiss to cooldown
+### 1. Cockpit-Mode Live Stage
+- Removed StageHeadline from Live stage, removed trade summary strip (duplicate of hero data)
+- Active plan shows as single-row cockpit: ticker + direction + contracts + status badge
+- SessionCountdownLine component shows inline timer + trades remaining
+- TodaysLimitsSection, SessionSetupCard, End Session moved behind collapsible "Session Details"
+- No-plan state compressed to single row with Plan + Log buttons
 
-## UX Flow
+### 2. OSControlRail De-duplicated
+- Removed risk budget, trade count, and session timer sections (already in hero + main view)
+- Rail now shows only: Vault Status, Active Plan summary, Restrictions, Day State CTA
 
-1. User logs a trade → success toast fires
-2. 1.5s later, if trigger conditions met and not on cooldown → modal slides in
-3. User taps "Schedule Your 1:1" → navigated to `/academy/support` (the existing sidebar page with Calendly embed)
-4. Or taps "Not now" → modal closes, 7-day cooldown for that trigger
+### 3. Auto-Default Session Times
+- Pre-fills draft from yesterday's localStorage key (`va_session_times_YYYY-MM-DD`)
+- "Same as yesterday" one-tap button saves and starts session immediately
 
+### 4. Auto-Review After Session Close
+- `handleTradeSubmit` auto-transitions to review stage + opens check-in when `sessionPhase === "Session closed"`
+
+### 5. Specific Trade Toast
+- `useTradeLog.addEntry` toast now shows symbol + signed P/L instead of generic message
+
+### 6. Smart Log Defaults
+- `planFollowed` already defaults to "Yes"
+- Last-used ticker remembered in `localStorage` (`va_last_ticker`) and pre-filled
+
+### 7. Inline AI Insights
+- Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
+- 2×2 grid, each card shows label + value + description without clicking
+
+## Anti-Churn Phase — All 10 Improvements — COMPLETED
+
+### 1. Fix First-Visit Experience ✅
+- `GettingStartedBanner` now shows whenever `!hasData`, regardless of `showMetrics` flag
+- New users with balance set but no trades still see the 3-step guidance
+
+### 2. Lower AI Insights Gate: 10 → 3 ✅
+- Insights stage gate changed from `entries.length < 10` to `< 3`
+- All copy updated: progress bar, counter text, denominator
+
+### 3. Add Rolling Win Rate + Weekly Compliance ✅
+- `useTradeLog` now exports `last10WinRate`, `weeklyComplianceRate`, `bestStreak`, `allTimeHigh`
+- Hero card shows "Last 10: X% win · Week: Y% compliance" inline
+
+### 4. Decrement Risk Budget After Each Trade Loss ✅
+- Created `decrement_risk_budget` RPC (SECURITY DEFINER, atomic GREATEST(0, ...))
+- Called in `handleTradeSubmit` after loss trades
+
+### 5. Add Yesterday's Recap to Hero ✅
+- Hero card shows "Yesterday: +$85 · 2 trades" or "No trades yesterday"
+
+### 6. Wire Weekly Review to Actually Work ✅
+- `WeeklyReviewCard` now accepts `entries`, computes weekly summary on click
+- Shows total P/L, win rate, compliance %, green/red days, best/worst day
+
+### 7. Add Streak Visualization (14-day dot row) ✅
+- 14 colored dots in hero: green (compliant), amber (broke rule), gray (no trades)
+- Shows "Best: Xd" streak count
+
+### 8. Add Beginner Insights (Rule-Based, Pre-AI) ✅
+- Below the lock, when 1-2 trades exist: shows rules followed, most traded symbol, avg P/L
+- Fills the dead space with real data before AI unlocks
+
+### 9. Quick Import (Batch Log) ✅
+- `LogTradeSheet` already has Quick Mode with 5-field form + "Log Another" flow
+- No changes needed — was already implemented in Phase 2
+
+### 10. Personal Best Markers ✅
+- `allTimeHigh` computed from equity curve
+- Gold "★ New Personal Best" badge appears in hero when balance ≥ ATH

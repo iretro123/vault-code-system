@@ -42,6 +42,8 @@ import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
+import { useCoachingNudge } from "@/hooks/useCoachingNudge";
+import { CoachingNudgeModal } from "@/components/academy/CoachingNudgeModal";
 import { SessionSetupCard, SessionCountdownLine, loadTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
@@ -154,6 +156,9 @@ const AcademyTrade = () => {
   const [sessionPhase, setSessionPhase] = useState<SessionPhaseLabel>(null);
   const [cutoffOverride, setCutoffOverride] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
+
+  const nudge = useCoachingNudge({ entries, totalPnl, startingBalance: startingBalance ?? 0, complianceRate });
 
   // Reset banner dismissal when phase changes
   useEffect(() => { setDismissedBanner(false); }, [sessionPhase]);
@@ -380,6 +385,11 @@ const AcademyTrade = () => {
     setExecutionStart(null);
     try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
     setCutoffOverride(false);
+
+    // Smart coaching nudge — show after 1.5s if conditions met
+    if (nudge.shouldShow) {
+      setTimeout(() => setShowNudge(true), 1500);
+    }
   };
 
   const handleLogFromPlan = (plan: ApprovedPlan) => {
@@ -1255,6 +1265,7 @@ const AcademyTrade = () => {
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} onLogAnother={() => { setLogPlanId(undefined); setLogPrefill(undefined); }} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
       <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
+      <CoachingNudgeModal open={showNudge} triggerType={nudge.triggerType} onDismiss={() => { setShowNudge(false); nudge.dismiss(); }} />
 
     </>
   );
