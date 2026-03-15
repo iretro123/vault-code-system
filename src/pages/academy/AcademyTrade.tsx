@@ -42,6 +42,8 @@ import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
+import { useCoachingNudge } from "@/hooks/useCoachingNudge";
+import { CoachingNudgeModal } from "@/components/academy/CoachingNudgeModal";
 import { SessionSetupCard, SessionCountdownLine, loadTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
