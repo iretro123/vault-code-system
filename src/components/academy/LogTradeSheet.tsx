@@ -260,9 +260,14 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
             <button
               type="button"
               onClick={() => setQuickMode(!quickMode)}
-              className="text-[10px] font-medium text-primary hover:text-primary/80 transition-colors"
+              className={cn(
+                "text-[10px] font-semibold px-2.5 py-1 rounded-full transition-colors",
+                quickMode
+                  ? "bg-primary/15 text-primary border border-primary/20"
+                  : "bg-muted/40 text-muted-foreground hover:bg-muted/60 border border-border"
+              )}
             >
-              {quickMode ? "Full Mode" : "Quick Mode"}
+              {quickMode ? "⚡ Quick" : "Full Mode"}
             </button>
           </div>
         </SheetHeader>
