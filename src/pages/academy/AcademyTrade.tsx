@@ -1198,8 +1198,11 @@ const AcademyTrade = () => {
 
       {/* Mobile CTA Bar */}
       {isMobile && (
-        <div className="fixed bottom-16 left-0 right-0 z-40 px-3 pb-[env(safe-area-inset-bottom,0px)]">
-          <Button className="w-full h-11 rounded-xl text-sm font-semibold shadow-lg" onClick={handleQuickAction}>
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-[env(safe-area-inset-bottom,0px)] flex justify-center">
+          <Button
+            className="w-full max-w-xs h-11 rounded-2xl text-sm font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.3),0_0_12px_rgba(59,130,246,0.15)] backdrop-blur-sm vault-cta-shine"
+            onClick={handleQuickAction}
+          >
             {dayStateCta}
           </Button>
         </div>
