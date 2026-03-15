@@ -7,7 +7,10 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { computePnl } from "@/hooks/useTradeLog";
+
+// Backward-compatible P/L calc (mirrors useTradeLog.computePnl without requiring full TradeEntry)
+const computePnl = (e: { risk_reward: number; risk_used: number; outcome?: string }) =>
+  e.outcome ? e.risk_reward : e.risk_reward * e.risk_used;
 
 const OUTCOME_STYLES = {
   win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: TrendingUp, dot: "bg-emerald-400" },
