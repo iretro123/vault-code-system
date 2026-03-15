@@ -599,30 +599,38 @@ const AcademyTrade = () => {
                         </span>
                       )}
                       {entries.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground/50">
-                          Yesterday: {yesterdayEntries.length > 0
-                            ? `${yesterdayPnl >= 0 ? "+" : "-"}$${Math.abs(yesterdayPnl).toFixed(0)} · ${yesterdayEntries.length} trade${yesterdayEntries.length !== 1 ? "s" : ""}`
-                            : "No trades"}
-                          {entries.length >= 3 && <> · Last 10: {last10WinRate}% win · Week: {weeklyComplianceRate}% compliance</>}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
+                          <span className="text-foreground/70">Yesterday: {yesterdayEntries.length > 0
+                            ? <><span className={yesterdayPnl >= 0 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>{yesterdayPnl >= 0 ? "+" : "-"}${Math.abs(yesterdayPnl).toFixed(0)}</span> · {yesterdayEntries.length} trade{yesterdayEntries.length !== 1 ? "s" : ""}</>
+                            : <span className="text-foreground/50">No trades</span>}
+                          </span>
+                          {entries.length >= 3 && (
+                            <>
+                              <span className="text-foreground/30">·</span>
+                              <span className="text-foreground/70">Win rate <span className="text-foreground font-semibold">{last10WinRate}%</span></span>
+                              <span className="text-foreground/30">·</span>
+                              <span className="text-foreground/70">Rules <span className="text-foreground font-semibold">{weeklyComplianceRate}%</span></span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </>
                   );
                 })()}
                 {/* Luminous divider */}
                 <div className="h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent mt-2 mb-0.5" />
-                <div className="flex items-center gap-3 mt-0.5">
-                  <span className="text-[10px] text-muted-foreground/50">
-                    {todayTradeCount}/{totalMaxTrades} trades
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] text-foreground/60 font-medium">
+                    {todayTradeCount}/{totalMaxTrades} trades left
                   </span>
-                  <span className="text-[10px] text-muted-foreground/50">·</span>
+                  <span className="text-[10px] text-foreground/20">·</span>
                   {(() => {
                     const hudBal = trackedBalance ?? vaultState.account_balance;
                     const hudTier = detectTier(hudBal);
                     const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
                     return (
-                      <span className={cn("text-[10px] font-medium tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-muted-foreground/50")}>
-                        ${hudRisk.toFixed(0)} risk budget
+                      <span className={cn("text-[10px] font-semibold tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-foreground/60")}>
+                        ${hudRisk.toFixed(0)} max loss today
                       </span>
                     );
                   })()}
@@ -641,7 +649,7 @@ const AcademyTrade = () => {
                 <div className="absolute mt-[10px] flex flex-col items-center justify-center w-12 h-12">
                   <span className="text-sm font-bold tabular-nums text-foreground">{weeklyComplianceRate}%</span>
                 </div>
-                <span className="text-[8px] text-muted-foreground/50 font-medium mt-0.5">This week</span>
+                <span className="text-[8px] text-foreground/40 font-medium mt-0.5">This week</span>
               </div>
             </div>
           </div>
@@ -685,8 +693,8 @@ const AcademyTrade = () => {
                     return (
                       <Collapsible>
                         <CollapsibleTrigger className="flex items-center gap-2 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 hover:bg-white/[0.04] transition-colors">
-                          <span className="text-[10px] font-semibold text-muted-foreground/60 flex-1 text-left">
-                            ${riskBudget.toFixed(0)} risk · ${positionCap.toFixed(0)} cap · {MAX_LOSSES_PER_DAY} trades
+                          <span className="text-[10px] font-semibold text-foreground/70 flex-1 text-left">
+                            ${riskBudget.toFixed(0)} max loss · ${positionCap.toFixed(0)} max spend · {MAX_LOSSES_PER_DAY} trades
                           </span>
                           <ChevronDown className="h-3 w-3 text-muted-foreground/40" />
                         </CollapsibleTrigger>
@@ -698,7 +706,7 @@ const AcademyTrade = () => {
                                 <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Risk Budget <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Loss <HelpCircle className="h-2.5 w-2.5" /></p>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades. Based on your balance and tier.</TooltipContent>
                                 </Tooltip>
@@ -707,7 +715,7 @@ const AcademyTrade = () => {
                                 <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Position Cap <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Spend <HelpCircle className="h-2.5 w-2.5" /></p>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom" className="max-w-[180px] text-xs">The max dollar amount you should spend on a single options position.</TooltipContent>
                                 </Tooltip>
@@ -716,7 +724,7 @@ const AcademyTrade = () => {
                                 <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Trades / Session <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom" className="max-w-[180px] text-xs">How many losing trades you're allowed before the system locks you out for the day.</TooltipContent>
                                 </Tooltip>
@@ -725,7 +733,7 @@ const AcademyTrade = () => {
                                 <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Size <HelpCircle className="h-2.5 w-2.5" /></p>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most contracts you can hold in one position based on your risk budget.</TooltipContent>
                                 </Tooltip>
@@ -794,7 +802,7 @@ const AcademyTrade = () => {
                         <span className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", vaultDotColor)} />
                         <span className="text-[11px] font-bold text-foreground">LIVE</span>
                         {activePlan && <span className="text-[10px] text-muted-foreground/60">· {activePlan.ticker} {activePlan.direction === "calls" ? "Calls" : "Puts"} {activePlan.contracts_planned}ct</span>}
-                        <span className="text-[10px] text-muted-foreground/50 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} risk left</span>
+                        <span className="text-[10px] text-foreground/60 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} left</span>
                       </div>
                     );
                   })()}
@@ -821,12 +829,12 @@ const AcademyTrade = () => {
 
                       <div className="flex items-center gap-2 pl-3.5">
                         <SessionCountdownLine />
-                        <span className="text-[10px] text-muted-foreground/40">·</span>
-                        <span className="text-[10px] text-muted-foreground/50 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
+                        <span className="text-[10px] text-foreground/30">·</span>
+                        <span className="text-[10px] text-foreground/60 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
                         {executing && executionStart && (
                           <>
-                            <span className="text-[10px] text-muted-foreground/40">·</span>
-                            <span className="text-[10px] text-muted-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
+                            <span className="text-[10px] text-foreground/30">·</span>
+                            <span className="text-[10px] text-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
                           </>
                         )}
                       </div>
@@ -852,7 +860,7 @@ const AcademyTrade = () => {
                   ) : (
                     <div className="flex items-center gap-2 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02]">
                       <SessionCountdownLine className="flex-1" />
-                      <span className="text-[10px] text-muted-foreground/40 tabular-nums">{todayTradeCount}/{totalMaxTrades}</span>
+                      <span className="text-[10px] text-foreground/50 tabular-nums">{todayTradeCount}/{totalMaxTrades}</span>
                       <Button size="sm" className="gap-1 rounded-md px-2.5 h-7 text-[10px]" onClick={() => setStage("plan")}>
                         <Calendar className="h-3 w-3" /> Plan
                       </Button>
@@ -892,7 +900,7 @@ const AcademyTrade = () => {
                   )}
 
                   <Collapsible>
-                    <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors font-medium w-full py-1">
+                    <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-foreground/40 hover:text-foreground/60 transition-colors font-medium w-full py-1">
                       <ChevronDown className="h-3 w-3" /> Session Details
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-2 pt-1">
