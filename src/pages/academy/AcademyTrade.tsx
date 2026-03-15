@@ -577,7 +577,7 @@ const AcademyTrade = () => {
                   return (
                     <>
                       {isATH && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                        <span className="vault-ath-shimmer inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-0.5 shadow-[0_0_10px_rgba(251,191,36,0.12)]">
                           ★ New Personal Best
                         </span>
                       )}
