@@ -1256,48 +1256,6 @@ const AcademyTrade = () => {
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
       <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
 
-      {/* Admin-only stress test seed */}
-      {isAdminActive && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={seeding || !user}
-            className="text-[10px] opacity-70 hover:opacity-100"
-            onClick={async () => {
-              if (!user) return;
-              setSeeding(true);
-              const today = new Date();
-              const trades = [
-                { symbol: "SPY", risk_reward: -85, risk_used: 85, followed_rules: false, outcome: "LOSS", notes: "SPY Puts | Broke rules | Oversized", trade_date: format(new Date(today.getTime() - 0 * 86400000), "yyyy-MM-dd"), emotional_state: 2, is_oversized: true },
-                { symbol: "AAPL", risk_reward: -45, risk_used: 45, followed_rules: true, outcome: "LOSS", notes: "AAPL Calls | Followed plan", trade_date: format(new Date(today.getTime() - 0 * 86400000), "yyyy-MM-dd"), emotional_state: 3 },
-                { symbol: "TSLA", risk_reward: -120, risk_used: 120, followed_rules: false, outcome: "LOSS", notes: "TSLA Calls | Revenge trade | Broke rules", trade_date: format(new Date(today.getTime() - 1 * 86400000), "yyyy-MM-dd"), emotional_state: 1 },
-                { symbol: "QQQ", risk_reward: -60, risk_used: 60, followed_rules: true, outcome: "LOSS", notes: "QQQ Puts | Followed plan", trade_date: format(new Date(today.getTime() - 1 * 86400000), "yyyy-MM-dd"), emotional_state: 3 },
-                { symbol: "NVDA", risk_reward: -95, risk_used: 95, followed_rules: false, outcome: "LOSS", notes: "NVDA Calls | Broke rules", trade_date: format(new Date(today.getTime() - 2 * 86400000), "yyyy-MM-dd"), emotional_state: 2 },
-                { symbol: "SPY", risk_reward: -35, risk_used: 35, followed_rules: true, outcome: "LOSS", notes: "SPY Calls | Small loss | Clean execution", trade_date: format(new Date(today.getTime() - 2 * 86400000), "yyyy-MM-dd"), emotional_state: 4 },
-                { symbol: "AMD", risk_reward: -70, risk_used: 70, followed_rules: false, outcome: "LOSS", notes: "AMD Puts | Oversized | Broke rules", trade_date: format(new Date(today.getTime() - 3 * 86400000), "yyyy-MM-dd"), emotional_state: 2, is_oversized: true },
-                { symbol: "META", risk_reward: -55, risk_used: 55, followed_rules: true, outcome: "LOSS", notes: "META Calls | Followed plan", trade_date: format(new Date(today.getTime() - 3 * 86400000), "yyyy-MM-dd"), emotional_state: 3 },
-                { symbol: "SPY", risk_reward: -110, risk_used: 110, followed_rules: false, outcome: "LOSS", notes: "SPY Puts | Revenge sizing | Broke rules", trade_date: format(new Date(today.getTime() - 4 * 86400000), "yyyy-MM-dd"), emotional_state: 1 },
-                { symbol: "MSFT", risk_reward: -40, risk_used: 40, followed_rules: true, outcome: "LOSS", notes: "MSFT Calls | Followed plan", trade_date: format(new Date(today.getTime() - 4 * 86400000), "yyyy-MM-dd"), emotional_state: 3 },
-              ];
-              try {
-                const { error } = await (supabase.from("trade_entries" as any) as any).insert(
-                  trades.map((t) => ({ ...t, user_id: user.id }))
-                );
-                if (error) throw error;
-                toast({ title: "Stress test seeded", description: "10 losing trades inserted. Refreshing…" });
-                await refetchTrades();
-              } catch (err: any) {
-                toast({ title: "Seed failed", description: err?.message || "Unknown error", variant: "destructive" });
-              } finally {
-                setSeeding(false);
-              }
-            }}
-          >
-            {seeding ? "Seeding…" : "🧪 Seed 10 Losses"}
-          </Button>
-        </div>
-      )}
     </>
   );
 };
