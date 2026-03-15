@@ -1083,7 +1083,7 @@ const AcademyTrade = () => {
                               <div key={e.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
                                 <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/20")} />
                                 <span className="text-xs font-semibold text-foreground min-w-[36px]">{e.symbol || "—"}</span>
-                                <span className="text-[10px] text-muted-foreground/50 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
+                                <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
                                 <span className={cn("text-xs font-semibold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/40")}>
                                   {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
                                 </span>
