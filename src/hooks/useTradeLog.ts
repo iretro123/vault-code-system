@@ -217,6 +217,42 @@ export function useTradeLog() {
       .sort((a, b) => days.indexOf(a.day) - days.indexOf(b.day));
   }, [entries]);
 
+  // ── Anti-churn rolling metrics ──
+
+  const last10WinRate = useMemo(() => {
+    const recent = entries.slice(0, 10);
+    if (recent.length === 0) return 0;
+    const wins = recent.filter((e) => e.risk_reward > 0).length;
+    return Math.round((wins / recent.length) * 100);
+  }, [entries]);
+
+  const weeklyComplianceRate = useMemo(() => {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekStr = weekAgo.toISOString().slice(0, 10);
+    const recent = entries.filter((e) => e.trade_date >= weekStr);
+    if (recent.length === 0) return 0;
+    const compliant = recent.filter((e) => e.followed_rules).length;
+    return Math.round((compliant / recent.length) * 100);
+  }, [entries]);
+
+  const bestStreak = useMemo(() => {
+    let max = 0;
+    let cur = 0;
+    // oldest-first for streak calculation
+    const sorted = [...entries].sort((a, b) => a.trade_date.localeCompare(b.trade_date) || a.created_at.localeCompare(b.created_at));
+    for (const e of sorted) {
+      if (e.followed_rules) { cur++; max = Math.max(max, cur); }
+      else cur = 0;
+    }
+    return max;
+  }, [entries]);
+
+  const allTimeHigh = useMemo(() => {
+    if (equityCurve.length === 0) return 0;
+    return Math.max(...equityCurve.map((p) => p.balance));
+  }, [equityCurve]);
+
   async function addEntry(entry: NewTradeEntry) {
     if (!user) return { error: new Error("Not authenticated") };
 
