@@ -118,7 +118,7 @@ const AcademyTrade = () => {
   const { isPageEnabled } = useFeatureFlags();
   const { state: vaultState } = useVaultState();
   const { isAdminActive } = useAdminMode();
-  const [seeding, setSeeding] = useState(false);
+  
   const {
     entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
