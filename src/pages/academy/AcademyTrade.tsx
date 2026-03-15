@@ -1189,7 +1189,7 @@ const AcademyTrade = () => {
                   onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
                 />
               )}
-              <WeeklyReviewCard hasData={hasData} />
+              <WeeklyReviewCard hasData={hasData} entries={entries} />
             </div>
           </div>
         )}
