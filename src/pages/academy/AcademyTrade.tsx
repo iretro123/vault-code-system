@@ -607,8 +607,8 @@ const AcademyTrade = () => {
                   return (
                     <div className="flex items-center gap-1 mt-0.5">
                       {dots.map((c, i) => (
-                        <span key={i} className={cn("w-[6px] h-[6px] rounded-full",
-                          c === "green" ? "bg-emerald-400" : c === "amber" ? "bg-amber-400" : "bg-white/[0.08]"
+                        <span key={i} className={cn("w-2 h-2 rounded-full transition-all",
+                          c === "green" ? "bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.4)]" : c === "amber" ? "bg-amber-400 shadow-[0_0_4px_rgba(245,158,11,0.3)]" : "bg-white/[0.08]"
                         )} />
                       ))}
                       {bestStreak > 0 && (
