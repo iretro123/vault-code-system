@@ -648,7 +648,7 @@ const AcademyTrade = () => {
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-bold tabular-nums text-foreground">{weeklyComplianceRate}%</span>
+                    <span className="inline-block text-sm font-bold leading-none tabular-nums text-foreground translate-x-[1px]">{weeklyComplianceRate}%</span>
                   </div>
                 </div>
                 <span className="text-[8px] text-foreground/60 font-medium mt-0.5">This week</span>
