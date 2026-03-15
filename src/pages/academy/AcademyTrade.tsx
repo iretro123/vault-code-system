@@ -100,12 +100,13 @@ function InsightMiniCard({ label, dotColor, text }: { label: string; dotColor: s
   );
 }
 
-// Cache-bust: clear stale trade caches after data migration (v2)
-const CACHE_BUST_KEY = "va_cache_bust_v2";
+// Cache-bust: clear stale trade caches after data migration (v3)
+const CACHE_BUST_KEY = "va_cache_bust_v3";
 if (!localStorage.getItem(CACHE_BUST_KEY)) {
   localStorage.removeItem("va_cache_ai_focus_v3");
   localStorage.removeItem("va_cache_ai_focus_ts");
   localStorage.removeItem("va_cache_trade_entries");
+  localStorage.removeItem("va_cache_trade_entries_ts");
   localStorage.setItem(CACHE_BUST_KEY, "1");
 }
 
