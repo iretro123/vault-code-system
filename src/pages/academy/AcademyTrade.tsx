@@ -1031,7 +1031,7 @@ const AcademyTrade = () => {
                                 <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
                                   <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDot)} />
                                   <span className="text-xs font-semibold text-foreground min-w-[36px]">{p.ticker || "—"}</span>
-                                  <span className="text-[10px] text-muted-foreground/50 flex-1 truncate">
+                          <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">
                                     {p.direction === "calls" ? "Calls" : "Puts"} · {p.contracts_planned}ct · ${Number(p.max_loss_planned).toFixed(0)} risk
                                   </span>
                                   <span className={cn("text-[10px] font-semibold capitalize", statusColor)}>{p.status}</span>
