@@ -93,6 +93,7 @@ const AcademyTrade = () => {
   const {
     entries, loading: tradesLoading, addEntry, deleteEntry, exportCSV, refetch: refetchTrades,
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
+    last10WinRate, weeklyComplianceRate, bestStreak, allTimeHigh,
   } = useTradeLog();
   const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
 
@@ -330,6 +331,13 @@ const AcademyTrade = () => {
     const { error } = await addEntry(newEntry);
     if (error) throw error;
 
+    // #4: Decrement risk budget after a loss
+    if (isLoss && user) {
+      try {
+        await supabase.rpc('decrement_risk_budget' as any, { p_user_id: user.id, p_amount: Math.abs(pnlNum) });
+      } catch (e) { console.warn("Risk budget decrement failed:", e); }
+    }
+
     if (logPlanId) {
       await markLogged(logPlanId);
       refetchPlan();
@@ -503,7 +511,7 @@ const AcademyTrade = () => {
             {hasData && symbolStats.length > 0 && (
               <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
             )}
-            <WeeklyReviewCard hasData={hasData} />
+            <WeeklyReviewCard hasData={hasData} entries={entries} />
           </section>
         </div>
 
@@ -559,6 +567,57 @@ const AcademyTrade = () => {
                     </span>
                   </div>
                 </div>
+                {/* Yesterday recap + rolling stats */}
+                {(() => {
+                  const yesterdayDate = new Date();
+                  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+                  const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
+                  const yesterdayEntries = entries.filter((e) => e.trade_date === yesterdayStr);
+                  const yesterdayPnl = yesterdayEntries.reduce((s, e) => s + computePnl(e), 0);
+                  const isATH = trackedBalance !== null && allTimeHigh > 0 && trackedBalance >= allTimeHigh && entries.length > 1;
+                  return (
+                    <>
+                      {isATH && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                          ★ New Personal Best
+                        </span>
+                      )}
+                      {entries.length > 0 && (
+                        <p className="text-[10px] text-muted-foreground/50">
+                          Yesterday: {yesterdayEntries.length > 0
+                            ? `${yesterdayPnl >= 0 ? "+" : "-"}$${Math.abs(yesterdayPnl).toFixed(0)} · ${yesterdayEntries.length} trade${yesterdayEntries.length !== 1 ? "s" : ""}`
+                            : "No trades"}
+                          {entries.length >= 3 && <> · Last 10: {last10WinRate}% win · Week: {weeklyComplianceRate}% compliance</>}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
+                {/* 14-day streak dots */}
+                {entries.length > 0 && (() => {
+                  const dots: Array<"green" | "amber" | "gray"> = [];
+                  for (let i = 13; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    const ds = d.toISOString().slice(0, 10);
+                    const dayEntries = entries.filter((e) => e.trade_date === ds);
+                    if (dayEntries.length === 0) dots.push("gray");
+                    else if (dayEntries.every((e) => e.followed_rules)) dots.push("green");
+                    else dots.push("amber");
+                  }
+                  return (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      {dots.map((c, i) => (
+                        <span key={i} className={cn("w-[6px] h-[6px] rounded-full",
+                          c === "green" ? "bg-emerald-400" : c === "amber" ? "bg-amber-400" : "bg-white/[0.08]"
+                        )} />
+                      ))}
+                      {bestStreak > 0 && (
+                        <span className="text-[9px] text-muted-foreground/40 ml-1">Best: {bestStreak}d</span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center gap-3 mt-0.5">
                   <span className="text-[10px] text-muted-foreground/40">
                     {todayTradeCount}/{totalMaxTrades} trades
@@ -593,7 +652,7 @@ const AcademyTrade = () => {
           </div>
         )}
 
-        {!hasData && !showMetrics && (
+        {!hasData && (
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
@@ -941,24 +1000,44 @@ const AcademyTrade = () => {
               {activeStage === "insights" && (
                 <div className="space-y-2">
                   <StageHeadline stage="insights" />
-                  {entries.length < 10 ? (
+                  {entries.length < 3 ? (
                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3 text-center">
                       <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 mx-auto">
                         <Lock className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">AI Insights unlock at 10 trades</p>
+                        <p className="text-sm font-semibold text-foreground">AI Insights unlock at 3 trades</p>
                         <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-                          Log {10 - entries.length} more trade{10 - entries.length !== 1 ? "s" : ""} to unlock personalized AI analysis of your risk behavior, leaks, and edges.
+                          Log {3 - entries.length} more trade{3 - entries.length !== 1 ? "s" : ""} to unlock personalized AI analysis of your risk behavior, leaks, and edges.
                         </p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-muted-foreground/60 font-medium">{entries.length} / 10 trades</span>
-                          <span className="text-primary font-semibold">{Math.round((entries.length / 10) * 100)}%</span>
+                          <span className="text-muted-foreground/60 font-medium">{entries.length} / 3 trades</span>
+                          <span className="text-primary font-semibold">{Math.round((entries.length / 3) * 100)}%</span>
                         </div>
-                        <Progress value={(entries.length / 10) * 100} className="h-2" />
+                        <Progress value={(entries.length / 3) * 100} className="h-2" />
                       </div>
+                      {/* #8: Beginner Insights — rule-based pre-AI stats */}
+                      {entries.length >= 1 && (
+                        <div className="text-left space-y-1.5 pt-2 border-t border-white/[0.06]">
+                          <p className="text-[10px] text-muted-foreground/50 font-semibold uppercase tracking-wider">Early Stats</p>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground/60">Rules followed</span>
+                            <span className="text-foreground font-medium">{entries.filter(e => e.followed_rules).length}/{entries.length} trades</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground/60">Most traded</span>
+                            <span className="text-foreground font-medium">{symbolStats[0]?.symbol || "—"}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground/60">Avg P/L</span>
+                            <span className={cn("font-medium", totalPnl / entries.length >= 0 ? "text-emerald-400" : "text-red-400")}>
+                              {totalPnl / entries.length >= 0 ? "+" : "-"}${Math.abs(totalPnl / entries.length).toFixed(0)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       <Button size="sm" variant="outline" className="gap-1 rounded-lg h-8 text-[11px] border-white/[0.08]" onClick={handleLogUnplanned}>
                         <Plus className="h-3 w-3" /> Log a Trade
                       </Button>
@@ -1110,7 +1189,7 @@ const AcademyTrade = () => {
                   onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
                 />
               )}
-              <WeeklyReviewCard hasData={hasData} />
+              <WeeklyReviewCard hasData={hasData} entries={entries} />
             </div>
           </div>
         )}
