@@ -637,7 +637,7 @@ const AcademyTrade = () => {
                 </div>
               </div>
               {/* Compliance Ring */}
-              <div className="flex flex-col items-center shrink-0">
+              <div className="relative flex flex-col items-center shrink-0">
                 <svg width="48" height="48" viewBox="0 0 48 48" className="transform -rotate-90">
                   <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted) / 0.15)" strokeWidth="3" />
                   <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(142 71% 45%)" strokeWidth="3" strokeLinecap="round"
