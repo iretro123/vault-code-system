@@ -1,5 +1,3 @@
-
-
 ## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
 ### 1. Source of Truth (Unified)
@@ -81,3 +79,44 @@
 ### 7. Inline AI Insights
 - Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
 - 2×2 grid, each card shows label + value + description without clicking
+
+## Anti-Churn Phase — All 10 Improvements — COMPLETED
+
+### 1. Fix First-Visit Experience ✅
+- `GettingStartedBanner` now shows whenever `!hasData`, regardless of `showMetrics` flag
+- New users with balance set but no trades still see the 3-step guidance
+
+### 2. Lower AI Insights Gate: 10 → 3 ✅
+- Insights stage gate changed from `entries.length < 10` to `< 3`
+- All copy updated: progress bar, counter text, denominator
+
+### 3. Add Rolling Win Rate + Weekly Compliance ✅
+- `useTradeLog` now exports `last10WinRate`, `weeklyComplianceRate`, `bestStreak`, `allTimeHigh`
+- Hero card shows "Last 10: X% win · Week: Y% compliance" inline
+
+### 4. Decrement Risk Budget After Each Trade Loss ✅
+- Created `decrement_risk_budget` RPC (SECURITY DEFINER, atomic GREATEST(0, ...))
+- Called in `handleTradeSubmit` after loss trades
+
+### 5. Add Yesterday's Recap to Hero ✅
+- Hero card shows "Yesterday: +$85 · 2 trades" or "No trades yesterday"
+
+### 6. Wire Weekly Review to Actually Work ✅
+- `WeeklyReviewCard` now accepts `entries`, computes weekly summary on click
+- Shows total P/L, win rate, compliance %, green/red days, best/worst day
+
+### 7. Add Streak Visualization (14-day dot row) ✅
+- 14 colored dots in hero: green (compliant), amber (broke rule), gray (no trades)
+- Shows "Best: Xd" streak count
+
+### 8. Add Beginner Insights (Rule-Based, Pre-AI) ✅
+- Below the lock, when 1-2 trades exist: shows rules followed, most traded symbol, avg P/L
+- Fills the dead space with real data before AI unlocks
+
+### 9. Quick Import (Batch Log) ✅
+- `LogTradeSheet` already has Quick Mode with 5-field form + "Log Another" flow
+- No changes needed — was already implemented in Phase 2
+
+### 10. Personal Best Markers ✅
+- `allTimeHigh` computed from equity curve
+- Gold "★ New Personal Best" badge appears in hero when balance ≥ ATH
