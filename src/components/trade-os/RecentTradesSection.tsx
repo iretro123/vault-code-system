@@ -46,7 +46,7 @@ function CompactTradesList({ entries, onExportCSV }: { entries: RecentTradesSect
           {visible.map((e) => {
             const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
             const s = OUTCOME_STYLES[outcome];
-            const pnl = e.risk_reward * e.risk_used;
+            const pnl = computePnl(e);
             const ticker = e.symbol || "—";
 
             return (
