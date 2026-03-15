@@ -1000,24 +1000,44 @@ const AcademyTrade = () => {
               {activeStage === "insights" && (
                 <div className="space-y-2">
                   <StageHeadline stage="insights" />
-                  {entries.length < 10 ? (
+                  {entries.length < 3 ? (
                     <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-4 space-y-3 text-center">
                       <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 mx-auto">
                         <Lock className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">AI Insights unlock at 10 trades</p>
+                        <p className="text-sm font-semibold text-foreground">AI Insights unlock at 3 trades</p>
                         <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-                          Log {10 - entries.length} more trade{10 - entries.length !== 1 ? "s" : ""} to unlock personalized AI analysis of your risk behavior, leaks, and edges.
+                          Log {3 - entries.length} more trade{3 - entries.length !== 1 ? "s" : ""} to unlock personalized AI analysis of your risk behavior, leaks, and edges.
                         </p>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-muted-foreground/60 font-medium">{entries.length} / 10 trades</span>
-                          <span className="text-primary font-semibold">{Math.round((entries.length / 10) * 100)}%</span>
+                          <span className="text-muted-foreground/60 font-medium">{entries.length} / 3 trades</span>
+                          <span className="text-primary font-semibold">{Math.round((entries.length / 3) * 100)}%</span>
                         </div>
-                        <Progress value={(entries.length / 10) * 100} className="h-2" />
+                        <Progress value={(entries.length / 3) * 100} className="h-2" />
                       </div>
+                      {/* #8: Beginner Insights — rule-based pre-AI stats */}
+                      {entries.length >= 1 && (
+                        <div className="text-left space-y-1.5 pt-2 border-t border-white/[0.06]">
+                          <p className="text-[10px] text-muted-foreground/50 font-semibold uppercase tracking-wider">Early Stats</p>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground/60">Rules followed</span>
+                            <span className="text-foreground font-medium">{entries.filter(e => e.followed_rules).length}/{entries.length} trades</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground/60">Most traded</span>
+                            <span className="text-foreground font-medium">{symbolStats[0]?.symbol || "—"}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-muted-foreground/60">Avg P/L</span>
+                            <span className={cn("font-medium", totalPnl / entries.length >= 0 ? "text-emerald-400" : "text-red-400")}>
+                              {totalPnl / entries.length >= 0 ? "+" : "-"}${Math.abs(totalPnl / entries.length).toFixed(0)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       <Button size="sm" variant="outline" className="gap-1 rounded-lg h-8 text-[11px] border-white/[0.08]" onClick={handleLogUnplanned}>
                         <Plus className="h-3 w-3" /> Log a Trade
                       </Button>
