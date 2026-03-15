@@ -82,6 +82,23 @@ function StageHeadline({ stage }: { stage: string }) {
   );
 }
 
+function InsightMiniCard({ label, dotColor, text }: { label: string; dotColor: string; text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const truncated = text.length > 60 ? text.slice(0, 60) + "…" : text;
+  return (
+    <div
+      className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5 cursor-pointer hover:bg-white/[0.04] transition-colors"
+      onClick={() => setExpanded(!expanded)}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <div className={cn("h-1.5 w-1.5 rounded-full", dotColor)} />
+        <p className="text-[9px] text-muted-foreground/60 font-semibold uppercase tracking-widest">{label}</p>
+      </div>
+      <p className="text-[12px] text-foreground/80 font-medium leading-snug">{expanded ? text : truncated}</p>
+    </div>
+  );
+}
+
 const AcademyTrade = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
