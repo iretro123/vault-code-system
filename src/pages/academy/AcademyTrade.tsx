@@ -847,10 +847,7 @@ const AcademyTrade = () => {
                   {todayStatus === "complete" && (
                     <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15">
                       <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                      <p className="text-xs text-emerald-400/80 font-medium flex-1">Session complete.</p>
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-emerald-400 px-2" onClick={() => setStage("insights")}>
-                        <Brain className="h-3 w-3 mr-1" /> Insights
-                      </Button>
+                      <p className="text-xs text-muted-foreground/60 font-medium">✓ Today's session is done. Come back tomorrow.</p>
                     </div>
                   )}
                 </div>
