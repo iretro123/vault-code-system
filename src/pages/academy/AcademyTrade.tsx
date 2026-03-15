@@ -936,17 +936,25 @@ const AcademyTrade = () => {
                   )}
 
                   {sessionPhase === "No new entries" && !dismissedBanner && (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-2 flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                      <p className="text-[11px] text-amber-400 font-medium flex-1">Cutoff reached — no new entries.</p>
-                      <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                        <p className="text-xs font-bold text-amber-400 flex-1">Cutoff reached</p>
+                        <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/60 pl-6">No new entries allowed. Review your session or override if needed.</p>
                     </div>
                   )}
                   {sessionPhase === "Session closed" && !dismissedBanner && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-2 flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                      <p className="text-[11px] text-red-400 font-medium flex-1">Session closed — move to Review.</p>
-                      <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
+                        <p className="text-xs font-bold text-red-400 flex-1">Session closed</p>
+                        <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
+                      </div>
+                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold ml-0" onClick={() => setStage("review")}>
+                        <ClipboardCheck className="h-3 w-3" /> Complete Review Now
+                      </Button>
                     </div>
                   )}
 
