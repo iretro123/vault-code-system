@@ -693,8 +693,8 @@ const AcademyTrade = () => {
                     return (
                       <Collapsible>
                         <CollapsibleTrigger className="flex items-center gap-2 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 hover:bg-white/[0.04] transition-colors">
-                          <span className="text-[10px] font-semibold text-muted-foreground/60 flex-1 text-left">
-                            ${riskBudget.toFixed(0)} risk · ${positionCap.toFixed(0)} cap · {MAX_LOSSES_PER_DAY} trades
+                          <span className="text-[10px] font-semibold text-foreground/70 flex-1 text-left">
+                            ${riskBudget.toFixed(0)} max loss · ${positionCap.toFixed(0)} max spend · {MAX_LOSSES_PER_DAY} trades
                           </span>
                           <ChevronDown className="h-3 w-3 text-muted-foreground/40" />
                         </CollapsibleTrigger>
