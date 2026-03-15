@@ -724,7 +724,7 @@ const AcademyTrade = () => {
                                 <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-muted-foreground/60 font-medium inline-flex items-center gap-0.5 cursor-help">Trades / Session <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
                                   </TooltipTrigger>
                                   <TooltipContent side="bottom" className="max-w-[180px] text-xs">How many losing trades you're allowed before the system locks you out for the day.</TooltipContent>
                                 </Tooltip>
