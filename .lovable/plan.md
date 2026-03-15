@@ -1,122 +1,87 @@
-## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
-### 1. Source of Truth (Unified)
-- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
-- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
-- **Trades Used**: `trade_entries` filtered by today's date
-- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
-- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
 
-### 2. DayState Engine (A–E)
-- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
-- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
-- Session closed auto-suggests review via `sessionPhase` input
+# Full Pipeline Audit & Fix Plan
 
-### 3. OSControlRail Unified
-- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
-- Shows `dayStateStatus` text and `dayStateCta` button
-- Log Result only shows in `live_session` state
+## Critical Bug Found: Mixed Data Format Corruption
 
-### 4. QuickCheckInSheet Enhanced
-- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
-- All fields save to `journal_entries`
+The database has **two batches of seeded trades with incompatible formats**, causing every calculation pipeline to produce wrong numbers:
 
-### 5. CTA Logic
-- Hero shows state-driven status line
-- Each stage has single primary CTA driven by `dayState`
-- "Start Session" replaces "Go to Live Mode"
-- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
+**Batch 1 (24 older trades, created Mar 14):** Have `outcome` set (WIN/LOSS/BREAKEVEN) but `risk_reward` contains **R-multipliers** (1.5, -1, 2.0, etc.). Since `computePnl` sees `outcome` exists, it returns the raw `risk_reward` value — so a $200 risk SPY win at 1.5R shows as **+$1.50** instead of **+$300**.
 
-## Phase 2 — Simplify the Current Flow — COMPLETED
+**Batch 2 (5 newer trades, created Mar 15):** Correctly formatted — `risk_reward` = direct dollar P/L (-450, -300, etc.).
 
-### 1. Budget Tooltips
-- Added beginner-friendly tooltips (with ?) to all 4 budget metrics: Risk Budget, Position Cap, Trades/Session, Max Contracts
-- Wrapped in TooltipProvider for consistent delay
+**Impact on every pipeline:**
+- **Equity Curve**: Shows flat line for 24 trades then sudden cliff — total P/L is wildly wrong
+- **HUD Balance**: Tracked balance is off by thousands 
+- **Win Rate**: Correctly counts wins (risk_reward > 0), so 13/29 = 45% — this is **accidentally correct**
+- **AI Performance Intelligence**: The edge function's `computeAnalytics` uses `risk_reward` for R-multiple stats and sizing stats — all metrics are corrupted (avg winner shows 1.55R which looks like a multiplier but is actually $1.55 in the new-format interpretation)
+- **Weekly Review**: P/L sums are wrong
+- **Symbol breakdown P/L**: All wrong
+- **Scoreboard**: Indirectly affected through stale cache
 
-### 2. Mobile CTA Bar
-- Fixed bottom bar on mobile showing `dayStateCta` button
-- Positioned above MobileNav (bottom-16), respects safe-area-inset-bottom
-- Calls `handleQuickAction` for state-driven action
+## Fix: Migrate the 24 corrupted records
 
-### 3. Quick-Log Mode
-- LogTradeSheet defaults to Quick mode: Symbol, Direction, Result, P/L, Rules Followed
-- "Add Details" expands to full mode with Date, Entry/Exit, Position Size, Accountability, Setup, Screenshot, Note
-- Toggle between Quick Mode / Full Mode in header
-- Fixed "Contracts / shares" → "Contracts" placeholder
+Convert the R-multiplier values to actual dollar P/L in the database:
+- For each record where `outcome IS NOT NULL` and `risk_reward` is between -2 and 3 (R-multiplier range): set `risk_reward = risk_reward * risk_used` (the legacy formula)
+- This makes all records consistent with the new format
 
-### 4. P/L Calculation Fix
-- Exported `computePnl` from `useTradeLog.ts` as standalone function
-- Review stage trade list now uses `computePnl(e)` instead of `e.risk_reward * e.risk_used`
-- Backward-compatible with legacy ±1 format entries
+SQL migration:
+```sql
+UPDATE trade_entries 
+SET risk_reward = risk_reward * risk_used
+WHERE user_id = '6f863212-a859-4812-9775-0b1388bc21b3'
+  AND outcome IS NOT NULL
+  AND risk_reward BETWEEN -5 AND 5
+  AND ABS(risk_reward) != ABS(risk_used);
+```
 
-## Phase 3 — Options Day Trader Optimization — COMPLETED
+## Pipeline Verification After Fix
 
-### 1. Cockpit-Mode Live Stage
-- Removed StageHeadline from Live stage, removed trade summary strip (duplicate of hero data)
-- Active plan shows as single-row cockpit: ticker + direction + contracts + status badge
-- SessionCountdownLine component shows inline timer + trades remaining
-- TodaysLimitsSection, SessionSetupCard, End Session moved behind collapsible "Session Details"
-- No-plan state compressed to single row with Plan + Log buttons
+Once the data is fixed, every pipeline should produce correct numbers:
 
-### 2. OSControlRail De-duplicated
-- Removed risk budget, trade count, and session timer sections (already in hero + main view)
-- Rail now shows only: Vault Status, Active Plan summary, Restrictions, Day State CTA
+1. **computePnl** → returns `risk_reward` directly for all records (all have `outcome`)
+2. **Equity Curve** → running sum of actual dollar P/L values
+3. **HUD Balance** → `startingBalance + totalPnl` = accurate tracked balance
+4. **AI Focus Edge Function** → `computeAnalytics` uses raw `risk_reward` for R-multiple stats — after fix, these will be dollar values, which is what the system prompt labels correctly ("Mean risk: $X")
+5. **Weekly Review** → correct day-by-day P/L aggregation
+6. **Symbol Stats** → correct per-ticker P/L totals
+7. **Vault State** → already correct (RED, 0 trades remaining, 0 risk remaining)
 
-### 3. Auto-Default Session Times
-- Pre-fills draft from yesterday's localStorage key (`va_session_times_YYYY-MM-DD`)
-- "Same as yesterday" one-tap button saves and starts session immediately
+## Additional Fix: Clear Stale AI Cache
 
-### 4. Auto-Review After Session Close
-- `handleTradeSubmit` auto-transitions to review stage + opens check-in when `sessionPhase === "Session closed"`
+After the data migration, we need to:
+1. Clear the `ai_focus_cache` column in profiles (force fresh AI scan)
+2. Clear localStorage caches (`va_cache_ai_focus_v3`, `va_cache_trade_entries`) on next load
 
-### 5. Specific Trade Toast
-- `useTradeLog.addEntry` toast now shows symbol + signed P/L instead of generic message
+## Code Changes Needed
 
-### 6. Smart Log Defaults
-- `planFollowed` already defaults to "Yes"
-- Last-used ticker remembered in `localStorage` (`va_last_ticker`) and pre-filled
+### 1. Database migration
+Update the 24 corrupted trade entries to convert R-multipliers to dollar P/L.
 
-### 7. Inline AI Insights
-- Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
-- 2×2 grid, each card shows label + value + description without clicking
+### 2. Clear AI cache in profiles
+```sql
+UPDATE profiles SET ai_focus_cache = NULL 
+WHERE user_id = '6f863212-a859-4812-9775-0b1388bc21b3';
+```
 
-## Anti-Churn Phase — All 10 Improvements — COMPLETED
+### 3. Add cache-bust on AcademyTrade.tsx
+Add a one-time localStorage clear for trade caches to force fresh data after the migration. This can be a versioned cache-bust key.
 
-### 1. Fix First-Visit Experience ✅
-- `GettingStartedBanner` now shows whenever `!hasData`, regardless of `showMetrics` flag
-- New users with balance set but no trades still see the 3-step guidance
+### 4. Edge function analytics fix
+The `trade-focus` edge function's `computeAnalytics` has the same format inconsistency — it uses `risk_reward` directly for R-multiple calculations (avgWinnerR, avgLoserR, bestR, worstR). After fixing the data, these "R" values will actually be dollar amounts. The system prompt labels them as "$" for sizing but "R" for R-multiple section. Need to either:
+- Accept that R-multiple is now dollar-based (rename in prompt), or
+- Compute actual R by dividing `risk_reward / risk_used`
 
-### 2. Lower AI Insights Gate: 10 → 3 ✅
-- Insights stage gate changed from `entries.length < 10` to `< 3`
-- All copy updated: progress bar, counter text, denominator
+The cleaner fix: compute R-multiple as `risk_reward / risk_used` in the analytics function, which works for both formats.
 
-### 3. Add Rolling Win Rate + Weekly Compliance ✅
-- `useTradeLog` now exports `last10WinRate`, `weeklyComplianceRate`, `bestStreak`, `allTimeHigh`
-- Hero card shows "Last 10: X% win · Week: Y% compliance" inline
+## Summary of Changes
 
-### 4. Decrement Risk Budget After Each Trade Loss ✅
-- Created `decrement_risk_budget` RPC (SECURITY DEFINER, atomic GREATEST(0, ...))
-- Called in `handleTradeSubmit` after loss trades
+| What | Where | Why |
+|------|-------|-----|
+| Fix 24 corrupted records | DB migration | R-multiplier → dollar P/L |
+| Clear AI cache | DB + localStorage | Force fresh scan with corrected data |
+| Fix R-multiple calculation | `trade-focus/index.ts` | Use `risk_reward / risk_used` instead of raw `risk_reward` |
+| Add cache-bust version | `AcademyTrade.tsx` | Invalidate stale localStorage after migration |
 
-### 5. Add Yesterday's Recap to Hero ✅
-- Hero card shows "Yesterday: +$85 · 2 trades" or "No trades yesterday"
+After these fixes, all pipelines — equity curve, HUD, AI intelligence, weekly review, symbol breakdown, vault command bar — will show real, accurate numbers derived from the corrected data.
 
-### 6. Wire Weekly Review to Actually Work ✅
-- `WeeklyReviewCard` now accepts `entries`, computes weekly summary on click
-- Shows total P/L, win rate, compliance %, green/red days, best/worst day
-
-### 7. Add Streak Visualization (14-day dot row) ✅
-- 14 colored dots in hero: green (compliant), amber (broke rule), gray (no trades)
-- Shows "Best: Xd" streak count
-
-### 8. Add Beginner Insights (Rule-Based, Pre-AI) ✅
-- Below the lock, when 1-2 trades exist: shows rules followed, most traded symbol, avg P/L
-- Fills the dead space with real data before AI unlocks
-
-### 9. Quick Import (Batch Log) ✅
-- `LogTradeSheet` already has Quick Mode with 5-field form + "Log Another" flow
-- No changes needed — was already implemented in Phase 2
-
-### 10. Personal Best Markers ✅
-- `allTimeHigh` computed from equity curve
-- Gold "★ New Personal Best" badge appears in hero when balance ≥ ATH
