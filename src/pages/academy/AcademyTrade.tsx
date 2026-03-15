@@ -649,7 +649,7 @@ const AcademyTrade = () => {
                 <div className="absolute mt-[10px] flex flex-col items-center justify-center w-12 h-12">
                   <span className="text-sm font-bold tabular-nums text-foreground">{weeklyComplianceRate}%</span>
                 </div>
-                <span className="text-[8px] text-foreground/40 font-medium mt-0.5">This week</span>
+                <span className="text-[8px] text-foreground/60 font-medium mt-0.5">This week</span>
               </div>
             </div>
           </div>
