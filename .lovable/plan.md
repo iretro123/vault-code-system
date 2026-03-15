@@ -1,122 +1,92 @@
-## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
-### 1. Source of Truth (Unified)
-- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
-- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
-- **Trades Used**: `trade_entries` filtered by today's date
-- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
-- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
 
-### 2. DayState Engine (A–E)
-- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
-- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
-- Session closed auto-suggests review via `sessionPhase` input
+# Trade OS — Hierarchy, Clarity & Command Center Overhaul
 
-### 3. OSControlRail Unified
-- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
-- Shows `dayStateStatus` text and `dayStateCta` button
-- Log Result only shows in `live_session` state
+This addresses all 7 UX issues raised: state confusion, hierarchy, readability, Live screen authority, and Insights density. No new screens or features — just making what exists feel clear, fast, and commanding.
 
-### 4. QuickCheckInSheet Enhanced
-- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
-- All fields save to `journal_entries`
+---
 
-### 5. CTA Logic
-- Hero shows state-driven status line
-- Each stage has single primary CTA driven by `dayState`
-- "Start Session" replaces "Go to Live Mode"
-- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
+## Changes
 
-## Phase 2 — Simplify the Current Flow — COMPLETED
+### 1. Replace 14-day streak dots with a Progress Ring
+**File:** `src/pages/academy/AcademyTrade.tsx` (hero card, lines 596-618)
 
-### 1. Budget Tooltips
-- Added beginner-friendly tooltips (with ?) to all 4 budget metrics: Risk Budget, Position Cap, Trades/Session, Max Contracts
-- Wrapped in TooltipProvider for consistent delay
+Remove the row of 14 tiny dots. Replace with a single 48px SVG ring on the right side of the hero card showing weekly compliance as a circular progress indicator (e.g., 85% filled in emerald). The ring sits right-aligned next to the balance, replacing the current empty space. Inside the ring: compliance % number. Below: "This week" label. This gives the hero card a clear visual anchor without the noise of 14 dots.
 
-### 2. Mobile CTA Bar
-- Fixed bottom bar on mobile showing `dayStateCta` button
-- Positioned above MobileNav (bottom-16), respects safe-area-inset-bottom
-- Calls `handleQuickAction` for state-driven action
+### 2. Fix State Collision — Remove "Session Complete" from Plan Stage
+**File:** `src/pages/academy/AcademyTrade.tsx` (lines 762-770)
 
-### 3. Quick-Log Mode
-- LogTradeSheet defaults to Quick mode: Symbol, Direction, Result, P/L, Rules Followed
-- "Add Details" expands to full mode with Date, Entry/Exit, Position Size, Accountability, Setup, Screenshot, Note
-- Toggle between Quick Mode / Full Mode in header
-- Fixed "Contracts / shares" → "Contracts" placeholder
+The "Session complete" banner with Insights button currently renders inside the Plan stage. This creates a confusing time-state collision. Fix: **only show it in the Review stage** (where it already exists at lines 986-994). Remove the duplicate from Plan stage entirely. When `todayStatus === "complete"` and user is on Plan, show instead: "✓ Today's session is done. Come back tomorrow." — a single line, no CTA, no cross-stage navigation.
 
-### 4. P/L Calculation Fix
-- Exported `computePnl` from `useTradeLog.ts` as standalone function
-- Review stage trade list now uses `computePnl(e)` instead of `e.risk_reward * e.risk_used`
-- Backward-compatible with legacy ±1 format entries
+### 3. Strengthen Stage Hierarchy — Single Primary CTA per Stage
+**File:** `src/pages/academy/AcademyTrade.tsx`
 
-## Phase 3 — Options Day Trader Optimization — COMPLETED
+Each stage should have ONE obvious thing to do:
+- **Plan stage**: If no plan → planner is the action (already works). If plan exists → "Start Session" button is primary (already works). Remove the budget card's visual weight by making it collapsible (default closed) — the planner already shows these numbers.
+- **Live stage**: The active plan card is correct. Move `StageHeadline` removal — the plan card IS the headline on Live. Replace the current StageHeadline with a tighter status line: vault status dot + "Live · 2/3 trades · $180 risk left" — all in one line above the plan card.
+- **Review stage**: Already strong. No changes needed.
+- **Insights stage**: Already good structure. Address density separately (point 7).
 
-### 1. Cockpit-Mode Live Stage
-- Removed StageHeadline from Live stage, removed trade summary strip (duplicate of hero data)
-- Active plan shows as single-row cockpit: ticker + direction + contracts + status badge
-- SessionCountdownLine component shows inline timer + trades remaining
-- TodaysLimitsSection, SessionSetupCard, End Session moved behind collapsible "Session Details"
-- No-plan state compressed to single row with Plan + Log buttons
+### 4. Make Today's Budget Collapsible on Plan Stage
+**File:** `src/pages/academy/AcademyTrade.tsx` (lines 676-730)
 
-### 2. OSControlRail De-duplicated
-- Removed risk budget, trade count, and session timer sections (already in hero + main view)
-- Rail now shows only: Vault Status, Active Plan summary, Restrictions, Day State CTA
+Wrap the Budget grid in a `<Collapsible>` defaulting to **closed**. Show a single summary line: "$120 risk · $600 cap · 3 trades" with a chevron to expand. This declutters Plan and makes the planner/active plan the clear primary focus.
 
-### 3. Auto-Default Session Times
-- Pre-fills draft from yesterday's localStorage key (`va_session_times_YYYY-MM-DD`)
-- "Same as yesterday" one-tap button saves and starts session immediately
+### 5. Upgrade Live Stage to Command Center Feel
+**File:** `src/pages/academy/AcademyTrade.tsx` (lines 774-874)
 
-### 4. Auto-Review After Session Close
-- `handleTradeSubmit` auto-transitions to review stage + opens check-in when `sessionPhase === "Session closed"`
+Replace `StageHeadline` on Live with an inline status bar:
+```
+[●] LIVE · SPY Calls 2ct · 1/3 trades · $180 risk remaining
+```
+This is a single row with the vault status dot, ticker, and key numbers — no title card needed.
 
-### 5. Specific Trade Toast
-- `useTradeLog.addEntry` toast now shows symbol + signed P/L instead of generic message
+The active plan card (lines 778-822): add a left border accent matching vault status (emerald/amber/red) for instant visual state. The "Mark Executing" → "Close & Log" flow stays as-is.
 
-### 6. Smart Log Defaults
-- `planFollowed` already defaults to "Yes"
-- Last-used ticker remembered in `localStorage` (`va_last_ticker`) and pre-filled
+For the "No new entries" and "Session closed" banners: make them more commanding — full-width, bolder text, and a clear "what to do now" CTA embedded in the banner itself.
 
-### 7. Inline AI Insights
-- Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
-- 2×2 grid, each card shows label + value + description without clicking
+### 6. Boost Typography Contrast
+**File:** `src/index.css` + throughout `AcademyTrade.tsx`
 
-## Anti-Churn Phase — All 10 Improvements — COMPLETED
+Global change: bump all `text-muted-foreground/50` and `/40` references in Trade OS cards to `/60` and `/50` respectively. Specifically:
+- Hero card labels: `/50` → `/60`
+- Budget labels: `/50` → `/60`  
+- Session details labels: `/40` → `/50`
+- Streak/stats text: `/40` → `/50`
 
-### 1. Fix First-Visit Experience ✅
-- `GettingStartedBanner` now shows whenever `!hasData`, regardless of `showMetrics` flag
-- New users with balance set but no trades still see the 3-step guidance
+This is ~15 className tweaks across the file. No design change — just readability on dark backgrounds.
 
-### 2. Lower AI Insights Gate: 10 → 3 ✅
-- Insights stage gate changed from `entries.length < 10` to `< 3`
-- All copy updated: progress bar, counter text, denominator
+### 7. Fix Insights Density — Summary + Expandable Detail
+**File:** `src/components/trade-os/AIFocusCard.tsx` (carousel slides, line 461)
 
-### 3. Add Rolling Win Rate + Weekly Compliance ✅
-- `useTradeLog` now exports `last10WinRate`, `weeklyComplianceRate`, `bestStreak`, `allTimeHigh`
-- Hero card shows "Last 10: X% win · Week: Y% compliance" inline
+For the Leak and Edge slides: truncate the AI text to the first sentence. Add a "Read more" toggle that expands to show the full text. Bold the actionable phrase (the most important sentence) using a simple regex match on action words.
 
-### 4. Decrement Risk Budget After Each Trade Loss ✅
-- Created `decrement_risk_budget` RPC (SECURITY DEFINER, atomic GREATEST(0, ...))
-- Called in `handleTradeSubmit` after loss trades
+Also in the inline Insights grid (AcademyTrade.tsx lines 1065-1091): truncate each card's text to 60 chars with `...` and add `cursor-pointer` + click-to-expand behavior using local state.
 
-### 5. Add Yesterday's Recap to Hero ✅
-- Hero card shows "Yesterday: +$85 · 2 trades" or "No trades yesterday"
+### 8. Stage Selector — Bolder Active State
+**File:** `src/components/trade-os/OSTabHeader.tsx`
 
-### 6. Wire Weekly Review to Actually Work ✅
-- `WeeklyReviewCard` now accepts `entries`, computes weekly summary on click
-- Shows total P/L, win rate, compliance %, green/red days, best/worst day
+The current active tab is subtle. Changes:
+- Active tab: increase background opacity from `bg-white/[0.1]` to `bg-white/[0.14]`
+- Active tab text: add `text-foreground` explicitly (currently inherits)
+- Completed tabs: make the check circle slightly larger (w-4 h-4 outer, w-2.5 h-2.5 inner check)
+- Add a subtle `font-bold` on the active tab label vs `font-semibold` on others
 
-### 7. Add Streak Visualization (14-day dot row) ✅
-- 14 colored dots in hero: green (compliant), amber (broke rule), gray (no trades)
-- Shows "Best: Xd" streak count
+---
 
-### 8. Add Beginner Insights (Rule-Based, Pre-AI) ✅
-- Below the lock, when 1-2 trades exist: shows rules followed, most traded symbol, avg P/L
-- Fills the dead space with real data before AI unlocks
+## Files Changed
 
-### 9. Quick Import (Batch Log) ✅
-- `LogTradeSheet` already has Quick Mode with 5-field form + "Log Another" flow
-- No changes needed — was already implemented in Phase 2
+| File | Changes |
+|---|---|
+| `src/pages/academy/AcademyTrade.tsx` | Remove streak dots → add compliance ring. Fix state collision. Collapsible budget. Live status bar. Typography contrast bumps. Insights card truncation. |
+| `src/components/trade-os/OSTabHeader.tsx` | Bolder active state, larger check circles |
+| `src/components/trade-os/AIFocusCard.tsx` | Truncate + expand on Leak/Edge slides |
 
-### 10. Personal Best Markers ✅
-- `allTimeHigh` computed from equity curve
-- Gold "★ New Personal Best" badge appears in hero when balance ≥ ATH
+## What Does NOT Change
+- No new screens, tabs, or components
+- Review stage untouched (already strongest)
+- Analytics section below OS card untouched
+- Mobile CTA pill untouched
+- Intelligence strip untouched
+- All data logic unchanged
+
