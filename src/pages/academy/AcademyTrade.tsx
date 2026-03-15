@@ -1159,7 +1159,7 @@ const AcademyTrade = () => {
                         <div className="grid grid-cols-2 gap-1.5">
                           {/* Grade */}
                           <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-2.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium uppercase tracking-widest mb-1">Grade</p>
+                            <p className="text-[9px] text-muted-foreground/60 font-semibold uppercase tracking-widest mb-1">Grade</p>
                             <p className={cn("text-2xl font-black",
                               cachedAI.riskGrade === "A" ? "text-emerald-400" :
                               cachedAI.riskGrade === "B" ? "text-primary" :
