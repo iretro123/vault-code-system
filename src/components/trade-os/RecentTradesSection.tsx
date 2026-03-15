@@ -124,7 +124,7 @@ export function RecentTradesSection({ entries, onExportCSV, onDelete, compact }:
           const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
           const s = OUTCOME_STYLES[outcome];
           const Icon = s.icon;
-          const pnlNum = e.risk_reward * e.risk_used;
+          const pnlNum = computePnl(e);
           const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
           const ticker = e.symbol || e.notes?.split(" ")[0] || "Trade";
 

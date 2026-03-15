@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-// Extract the P/L formula from useTradeLog (pure function)
-const computePnl = (e: { risk_reward: number; risk_used: number }) =>
-  e.risk_reward * e.risk_used;
+// Backward-compatible P/L: matches useTradeLog.computePnl
+const computePnl = (e: { risk_reward: number; risk_used: number; outcome?: string }) =>
+  e.outcome
+    ? e.risk_reward                  // new format: direct dollar P/L
+    : e.risk_reward * e.risk_used;   // legacy ±1/0 multiplier format
 
 interface MockEntry {
   id: string;
@@ -11,6 +13,7 @@ interface MockEntry {
   followed_rules: boolean;
   trade_date: string;
   created_at: string;
+  outcome?: string;
 }
 
 function makeTrade(
