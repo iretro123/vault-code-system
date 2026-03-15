@@ -540,9 +540,9 @@ const AcademyTrade = () => {
               <div className="space-y-1">
                 <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/50 font-semibold">Your Trading Day</p>
                 <div className="flex items-baseline gap-2.5">
-                  <span className="text-3xl font-bold tabular-nums text-foreground tracking-tight">
-                    {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
-                  </span>
+                    <span className="text-4xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                      {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
+                    </span>
                   {todayPnl !== 0 && (
                     <span className={cn(
                       "text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full",
