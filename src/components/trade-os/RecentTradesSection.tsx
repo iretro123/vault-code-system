@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+// Backward-compatible P/L calc (mirrors useTradeLog.computePnl without requiring full TradeEntry)
+const computePnl = (e: { risk_reward: number; risk_used: number; outcome?: string }) =>
+  e.outcome ? e.risk_reward : e.risk_reward * e.risk_used;
+
 const OUTCOME_STYLES = {
   win: { label: "Win", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: TrendingUp, dot: "bg-emerald-400" },
   loss: { label: "Loss", color: "text-red-400", bg: "bg-red-500/10", border: "border-red-500/20", icon: TrendingDown, dot: "bg-red-400" },
@@ -45,7 +49,7 @@ function CompactTradesList({ entries, onExportCSV }: { entries: RecentTradesSect
           {visible.map((e) => {
             const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
             const s = OUTCOME_STYLES[outcome];
-            const pnl = e.risk_reward * e.risk_used;
+            const pnl = computePnl(e);
             const ticker = e.symbol || "—";
 
             return (
@@ -123,7 +127,7 @@ export function RecentTradesSection({ entries, onExportCSV, onDelete, compact }:
           const outcome: "win" | "loss" | "breakeven" = e.risk_reward > 0 ? "win" : e.risk_reward < 0 ? "loss" : "breakeven";
           const s = OUTCOME_STYLES[outcome];
           const Icon = s.icon;
-          const pnlNum = e.risk_reward * e.risk_used;
+          const pnlNum = computePnl(e);
           const pnlStr = pnlNum >= 0 ? `+$${Math.abs(pnlNum).toFixed(0)}` : `-$${Math.abs(pnlNum).toFixed(0)}`;
           const ticker = e.symbol || e.notes?.split(" ")[0] || "Trade";
 

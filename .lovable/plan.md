@@ -1,80 +1,122 @@
+## Plan: Trading OS — Trust, Clarity & State-Driven Pass — COMPLETED
 
+### 1. Source of Truth (Unified)
+- **Tracked Balance**: `profiles.account_balance` + `totalPnl` from `trade_entries`
+- **Risk Budget**: `trackedBalance * TIER_DEFAULTS[tier].riskPercent / 100` — used everywhere (hero, plan, rail)
+- **Trades Used**: `trade_entries` filtered by today's date
+- **Active Plan**: `approved_plans` with `status = 'planned'`, today only
+- **AI Progress**: `entries.length` vs thresholds (10, 20, 50)
 
-# Stress Test & Bug Fix Plan: Trade OS Full Audit
+### 2. DayState Engine (A–E)
+- `useSessionStage` now exports `dayState`, `dayStateStatus`, `dayStateCta`
+- States: `no_plan` → `plan_approved` → `live_session` → `review_pending` → `day_complete`
+- Session closed auto-suggests review via `sessionPhase` input
 
-## Critical Bug Found
+### 3. OSControlRail Unified
+- Now uses `trackedBalance + TIER_DEFAULTS` instead of `vaultState.risk_remaining_today`
+- Shows `dayStateStatus` text and `dayStateCta` button
+- Log Result only shows in `live_session` state
 
-**`RecentTradesSection.tsx` uses wrong P/L formula** (lines 48 and 126). It calculates `e.risk_reward * e.risk_used` directly instead of using the backward-compatible `computePnl()` function from `useTradeLog.ts`. 
+### 4. QuickCheckInSheet Enhanced
+- 5-step closeout: Rules toggle → What went well → Biggest mistake → Lesson learned → Submit
+- All fields save to `journal_entries`
 
-Since new trades store the signed dollar P/L directly in `risk_reward` (e.g., -45), and `risk_used` is set to `Math.abs(pnlNum)` (e.g., 45), the compact view shows `-45 * 45 = -$2,025` instead of the correct `-$45`. This is a **data display corruption bug** that makes the entire trade journal unreliable.
+### 5. CTA Logic
+- Hero shows state-driven status line
+- Each stage has single primary CTA driven by `dayState`
+- "Start Session" replaces "Go to Live Mode"
+- "Complete Review" replaces "Complete Check-In" / "Complete your Review"
 
-The same bug exists in the test file `tradeLogCalc.test.ts` which doesn't account for the new `outcome`-based format.
+## Phase 2 — Simplify the Current Flow — COMPLETED
 
-## Stress Test: Seed 10 Losing Trades
+### 1. Budget Tooltips
+- Added beginner-friendly tooltips (with ?) to all 4 budget metrics: Risk Budget, Position Cap, Trades/Session, Max Contracts
+- Wrapped in TooltipProvider for consistent delay
 
-Create a dev-only seed script (edge function) that inserts 10 realistic losing trades across recent days to validate:
-- Equity curve renders a clear downtrend without chart bugs
-- HUD metrics (win rate, compliance, streak, P/L) calculate correctly under heavy loss pressure
-- Weekly Review card shows accurate red-day counts and worst-day detection
-- AI Performance Intelligence fires with correct data (risk grade should be D or F)
-- Session stage lifecycle handles the "review pending" state after bulk entries
-- Vault limits and risk budget decrease correctly as losses accumulate
-- Symbol breakdown shows per-ticker loss stats accurately
+### 2. Mobile CTA Bar
+- Fixed bottom bar on mobile showing `dayStateCta` button
+- Positioned above MobileNav (bottom-16), respects safe-area-inset-bottom
+- Calls `handleQuickAction` for state-driven action
 
-## Changes
+### 3. Quick-Log Mode
+- LogTradeSheet defaults to Quick mode: Symbol, Direction, Result, P/L, Rules Followed
+- "Add Details" expands to full mode with Date, Entry/Exit, Position Size, Accountability, Setup, Screenshot, Note
+- Toggle between Quick Mode / Full Mode in header
+- Fixed "Contracts / shares" → "Contracts" placeholder
 
-### 1. Fix P/L calculation bug in `RecentTradesSection.tsx`
-- Import `computePnl` from `useTradeLog`
-- Replace `e.risk_reward * e.risk_used` on line 48 with `computePnl(e)`
-- Replace `e.risk_reward * e.risk_used` on line 126 with `computePnl(e)`
+### 4. P/L Calculation Fix
+- Exported `computePnl` from `useTradeLog.ts` as standalone function
+- Review stage trade list now uses `computePnl(e)` instead of `e.risk_reward * e.risk_used`
+- Backward-compatible with legacy ±1 format entries
 
-### 2. Fix test file `tradeLogCalc.test.ts`
-- Update the test's `computePnl` to match the real backward-compatible version that checks for `outcome`
+## Phase 3 — Options Day Trader Optimization — COMPLETED
 
-### 3. Create stress-test seed data
-Add a temporary dev button (behind admin check) on the Trade OS page that inserts 10 losing trades via direct Supabase insert:
+### 1. Cockpit-Mode Live Stage
+- Removed StageHeadline from Live stage, removed trade summary strip (duplicate of hero data)
+- Active plan shows as single-row cockpit: ticker + direction + contracts + status badge
+- SessionCountdownLine component shows inline timer + trades remaining
+- TodaysLimitsSection, SessionSetupCard, End Session moved behind collapsible "Session Details"
+- No-plan state compressed to single row with Plan + Log buttons
 
-```
-Trades to seed (spread across last 5 days):
-1. SPY Puts  -$85  (broke rules, oversized)
-2. AAPL Calls -$45  (followed rules)
-3. TSLA Calls -$120 (broke rules, revenge trade)
-4. QQQ Puts  -$60  (followed rules)
-5. NVDA Calls -$95  (broke rules)
-6. SPY Calls  -$35  (followed rules)
-7. AMD Puts   -$70  (broke rules, oversized)
-8. META Calls -$55  (followed rules)
-9. SPY Puts   -$110 (broke rules, revenge sizing)
-10. MSFT Calls -$40  (followed rules)
+### 2. OSControlRail De-duplicated
+- Removed risk budget, trade count, and session timer sections (already in hero + main view)
+- Rail now shows only: Vault Status, Active Plan summary, Restrictions, Day State CTA
 
-Total: -$715 in losses
-Rules broken: 5/10 (50% compliance)
-Symbols: 7 unique tickers
-```
+### 3. Auto-Default Session Times
+- Pre-fills draft from yesterday's localStorage key (`va_session_times_YYYY-MM-DD`)
+- "Same as yesterday" one-tap button saves and starts session immediately
 
-This will stress:
-- Equity curve showing steep decline
-- Win rate dropping to 0% for these entries
-- Compliance at 50%
-- Risk grade should degrade
-- Multiple symbols in breakdown
-- Multiple red days in weekly review
+### 4. Auto-Review After Session Close
+- `handleTradeSubmit` auto-transitions to review stage + opens check-in when `sessionPhase === "Session closed"`
 
-### 4. Minor UX hardening
-- Ensure negative equity curve uses red gradient (already handled, but verify)
-- Verify `computePnl` is used consistently everywhere P/L is displayed
+### 5. Specific Trade Toast
+- `useTradeLog.addEntry` toast now shows symbol + signed P/L instead of generic message
 
-## Technical Details
+### 6. Smart Log Defaults
+- `planFollowed` already defaults to "Yes"
+- Last-used ticker remembered in `localStorage` (`va_last_ticker`) and pre-filled
 
-The `computePnl` function handles two data formats:
-```typescript
-// New format: outcome field exists, risk_reward = direct signed dollar P/L
-// Legacy format: no outcome field, risk_reward = ±1/0 multiplier × risk_used
-export const computePnl = (e: TradeEntry) =>
-  e.outcome
-    ? e.risk_reward                  // new: direct dollar P/L
-    : e.risk_reward * e.risk_used;   // legacy multiplier
-```
+### 7. Inline AI Insights
+- Replaced 4 Popover components with always-visible inline cards (Grade, Leak, Edge, Next)
+- 2×2 grid, each card shows label + value + description without clicking
 
-The bug in `RecentTradesSection` always uses the legacy formula, so every new-format trade shows an inflated/wrong P/L. This is the most critical fix.
+## Anti-Churn Phase — All 10 Improvements — COMPLETED
 
+### 1. Fix First-Visit Experience ✅
+- `GettingStartedBanner` now shows whenever `!hasData`, regardless of `showMetrics` flag
+- New users with balance set but no trades still see the 3-step guidance
+
+### 2. Lower AI Insights Gate: 10 → 3 ✅
+- Insights stage gate changed from `entries.length < 10` to `< 3`
+- All copy updated: progress bar, counter text, denominator
+
+### 3. Add Rolling Win Rate + Weekly Compliance ✅
+- `useTradeLog` now exports `last10WinRate`, `weeklyComplianceRate`, `bestStreak`, `allTimeHigh`
+- Hero card shows "Last 10: X% win · Week: Y% compliance" inline
+
+### 4. Decrement Risk Budget After Each Trade Loss ✅
+- Created `decrement_risk_budget` RPC (SECURITY DEFINER, atomic GREATEST(0, ...))
+- Called in `handleTradeSubmit` after loss trades
+
+### 5. Add Yesterday's Recap to Hero ✅
+- Hero card shows "Yesterday: +$85 · 2 trades" or "No trades yesterday"
+
+### 6. Wire Weekly Review to Actually Work ✅
+- `WeeklyReviewCard` now accepts `entries`, computes weekly summary on click
+- Shows total P/L, win rate, compliance %, green/red days, best/worst day
+
+### 7. Add Streak Visualization (14-day dot row) ✅
+- 14 colored dots in hero: green (compliant), amber (broke rule), gray (no trades)
+- Shows "Best: Xd" streak count
+
+### 8. Add Beginner Insights (Rule-Based, Pre-AI) ✅
+- Below the lock, when 1-2 trades exist: shows rules followed, most traded symbol, avg P/L
+- Fills the dead space with real data before AI unlocks
+
+### 9. Quick Import (Batch Log) ✅
+- `LogTradeSheet` already has Quick Mode with 5-field form + "Log Another" flow
+- No changes needed — was already implemented in Phase 2
+
+### 10. Personal Best Markers ✅
+- `allTimeHigh` computed from equity curve
+- Gold "★ New Personal Best" badge appears in hero when balance ≥ ATH

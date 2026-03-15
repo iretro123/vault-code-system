@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-// Extract the P/L formula from useTradeLog (pure function)
-const computePnl = (e: { risk_reward: number; risk_used: number }) =>
-  e.risk_reward * e.risk_used;
+// Backward-compatible P/L: matches useTradeLog.computePnl
+const computePnl = (e: { risk_reward: number; risk_used: number; outcome?: string }) =>
+  e.outcome
+    ? e.risk_reward                  // new format: direct dollar P/L
+    : e.risk_reward * e.risk_used;   // legacy ±1/0 multiplier format
 
 interface MockEntry {
   id: string;
@@ -11,6 +13,7 @@ interface MockEntry {
   followed_rules: boolean;
   trade_date: string;
   created_at: string;
+  outcome?: string;
 }
 
 function makeTrade(
@@ -44,6 +47,24 @@ describe("trade P/L model", () => {
 
   it("large loss: risk_reward=-2, risk_used=300 → -$600", () => {
     expect(computePnl({ risk_reward: -2, risk_used: 300 })).toBe(-600);
+  });
+
+  // New format tests (outcome field present → risk_reward IS the dollar P/L)
+  it("new format win: outcome=WIN, risk_reward=85 → +$85", () => {
+    expect(computePnl({ risk_reward: 85, risk_used: 85, outcome: "WIN" })).toBe(85);
+  });
+
+  it("new format loss: outcome=LOSS, risk_reward=-45 → -$45", () => {
+    expect(computePnl({ risk_reward: -45, risk_used: 45, outcome: "LOSS" })).toBe(-45);
+  });
+
+  it("new format breakeven: outcome=BREAKEVEN, risk_reward=0 → $0", () => {
+    expect(computePnl({ risk_reward: 0, risk_used: 0, outcome: "BREAKEVEN" })).toBe(0);
+  });
+
+  it("BUG REGRESSION: new format must NOT multiply risk_reward × risk_used", () => {
+    // Before fix, -45 * 45 = -2025 (wrong). After fix, -45 (correct).
+    expect(computePnl({ risk_reward: -45, risk_used: 45, outcome: "LOSS" })).toBe(-45);
   });
 });
 
