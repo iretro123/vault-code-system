@@ -860,7 +860,7 @@ const AcademyTrade = () => {
                   ) : (
                     <div className="flex items-center gap-2 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02]">
                       <SessionCountdownLine className="flex-1" />
-                      <span className="text-[10px] text-muted-foreground/40 tabular-nums">{todayTradeCount}/{totalMaxTrades}</span>
+                      <span className="text-[10px] text-foreground/50 tabular-nums">{todayTradeCount}/{totalMaxTrades}</span>
                       <Button size="sm" className="gap-1 rounded-md px-2.5 h-7 text-[10px]" onClick={() => setStage("plan")}>
                         <Calendar className="h-3 w-3" /> Plan
                       </Button>
