@@ -23,6 +23,7 @@ import { useSessionStage } from "@/hooks/useSessionStage";
 import { useVaultState } from "@/contexts/VaultStateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useAdminMode } from "@/contexts/AdminModeContext";
 import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 import { MAX_LOSSES_PER_DAY, computeVaultLimits } from "@/lib/vaultConstants";
 
