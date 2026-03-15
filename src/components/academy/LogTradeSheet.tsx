@@ -459,18 +459,23 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
         {/* Sticky footer */}
         <div className="px-6 py-4 border-t border-border flex gap-3 shrink-0">
           {justSaved ? (
-            <>
-              <Button className="flex-1 gap-1.5" onClick={handleLogAnother}>
-                <Plus className="h-3 w-3" /> Log Another
-              </Button>
+            <div className="flex-1 flex gap-3 vault-fade-up">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="vault-check-pop w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                  <Check className="h-4 w-4 text-emerald-400" />
+                </span>
+                <Button className="flex-1 gap-1.5" onClick={handleLogAnother}>
+                  <Plus className="h-3 w-3" /> Log Another
+                </Button>
+              </div>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Done
               </Button>
-            </>
+            </div>
           ) : (
             <>
               <Button className="flex-1" onClick={handleSubmit} disabled={!isFormValid || submitting}>
-                {submitting ? "Saving…" : "Save Trade & Generate Review"}
+                {submitting ? "Saving…" : "Save"}
               </Button>
               <Button variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel
