@@ -385,6 +385,11 @@ const AcademyTrade = () => {
     setExecutionStart(null);
     try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
     setCutoffOverride(false);
+
+    // Smart coaching nudge — show after 1.5s if conditions met
+    if (nudge.shouldShow) {
+      setTimeout(() => setShowNudge(true), 1500);
+    }
   };
 
   const handleLogFromPlan = (plan: ApprovedPlan) => {
