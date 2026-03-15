@@ -856,9 +856,29 @@ const AcademyTrade = () => {
               {/* LIVE STAGE */}
               {activeStage === "live" && (
                 <div className="space-y-2">
-                  {/* ── Cockpit: Plan line + timer + trades remaining ── */}
+                  {/* ── Live Status Bar ── */}
+                  {(() => {
+                    const hudBal = trackedBalance ?? vaultState.account_balance;
+                    const hudTier = detectTier(hudBal);
+                    const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
+                    const vaultDotColor = vaultState.vault_status === "GREEN" ? "bg-emerald-400" : vaultState.vault_status === "YELLOW" ? "bg-amber-400" : "bg-red-400";
+                    return (
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02]">
+                        <span className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", vaultDotColor)} />
+                        <span className="text-[11px] font-bold text-foreground">LIVE</span>
+                        {activePlan && <span className="text-[10px] text-muted-foreground/60">· {activePlan.ticker} {activePlan.direction === "calls" ? "Calls" : "Puts"} {activePlan.contracts_planned}ct</span>}
+                        <span className="text-[10px] text-muted-foreground/50 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} risk left</span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── Cockpit: Plan card ── */}
                   {activePlan && activePlan.status === "planned" ? (
-                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
+                    <div className={cn("rounded-lg p-2 space-y-1.5 border-l-[3px]",
+                      vaultState.vault_status === "GREEN" ? "border-l-emerald-400 border border-emerald-500/20 bg-emerald-500/[0.05]" :
+                      vaultState.vault_status === "YELLOW" ? "border-l-amber-400 border border-amber-500/20 bg-amber-500/[0.05]" :
+                      "border-l-red-400 border border-red-500/20 bg-red-500/[0.05]"
+                    )}>
                       <div className="flex items-center gap-1.5">
                         <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]", executing ? "bg-amber-400 animate-pulse" : "bg-emerald-400 animate-pulse")} />
                         <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
