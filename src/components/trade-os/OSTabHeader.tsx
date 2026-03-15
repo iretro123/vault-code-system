@@ -43,8 +43,8 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               )}
             >
               {isCompleted && !isActive ? (
-                <span className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 shrink-0">
-                  <Check className="h-2 w-2 text-emerald-400" strokeWidth={3} />
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 shrink-0">
+                  <Check className="h-2.5 w-2.5 text-emerald-400" strokeWidth={3} />
                 </span>
               ) : (
                 <Icon className={cn("h-3 w-3 shrink-0", isActive ? "text-primary" : "")} />

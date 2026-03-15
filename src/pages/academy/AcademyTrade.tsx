@@ -1253,7 +1253,7 @@ const AcademyTrade = () => {
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-2 px-0.5">
               <BarChart3 className="h-3.5 w-3.5 text-primary/60" />
-              <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/50 uppercase">Analytics</p>
+              <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/60 uppercase">Analytics</p>
             </div>
 
             {/* Row 1: Equity Curve — full width */}

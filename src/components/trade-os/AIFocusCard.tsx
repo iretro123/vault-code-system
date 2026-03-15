@@ -458,7 +458,7 @@ function AIFocusCardCarousel({ result, slides, gradeStyle, refreshing }: {
                       )}
                     </div>
                   </div>
-                  <p className="text-[14px] leading-[1.6] text-foreground/90 font-medium">{s.value}</p>
+                  <SlideText text={s.value} />
                   <div className="mt-3 h-[2px] rounded-full w-12 opacity-40" style={{ background: `linear-gradient(90deg, ${s.glowColor}, transparent)` }} />
                 </div>
               </div>
