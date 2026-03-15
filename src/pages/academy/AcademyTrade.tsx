@@ -829,8 +829,8 @@ const AcademyTrade = () => {
 
                       <div className="flex items-center gap-2 pl-3.5">
                         <SessionCountdownLine />
-                        <span className="text-[10px] text-muted-foreground/40">·</span>
-                        <span className="text-[10px] text-muted-foreground/50 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
+                        <span className="text-[10px] text-foreground/30">·</span>
+                        <span className="text-[10px] text-foreground/60 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
                         {executing && executionStart && (
                           <>
                             <span className="text-[10px] text-muted-foreground/40">·</span>
