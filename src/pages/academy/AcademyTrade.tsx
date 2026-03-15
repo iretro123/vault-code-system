@@ -1120,11 +1120,11 @@ const AcademyTrade = () => {
           {cachedAI && (
             <button
               onClick={() => setStage("insights")}
-              className="w-full border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors"
+              className="w-full border-t border-white/[0.04] border-l-2 border-l-primary/30 hover:bg-white/[0.02] hover:-translate-y-px transition-all duration-100"
             >
               <div className="flex items-center gap-4 px-3 py-1.5">
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-primary/60 animate-pulse shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
                   <span className="text-[9px] text-muted-foreground/40 font-medium">AI</span>
                 </div>
                 <div className="flex items-center gap-4 flex-1 min-w-0">
