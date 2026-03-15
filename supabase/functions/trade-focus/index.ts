@@ -157,7 +157,11 @@ function computeAnalytics(trades: any[], userRules: any): Analytics {
       symbol,
       count: arr.length,
       winRate: winRate(arr),
-      avgR: Math.round(avgField(arr, "risk_reward") * 100) / 100,
+      avgR: Math.round((arr.reduce((s, t) => {
+        const ru = Number(t.risk_used) || 0;
+        const rr = Number(t.risk_reward) || 0;
+        return s + (ru > 0 ? rr / ru : 0);
+      }, 0) / arr.length) * 100) / 100,
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
@@ -184,10 +188,15 @@ function computeAnalytics(trades: any[], userRules: any): Analytics {
   const planned = trades.filter(t => t.plan_id);
   const unplanned = trades.filter(t => !t.plan_id);
 
-  // R-multiple
+  // R-multiple: compute as risk_reward / risk_used for actual R ratio
   const winners = trades.filter(t => t.risk_reward > 0);
   const losers = trades.filter(t => t.risk_reward < 0);
-  const allR = trades.map(t => Number(t.risk_reward) || 0);
+  const computeR = (t: any): number => {
+    const riskUsed = Number(t.risk_used) || 0;
+    const rr = Number(t.risk_reward) || 0;
+    return riskUsed > 0 ? rr / riskUsed : 0;
+  };
+  const allR = trades.map(computeR);
 
   // Rule-breaking correlations
   const ruleBreakers = trades.filter(t => !t.followed_rules);
@@ -242,8 +251,8 @@ function computeAnalytics(trades: any[], userRules: any): Analytics {
     unplannedTradeWinRate: winRate(unplanned),
     plannedCount: planned.length,
     unplannedCount: unplanned.length,
-    avgWinnerR: winners.length ? Math.round(avgField(winners, "risk_reward") * 100) / 100 : 0,
-    avgLoserR: losers.length ? Math.round(avgField(losers, "risk_reward") * 100) / 100 : 0,
+    avgWinnerR: winners.length ? Math.round((winners.reduce((s, t) => s + computeR(t), 0) / winners.length) * 100) / 100 : 0,
+    avgLoserR: losers.length ? Math.round((losers.reduce((s, t) => s + computeR(t), 0) / losers.length) * 100) / 100 : 0,
     bestR: allR.length ? Math.round(Math.max(...allR) * 100) / 100 : 0,
     worstR: allR.length ? Math.round(Math.min(...allR) * 100) / 100 : 0,
     ruleBreakCount: ruleBreakers.length,
