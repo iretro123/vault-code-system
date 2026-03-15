@@ -1011,7 +1011,7 @@ const AcademyTrade = () => {
                             </p>
                           </div>
                           <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Compliance</p>
+                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Rules</p>
                             <p className={cn("text-sm font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
                           </div>
                         </div>
