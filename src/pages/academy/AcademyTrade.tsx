@@ -76,9 +76,8 @@ function StageHeadline({ stage }: { stage: string }) {
   if (!h) return null;
   return (
     <div className="px-0.5 pt-2 pb-1">
-      <h2 className="text-base font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
-      <p className="text-[11px] text-muted-foreground/60 font-medium mt-0.5">{h.subtitle}</p>
-      <p className="text-[10px] text-muted-foreground/40 mt-1 italic">{h.guidance}</p>
+      <h2 className="text-lg font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
+      <p className="text-[11px] text-muted-foreground/70 font-medium mt-0.5">{h.subtitle}</p>
     </div>
   );
 }
