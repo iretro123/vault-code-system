@@ -617,6 +617,8 @@ const AcademyTrade = () => {
                     </div>
                   );
                 })()}
+                {/* Luminous divider */}
+                <div className="h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent mt-2 mb-0.5" />
                 <div className="flex items-center gap-3 mt-0.5">
                   <span className="text-[10px] text-muted-foreground/40">
                     {todayTradeCount}/{totalMaxTrades} trades
