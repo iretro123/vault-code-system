@@ -4,6 +4,7 @@ import { TrendingUp, Plus, ArrowRight, Wallet, CheckCircle2, Circle, ArrowUpRigh
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
+import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 
 export function MyTradesCard() {
   const navigate = useNavigate();
