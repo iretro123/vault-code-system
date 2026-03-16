@@ -1,37 +1,46 @@
 
 
-# Fix: Bridge Coach Tickets into DM Conversations
+# Bridge Coach Tickets into DM Conversations
 
 ## Root Cause
-Two separate messaging systems exist side-by-side:
-- **DMs** (`dm_threads` + `dm_messages`) — the iMessage-style chat
-- **Ask Coach** (`coach_tickets`) — the ticket submission form
 
-When Kenya submits an "Ask Coach" question, it goes into `coach_tickets` only. The inbox notification links to the DM thread, but the actual question text was never inserted as a DM message. Result: you open the thread and see nothing new.
+Two completely separate messaging systems exist:
 
-## Fix
+1. **Coach Tickets** (`coach_tickets` + `coach_ticket_replies`) — used by "Ask RZ (Manual)" in CoachDrawer
+2. **DMs** (`dm_threads` + `dm_messages`) — used by InboxDrawer's `InlineThreadView`
 
-### 1. Database trigger: auto-bridge coach tickets into DMs
+When Kenya submits a ticket, the trigger `inbox_on_new_coach_ticket` creates an `inbox_items` row for you. When you click that inbox notification, `InlineThreadView` opens — but it reads from `dm_messages`, which has nothing because the question went into `coach_tickets`. Empty thread.
 
-Update the existing `inbox_on_new_coach_ticket()` trigger function to also:
-- Find or create a `dm_threads` row for the submitting user
-- Insert the ticket question as a `dm_messages` row in that thread (sender = the student)
-- Link the inbox notification to that DM thread via `dm_thread_id`
+Similarly, when you reply via the admin panel at `/academy/admin`, the trigger `inbox_on_coach_reply` notifies the student with a link to `/academy/my-questions` — but the inbox tries to open a DM thread, not the ticket detail.
 
-This way, when Kenya submits a coach ticket, her question immediately appears as a DM message in her thread, and your inbox notification opens directly to it.
+## Fix: Database Trigger Updates
 
-### 2. Update inbox notification to include `dm_thread_id`
+### 1. Update `inbox_on_new_coach_ticket()` trigger
 
-The current trigger inserts into `inbox_items` without `dm_thread_id`. Adding it ensures `InlineThreadView` resolves the correct thread instantly instead of falling back to a lookup.
+When a student submits a coach ticket:
+- Find or create a `dm_threads` row for that student
+- Insert their question as a `dm_messages` row (sender = the student)
+- Set `dm_thread_id` on the inbox notification so `InlineThreadView` resolves instantly
+
+### 2. Update `inbox_on_coach_reply()` trigger
+
+When admin replies to a ticket:
+- Find or create a `dm_threads` row for the ticket's student
+- Insert the reply as a `dm_messages` row (sender = admin)
+- Set `dm_thread_id` on the inbox notification
+- Update `dm_threads.last_message_at`
 
 ## Result
-When any student submits an "Ask Coach" question:
-1. Their question appears as a message in their DM thread
-2. You get an inbox notification that opens directly to that conversation
-3. You can read what they asked and reply inline — no more missing messages
 
-## What stays the same
-- The `coach_tickets` table still stores the ticket for the admin ticket list
-- The existing DM system, realtime subscriptions, and read receipts all work as-is
-- No UI code changes needed — the `InlineThreadView` already renders `dm_messages` correctly
+- Student submits "Ask RZ" → question appears as a DM message in their thread → you see it in your inbox and can read + reply inline
+- You reply → reply appears as a DM message → student gets inbox notification and sees it in their DM thread
+- Full back-and-forth works through the existing DM UI without any frontend changes
+
+## No UI Code Changes Needed
+
+The `InlineThreadView` component already handles:
+- Resolving threads via `dm_thread_id`
+- Rendering messages from `dm_messages`
+- Sending replies via `sendDmMessage`
+- Real-time updates via Supabase channel subscriptions
 
