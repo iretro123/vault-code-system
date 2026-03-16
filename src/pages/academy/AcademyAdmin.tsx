@@ -34,6 +34,8 @@ interface Ticket {
   screenshot_url: string | null;
   status: string;
   created_at: string;
+  user_display_name: string | null;
+  user_email: string | null;
 }
 
 interface Reply {
