@@ -132,7 +132,26 @@ const AcademyAdmin = () => {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
-    setTickets((data as Ticket[]) || []);
+
+    const raw = (data as any[]) || [];
+    // Batch-fetch profiles for all ticket submitters
+    const userIds = [...new Set(raw.map((t) => t.user_id))];
+    let profileMap: Record<string, { display_name: string | null; email: string | null }> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, email")
+        .in("user_id", userIds);
+      for (const p of (profiles || [])) {
+        profileMap[p.user_id] = { display_name: p.display_name, email: p.email };
+      }
+    }
+
+    setTickets(raw.map((t) => ({
+      ...t,
+      user_display_name: profileMap[t.user_id]?.display_name ?? null,
+      user_email: profileMap[t.user_id]?.email ?? null,
+    })));
     setTicketsLoading(false);
   }, []);
 
