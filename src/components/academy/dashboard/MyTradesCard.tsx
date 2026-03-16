@@ -23,9 +23,11 @@ export function MyTradesCard() {
     refetch();
   }, []);
 
+  const { totalAdjustments } = useBalanceAdjustments();
+
   const accountBalance = (profile as any)?.account_balance ?? 0;
   const balanceSet = accountBalance > 0;
-  const trackedBalance = accountBalance + totalPnl;
+  const trackedBalance = accountBalance + totalAdjustments + totalPnl;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayTrades = entries.filter((e) => e.trade_date === todayStr).length;
