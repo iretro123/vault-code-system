@@ -500,6 +500,33 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_adjustments: {
+        Row: {
+          adjustment_date: string
+          amount: number
+          created_at: string
+          id: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          adjustment_date?: string
+          amount: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          adjustment_date?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       behavior_stats: {
         Row: {
           avg_trades_per_day: number
@@ -2123,6 +2150,7 @@ export type Database = {
           notify_coach_reply: boolean
           notify_live_events: boolean
           notify_new_modules: boolean
+          preferred_alert_channel: string
           session_autopause_minutes: number
           sounds_enabled: boolean
           trading_style: string | null
@@ -2136,6 +2164,7 @@ export type Database = {
           notify_coach_reply?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
+          preferred_alert_channel?: string
           session_autopause_minutes?: number
           sounds_enabled?: boolean
           trading_style?: string | null
@@ -2149,6 +2178,7 @@ export type Database = {
           notify_coach_reply?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
+          preferred_alert_channel?: string
           session_autopause_minutes?: number
           sounds_enabled?: boolean
           trading_style?: string | null

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+export type AlertChannel = "in_app" | "email" | "both";
+
 export interface UserPreferences {
   user_id: string;
   trading_style: string | null;
@@ -13,6 +15,7 @@ export interface UserPreferences {
   notify_coach_reply: boolean;
   notify_live_events: boolean;
   sounds_enabled: boolean;
+  preferred_alert_channel: AlertChannel;
 }
 
 const DEFAULTS: Omit<UserPreferences, "user_id"> = {
@@ -25,6 +28,7 @@ const DEFAULTS: Omit<UserPreferences, "user_id"> = {
   notify_coach_reply: true,
   notify_live_events: true,
   sounds_enabled: true,
+  preferred_alert_channel: "in_app",
 };
 
 export function useUserPreferences() {

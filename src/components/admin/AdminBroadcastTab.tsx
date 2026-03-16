@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Send, Loader2, Clock, CheckCircle2,
   AlertTriangle, FileText, Trash2, RotateCcw,
-  Sparkles, Eye, MessageSquare, Smartphone,
+  Sparkles, Eye, MessageSquare, Smartphone, Mail,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -57,7 +57,7 @@ export function AdminBroadcastTab() {
 
   /* ── Form state ── */
   const [mode] = useState<"motivation_ping">("motivation_ping");
-  const [channel, setChannel] = useState<"in_app" | "sms">("in_app");
+  const [channel, setChannel] = useState<"in_app" | "sms" | "email">("in_app");
   const [smsStatus, setSmsStatus] = useState<{ sent: number; failed: number } | null>(null);
   const [recipientType, setRecipientType] = useState<"all" | "single">("single");
   const [userId, setUserId] = useState("");
@@ -134,8 +134,8 @@ export function AdminBroadcastTab() {
 
   /* ── Send ── */
   const handleSend = async () => {
-    if (channel !== "sms" && !title.trim()) { toast.error("Title is required"); return; }
-    if (channel === "sms" && !body.trim()) { toast.error("Message is required"); return; }
+    if (channel !== "sms" && channel !== "email" && !title.trim()) { toast.error("Title is required"); return; }
+    if ((channel === "sms" || channel === "email") && !body.trim()) { toast.error("Message is required"); return; }
     if (recipientType === "single" && !userId) { toast.error("Select a recipient"); return; }
     if (!user) return;
 
@@ -185,6 +185,41 @@ export function AdminBroadcastTab() {
         status: data.failed === 0 ? "sent" : "partial",
         sent_at: new Date().toISOString(),
         metadata: { sent: data.sent, failed: data.failed } as any,
+      });
+    } else if (channel === "email") {
+      // Send via email edge function
+      const { data, error } = await supabase.functions.invoke("send-broadcast-email", {
+        body: {
+          recipientType,
+          userId: targetUserId,
+          title: title.trim(),
+          body: body.trim(),
+          templateKey,
+        },
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || error?.message || "Email send failed");
+        setSending(false);
+        return;
+      }
+
+      const sentCount = data?.sent ?? 1;
+      const failedCount = data?.failed ?? 0;
+      toast.success(`Email sent to ${sentCount} member${sentCount !== 1 ? "s" : ""}${failedCount ? ` (${failedCount} skipped)` : ""}`);
+
+      await supabase.from("broadcast_messages").insert({
+        sender_id: user!.id,
+        mode,
+        channel: "email",
+        recipient_type: recipientType,
+        recipient_user_id: targetUserId,
+        title: title.trim(),
+        body: body.trim(),
+        template_key: templateKey,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        metadata: { sent: sentCount, failed: failedCount } as any,
       });
     } else {
       // In-app delivery (existing logic)
@@ -360,9 +395,22 @@ export function AdminBroadcastTab() {
                 >
                   <Smartphone className="h-3 w-3" /> SMS (GHL)
                 </button>
+                <button
+                  onClick={() => setChannel("email")}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 ${
+                    channel === "email"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Mail className="h-3 w-3" /> Email
+                </button>
               </div>
               {channel === "sms" && (
                 <p className="text-[10px] text-amber-400/80">⚡ Will send via GHL to members with phone numbers on file</p>
+              )}
+              {channel === "email" && recipientType === "all" && (
+                <p className="text-[10px] text-blue-400/80">📧 Only members who opted into email alerts will receive this</p>
               )}
             </div>
 
@@ -418,11 +466,11 @@ export function AdminBroadcastTab() {
 
             <Button
               onClick={handleSend}
-              disabled={sending || (channel === "sms" ? !body.trim() : !title.trim()) || (recipientType === "single" && !userId)}
+              disabled={sending || (channel === "sms" || channel === "email" ? !body.trim() : !title.trim()) || (recipientType === "single" && !userId)}
               className="gap-1.5"
             >
-              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : channel === "sms" ? <Smartphone className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
-              {channel === "sms" ? "Send SMS" : "Send"}
+              {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : channel === "sms" ? <Smartphone className="h-3.5 w-3.5" /> : channel === "email" ? <Mail className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+              {channel === "sms" ? "Send SMS" : channel === "email" ? "Send Email" : "Send"}
             </Button>
             {smsStatus && (
               <p className="text-xs text-muted-foreground">

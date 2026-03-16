@@ -37,6 +37,8 @@ import { TodayVaultCheckCard } from "@/components/trade-os/TodayVaultCheckCard";
 import { AIFocusCard } from "@/components/trade-os/AIFocusCard";
 import { RecentTradesSection } from "@/components/trade-os/RecentTradesSection";
 import { TrackedBalanceCard } from "@/components/trade-os/TrackedBalanceCard";
+import { BalanceAdjustmentCard } from "@/components/trade-os/BalanceAdjustmentCard";
+import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
@@ -127,6 +129,7 @@ const AcademyTrade = () => {
     last10WinRate, weeklyComplianceRate, bestStreak, allTimeHigh,
   } = useTradeLog();
   const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
+  const { adjustments, totalAdjustments, addAdjustment, removeAdjustment, refetch: refetchAdjustments } = useBalanceAdjustments();
 
   const plannerRef = useRef<HTMLDivElement>(null);
 
@@ -178,8 +181,8 @@ const AcademyTrade = () => {
   const todayTradeCount = useMemo(() => entries.filter((e) => e.trade_date === todayStr).length, [entries, todayStr]);
   const trackedBalance = useMemo(() => {
     if (startingBalance === null) return null;
-    return Math.max(0, startingBalance + totalPnl);
-  }, [startingBalance, totalPnl]);
+    return Math.max(0, startingBalance + totalAdjustments + totalPnl);
+  }, [startingBalance, totalAdjustments, totalPnl]);
 
   const hasData = entries.length > 0;
 
@@ -509,21 +512,35 @@ const AcademyTrade = () => {
               <SectionLabel>Performance</SectionLabel>
               <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
               {equityCurve.length > 1 && startingBalance !== null && (
-                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} winRate={allTimeWinRate} totalTrades={entries.length} />
+                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance + totalAdjustments} winRate={allTimeWinRate} totalTrades={entries.length} />
               )}
             </section>
           )}
           {trackedBalance !== null && (
             <section className="space-y-2.5">
               <SectionLabel>Account</SectionLabel>
-              <TrackedBalanceCard
+              <BalanceAdjustmentCard
                 balance={trackedBalance}
-                showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-                onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-                onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-                showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
-                onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-                onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+                onAddFunds={async (amt, note) => {
+                  const ok = await addAdjustment(amt, note);
+                  if (ok) toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` });
+                  return ok;
+                }}
+                onWithdraw={async (amt, note) => {
+                  const ok = await addAdjustment(-amt, note);
+                  if (ok) toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` });
+                  return ok;
+                }}
+                onReset={async () => {
+                  await handleResetBalance();
+                }}
+                onDeleteAdjustment={async (id) => {
+                  const ok = await removeAdjustment(id);
+                  if (ok) toast({ title: "Adjustment removed" });
+                  return ok;
+                }}
+                adjustments={adjustments}
+                resetting={resetting}
               />
             </section>
           )}
@@ -1232,14 +1249,28 @@ const AcademyTrade = () => {
             {/* Row 3: Tracked Balance + Weekly Review */}
             <div className="grid gap-2 md:grid-cols-2">
               {trackedBalance !== null && (
-                <TrackedBalanceCard
+                <BalanceAdjustmentCard
                   balance={trackedBalance}
-                  showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-                  onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-                  onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-                  showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
-                  onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-                  onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+                  onAddFunds={async (amt, note) => {
+                    const ok = await addAdjustment(amt, note);
+                    if (ok) toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` });
+                    return ok;
+                  }}
+                  onWithdraw={async (amt, note) => {
+                    const ok = await addAdjustment(-amt, note);
+                    if (ok) toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` });
+                    return ok;
+                  }}
+                  onReset={async () => {
+                    await handleResetBalance();
+                  }}
+                  onDeleteAdjustment={async (id) => {
+                    const ok = await removeAdjustment(id);
+                    if (ok) toast({ title: "Adjustment removed" });
+                    return ok;
+                  }}
+                  adjustments={adjustments}
+                  resetting={resetting}
                 />
               )}
               <WeeklyReviewCard hasData={hasData} entries={entries} />
