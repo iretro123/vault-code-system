@@ -278,31 +278,14 @@ const AcademyTrade = () => {
     if (resetInput !== "RESET" || !user) return;
     setResetting(true);
     try {
+      // Clear adjustment history first, then zero the starting balance
+      await clearAllAdjustments();
       const { error } = await supabase.from("profiles").update({ account_balance: 0 }).eq("user_id", user.id);
       if (error) throw error;
       setStartingBalance(null); setShowResetConfirm(false); setResetInput(""); setShowBalanceModal(true);
       toast({ title: "Balance reset", description: "Set a new starting balance to continue tracking." });
     } catch { toast({ title: "Error resetting balance", variant: "destructive" }); }
     finally { setResetting(false); }
-  };
-
-  const handleUpdateBalance = async () => {
-    const newBalance = parseFloat(updateBalanceInput);
-    if (isNaN(newBalance) || newBalance < 0 || !user) return;
-    setUpdatingBalance(true);
-    try {
-      const newStarting = newBalance - totalPnl;
-      const { error } = await supabase.from("profiles").update({ account_balance: newStarting }).eq("user_id", user.id);
-      if (error) throw error;
-      setStartingBalance(newStarting);
-      setShowUpdateBalance(false);
-      setUpdateBalanceInput("");
-      toast({ title: "Balance updated", description: `Now tracking from $${newBalance.toLocaleString()}.` });
-    } catch {
-      toast({ title: "Error updating balance", variant: "destructive" });
-    } finally {
-      setUpdatingBalance(false);
-    }
   };
 
   const handleTradeSubmit = async (data: TradeFormData) => {
