@@ -134,8 +134,8 @@ export function AdminBroadcastTab() {
 
   /* ── Send ── */
   const handleSend = async () => {
-    if (channel !== "sms" && !title.trim()) { toast.error("Title is required"); return; }
-    if (channel === "sms" && !body.trim()) { toast.error("Message is required"); return; }
+    if (channel !== "sms" && channel !== "email" && !title.trim()) { toast.error("Title is required"); return; }
+    if ((channel === "sms" || channel === "email") && !body.trim()) { toast.error("Message is required"); return; }
     if (recipientType === "single" && !userId) { toast.error("Select a recipient"); return; }
     if (!user) return;
 
