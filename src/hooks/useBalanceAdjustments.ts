@@ -59,5 +59,16 @@ export function useBalanceAdjustments() {
     return true;
   }, [user]);
 
-  return { adjustments, loading, totalAdjustments, addAdjustment, removeAdjustment, refetch: fetch };
+  const clearAll = useCallback(async () => {
+    if (!user) return false;
+    const { error } = await supabase
+      .from("balance_adjustments")
+      .delete()
+      .eq("user_id", user.id);
+    if (error) return false;
+    setAdjustments([]);
+    return true;
+  }, [user]);
+
+  return { adjustments, loading, totalAdjustments, addAdjustment, removeAdjustment, clearAll, refetch: fetch };
 }

@@ -1,32 +1,31 @@
 import { useMemo, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip as RechartsTooltip, ReferenceLine } from "recharts";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { format } from "date-fns";
+
+interface Adjustment {
+  date: string;
+  amount: number;
+}
 
 interface EquityCurveCardProps {
   equityCurve: { date: string; balance: number }[];
   startingBalance: number;
   winRate?: number;
   totalTrades?: number;
+  /** Raw adjustments array — spliced by date for accurate historical curve */
+  adjustments?: Adjustment[];
 }
 
 const RANGES = ["1D", "1W", "1M", "3M", "All"] as const;
 type Range = typeof RANGES[number];
 
 const RANGE_DAYS: Record<Range, number | null> = {
-  "1D": 1,
-  "1W": 7,
-  "1M": 30,
-  "3M": 90,
-  "All": null,
+  "1D": 1, "1W": 7, "1M": 30, "3M": 90, "All": null,
 };
 
 const RANGE_LABELS: Record<Range, string> = {
-  "1D": "Today",
-  "1W": "Past Week",
-  "1M": "Past Month",
-  "3M": "Past 3 Months",
-  "All": "All Time",
+  "1D": "Today", "1W": "Past Week", "1M": "Past Month", "3M": "Past 3 Months", "All": "All Time",
 };
 
 const COLOR_POS = "hsl(160, 84%, 39%)";
@@ -34,67 +33,94 @@ const COLOR_NEG = "hsl(0, 72%, 51%)";
 
 function formatTickDate(dateStr: string) {
   if (!dateStr) return "";
-  try {
-    return format(new Date(dateStr + "T12:00:00"), "MMM d");
-  } catch {
-    return dateStr;
+  try { return format(new Date(dateStr + "T12:00:00"), "MMM d"); } catch { return dateStr; }
+}
+
+/** Sum all adjustment amounts where adjustment date <= given date */
+function sumAdjustmentsToDate(adjustments: Adjustment[], dateStr: string): number {
+  let total = 0;
+  for (const adj of adjustments) {
+    if (adj.date <= dateStr) total += adj.amount;
   }
+  return total;
+}
+
+/** Find adjustment on exact date */
+function adjustmentOnDate(adjustments: Adjustment[], dateStr: string): number {
+  let total = 0;
+  for (const adj of adjustments) {
+    if (adj.date === dateStr) total += adj.amount;
+  }
+  return total;
 }
 
 function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
-  const { date, balance, prevBalance } = payload[0].payload;
-  const change = prevBalance != null ? balance - prevBalance : null;
-  const isUp = change != null && change >= 0;
+  const { date, balance, tradePnlChange, adjustmentAmount } = payload[0].payload;
 
   return (
     <div className="bg-black/80 backdrop-blur-sm border border-white/10 rounded-lg px-3 py-2 shadow-xl space-y-0.5">
       {date && (
         <p className="text-[10px] text-muted-foreground/60">
-          {(() => {
-            try {
-              return format(new Date(date + "T12:00:00"), "EEE, MMM d");
-            } catch {
-              return date;
-            }
-          })()}
+          {(() => { try { return format(new Date(date + "T12:00:00"), "EEE, MMM d"); } catch { return date; } })()}
         </p>
       )}
       <p className="text-sm font-semibold tabular-nums text-foreground">
         ${Math.round(balance).toLocaleString()}
       </p>
-      {change != null && (
-        <p className={`text-[11px] font-medium tabular-nums ${isUp ? "text-emerald-400" : "text-destructive"}`}>
-          {isUp ? "+" : ""}{Math.round(change).toLocaleString()}
+      {tradePnlChange != null && tradePnlChange !== 0 && (
+        <p className={`text-[11px] font-medium tabular-nums ${tradePnlChange >= 0 ? "text-emerald-400" : "text-destructive"}`}>
+          Trade: {tradePnlChange >= 0 ? "+" : ""}{Math.round(tradePnlChange).toLocaleString()}
+        </p>
+      )}
+      {adjustmentAmount != null && adjustmentAmount !== 0 && (
+        <p className="text-[11px] font-medium tabular-nums text-blue-400">
+          {adjustmentAmount > 0 ? "Deposit" : "Withdrawal"}: {adjustmentAmount > 0 ? "+" : ""}{Math.round(adjustmentAmount).toLocaleString()}
         </p>
       )}
     </div>
   );
 }
 
-export function EquityCurveCard({ equityCurve, startingBalance, winRate, totalTrades }: EquityCurveCardProps) {
+export function EquityCurveCard({ equityCurve, startingBalance, winRate, totalTrades, adjustments = [] }: EquityCurveCardProps) {
   const [range, setRange] = useState<Range>("All");
 
+  // Build equity data with time-aware adjustment splicing
+  // Each point: balance = startingBalance + adjustmentsToDate + cumulativeTradePnl
   const allData = useMemo(() => {
-    const seed = { date: "", balance: startingBalance, prevBalance: null as number | null };
-    let prev = startingBalance;
+    const seed = {
+      date: "",
+      balance: startingBalance,
+      tradePnlChange: null as number | null,
+      adjustmentAmount: null as number | null,
+    };
+
+    let prevTradePnl = 0;
     const mapped = equityCurve.map((p) => {
-      const bal = startingBalance + p.balance;
-      const pt = { date: p.date, balance: bal, prevBalance: prev };
-      prev = bal;
-      return pt;
+      const cumulativeTradePnl = p.balance; // equityCurve[].balance is cumulative P/L from trades
+      const adjToDate = sumAdjustmentsToDate(adjustments, p.date);
+      const adjOnDate = adjustmentOnDate(adjustments, p.date);
+      const bal = startingBalance + adjToDate + cumulativeTradePnl;
+      const tradeDelta = cumulativeTradePnl - prevTradePnl;
+      prevTradePnl = cumulativeTradePnl;
+
+      return {
+        date: p.date,
+        balance: bal,
+        tradePnlChange: tradeDelta,
+        adjustmentAmount: adjOnDate !== 0 ? adjOnDate : null,
+      };
     });
+
     return [seed, ...mapped];
-  }, [equityCurve, startingBalance]);
+  }, [equityCurve, startingBalance, adjustments]);
 
   const filteredData = useMemo(() => {
     const days = RANGE_DAYS[range];
     if (!days || allData.length <= 1) return allData;
-
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
-
     const inRange = allData.filter((pt, i) => i === 0 || !pt.date || pt.date >= cutoffStr);
     if (inRange.length <= 1) return allData;
     return inRange;
@@ -106,30 +132,22 @@ export function EquityCurveCard({ equityCurve, startingBalance, winRate, totalTr
   const pctChange = rangeStart > 0 ? (totalChange / rangeStart) * 100 : 0;
   const isPositive = totalChange >= 0;
 
-  const { high, low, maxDrawdown, avgTrade } = useMemo(() => {
+  const { high, low, maxDrawdown } = useMemo(() => {
     let hi = -Infinity, lo = Infinity, peak = -Infinity, maxDd = 0;
-    let sumChange = 0, changeCount = 0;
-    for (let i = 0; i < filteredData.length; i++) {
-      const pt = filteredData[i];
+    for (const pt of filteredData) {
       if (pt.balance > hi) hi = pt.balance;
       if (pt.balance < lo) lo = pt.balance;
       if (pt.balance > peak) peak = pt.balance;
       const dd = peak > 0 ? ((peak - pt.balance) / peak) * 100 : 0;
       if (dd > maxDd) maxDd = dd;
-      if (i > 0 && pt.prevBalance != null) {
-        sumChange += pt.balance - pt.prevBalance;
-        changeCount++;
-      }
     }
     return {
       high: hi === -Infinity ? startingBalance : hi,
       low: lo === Infinity ? startingBalance : lo,
       maxDrawdown: maxDd,
-      avgTrade: changeCount > 0 ? sumChange / changeCount : 0,
     };
   }, [filteredData, startingBalance]);
 
-  // Date range context
   const dateRangeLabel = useMemo(() => {
     const dates = filteredData.filter((d) => d.date);
     if (dates.length === 0) return "";
@@ -139,21 +157,18 @@ export function EquityCurveCard({ equityCurve, startingBalance, winRate, totalTr
       const f = format(new Date(first + "T12:00:00"), "MMM d");
       const l = format(new Date(last + "T12:00:00"), "MMM d");
       return f === l ? f : `${f} – ${l}`;
-    } catch {
-      return "";
-    }
+    } catch { return ""; }
   }, [filteredData]);
 
   const strokeColor = isPositive ? COLOR_POS : COLOR_NEG;
   const gradId = "eq-grad-" + (isPositive ? "up" : "dn");
 
-  // Stats array
   const stats = [
     { label: "High", value: `$${Math.round(high).toLocaleString()}` },
     { label: "Low", value: `$${Math.round(low).toLocaleString()}` },
     { label: "Drawdown", value: `${maxDrawdown.toFixed(1)}%` },
     ...(winRate != null ? [{ label: "Win Rate", value: `${winRate}%` }] : []),
-    ...(totalTrades != null ? [{ label: "Trades", value: String(totalTrades) }] : winRate == null ? [{ label: "Avg Trade", value: `${avgTrade >= 0 ? "+" : ""}$${Math.round(Math.abs(avgTrade)).toLocaleString()}` }] : []),
+    ...(totalTrades != null ? [{ label: "Trades", value: String(totalTrades) }] : []),
   ];
 
   return (

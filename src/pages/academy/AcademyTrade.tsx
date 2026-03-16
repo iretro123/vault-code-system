@@ -36,7 +36,7 @@ import { GettingStartedBanner } from "@/components/trade-os/GettingStartedBanner
 import { TodayVaultCheckCard } from "@/components/trade-os/TodayVaultCheckCard";
 import { AIFocusCard } from "@/components/trade-os/AIFocusCard";
 import { RecentTradesSection } from "@/components/trade-os/RecentTradesSection";
-import { TrackedBalanceCard } from "@/components/trade-os/TrackedBalanceCard";
+
 import { BalanceAdjustmentCard } from "@/components/trade-os/BalanceAdjustmentCard";
 import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
@@ -129,7 +129,7 @@ const AcademyTrade = () => {
     last10WinRate, weeklyComplianceRate, bestStreak, allTimeHigh,
   } = useTradeLog();
   const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
-  const { adjustments, totalAdjustments, addAdjustment, removeAdjustment, refetch: refetchAdjustments } = useBalanceAdjustments();
+  const { adjustments, totalAdjustments, addAdjustment, removeAdjustment, clearAll: clearAllAdjustments, refetch: refetchAdjustments } = useBalanceAdjustments();
 
   const plannerRef = useRef<HTMLDivElement>(null);
 
@@ -138,9 +138,6 @@ const AcademyTrade = () => {
   const [balanceSkipped, setBalanceSkipped] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showUpdateBalance, setShowUpdateBalance] = useState(false);
-  const [updateBalanceInput, setUpdateBalanceInput] = useState("");
-  const [updatingBalance, setUpdatingBalance] = useState(false);
   const [resetInput, setResetInput] = useState("");
   const [resetting, setResetting] = useState(false);
   const [showLogTrade, setShowLogTrade] = useState(false);
@@ -281,31 +278,14 @@ const AcademyTrade = () => {
     if (resetInput !== "RESET" || !user) return;
     setResetting(true);
     try {
+      // Clear adjustment history first, then zero the starting balance
+      await clearAllAdjustments();
       const { error } = await supabase.from("profiles").update({ account_balance: 0 }).eq("user_id", user.id);
       if (error) throw error;
       setStartingBalance(null); setShowResetConfirm(false); setResetInput(""); setShowBalanceModal(true);
       toast({ title: "Balance reset", description: "Set a new starting balance to continue tracking." });
     } catch { toast({ title: "Error resetting balance", variant: "destructive" }); }
     finally { setResetting(false); }
-  };
-
-  const handleUpdateBalance = async () => {
-    const newBalance = parseFloat(updateBalanceInput);
-    if (isNaN(newBalance) || newBalance < 0 || !user) return;
-    setUpdatingBalance(true);
-    try {
-      const newStarting = newBalance - totalPnl;
-      const { error } = await supabase.from("profiles").update({ account_balance: newStarting }).eq("user_id", user.id);
-      if (error) throw error;
-      setStartingBalance(newStarting);
-      setShowUpdateBalance(false);
-      setUpdateBalanceInput("");
-      toast({ title: "Balance updated", description: `Now tracking from $${newBalance.toLocaleString()}.` });
-    } catch {
-      toast({ title: "Error updating balance", variant: "destructive" });
-    } finally {
-      setUpdatingBalance(false);
-    }
   };
 
   const handleTradeSubmit = async (data: TradeFormData) => {
@@ -512,7 +492,7 @@ const AcademyTrade = () => {
               <SectionLabel>Performance</SectionLabel>
               <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
               {equityCurve.length > 1 && startingBalance !== null && (
-                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance + totalAdjustments} winRate={allTimeWinRate} totalTrades={entries.length} />
+                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} adjustments={adjustments.map(a => ({ date: a.adjustment_date, amount: Number(a.amount) }))} winRate={allTimeWinRate} totalTrades={entries.length} />
               )}
             </section>
           )}
@@ -1235,7 +1215,7 @@ const AcademyTrade = () => {
 
             {/* Row 1: Equity Curve — full width */}
             {equityCurve.length > 1 && startingBalance !== null && (
-              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} winRate={allTimeWinRate} totalTrades={entries.length} />
+              <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} adjustments={adjustments.map(a => ({ date: a.adjustment_date, amount: Number(a.amount) }))} winRate={allTimeWinRate} totalTrades={entries.length} />
             )}
 
             {/* Row 2: Performance Breakdown + Recent Trades */}
