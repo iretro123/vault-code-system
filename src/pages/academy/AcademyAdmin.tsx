@@ -34,6 +34,8 @@ interface Ticket {
   screenshot_url: string | null;
   status: string;
   created_at: string;
+  user_display_name: string | null;
+  user_email: string | null;
 }
 
 interface Reply {
@@ -130,7 +132,26 @@ const AcademyAdmin = () => {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
-    setTickets((data as Ticket[]) || []);
+
+    const raw = (data as any[]) || [];
+    // Batch-fetch profiles for all ticket submitters
+    const userIds = [...new Set(raw.map((t) => t.user_id))];
+    let profileMap: Record<string, { display_name: string | null; email: string | null }> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, email")
+        .in("user_id", userIds);
+      for (const p of (profiles || [])) {
+        profileMap[p.user_id] = { display_name: p.display_name, email: p.email };
+      }
+    }
+
+    setTickets(raw.map((t) => ({
+      ...t,
+      user_display_name: profileMap[t.user_id]?.display_name ?? null,
+      user_email: profileMap[t.user_id]?.email ?? null,
+    })));
     setTicketsLoading(false);
   }, []);
 
@@ -353,6 +374,12 @@ const AcademyAdmin = () => {
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5">{statusIcon(t.status)}</div>
                         <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground mb-0.5">
+                            From: {t.user_display_name || t.user_email || "Unknown"}
+                            {t.user_display_name && t.user_email && (
+                              <span className="font-normal text-muted-foreground/60 ml-1">({t.user_email})</span>
+                            )}
+                          </p>
                           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <span className="text-[10px] font-semibold uppercase tracking-wider bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.category}</span>
                             {t.urgency === "priority" && (
