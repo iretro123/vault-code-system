@@ -37,6 +37,8 @@ import { TodayVaultCheckCard } from "@/components/trade-os/TodayVaultCheckCard";
 import { AIFocusCard } from "@/components/trade-os/AIFocusCard";
 import { RecentTradesSection } from "@/components/trade-os/RecentTradesSection";
 import { TrackedBalanceCard } from "@/components/trade-os/TrackedBalanceCard";
+import { BalanceAdjustmentCard } from "@/components/trade-os/BalanceAdjustmentCard";
+import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
