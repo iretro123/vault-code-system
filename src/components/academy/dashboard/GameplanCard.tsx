@@ -96,11 +96,6 @@ const CONSISTENCY_TASKS: Omit<TaskItem, "done">[] = [
   { id: "consistency-no-trade", title: "Mark no-trade day (if no setup)" },
 ];
 
-const MOCK_RECENT = [
-  { id: "mock-1", title: "Claim your role", date: "Mar 1" },
-  { id: "mock-2", title: "Watch first lesson", date: "Mar 2" },
-  { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
-];
 
 export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
@@ -139,7 +134,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   }, []);
 
   const recentItems = useMemo(() => {
-    const entries = Object.entries(completedMap)
+    return Object.entries(completedMap)
       .filter(([id]) => allTasksLookup[id])
       .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime())
       .slice(0, 5)
@@ -148,7 +143,6 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
         title: allTasksLookup[id],
         date: new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       }));
-    return entries.length > 0 ? entries : MOCK_RECENT;
   }, [completedMap, allTasksLookup]);
 
   const handleToggle = useCallback((taskId: string) => {
@@ -246,13 +240,15 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
             <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
               Recently Completed
             </p>
-            {recentItems.map((item) => (
+            {recentItems.length > 0 ? recentItems.map((item) => (
               <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Check className="h-3 w-3 text-emerald-400/60" />
                 <span className="flex-1 truncate">{item.title}</span>
                 <span className="text-[10px] tabular-nums">{item.date}</span>
               </div>
-            ))}
+            )) : (
+              <p className="text-xs text-muted-foreground/50">No activity yet — complete your first task to see it here.</p>
+            )}
           </div>
         </>
       )}
