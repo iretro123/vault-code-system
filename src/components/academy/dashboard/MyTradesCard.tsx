@@ -4,6 +4,7 @@ import { TrendingUp, Plus, ArrowRight, Wallet, CheckCircle2, Circle, ArrowUpRigh
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useTradeLog } from "@/hooks/useTradeLog";
+import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 
 export function MyTradesCard() {
   const navigate = useNavigate();
@@ -22,9 +23,11 @@ export function MyTradesCard() {
     refetch();
   }, []);
 
+  const { totalAdjustments } = useBalanceAdjustments();
+
   const accountBalance = (profile as any)?.account_balance ?? 0;
   const balanceSet = accountBalance > 0;
-  const trackedBalance = accountBalance + totalPnl;
+  const trackedBalance = accountBalance + totalAdjustments + totalPnl;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayTrades = entries.filter((e) => e.trade_date === todayStr).length;
