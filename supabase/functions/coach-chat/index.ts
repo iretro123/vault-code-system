@@ -121,6 +121,7 @@ serve(async (req) => {
       lessonProgressRes,
       journalRes,
       profileRes,
+      adjustmentsRes,
     ] = await Promise.all([
       serviceClient
         .from("academy_modules")
@@ -167,6 +168,10 @@ serve(async (req) => {
         .select("display_name, account_balance, discipline_score, academy_experience, role_level")
         .eq("user_id", user.id)
         .maybeSingle(),
+      serviceClient
+        .from("balance_adjustments")
+        .select("amount")
+        .eq("user_id", user.id),
     ]);
 
     const contextErrors = [
@@ -179,6 +184,7 @@ serve(async (req) => {
       lessonProgressRes.error,
       journalRes.error,
       profileRes.error,
+      adjustmentsRes.error,
     ].filter(Boolean);
 
     if (contextErrors.length > 0) {
@@ -194,6 +200,7 @@ serve(async (req) => {
     const lessonProgress = (lessonProgressRes.data || []) as any[];
     const journals = (journalRes.data || []) as any[];
     const profile = profileRes.data as any;
+    const totalAdjustments = ((adjustmentsRes.data || []) as any[]).reduce((sum, a) => sum + Number(a.amount || 0), 0);
 
     // Build curriculum context
     const lessonsByModule = new Map<string, any[]>();
@@ -227,8 +234,8 @@ serve(async (req) => {
         const ru = Number(t.risk_used || 0);
         return sum + (rr * ru);
       }, 0);
-      const liveBalance = startingBalance + tradePnlSum;
-      studentContext += `Account Balance: $${liveBalance.toFixed(2)} (starting: $${startingBalance.toFixed(2)}, trade P/L: ${tradePnlSum >= 0 ? "+" : ""}$${tradePnlSum.toFixed(2)})\n`;
+      const liveBalance = startingBalance + totalAdjustments + tradePnlSum;
+      studentContext += `Account Balance: $${liveBalance.toFixed(2)} (starting: $${startingBalance.toFixed(2)}, deposits/withdrawals: ${totalAdjustments >= 0 ? "+" : ""}$${totalAdjustments.toFixed(2)}, trade P/L: ${tradePnlSum >= 0 ? "+" : ""}$${tradePnlSum.toFixed(2)})\n`;
       if (profile.discipline_score !== null && profile.discipline_score !== undefined) {
         studentContext += `Discipline Score: ${profile.discipline_score}/100\n`;
       }
