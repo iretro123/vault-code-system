@@ -570,6 +570,38 @@ const AcademyTrade = () => {
     <>
       <div className="px-3 md:px-5 pb-6 space-y-1.5 max-w-6xl pt-2">
 
+        {/* ══════ TRADE OS IDENTITY ══════ */}
+        <div className="pt-4 pb-2 px-1">
+          <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-[0.18em] text-primary px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 shadow-[0_0_12px_hsl(var(--primary)/0.15)]">
+            Trade OS
+          </span>
+          <h1 className="text-2xl md:text-[32px] font-bold text-foreground mt-2.5 tracking-tight leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
+            Your Command Center
+          </h1>
+          <div className="flex items-center gap-2 mt-2">
+            {(["Plan", "Live", "Review", "Insights"] as const).map((stage, i) => {
+              const isActive = activeStage === stage.toLowerCase();
+              return (
+                <span key={stage} className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "text-xs font-medium transition-colors",
+                      isActive
+                        ? "text-primary font-semibold"
+                        : "text-muted-foreground/40"
+                    )}
+                    style={isActive ? { textShadow: "0 0 10px hsl(var(--primary) / 0.5)" } : undefined}
+                  >
+                    {stage}
+                  </span>
+                  {i < 3 && <span className="text-muted-foreground/20 text-xs">→</span>}
+                </span>
+              );
+            })}
+          </div>
+          <div className="mt-3 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+        </div>
+
         {/* ══════ WELCOME HERO ══════ */}
         {showMetrics && (
           <div className="vault-os-card p-4 md:p-5" style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.06), transparent 70%), hsl(var(--card))" }}>
