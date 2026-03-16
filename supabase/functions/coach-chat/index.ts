@@ -121,6 +121,7 @@ serve(async (req) => {
       lessonProgressRes,
       journalRes,
       profileRes,
+      adjustmentsRes,
     ] = await Promise.all([
       serviceClient
         .from("academy_modules")
@@ -167,6 +168,10 @@ serve(async (req) => {
         .select("display_name, account_balance, discipline_score, academy_experience, role_level")
         .eq("user_id", user.id)
         .maybeSingle(),
+      serviceClient
+        .from("balance_adjustments")
+        .select("amount")
+        .eq("user_id", user.id),
     ]);
 
     const contextErrors = [
