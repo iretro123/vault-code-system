@@ -85,29 +85,53 @@ function CustomTooltip({ active, payload }: any) {
 export function EquityCurveCard({ equityCurve, startingBalance, winRate, totalTrades, adjustments = [] }: EquityCurveCardProps) {
   const [range, setRange] = useState<Range>("All");
 
-  // Build equity data with time-aware adjustment splicing
-  // Each point: balance = startingBalance + adjustmentsToDate + cumulativeTradePnl
+  // Build continuous equity data from first activity to today
   const allData = useMemo(() => {
-    const seed = {
-      date: "",
-      balance: startingBalance,
-      tradePnlChange: null as number | null,
-      adjustmentAmount: null as number | null,
-    };
+    const todayStr = new Date().toISOString().slice(0, 10);
 
-    let prevTradePnl = 0;
-    const mapped = equityCurve.map((p) => {
-      const cumulativeTradePnl = p.balance; // equityCurve[].balance is cumulative P/L from trades
-      const adjToDate = sumAdjustmentsToDate(adjustments, p.date);
-      const adjOnDate = adjustmentOnDate(adjustments, p.date);
+    // Build a map of date → cumulative trade P/L from equityCurve
+    const tradePnlByDate = new Map<string, number>();
+    for (const p of equityCurve) {
+      tradePnlByDate.set(p.date, p.balance); // cumulative P/L
+    }
+
+    // Collect all unique dates from trades + adjustments
+    const allDatesSet = new Set<string>();
+    for (const p of equityCurve) allDatesSet.add(p.date);
+    for (const a of adjustments) allDatesSet.add(a.date);
+    allDatesSet.add(todayStr);
+
+    // Sort dates oldest first
+    const sortedDates = Array.from(allDatesSet).sort();
+    if (sortedDates.length === 0) return [{ date: "", balance: startingBalance, tradePnlChange: null as number | null, adjustmentAmount: null as number | null }];
+
+    // Fill calendar gaps between first date and today
+    const filledDates: string[] = [];
+    const first = new Date(sortedDates[0] + "T12:00:00");
+    const last = new Date(todayStr + "T12:00:00");
+    for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
+      filledDates.push(d.toISOString().slice(0, 10));
+    }
+
+    // Build continuous curve
+    const seed = { date: "", balance: startingBalance, tradePnlChange: null as number | null, adjustmentAmount: null as number | null };
+    let prevCumulativePnl = 0;
+    let lastKnownCumulativePnl = 0;
+
+    const mapped = filledDates.map((date) => {
+      const cumulativeTradePnl = tradePnlByDate.has(date) ? tradePnlByDate.get(date)! : lastKnownCumulativePnl;
+      if (tradePnlByDate.has(date)) lastKnownCumulativePnl = cumulativeTradePnl;
+
+      const adjToDate = sumAdjustmentsToDate(adjustments, date);
+      const adjOnDate = adjustmentOnDate(adjustments, date);
       const bal = startingBalance + adjToDate + cumulativeTradePnl;
-      const tradeDelta = cumulativeTradePnl - prevTradePnl;
-      prevTradePnl = cumulativeTradePnl;
+      const tradeDelta = cumulativeTradePnl - prevCumulativePnl;
+      prevCumulativePnl = cumulativeTradePnl;
 
       return {
-        date: p.date,
+        date,
         balance: bal,
-        tradePnlChange: tradeDelta,
+        tradePnlChange: tradeDelta !== 0 ? tradeDelta : null,
         adjustmentAmount: adjOnDate !== 0 ? adjOnDate : null,
       };
     });

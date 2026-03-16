@@ -1233,20 +1233,30 @@ const AcademyTrade = () => {
                   balance={trackedBalance}
                   onAddFunds={async (amt, note) => {
                     const ok = await addAdjustment(amt, note);
-                    if (ok) toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` });
+                    if (ok) {
+                      toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` });
+                      refetchTrades();
+                    }
                     return ok;
                   }}
                   onWithdraw={async (amt, note) => {
                     const ok = await addAdjustment(-amt, note);
-                    if (ok) toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` });
+                    if (ok) {
+                      toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` });
+                      refetchTrades();
+                    }
                     return ok;
                   }}
                   onReset={async () => {
                     await handleResetBalance();
+                    refetchTrades();
                   }}
                   onDeleteAdjustment={async (id) => {
                     const ok = await removeAdjustment(id);
-                    if (ok) toast({ title: "Adjustment removed" });
+                    if (ok) {
+                      toast({ title: "Adjustment removed" });
+                      refetchTrades();
+                    }
                     return ok;
                   }}
                   adjustments={adjustments}
