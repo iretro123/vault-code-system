@@ -96,11 +96,6 @@ const CONSISTENCY_TASKS: Omit<TaskItem, "done">[] = [
   { id: "consistency-no-trade", title: "Mark no-trade day (if no setup)" },
 ];
 
-const MOCK_RECENT = [
-  { id: "mock-1", title: "Claim your role", date: "Mar 1" },
-  { id: "mock-2", title: "Watch first lesson", date: "Mar 2" },
-  { id: "mock-3", title: "Set your risk rules", date: "Mar 3" },
-];
 
 export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
