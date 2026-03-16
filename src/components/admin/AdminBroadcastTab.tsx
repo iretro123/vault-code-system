@@ -186,6 +186,41 @@ export function AdminBroadcastTab() {
         sent_at: new Date().toISOString(),
         metadata: { sent: data.sent, failed: data.failed } as any,
       });
+    } else if (channel === "email") {
+      // Send via email edge function
+      const { data, error } = await supabase.functions.invoke("send-broadcast-email", {
+        body: {
+          recipientType,
+          userId: targetUserId,
+          title: title.trim(),
+          body: body.trim(),
+          templateKey,
+        },
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || error?.message || "Email send failed");
+        setSending(false);
+        return;
+      }
+
+      const sentCount = data?.sent ?? 1;
+      const failedCount = data?.failed ?? 0;
+      toast.success(`Email sent to ${sentCount} member${sentCount !== 1 ? "s" : ""}${failedCount ? ` (${failedCount} skipped)` : ""}`);
+
+      await supabase.from("broadcast_messages").insert({
+        sender_id: user!.id,
+        mode,
+        channel: "email",
+        recipient_type: recipientType,
+        recipient_user_id: targetUserId,
+        title: title.trim(),
+        body: body.trim(),
+        template_key: templateKey,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        metadata: { sent: sentCount, failed: failedCount } as any,
+      });
     } else {
       // In-app delivery (existing logic)
       if (mode === "motivation_ping") {
