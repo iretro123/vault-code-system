@@ -184,6 +184,7 @@ serve(async (req) => {
       lessonProgressRes.error,
       journalRes.error,
       profileRes.error,
+      adjustmentsRes.error,
     ].filter(Boolean);
 
     if (contextErrors.length > 0) {
@@ -199,6 +200,7 @@ serve(async (req) => {
     const lessonProgress = (lessonProgressRes.data || []) as any[];
     const journals = (journalRes.data || []) as any[];
     const profile = profileRes.data as any;
+    const totalAdjustments = ((adjustmentsRes.data || []) as any[]).reduce((sum, a) => sum + Number(a.amount || 0), 0);
 
     // Build curriculum context
     const lessonsByModule = new Map<string, any[]>();
