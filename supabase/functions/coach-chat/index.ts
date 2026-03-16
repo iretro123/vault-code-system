@@ -234,8 +234,8 @@ serve(async (req) => {
         const ru = Number(t.risk_used || 0);
         return sum + (rr * ru);
       }, 0);
-      const liveBalance = startingBalance + tradePnlSum;
-      studentContext += `Account Balance: $${liveBalance.toFixed(2)} (starting: $${startingBalance.toFixed(2)}, trade P/L: ${tradePnlSum >= 0 ? "+" : ""}$${tradePnlSum.toFixed(2)})\n`;
+      const liveBalance = startingBalance + totalAdjustments + tradePnlSum;
+      studentContext += `Account Balance: $${liveBalance.toFixed(2)} (starting: $${startingBalance.toFixed(2)}, deposits/withdrawals: ${totalAdjustments >= 0 ? "+" : ""}$${totalAdjustments.toFixed(2)}, trade P/L: ${tradePnlSum >= 0 ? "+" : ""}$${tradePnlSum.toFixed(2)})\n`;
       if (profile.discipline_score !== null && profile.discipline_score !== undefined) {
         studentContext += `Discipline Score: ${profile.discipline_score}/100\n`;
       }
