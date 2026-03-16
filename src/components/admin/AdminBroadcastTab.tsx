@@ -360,9 +360,22 @@ export function AdminBroadcastTab() {
                 >
                   <Smartphone className="h-3 w-3" /> SMS (GHL)
                 </button>
+                <button
+                  onClick={() => setChannel("email")}
+                  className={`px-3 py-1.5 rounded-md border text-xs transition-colors flex items-center gap-1.5 ${
+                    channel === "email"
+                      ? "border-primary/40 bg-primary/[0.08] text-primary"
+                      : "border-white/[0.06] text-muted-foreground hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <Mail className="h-3 w-3" /> Email
+                </button>
               </div>
               {channel === "sms" && (
                 <p className="text-[10px] text-amber-400/80">⚡ Will send via GHL to members with phone numbers on file</p>
+              )}
+              {channel === "email" && recipientType === "all" && (
+                <p className="text-[10px] text-blue-400/80">📧 Only members who opted into email alerts will receive this</p>
               )}
             </div>
 
