@@ -240,13 +240,15 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
             <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
               Recently Completed
             </p>
-            {recentItems.map((item) => (
+            {recentItems.length > 0 ? recentItems.map((item) => (
               <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Check className="h-3 w-3 text-emerald-400/60" />
                 <span className="flex-1 truncate">{item.title}</span>
                 <span className="text-[10px] tabular-nums">{item.date}</span>
               </div>
-            ))}
+            )) : (
+              <p className="text-xs text-muted-foreground/50">No activity yet — complete your first task to see it here.</p>
+            )}
           </div>
         </>
       )}
