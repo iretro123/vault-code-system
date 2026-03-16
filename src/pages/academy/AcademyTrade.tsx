@@ -512,7 +512,7 @@ const AcademyTrade = () => {
               <SectionLabel>Performance</SectionLabel>
               <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
               {equityCurve.length > 1 && startingBalance !== null && (
-                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} winRate={allTimeWinRate} totalTrades={entries.length} />
+                <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance + totalAdjustments} winRate={allTimeWinRate} totalTrades={entries.length} />
               )}
             </section>
           )}
