@@ -129,7 +129,7 @@ const AcademyTrade = () => {
     last10WinRate, weeklyComplianceRate, bestStreak, allTimeHigh,
   } = useTradeLog();
   const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
-  const { adjustments, totalAdjustments, addAdjustment, removeAdjustment, refetch: refetchAdjustments } = useBalanceAdjustments();
+  const { adjustments, totalAdjustments, addAdjustment, removeAdjustment, clearAll: clearAllAdjustments, refetch: refetchAdjustments } = useBalanceAdjustments();
 
   const plannerRef = useRef<HTMLDivElement>(null);
 
