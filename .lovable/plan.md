@@ -120,3 +120,21 @@
 ### 10. Personal Best Markers ✅
 - `allTimeHigh` computed from equity curve
 - Gold "★ New Personal Best" badge appears in hero when balance ≥ ATH
+
+## Email Alerts + Balance Adjustments — IN PROGRESS
+
+### Feature 1: Email Channel for Broadcasts ✅
+- Added `preferred_alert_channel` column to `user_preferences` (values: `in_app`, `email`, `both`)
+- Settings → Notifications: New "Alert Channel" picker (In-App Only / Email Only / Both)
+- Admin Broadcast tab: Added "Email" channel alongside In-App and SMS
+- `send-broadcast-email` edge function: preference-aware filtering (checks `notifications_enabled`, category toggles, and `preferred_alert_channel`)
+- ⚠️ **Email domain not yet configured** — emails are logged but not sent until domain setup is complete
+
+### Feature 2: Balance Adjustments (Deposit/Withdrawal Tracking) ✅
+- Created `balance_adjustments` table with RLS (users CRUD own rows)
+- `useBalanceAdjustments` hook: fetches, adds, removes adjustments; computes `totalAdjustments`
+- Updated balance formula: `Live Balance = starting_balance + totalAdjustments + totalPnl`
+- Replaced `TrackedBalanceCard` with `BalanceAdjustmentCard`: Add Funds (+) / Withdraw (−) buttons
+- Collapsible adjustment history with delete capability
+- Equity curve baseline updated to `startingBalance + totalAdjustments`
+- Trade stats (win rate, P/L) remain purely based on `trade_entries` — unaffected by deposits/withdrawals
