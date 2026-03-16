@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Send, Loader2, Clock, CheckCircle2,
   AlertTriangle, FileText, Trash2, RotateCcw,
-  Sparkles, Eye, MessageSquare, Smartphone,
+  Sparkles, Eye, MessageSquare, Smartphone, Mail,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
