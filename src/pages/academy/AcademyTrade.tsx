@@ -519,14 +519,28 @@ const AcademyTrade = () => {
           {trackedBalance !== null && (
             <section className="space-y-2.5">
               <SectionLabel>Account</SectionLabel>
-              <TrackedBalanceCard
+              <BalanceAdjustmentCard
                 balance={trackedBalance}
-                showResetConfirm={showResetConfirm} resetInput={resetInput} resetting={resetting}
-                onToggleReset={() => { setShowResetConfirm(!showResetConfirm); setResetInput(""); setShowUpdateBalance(false); }}
-                onResetInputChange={setResetInput} onConfirmReset={handleResetBalance}
-                showUpdateBalance={showUpdateBalance} updateBalanceInput={updateBalanceInput} updatingBalance={updatingBalance}
-                onToggleUpdate={() => { setShowUpdateBalance(!showUpdateBalance); setUpdateBalanceInput(trackedBalance ? String(Math.round(trackedBalance)) : ""); setShowResetConfirm(false); }}
-                onUpdateInputChange={setUpdateBalanceInput} onConfirmUpdate={handleUpdateBalance}
+                onAddFunds={async (amt, note) => {
+                  const ok = await addAdjustment(amt, note);
+                  if (ok) toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` });
+                  return ok;
+                }}
+                onWithdraw={async (amt, note) => {
+                  const ok = await addAdjustment(-amt, note);
+                  if (ok) toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` });
+                  return ok;
+                }}
+                onReset={async () => {
+                  await handleResetBalance();
+                }}
+                onDeleteAdjustment={async (id) => {
+                  const ok = await removeAdjustment(id);
+                  if (ok) toast({ title: "Adjustment removed" });
+                  return ok;
+                }}
+                adjustments={adjustments}
+                resetting={resetting}
               />
             </section>
           )}
