@@ -374,6 +374,12 @@ const AcademyAdmin = () => {
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5">{statusIcon(t.status)}</div>
                         <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground mb-0.5">
+                            From: {t.user_display_name || t.user_email || "Unknown"}
+                            {t.user_display_name && t.user_email && (
+                              <span className="font-normal text-muted-foreground/60 ml-1">({t.user_email})</span>
+                            )}
+                          </p>
                           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <span className="text-[10px] font-semibold uppercase tracking-wider bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.category}</span>
                             {t.urgency === "priority" && (
