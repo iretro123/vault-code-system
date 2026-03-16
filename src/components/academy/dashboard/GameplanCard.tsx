@@ -134,7 +134,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   }, []);
 
   const recentItems = useMemo(() => {
-    const entries = Object.entries(completedMap)
+    return Object.entries(completedMap)
       .filter(([id]) => allTasksLookup[id])
       .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime())
       .slice(0, 5)
@@ -143,7 +143,6 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
         title: allTasksLookup[id],
         date: new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       }));
-    return entries.length > 0 ? entries : MOCK_RECENT;
   }, [completedMap, allTasksLookup]);
 
   const handleToggle = useCallback((taskId: string) => {
