@@ -42,6 +42,7 @@ interface PlanPrefill {
   entryPrice?: string;
   positionSize?: string;
   stopPrice?: string;
+  planFollowed?: string;
 }
 
 interface LogTradeSheetProps {
