@@ -756,10 +756,8 @@ const AcademyTrade = () => {
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          {/* Two-column body */}
-          <div className="flex flex-col md:flex-row">
-            {/* ── LEFT MAIN ZONE ── */}
-            <div className="flex-[3] min-w-0 px-2.5 pb-2.5">
+          {/* Content body */}
+          <div className="px-2.5 pb-2.5">
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
