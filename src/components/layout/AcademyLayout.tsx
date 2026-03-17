@@ -129,7 +129,7 @@ function AcademyLayoutInner() {
             You're offline — some features may not work
           </div>
         )}
-        <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
+        <header className="academy-top-safe sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
           <div className="flex h-14 items-center justify-between px-4">
             <div className="flex items-center gap-2">
               {isMobile && isCommunity && (
