@@ -30,7 +30,8 @@ export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectio
   const bal = balanceOverride ?? vaultState.account_balance;
   const tier = detectTier(bal);
   const defaults = TIER_DEFAULTS[tier];
-  const riskBudget = bal * (defaults.riskPercent / 100);
+  const effectiveRisk = (riskPercentOverride != null && riskPercentOverride >= 1 && riskPercentOverride <= 3) ? riskPercentOverride : defaults.riskPercent;
+  const riskBudget = bal * (effectiveRisk / 100);
 
   const lastRestriction = deriveLastRestriction(vaultState);
   const hasRestriction = lastRestriction !== "No restrictions today";

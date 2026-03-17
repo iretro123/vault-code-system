@@ -145,8 +145,8 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
 
   const result: ApprovalResult | null = useMemo(() => {
     if (!hasValidPrice || accountBalance <= 0) return null;
-    return calculateContractChoices(accountBalance, priceNum);
-  }, [accountBalance, priceNum, hasValidPrice]);
+    return calculateContractChoices(accountBalance, priceNum, { riskPercent: effectiveRiskPercent });
+  }, [accountBalance, priceNum, hasValidPrice, effectiveRiskPercent]);
 
   const customChoice: ContractChoice | null = useMemo(() => {
     if (!hasValidPrice || accountBalance <= 0 || !result) return null;
