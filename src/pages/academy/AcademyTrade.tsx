@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 import { MAX_LOSSES_PER_DAY, computeVaultLimits } from "@/lib/vaultConstants";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 // Extracted components
 import { SectionLabel } from "@/components/trade-os/SectionLabel";
