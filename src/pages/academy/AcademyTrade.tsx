@@ -57,17 +57,17 @@ const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidanc
   plan: {
     title: "Pre-Market Plan",
     subtitle: "Build your trade. Size it. Get approved.",
-    guidance: "Set your budget, build a plan, get it approved. Then move to Live.",
+    guidance: "Set your budget, build a plan, and hit 'Use This Plan & Begin' to go live.",
   },
   live: {
     title: "Live Session",
-    subtitle: "Follow your plan. Track your limits.",
-    guidance: "Your plan is active. Monitor limits. Log when done.",
+    subtitle: "Your plan is locked. Execute and end when done.",
+    guidance: "Set your trading window, trade your plan, then hit End Session.",
   },
   review: {
     title: "Session Review",
-    subtitle: "Log results. Record what happened.",
-    guidance: "Log all trades, complete your check-in, then see what AI found.",
+    subtitle: "Did you follow your plan?",
+    guidance: "Answer honestly, log your result, and close the day.",
   },
   insights: {
     title: "Performance Intelligence",
@@ -850,7 +850,7 @@ const AcademyTrade = () => {
                         activePlanOverride={activePlan}
                         savePlanOverride={undefined}
                         replaceWithNewOverride={undefined}
-                        onPlanSaved={refetchPlan}
+                        onPlanSaved={() => { refetchPlan(); setTimeout(() => setStage("live"), 300); }}
                         embedded
                       />
                     </div>
@@ -866,251 +866,127 @@ const AcademyTrade = () => {
 
               {/* LIVE STAGE */}
               {activeStage === "live" && (
-                <div className="space-y-2">
-                  {/* ── Live Status Bar ── */}
-                  {(() => {
-                    const hudBal = trackedBalance ?? vaultState.account_balance;
-                    const hudTier = detectTier(hudBal);
-                    const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
-                    const vaultDotColor = vaultState.vault_status === "GREEN" ? "bg-emerald-400" : vaultState.vault_status === "YELLOW" ? "bg-amber-400" : "bg-red-400";
-                    return (
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02]">
-                        <span className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", vaultDotColor)} />
-                        <span className="text-[11px] font-bold text-foreground">LIVE</span>
-                        {activePlan && <span className="text-[10px] text-muted-foreground/60">· {activePlan.ticker} {activePlan.direction === "calls" ? "Calls" : "Puts"} {activePlan.contracts_planned}ct</span>}
-                        <span className="text-[10px] text-foreground/60 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} left</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── Cockpit: Plan card ── */}
-                  {activePlan && activePlan.status === "planned" ? (
-                    <div className={cn("rounded-lg p-2 space-y-1.5 border-l-[3px]",
-                      vaultState.vault_status === "GREEN" ? "border-l-emerald-400 border border-emerald-500/20 bg-emerald-500/[0.05]" :
-                      vaultState.vault_status === "YELLOW" ? "border-l-amber-400 border border-amber-500/20 bg-amber-500/[0.05]" :
-                      "border-l-red-400 border border-red-500/20 bg-red-500/[0.05]"
-                    )}>
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]", executing ? "bg-amber-400 animate-pulse" : "bg-emerald-400 animate-pulse")} />
-                        <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                        <span className="text-[10px] text-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
-                        <span className={cn("ml-auto text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full",
-                          executing
-                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-                            : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                <div className="space-y-4">
+                  {/* ── Luxury Plan Summary ── */}
+                  {activePlan && activePlan.status === "planned" && (
+                    <div className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4 space-y-3 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.12)]">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                        <span className="text-lg font-bold text-foreground tracking-tight">{activePlan.ticker || "—"}</span>
+                        <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full border",
+                          activePlan.direction === "calls"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-red-500/10 text-red-400 border-red-500/20"
                         )}>
-                          {executing ? "Executing" : "Planned"}
+                          {activePlan.direction === "calls" ? "Calls" : "Puts"}
                         </span>
                       </div>
-
-                      <div className="flex items-center gap-2 pl-3.5">
-                        <SessionCountdownLine />
-                        <span className="text-[10px] text-foreground/30">·</span>
-                        <span className="text-[10px] text-foreground/60 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
-                        {executing && executionStart && (
-                          <>
-                            <span className="text-[10px] text-foreground/30">·</span>
-                            <span className="text-[10px] text-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
-                          </>
-                        )}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Contracts</p>
+                          <p className="text-xl font-bold tabular-nums text-foreground">{activePlan.contracts_planned}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Entry</p>
+                          <p className="text-xl font-bold tabular-nums text-foreground">${Number(activePlan.entry_price_planned).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Max Loss</p>
+                          <p className="text-xl font-bold tabular-nums text-red-400">${Number(activePlan.max_loss_planned).toFixed(0)}</p>
+                        </div>
                       </div>
-
-                      {!executing ? (
-                        <Button size="sm" className="h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold" onClick={handleMarkExecuting} disabled={isCutoffOrClosed && !cutoffOverride}>
-                          <Zap className="h-3 w-3" /> Mark Executing
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className={cn("h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold",
-                            isCutoffOrClosed && "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-                          )}
-                          variant={isCutoffOrClosed ? "outline" : "default"}
-                          onClick={() => handleLogWithCutoffCheck(activePlan)}
-                        >
-                          <CheckCircle2 className="h-3 w-3" />
-                          {isCutoffOrClosed ? "Override: Log After Cutoff" : "Close & Log Result"}
-                        </Button>
-                      )}
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel Plan</Button>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02]">
-                      <SessionCountdownLine className="flex-1" />
-                      <span className="text-[10px] text-foreground/50 tabular-nums">{todayTradeCount}/{totalMaxTrades}</span>
-                      <Button size="sm" className="gap-1 rounded-md px-2.5 h-7 text-[10px]" onClick={() => setStage("plan")}>
-                        <Calendar className="h-3 w-3" /> Plan
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-1 rounded-md px-2.5 h-7 text-[10px] border-white/[0.08]" onClick={() => handleLogWithCutoffCheck()}>
-                        <Plus className="h-3 w-3" /> Log
+                  )}
+
+                  {!activePlan && (
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center space-y-2">
+                      <p className="text-sm text-muted-foreground/60">No active plan.</p>
+                      <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
+                        <Calendar className="h-3 w-3" /> Build a Plan
                       </Button>
                     </div>
                   )}
 
-                  {sessionPhase === "No new entries" && !dismissedBanner && (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3 space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-                        <p className="text-xs font-bold text-amber-400 flex-1">Cutoff reached</p>
-                        <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground/60 pl-6">No new entries allowed. Review your session or override if needed.</p>
-                    </div>
-                  )}
-                  {sessionPhase === "Session closed" && !dismissedBanner && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
-                        <p className="text-xs font-bold text-red-400 flex-1">Session closed</p>
-                        <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
-                      </div>
-                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold ml-0" onClick={() => setStage("review")}>
-                        <ClipboardCheck className="h-3 w-3" /> Complete Review Now
-                      </Button>
-                    </div>
-                  )}
-
-                  {todayTradeCount > 0 && todayStatus !== "complete" && (
-                    <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("review")}>
-                      <ClipboardCheck className="h-3 w-3" /> Complete Review
-                    </Button>
-                  )}
-
-                  <div className="space-y-2.5 pt-1">
-                    <SectionLabel>Your Session Window</SectionLabel>
+                  {/* ── Session Window ── */}
+                  <div className="space-y-2">
+                    <SectionLabel>Set Your Trading Window</SectionLabel>
                     <SessionSetupCard onPhaseChange={setSessionPhase} />
-
-                    <SectionLabel>Today's Limits</SectionLabel>
-                    <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
-
-                    {sessionPhase && (
-                      <button
-                        onClick={() => setStage("review")}
-                        className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/15 transition-colors"
-                      >
-                        <Square className="h-3 w-3" /> End Session
-                      </button>
-                    )}
                   </div>
+
+                  {/* ── End Session (red pill) ── */}
+                  {sessionPhase && (
+                    <button
+                      onClick={() => {
+                        if (activePlan) handleLogWithCutoffCheck(activePlan);
+                        else handleLogWithCutoffCheck();
+                        setTimeout(() => setStage("review"), 100);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 h-12 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)]"
+                    >
+                      <Square className="h-4 w-4" /> End Session & Review
+                    </button>
+                  )}
                 </div>
               )}
 
               {/* REVIEW STAGE */}
               {activeStage === "review" && (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <StageHeadline stage="review" />
-                  {entries.length === 0 ? (
-                    <div className="text-center py-6 space-y-2">
-                      <p className="text-xs text-muted-foreground/60">No trades logged yet.</p>
-                      <Button size="sm" className="gap-1 rounded-lg px-3 h-8 text-[11px]" onClick={handleLogUnplanned}>
-                        <Plus className="h-3 w-3" /> Log a Trade
+
+                  {todayStatus === "complete" ? (
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5 text-center space-y-3">
+                      <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
+                      <p className="text-sm font-semibold text-foreground">Session complete</p>
+                      <p className="text-xs text-muted-foreground/60">Great work. See what the AI found about your trading patterns.</p>
+                      <Button size="sm" className="gap-1.5 rounded-lg h-9 text-xs" onClick={() => setStage("insights")}>
+                        <Brain className="h-3.5 w-3.5" /> View Insights
                       </Button>
                     </div>
                   ) : (
                     <>
-                      {/* Session Summary */}
-                      {todayTradeCount > 0 && (
-                        <div className="flex items-center divide-x divide-white/[0.08] rounded-lg border border-white/[0.08] overflow-hidden">
-                          <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Trades Today</p>
-                            <p className="text-sm font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
-                          </div>
-                          <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">P/L</p>
-                            <p className={cn("text-sm font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                              {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
-                            </p>
-                          </div>
-                          <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Rules</p>
-                            <p className={cn("text-sm font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
-                          </div>
+                      {/* Core Question Card */}
+                      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4">
+                        <div className="text-center space-y-1">
+                          <p className="text-base font-bold text-foreground">Did you follow the plan you set?</p>
+                          <p className="text-xs text-muted-foreground/60">Be honest — this is how you grow.</p>
                         </div>
-                      )}
-
-                      {/* Today's Plan History */}
-                      {todayPlans.length > 0 && (
-                        <div>
-                          <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
-                            Plans ({todayPlans.length})
-                          </p>
-                          <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
-                            {todayPlans.map(p => {
-                              const statusColor = p.status === "planned" ? "text-primary" : p.status === "logged" ? "text-emerald-400" : "text-muted-foreground/40";
-                              const statusDot = p.status === "planned" ? "bg-primary" : p.status === "logged" ? "bg-emerald-400" : "bg-muted-foreground/30";
-                              return (
-                                <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
-                                  <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDot)} />
-                                  <span className="text-xs font-semibold text-foreground min-w-[36px]">{p.ticker || "—"}</span>
-                          <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">
-                                    {p.direction === "calls" ? "Calls" : "Puts"} · {p.contracts_planned}ct · ${Number(p.max_loss_planned).toFixed(0)} risk
-                                  </span>
-                                  <span className={cn("text-[10px] font-semibold capitalize", statusColor)}>{p.status}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {todayStatus !== "complete" && (
-                        <div className="flex flex-col gap-1.5">
-                          <Button
-                            variant="outline"
-                            className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-white/[0.08]"
-                            onClick={handleLogUnplanned}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => {
+                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "Yes" }));
+                              if (activePlan) handleLogFromPlan(activePlan);
+                              else handleLogUnplanned();
+                            }}
+                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] transition-colors"
                           >
-                            <Plus className="h-3.5 w-3.5" /> Log Another Trade
-                          </Button>
-                          <Button
-                            className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
-                            onClick={() => setShowCheckIn(true)}
+                            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                            <span className="text-xs font-semibold text-emerald-400">Yes, I followed it</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "No" }));
+                              handleLogUnplanned();
+                            }}
+                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] transition-colors"
                           >
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Complete Review
-                          </Button>
-                        </div>
-                      )}
-
-                      {todayTradeCount === 0 && todayStatus !== "complete" && !noTradeDay && (
-                        <Button
-                          variant="ghost"
-                          className="w-full h-8 gap-1.5 rounded-lg text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
-                          onClick={() => setShowNoTradeDay(true)}
-                        >
-                          <CalendarOff className="h-3.5 w-3.5" /> Mark No-Trade Day
-                        </Button>
-                      )}
-
-                      <div>
-                        <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
-                          {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
-                        </p>
-                        <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
-                          {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
-                            const pnl = computePnl(e);
-                            const isWin = e.risk_reward > 0;
-                            const isLoss = e.risk_reward < 0;
-                            return (
-                              <div key={e.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
-                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/20")} />
-                                <span className="text-xs font-semibold text-foreground min-w-[36px]">{e.symbol || "—"}</span>
-                                <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
-                                <span className={cn("text-xs font-semibold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/40")}>
-                                  {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
-                                </span>
-                              </div>
-                            );
-                          })}
+                            <AlertTriangle className="h-6 w-6 text-amber-400" />
+                            <span className="text-xs font-semibold text-amber-400">No, I adjusted</span>
+                          </button>
                         </div>
                       </div>
 
-                      {todayStatus === "complete" && (
-                        <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15">
-                          <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                          <p className="text-xs text-emerald-400/80 font-medium flex-1">Session complete. See what AI found.</p>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-emerald-400 px-2" onClick={() => setStage("insights")}>
-                            <Brain className="h-3 w-3 mr-1" /> Insights
-                          </Button>
-                        </div>
+                      {todayTradeCount > 0 && (
+                        <Button className="w-full h-10 gap-1.5 rounded-xl text-xs font-semibold" onClick={() => setShowCheckIn(true)}>
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Complete Review
+                        </Button>
+                      )}
+
+                      {todayTradeCount === 0 && !noTradeDay && (
+                        <Button variant="ghost" className="w-full h-8 gap-1.5 rounded-lg text-[11px] font-medium text-muted-foreground/60 hover:text-foreground" onClick={() => setShowNoTradeDay(true)}>
+                          <CalendarOff className="h-3.5 w-3.5" /> Mark No-Trade Day
+                        </Button>
                       )}
                     </>
                   )}
