@@ -681,7 +681,7 @@ const AcademyTrade = () => {
                 <div className="h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent mt-2 mb-0.5" />
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[10px] text-foreground/60 font-medium">
-                    {todayTradeCount}/{totalMaxTrades} trades left
+                    {todayTradeCount} trades today
                   </span>
                   <span className="text-[10px] text-foreground/20">·</span>
                   {(() => {
