@@ -160,6 +160,7 @@ const AcademyTrade = () => {
   const [showNudge, setShowNudge] = useState(false);
 
   const nudge = useCoachingNudge({ entries, totalPnl, startingBalance: startingBalance ?? 0, complianceRate });
+  const { prefs, updatePrefs } = useUserPreferences();
 
   // Reset banner dismissal when phase changes
   useEffect(() => { setDismissedBanner(false); }, [sessionPhase]);
