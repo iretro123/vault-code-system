@@ -704,7 +704,7 @@ function HeroDecisionCard({
               <span className="flex items-center justify-center h-4.5 w-4.5 rounded-full bg-white/20">
                 <Check className="h-2.5 w-2.5" strokeWidth={3} />
               </span>
-              Use This Plan
+              Use This Plan & Begin
               <ArrowRight className="h-3 w-3 opacity-50" />
             </>
           )}

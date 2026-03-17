@@ -932,121 +932,61 @@ const AcademyTrade = () => {
 
               {/* REVIEW STAGE */}
               {activeStage === "review" && (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <StageHeadline stage="review" />
-                  {entries.length === 0 ? (
-                    <div className="text-center py-6 space-y-2">
-                      <p className="text-xs text-muted-foreground/60">No trades logged yet.</p>
-                      <Button size="sm" className="gap-1 rounded-lg px-3 h-8 text-[11px]" onClick={handleLogUnplanned}>
-                        <Plus className="h-3 w-3" /> Log a Trade
+
+                  {todayStatus === "complete" ? (
+                    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5 text-center space-y-3">
+                      <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
+                      <p className="text-sm font-semibold text-foreground">Session complete</p>
+                      <p className="text-xs text-muted-foreground/60">Great work. See what the AI found about your trading patterns.</p>
+                      <Button size="sm" className="gap-1.5 rounded-lg h-9 text-xs" onClick={() => setStage("insights")}>
+                        <Brain className="h-3.5 w-3.5" /> View Insights
                       </Button>
                     </div>
                   ) : (
                     <>
-                      {/* Session Summary */}
-                      {todayTradeCount > 0 && (
-                        <div className="flex items-center divide-x divide-white/[0.08] rounded-lg border border-white/[0.08] overflow-hidden">
-                          <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Trades Today</p>
-                            <p className="text-sm font-semibold tabular-nums text-foreground">{todayTradeCount}</p>
-                          </div>
-                          <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">P/L</p>
-                            <p className={cn("text-sm font-semibold tabular-nums", todayPnl > 0 ? "text-emerald-400" : todayPnl < 0 ? "text-red-400" : "text-foreground")}>
-                              {todayPnl >= 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)}
-                            </p>
-                          </div>
-                          <div className="flex-1 px-2.5 py-1.5">
-                            <p className="text-[9px] text-muted-foreground/60 font-medium mb-0.5">Rules</p>
-                            <p className={cn("text-sm font-semibold tabular-nums", todayCompliance === 100 ? "text-emerald-400" : "text-amber-400")}>{todayCompliance}%</p>
-                          </div>
+                      {/* Core Question Card */}
+                      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4">
+                        <div className="text-center space-y-1">
+                          <p className="text-base font-bold text-foreground">Did you follow the plan you set?</p>
+                          <p className="text-xs text-muted-foreground/60">Be honest — this is how you grow.</p>
                         </div>
-                      )}
-
-                      {/* Today's Plan History */}
-                      {todayPlans.length > 0 && (
-                        <div>
-                          <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
-                            Plans ({todayPlans.length})
-                          </p>
-                          <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
-                            {todayPlans.map(p => {
-                              const statusColor = p.status === "planned" ? "text-primary" : p.status === "logged" ? "text-emerald-400" : "text-muted-foreground/40";
-                              const statusDot = p.status === "planned" ? "bg-primary" : p.status === "logged" ? "bg-emerald-400" : "bg-muted-foreground/30";
-                              return (
-                                <div key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
-                                  <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusDot)} />
-                                  <span className="text-xs font-semibold text-foreground min-w-[36px]">{p.ticker || "—"}</span>
-                          <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">
-                                    {p.direction === "calls" ? "Calls" : "Puts"} · {p.contracts_planned}ct · ${Number(p.max_loss_planned).toFixed(0)} risk
-                                  </span>
-                                  <span className={cn("text-[10px] font-semibold capitalize", statusColor)}>{p.status}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {todayStatus !== "complete" && (
-                        <div className="flex flex-col gap-1.5">
-                          <Button
-                            variant="outline"
-                            className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold border-white/[0.08]"
-                            onClick={handleLogUnplanned}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => {
+                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "Yes" }));
+                              if (activePlan) handleLogFromPlan(activePlan);
+                              else handleLogUnplanned();
+                            }}
+                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] transition-colors"
                           >
-                            <Plus className="h-3.5 w-3.5" /> Log Another Trade
-                          </Button>
-                          <Button
-                            className="w-full h-9 gap-1.5 rounded-lg text-xs font-semibold"
-                            onClick={() => setShowCheckIn(true)}
+                            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                            <span className="text-xs font-semibold text-emerald-400">Yes, I followed it</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "No" }));
+                              handleLogUnplanned();
+                            }}
+                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] transition-colors"
                           >
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Complete Review
-                          </Button>
-                        </div>
-                      )}
-
-                      {todayTradeCount === 0 && todayStatus !== "complete" && !noTradeDay && (
-                        <Button
-                          variant="ghost"
-                          className="w-full h-8 gap-1.5 rounded-lg text-[11px] font-medium text-muted-foreground/60 hover:text-foreground"
-                          onClick={() => setShowNoTradeDay(true)}
-                        >
-                          <CalendarOff className="h-3.5 w-3.5" /> Mark No-Trade Day
-                        </Button>
-                      )}
-
-                      <div>
-                        <p className="text-[10px] tracking-[0.08em] font-semibold text-muted-foreground/60 uppercase mb-1.5">
-                          {todayTradeCount > 0 ? `Today (${todayTradeCount})` : "Recent"}
-                        </p>
-                        <div className="space-y-0.5 rounded-lg border border-white/[0.08] overflow-hidden">
-                          {(todayTradeCount > 0 ? todayEntries : recentFive).map(e => {
-                            const pnl = computePnl(e);
-                            const isWin = e.risk_reward > 0;
-                            const isLoss = e.risk_reward < 0;
-                            return (
-                              <div key={e.id} className="flex items-center gap-2 px-2.5 py-1.5 hover:bg-white/[0.02] transition-colors">
-                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", isWin ? "bg-emerald-400" : isLoss ? "bg-red-400" : "bg-muted-foreground/20")} />
-                                <span className="text-xs font-semibold text-foreground min-w-[36px]">{e.symbol || "—"}</span>
-                                <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">{e.outcome || "—"} {e.followed_rules ? "✓" : "✗"}</span>
-                                <span className={cn("text-xs font-semibold tabular-nums", isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-muted-foreground/40")}>
-                                  {pnl >= 0 ? "+" : "-"}${Math.abs(pnl).toFixed(0)}
-                                </span>
-                              </div>
-                            );
-                          })}
+                            <AlertTriangle className="h-6 w-6 text-amber-400" />
+                            <span className="text-xs font-semibold text-amber-400">No, I adjusted</span>
+                          </button>
                         </div>
                       </div>
 
-                      {todayStatus === "complete" && (
-                        <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15">
-                          <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                          <p className="text-xs text-emerald-400/80 font-medium flex-1">Session complete. See what AI found.</p>
-                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-emerald-400 px-2" onClick={() => setStage("insights")}>
-                            <Brain className="h-3 w-3 mr-1" /> Insights
-                          </Button>
-                        </div>
+                      {todayTradeCount > 0 && (
+                        <Button className="w-full h-10 gap-1.5 rounded-xl text-xs font-semibold" onClick={() => setShowCheckIn(true)}>
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Complete Review
+                        </Button>
+                      )}
+
+                      {todayTradeCount === 0 && !noTradeDay && (
+                        <Button variant="ghost" className="w-full h-8 gap-1.5 rounded-lg text-[11px] font-medium text-muted-foreground/60 hover:text-foreground" onClick={() => setShowNoTradeDay(true)}>
+                          <CalendarOff className="h-3.5 w-3.5" /> Mark No-Trade Day
+                        </Button>
                       )}
                     </>
                   )}
