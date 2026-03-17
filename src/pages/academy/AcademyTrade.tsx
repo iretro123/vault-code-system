@@ -1205,27 +1205,7 @@ const AcademyTrade = () => {
               )}
             </div>
 
-            {/* ── RIGHT SESSION RAIL — hidden on mobile ── */}
-            <div className="hidden md:block flex-[0.7] min-w-0 p-2 border-l border-white/[0.04]">
-              <OSControlRail
-                activePlan={activePlan}
-                trackedBalance={trackedBalance}
-                vaultAccountBalance={vaultState.account_balance}
-                todayTradeCount={todayTradeCount}
-                maxTradesPerDay={vaultState.max_trades_per_day}
-                vaultStatus={vaultState.vault_status}
-                lastBlockReason={vaultState.last_block_reason}
-                dayState={dayState}
-                dayStateStatus={dayStateStatus}
-                dayStateCta={dayStateCta}
-                onQuickAction={handleQuickAction}
-                onLogFromPlan={handleLogFromPlan}
-                activeStage={activeStage}
-                stageStatus={stageStatus}
-                onSelectStage={setStage}
-              />
-            </div>
-          </div>
+           </div>
 
           {/* ── INTELLIGENCE STRIP ── */}
           {cachedAI && (
