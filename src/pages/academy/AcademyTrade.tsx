@@ -57,17 +57,17 @@ const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidanc
   plan: {
     title: "Pre-Market Plan",
     subtitle: "Build your trade. Size it. Get approved.",
-    guidance: "Set your budget, build a plan, get it approved. Then move to Live.",
+    guidance: "Set your budget, build a plan, and hit 'Use This Plan & Begin' to go live.",
   },
   live: {
     title: "Live Session",
-    subtitle: "Follow your plan. Track your limits.",
-    guidance: "Your plan is active. Monitor limits. Log when done.",
+    subtitle: "Your plan is locked. Execute and end when done.",
+    guidance: "Set your trading window, trade your plan, then hit End Session.",
   },
   review: {
     title: "Session Review",
-    subtitle: "Log results. Record what happened.",
-    guidance: "Log all trades, complete your check-in, then see what AI found.",
+    subtitle: "Did you follow your plan?",
+    guidance: "Answer honestly, log your result, and close the day.",
   },
   insights: {
     title: "Performance Intelligence",
