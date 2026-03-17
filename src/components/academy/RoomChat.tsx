@@ -11,7 +11,7 @@ import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useMentionAutocomplete, parseMentions, getMentionLabel, getMentionInsertText, type MentionUser } from "@/hooks/useMentionAutocomplete";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, FileText, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
@@ -34,6 +34,12 @@ import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
 import { detectChatEffect, type ChatEffectType } from "@/lib/chatEffects";
 import { supabase } from "@/integrations/supabase/client";
+import logTradeEmoji from "@/assets/emoji/log-trade.svg";
+import askQuestionEmoji from "@/assets/emoji/ask-question.svg";
+import shareWinEmoji from "@/assets/emoji/share-win.svg";
+import reactionThumbsUpEmoji from "@/assets/emoji/reaction-thumbs-up.svg";
+import reactionFireEmoji from "@/assets/emoji/reaction-fire.svg";
+import reactionSkullEmoji from "@/assets/emoji/reaction-skull.svg";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -86,6 +92,18 @@ const ExperienceBadge = React.forwardRef<HTMLSpanElement, { role?: string }>(
   }
 );
 ExperienceBadge.displayName = "ExperienceBadge";
+
+const REACTION_EMOJI_ICON: Record<ReactionEmoji, string> = {
+  "👍": reactionThumbsUpEmoji,
+  "🔥": reactionFireEmoji,
+  "💀": reactionSkullEmoji,
+};
+
+function renderReactionEmoji(emoji: string, className = "h-3.5 w-3.5") {
+  const src = REACTION_EMOJI_ICON[emoji as ReactionEmoji];
+  if (!src) return <span className="leading-none">{emoji}</span>;
+  return <img src={src} alt="" className={cn("shrink-0", className)} />;
+}
 
 /* ── message body renderers ── */
 
@@ -1282,10 +1300,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               key={emoji}
                               type="button"
                               onClick={() => toggleReaction(msg.id, emoji)}
-                              className="text-sm px-1.5 py-1 rounded-md hover:bg-white/[0.08] transition-colors"
+                              className="px-1.5 py-1 rounded-md hover:bg-white/[0.08] transition-colors"
                               title={`React ${emoji}`}
                             >
-                              {emoji}
+                              {renderReactionEmoji(emoji)}
                             </button>
                           ))}
                           {/* Reply */}
@@ -1335,7 +1353,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                   : "bg-white/[0.06] border-white/[0.08] text-muted-foreground hover:bg-white/[0.1]"
                               )}
                             >
-                              <span>{r.emoji}</span>
+                              {renderReactionEmoji(r.emoji)}
                               <span className="text-[11px] font-medium">{r.count}</span>
                             </button>
                           ))}
@@ -1349,9 +1367,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 key={emoji}
                                 type="button"
                                 onClick={() => toggleReaction(msg.id, emoji)}
-                                className="text-xs px-1 py-0.5 rounded hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
+                                className="px-1 py-0.5 rounded hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
                               >
-                                {emoji}
+                                {renderReactionEmoji(emoji, "h-3 w-3")}
                               </button>
                             ))}
                           </span>
@@ -1389,8 +1407,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10">
           <button
             onClick={jumpToLatest}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-card border border-white/[0.08] text-foreground text-xs font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:bg-white/[0.08] active:scale-95 transition-all"
+            className="group flex items-center gap-1.5 rounded-full border border-primary/35 bg-card/95 px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-[0_6px_18px_rgba(0,0,0,0.35)] backdrop-blur transition-all hover:border-primary/55 hover:bg-white/[0.08] active:scale-95"
           >
+            <span className="h-1.5 w-1.5 rounded-full bg-primary/90" />
             <ArrowDown className="h-3.5 w-3.5 text-primary" />
             New messages
           </button>
@@ -1432,19 +1451,20 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           ) : (
             <div className="relative space-y-2">
               {/* Template chips */}
-              <div className="flex items-center gap-1 px-1">
-              {[
-                  { label: "Log Trade", emoji: "📋", action: () => navigate("/academy/trade") },
-                  { label: "Ask Question", emoji: "❓", action: () => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")) },
-                  { label: "Share Win", emoji: "🏆", action: () => onSwitchTab?.("wins") },
+              <div className="flex items-center justify-between gap-1 px-1">
+                {[
+                  { label: "Log Trade", emojiSrc: logTradeEmoji, action: () => navigate("/academy/trade") },
+                  { label: "Ask Question", emojiSrc: askQuestionEmoji, action: () => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")) },
+                  { label: "Share Win", emojiSrc: shareWinEmoji, action: () => onSwitchTab?.("wins") },
                 ].map((chip) => (
                   <button
                     key={chip.label}
                     type="button"
                     onClick={chip.action}
-                    className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded-md hover:bg-white/[0.06] transition-colors font-medium"
+                    className="chat-quick-action inline-flex min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-1.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
                   >
-                    {chip.emoji} {chip.label}
+                    <img src={chip.emojiSrc} alt="" className="h-[14px] w-[14px] shrink-0" />
+                    <span>{chip.label}</span>
                   </button>
                 ))}
               </div>

@@ -1,73 +1,75 @@
-# Welcome to your Lovable project
+# Vault Code System
 
-## Project info
+Vault Code System now runs from one shared React + Vite codebase for:
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+- Web (existing deployment flow)
+- iOS (Capacitor wrapper)
+- Android (Capacitor wrapper)
 
-## How can I edit this code?
+The native apps use the same `dist/` build artifacts as web, so feature parity stays aligned.
 
-There are several ways of editing your application.
+## Requirements
 
-**Use Lovable**
+- Node.js + npm
+- Xcode (for iOS)
+- Android Studio (for Android)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Install
 
-Changes made via Lovable will be committed automatically to this repo.
+```bash
+npm install
+```
 
-**Use your preferred IDE**
+## Web development
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Web production build
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run build
+```
 
-**Use GitHub Codespaces**
+## Mobile workflows (Capacitor)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### One-time platform setup
 
-## What technologies are used for this project?
+```bash
+npm run cap:add:ios
+npm run cap:add:android
+```
 
-This project is built with:
+### Sync latest web code into native projects
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+npm run cap:sync
+```
 
-## How can I deploy this project?
+### Run iOS simulator
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```bash
+npm run cap:run:ios
+```
 
-## Can I connect a custom domain to my Lovable project?
+If this is your first Xcode install, accept the license once:
 
-Yes, you can!
+```bash
+sudo xcodebuild -license accept
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Run Android emulator/device
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+npm run cap:run:android
+```
+
+## Added scripts
+
+- `build:mobile`: Build web and copy assets to native projects
+- `cap:sync`: Build web and sync all Capacitor platforms
+- `cap:add:ios`: Add iOS native project
+- `cap:add:android`: Add Android native project
+- `cap:run:ios`: Sync then run iOS
+- `cap:run:android`: Sync then run Android

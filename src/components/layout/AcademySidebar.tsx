@@ -91,7 +91,7 @@ export function AcademySidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-white/[0.04]" style={{ background: '#0B0F14' }}>
-      <SidebarContent>
+      <SidebarContent className="academy-sidebar-safe-top">
         {/* Vault V toggle */}
         <SidebarGroup>
           <SidebarGroupContent>
