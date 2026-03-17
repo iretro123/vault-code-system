@@ -402,7 +402,7 @@ const AcademyTrade = () => {
     plannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
+  const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); setTimeout(() => setStage("insights"), 600); };
   const handleNoTradeDayComplete = () => { setShowNoTradeDay(false); setNoTradeDay(true); setTodayStatus("complete"); toast({ title: "No-trade day logged" }); };
 
   const handleDeleteEntry = async (id: string) => {
