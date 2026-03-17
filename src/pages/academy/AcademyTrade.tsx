@@ -1205,7 +1205,7 @@ const AcademyTrade = () => {
               )}
             </div>
 
-           </div>
+
 
           {/* ── INTELLIGENCE STRIP ── */}
           {cachedAI && (
