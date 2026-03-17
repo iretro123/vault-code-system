@@ -850,7 +850,7 @@ const AcademyTrade = () => {
                         activePlanOverride={activePlan}
                         savePlanOverride={undefined}
                         replaceWithNewOverride={undefined}
-                        onPlanSaved={refetchPlan}
+                        onPlanSaved={() => { refetchPlan(); setTimeout(() => setStage("live"), 300); }}
                         embedded
                       />
                     </div>
