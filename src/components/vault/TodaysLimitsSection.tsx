@@ -4,6 +4,7 @@ import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 
 interface TodaysLimitsSectionProps {
   balanceOverride?: number;
+  riskPercentOverride?: number | null;
 }
 
 function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"]): string {
