@@ -1241,6 +1241,9 @@ const AcademyTrade = () => {
             </button>
           )}
         </div>
+          </div>{/* close right: tabs+content */}
+          </div>{/* close flex inside card */}
+        </div>{/* close vault-os-card */}
 
         {/* ══════ LOWER ANALYTICS ══════ */}
         {hasData && (
@@ -1304,8 +1307,6 @@ const AcademyTrade = () => {
             </div>
           </div>
         )}
-        </div>
-        </div>
       </div>
 
       {/* Mobile CTA Bar */}
