@@ -115,15 +115,18 @@ export function OSControlRail({
             <button
               key={stage}
               onClick={() => onSelectStage(stage)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors group text-left"
+              className={cn(
+                "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors group text-left",
+                isCompleted ? "hover:bg-emerald-500/[0.06]" : "hover:bg-primary/[0.06] bg-primary/[0.03]"
+              )}
             >
               {isCompleted ? (
                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 shrink-0">
                   <Check className="h-2.5 w-2.5 text-emerald-400" strokeWidth={3} />
                 </span>
               ) : (
-                <span className="flex items-center justify-center w-5 h-5 rounded-md bg-white/[0.06] shrink-0">
-                  <Icon className="h-3 w-3 text-foreground/60" />
+                <span className="flex items-center justify-center w-5 h-5 rounded-md bg-primary/10 border border-primary/15 shrink-0">
+                  <Icon className="h-3 w-3 text-primary/70" />
                 </span>
               )}
               <div className="flex-1 min-w-0">
