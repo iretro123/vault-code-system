@@ -137,7 +137,8 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
 
   const tier = detectTier(accountBalance);
   const tierDefaults = TIER_DEFAULTS[tier];
-  const tradeLossLimit = accountBalance * (tierDefaults.riskPercent / 100);
+  const effectiveRiskPercent = (riskPercentOverride != null && riskPercentOverride >= 1 && riskPercentOverride <= 3) ? riskPercentOverride : tierDefaults.riskPercent;
+  const tradeLossLimit = accountBalance * (effectiveRiskPercent / 100);
 
   const priceNum = parseFloat(contractPrice);
   const hasValidPrice = !isNaN(priceNum) && priceNum > 0;
