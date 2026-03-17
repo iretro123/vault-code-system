@@ -1309,6 +1309,8 @@ const AcademyTrade = () => {
             </div>
           </div>
         )}
+        </div>
+        </div>
       </div>
 
       {/* Mobile CTA Bar */}
