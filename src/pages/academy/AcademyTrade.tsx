@@ -919,8 +919,9 @@ const AcademyTrade = () => {
                     <div className="flex justify-center">
                       <button
                         onClick={() => {
-                          // Actually end the session
+                          // Actually end the session — clear both localStorage and DB
                           clearSession();
+                          if (user) clearSessionFromDB(user.id);
                           setSessionPhase(null);
                           setExecuting(false);
                           setExecutionStart(null);
