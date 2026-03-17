@@ -87,7 +87,7 @@ interface VaultTradePlannerProps {
   riskPercentOverride?: number | null;
 }
 
-export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved, embedded = false }: VaultTradePlannerProps) {
+export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved, embedded = false, riskPercentOverride }: VaultTradePlannerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasAccess, status: accessStatus, loading: accessLoading } = useStudentAccess();
