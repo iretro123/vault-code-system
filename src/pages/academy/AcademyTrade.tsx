@@ -723,6 +723,32 @@ const AcademyTrade = () => {
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
+        {/* ══════ LEFT GUIDE RAIL — desktop only ══════ */}
+        <div className="hidden lg:block w-[220px] shrink-0">
+          <div className="sticky top-20">
+            <OSControlRail
+              activePlan={activePlan}
+              trackedBalance={trackedBalance}
+              vaultAccountBalance={vaultState.account_balance}
+              todayTradeCount={todayTradeCount}
+              maxTradesPerDay={vaultState.max_trades_per_day}
+              vaultStatus={vaultState.vault_status}
+              lastBlockReason={vaultState.last_block_reason}
+              dayState={dayState}
+              dayStateStatus={dayStateStatus}
+              dayStateCta={dayStateCta}
+              onQuickAction={handleQuickAction}
+              onLogFromPlan={handleLogFromPlan}
+              activeStage={activeStage}
+              stageStatus={stageStatus}
+              onSelectStage={setStage}
+            />
+          </div>
+        </div>
+
+        {/* ══════ MAIN CONTENT ══════ */}
+        <div className="flex-1 min-w-0 space-y-1.5">
+
         {/* ══════ HERO OS CARD ══════ */}
         <div className="vault-os-card overflow-hidden">
           {/* Tabs */}
