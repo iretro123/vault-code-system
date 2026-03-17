@@ -881,6 +881,7 @@ const AcademyTrade = () => {
                         replaceWithNewOverride={undefined}
                         onPlanSaved={() => { refetchPlan(); setTimeout(() => setStage("live"), 300); }}
                         embedded
+                        riskPercentOverride={prefs?.risk_percent_override ?? null}
                       />
                     </div>
                   )}
