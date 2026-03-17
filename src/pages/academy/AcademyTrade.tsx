@@ -866,131 +866,67 @@ const AcademyTrade = () => {
 
               {/* LIVE STAGE */}
               {activeStage === "live" && (
-                <div className="space-y-2">
-                  {/* ── Live Status Bar ── */}
-                  {(() => {
-                    const hudBal = trackedBalance ?? vaultState.account_balance;
-                    const hudTier = detectTier(hudBal);
-                    const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
-                    const vaultDotColor = vaultState.vault_status === "GREEN" ? "bg-emerald-400" : vaultState.vault_status === "YELLOW" ? "bg-amber-400" : "bg-red-400";
-                    return (
-                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-white/[0.02]">
-                        <span className={cn("w-2 h-2 rounded-full animate-pulse shrink-0", vaultDotColor)} />
-                        <span className="text-[11px] font-bold text-foreground">LIVE</span>
-                        {activePlan && <span className="text-[10px] text-muted-foreground/60">· {activePlan.ticker} {activePlan.direction === "calls" ? "Calls" : "Puts"} {activePlan.contracts_planned}ct</span>}
-                        <span className="text-[10px] text-foreground/60 ml-auto tabular-nums">{todayTradeCount}/{totalMaxTrades} trades · ${hudRisk.toFixed(0)} left</span>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── Cockpit: Plan card ── */}
-                  {activePlan && activePlan.status === "planned" ? (
-                    <div className={cn("rounded-lg p-2 space-y-1.5 border-l-[3px]",
-                      vaultState.vault_status === "GREEN" ? "border-l-emerald-400 border border-emerald-500/20 bg-emerald-500/[0.05]" :
-                      vaultState.vault_status === "YELLOW" ? "border-l-amber-400 border border-amber-500/20 bg-amber-500/[0.05]" :
-                      "border-l-red-400 border border-red-500/20 bg-red-500/[0.05]"
-                    )}>
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.5)]", executing ? "bg-amber-400 animate-pulse" : "bg-emerald-400 animate-pulse")} />
-                        <span className="text-sm font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                        <span className="text-[10px] text-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct · ${Number(activePlan.entry_price_planned).toFixed(2)}</span>
-                        <span className={cn("ml-auto text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full",
-                          executing
-                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-                            : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                <div className="space-y-4">
+                  {/* ── Luxury Plan Summary ── */}
+                  {activePlan && activePlan.status === "planned" && (
+                    <div className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4 space-y-3 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.12)]">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
+                        <span className="text-lg font-bold text-foreground tracking-tight">{activePlan.ticker || "—"}</span>
+                        <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full border",
+                          activePlan.direction === "calls"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-red-500/10 text-red-400 border-red-500/20"
                         )}>
-                          {executing ? "Executing" : "Planned"}
+                          {activePlan.direction === "calls" ? "Calls" : "Puts"}
                         </span>
                       </div>
-
-                      <div className="flex items-center gap-2 pl-3.5">
-                        <SessionCountdownLine />
-                        <span className="text-[10px] text-foreground/30">·</span>
-                        <span className="text-[10px] text-foreground/60 tabular-nums">{todayTradeCount}/{totalMaxTrades} trades</span>
-                        {executing && executionStart && (
-                          <>
-                            <span className="text-[10px] text-foreground/30">·</span>
-                            <span className="text-[10px] text-foreground/60 tabular-nums font-mono">{fmtExecTime(execElapsed)}</span>
-                          </>
-                        )}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Contracts</p>
+                          <p className="text-xl font-bold tabular-nums text-foreground">{activePlan.contracts_planned}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Entry</p>
+                          <p className="text-xl font-bold tabular-nums text-foreground">${Number(activePlan.entry_price_planned).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Max Loss</p>
+                          <p className="text-xl font-bold tabular-nums text-red-400">${Number(activePlan.max_loss_planned).toFixed(0)}</p>
+                        </div>
                       </div>
-
-                      {!executing ? (
-                        <Button size="sm" className="h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold" onClick={handleMarkExecuting} disabled={isCutoffOrClosed && !cutoffOverride}>
-                          <Zap className="h-3 w-3" /> Mark Executing
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          className={cn("h-8 text-[11px] gap-1 rounded-lg px-3 w-full font-semibold",
-                            isCutoffOrClosed && "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-                          )}
-                          variant={isCutoffOrClosed ? "outline" : "default"}
-                          onClick={() => handleLogWithCutoffCheck(activePlan)}
-                        >
-                          <CheckCircle2 className="h-3 w-3" />
-                          {isCutoffOrClosed ? "Override: Log After Cutoff" : "Close & Log Result"}
-                        </Button>
-                      )}
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel Plan</Button>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 p-2 rounded-lg border border-white/[0.08] bg-white/[0.02]">
-                      <SessionCountdownLine className="flex-1" />
-                      <span className="text-[10px] text-foreground/50 tabular-nums">{todayTradeCount}/{totalMaxTrades}</span>
-                      <Button size="sm" className="gap-1 rounded-md px-2.5 h-7 text-[10px]" onClick={() => setStage("plan")}>
-                        <Calendar className="h-3 w-3" /> Plan
-                      </Button>
-                      <Button size="sm" variant="outline" className="gap-1 rounded-md px-2.5 h-7 text-[10px] border-white/[0.08]" onClick={() => handleLogWithCutoffCheck()}>
-                        <Plus className="h-3 w-3" /> Log
+                  )}
+
+                  {!activePlan && (
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center space-y-2">
+                      <p className="text-sm text-muted-foreground/60">No active plan.</p>
+                      <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
+                        <Calendar className="h-3 w-3" /> Build a Plan
                       </Button>
                     </div>
                   )}
 
-                  {sessionPhase === "No new entries" && !dismissedBanner && (
-                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] p-3 space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-                        <p className="text-xs font-bold text-amber-400 flex-1">Cutoff reached</p>
-                        <button onClick={() => setDismissedBanner(true)} className="text-amber-400/50 hover:text-amber-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground/60 pl-6">No new entries allowed. Review your session or override if needed.</p>
-                    </div>
-                  )}
-                  {sessionPhase === "Session closed" && !dismissedBanner && (
-                    <div className="rounded-lg border border-red-500/20 bg-red-500/[0.06] p-3 space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
-                        <p className="text-xs font-bold text-red-400 flex-1">Session closed</p>
-                        <button onClick={() => setDismissedBanner(true)} className="text-red-400/50 hover:text-red-400 transition-colors p-0.5"><X className="h-3.5 w-3.5" /></button>
-                      </div>
-                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold ml-0" onClick={() => setStage("review")}>
-                        <ClipboardCheck className="h-3 w-3" /> Complete Review Now
-                      </Button>
-                    </div>
-                  )}
-
-                  {todayTradeCount > 0 && todayStatus !== "complete" && (
-                    <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => setStage("review")}>
-                      <ClipboardCheck className="h-3 w-3" /> Complete Review
-                    </Button>
-                  )}
-
-                  <div className="space-y-2.5 pt-1">
-                    <SectionLabel>Your Session Window</SectionLabel>
+                  {/* ── Session Window ── */}
+                  <div className="space-y-2">
+                    <SectionLabel>Set Your Trading Window</SectionLabel>
                     <SessionSetupCard onPhaseChange={setSessionPhase} />
-
-                    <SectionLabel>Today's Limits</SectionLabel>
-                    <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
-
-                    {sessionPhase && (
-                      <button
-                        onClick={() => setStage("review")}
-                        className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/15 transition-colors"
-                      >
-                        <Square className="h-3 w-3" /> End Session
-                      </button>
-                    )}
                   </div>
+
+                  {/* ── End Session (red pill) ── */}
+                  {sessionPhase && (
+                    <button
+                      onClick={() => {
+                        if (activePlan) handleLogWithCutoffCheck(activePlan);
+                        else handleLogWithCutoffCheck();
+                        setTimeout(() => setStage("review"), 100);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 h-12 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)]"
+                    >
+                      <Square className="h-4 w-4" /> End Session & Review
+                    </button>
+                  )}
                 </div>
               )}
 
