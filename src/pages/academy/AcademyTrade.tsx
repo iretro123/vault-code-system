@@ -798,7 +798,11 @@ const AcademyTrade = () => {
                                   className={cn(
                                     "h-6 w-10 rounded-md text-[11px] font-semibold transition-all duration-100",
                                     effectiveRisk === pct
-                                      ? "bg-primary/20 text-primary border border-primary/30 shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
+                                      ? {
+                                          1: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.15)]",
+                                          2: "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.15)]",
+                                          3: "bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.15)]",
+                                        }[pct]
                                       : "bg-white/[0.04] text-muted-foreground/60 border border-white/[0.08] hover:bg-white/[0.08]"
                                   )}
                                 >
