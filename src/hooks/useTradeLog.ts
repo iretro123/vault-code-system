@@ -124,7 +124,8 @@ export function useTradeLog() {
       const { data, error } = await (supabase.from("trade_entries" as any) as any)
         .select("*")
         .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(2000);
 
       if (error) throw error;
       const result = data || [];

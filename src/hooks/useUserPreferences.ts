@@ -16,6 +16,7 @@ export interface UserPreferences {
   notify_live_events: boolean;
   sounds_enabled: boolean;
   preferred_alert_channel: AlertChannel;
+  risk_percent_override: number | null;
 }
 
 const DEFAULTS: Omit<UserPreferences, "user_id"> = {
@@ -29,6 +30,7 @@ const DEFAULTS: Omit<UserPreferences, "user_id"> = {
   notify_live_events: true,
   sounds_enabled: true,
   preferred_alert_channel: "in_app",
+  risk_percent_override: null,
 };
 
 export function useUserPreferences() {

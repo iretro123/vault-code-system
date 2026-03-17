@@ -46,7 +46,7 @@ export function DmFileUpload({ threadId, userId, uploading, setUploading, onUplo
         .replace(/[^a-zA-Z0-9._-]/g, "_")
         .replace(/_+/g, "_");
 
-      const path = `dm/${threadId}/${userId}/${Date.now()}_${safeFileName}`;
+      const path = `dm-${threadId}/${userId}/${Date.now()}_${safeFileName}`;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const encodedPath = path.split("/").map(encodeURIComponent).join("/");

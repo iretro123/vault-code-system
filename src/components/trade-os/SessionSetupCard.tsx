@@ -131,7 +131,7 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
   // Notify parent of phase changes
   useEffect(() => {
     onPhaseChange?.(sessionPhase?.label ?? null);
-  }, [sessionPhase?.label]);
+  }, [sessionPhase?.label, onPhaseChange]);
 
   // Not set — show setup form
   if (!times) {
@@ -249,6 +249,24 @@ export function SessionCountdownLine({ className }: { className?: string }) {
       {phase.countdown && <> · {phase.countdownLabel}: {phase.countdown}</>}
     </span>
   );
+}
+
+/** Clear today's session from localStorage */
+export function clearSession() {
+  try { localStorage.removeItem(getStorageKey()); } catch {}
+}
+
+/** Clear today's session from DB — call alongside clearSession() */
+export async function clearSessionFromDB(userId: string) {
+  try {
+    const todayDate = new Date().toISOString().slice(0, 10);
+    await (supabase.from("trading_sessions" as any) as any)
+      .delete()
+      .eq("user_id", userId)
+      .eq("session_date", todayDate);
+  } catch (err) {
+    console.error("Error clearing session from DB:", err);
+  }
 }
 
 export { loadTimes, type SessionTimes };

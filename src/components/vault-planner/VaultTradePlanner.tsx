@@ -83,9 +83,11 @@ interface VaultTradePlannerProps {
   onPlanSaved?: () => void;
   /** When true, strips card wrappers and compresses for embedding inside OS */
   embedded?: boolean;
+  /** User-selected risk percent (1-3). Overrides tier default. */
+  riskPercentOverride?: number | null;
 }
 
-export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved, embedded = false }: VaultTradePlannerProps) {
+export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved, embedded = false, riskPercentOverride }: VaultTradePlannerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { hasAccess, status: accessStatus, loading: accessLoading } = useStudentAccess();
@@ -135,15 +137,16 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
 
   const tier = detectTier(accountBalance);
   const tierDefaults = TIER_DEFAULTS[tier];
-  const tradeLossLimit = accountBalance * (tierDefaults.riskPercent / 100);
+  const effectiveRiskPercent = (riskPercentOverride != null && riskPercentOverride >= 1 && riskPercentOverride <= 3) ? riskPercentOverride : tierDefaults.riskPercent;
+  const tradeLossLimit = accountBalance * (effectiveRiskPercent / 100);
 
   const priceNum = parseFloat(contractPrice);
   const hasValidPrice = !isNaN(priceNum) && priceNum > 0;
 
   const result: ApprovalResult | null = useMemo(() => {
     if (!hasValidPrice || accountBalance <= 0) return null;
-    return calculateContractChoices(accountBalance, priceNum);
-  }, [accountBalance, priceNum, hasValidPrice]);
+    return calculateContractChoices(accountBalance, priceNum, { riskPercent: effectiveRiskPercent });
+  }, [accountBalance, priceNum, hasValidPrice, effectiveRiskPercent]);
 
   const customChoice: ContractChoice | null = useMemo(() => {
     if (!hasValidPrice || accountBalance <= 0 || !result) return null;
@@ -704,7 +707,7 @@ function HeroDecisionCard({
               <span className="flex items-center justify-center h-4.5 w-4.5 rounded-full bg-white/20">
                 <Check className="h-2.5 w-2.5" strokeWidth={3} />
               </span>
-              Use This Plan
+              Use This Plan & Begin
               <ArrowRight className="h-3 w-3 opacity-50" />
             </>
           )}

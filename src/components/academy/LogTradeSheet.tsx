@@ -42,6 +42,7 @@ interface PlanPrefill {
   entryPrice?: string;
   positionSize?: string;
   stopPrice?: string;
+  planFollowed?: string;
 }
 
 interface LogTradeSheetProps {
@@ -119,15 +120,27 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
     return () => URL.revokeObjectURL(url);
   }, [screenshotFile]);
 
-  // Re-apply prefill when it changes
+  // Re-apply prefill and reset stale fields when sheet opens with new prefill
   useEffect(() => {
-    if (prefill) {
+    if (open && prefill) {
+      // Reset non-prefilled fields to prevent stale data
+      setExitPrice("");
+      setPnlOverride("");
+      setResultType("Win");
+      setTargetHit("Yes");
+      setStopRespected("Yes");
+      setOversized("No");
+      setSetupUsed("");
+      setNote("");
+      setScreenshotFile(null);
+      // Apply prefill values
       if (prefill.symbol) setSymbol(prefill.symbol);
       if (prefill.direction) setDirection(prefill.direction);
       if (prefill.entryPrice) setEntryPrice(prefill.entryPrice);
       if (prefill.positionSize) setPositionSize(prefill.positionSize);
+      if (prefill.planFollowed) setPlanFollowed(prefill.planFollowed);
     }
-  }, [prefill]);
+  }, [open, prefill]);
 
   const calculatedPnl = useMemo(() => {
     const entry = parseFloat(entryPrice);
