@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { useAdminMode } from "@/contexts/AdminModeContext";
 import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 import { MAX_LOSSES_PER_DAY, computeVaultLimits } from "@/lib/vaultConstants";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 // Extracted components
 import { SectionLabel } from "@/components/trade-os/SectionLabel";
@@ -159,6 +160,7 @@ const AcademyTrade = () => {
   const [showNudge, setShowNudge] = useState(false);
 
   const nudge = useCoachingNudge({ entries, totalPnl, startingBalance: startingBalance ?? 0, complianceRate });
+  const { prefs, updatePrefs } = useUserPreferences();
 
   // Reset banner dismissal when phase changes
   useEffect(() => { setDismissedBanner(false); }, [sessionPhase]);
@@ -772,7 +774,8 @@ const AcademyTrade = () => {
                     const bal = trackedBalance ?? vaultState.account_balance;
                     const tier = detectTier(bal);
                     const defaults = TIER_DEFAULTS[tier];
-                    const riskBudget = bal * (defaults.riskPercent / 100);
+                    const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
+                    const riskBudget = bal * (effectiveRisk / 100);
                     const positionCap = bal * (defaults.preferredSpendPercent / 100);
                     return (
                       <Collapsible>
@@ -785,6 +788,24 @@ const AcademyTrade = () => {
                         <CollapsibleContent>
                           <TooltipProvider delayDuration={200}>
                           <div className="pt-2 pb-1 px-0.5">
+                            {/* Risk % Selector */}
+                            <div className="flex items-center justify-center gap-1 mb-3">
+                              <span className="text-[9px] text-muted-foreground/50 font-medium mr-1.5">Risk</span>
+                              {[1, 2, 3].map((pct) => (
+                                <button
+                                  key={pct}
+                                  onClick={(e) => { e.stopPropagation(); updatePrefs({ risk_percent_override: pct }); }}
+                                  className={cn(
+                                    "h-6 w-10 rounded-md text-[11px] font-semibold transition-all duration-100",
+                                    effectiveRisk === pct
+                                      ? "bg-primary/20 text-primary border border-primary/30 shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
+                                      : "bg-white/[0.04] text-muted-foreground/60 border border-white/[0.08] hover:bg-white/[0.08]"
+                                  )}
+                                >
+                                  {pct}%
+                                </button>
+                              ))}
+                            </div>
                             <div className="grid grid-cols-4 gap-2">
                               <div className="text-center">
                                 <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
@@ -792,7 +813,7 @@ const AcademyTrade = () => {
                                   <TooltipTrigger asChild>
                                     <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Loss <HelpCircle className="h-2.5 w-2.5" /></p>
                                   </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades. Based on your balance and tier.</TooltipContent>
+                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades. Based on your balance and risk %.</TooltipContent>
                                 </Tooltip>
                               </div>
                               <div className="text-center">
@@ -824,7 +845,7 @@ const AcademyTrade = () => {
                               </div>
                             </div>
                             <p className="text-[9px] text-muted-foreground/50 text-center mt-2">
-                              ${bal.toLocaleString()} · {tier} tier · {defaults.riskPercent}% risk
+                              ${bal.toLocaleString()} · {tier} tier · {effectiveRisk}% risk
                             </p>
                           </div>
                           </TooltipProvider>
@@ -860,6 +881,7 @@ const AcademyTrade = () => {
                         replaceWithNewOverride={undefined}
                         onPlanSaved={() => { refetchPlan(); setTimeout(() => setStage("live"), 300); }}
                         embedded
+                        riskPercentOverride={prefs?.risk_percent_override ?? null}
                       />
                     </div>
                   )}

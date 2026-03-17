@@ -4,6 +4,7 @@ import { detectTier, TIER_DEFAULTS } from "@/lib/tradePlannerCalc";
 
 interface TodaysLimitsSectionProps {
   balanceOverride?: number;
+  riskPercentOverride?: number | null;
 }
 
 function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"]): string {
@@ -14,7 +15,7 @@ function deriveLastRestriction(vault: ReturnType<typeof useVaultState>["state"])
   return "No restrictions today";
 }
 
-export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectionProps>(function TodaysLimitsSection({ balanceOverride }, ref) {
+export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectionProps>(function TodaysLimitsSection({ balanceOverride, riskPercentOverride }, ref) {
   const { state: vaultState, loading } = useVaultState();
 
   if (loading) {
@@ -29,7 +30,8 @@ export const TodaysLimitsSection = forwardRef<HTMLDivElement, TodaysLimitsSectio
   const bal = balanceOverride ?? vaultState.account_balance;
   const tier = detectTier(bal);
   const defaults = TIER_DEFAULTS[tier];
-  const riskBudget = bal * (defaults.riskPercent / 100);
+  const effectiveRisk = (riskPercentOverride != null && riskPercentOverride >= 1 && riskPercentOverride <= 3) ? riskPercentOverride : defaults.riskPercent;
+  const riskBudget = bal * (effectiveRisk / 100);
 
   const lastRestriction = deriveLastRestriction(vaultState);
   const hasRestriction = lastRestriction !== "No restrictions today";
