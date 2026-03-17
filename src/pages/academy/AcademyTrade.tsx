@@ -959,27 +959,43 @@ const AcademyTrade = () => {
                           <p className="text-base font-bold text-foreground">Did you follow the plan you set?</p>
                           <p className="text-xs text-muted-foreground/60">Be honest — this is how you grow.</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                           <button
                             onClick={() => {
-                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "Yes" }));
-                              if (activePlan) handleLogFromPlan(activePlan);
-                              else handleLogUnplanned();
+                              // Pre-fill from plan with planFollowed = Yes
+                              if (activePlan) {
+                                setLogPlanId(activePlan.id);
+                                setLogPrefill({
+                                  symbol: activePlan.ticker || "",
+                                  direction: activePlan.direction === "calls" ? "Calls" : "Puts",
+                                  entryPrice: String(activePlan.entry_price_planned),
+                                  positionSize: String(activePlan.contracts_planned),
+                                  planFollowed: "Yes",
+                                });
+                              } else {
+                                setLogPlanId(undefined);
+                                setLogPrefill({ planFollowed: "Yes" });
+                              }
+                              setShowLogTrade(true);
                             }}
-                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] transition-colors"
+                            className="flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] hover:border-emerald-500/40 transition-all"
                           >
-                            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-                            <span className="text-xs font-semibold text-emerald-400">Yes, I followed it</span>
+                            <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                            <span className="text-sm font-bold text-emerald-400">Yes, I followed it</span>
+                            <span className="text-[10px] text-emerald-400/60">Quick log from your plan</span>
                           </button>
                           <button
                             onClick={() => {
-                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "No" }));
-                              handleLogUnplanned();
+                              // Blank manual entry
+                              setLogPlanId(undefined);
+                              setLogPrefill({ planFollowed: "No" });
+                              setShowLogTrade(true);
                             }}
-                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] transition-colors"
+                            className="flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] hover:border-amber-500/40 transition-all"
                           >
-                            <AlertTriangle className="h-6 w-6 text-amber-400" />
-                            <span className="text-xs font-semibold text-amber-400">No, I adjusted</span>
+                            <AlertTriangle className="h-7 w-7 text-amber-400" />
+                            <span className="text-sm font-bold text-amber-400">No, I adjusted</span>
+                            <span className="text-[10px] text-amber-400/60">Log what you actually did</span>
                           </button>
                         </div>
                       </div>
