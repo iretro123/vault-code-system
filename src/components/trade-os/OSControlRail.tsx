@@ -65,9 +65,9 @@ export function OSControlRail({
   const CurrentIcon = current.icon;
 
   return (
-    <div className="p-4 space-y-4 h-full">
+    <div className="p-4 space-y-4 h-full bg-primary/[0.03]">
       {/* Section Label */}
-      <p className="text-[10px] uppercase tracking-[0.14em] text-foreground/70 font-bold pl-0.5">
+      <p className="text-[10px] uppercase tracking-[0.14em] text-primary/80 font-bold pl-0.5">
         Your Workflow
       </p>
 
@@ -77,10 +77,10 @@ export function OSControlRail({
       </p>
 
       {/* Active Stage Hero */}
-      <div className="rounded-xl border border-white/[0.08] bg-white/[0.06] backdrop-blur-sm p-3 space-y-2.5 border-l-2 border-l-primary">
+      <div className="rounded-xl border border-primary/20 bg-primary/[0.08] backdrop-blur-sm p-3 space-y-2.5 border-l-2 border-l-primary shadow-[0_0_16px_-4px_hsl(var(--primary)/0.15)]">
         {/* Header */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
+          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/15 border border-primary/20">
             <CurrentIcon className="h-3.5 w-3.5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
@@ -98,7 +98,7 @@ export function OSControlRail({
         </p>
 
         {/* Hint */}
-        <p className="text-[10px] text-foreground/60 italic leading-snug">
+        <p className="text-[10px] text-primary/70 italic leading-snug">
           {current.hint}
         </p>
       </div>
@@ -115,15 +115,18 @@ export function OSControlRail({
             <button
               key={stage}
               onClick={() => onSelectStage(stage)}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] transition-colors group text-left"
+              className={cn(
+                "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors group text-left",
+                isCompleted ? "hover:bg-emerald-500/[0.06]" : "hover:bg-primary/[0.06] bg-primary/[0.03]"
+              )}
             >
               {isCompleted ? (
                 <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 shrink-0">
                   <Check className="h-2.5 w-2.5 text-emerald-400" strokeWidth={3} />
                 </span>
               ) : (
-                <span className="flex items-center justify-center w-5 h-5 rounded-md bg-white/[0.06] shrink-0">
-                  <Icon className="h-3 w-3 text-foreground/60" />
+                <span className="flex items-center justify-center w-5 h-5 rounded-md bg-primary/10 border border-primary/15 shrink-0">
+                  <Icon className="h-3 w-3 text-primary/70" />
                 </span>
               )}
               <div className="flex-1 min-w-0">
