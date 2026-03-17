@@ -1178,7 +1178,7 @@ const AcademyTrade = () => {
         </div>{/* close vault-os-card */}
 
         {/* ══════ LOWER ANALYTICS ══════ */}
-        {hasData && (
+        {showMetrics && (
           <div className="space-y-3 pt-2">
             <div className="flex items-center gap-2 px-0.5">
               <BarChart3 className="h-3.5 w-3.5 text-primary/60" />
