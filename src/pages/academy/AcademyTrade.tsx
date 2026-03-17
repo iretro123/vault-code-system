@@ -46,7 +46,7 @@ import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner"
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 import { useCoachingNudge } from "@/hooks/useCoachingNudge";
 import { CoachingNudgeModal } from "@/components/academy/CoachingNudgeModal";
-import { SessionSetupCard, SessionCountdownLine, loadTimes, clearSession } from "@/components/trade-os/SessionSetupCard";
+import { SessionSetupCard, SessionCountdownLine, loadTimes, clearSession, clearSessionFromDB } from "@/components/trade-os/SessionSetupCard";
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
@@ -369,8 +369,16 @@ const AcademyTrade = () => {
     try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
     setCutoffOverride(false);
 
+    // Auto-advance: if in review stage, auto-open check-in after brief delay
+    if (activeStage === "review") {
+      setTimeout(() => {
+        setShowLogTrade(false);
+        setTimeout(() => setShowCheckIn(true), 400);
+      }, 800);
+    }
+
     // Smart coaching nudge — show after 1.5s if conditions met
-    if (nudge.shouldShow) {
+    if (nudge.shouldShow && activeStage !== "review") {
       setTimeout(() => setShowNudge(true), 1500);
     }
   };
@@ -919,8 +927,9 @@ const AcademyTrade = () => {
                     <div className="flex justify-center">
                       <button
                         onClick={() => {
-                          // Actually end the session
+                          // Actually end the session — clear both localStorage and DB
                           clearSession();
+                          if (user) clearSessionFromDB(user.id);
                           setSessionPhase(null);
                           setExecuting(false);
                           setExecutionStart(null);
