@@ -83,6 +83,8 @@ interface VaultTradePlannerProps {
   onPlanSaved?: () => void;
   /** When true, strips card wrappers and compresses for embedding inside OS */
   embedded?: boolean;
+  /** User-selected risk percent (1-3). Overrides tier default. */
+  riskPercentOverride?: number | null;
 }
 
 export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePlanOverride, replaceWithNewOverride, onPlanSaved, embedded = false }: VaultTradePlannerProps) {
