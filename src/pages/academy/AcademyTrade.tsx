@@ -722,6 +722,9 @@ const AcademyTrade = () => {
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
+        {/* ══════ FLEX WRAPPER: Left Rail + Main ══════ */}
+        <div className="flex gap-4">
+
         {/* ══════ LEFT GUIDE RAIL — desktop only ══════ */}
         <div className="hidden lg:block w-[220px] shrink-0">
           <div className="sticky top-20">
