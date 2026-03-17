@@ -251,4 +251,9 @@ export function SessionCountdownLine({ className }: { className?: string }) {
   );
 }
 
+/** Clear today's session from localStorage */
+export function clearSession() {
+  try { localStorage.removeItem(getStorageKey()); } catch {}
+}
+
 export { loadTimes, type SessionTimes };

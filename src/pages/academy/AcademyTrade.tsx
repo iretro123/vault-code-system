@@ -46,7 +46,7 @@ import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner"
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 import { useCoachingNudge } from "@/hooks/useCoachingNudge";
 import { CoachingNudgeModal } from "@/components/academy/CoachingNudgeModal";
-import { SessionSetupCard, SessionCountdownLine, loadTimes } from "@/components/trade-os/SessionSetupCard";
+import { SessionSetupCard, SessionCountdownLine, loadTimes, clearSession } from "@/components/trade-os/SessionSetupCard";
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
@@ -402,7 +402,7 @@ const AcademyTrade = () => {
     plannerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); };
+  const handleCheckInComplete = () => { setShowCheckIn(false); setTodayStatus("complete"); toast({ title: "Check-in complete", description: "AI review is ready for this session." }); setTimeout(() => setStage("insights"), 600); };
   const handleNoTradeDayComplete = () => { setShowNoTradeDay(false); setNoTradeDay(true); setTodayStatus("complete"); toast({ title: "No-trade day logged" }); };
 
   const handleDeleteEntry = async (id: string) => {
@@ -916,16 +916,23 @@ const AcademyTrade = () => {
 
                   {/* ── End Session (red pill) ── */}
                   {sessionPhase && (
-                    <button
-                      onClick={() => {
-                        if (activePlan) handleLogWithCutoffCheck(activePlan);
-                        else handleLogWithCutoffCheck();
-                        setTimeout(() => setStage("review"), 100);
-                      }}
-                      className="w-full flex items-center justify-center gap-2 h-12 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)]"
-                    >
-                      <Square className="h-4 w-4" /> End Session & Review
-                    </button>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => {
+                          // Actually end the session
+                          clearSession();
+                          setSessionPhase(null);
+                          setExecuting(false);
+                          setExecutionStart(null);
+                          try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
+                          // Go to review — no log popup
+                          setStage("review");
+                        }}
+                        className="flex items-center justify-center gap-2 h-12 px-10 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)] max-w-xs w-full"
+                      >
+                        <Square className="h-4 w-4" /> End Session & Review
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -952,27 +959,43 @@ const AcademyTrade = () => {
                           <p className="text-base font-bold text-foreground">Did you follow the plan you set?</p>
                           <p className="text-xs text-muted-foreground/60">Be honest — this is how you grow.</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                           <button
                             onClick={() => {
-                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "Yes" }));
-                              if (activePlan) handleLogFromPlan(activePlan);
-                              else handleLogUnplanned();
+                              // Pre-fill from plan with planFollowed = Yes
+                              if (activePlan) {
+                                setLogPlanId(activePlan.id);
+                                setLogPrefill({
+                                  symbol: activePlan.ticker || "",
+                                  direction: activePlan.direction === "calls" ? "Calls" : "Puts",
+                                  entryPrice: String(activePlan.entry_price_planned),
+                                  positionSize: String(activePlan.contracts_planned),
+                                  planFollowed: "Yes",
+                                });
+                              } else {
+                                setLogPlanId(undefined);
+                                setLogPrefill({ planFollowed: "Yes" });
+                              }
+                              setShowLogTrade(true);
                             }}
-                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] transition-colors"
+                            className="flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] hover:border-emerald-500/40 transition-all"
                           >
-                            <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-                            <span className="text-xs font-semibold text-emerald-400">Yes, I followed it</span>
+                            <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+                            <span className="text-sm font-bold text-emerald-400">Yes, I followed it</span>
+                            <span className="text-[10px] text-emerald-400/60">Quick log from your plan</span>
                           </button>
                           <button
                             onClick={() => {
-                              setLogPrefill((prev: any) => ({ ...prev, planFollowed: "No" }));
-                              handleLogUnplanned();
+                              // Blank manual entry
+                              setLogPlanId(undefined);
+                              setLogPrefill({ planFollowed: "No" });
+                              setShowLogTrade(true);
                             }}
-                            className="flex flex-col items-center gap-1.5 p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] transition-colors"
+                            className="flex flex-col items-center gap-2 p-5 rounded-xl border-2 border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] hover:border-amber-500/40 transition-all"
                           >
-                            <AlertTriangle className="h-6 w-6 text-amber-400" />
-                            <span className="text-xs font-semibold text-amber-400">No, I adjusted</span>
+                            <AlertTriangle className="h-7 w-7 text-amber-400" />
+                            <span className="text-sm font-bold text-amber-400">No, I adjusted</span>
+                            <span className="text-[10px] text-amber-400/60">Log what you actually did</span>
                           </button>
                         </div>
                       </div>
