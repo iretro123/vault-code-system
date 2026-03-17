@@ -32,9 +32,22 @@ export function QuickCheckInSheet({ open, onOpenChange, onComplete, userId }: Pr
     if (!userId) { onComplete(); return; }
     setSaving(true);
     try {
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      // Guard against duplicate journal entries for the same day
+      const { data: existing } = await supabase
+        .from("journal_entries")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("entry_date", todayStr)
+        .maybeSingle();
+      if (existing) {
+        // Already has today's entry — just advance
+        onComplete();
+        return;
+      }
       const { error } = await supabase.from("journal_entries").insert({
         user_id: userId,
-        entry_date: format(new Date(), "yyyy-MM-dd"),
+        entry_date: todayStr,
         what_happened: didWell || "Check-in completed",
         biggest_mistake: mistake || "None noted",
         lesson: lesson || "No specific focus",

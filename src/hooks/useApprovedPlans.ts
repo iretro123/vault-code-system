@@ -47,12 +47,7 @@ export function useApprovedPlans() {
   const [todayPlans, setTodayPlans] = useState<ApprovedPlan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getTodayStr = () => {
-    const now = new Date();
-    return now.getUTCFullYear() + "-" +
-      String(now.getUTCMonth() + 1).padStart(2, "0") + "-" +
-      String(now.getUTCDate()).padStart(2, "0");
-  };
+  const getTodayStr = () => format(new Date(), "yyyy-MM-dd");
 
   const fetchActivePlan = useCallback(async () => {
     if (!user) { setActivePlan(null); setTodayPlans([]); setLoading(false); return; }

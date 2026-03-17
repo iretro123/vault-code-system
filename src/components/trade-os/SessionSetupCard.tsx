@@ -131,7 +131,7 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
   // Notify parent of phase changes
   useEffect(() => {
     onPhaseChange?.(sessionPhase?.label ?? null);
-  }, [sessionPhase?.label]);
+  }, [sessionPhase?.label, onPhaseChange]);
 
   // Not set — show setup form
   if (!times) {
