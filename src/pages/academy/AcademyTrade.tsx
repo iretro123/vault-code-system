@@ -568,8 +568,7 @@ const AcademyTrade = () => {
 
   return (
     <>
-      <div className="px-3 md:px-5 pb-6 max-w-7xl pt-2">
-        <div className="flex gap-4">
+      <div className="px-3 md:px-5 pb-6 max-w-7xl pt-2 space-y-1.5">
 
         {/* ══════ TRADE OS IDENTITY ══════ */}
         <div className="pt-4 pb-2 px-1">
