@@ -975,23 +975,22 @@ const AcademyTrade = () => {
                     </Button>
                   )}
 
-                  <Collapsible>
-                    <CollapsibleTrigger className="flex items-center gap-1 text-[10px] text-foreground/40 hover:text-foreground/60 transition-colors font-medium w-full py-1">
-                      <ChevronDown className="h-3 w-3" /> Session Details
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-2 pt-1">
-                      <SessionSetupCard onPhaseChange={setSessionPhase} />
-                      <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
-                      {sessionPhase && (
-                        <button
-                          onClick={() => setStage("review")}
-                          className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/15 transition-colors"
-                        >
-                          <Square className="h-3 w-3" /> End Session
-                        </button>
-                      )}
-                    </CollapsibleContent>
-                  </Collapsible>
+                  <div className="space-y-2.5 pt-1">
+                    <SectionLabel>Your Session Window</SectionLabel>
+                    <SessionSetupCard onPhaseChange={setSessionPhase} />
+
+                    <SectionLabel>Today's Limits</SectionLabel>
+                    <TodaysLimitsSection balanceOverride={trackedBalance ?? undefined} />
+
+                    {sessionPhase && (
+                      <button
+                        onClick={() => setStage("review")}
+                        className="w-full flex items-center justify-center gap-1.5 h-9 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/[0.08] text-red-400 hover:bg-red-500/15 transition-colors"
+                      >
+                        <Square className="h-3 w-3" /> End Session
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
