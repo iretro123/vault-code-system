@@ -568,7 +568,7 @@ const AcademyTrade = () => {
 
   return (
     <>
-      <div className="px-3 md:px-5 pb-6 space-y-1.5 max-w-6xl pt-2">
+      <div className="px-3 md:px-5 pb-6 max-w-7xl pt-2 space-y-1.5">
 
         {/* ══════ TRADE OS IDENTITY ══════ */}
         <div className="pt-4 pb-2 px-1">
@@ -722,15 +722,42 @@ const AcademyTrade = () => {
           <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
         )}
 
+        {/* ══════ FLEX WRAPPER: Left Rail + Main ══════ */}
+        <div className="flex gap-4">
+
+        {/* ══════ LEFT GUIDE RAIL — desktop only ══════ */}
+        <div className="hidden lg:block w-[220px] shrink-0">
+          <div className="sticky top-20">
+            <OSControlRail
+              activePlan={activePlan}
+              trackedBalance={trackedBalance}
+              vaultAccountBalance={vaultState.account_balance}
+              todayTradeCount={todayTradeCount}
+              maxTradesPerDay={vaultState.max_trades_per_day}
+              vaultStatus={vaultState.vault_status}
+              lastBlockReason={vaultState.last_block_reason}
+              dayState={dayState}
+              dayStateStatus={dayStateStatus}
+              dayStateCta={dayStateCta}
+              onQuickAction={handleQuickAction}
+              onLogFromPlan={handleLogFromPlan}
+              activeStage={activeStage}
+              stageStatus={stageStatus}
+              onSelectStage={setStage}
+            />
+          </div>
+        </div>
+
+        {/* ══════ MAIN CONTENT ══════ */}
+        <div className="flex-1 min-w-0 space-y-1.5">
+
         {/* ══════ HERO OS CARD ══════ */}
         <div className="vault-os-card overflow-hidden">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
-          {/* Two-column body */}
-          <div className="flex flex-col md:flex-row">
-            {/* ── LEFT MAIN ZONE ── */}
-            <div className="flex-[3] min-w-0 px-2.5 pb-2.5">
+          {/* Content body */}
+          <div className="px-2.5 pb-2.5">
 
               {/* PLAN STAGE */}
               {activeStage === "plan" && (
@@ -1178,27 +1205,7 @@ const AcademyTrade = () => {
               )}
             </div>
 
-            {/* ── RIGHT SESSION RAIL — hidden on mobile ── */}
-            <div className="hidden md:block flex-[0.7] min-w-0 p-2 border-l border-white/[0.04]">
-              <OSControlRail
-                activePlan={activePlan}
-                trackedBalance={trackedBalance}
-                vaultAccountBalance={vaultState.account_balance}
-                todayTradeCount={todayTradeCount}
-                maxTradesPerDay={vaultState.max_trades_per_day}
-                vaultStatus={vaultState.vault_status}
-                lastBlockReason={vaultState.last_block_reason}
-                dayState={dayState}
-                dayStateStatus={dayStateStatus}
-                dayStateCta={dayStateCta}
-                onQuickAction={handleQuickAction}
-                onLogFromPlan={handleLogFromPlan}
-                activeStage={activeStage}
-                stageStatus={stageStatus}
-                onSelectStage={setStage}
-              />
-            </div>
-          </div>
+
 
           {/* ── INTELLIGENCE STRIP ── */}
           {cachedAI && (
@@ -1302,6 +1309,8 @@ const AcademyTrade = () => {
             </div>
           </div>
         )}
+        </div>
+        </div>
       </div>
 
       {/* Mobile CTA Bar */}
