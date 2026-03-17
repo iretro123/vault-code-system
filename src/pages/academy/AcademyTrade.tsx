@@ -369,8 +369,16 @@ const AcademyTrade = () => {
     try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
     setCutoffOverride(false);
 
+    // Auto-advance: if in review stage, auto-open check-in after brief delay
+    if (activeStage === "review") {
+      setTimeout(() => {
+        setShowLogTrade(false);
+        setTimeout(() => setShowCheckIn(true), 400);
+      }, 800);
+    }
+
     // Smart coaching nudge — show after 1.5s if conditions met
-    if (nudge.shouldShow) {
+    if (nudge.shouldShow && activeStage !== "review") {
       setTimeout(() => setShowNudge(true), 1500);
     }
   };
