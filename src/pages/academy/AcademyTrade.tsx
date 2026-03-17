@@ -1193,6 +1193,9 @@ const AcademyTrade = () => {
                 dayStateCta={dayStateCta}
                 onQuickAction={handleQuickAction}
                 onLogFromPlan={handleLogFromPlan}
+                activeStage={activeStage}
+                stageStatus={stageStatus}
+                onSelectStage={setStage}
               />
             </div>
           </div>
