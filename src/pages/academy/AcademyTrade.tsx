@@ -916,16 +916,23 @@ const AcademyTrade = () => {
 
                   {/* ── End Session (red pill) ── */}
                   {sessionPhase && (
-                    <button
-                      onClick={() => {
-                        if (activePlan) handleLogWithCutoffCheck(activePlan);
-                        else handleLogWithCutoffCheck();
-                        setTimeout(() => setStage("review"), 100);
-                      }}
-                      className="w-full flex items-center justify-center gap-2 h-12 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)]"
-                    >
-                      <Square className="h-4 w-4" /> End Session & Review
-                    </button>
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => {
+                          // Actually end the session
+                          clearSession();
+                          setSessionPhase(null);
+                          setExecuting(false);
+                          setExecutionStart(null);
+                          try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
+                          // Go to review — no log popup
+                          setStage("review");
+                        }}
+                        className="flex items-center justify-center gap-2 h-12 px-10 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)] max-w-xs w-full"
+                      >
+                        <Square className="h-4 w-4" /> End Session & Review
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
