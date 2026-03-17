@@ -2151,6 +2151,7 @@ export type Database = {
           notify_live_events: boolean
           notify_new_modules: boolean
           preferred_alert_channel: string
+          risk_percent_override: number | null
           session_autopause_minutes: number
           sounds_enabled: boolean
           trading_style: string | null
@@ -2165,6 +2166,7 @@ export type Database = {
           notify_live_events?: boolean
           notify_new_modules?: boolean
           preferred_alert_channel?: string
+          risk_percent_override?: number | null
           session_autopause_minutes?: number
           sounds_enabled?: boolean
           trading_style?: string | null
@@ -2179,6 +2181,7 @@ export type Database = {
           notify_live_events?: boolean
           notify_new_modules?: boolean
           preferred_alert_channel?: string
+          risk_percent_override?: number | null
           session_autopause_minutes?: number
           sounds_enabled?: boolean
           trading_style?: string | null
