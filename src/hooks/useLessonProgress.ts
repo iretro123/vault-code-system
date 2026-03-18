@@ -77,6 +77,13 @@ export function useLessonProgress() {
       .update({ first_lesson_started: true } as any)
       .eq("user_id", user.id)
       .then(() => {});
+
+    // Mark first_lesson_completed on onboarding_state
+    supabase
+      .from("onboarding_state")
+      .update({ first_lesson_completed: true, updated_at: new Date().toISOString() })
+      .eq("user_id", user.id)
+      .then(() => {});
   }, [user, progress]);
 
   return { progress, loading, markComplete, refetch: fetchProgress };
