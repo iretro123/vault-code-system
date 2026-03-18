@@ -212,6 +212,9 @@ const Auth = () => {
 
               <p className="text-center text-sm text-muted-foreground mt-5">
                 First time here?{" "}
+                <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
+              </p>
+              <p className="text-center text-sm text-muted-foreground mt-2">
                 <a href="https://vaulttradingacademy.com/free-challenge-1993" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Sign Up</a>
               </p>
             </div>
