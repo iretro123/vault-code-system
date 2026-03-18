@@ -359,24 +359,28 @@ const Signup = () => {
 
             {/* Agreement Launcher */}
             <div
-              className="rounded-xl border border-border/30 bg-muted/20 p-4 shadow-sm cursor-pointer group hover:border-primary/30 transition-colors"
+              className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer group hover:border-primary/20 hover:shadow-[0_4px_24px_rgba(0,0,0,0.3),0_0_20px_rgba(59,130,246,0.06),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200"
               onClick={() => { if (!agreementChecked) { setAgreementDraftChecked(false); setAgreementModalOpen(true); } }}
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {agreementChecked ? (
-                    <div className="h-9 w-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="h-4.5 w-4.5 text-emerald-400" />
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.15)] flex items-center justify-center shrink-0">
+                      <ShieldCheck className="h-5 w-5 text-emerald-400" />
                     </div>
                   ) : (
-                    <div className="h-9 w-9 rounded-lg bg-muted/40 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-                      <FileText className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    <div className="h-10 w-10 rounded-xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:shadow-[0_0_12px_rgba(59,130,246,0.12)] transition-all duration-200">
+                      <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground/90">Important Agreement</p>
+                    <p className="text-[13px] font-semibold text-foreground">Important Agreement</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {agreementChecked ? "Agreement accepted" : "Required before creating your account"}
+                      {agreementChecked ? (
+                        <span className="text-emerald-400/90 font-medium">✓ Agreement accepted</span>
+                      ) : (
+                        "Required before creating your account"
+                      )}
                     </p>
                   </div>
                 </div>
@@ -384,7 +388,7 @@ const Signup = () => {
                   type="button"
                   variant={agreementChecked ? "ghost" : "outline"}
                   size="sm"
-                  className={`shrink-0 text-xs rounded-lg h-8 px-3 ${agreementChecked ? "text-emerald-400 hover:text-emerald-300" : "border-border/40 hover:border-primary/40 hover:text-primary"}`}
+                  className={`shrink-0 text-xs rounded-lg h-9 px-4 font-semibold ${agreementChecked ? "text-emerald-400 hover:text-emerald-300" : "border-white/[0.12] bg-white/[0.04] hover:border-primary/30 hover:bg-primary/10 hover:text-primary"}`}
                   onClick={(e) => { e.stopPropagation(); setAgreementDraftChecked(agreementChecked); setAgreementModalOpen(true); }}
                 >
                   {agreementChecked ? "View Again" : "Review & Accept"}
