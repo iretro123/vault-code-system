@@ -406,6 +406,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
+  const seenMessageCount = useRef(0);
   const initialScrollDone = useRef(false);
   const userScrolledRef = useRef(false);
   const autoScrollingRef = useRef(false);
@@ -430,10 +431,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
     bottomRef.current?.scrollIntoView({ block: "end" });
     setShowJumpToLatest(false);
+    seenMessageCount.current = messages.length;
     requestAnimationFrame(() => {
       autoScrollingRef.current = false;
     });
-  }, []);
+  }, [messages.length]);
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -479,6 +481,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     }
     if (shouldAutoScroll.current && containerRef.current) {
       containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
+      seenMessageCount.current = messages.length;
+    } else if (messages.length > seenMessageCount.current) {
+      setShowJumpToLatest(true);
     }
   }, [messages.length, scrollToBottomInstant]);
 
@@ -535,8 +540,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     if (!atBottom) userScrolledRef.current = true;
     shouldAutoScroll.current = atBottom;
-    setShowJumpToLatest(!atBottom);
-  }, []);
+    if (atBottom) {
+      seenMessageCount.current = messages.length;
+      setShowJumpToLatest(false);
+    }
+  }, [messages.length]);
 
   const jumpToLatest = () => {
     userScrolledRef.current = false;
