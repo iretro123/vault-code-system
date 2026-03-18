@@ -283,7 +283,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
     detectFoundation();
     return () => { active = false; };
-  }, [user, onboarding, profile]);
+  }, [user, onboarding]);
 
   const groups = useMemo<TaskGroup[]>(() => {
     const hydrate = (items: Omit<TaskItem, "done">[]): TaskItem[] =>
