@@ -380,6 +380,30 @@ export type Database = {
           },
         ]
       }
+      agreement_acceptances: {
+        Row: {
+          accepted_at: string
+          agreement_version: string
+          id: string
+          ip_address: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          agreement_version: string
+          id?: string
+          ip_address?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          agreement_version?: string
+          id?: string
+          ip_address?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       allowed_signups: {
         Row: {
           added_by: string
