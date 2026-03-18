@@ -1148,9 +1148,9 @@ export type Database = {
           description: string
           duration_minutes: number
           id: string
+          is_manual_live: boolean
           is_replay: boolean
           join_url: string
-          live_notified_at: string | null
           replay_url: string | null
           session_date: string
           session_type: string
@@ -1164,9 +1164,9 @@ export type Database = {
           description?: string
           duration_minutes?: number
           id?: string
+          is_manual_live?: boolean
           is_replay?: boolean
           join_url?: string
-          live_notified_at?: string | null
           replay_url?: string | null
           session_date: string
           session_type?: string
@@ -1180,9 +1180,9 @@ export type Database = {
           description?: string
           duration_minutes?: number
           id?: string
+          is_manual_live?: boolean
           is_replay?: boolean
           join_url?: string
-          live_notified_at?: string | null
           replay_url?: string | null
           session_date?: string
           session_type?: string
@@ -2615,6 +2615,7 @@ export type Database = {
         }[]
       }
       cleanup_deleted_messages: { Args: never; Returns: undefined }
+      cleanup_live_now: { Args: never; Returns: undefined }
       close_trade_intent: {
         Args: { _trade_result: number; _user_id: string }
         Returns: {
@@ -2910,7 +2911,7 @@ export type Database = {
         Returns: string
       }
       nightly_memory_aggregation: { Args: never; Returns: undefined }
-      notify_live_sessions: { Args: never; Returns: undefined }
+      notify_live_now: { Args: never; Returns: undefined }
       promote_to_ceo: { Args: { target_user_id: string }; Returns: undefined }
       set_account_balance: {
         Args: { _balance: number; _user_id: string }
@@ -2942,6 +2943,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      start_live_now: { Args: never; Returns: string }
       start_vault_focus_session: {
         Args: {
           cooldown_after_loss_minutes?: number
@@ -2951,6 +2953,7 @@ export type Database = {
         }
         Returns: string
       }
+      stop_live_now: { Args: never; Returns: undefined }
       submit_trade_intent: {
         Args: {
           _contracts: number
