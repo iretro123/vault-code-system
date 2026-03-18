@@ -1508,7 +1508,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             </div>
           );
         })}
-        <div ref={bottomRef} className="h-4 shrink-0" />
+        <div ref={bottomRef} className="h-8 shrink-0" />
       </div>
 
       {/* Jump to latest */}
