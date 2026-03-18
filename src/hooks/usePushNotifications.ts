@@ -21,8 +21,8 @@ export function usePushNotifications() {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    // @ts-ignore — native-only module, not available in web builds
-    import("@capacitor/push-notifications").then(({ PushNotifications }: any) => {
+    const _pnMod = "@capacitor/push-notifications";
+    import(/* @vite-ignore */ _pnMod).then(({ PushNotifications }: any) => {
       async function registerPush() {
         try {
           const perm = await PushNotifications.checkPermissions();

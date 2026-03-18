@@ -72,8 +72,8 @@ export async function hapticNotification() {
 export async function hapticStrong() {
   if (!isNativePlatform()) return;
   try {
-    // @ts-ignore — native-only module
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
+    const _hapMod = "@capacitor/haptics";
+    const { Haptics, ImpactStyle } = await import(/* @vite-ignore */ _hapMod);
     await Haptics.impact({ style: ImpactStyle.Heavy });
   } catch {
     // no-op
