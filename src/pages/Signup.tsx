@@ -357,44 +357,109 @@ const Signup = () => {
               <p className="text-[11px] text-destructive -mt-2">Passwords do not match.</p>
             )}
 
-            {/* Important Agreement */}
-            <div className="rounded-xl border border-border/30 bg-muted/20 p-4 shadow-sm space-y-3">
-              <h3 className="text-xs font-bold tracking-wide text-foreground/90 uppercase">Important Agreement</h3>
-              <ScrollArea className="h-[140px] md:h-[160px] rounded-lg border border-border/20 bg-background/60 p-3">
-                <p className="text-[11px] leading-[1.6] text-muted-foreground pr-3">
-                  By creating an account and using Vault Trading Academy and VAULT OS, you acknowledge and agree that the platform provides educational, informational, analytical, journaling, tracking, and risk-management tools only. Nothing on the platform, including content, alerts, analytics, calculators, coaching, live sessions, community discussions, performance tracking, or any other feature, constitutes financial, investment, trading, legal, or tax advice, or a recommendation to buy, sell, hold, or enter any security, option, or financial instrument.
-                  <br /><br />
-                  You understand that trading and investing involve substantial risk and may result in partial or total loss of capital. Past performance does not guarantee future results. Vault Trading Academy and VAULT OS do not guarantee profits, performance, success, or any specific outcome.
-                  <br /><br />
-                  You acknowledge that you are solely responsible for your decisions, orders, entries, exits, position sizing, risk management, broker selections, account activity, and all results arising from your trading or investing activity. You agree that any action you take based on information, tools, or features provided through the platform is taken at your own risk.
-                  <br /><br />
-                  You understand and agree that Vault Trading Academy may collect, use, store, and process your personal information in accordance with its Privacy Policy and may use service providers and infrastructure providers to operate the platform, process payments, maintain accounts, support analytics, and secure the Services.
-                  <br /><br />
-                  If account connectivity features are offered, you understand that Vault Trading Academy may allow you to connect financial accounts through third-party providers such as Plaid. If you choose to use such features, you authorize the processing of the financial data made available through those integrations for purposes such as analytics, account tracking, performance insights, and related platform functionality. Vault Trading Academy does not collect or store your bank login credentials.
-                  <br /><br />
-                  You understand that third-party services, brokerages, banks, payment processors, and integrations may experience outages, delays, interruptions, inaccuracies, security events, or other failures, and Vault Trading Academy is not responsible for the acts, omissions, errors, data issues, service interruptions, or decisions of any third party.
-                  <br /><br />
-                  To the fullest extent permitted by law, you agree that Vault Trading Academy, VAULT OS, and their owners, affiliates, officers, employees, contractors, educators, coaches, agents, and service providers shall not be liable for any direct, indirect, incidental, consequential, special, exemplary, trading, business, financial, data, or other losses or damages arising from or related to your use of the platform, your inability to use the platform, your reliance on any content or feature, or your trading or investment activity.
-                  <br /><br />
-                  You further acknowledge that your use of the platform is subject to the Terms of Service and Privacy Policy, including provisions regarding account use, payments, subscriptions, cancellations, refunds, data practices, and platform rules. If you do not agree, do not create an account or use the platform.
-                </p>
-              </ScrollArea>
-              <div className="flex items-start gap-2.5">
-                <Checkbox
-                  id="agreement"
-                  checked={agreementChecked}
-                  onCheckedChange={(v) => setAgreementChecked(v === true)}
-                  className="mt-0.5 border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                />
-                <label htmlFor="agreement" className="text-[11px] leading-[1.55] text-muted-foreground cursor-pointer select-none">
-                  I have read and agree to the{" "}
-                  <a href="https://vaulttradingacademy.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Terms of Service</a>
-                  {" "}and{" "}
-                  <a href="https://vaulttradingacademy.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Privacy Policy</a>
-                  , understand that VAULT OS is for educational and analytical purposes only, acknowledge the risks of trading and investing, consent to the processing of my information as described, and accept full responsibility for my decisions, account activity, and results.
-                </label>
+            {/* Agreement Launcher */}
+            <div
+              className="rounded-xl border border-border/30 bg-muted/20 p-4 shadow-sm cursor-pointer group hover:border-primary/30 transition-colors"
+              onClick={() => { if (!agreementChecked) { setAgreementDraftChecked(false); setAgreementModalOpen(true); } }}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {agreementChecked ? (
+                    <div className="h-9 w-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="h-4.5 w-4.5 text-emerald-400" />
+                    </div>
+                  ) : (
+                    <div className="h-9 w-9 rounded-lg bg-muted/40 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                      <FileText className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground/90">Important Agreement</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {agreementChecked ? "Agreement accepted" : "Required before creating your account"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant={agreementChecked ? "ghost" : "outline"}
+                  size="sm"
+                  className={`shrink-0 text-xs rounded-lg h-8 px-3 ${agreementChecked ? "text-emerald-400 hover:text-emerald-300" : "border-border/40 hover:border-primary/40 hover:text-primary"}`}
+                  onClick={(e) => { e.stopPropagation(); setAgreementDraftChecked(agreementChecked); setAgreementModalOpen(true); }}
+                >
+                  {agreementChecked ? "View Again" : "Review & Accept"}
+                </Button>
               </div>
             </div>
+
+            {/* Agreement Modal */}
+            <Dialog open={agreementModalOpen} onOpenChange={setAgreementModalOpen}>
+              <DialogContent className="max-w-[92vw] sm:max-w-lg max-h-[85vh] p-0 gap-0 border-border/30 bg-card shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_40px_rgba(59,130,246,0.06)] rounded-2xl overflow-hidden">
+                {/* Modal Header */}
+                <div className="px-6 pt-6 pb-4 border-b border-border/20">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <ShieldCheck className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-foreground tracking-tight">Important Agreement</h2>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">Please read carefully before proceeding</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scrollable Legal Text */}
+                <ScrollArea className="h-[40vh] max-h-[320px]">
+                  <div className="px-6 py-4">
+                    <p className="text-[11.5px] leading-[1.7] text-muted-foreground">
+                      By creating an account and using Vault Trading Academy and VAULT OS, you acknowledge and agree that the platform provides educational, informational, analytical, journaling, tracking, and risk-management tools only. Nothing on the platform, including content, alerts, analytics, calculators, coaching, live sessions, community discussions, performance tracking, or any other feature, constitutes financial, investment, trading, legal, or tax advice, or a recommendation to buy, sell, hold, or enter any security, option, or financial instrument.
+                      <br /><br />
+                      You understand that trading and investing involve substantial risk and may result in partial or total loss of capital. Past performance does not guarantee future results. Vault Trading Academy and VAULT OS do not guarantee profits, performance, success, or any specific outcome.
+                      <br /><br />
+                      You acknowledge that you are solely responsible for your decisions, orders, entries, exits, position sizing, risk management, broker selections, account activity, and all results arising from your trading or investing activity. You agree that any action you take based on information, tools, or features provided through the platform is taken at your own risk.
+                      <br /><br />
+                      You understand and agree that Vault Trading Academy may collect, use, store, and process your personal information in accordance with its Privacy Policy and may use service providers and infrastructure providers to operate the platform, process payments, maintain accounts, support analytics, and secure the Services.
+                      <br /><br />
+                      If account connectivity features are offered, you understand that Vault Trading Academy may allow you to connect financial accounts through third-party providers such as Plaid. If you choose to use such features, you authorize the processing of the financial data made available through those integrations for purposes such as analytics, account tracking, performance insights, and related platform functionality. Vault Trading Academy does not collect or store your bank login credentials.
+                      <br /><br />
+                      You understand that third-party services, brokerages, banks, payment processors, and integrations may experience outages, delays, interruptions, inaccuracies, security events, or other failures, and Vault Trading Academy is not responsible for the acts, omissions, errors, data issues, service interruptions, or decisions of any third party.
+                      <br /><br />
+                      To the fullest extent permitted by law, you agree that Vault Trading Academy, VAULT OS, and their owners, affiliates, officers, employees, contractors, educators, coaches, agents, and service providers shall not be liable for any direct, indirect, incidental, consequential, special, exemplary, trading, business, financial, data, or other losses or damages arising from or related to your use of the platform, your inability to use the platform, your reliance on any content or feature, or your trading or investment activity.
+                      <br /><br />
+                      You further acknowledge that your use of the platform is subject to the Terms of Service and Privacy Policy, including provisions regarding account use, payments, subscriptions, cancellations, refunds, data practices, and platform rules. If you do not agree, do not create an account or use the platform.
+                    </p>
+                  </div>
+                </ScrollArea>
+
+                {/* Footer with Checkbox + Confirm */}
+                <div className="px-6 py-5 border-t border-border/20 bg-muted/10 space-y-4">
+                  <div className="flex items-start gap-2.5">
+                    <Checkbox
+                      id="agreement-modal"
+                      checked={agreementDraftChecked}
+                      onCheckedChange={(v) => setAgreementDraftChecked(v === true)}
+                      className="mt-0.5 border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <label htmlFor="agreement-modal" className="text-[11px] leading-[1.55] text-muted-foreground cursor-pointer select-none">
+                      I have read and agree to the{" "}
+                      <a href="https://vaulttradingacademy.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Terms of Service</a>
+                      {" "}and{" "}
+                      <a href="https://vaulttradingacademy.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Privacy Policy</a>
+                      , understand that VAULT OS is for educational and analytical purposes only, acknowledge the risks of trading and investing, consent to the processing of my information as described, and accept full responsibility for my decisions, account activity, and results.
+                    </label>
+                  </div>
+                  <Button
+                    type="button"
+                    className="w-full h-11 text-sm font-semibold rounded-xl"
+                    disabled={!agreementDraftChecked}
+                    onClick={() => { setAgreementChecked(true); setAgreementModalOpen(false); }}
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Accept & Continue
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Divider */}
             <div className="border-t border-border/10 pt-3.5">
