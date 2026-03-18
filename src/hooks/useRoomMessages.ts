@@ -208,6 +208,13 @@ export function useRoomMessages(roomSlug: string) {
         .eq("user_id", user.id)
         .then(() => {});
 
+      // Mark intro_posted on onboarding_state
+      supabase
+        .from("onboarding_state")
+        .update({ intro_posted: true, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .then(() => {});
+
       setSending(false);
       return {
         ok: true,
