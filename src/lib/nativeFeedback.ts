@@ -1,5 +1,4 @@
 import { Capacitor } from "@capacitor/core";
-import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 
 function isNativePlatform() {
   if (typeof window === "undefined") return false;
@@ -51,6 +50,7 @@ export async function playMessageSound() {
 export async function hapticLight() {
   if (!isNativePlatform()) return;
   try {
+    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch {
     // no-op
@@ -60,6 +60,7 @@ export async function hapticLight() {
 export async function hapticNotification() {
   if (!isNativePlatform()) return;
   try {
+    const { Haptics, NotificationType } = await import("@capacitor/haptics");
     await Haptics.notification({ type: NotificationType.Success });
   } catch {
     // no-op
@@ -69,6 +70,7 @@ export async function hapticNotification() {
 export async function hapticStrong() {
   if (!isNativePlatform()) return;
   try {
+    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
     await Haptics.impact({ style: ImpactStyle.Heavy });
   } catch {
     // no-op
