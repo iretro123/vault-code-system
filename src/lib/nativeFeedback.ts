@@ -50,8 +50,8 @@ export async function playMessageSound() {
 export async function hapticLight() {
   if (!isNativePlatform()) return;
   try {
-    // @ts-ignore — native-only module
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
+    const _hapMod = "@capacitor/haptics";
+    const { Haptics, ImpactStyle } = await import(/* @vite-ignore */ _hapMod);
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch {
     // no-op
@@ -61,8 +61,8 @@ export async function hapticLight() {
 export async function hapticNotification() {
   if (!isNativePlatform()) return;
   try {
-    // @ts-ignore — native-only module
-    const { Haptics, NotificationType } = await import("@capacitor/haptics");
+    const _hapMod = "@capacitor/haptics";
+    const { Haptics, NotificationType } = await import(/* @vite-ignore */ _hapMod);
     await Haptics.notification({ type: NotificationType.Success });
   } catch {
     // no-op
@@ -72,8 +72,8 @@ export async function hapticNotification() {
 export async function hapticStrong() {
   if (!isNativePlatform()) return;
   try {
-    // @ts-ignore — native-only module
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
+    const _hapMod = "@capacitor/haptics";
+    const { Haptics, ImpactStyle } = await import(/* @vite-ignore */ _hapMod);
     await Haptics.impact({ style: ImpactStyle.Heavy });
   } catch {
     // no-op
