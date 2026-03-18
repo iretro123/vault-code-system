@@ -197,7 +197,8 @@ const Signup = () => {
     phoneNumber.trim().length > 0 &&
     stripeStatus === "found" &&
     password.length >= 8 &&
-    password === confirmPassword;
+    password === confirmPassword &&
+    agreementChecked;
 
   const inputClass = "h-12 bg-muted/50 border-border/40 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40 transition-colors";
   const labelClass = "text-xs font-medium text-white/70 block mb-1";
