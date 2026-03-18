@@ -406,6 +406,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
+  const seenMessageCount = useRef(0);
   const initialScrollDone = useRef(false);
   const userScrolledRef = useRef(false);
   const autoScrollingRef = useRef(false);
