@@ -157,12 +157,6 @@ const Auth = () => {
         ) : (
           <>
             <div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-              {/* First time link */}
-              <p className="text-center text-sm text-muted-foreground mb-6">
-                First time here?{" "}
-                <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
-              </p>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email */}
                 <div className="relative">
@@ -215,6 +209,11 @@ const Auth = () => {
                   )}
                 </Button>
               </form>
+
+              <p className="text-center text-sm text-muted-foreground mt-5">
+                First time here?{" "}
+                <a href="https://vaulttradingacademy.com/free-challenge-1993" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Sign Up</a>
+              </p>
             </div>
           </>
         )}
