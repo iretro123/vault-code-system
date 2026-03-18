@@ -29,6 +29,7 @@ interface TaskGroup {
 
 const LS_KEY = "va_gameplan_completed";
 const LS_RESET_KEY = "va_gameplan_last_reset";
+const LS_DISMISSED_KEY = "va_gameplan_dismissed";
 const RESET_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function loadCompleted(): Record<string, string> {
