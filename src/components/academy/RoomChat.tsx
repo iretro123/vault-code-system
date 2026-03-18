@@ -431,10 +431,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
     bottomRef.current?.scrollIntoView({ block: "end" });
     setShowJumpToLatest(false);
+    seenMessageCount.current = messages.length;
     requestAnimationFrame(() => {
       autoScrollingRef.current = false;
     });
-  }, []);
+  }, [messages.length]);
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
