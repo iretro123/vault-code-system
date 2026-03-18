@@ -183,7 +183,7 @@ function TaskConfettiBurst() {
 export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
   const { onboarding } = useAcademyData();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
   const [cohortStats, setCohortStats] = useState<CohortStats | null>(null);
