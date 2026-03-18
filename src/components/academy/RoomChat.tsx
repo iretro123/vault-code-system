@@ -1554,7 +1554,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </p>
         </div>
       ) : canPost ? (
-        <div className="px-5 pb-4 pt-2 bg-card border-t border-white/[0.06]">
+        <div className="px-5 pb-4 md:pb-4 pt-2 bg-card border-t border-white/[0.06] mb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:mb-0">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
