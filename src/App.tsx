@@ -112,7 +112,7 @@ const App = () => (
               <Route path="journal" element={<AcademyJournal />} />
               <Route path="progress" element={<AcademyProgress />} />
               <Route path="playbook" element={<AcademyPlaybook />} />
-              <Route path="vault-os" element={<AcademyVaultOS />} />
+              <Route path="vault-os" element={<Navigate to="/academy/home" replace />} />
               <Route path="vault" element={<AcademyVaultApproval />} />
               <Route path="support" element={<AcademySupport />} />
               <Route path="admin" element={<AcademyAdmin />} />
