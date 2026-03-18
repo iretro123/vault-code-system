@@ -189,6 +189,12 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
   const [cohortStats, setCohortStats] = useState<CohortStats | null>(null);
   const [cohortLoading, setCohortLoading] = useState(false);
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(LS_DISMISSED_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
   const [confettiKey, setConfettiKey] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimerRef = useRef<number | null>(null);
