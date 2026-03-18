@@ -39,7 +39,7 @@ import AcademyProgress from "./pages/academy/AcademyProgress";
 import AcademyMyQuestions from "./pages/academy/AcademyMyQuestions";
 import AcademyPlaybook from "./pages/academy/AcademyPlaybook";
 import AcademyQA from "./pages/academy/AcademyQA";
-import AcademyVaultOS from "./pages/academy/AcademyVaultOS";
+
 import AcademySupport from "./pages/academy/AcademySupport";
 import AcademyVaultApproval from "./pages/academy/AcademyVaultApproval";
 
@@ -112,7 +112,7 @@ const App = () => (
               <Route path="journal" element={<AcademyJournal />} />
               <Route path="progress" element={<AcademyProgress />} />
               <Route path="playbook" element={<AcademyPlaybook />} />
-              <Route path="vault-os" element={<AcademyVaultOS />} />
+              <Route path="vault-os" element={<Navigate to="/academy/home" replace />} />
               <Route path="vault" element={<AcademyVaultApproval />} />
               <Route path="support" element={<AcademySupport />} />
               <Route path="admin" element={<AcademyAdmin />} />
