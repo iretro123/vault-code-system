@@ -274,12 +274,12 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
       if (!active) return;
 
-      // Merge auto-detected into completedMap (don't overwrite existing timestamps)
+      // Merge auto-detected into completedMap (skip if user manually dismissed)
       setCompletedMap((prev) => {
         let changed = false;
         const next = { ...prev };
         for (const [id, ts] of Object.entries(autoCompleted)) {
-          if (!next[id]) {
+          if (!next[id] && !dismissed.has(id)) {
             next[id] = ts;
             changed = true;
           }
@@ -290,7 +290,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
     detectFoundation();
     return () => { active = false; };
-  }, [user, onboarding]);
+  }, [user, onboarding, dismissed]);
 
   const groups = useMemo<TaskGroup[]>(() => {
     const hydrate = (items: Omit<TaskItem, "done">[]): TaskItem[] =>
