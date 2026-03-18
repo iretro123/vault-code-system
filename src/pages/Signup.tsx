@@ -398,24 +398,24 @@ const Signup = () => {
 
             {/* Agreement Modal */}
             <Dialog open={agreementModalOpen} onOpenChange={setAgreementModalOpen}>
-              <DialogContent className="max-w-[92vw] sm:max-w-lg max-h-[85vh] p-0 gap-0 border-border/30 bg-card shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_40px_rgba(59,130,246,0.06)] rounded-2xl overflow-hidden">
+              <DialogContent className="max-w-[92vw] sm:max-w-lg max-h-[85vh] p-0 gap-0 border-white/[0.08] bg-[hsl(220,20%,8%)] shadow-[0_24px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(59,130,246,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-2xl overflow-hidden backdrop-blur-xl">
                 {/* Modal Header */}
-                <div className="px-6 pt-6 pb-4 border-b border-border/20">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <ShieldCheck className="h-5 w-5 text-primary" />
+                <div className="px-6 pt-6 pb-4 border-b border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent">
+                  <div className="flex items-center gap-3.5">
+                    <div className="h-11 w-11 rounded-xl bg-primary/15 shadow-[0_0_20px_rgba(59,130,246,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] flex items-center justify-center">
+                      <ShieldCheck className="h-5.5 w-5.5 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-base font-bold text-foreground tracking-tight">Important Agreement</h2>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">Please read carefully before proceeding</p>
+                      <h2 className="text-[15px] font-bold text-foreground tracking-tight">Important Agreement</h2>
+                      <p className="text-[11px] text-muted-foreground/80 mt-0.5">Please read carefully before proceeding</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Scrollable Legal Text */}
                 <ScrollArea className="h-[40vh] max-h-[320px]">
-                  <div className="px-6 py-4">
-                    <p className="text-[11.5px] leading-[1.7] text-muted-foreground">
+                  <div className="px-6 py-4 bg-black/20">
+                    <p className="text-[11.5px] leading-[1.75] text-muted-foreground/90">
                       By creating an account and using Vault Trading Academy and VAULT OS, you acknowledge and agree that the platform provides educational, informational, analytical, journaling, tracking, and risk-management tools only. Nothing on the platform, including content, alerts, analytics, calculators, coaching, live sessions, community discussions, performance tracking, or any other feature, constitutes financial, investment, trading, legal, or tax advice, or a recommendation to buy, sell, hold, or enter any security, option, or financial instrument.
                       <br /><br />
                       You understand that trading and investing involve substantial risk and may result in partial or total loss of capital. Past performance does not guarantee future results. Vault Trading Academy and VAULT OS do not guarantee profits, performance, success, or any specific outcome.
@@ -436,15 +436,15 @@ const Signup = () => {
                 </ScrollArea>
 
                 {/* Footer with Checkbox + Confirm */}
-                <div className="px-6 py-5 border-t border-border/20 bg-muted/10 space-y-4">
-                  <div className="flex items-start gap-2.5">
+                <div className="px-6 py-5 border-t border-white/[0.06] bg-white/[0.02] backdrop-blur-sm space-y-4">
+                  <div className="flex items-start gap-3 rounded-xl bg-white/[0.04] border border-white/[0.08] p-3.5">
                     <Checkbox
                       id="agreement-modal"
                       checked={agreementDraftChecked}
                       onCheckedChange={(v) => setAgreementDraftChecked(v === true)}
-                      className="mt-0.5 border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:shadow-[0_0_10px_rgba(59,130,246,0.4)] transition-all duration-150"
                     />
-                    <label htmlFor="agreement-modal" className="text-[11px] leading-[1.55] text-muted-foreground cursor-pointer select-none">
+                    <label htmlFor="agreement-modal" className="text-[11.5px] leading-[1.6] text-foreground/70 cursor-pointer select-none">
                       I have read and agree to the{" "}
                       <a href="https://vaulttradingacademy.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Terms of Service</a>
                       {" "}and{" "}
@@ -454,7 +454,7 @@ const Signup = () => {
                   </div>
                   <Button
                     type="button"
-                    className="w-full h-11 text-sm font-semibold rounded-xl"
+                    className={`w-full h-11 text-sm font-semibold rounded-xl transition-all duration-200 ${agreementDraftChecked ? "shadow-[0_0_20px_rgba(59,130,246,0.2)]" : ""}`}
                     disabled={!agreementDraftChecked}
                     onClick={() => { setAgreementChecked(true); setAgreementModalOpen(false); }}
                   >
