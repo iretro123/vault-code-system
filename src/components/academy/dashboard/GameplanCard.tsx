@@ -7,6 +7,8 @@ import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { hapticLight, playCheckSound } from "@/lib/nativeFeedback";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   onCheckIn: () => void;
