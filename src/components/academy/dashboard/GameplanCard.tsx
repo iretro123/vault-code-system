@@ -342,8 +342,26 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       const wasDone = !!next[taskId];
       if (wasDone) {
         delete next[taskId];
+        // Track dismissal so auto-detect doesn't re-check it
+        if (taskId.startsWith("foundation-")) {
+          setDismissed((d) => {
+            const updated = new Set(d);
+            updated.add(taskId);
+            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch {}
+            return updated;
+          });
+        }
       } else {
         next[taskId] = new Date().toISOString();
+        // Remove from dismissed if user re-checks
+        if (taskId.startsWith("foundation-")) {
+          setDismissed((d) => {
+            const updated = new Set(d);
+            updated.delete(taskId);
+            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch {}
+            return updated;
+          });
+        }
         queueMicrotask(() => {
           void hapticLight();
           void playCheckSound();
