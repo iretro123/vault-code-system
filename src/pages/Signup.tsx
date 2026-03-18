@@ -29,6 +29,16 @@ const Signup = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
+  const [agreementChecked, setAgreementChecked] = useState(false);
+  const ipRef = useRef<string | null>(null);
+
+  // Best-effort IP fetch
+  useEffect(() => {
+    fetch("https://api.ipify.org?format=json")
+      .then(r => r.json())
+      .then(d => { ipRef.current = d.ip; })
+      .catch(() => {});
+  }, []);
 
   // Debounced membership check
   useEffect(() => {
