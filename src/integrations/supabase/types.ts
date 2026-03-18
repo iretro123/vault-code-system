@@ -1150,6 +1150,7 @@ export type Database = {
           id: string
           is_replay: boolean
           join_url: string
+          live_notified_at: string | null
           replay_url: string | null
           session_date: string
           session_type: string
@@ -1165,6 +1166,7 @@ export type Database = {
           id?: string
           is_replay?: boolean
           join_url?: string
+          live_notified_at?: string | null
           replay_url?: string | null
           session_date: string
           session_type?: string
@@ -1180,6 +1182,7 @@ export type Database = {
           id?: string
           is_replay?: boolean
           join_url?: string
+          live_notified_at?: string | null
           replay_url?: string | null
           session_date?: string
           session_type?: string
@@ -2907,6 +2910,7 @@ export type Database = {
         Returns: string
       }
       nightly_memory_aggregation: { Args: never; Returns: undefined }
+      notify_live_sessions: { Args: never; Returns: undefined }
       promote_to_ceo: { Args: { target_user_id: string }; Returns: undefined }
       set_account_balance: {
         Args: { _balance: number; _user_id: string }
