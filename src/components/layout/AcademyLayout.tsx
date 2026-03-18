@@ -149,12 +149,12 @@ function AcademyLayoutInner() {
           </div>
         </header>
 
-        <main className={`flex-1 overflow-y-auto ${isCommunity ? "pb-6" : "pb-24 md:pb-6"}`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden ${isCommunity ? "pb-6" : "pb-24 md:pb-6"}`}>
           <Outlet />
         </main>
 
         <CoachDrawer />
-        {!isCommunity && <MobileNav />}
+        <MobileNav />
       </div>
 
       {showBlockModal && (

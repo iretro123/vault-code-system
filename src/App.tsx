@@ -9,6 +9,7 @@ import { VaultStateProvider } from "@/contexts/VaultStateContext";
 import { AcademyDataProvider } from "@/contexts/AcademyDataContext";
 import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import { captureReferral } from "@/lib/referralCapture";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import NotFound from "./pages/NotFound";
 import TradeLog from "./pages/TradeLog";
 import Auth from "./pages/Auth";
@@ -64,11 +65,17 @@ function ReferralCapture() {
   return null;
 }
 
+function PushBootstrap() {
+  usePushNotifications();
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <ReferralCapture />
       <AuthProvider>
+        <PushBootstrap />
         <VaultStateProvider>
         <AcademyDataProvider>
         <AdminModeProvider>

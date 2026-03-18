@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Check, Plus, ChevronRight, ChevronDown } from "lucide-react";
+import { Check, Plus, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
+import { hapticLight, playCheckSound } from "@/lib/nativeFeedback";
 
 interface Props {
   onCheckIn: () => void;
@@ -96,18 +98,120 @@ const CONSISTENCY_TASKS: Omit<TaskItem, "done">[] = [
   { id: "consistency-no-trade", title: "Mark no-trade day (if no setup)" },
 ];
 
+const COHORT_BUCKETS = [
+  { label: "0-33%", min: 0, max: 33, barClass: "bg-rose-500/35", dotClass: "bg-rose-400" },
+  { label: "34-66%", min: 34, max: 66, barClass: "bg-amber-500/35", dotClass: "bg-amber-400" },
+  { label: "67-100%", min: 67, max: 100, barClass: "bg-emerald-500/35", dotClass: "bg-emerald-400" },
+];
+
+type CohortBucket = typeof COHORT_BUCKETS[number] & { count: number; pct: number };
+
+type CohortUser = {
+  user_id: string;
+  name: string;
+  avatar_url: string | null;
+  done: number;
+  total: number;
+  percent: number;
+};
+
+type CohortStats = {
+  totalUsers: number;
+  buckets: CohortBucket[];
+  behind: CohortUser[];
+};
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function TaskConfettiBurst() {
+  const particles = useMemo(() => {
+    const colors = ["#34D399", "#60A5FA", "#F59E0B", "#F472B6", "#A78BFA"];
+    return Array.from({ length: 18 }, (_, i) => {
+      const angle = -70 + Math.random() * 140;
+      const distance = 120 + Math.random() * 80;
+      return {
+        id: i,
+        color: colors[i % colors.length],
+        left: 20 + Math.random() * 60,
+        delay: Math.random() * 0.15,
+        angle,
+        distance,
+        rotation: Math.random() * 540 - 270,
+        width: 3 + Math.random() * 2,
+        height: 6 + Math.random() * 5,
+        borderRadius: Math.random() > 0.6 ? "999px" : "1px",
+      };
+    });
+  }, []);
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {particles.map((p) => (
+        <span
+          key={p.id}
+          className="absolute"
+          style={{
+            left: `${p.left}%`,
+            bottom: "18%",
+            width: p.width,
+            height: p.height,
+            backgroundColor: p.color,
+            borderRadius: p.borderRadius,
+            animationName: "chat-confetti-burst",
+            animationDuration: "1.2s",
+            animationDelay: `${p.delay}s`,
+            animationTimingFunction: "cubic-bezier(0.2, 0.6, 0.4, 1)",
+            animationFillMode: "forwards",
+            opacity: 0,
+            ["--confetti-x" as string]: `${Math.cos((p.angle * Math.PI) / 180) * p.distance}px`,
+            ["--confetti-y" as string]: `${-p.distance}px`,
+            ["--confetti-r" as string]: `${p.rotation}deg`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [showTasks, setShowTasks] = useState(false);
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
+  const [cohortStats, setCohortStats] = useState<CohortStats | null>(null);
+  const [cohortLoading, setCohortLoading] = useState(false);
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiTimerRef = useRef<number | null>(null);
+
+  const triggerConfetti = useCallback(() => {
+    setConfettiKey((k) => k + 1);
+    setShowConfetti(true);
+    if (confettiTimerRef.current) {
+      window.clearTimeout(confettiTimerRef.current);
+    }
+    confettiTimerRef.current = window.setTimeout(() => {
+      setShowConfetti(false);
+      confettiTimerRef.current = null;
+    }, 1200);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(completedMap));
   }, [completedMap]);
+
+  useEffect(() => {
+    return () => {
+      if (confettiTimerRef.current) {
+        window.clearTimeout(confettiTimerRef.current);
+        confettiTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const groups = useMemo<TaskGroup[]>(() => {
     const hydrate = (items: Omit<TaskItem, "done">[]): TaskItem[] =>
@@ -125,6 +229,14 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const totalCount = weeklyTasks.length;
   const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
+  const activeGroupIndex = useMemo(() => {
+    const idx = groups.findIndex((group) => group.tasks.some((t) => !t.done));
+    return idx === -1 ? groups.length - 1 : idx;
+  }, [groups]);
+
+  const activeGroup = groups[activeGroupIndex];
+  const activeTaskIds = useMemo(() => new Set(activeGroup?.tasks.map((t) => t.id)), [activeGroup]);
+
   const allTasksLookup = useMemo(() => {
     const map: Record<string, string> = {};
     [...FOUNDATION_TASKS, ...THIS_WEEK_TASKS, ...CONSISTENCY_TASKS].forEach((t) => {
@@ -135,7 +247,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
   const recentItems = useMemo(() => {
     return Object.entries(completedMap)
-      .filter(([id]) => allTasksLookup[id])
+      .filter(([id]) => allTasksLookup[id] && activeTaskIds.has(id))
       .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime())
       .slice(0, 5)
       .map(([id, ts]) => ({
@@ -143,19 +255,27 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
         title: allTasksLookup[id],
         date: new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       }));
-  }, [completedMap, allTasksLookup]);
+  }, [completedMap, allTasksLookup, activeTaskIds]);
 
   const handleToggle = useCallback((taskId: string) => {
     setCompletedMap((prev) => {
       const next = { ...prev };
-      if (next[taskId]) {
+      const wasDone = !!next[taskId];
+      if (wasDone) {
         delete next[taskId];
       } else {
         next[taskId] = new Date().toISOString();
+        queueMicrotask(() => {
+          void hapticLight();
+          void playCheckSound();
+        });
+        queueMicrotask(() => {
+          triggerConfetti();
+        });
       }
       return next;
     });
-  }, []);
+  }, [triggerConfetti]);
 
   const handleNavigate = useCallback((taskId: string) => {
     if (taskId === "foundation-claim-role" && onClaimRole) {
@@ -174,8 +294,97 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
     return null;
   }, [groups]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    let active = true;
+
+    async function loadCohort() {
+      setCohortLoading(true);
+      const { data: taskRows, error } = await (supabase as any)
+        .from("user_task")
+        .select("user_id, status, type")
+        .eq("type", "onboarding");
+
+      if (error || !taskRows) {
+        if (active) setCohortLoading(false);
+        return;
+      }
+
+      const progressMap = new Map<string, { done: number; total: number }>();
+
+      for (const row of taskRows as any[]) {
+        const current = progressMap.get(row.user_id) || { done: 0, total: 0 };
+        current.total += 1;
+        if (row.status === "done") current.done += 1;
+        progressMap.set(row.user_id, current);
+      }
+
+      const userIds = Array.from(progressMap.keys());
+      if (userIds.length === 0) {
+        const emptyBuckets: CohortBucket[] = COHORT_BUCKETS.map((bucket) => ({
+          ...bucket,
+          count: 0,
+          pct: 0,
+        }));
+        if (!active) return;
+        setCohortStats({ totalUsers: 0, buckets: emptyBuckets, behind: [] });
+        setCohortLoading(false);
+        return;
+      }
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, avatar_url")
+        .in("user_id", userIds);
+
+      const profileMap = new Map<string, { name: string; avatar_url: string | null }>();
+      for (const p of (profiles as any[] || [])) {
+        profileMap.set(p.user_id, {
+          name: p.display_name || "Student",
+          avatar_url: p.avatar_url || null,
+        });
+      }
+
+      const users: CohortUser[] = userIds.map((userId) => {
+        const counts = progressMap.get(userId) || { done: 0, total: 0 };
+        const percent = counts.total > 0 ? Math.round((counts.done / counts.total) * 100) : 0;
+        const profile = profileMap.get(userId);
+        return {
+          user_id: userId,
+          name: profile?.name || "Student",
+          avatar_url: profile?.avatar_url || null,
+          done: counts.done,
+          total: counts.total,
+          percent,
+        };
+      });
+
+      const totalUsers = users.length;
+      const buckets: CohortBucket[] = COHORT_BUCKETS.map((bucket) => {
+        const count = users.filter((u) => u.percent >= bucket.min && u.percent <= bucket.max).length;
+        const pct = totalUsers > 0 ? Math.round((count / totalUsers) * 100) : 0;
+        return { ...bucket, count, pct };
+      });
+
+      const behind = users
+        .filter((u) => u.percent < 67)
+        .sort((a, b) => a.percent - b.percent || a.name.localeCompare(b.name))
+        .slice(0, 6);
+
+      if (!active) return;
+      setCohortStats({ totalUsers, buckets, behind });
+      setCohortLoading(false);
+    }
+
+    loadCohort();
+
+    return () => {
+      active = false;
+    };
+  }, [isAdmin]);
+
   return (
-    <div ref={cardRef} className="vault-premium-card p-5 md:p-6 space-y-4">
+    <div className="vault-premium-card p-5 md:p-6 space-y-4 relative overflow-hidden">
+      {showConfetti && <TaskConfettiBurst key={confettiKey} />}
       <div className="w-full flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold text-foreground">Your Onboarding</h2>
         {isAdmin && (
@@ -230,45 +439,85 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       </div>
 
       {/* Task groups */}
-      {showTasks && (
-        <>
-          {groups.map((group) => (
-            <TaskGroupSection key={group.title} group={group} onToggle={handleToggle} onNavigate={handleNavigate} />
-          ))}
-
-          <div className="pt-2 border-t border-white/[0.06] space-y-2">
-            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-              Recently Completed
+      {activeGroup && (
+        <div className="space-y-3">
+          <TaskGroupSection group={activeGroup} onToggle={handleToggle} onNavigate={handleNavigate} />
+          {activeGroupIndex < groups.length - 1 && (
+            <p className="text-[11px] text-muted-foreground/50">
+              Complete this section to unlock {groups[activeGroupIndex + 1].title}.
             </p>
-            {recentItems.length > 0 ? recentItems.map((item) => (
-              <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Check className="h-3 w-3 text-emerald-400/60" />
-                <span className="flex-1 truncate">{item.title}</span>
-                <span className="text-[10px] tabular-nums">{item.date}</span>
-              </div>
-            )) : (
-              <p className="text-xs text-muted-foreground/50">No activity yet — complete your first task to see it here.</p>
-            )}
-          </div>
-        </>
+          )}
+        </div>
       )}
 
-      <button
-        onClick={() => {
-          setShowTasks((v) => {
-            if (v) {
-              requestAnimationFrame(() => {
-                cardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-              });
-            }
-            return !v;
-          });
-        }}
-        className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors duration-100"
-      >
-        {showTasks ? "Hide Tasks" : "Show Tasks"}
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-150 ${showTasks ? "rotate-180" : ""}`} />
-      </button>
+      <div className="pt-2 border-t border-white/[0.06] space-y-2">
+        <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+          Recently Completed
+        </p>
+        {recentItems.length > 0 ? recentItems.map((item) => (
+          <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Check className="h-3 w-3 text-emerald-400/60" />
+            <span className="flex-1 truncate">{item.title}</span>
+            <span className="text-[10px] tabular-nums">{item.date}</span>
+          </div>
+        )) : (
+          <p className="text-xs text-muted-foreground/50">No activity yet — complete your first task to see it here.</p>
+        )}
+      </div>
+
+      {isAdmin && (
+        <div className="pt-2 border-t border-white/[0.06] space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
+              Cohort Tracker
+            </p>
+            <span className="text-[10px] text-muted-foreground/50">
+              {cohortLoading ? "Loading..." : `${cohortStats?.totalUsers ?? 0} students`}
+            </span>
+          </div>
+
+          <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden flex">
+            {(cohortStats?.buckets || COHORT_BUCKETS.map((b) => ({ ...b, count: 0, pct: 0 }))).map((bucket) => (
+              <div
+                key={bucket.label}
+                className={bucket.barClass}
+                style={{ width: `${bucket.pct}%` }}
+              />
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground/60">
+            {(cohortStats?.buckets || COHORT_BUCKETS.map((b) => ({ ...b, count: 0, pct: 0 }))).map((bucket) => (
+              <span key={bucket.label} className="flex items-center gap-1">
+                <span className={`h-2 w-2 rounded-full ${bucket.dotClass}`} />
+                {bucket.label} {bucket.pct}%
+              </span>
+            ))}
+          </div>
+
+          {cohortStats?.behind && cohortStats.behind.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {cohortStats.behind.map((student) => (
+                <div
+                  key={student.user_id}
+                  className="flex items-center gap-1.5 rounded-full border border-white/[0.08] px-2 py-1 bg-white/[0.03]"
+                >
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={student.avatar_url || undefined} alt={student.name} />
+                    <AvatarFallback className="text-[9px]">
+                      {getInitials(student.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-[10px] text-foreground/80">{student.name}</span>
+                  <span className="text-[10px] text-muted-foreground/60">{student.percent}%</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] text-muted-foreground/50">Everyone is on pace.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

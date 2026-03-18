@@ -40,6 +40,7 @@ import shareWinEmoji from "@/assets/emoji/share-win.svg";
 import reactionThumbsUpEmoji from "@/assets/emoji/reaction-thumbs-up.svg";
 import reactionFireEmoji from "@/assets/emoji/reaction-fire.svg";
 import reactionSkullEmoji from "@/assets/emoji/reaction-skull.svg";
+import { hapticNotification, playMessageSound } from "@/lib/nativeFeedback";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -68,6 +69,10 @@ interface RoomChatProps {
 
 function getInitials(name: string) {
   return name.split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2) || "?";
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
@@ -341,9 +346,21 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     user?.email?.split("@")[0] ||
     "Anonymous";
 
+  const mentionTargets = useMemo(() => {
+    const targets: string[] = [];
+    const username = (profile as any)?.username;
+    const display = (profile as any)?.display_name;
+    if (username) targets.push(username);
+    if (display) targets.push(display.replace(/\s+/g, ""));
+    if (user?.email) targets.push(user.email.split("@")[0]);
+    return [...new Set(targets.filter(Boolean))];
+  }, [profile, user]);
+
   const { typingText, broadcastTyping } = useTypingIndicator(roomSlug, user?.id, displayName);
   const { trackMessages, getReactions, toggleReaction } = useMessageReactions(roomSlug, user?.id);
   const { ensureProfiles, getProfile } = useChatProfiles();
+  const lastNotifiedRef = useRef<string | null>(null);
+  const hasInitializedNotify = useRef(false);
 
   // Track visible message IDs for reaction fetching + fetch profiles
   useEffect(() => {
@@ -354,7 +371,34 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     }
   }, [messages, trackMessages, ensureProfiles]);
 
+  useEffect(() => {
+    if (!active || messages.length === 0) return;
+    const latest = messages[messages.length - 1];
+    if (!latest || latest.id.startsWith("optimistic-")) return;
+    if (!hasInitializedNotify.current) {
+      lastNotifiedRef.current = latest.id;
+      hasInitializedNotify.current = true;
+      return;
+    }
+    if (latest.id === lastNotifiedRef.current) return;
+    lastNotifiedRef.current = latest.id;
+    if (latest.user_id === user?.id) return;
+
+    const isRz = /^rz\b/i.test(latest.user_name || "");
+    const isMentioned =
+      /@everyone\b/i.test(latest.body || "") ||
+      (mentionTargets.length > 0 &&
+        new RegExp(`@(${mentionTargets.map(escapeRegex).join("|")})\\b`, "i").test(latest.body || ""));
+    const shouldBuzz = isRz || isMentioned;
+
+    void playMessageSound();
+    if (shouldBuzz) {
+      void hapticNotification();
+    }
+  }, [active, messages, mentionTargets, user?.id]);
+
   const [draft, setDraft] = useState("");
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt?: string; filename?: string } | null>(null);
@@ -362,6 +406,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
+  const initialScrollDone = useRef(false);
+  const userScrolledRef = useRef(false);
+  const autoScrollingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit state
@@ -376,6 +423,17 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const isTradeRecaps = roomSlug === "trade-recaps";
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const [chatEffect, setChatEffect] = useState<ChatEffectType>(null);
+  const isComposing = isComposerFocused || draft.trim().length > 0;
+  const scrollToBottomInstant = useCallback(() => {
+    const el = containerRef.current;
+    autoScrollingRef.current = true;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+    bottomRef.current?.scrollIntoView({ block: "end" });
+    setShowJumpToLatest(false);
+    requestAnimationFrame(() => {
+      autoScrollingRef.current = false;
+    });
+  }, []);
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -415,24 +473,75 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }, [editingId]);
 
   useEffect(() => {
+    if (!userScrolledRef.current && messages.length > 0) {
+      scrollToBottomInstant();
+      return;
+    }
     if (shouldAutoScroll.current && containerRef.current) {
       containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
     }
-  }, [messages.length]);
+  }, [messages.length, scrollToBottomInstant]);
+
+  useEffect(() => {
+    if (!active || messages.length === 0) return;
+    if (initialScrollDone.current) return;
+    initialScrollDone.current = true;
+    shouldAutoScroll.current = true;
+    scrollToBottomInstant();
+    requestAnimationFrame(() => scrollToBottomInstant());
+    setTimeout(scrollToBottomInstant, 50);
+  }, [active, messages.length, scrollToBottomInstant]);
+
+  useEffect(() => {
+    if (!active) return;
+    shouldAutoScroll.current = true;
+    requestAnimationFrame(() => scrollToBottomInstant());
+  }, [active]);
+
+  useEffect(() => {
+    if (!active || loading) return;
+    if (userScrolledRef.current) return;
+    shouldAutoScroll.current = true;
+    scrollToBottomInstant();
+    requestAnimationFrame(() => scrollToBottomInstant());
+    setTimeout(scrollToBottomInstant, 150);
+    setTimeout(scrollToBottomInstant, 400);
+  }, [active, loading, messages.length, scrollToBottomInstant]);
+
+  useEffect(() => {
+    initialScrollDone.current = false;
+    userScrolledRef.current = false;
+  }, [roomSlug]);
+
+  useEffect(() => {
+    if (!active) return;
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      if (shouldAutoScroll.current || !initialScrollDone.current) {
+        scrollToBottomInstant();
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [active, scrollToBottomInstant]);
 
   // Removed: [loading] scroll effect — redundant with SWR cache and causes layout jump on mount
 
   const handleScroll = useCallback(() => {
+    if (autoScrollingRef.current) return;
     const el = containerRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (!atBottom) userScrolledRef.current = true;
     shouldAutoScroll.current = atBottom;
     setShowJumpToLatest(!atBottom);
   }, []);
 
   const jumpToLatest = () => {
-    containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
-    setShowJumpToLatest(false);
+    userScrolledRef.current = false;
+    shouldAutoScroll.current = true;
+    scrollToBottomInstant();
   };
 
   const selectMention = useCallback(
@@ -1169,7 +1278,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           onKeyDown={handleEditKeyDown}
                           maxLength={1000}
                           rows={1}
-                          className="w-full bg-card border border-white/[0.08] rounded-lg px-3 py-1.5 text-sm text-foreground resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
+                          className="w-full bg-card border border-white/[0.08] rounded-lg px-3 py-1.5 text-[16px] md:text-sm text-foreground resize-none outline-none focus:ring-1 focus:ring-primary/40 min-h-[32px] max-h-[120px] leading-relaxed"
                         />
                         <div className="flex items-center gap-2 mt-1">
                           <button
@@ -1403,7 +1512,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       </div>
 
       {/* Jump to latest */}
-      {showJumpToLatest && (
+      {showJumpToLatest && !isComposing && (
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-10">
           <button
             onClick={jumpToLatest}
@@ -1546,7 +1655,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                  className={cn(
-                  "relative rounded-xl bg-card border shadow-[0_1px_4px_rgba(0,0,0,0.15)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.15)] transition-all duration-100",
+                  "relative rounded-xl bg-card border shadow-[0_1px_4px_rgba(0,0,0,0.15)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.15)] transition-all duration-100 max-w-full overflow-x-hidden",
                   dragOver
                     ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.15)]"
                     : "border-white/[0.08]"
@@ -1558,7 +1667,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     <span className="text-[13px] font-semibold text-primary">Drop files to attach</span>
                   </div>
                 )}
-                <div className="flex items-end gap-2 px-3 py-2">
+                <div className="flex items-end gap-2 px-3 py-2 min-w-0">
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -1589,11 +1698,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     value={draft}
                     onChange={handleDraftChange}
                     onKeyDown={handleKeyDown}
+                    onFocus={() => setIsComposerFocused(true)}
+                    onBlur={() => setIsComposerFocused(false)}
                     placeholder="Type a message…"
                     maxLength={1000}
                     disabled={sending}
                     rows={1}
-                    className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
+                    className="flex-1 min-w-0 w-full bg-transparent text-[16px] md:text-[14px] text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
                   />
 
                   {/* Send button — premium Vault blue */}

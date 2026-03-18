@@ -8,13 +8,20 @@ if (typeof URL.parse !== "function") {
 
 import { createRoot } from "react-dom/client";
 import { Capacitor } from "@capacitor/core";
+import { Keyboard } from "@capacitor/keyboard";
 import App from "./App.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
 import "./index.css";
 
-if (Capacitor.isNativePlatform()) {
+const isNativeCapacitor =
+  Capacitor.isNativePlatform() ||
+  window.location.protocol === "capacitor:" ||
+  window.navigator.userAgent.includes("Capacitor");
+
+if (isNativeCapacitor) {
   document.documentElement.classList.add("native-capacitor");
   document.body.classList.add("native-capacitor");
+  Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
 }
 
 createRoot(document.getElementById("root")!).render(

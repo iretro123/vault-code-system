@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useUserPreferences, type AlertChannel } from "@/hooks/useUserPreferences";
 import { cn } from "@/lib/utils";
 import { Bell, Mail, Smartphone } from "lucide-react";
+import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 const TOGGLES = [
   { key: "notifications_enabled", label: "Enable Notifications", desc: "Master toggle for all alerts." },
@@ -25,6 +26,7 @@ const CHANNEL_OPTIONS: { value: AlertChannel; label: string; icon: typeof Bell; 
 
 export function SettingsNotifications() {
   const { prefs, loading, updatePrefs } = useUserPreferences();
+  const { requestIfNeeded: requestOSPermission } = useOSNotifications();
   const [values, setValues] = useState<Record<ToggleKey, boolean>>({
     notifications_enabled: true,
     sounds_enabled: true,
@@ -52,6 +54,9 @@ export function SettingsNotifications() {
   const handleToggle = async (key: ToggleKey, checked: boolean) => {
     setValues((v) => ({ ...v, [key]: checked }));
     await updatePrefs({ [key]: checked });
+    if (key === "notifications_enabled" && checked) {
+      await requestOSPermission();
+    }
   };
 
   const handleChannelChange = async (val: AlertChannel) => {

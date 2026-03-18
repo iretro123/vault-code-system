@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
+import { hapticStrong } from "@/lib/nativeFeedback";
 
 export interface AcademyNotification {
   id: string;
@@ -92,14 +93,19 @@ export function useAcademyNotifications() {
           setNewArrival(true);
           refetchNotifications();
 
-          // OS/browser notification when tab is hidden
-          notify({
-            id: n.id,
-            type: n.type,
-            title: n.title,
-            body: n.body || "",
-            linkPath: n.link_path,
-          });
+          // OS/browser notification only for mentions, CEO/RZ alerts, or live-now
+          if (n.type === "mention" || n.type === "rz_message" || n.type === "live_now") {
+            notify({
+              id: n.id,
+              type: n.type,
+              title: n.title,
+              body: n.body || "",
+              linkPath: n.link_path,
+            });
+            if (n.type === "live_now") {
+              void hapticStrong();
+            }
+          }
         }
       )
       .subscribe();

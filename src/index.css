@@ -27,21 +27,29 @@ body.native-capacitor #root {
 
 body.native-capacitor {
   touch-action: pan-y;
+  overscroll-behavior-x: none;
 }
 
 body.native-capacitor .overflow-auto,
 body.native-capacitor .overflow-scroll,
 body.native-capacitor .overflow-x-auto,
-body.native-capacitor .overflow-x-scroll {
+body.native-capacitor .overflow-x-scroll,
+body.native-capacitor .overflow-y-auto,
+body.native-capacitor .overflow-y-scroll {
   overflow-x: hidden !important;
 }
 
 body.native-capacitor .academy-top-safe {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+  padding-top: max(env(safe-area-inset-top, 0px), 32px);
 }
 
 body.native-capacitor .academy-sidebar-safe-top {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+  padding-top: max(env(safe-area-inset-top, 0px), 32px);
+}
+
+.vault-chat-scroll,
+[data-chat-composer] {
+  overscroll-behavior-x: none;
 }
 
 .chat-emoji {

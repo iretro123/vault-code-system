@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { format, isPast, isThisWeek, startOfMonth } from "date-fns";
 import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
+import { useLiveNow } from "@/hooks/useLiveNow";
 
 import liveSessionPrep from "@/assets/live-session-prep.jpg";
 import liveSessionTrading from "@/assets/live-session-trading.jpg";
@@ -186,7 +187,7 @@ function SessionForm({ initial, onSave, onCancel, saving }: {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div><label className="text-xs text-muted-foreground mb-1 block">Duration (min)</label><Input value={duration} onChange={(e) => setDuration(e.target.value.replace(/\D/g, ""))} placeholder="60" /></div>
-        <div><label className="text-xs text-muted-foreground mb-1 block">Status</label><select value={status} onChange={(e) => setStatus(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"><option value="scheduled">Scheduled</option><option value="completed">Completed</option></select></div>
+        <div><label className="text-xs text-muted-foreground mb-1 block">Status</label><select value={status} onChange={(e) => setStatus(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"><option value="scheduled">Scheduled</option><option value="live">Live</option><option value="completed">Completed</option></select></div>
       </div>
       <Input value={joinUrl} onChange={(e) => setJoinUrl(e.target.value)} placeholder="Join URL (Zoom, Meet, etc.)" />
       <div className="flex items-center gap-2"><input type="checkbox" id="is-replay" checked={isReplay} onChange={(e) => setIsReplay(e.target.checked)} className="rounded" /><label htmlFor="is-replay" className="text-sm text-muted-foreground">Has replay</label></div>
@@ -223,13 +224,16 @@ const AcademyLive = () => {
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user } = useAuth();
   const { isAdminActive } = useAdminMode();
-  const { hasPermission } = useAcademyPermissions();
+  const { hasPermission, isCEO } = useAcademyPermissions();
   const canManage = isAdminActive && hasPermission("manage_live_sessions");
+  const { liveSession, refresh: refreshLiveNow } = useLiveNow();
   const { monthCount, totalCount } = useAttendance(user?.id);
 
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [notifySending, setNotifySending] = useState(false);
+  const [liveToggleSending, setLiveToggleSending] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
 
@@ -257,6 +261,46 @@ const AcademyLive = () => {
   const trackZoomClick = async (session: LiveSession) => {
     if (!user?.id) return;
     try { await supabase.from("live_session_attendance" as any).insert({ user_id: user.id, session_title: session.title, session_id: session.id }); } catch {}
+  };
+
+  const handleNotifyEveryone = async () => {
+    if (!isCEO || notifySending) return;
+    setNotifySending(true);
+    const { error } = await supabase.rpc("notify_live_now" as any);
+    if (error) {
+      toast.error(error.message || "Failed to send live notification.");
+    } else {
+      toast.success("Live notification sent.");
+    }
+    setNotifySending(false);
+  };
+
+  const handleGoLive = async () => {
+    if (!isCEO || liveToggleSending) return;
+    setLiveToggleSending(true);
+    const { error } = await supabase.rpc("start_live_now" as any);
+    if (error) {
+      toast.error(error.message || "Failed to start live session.");
+    } else {
+      toast.success("You are live.");
+      refetch();
+      refreshLiveNow();
+    }
+    setLiveToggleSending(false);
+  };
+
+  const handleStopLive = async () => {
+    if (!isCEO || liveToggleSending) return;
+    setLiveToggleSending(true);
+    const { error } = await supabase.rpc("stop_live_now" as any);
+    if (error) {
+      toast.error(error.message || "Failed to stop live session.");
+    } else {
+      toast.success("Live ended.");
+      refetch();
+      refreshLiveNow();
+    }
+    setLiveToggleSending(false);
   };
 
   const handleAdd = async (data: any) => {
@@ -367,6 +411,40 @@ const AcademyLive = () => {
         {/* HERO + SIDEBAR */}
         <div className="flex gap-6 max-w-[1200px]">
           <div className="flex-1 min-w-0">
+            {isCEO && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleNotifyEveryone}
+                  disabled={notifySending}
+                >
+                  <Bell className="h-4 w-4" />
+                  {notifySending ? "Sending..." : "Notify everyone"}
+                </Button>
+                {liveSession ? (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="gap-2"
+                    onClick={handleStopLive}
+                    disabled={liveToggleSending}
+                  >
+                    {liveToggleSending ? "Stopping..." : "Stop Live"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="gap-2"
+                    onClick={handleGoLive}
+                    disabled={liveToggleSending}
+                  >
+                    <Radio className="h-4 w-4" />
+                    {liveToggleSending ? "Going live..." : "Go Live"}
+                  </Button>
+                )}
+              </div>
+            )}
             {nextSession ? (() => {
               const isLiveNow = Date.now() >= new Date(nextSession.session_date).getTime();
               return (

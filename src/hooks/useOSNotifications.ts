@@ -43,6 +43,8 @@ function pathForType(type: string, linkPath?: string | null): string {
       return "/academy/learn";
     case "live_soon":
       return "/academy/live";
+    case "live_now":
+      return "/academy/live";
     default:
       return "/academy/home";
   }
@@ -93,8 +95,8 @@ export function useOSNotifications() {
         if (first) shownIds.delete(first);
       }
 
-      // Only show OS notification when tab is hidden/unfocused
-      if (document.visibilityState === "visible" && document.hasFocus()) return;
+      // Only show OS notification when app is open/foreground
+      if (document.visibilityState !== "visible") return;
 
       try {
         const n = new Notification(payload.title, {
