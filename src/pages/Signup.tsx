@@ -398,7 +398,7 @@ const Signup = () => {
 
             {/* Agreement Modal */}
             <Dialog open={agreementModalOpen} onOpenChange={setAgreementModalOpen}>
-              <DialogContent className="max-w-[92vw] sm:max-w-lg w-full max-h-[calc(100dvh-1.5rem)] p-0 gap-0 border-white/[0.08] bg-[hsl(220,20%,8%)] shadow-[0_24px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(59,130,246,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-2xl overflow-hidden backdrop-blur-xl flex flex-col">
+              <DialogContent className="max-w-[92vw] sm:max-w-lg w-full !max-h-[85dvh] p-0 gap-0 border-white/[0.08] bg-[hsl(220,20%,8%)] shadow-[0_24px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(59,130,246,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-2xl overflow-hidden backdrop-blur-xl !flex !flex-col">
                 {/* Modal Header */}
                 <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent shrink-0">
                   <div className="flex items-center gap-3.5">
@@ -412,8 +412,11 @@ const Signup = () => {
                   </div>
                 </div>
 
-                {/* Scrollable Legal Text */}
-                <ScrollArea className="min-h-0 flex-1">
+                {/* Scrollable Legal Text — native scroll for mobile touch reliability */}
+                <div
+                  className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+                  style={{ touchAction: "pan-y" }}
+                >
                   <div className="px-4 sm:px-6 py-4 bg-black/20">
                     <p className="text-[11.5px] leading-[1.75] text-muted-foreground/90">
                       By creating an account and using Vault Trading Academy and VAULT OS, you acknowledge and agree that the platform provides educational, informational, analytical, journaling, tracking, and risk-management tools only. Nothing on the platform, including content, alerts, analytics, calculators, coaching, live sessions, community discussions, performance tracking, or any other feature, constitutes financial, investment, trading, legal, or tax advice, or a recommendation to buy, sell, hold, or enter any security, option, or financial instrument.
@@ -433,7 +436,7 @@ const Signup = () => {
                       You further acknowledge that your use of the platform is subject to the Terms of Service and Privacy Policy, including provisions regarding account use, payments, subscriptions, cancellations, refunds, data practices, and platform rules. If you do not agree, do not create an account or use the platform.
                     </p>
                   </div>
-                </ScrollArea>
+                </div>
 
                 {/* Footer with Checkbox + Confirm */}
                 <div className="px-4 sm:px-6 py-4 sm:py-5 border-t border-white/[0.06] bg-white/[0.02] backdrop-blur-sm space-y-3 sm:space-y-4 shrink-0">
