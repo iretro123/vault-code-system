@@ -117,6 +117,17 @@ const Signup = () => {
           username: username.trim().toLowerCase(),
           display_name: `${firstName.trim()} ${lastName.trim()}`,
         });
+
+        // Record agreement acceptance
+        try {
+          await supabase.from("agreement_acceptances" as any).insert({
+            user_id: newUserId,
+            agreement_version: "1.0",
+            ip_address: ipRef.current,
+          } as any);
+        } catch (e) {
+          console.error("[Signup] agreement acceptance error:", e);
+        }
       }
 
       // Referral attribution
