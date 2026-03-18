@@ -208,7 +208,7 @@ const Signup = () => {
 
   return (
     <div
-      className="min-h-screen overflow-y-auto px-4 py-12 sm:py-16 flex items-start justify-center"
+      className="h-[100dvh] overflow-y-auto px-4 pt-12 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] sm:pt-16 sm:pb-16 flex items-start justify-center"
       style={{
         background: `
           radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
