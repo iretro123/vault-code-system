@@ -657,26 +657,18 @@ function TaskGroupSection({
               {task.done && <Check className="h-3 w-3 text-emerald-400" />}
             </button>
 
-            {/* Title area — navigates if incomplete */}
-            {!task.done && task.route ? (
-              <button
-                onClick={() => onNavigate(task.id)}
-                className="flex-1 text-sm font-medium text-foreground/90 text-left hover:text-primary transition-colors duration-100 truncate"
-              >
-                {task.title}
-              </button>
-            ) : (
-              <span
-                className={`flex-1 text-sm font-medium truncate ${
-                  task.done ? "text-muted-foreground line-through" : "text-foreground/90"
-                }`}
-              >
-                {task.title}
-              </span>
-            )}
+            {/* Title area — always navigates */}
+            <button
+              onClick={() => onNavigate(task.id)}
+              className={`flex-1 text-sm font-medium text-left truncate transition-colors duration-100 ${
+                task.done ? "text-muted-foreground line-through hover:text-foreground/70" : "text-foreground/90 hover:text-primary"
+              }`}
+            >
+              {task.title}
+            </button>
 
-            {!task.done && task.route && (
-              <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+            {task.route && (
+              <ChevronRight className={`h-4 w-4 shrink-0 ${task.done ? "text-muted-foreground/20" : "text-muted-foreground/40"}`} />
             )}
           </div>
         ))}
