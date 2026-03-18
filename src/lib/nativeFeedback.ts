@@ -61,6 +61,7 @@ export async function hapticLight() {
 export async function hapticNotification() {
   if (!isNativePlatform()) return;
   try {
+    // @ts-ignore — native-only module
     const { Haptics, NotificationType } = await import("@capacitor/haptics");
     await Haptics.notification({ type: NotificationType.Success });
   } catch {
