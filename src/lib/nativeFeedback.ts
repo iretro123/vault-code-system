@@ -50,8 +50,8 @@ export async function playMessageSound() {
 export async function hapticLight() {
   if (!isNativePlatform()) return;
   try {
-    // @ts-ignore — native-only module
-    const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
+    const _hapMod = "@capacitor/haptics";
+    const { Haptics, ImpactStyle } = await import(/* @vite-ignore */ _hapMod);
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch {
     // no-op
