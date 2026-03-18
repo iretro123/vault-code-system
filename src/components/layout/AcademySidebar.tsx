@@ -8,7 +8,6 @@ import {
   BookOpen,
   Radio,
   Settings,
-  LayoutGrid,
   ChevronLeft,
   Search,
   Gift,
