@@ -7,6 +7,8 @@ import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { hapticLight, playCheckSound } from "@/lib/nativeFeedback";
+import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   onCheckIn: () => void;
@@ -180,6 +182,8 @@ function TaskConfettiBurst() {
 
 export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const { isAdmin } = useAcademyRole();
+  const { onboarding } = useAcademyData();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
   const [cohortStats, setCohortStats] = useState<CohortStats | null>(null);
@@ -212,6 +216,74 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       }
     };
   }, []);
+
+  // Auto-detect foundation task completion from real data
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+
+    async function detectFoundation() {
+      const autoCompleted: Record<string, string> = {};
+      const now = new Date().toISOString();
+
+      // 1. Claim role — from onboarding_state
+      if (onboarding?.claimed_role) {
+        autoCompleted["foundation-claim-role"] = now;
+      }
+
+      // 2. Introduce yourself — from onboarding_state
+      if (onboarding?.intro_posted) {
+        autoCompleted["foundation-introduce"] = now;
+      }
+
+      // 3. Watch first lesson — from onboarding_state
+      if (onboarding?.first_lesson_completed) {
+        autoCompleted["foundation-first-lesson"] = now;
+      }
+
+      // 4. Set risk rules — check if trading_rules row exists
+      try {
+        const { data: rulesData } = await supabase
+          .from("trading_rules")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (rulesData) {
+          autoCompleted["foundation-risk-rules"] = now;
+        }
+      } catch {}
+
+      // 5. Set starting balance — check account_balance from profiles table
+      try {
+        const { data: balanceData } = await supabase
+          .from("profiles")
+          .select("account_balance")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (balanceData && (balanceData as any).account_balance > 0) {
+          autoCompleted["foundation-starting-balance"] = now;
+        }
+      } catch {}
+
+      if (!active) return;
+
+      // Merge auto-detected into completedMap (don't overwrite existing timestamps)
+      setCompletedMap((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const [id, ts] of Object.entries(autoCompleted)) {
+          if (!next[id]) {
+            next[id] = ts;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
+
+    detectFoundation();
+    return () => { active = false; };
+  }, [user, onboarding]);
 
   const groups = useMemo<TaskGroup[]>(() => {
     const hydrate = (items: Omit<TaskItem, "done">[]): TaskItem[] =>
