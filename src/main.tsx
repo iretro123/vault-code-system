@@ -20,6 +20,7 @@ const isNativeCapacitor =
 if (isNativeCapacitor) {
   document.documentElement.classList.add("native-capacitor");
   document.body.classList.add("native-capacitor");
+  // @ts-ignore — native-only module, not available in web builds
   import("@capacitor/keyboard")
     .then(({ Keyboard }) => Keyboard.setAccessoryBarVisible({ isVisible: false }))
     .catch(() => {});
