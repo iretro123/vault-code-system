@@ -253,10 +253,17 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
         }
       } catch {}
 
-      // 5. Set starting balance — check profile.account_balance > 0
-      if (profile && profile.account_balance > 0) {
-        autoCompleted["foundation-starting-balance"] = now;
-      }
+      // 5. Set starting balance — check account_balance from profiles table
+      try {
+        const { data: balanceData } = await supabase
+          .from("profiles")
+          .select("account_balance")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (balanceData && (balanceData as any).account_balance > 0) {
+          autoCompleted["foundation-starting-balance"] = now;
+        }
+      } catch {}
 
       if (!active) return;
 
