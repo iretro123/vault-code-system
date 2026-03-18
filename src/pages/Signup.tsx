@@ -31,6 +31,8 @@ const Signup = () => {
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
   const [agreementChecked, setAgreementChecked] = useState(false);
+  const [agreementModalOpen, setAgreementModalOpen] = useState(false);
+  const [agreementDraftChecked, setAgreementDraftChecked] = useState(false);
   const ipRef = useRef<string | null>(null);
 
   // Best-effort IP fetch
