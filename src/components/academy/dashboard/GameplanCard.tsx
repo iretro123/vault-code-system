@@ -29,6 +29,7 @@ interface TaskGroup {
 
 const LS_KEY = "va_gameplan_completed";
 const LS_RESET_KEY = "va_gameplan_last_reset";
+const LS_DISMISSED_KEY = "va_gameplan_dismissed";
 const RESET_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function loadCompleted(): Record<string, string> {
@@ -188,6 +189,12 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   const [completedMap, setCompletedMap] = useState<Record<string, string>>(loadCompleted);
   const [cohortStats, setCohortStats] = useState<CohortStats | null>(null);
   const [cohortLoading, setCohortLoading] = useState(false);
+  const [dismissed, setDismissed] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(LS_DISMISSED_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
   const [confettiKey, setConfettiKey] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const confettiTimerRef = useRef<number | null>(null);
@@ -267,12 +274,12 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
       if (!active) return;
 
-      // Merge auto-detected into completedMap (don't overwrite existing timestamps)
+      // Merge auto-detected into completedMap (skip if user manually dismissed)
       setCompletedMap((prev) => {
         let changed = false;
         const next = { ...prev };
         for (const [id, ts] of Object.entries(autoCompleted)) {
-          if (!next[id]) {
+          if (!next[id] && !dismissed.has(id)) {
             next[id] = ts;
             changed = true;
           }
@@ -283,7 +290,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
     detectFoundation();
     return () => { active = false; };
-  }, [user, onboarding]);
+  }, [user, onboarding, dismissed]);
 
   const groups = useMemo<TaskGroup[]>(() => {
     const hydrate = (items: Omit<TaskItem, "done">[]): TaskItem[] =>
@@ -335,8 +342,26 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       const wasDone = !!next[taskId];
       if (wasDone) {
         delete next[taskId];
+        // Track dismissal so auto-detect doesn't re-check it
+        if (taskId.startsWith("foundation-")) {
+          setDismissed((d) => {
+            const updated = new Set(d);
+            updated.add(taskId);
+            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch {}
+            return updated;
+          });
+        }
       } else {
         next[taskId] = new Date().toISOString();
+        // Remove from dismissed if user re-checks
+        if (taskId.startsWith("foundation-")) {
+          setDismissed((d) => {
+            const updated = new Set(d);
+            updated.delete(taskId);
+            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch {}
+            return updated;
+          });
+        }
         queueMicrotask(() => {
           void hapticLight();
           void playCheckSound();
