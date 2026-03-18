@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { hapticStrong } from "@/lib/nativeFeedback";
@@ -22,54 +21,58 @@ export function usePushNotifications() {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    async function registerPush() {
-      try {
-        const perm = await PushNotifications.checkPermissions();
-        if (perm.receive !== "granted") {
-          const request = await PushNotifications.requestPermissions();
-          if (request.receive !== "granted") return;
+    // @ts-ignore — native-only module, not available in web builds
+    import("@capacitor/push-notifications").then(({ PushNotifications }: any) => {
+      async function registerPush() {
+        try {
+          const perm = await PushNotifications.checkPermissions();
+          if (perm.receive !== "granted") {
+            const request = await PushNotifications.requestPermissions();
+            if (request.receive !== "granted") return;
+          }
+          await PushNotifications.register();
+        } catch (err) {
+          console.warn("Push registration failed", err);
         }
-
-        await PushNotifications.register();
-      } catch (err) {
-        console.warn("Push registration failed", err);
       }
-    }
 
-    PushNotifications.addListener("registration", async (token) => {
-      try {
-        await supabase
-          .from("device_tokens" as any)
-          .upsert({
-            user_id: user.id,
-            token: token.value,
-            platform: Capacitor.getPlatform(),
-            last_seen_at: new Date().toISOString(),
-          }, { onConflict: "token" });
-      } catch (err) {
-        console.warn("Failed to save push token", err);
-      }
+      PushNotifications.addListener("registration", async (token) => {
+        try {
+          await supabase
+            .from("device_tokens" as any)
+            .upsert({
+              user_id: user.id,
+              token: token.value,
+              platform: Capacitor.getPlatform(),
+              last_seen_at: new Date().toISOString(),
+            }, { onConflict: "token" });
+        } catch (err) {
+          console.warn("Failed to save push token", err);
+        }
+      });
+
+      PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
+        const data = (notification?.notification as any)?.data || {};
+        const linkPath = data.link_path || "/academy/community";
+        if (linkPath) {
+          window.location.href = linkPath;
+        }
+      });
+
+      PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        const data = (notification as any)?.data || {};
+        if (data?.type === "live_now") {
+          void hapticStrong();
+        }
+      });
+
+      PushNotifications.addListener("registrationError", (err) => {
+        console.warn("Push registration error", err);
+      });
+
+      registerPush();
+    }).catch(() => {
+      console.warn("@capacitor/push-notifications not available");
     });
-
-    PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
-      const data = (notification?.notification as any)?.data || {};
-      const linkPath = data.link_path || "/academy/community";
-      if (linkPath) {
-        window.location.href = linkPath;
-      }
-    });
-
-    PushNotifications.addListener("pushNotificationReceived", (notification) => {
-      const data = (notification as any)?.data || {};
-      if (data?.type === "live_now") {
-        void hapticStrong();
-      }
-    });
-
-    PushNotifications.addListener("registrationError", (err) => {
-      console.warn("Push registration error", err);
-    });
-
-    registerPush();
   }, [user]);
 }

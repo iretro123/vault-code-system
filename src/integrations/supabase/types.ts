@@ -2615,7 +2615,6 @@ export type Database = {
         }[]
       }
       cleanup_deleted_messages: { Args: never; Returns: undefined }
-      cleanup_live_now: { Args: never; Returns: undefined }
       close_trade_intent: {
         Args: { _trade_result: number; _user_id: string }
         Returns: {
