@@ -67,7 +67,7 @@ const TASK_ROUTES: Record<string, string> = {
   "foundation-claim-role": "/academy/home",
   "foundation-introduce": "/academy/community",
   "foundation-first-lesson": "/academy/learn",
-  "foundation-risk-rules": "/rules",
+  "foundation-risk-rules": "/academy/trade",
   "foundation-starting-balance": "/academy/trade",
   "tw-lesson": "/academy/learn",
   "tw-trades": "/academy/trade",
