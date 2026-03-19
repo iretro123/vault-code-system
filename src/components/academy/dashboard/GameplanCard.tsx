@@ -480,7 +480,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   }, [isAdmin]);
 
   return (
-    <div className="vault-premium-card p-5 md:p-6 space-y-4 relative overflow-hidden">
+    <div className="vault-luxury-card p-5 md:p-6 space-y-4 relative overflow-hidden">
       {showConfetti && <TaskConfettiBurst key={confettiKey} />}
       <div className="w-full flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold text-foreground">Your Onboarding</h2>
