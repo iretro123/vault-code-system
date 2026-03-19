@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +39,7 @@ export function ImageLightbox({ src, alt, filename, onClose }: ImageLightboxProp
     document.body.removeChild(a);
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
       onClick={onClose}
@@ -46,10 +47,8 @@ export function ImageLightbox({ src, alt, filename, onClose }: ImageLightboxProp
       aria-modal="true"
       aria-label="Image preview"
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in-0 duration-150" />
 
-      {/* Controls top-right */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={handleDownload}
@@ -68,7 +67,6 @@ export function ImageLightbox({ src, alt, filename, onClose }: ImageLightboxProp
         </button>
       </div>
 
-      {/* Image */}
       <div
         className="relative z-[1] max-w-[90vw] max-h-[85vh] animate-in zoom-in-95 fade-in-0 duration-150"
         onClick={(e) => e.stopPropagation()}
@@ -85,6 +83,7 @@ export function ImageLightbox({ src, alt, filename, onClose }: ImageLightboxProp
           </p>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
