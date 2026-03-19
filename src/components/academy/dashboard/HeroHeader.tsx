@@ -255,7 +255,7 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-7 relative overflow-hidden">
+    <div className="vault-luxury-card p-5 md:p-7 relative overflow-hidden border-t border-white/[0.08]">
       {/* Animated particle network background — disabled on mobile to prevent crashes */}
       {!isMobile && <ParticleCanvas />}
 
