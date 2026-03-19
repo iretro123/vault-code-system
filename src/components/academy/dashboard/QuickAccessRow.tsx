@@ -21,7 +21,7 @@ export function QuickAccessRow() {
   };
 
   return (
-    <div className="vault-glass-card p-6">
+    <div className="vault-luxury-card p-6">
       <h3 className="text-xs uppercase tracking-[0.08em] font-semibold text-muted-foreground/60 mb-4">
         Quick Access
       </h3>
