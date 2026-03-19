@@ -21,7 +21,7 @@ export function QuickAccessRow() {
   };
 
   return (
-    <div className="vault-glass-card p-6">
+    <div className="vault-luxury-card p-6">
       <h3 className="text-xs uppercase tracking-[0.08em] font-semibold text-muted-foreground/60 mb-4">
         Quick Access
       </h3>
@@ -32,19 +32,21 @@ export function QuickAccessRow() {
             <button
               key={item.label}
               onClick={() => handleClick(item)}
-              className="flex flex-col items-center gap-2.5 rounded-xl py-5 px-3 transition-colors duration-100"
+              className="flex flex-col items-center gap-2.5 rounded-2xl py-6 px-4 transition-all duration-150 group"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.07)",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.boxShadow = "0 0 16px rgba(59,130,246,0.08)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
-              <Icon className="h-5.5 w-5.5 text-primary" />
+              <Icon className="h-5.5 w-5.5 text-primary transition-all duration-150 group-hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.4)]" />
               <span className="text-xs font-semibold text-foreground/80">{item.label}</span>
             </button>
           );

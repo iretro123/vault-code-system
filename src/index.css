@@ -289,6 +289,32 @@ html {
       inset 0 1px 0 rgba(255, 255, 255, 0.03);
   }
 
+  /* Luxury elevated card — richer glow, shimmer top edge */
+  .vault-luxury-card {
+    position: relative;
+    background:
+      radial-gradient(ellipse 80% 180px at 50% 0%, rgba(59,130,246,0.06) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 120px at 80% 0%, rgba(139,92,246,0.03) 0%, transparent 50%),
+      hsl(214, 24%, 11%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 2px 8px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  .vault-luxury-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 30%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.08) 70%, transparent);
+    pointer-events: none;
+    z-index: 1;
+  }
+
   /* Contract choice card — clean with hover glow */
   .vault-approval-choice-card {
     background: hsl(214, 22%, 13%);

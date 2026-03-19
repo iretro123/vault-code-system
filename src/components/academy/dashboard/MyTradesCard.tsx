@@ -33,7 +33,7 @@ export function MyTradesCard() {
   const todayTrades = entries.filter((e) => e.trade_date === todayStr).length;
 
   return (
-    <div className="vault-premium-card p-5 space-y-3 h-full flex flex-col">
+    <div className="vault-luxury-card p-5 space-y-3 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -129,8 +129,9 @@ function MetricMini({ label, value, accent }: { label: string; value: string; ac
     <div
       className="rounded-xl px-3 py-2 text-center"
       style={{
-        background: "rgba(255,255,255,0.03)",
+        background: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(255,255,255,0.06)",
+        backdropFilter: "blur(8px)",
       }}
     >
       <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-muted-foreground/60 mb-1">

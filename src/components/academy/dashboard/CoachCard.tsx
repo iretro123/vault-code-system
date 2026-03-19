@@ -12,10 +12,12 @@ export function CoachCard() {
 
   return (
     <div
-      className="vault-glass-card p-6 md:p-8 space-y-6 rounded-2xl"
+      className="vault-luxury-card p-6 md:p-8 space-y-6 transition-all duration-200"
       style={{
-        background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(255,255,255,0.04) 100%)",
+        background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.04) 50%, rgba(255,255,255,0.03) 100%)",
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 1px rgba(59,130,246,0.08)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = ""; }}
     >
       {/* Header row */}
       <div className="flex items-start gap-4">

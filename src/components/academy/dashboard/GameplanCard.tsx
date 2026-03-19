@@ -480,7 +480,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   }, [isAdmin]);
 
   return (
-    <div className="vault-premium-card p-5 md:p-6 space-y-4 relative overflow-hidden">
+    <div className="vault-luxury-card p-5 md:p-6 space-y-4 relative overflow-hidden">
       {showConfetti && <TaskConfettiBurst key={confettiKey} />}
       <div className="w-full flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold text-foreground">Your Onboarding</h2>
@@ -497,7 +497,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       {nextTask ? (
         <div
           className="flex items-center gap-3 rounded-xl px-4 py-3"
-          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}
+          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", borderLeft: "2px solid hsl(217, 91%, 60%)" }}
         >
           <span className="text-[10px] uppercase tracking-widest font-semibold text-blue-400/70">Next Step</span>
           <button
@@ -563,10 +563,10 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       </div>
 
       {isAdmin && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2">
+        <div className="pt-2 border-t border-white/[0.06] space-y-2 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
           <div className="flex items-center justify-between">
             <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-              Cohort Tracker
+              Class Overview
             </p>
             <span className="text-[10px] text-muted-foreground/50">
               {cohortLoading ? "Loading..." : `${cohortStats?.totalUsers ?? 0} students`}

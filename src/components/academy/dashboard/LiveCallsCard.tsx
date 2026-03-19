@@ -42,7 +42,7 @@ export function LiveCallsCard() {
   }, []);
 
   return (
-    <div className="vault-glass-card p-6 md:p-8 space-y-5">
+    <div className="vault-luxury-card p-6 md:p-8 space-y-5">
       <div className="flex items-center gap-3">
         <div className="h-9 w-9 rounded-xl bg-rose-500/15 flex items-center justify-center">
           <Video className="h-4.5 w-4.5 text-rose-400" />
@@ -63,7 +63,7 @@ export function LiveCallsCard() {
           {sessions.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors duration-100 hover:bg-white/[0.06]"
               style={{
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.06)",

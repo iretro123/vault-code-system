@@ -255,7 +255,7 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
   };
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 md:p-7 relative overflow-hidden">
+    <div className="vault-luxury-card p-5 md:p-7 relative overflow-hidden border-t border-white/[0.08]">
       {/* Animated particle network background — disabled on mobile to prevent crashes */}
       {!isMobile && <ParticleCanvas />}
 
@@ -263,16 +263,16 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
         <div className="space-y-2">
           {/* Online indicator */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" style={{ boxShadow: "0 0 8px 2px rgba(16,185,129,0.3)" }} />
             <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-400/90">
               Online
             </span>
           </div>
 
           {/* Greeting */}
-          <h1 className="text-[26px] md:text-[32px] font-bold tracking-tight leading-tight text-muted-foreground">
+          <h1 className="text-[26px] md:text-[32px] font-bold tracking-tight leading-tight text-muted-foreground" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
             {getGreeting()},{" "}
-            <span className="text-primary">{firstName}</span>
+            <span className="text-primary" style={{ textShadow: "0 0 20px rgba(59,130,246,0.25)" }}>{firstName}</span>
           </h1>
 
           {/* Dynamic status line */}
