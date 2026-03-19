@@ -497,7 +497,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       {nextTask ? (
         <div
           className="flex items-center gap-3 rounded-xl px-4 py-3"
-          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}
+          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", borderLeft: "2px solid hsl(217, 91%, 60%)" }}
         >
           <span className="text-[10px] uppercase tracking-widest font-semibold text-blue-400/70">Next Step</span>
           <button
