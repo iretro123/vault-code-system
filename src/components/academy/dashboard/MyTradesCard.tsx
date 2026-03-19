@@ -33,7 +33,7 @@ export function MyTradesCard() {
   const todayTrades = entries.filter((e) => e.trade_date === todayStr).length;
 
   return (
-    <div className="vault-premium-card p-5 space-y-3 h-full flex flex-col">
+    <div className="vault-luxury-card p-5 space-y-3 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
