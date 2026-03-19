@@ -263,7 +263,7 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
         <div className="space-y-2">
           {/* Online indicator */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" style={{ boxShadow: "0 0 8px 2px rgba(16,185,129,0.3)" }} />
             <span className="text-[11px] font-semibold uppercase tracking-widest text-emerald-400/90">
               Online
             </span>
