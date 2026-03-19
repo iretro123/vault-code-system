@@ -563,10 +563,10 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       </div>
 
       {isAdmin && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2">
+        <div className="pt-2 border-t border-white/[0.06] space-y-2 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
           <div className="flex items-center justify-between">
             <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-              Cohort Tracker
+              Class Overview
             </p>
             <span className="text-[10px] text-muted-foreground/50">
               {cohortLoading ? "Loading..." : `${cohortStats?.totalUsers ?? 0} students`}

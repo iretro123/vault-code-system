@@ -270,9 +270,9 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
           </div>
 
           {/* Greeting */}
-          <h1 className="text-[26px] md:text-[32px] font-bold tracking-tight leading-tight text-muted-foreground">
+          <h1 className="text-[26px] md:text-[32px] font-bold tracking-tight leading-tight text-muted-foreground" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
             {getGreeting()},{" "}
-            <span className="text-primary">{firstName}</span>
+            <span className="text-primary" style={{ textShadow: "0 0 20px rgba(59,130,246,0.25)" }}>{firstName}</span>
           </h1>
 
           {/* Dynamic status line */}

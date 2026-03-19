@@ -63,7 +63,7 @@ export function LiveCallsCard() {
           {sessions.map((s) => (
             <div
               key={s.id}
-              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              className="flex items-center gap-3 rounded-xl px-4 py-3 transition-colors duration-100 hover:bg-white/[0.06]"
               style={{
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.06)",

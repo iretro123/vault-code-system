@@ -129,8 +129,9 @@ function MetricMini({ label, value, accent }: { label: string; value: string; ac
     <div
       className="rounded-xl px-3 py-2 text-center"
       style={{
-        background: "rgba(255,255,255,0.03)",
+        background: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(255,255,255,0.06)",
+        backdropFilter: "blur(8px)",
       }}
     >
       <p className="text-[10px] uppercase tracking-[0.08em] font-medium text-muted-foreground/60 mb-1">
