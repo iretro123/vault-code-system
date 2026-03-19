@@ -33,7 +33,7 @@ const PAGE_SIZE = 40;
 // ── Global message cache per room (survives remounts) ──
 const roomMessageCache = new Map<string, Message[]>();
 
-export function useRoomMessages(roomSlug: string) {
+export function useRoomMessages(roomSlug: string, _activationKey?: number) {
   const { user, profile, userRole } = useAuth();
   const cachedRef = useRef(roomMessageCache.get(roomSlug));
   const cached = cachedRef.current;
