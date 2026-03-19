@@ -1,53 +1,85 @@
 
 
-## Stress Test Results: Login & Signup Auth Flows
+## Rename "Cohort Tracker" + Premium Dashboard Design Upgrade
 
-After reviewing `Auth.tsx`, `Signup.tsx`, `useAuth.tsx`, `ensureProfile.ts`, and `ResetPassword.tsx`, here are the issues found and the fixes needed.
-
----
-
-### Issues Found
-
-**1. Missing `DialogTitle` in agreement modal (console error)**
-The agreement modal in Signup.tsx uses `DialogContent` without a `DialogTitle`, causing a Radix accessibility error visible in console logs. This can cause screen readers to break and on some mobile browsers interfere with focus management.
-
-**2. Signup navigates to `/academy` even when no session exists**
-After `signUp()`, if email confirmation is required, `getSession()` returns null. The code still calls `navigate("/academy")` (line 189) regardless. The user lands on the academy page with no session, gets bounced by AuthGate, creating a confusing flash. Profile and agreement are silently skipped since `newUserId` is null.
-
-**3. Race condition / duplicate ban check on login**
-`Auth.tsx` manually calls `supabase.auth.getUser()` then queries profiles for ban status after `signIn()`. Meanwhile, `useAuth`'s `onAuthStateChange` listener fires simultaneously and does the exact same ban check. This is a race: the Auth page could navigate to `/academy` before `useAuth` finishes its ban check and signs the user out, causing a brief flash of authenticated content.
-
-**4. Login button stays enabled during async ban check**
-After `signIn()` succeeds, `loading` is not set back to true during the getUser/profile check (lines 42-55). A user could interact with the page during this window.
-
-**5. `check-stripe-customer` is unauthenticated + no rate limit**
-The membership verification endpoint has `verify_jwt = false` and is called on every email keystroke (debounced 600ms). This enables email enumeration attacks. Low priority but worth noting.
+**Scope**: Design-only changes to the academy dashboard (`/academy/home`). No logic, data, or routing changes.
 
 ---
 
-### Fix Plan
+### 1. Rename "Cohort Tracker" to "Class Overview"
 
-**File: `src/pages/Signup.tsx`**
-
-1. **Add hidden `DialogTitle`** for accessibility — import `DialogTitle` from Radix and add a visually hidden title inside the modal.
-
-2. **Handle missing session after signup** — After `signUp()` succeeds, check if `getSession()` returns a session. If not (email confirmation required), show a "Check your email" toast and do NOT navigate. Only proceed with profile creation, agreement, provisioning, and navigation when a session exists.
-
-**File: `src/pages/Auth.tsx`**
-
-3. **Remove duplicate ban check** — The `useAuth` hook already checks ban/revoked status in `fetchUserData` and signs out if detected. Remove the redundant manual `getUser()` + profile query from Auth.tsx to eliminate the race condition. Let `useAuth`'s listener handle it. Simply navigate on successful `signIn()`.
-
-4. **Simplify login flow** — After `signIn()` returns no error, toast + navigate. The `useAuth` listener handles the rest (profile fetch, ban enforcement).
+- File: `src/components/academy/dashboard/GameplanCard.tsx` (line 569)
+- Change label from "Cohort Tracker" to "Class Overview"
+- Alternative options: "Student Pulse", "Academy Pulse" — going with "Class Overview" for clarity and professionalism.
 
 ---
 
-### Summary of Changes
+### 2. Elevate HeroHeader to full luxury tier
 
-| File | Change | Why |
-|------|--------|-----|
-| `Signup.tsx` | Add `DialogTitle` (visually hidden) | Fix console error + accessibility |
-| `Signup.tsx` | Gate post-signup logic on session existence | Prevent ghost navigation when email confirm is on |
-| `Auth.tsx` | Remove manual getUser + ban check after signIn | Eliminate race condition with useAuth listener |
+- File: `src/components/academy/dashboard/HeroHeader.tsx`
+- Add a subtle top-edge highlight border (`border-t border-white/[0.08]`) and a deeper layered background gradient with a warm blue-to-transparent sweep.
+- Upgrade the "Online" indicator with a softer glow ring effect.
+- Give the greeting text a subtle text-shadow for depth.
 
-No database changes needed. No changes to `useAuth.tsx` (its ban check is the correct single source of truth).
+---
+
+### 3. Upgrade GameplanCard styling
+
+- File: `src/components/academy/dashboard/GameplanCard.tsx`
+- Add a faint inner glow line at the top (`inset 0 1px 0 rgba(255,255,255,0.05)`).
+- "Next Step" highlight row: add a subtle left accent border (2px solid primary) for a premium rail feel.
+- "Class Overview" section: add a frosted glass sub-card background (`bg-white/[0.03]` with rounded corners and subtle border) to visually elevate the admin analytics area.
+
+---
+
+### 4. Upgrade MyTradesCard
+
+- File: `src/components/academy/dashboard/MyTradesCard.tsx`
+- Add a subtle top-edge glow line matching the premium card system.
+- Metric cells: add frosted glass backgrounds (`bg-white/[0.04]`, `rounded-lg`) for each metric mini-card.
+
+---
+
+### 5. Upgrade CoachCard
+
+- File: `src/components/academy/dashboard/CoachCard.tsx`
+- Strengthen the gradient background to be richer with a second color stop.
+- Add a faint border-glow on hover.
+
+---
+
+### 6. Upgrade LiveCallsCard
+
+- File: `src/components/academy/dashboard/LiveCallsCard.tsx`
+- Add consistent premium card styling matching the elevated system.
+- Session rows: subtle hover state with frosted glass lift.
+
+---
+
+### 7. Upgrade QuickAccessRow
+
+- File: `src/components/academy/dashboard/QuickAccessRow.tsx`
+- Each quick-access tile: add a subtle icon glow on hover (primary color at low opacity).
+- Slightly increase padding and border radius for a more spacious luxury feel.
+
+---
+
+### 8. Add a premium card shimmer class (optional global enhancement)
+
+- File: `src/index.css`
+- Add `.vault-luxury-card` — a step above `vault-premium-card` with a stronger inset highlight, slightly warmer shadow, and a faint animated shimmer on the top edge for the hero and key cards.
+
+---
+
+### Files changed (design only)
+
+| File | Change |
+|------|--------|
+| `GameplanCard.tsx` | Rename label + premium sub-card styling |
+| `HeroHeader.tsx` | Richer gradient, glow accents, text depth |
+| `MyTradesCard.tsx` | Frosted metric cells, top glow |
+| `CoachCard.tsx` | Richer gradient, hover glow |
+| `LiveCallsCard.tsx` | Premium card consistency |
+| `QuickAccessRow.tsx` | Tile hover glow, spacious feel |
+| `index.css` | New `.vault-luxury-card` class |
 
