@@ -110,27 +110,33 @@ const Signup = () => {
     if (result.error) {
       toast({ title: "Error", description: result.error.message, variant: "destructive" });
     } else {
-      toast({ title: "Account created", description: "Welcome to Vault Academy." });
-
       const { data: sessionData } = await supabase.auth.getSession();
       const newUserId = sessionData?.session?.user?.id;
-      if (newUserId) {
-        await ensureProfile(newUserId, email, {
-          phone_number: phoneNumber.trim(),
-          username: username.trim().toLowerCase(),
-          display_name: `${firstName.trim()} ${lastName.trim()}`,
-        });
 
-        // Record agreement acceptance
-        try {
-          await supabase.from("agreement_acceptances" as any).insert({
-            user_id: newUserId,
-            agreement_version: "1.0",
-            ip_address: ipRef.current,
-          } as any);
-        } catch (e) {
-          console.error("[Signup] agreement acceptance error:", e);
-        }
+      // If no session (email confirmation required), show message and stop
+      if (!newUserId) {
+        toast({ title: "Check your email", description: "Please confirm your email address to complete signup." });
+        setLoading(false);
+        return;
+      }
+
+      toast({ title: "Account created", description: "Welcome to Vault Academy." });
+
+      await ensureProfile(newUserId, email, {
+        phone_number: phoneNumber.trim(),
+        username: username.trim().toLowerCase(),
+        display_name: `${firstName.trim()} ${lastName.trim()}`,
+      });
+
+      // Record agreement acceptance
+      try {
+        await supabase.from("agreement_acceptances" as any).insert({
+          user_id: newUserId,
+          agreement_version: "1.0",
+          ip_address: ipRef.current,
+        } as any);
+      } catch (e) {
+        console.error("[Signup] agreement acceptance error:", e);
       }
 
       // Referral attribution
@@ -139,7 +145,7 @@ const Signup = () => {
         try {
           const { data: updated } = await supabase
             .from("referrals" as any)
-            .update({ referred_user_id: newUserId || null, referred_email: email, status: "signed_up" } as any)
+            .update({ referred_user_id: newUserId, referred_email: email, status: "signed_up" } as any)
             .eq("referrer_user_id", savedRef)
             .eq("status", "clicked")
             .is("referred_user_id", null)
@@ -149,7 +155,7 @@ const Signup = () => {
           if (!updated || (updated as any[]).length === 0) {
             await supabase.from("referrals" as any).insert({
               referrer_user_id: savedRef,
-              referred_user_id: newUserId || null,
+              referred_user_id: newUserId,
               referred_email: email,
               status: "signed_up",
             } as any);
@@ -161,28 +167,26 @@ const Signup = () => {
       }
 
       // Auto-provision access for whitelisted users
-      if (newUserId) {
-        try {
-          const { data: { session: provSession } } = await supabase.auth.getSession();
-          const provRes = await fetch(
-            `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-manual-access`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(provSession?.access_token ? { "Authorization": `Bearer ${provSession.access_token}` } : {}),
-              },
-              body: JSON.stringify({ email: email.trim().toLowerCase(), auth_user_id: newUserId }),
-            }
-          );
-          const provData = await provRes.json();
-          if (provData.error) {
-            console.error("[Signup] provision error:", provData.error);
-            toast({ title: "Access setup issue", description: "Your account was created but access provisioning failed. Please contact support.", variant: "destructive" });
+      try {
+        const { data: { session: provSession } } = await supabase.auth.getSession();
+        const provRes = await fetch(
+          `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-manual-access`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(provSession?.access_token ? { "Authorization": `Bearer ${provSession.access_token}` } : {}),
+            },
+            body: JSON.stringify({ email: email.trim().toLowerCase(), auth_user_id: newUserId }),
           }
-        } catch (e) {
-          console.error("[Signup] provision-manual-access error:", e);
+        );
+        const provData = await provRes.json();
+        if (provData.error) {
+          console.error("[Signup] provision error:", provData.error);
+          toast({ title: "Access setup issue", description: "Your account was created but access provisioning failed. Please contact support.", variant: "destructive" });
         }
+      } catch (e) {
+        console.error("[Signup] provision-manual-access error:", e);
       }
 
       localStorage.removeItem("va_cache_student_access");
