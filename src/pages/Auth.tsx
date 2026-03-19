@@ -39,22 +39,7 @@ const Auth = () => {
       return;
     }
 
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("access_status, is_banned")
-        .eq("user_id", authUser.id)
-        .maybeSingle();
-
-      if (profileData?.access_status === "revoked" || profileData?.is_banned) {
-        await supabase.auth.signOut();
-        toast({ title: "Access Revoked", description: "Your account access has been revoked. Contact support for assistance.", variant: "destructive" });
-        setLoading(false);
-        return;
-      }
-    }
-
+    // useAuth's onAuthStateChange handles profile fetch + ban enforcement
     toast({ title: "Welcome back", description: "You have been signed in." });
     navigate("/academy");
     setLoading(false);
