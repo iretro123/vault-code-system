@@ -318,11 +318,22 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const navigate = useNavigate();
   // Track if this tab has ever been activated — once true, stays true to keep subscriptions alive
   const hasBeenActive = useRef(false);
+  const prevActiveRef = useRef(active);
   if (active) hasBeenActive.current = true;
   const shouldLoad = hasBeenActive.current;
 
+  // Bump a counter to force useRoomMessages to re-fetch when tab is re-activated
+  const [activationCount, setActivationCount] = useState(0);
+  useEffect(() => {
+    // Detect transition from inactive → active (not the initial mount)
+    if (active && !prevActiveRef.current && hasBeenActive.current) {
+      setActivationCount((c) => c + 1);
+    }
+    prevActiveRef.current = active;
+  }, [active]);
+
   const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
-    useRoomMessages(shouldLoad ? roomSlug : "__deferred__");
+    useRoomMessages(shouldLoad ? roomSlug : "__deferred__", activationCount);
   const { user, profile, userRole: authUserRole } = useAuth();
   const {
     canModerate, isRoomLocked, isMuted, muteExpiresAt,

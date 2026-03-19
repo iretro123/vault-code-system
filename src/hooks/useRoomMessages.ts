@@ -33,7 +33,7 @@ const PAGE_SIZE = 40;
 // ── Global message cache per room (survives remounts) ──
 const roomMessageCache = new Map<string, Message[]>();
 
-export function useRoomMessages(roomSlug: string) {
+export function useRoomMessages(roomSlug: string, _activationKey?: number) {
   const { user, profile, userRole } = useAuth();
   const cachedRef = useRef(roomMessageCache.get(roomSlug));
   const cached = cachedRef.current;
@@ -82,6 +82,8 @@ export function useRoomMessages(roomSlug: string) {
 
     if (err) {
       setError(err.message);
+      // Clear stale cache on error so next activation does a clean fetch
+      roomMessageCache.delete(roomSlug);
       setLoading(false);
       return;
     }
@@ -306,6 +308,24 @@ export function useRoomMessages(roomSlug: string) {
     hasFetchedRef.current = true;
     fetchMessages();
   }, [fetchMessages]);
+
+  // Re-fetch when browser tab becomes visible after being hidden
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && hasFetchedRef.current) {
+        fetchMessages();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [fetchMessages]);
+
+  // Re-fetch when activation key changes (tab re-activated)
+  useEffect(() => {
+    if (_activationKey && _activationKey > 0 && hasFetchedRef.current) {
+      fetchMessages();
+    }
+  }, [_activationKey, fetchMessages]);
 
   // Realtime subscription
   useEffect(() => {
