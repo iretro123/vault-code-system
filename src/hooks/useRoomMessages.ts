@@ -82,6 +82,8 @@ export function useRoomMessages(roomSlug: string) {
 
     if (err) {
       setError(err.message);
+      // Clear stale cache on error so next activation does a clean fetch
+      roomMessageCache.delete(roomSlug);
       setLoading(false);
       return;
     }
