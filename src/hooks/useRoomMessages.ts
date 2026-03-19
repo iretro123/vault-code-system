@@ -320,6 +320,13 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [fetchMessages]);
 
+  // Re-fetch when activation key changes (tab re-activated)
+  useEffect(() => {
+    if (_activationKey && _activationKey > 0 && hasFetchedRef.current) {
+      fetchMessages();
+    }
+  }, [_activationKey, fetchMessages]);
+
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
