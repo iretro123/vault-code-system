@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, CheckCircle2, AlertCircle, ShieldCheck, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -110,27 +110,33 @@ const Signup = () => {
     if (result.error) {
       toast({ title: "Error", description: result.error.message, variant: "destructive" });
     } else {
-      toast({ title: "Account created", description: "Welcome to Vault Academy." });
-
       const { data: sessionData } = await supabase.auth.getSession();
       const newUserId = sessionData?.session?.user?.id;
-      if (newUserId) {
-        await ensureProfile(newUserId, email, {
-          phone_number: phoneNumber.trim(),
-          username: username.trim().toLowerCase(),
-          display_name: `${firstName.trim()} ${lastName.trim()}`,
-        });
 
-        // Record agreement acceptance
-        try {
-          await supabase.from("agreement_acceptances" as any).insert({
-            user_id: newUserId,
-            agreement_version: "1.0",
-            ip_address: ipRef.current,
-          } as any);
-        } catch (e) {
-          console.error("[Signup] agreement acceptance error:", e);
-        }
+      // If no session (email confirmation required), show message and stop
+      if (!newUserId) {
+        toast({ title: "Check your email", description: "Please confirm your email address to complete signup." });
+        setLoading(false);
+        return;
+      }
+
+      toast({ title: "Account created", description: "Welcome to Vault Academy." });
+
+      await ensureProfile(newUserId, email, {
+        phone_number: phoneNumber.trim(),
+        username: username.trim().toLowerCase(),
+        display_name: `${firstName.trim()} ${lastName.trim()}`,
+      });
+
+      // Record agreement acceptance
+      try {
+        await supabase.from("agreement_acceptances" as any).insert({
+          user_id: newUserId,
+          agreement_version: "1.0",
+          ip_address: ipRef.current,
+        } as any);
+      } catch (e) {
+        console.error("[Signup] agreement acceptance error:", e);
       }
 
       // Referral attribution
@@ -139,7 +145,7 @@ const Signup = () => {
         try {
           const { data: updated } = await supabase
             .from("referrals" as any)
-            .update({ referred_user_id: newUserId || null, referred_email: email, status: "signed_up" } as any)
+            .update({ referred_user_id: newUserId, referred_email: email, status: "signed_up" } as any)
             .eq("referrer_user_id", savedRef)
             .eq("status", "clicked")
             .is("referred_user_id", null)
@@ -149,7 +155,7 @@ const Signup = () => {
           if (!updated || (updated as any[]).length === 0) {
             await supabase.from("referrals" as any).insert({
               referrer_user_id: savedRef,
-              referred_user_id: newUserId || null,
+              referred_user_id: newUserId,
               referred_email: email,
               status: "signed_up",
             } as any);
@@ -161,28 +167,26 @@ const Signup = () => {
       }
 
       // Auto-provision access for whitelisted users
-      if (newUserId) {
-        try {
-          const { data: { session: provSession } } = await supabase.auth.getSession();
-          const provRes = await fetch(
-            `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-manual-access`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(provSession?.access_token ? { "Authorization": `Bearer ${provSession.access_token}` } : {}),
-              },
-              body: JSON.stringify({ email: email.trim().toLowerCase(), auth_user_id: newUserId }),
-            }
-          );
-          const provData = await provRes.json();
-          if (provData.error) {
-            console.error("[Signup] provision error:", provData.error);
-            toast({ title: "Access setup issue", description: "Your account was created but access provisioning failed. Please contact support.", variant: "destructive" });
+      try {
+        const { data: { session: provSession } } = await supabase.auth.getSession();
+        const provRes = await fetch(
+          `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-manual-access`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(provSession?.access_token ? { "Authorization": `Bearer ${provSession.access_token}` } : {}),
+            },
+            body: JSON.stringify({ email: email.trim().toLowerCase(), auth_user_id: newUserId }),
           }
-        } catch (e) {
-          console.error("[Signup] provision-manual-access error:", e);
+        );
+        const provData = await provRes.json();
+        if (provData.error) {
+          console.error("[Signup] provision error:", provData.error);
+          toast({ title: "Access setup issue", description: "Your account was created but access provisioning failed. Please contact support.", variant: "destructive" });
         }
+      } catch (e) {
+        console.error("[Signup] provision-manual-access error:", e);
       }
 
       localStorage.removeItem("va_cache_student_access");
@@ -399,6 +403,7 @@ const Signup = () => {
             {/* Agreement Modal */}
             <Dialog open={agreementModalOpen} onOpenChange={setAgreementModalOpen}>
               <DialogContent className="max-w-[92vw] sm:max-w-lg w-full !max-h-[85dvh] p-0 gap-0 border-white/[0.08] bg-[hsl(220,20%,8%)] shadow-[0_24px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(59,130,246,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-2xl overflow-hidden backdrop-blur-xl !flex !flex-col">
+                <DialogTitle className="sr-only">Important Agreement</DialogTitle>
                 {/* Modal Header */}
                 <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent shrink-0">
                   <div className="flex items-center gap-3.5">
