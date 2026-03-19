@@ -309,6 +309,17 @@ export function useRoomMessages(roomSlug: string) {
     fetchMessages();
   }, [fetchMessages]);
 
+  // Re-fetch when browser tab becomes visible after being hidden
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && hasFetchedRef.current) {
+        fetchMessages();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [fetchMessages]);
+
   // Realtime subscription
   useEffect(() => {
     const channel = supabase
