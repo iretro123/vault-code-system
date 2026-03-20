@@ -1118,14 +1118,35 @@ const AcademyTrade = () => {
                     )}
                   </div>
 
+                  {/* ═══ SESSION STATS (collapsed) ═══ */}
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-3.5 py-2 hover:bg-white/[0.04] transition-colors group">
+                      <span className="text-[10px] font-semibold text-foreground/50">Session Stats</span>
+                      <ChevronDown className="h-3 w-3 text-muted-foreground/30 transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2">
+                      <DisciplineMetricsStrip
+                        compact
+                        vaultStatus={vaultState.vault_status}
+                        complianceRate={complianceRate}
+                        weeklyComplianceRate={weeklyComplianceRate}
+                        currentStreak={currentStreak}
+                        todayTrades={entries.filter(e => e.trade_date === new Date().toISOString().slice(0, 10))}
+                        lossStreak={vaultState.loss_streak ?? 0}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+
                   {/* ═══ ACTIONS ═══ */}
-                  <Button
-                    variant="outline"
-                    className="w-full h-10 gap-2 rounded-xl text-xs font-semibold border-white/[0.08] hover:bg-white/[0.04]"
-                    onClick={() => handleLogWithCutoffCheck(activePlan || undefined)}
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Quick Log Trade
-                  </Button>
+                  <div className="mt-6">
+                    <Button
+                      variant="outline"
+                      className="w-full h-10 gap-2 rounded-xl text-xs font-semibold border-white/[0.08] hover:bg-white/[0.04]"
+                      onClick={() => handleLogWithCutoffCheck(activePlan || undefined)}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Quick Log Trade
+                    </Button>
+                  </div>
 
                   {sessionPhase && (
                     <div className="flex justify-center">
