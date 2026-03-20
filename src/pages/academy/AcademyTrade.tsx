@@ -280,9 +280,29 @@ const AcademyTrade = () => {
     try {
       const { error } = await supabase.from("profiles").update({ account_balance: balance }).eq("user_id", user.id);
       if (error) throw error;
+
+      // Sync vault_state for today with recalculated limits
+      const riskMode = vaultState.risk_mode || "STANDARD";
+      const limits = computeVaultLimits(balance, riskMode);
+      const todayStr = new Date().toISOString().slice(0, 10);
+      await supabase.from("vault_state").update({
+        account_balance: balance,
+        daily_loss_limit: limits.daily_loss_limit,
+        risk_remaining_today: limits.daily_loss_limit,
+        max_contracts_allowed: limits.max_contracts,
+        max_trades_per_day: limits.max_trades_per_day,
+        trades_remaining_today: limits.max_trades_per_day,
+      }).eq("user_id", user.id).eq("date", todayStr);
+
       setStartingBalance(balance);
       setShowBalanceModal(false);
       setBalanceSkipped(false);
+
+      // Refresh all downstream data
+      vaultRefetch();
+      refetchTrades();
+      refetchAdjustments();
+
       toast({ title: "Starting balance set", description: `Tracking from $${balance.toLocaleString()}.` });
     } catch {
       toast({ title: "Error saving balance", description: "Please try again.", variant: "destructive" });
