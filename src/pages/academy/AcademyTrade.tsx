@@ -1109,16 +1109,6 @@ const AcademyTrade = () => {
                     </CollapsibleContent>
                   </Collapsible>
 
-                  {/* ═══ ACTIONS ═══ */}
-                  <div className="mt-6">
-                    <Button
-                      variant="outline"
-                      className="w-full h-10 gap-2 rounded-xl text-xs font-semibold border-white/[0.08] hover:bg-white/[0.04]"
-                      onClick={() => handleLogWithCutoffCheck(activePlan || undefined)}
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Quick Log Trade
-                    </Button>
-                  </div>
 
                   {sessionPhase && (
                     <div className="flex justify-center mt-4">
