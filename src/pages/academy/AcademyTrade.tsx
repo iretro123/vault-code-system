@@ -520,7 +520,13 @@ const AcademyTrade = () => {
     }
   }, [dayState, activePlan]);
 
-  if (balanceLoading || tradesLoading) {
+  const handleOnboardingComplete = useCallback(async () => {
+    setOnboardingDone(true);
+    // Refetch vault state after onboarding seeds it
+    vaultRefetch();
+  }, [vaultRefetch]);
+
+
     return (
       <>
         <PageHeader title="My Trades" subtitle="Loading your trade data..." />
