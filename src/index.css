@@ -727,6 +727,11 @@ html {
       0 8px 32px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 hsla(0, 0%, 100%, 0.03);
   }
+  @media (min-width: 768px) {
+    .vault-obsidian-surface {
+      border-radius: 12px;
+    }
+  }
 
   /* ═══ Vault Hero Glow — status-aware radial ═══ */
   .vault-hero-glow {
