@@ -944,7 +944,7 @@ const AcademyTrade = () => {
                                     key={dir}
                                     onClick={() => setLocalDirection(dir)}
                                     className={cn(
-                                      "h-8 px-4 rounded-lg text-[11px] font-semibold transition-all duration-100",
+                                      "h-8 px-4 md:h-7 md:px-3 rounded-lg text-[11px] font-semibold transition-all duration-100",
                                       localDirection === dir
                                         ? dir === "calls"
                                           ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
