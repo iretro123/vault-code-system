@@ -1037,7 +1037,7 @@ const AcademyTrade = () => {
                         vaultState.vault_status === "YELLOW" ? "bg-amber-500/[0.08] border-amber-500/20" :
                         "bg-red-500/[0.08] border-red-500/20"
                       )}>
-                        <Shield className={cn("h-7 w-7",
+                        <Shield className={cn("h-7 w-7 md:h-5 md:w-5",
                           vaultState.vault_status === "GREEN" ? "text-emerald-400" :
                           vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
                         )} />
