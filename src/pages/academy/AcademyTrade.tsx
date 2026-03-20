@@ -879,13 +879,12 @@ const AcademyTrade = () => {
                             <CollapsibleTrigger className="flex items-center justify-between w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-3.5 py-2.5 hover:bg-white/[0.04] transition-colors group">
                               <div className="flex items-center gap-2">
                                 <Target className="h-3.5 w-3.5 text-primary/50" />
-                                <span className="text-[11px] font-semibold text-foreground/70">Session & Targets</span>
+                                <span className="text-[11px] font-semibold text-foreground/70">Reward Targets</span>
                               </div>
                               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/30 transition-transform group-data-[state=open]:rotate-180" />
                             </CollapsibleTrigger>
-                            <CollapsibleContent className="pt-2 space-y-2">
+                            <CollapsibleContent className="pt-2">
                               <RewardTargetsStrip riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY} />
-                              <SessionSetupCard onPhaseChange={setSessionPhase} />
                             </CollapsibleContent>
                           </Collapsible>
 
