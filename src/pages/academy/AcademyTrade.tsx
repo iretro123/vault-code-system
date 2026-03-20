@@ -989,11 +989,11 @@ const AcademyTrade = () => {
                           />
 
                           {/* ═══ LOCK IN CTA ═══ */}
-                          <div className="mt-6 space-y-2">
+                          <div className="mt-6 md:mt-4 space-y-2">
                             <div className="vault-divider-glow mx-auto w-1/2" />
                             <Button
                               className={cn(
-                                "w-full h-14 text-sm font-bold rounded-xl gap-2 vault-cta-shine shadow-[0_4px_24px_hsla(217,91%,60%,0.2)]",
+                                "w-full h-14 md:h-11 text-sm font-bold rounded-xl gap-2 vault-cta-shine shadow-[0_4px_24px_hsla(217,91%,60%,0.2)]",
                                 savingRules && "vault-armed-flash bg-emerald-600 hover:bg-emerald-600"
                               )}
                               onClick={handleLockRules}
