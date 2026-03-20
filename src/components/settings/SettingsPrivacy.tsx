@@ -9,7 +9,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function SettingsPrivacy() {
-  const { user } = useAuth();
+  const { user, refetchProfile } = useAuth();
+  const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
 
   // Delete journal & progress gate
