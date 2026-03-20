@@ -240,6 +240,12 @@ const AcademyTrade = () => {
     sessionPhase,
   });
 
+  // Scroll to top on every stage change so users don't land at the bottom
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeStage]);
+
   const cachedAI = useMemo(() => {
     try {
       const raw = localStorage.getItem("va_cache_ai_focus_v3");
