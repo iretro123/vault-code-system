@@ -814,12 +814,9 @@ const AcademyTrade = () => {
                       const riskBudget = bal * (effectiveRisk / 100);
                       const positionCap = bal * (defaults.preferredSpendPercent / 100);
                       const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
-                      const [localDirection, setLocalDirection] = useState<"calls" | "puts">("calls");
-                      const [localTicker, setLocalTicker] = useState("");
-                      const [saving, setSaving] = useState(false);
 
                       const handleLockRules = async () => {
-                        setSaving(true);
+                        setSavingRules(true);
                         try {
                           const { error } = await savePlan({
                             ticker: localTicker || undefined,
