@@ -619,7 +619,30 @@ const AcademyTrade = () => {
           </section>
         </div>
 
-        <SetStartingBalanceModal open={showBalanceModal} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} defaultValue={startingBalance ?? undefined} />
+        <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} defaultValue={startingBalance ?? undefined} />
+        <BalanceAdjustmentModal
+          open={showBalanceAdjustModal}
+          onOpenChange={setShowBalanceAdjustModal}
+          balance={trackedBalance}
+          onAddFunds={async (amt, note) => {
+            const ok = await addAdjustment(amt, note);
+            if (ok) toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` });
+            return ok;
+          }}
+          onWithdraw={async (amt, note) => {
+            const ok = await addAdjustment(-amt, note);
+            if (ok) toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` });
+            return ok;
+          }}
+          onReset={async () => { await handleResetBalance(); }}
+          onDeleteAdjustment={async (id) => {
+            const ok = await removeAdjustment(id);
+            if (ok) toast({ title: "Adjustment removed" });
+            return ok;
+          }}
+          adjustments={adjustments}
+          resetting={resetting}
+        />
         <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} onLogAnother={() => { setLogPlanId(undefined); setLogPrefill(undefined); }} />
         <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
         <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
