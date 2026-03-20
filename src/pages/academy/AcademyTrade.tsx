@@ -794,7 +794,8 @@ const AcademyTrade = () => {
                       const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
                       const riskBudget = bal * (effectiveRisk / 100);
                       const positionCap = bal * (defaults.preferredSpendPercent / 100);
-                      const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
+                      const riskModeFromPercent = effectiveRisk === 1 ? "CONSERVATIVE" : effectiveRisk === 3 ? "AGGRESSIVE" : "STANDARD";
+                      const vaultLimits = computeVaultLimits(bal, riskModeFromPercent);
 
                       const handleLockRules = async () => {
                         setSavingRules(true);
@@ -1037,7 +1038,8 @@ const AcademyTrade = () => {
                       const defaults = TIER_DEFAULTS[tier];
                       const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
                       const riskBudget = bal * (effectiveRisk / 100);
-                      const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
+                      const riskModeFromPercent = effectiveRisk === 1 ? "CONSERVATIVE" : effectiveRisk === 3 ? "AGGRESSIVE" : "STANDARD";
+                      const vaultLimits = computeVaultLimits(bal, riskModeFromPercent);
                       return (
                         <div className="vault-obsidian-surface p-4 md:p-2.5 space-y-2">
                           <LiveSessionMetrics
