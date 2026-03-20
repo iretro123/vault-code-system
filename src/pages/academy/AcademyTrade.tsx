@@ -195,7 +195,7 @@ const AcademyTrade = () => {
       } catch { setShowBalanceModal(true); }
       finally { setBalanceLoading(false); }
     })();
-  }, [user]);
+  }, [user, onboardingDone]);
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const todayTradeCount = useMemo(() => entries.filter((e) => e.trade_date === todayStr).length, [entries, todayStr]);
