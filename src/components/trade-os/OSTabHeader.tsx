@@ -49,7 +49,7 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               ) : (
                 <Icon className={cn("h-3 w-3 shrink-0", isActive ? "text-primary" : "")} />
               )}
-              {isMobile && !isActive ? tab.shortLabel : tab.label}
+              {isMobile ? tab.shortLabel : tab.label}
               {/* Active indicator line */}
               {isActive && (
                 <span className="absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
