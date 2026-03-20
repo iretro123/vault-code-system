@@ -1043,7 +1043,7 @@ const AcademyTrade = () => {
                         )} />
                       </div>
                       <div>
-                        <p className={cn("text-3xl font-black tracking-tight",
+                        <p className={cn("text-3xl md:text-2xl font-black tracking-tight",
                           vaultState.vault_status === "GREEN" ? "text-emerald-400" :
                           vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
                         )} style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
