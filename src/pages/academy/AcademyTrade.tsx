@@ -39,6 +39,7 @@ import { AIFocusCard } from "@/components/trade-os/AIFocusCard";
 import { RecentTradesSection } from "@/components/trade-os/RecentTradesSection";
 
 import { BalanceAdjustmentCard } from "@/components/trade-os/BalanceAdjustmentCard";
+import { BalanceAdjustmentModal } from "@/components/trade-os/BalanceAdjustmentModal";
 import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
