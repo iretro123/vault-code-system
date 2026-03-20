@@ -598,37 +598,15 @@ const AcademyTrade = () => {
     <>
       <div className="px-3 md:px-5 pb-6 max-w-7xl pt-2 space-y-1.5">
 
-        {/* ══════ TRADE OS IDENTITY ══════ */}
-        <div className="pt-4 pb-2 px-1">
+        {/* ══════ TRADE OS IDENTITY — CENTERED ══════ */}
+        <div className="pt-5 pb-1 flex flex-col items-center text-center">
           <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-[0.18em] text-primary px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 shadow-[0_0_12px_hsl(var(--primary)/0.15)]">
             Trade OS
           </span>
-          <h1 className="text-2xl md:text-[32px] font-bold text-foreground mt-2.5 tracking-tight leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
-            Your Command Center
+          <h1 className="text-2xl md:text-[28px] font-bold text-foreground mt-2 tracking-tight leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
+            Trade OS
           </h1>
-          <div className="flex items-center gap-2 mt-2">
-            {(["Start Your Day", "Go Live", "Review", "My Insights"] as const).map((label, i) => {
-              const stageKeys = ["plan", "live", "review", "insights"] as const;
-              const isActive = activeStage === stageKeys[i];
-              return (
-                <span key={label} className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "text-xs font-medium transition-colors",
-                      isActive
-                        ? "text-primary font-semibold"
-                        : "text-muted-foreground/40"
-                    )}
-                    style={isActive ? { textShadow: "0 0 10px hsl(var(--primary) / 0.5)" } : undefined}
-                  >
-                    {label}
-                  </span>
-                  {i < 3 && <span className="text-muted-foreground/20 text-xs">→</span>}
-                </span>
-              );
-            })}
-          </div>
-          <div className="mt-3 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+          <p className="text-[11px] text-muted-foreground/50 font-medium mt-1 tracking-wide">Your center of operations</p>
         </div>
 
         {/* ══════ WELCOME HERO ══════ */}
