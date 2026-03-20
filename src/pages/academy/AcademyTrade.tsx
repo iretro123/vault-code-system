@@ -1227,7 +1227,7 @@ const AcademyTrade = () => {
                             }}
                             className="flex flex-col items-center gap-2.5 p-6 md:p-3 rounded-xl border-2 border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] hover:border-amber-500/40 transition-all active:scale-[0.97]"
                           >
-                            <AlertTriangle className="h-8 w-8 md:h-6 md:w-6 text-amber-400" />
+                            <AlertTriangle className="h-8 w-8 md:h-5 md:w-5 text-amber-400" />
                             <span className="text-sm font-bold text-amber-400">No, I adjusted</span>
                             <span className="text-[10px] text-amber-400/60">Log what you actually did</span>
                           </button>
