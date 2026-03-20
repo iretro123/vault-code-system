@@ -394,12 +394,15 @@ const AcademyTrade = () => {
   };
 
   const handleLogFromPlan = (plan: ApprovedPlan) => {
+    const isRiskOnly = plan.entry_price_planned === 0;
     setLogPlanId(plan.id);
     setLogPrefill({
       symbol: plan.ticker || "",
       direction: plan.direction === "calls" ? "Calls" : "Puts",
-      entryPrice: String(plan.entry_price_planned),
-      positionSize: String(plan.contracts_planned),
+      ...(isRiskOnly ? {} : {
+        entryPrice: String(plan.entry_price_planned),
+        positionSize: String(plan.contracts_planned),
+      }),
     });
     setShowLogTrade(true);
   };
