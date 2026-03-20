@@ -62,7 +62,7 @@ function CockpitContent() {
   if (needsOnboarding) {
     return (
       <AppLayout>
-        <V1Onboarding onComplete={handleOnboardingComplete} />
+        <TradeOSOnboarding onComplete={handleOnboardingComplete} />
       </AppLayout>
     );
   }
