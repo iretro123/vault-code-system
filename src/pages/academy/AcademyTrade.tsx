@@ -39,6 +39,7 @@ import { AIFocusCard } from "@/components/trade-os/AIFocusCard";
 import { RecentTradesSection } from "@/components/trade-os/RecentTradesSection";
 
 import { BalanceAdjustmentCard } from "@/components/trade-os/BalanceAdjustmentCard";
+import { BalanceAdjustmentModal } from "@/components/trade-os/BalanceAdjustmentModal";
 import { useBalanceAdjustments } from "@/hooks/useBalanceAdjustments";
 import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
@@ -151,6 +152,7 @@ const AcademyTrade = () => {
   const [balanceSkipped, setBalanceSkipped] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showBalanceAdjustModal, setShowBalanceAdjustModal] = useState(false);
   const [resetInput, setResetInput] = useState("");
   const [resetting, setResetting] = useState(false);
   const [showLogTrade, setShowLogTrade] = useState(false);
@@ -617,7 +619,30 @@ const AcademyTrade = () => {
           </section>
         </div>
 
-        <SetStartingBalanceModal open={showBalanceModal} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} defaultValue={startingBalance ?? undefined} />
+        <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} defaultValue={startingBalance ?? undefined} />
+        <BalanceAdjustmentModal
+          open={showBalanceAdjustModal}
+          onOpenChange={setShowBalanceAdjustModal}
+          balance={trackedBalance}
+          onAddFunds={async (amt, note) => {
+            const ok = await addAdjustment(amt, note);
+            if (ok) toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` });
+            return ok;
+          }}
+          onWithdraw={async (amt, note) => {
+            const ok = await addAdjustment(-amt, note);
+            if (ok) toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` });
+            return ok;
+          }}
+          onReset={async () => { await handleResetBalance(); }}
+          onDeleteAdjustment={async (id) => {
+            const ok = await removeAdjustment(id);
+            if (ok) toast({ title: "Adjustment removed" });
+            return ok;
+          }}
+          adjustments={adjustments}
+          resetting={resetting}
+        />
         <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} onLogAnother={() => { setLogPlanId(undefined); setLogPrefill(undefined); }} />
         <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
         <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
@@ -812,7 +837,7 @@ const AcademyTrade = () => {
                                   ${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </p>
                               </div>
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg border-white/[0.08] text-muted-foreground/60" onClick={() => setShowBalanceModal(true)}>
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg border-white/[0.08] text-muted-foreground/60" onClick={() => setShowBalanceAdjustModal(true)}>
                                 <Wallet className="h-3 w-3 mr-1" /> Update
                               </Button>
                             </div>
@@ -1398,7 +1423,30 @@ const AcademyTrade = () => {
       )}
 
       {/* Modals */}
-      <SetStartingBalanceModal open={showBalanceModal} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} defaultValue={startingBalance ?? undefined} />
+      <SetStartingBalanceModal open={showBalanceModal && startingBalance === null} onSave={handleStartingBalanceSave} onDismiss={handleBalanceDismiss} defaultValue={startingBalance ?? undefined} />
+      <BalanceAdjustmentModal
+        open={showBalanceAdjustModal}
+        onOpenChange={setShowBalanceAdjustModal}
+        balance={trackedBalance}
+        onAddFunds={async (amt, note) => {
+          const ok = await addAdjustment(amt, note);
+          if (ok) { toast({ title: "Funds added", description: `+$${amt.toLocaleString()} recorded.` }); refetchTrades(); }
+          return ok;
+        }}
+        onWithdraw={async (amt, note) => {
+          const ok = await addAdjustment(-amt, note);
+          if (ok) { toast({ title: "Withdrawal recorded", description: `-$${amt.toLocaleString()} recorded.` }); refetchTrades(); }
+          return ok;
+        }}
+        onReset={async () => { await handleResetBalance(); refetchTrades(); }}
+        onDeleteAdjustment={async (id) => {
+          const ok = await removeAdjustment(id);
+          if (ok) { toast({ title: "Adjustment removed" }); refetchTrades(); }
+          return ok;
+        }}
+        adjustments={adjustments}
+        resetting={resetting}
+      />
       <LogTradeSheet open={showLogTrade} onOpenChange={setShowLogTrade} onSubmit={handleTradeSubmit} planId={logPlanId} prefill={logPrefill} onLogAnother={() => { setLogPlanId(undefined); setLogPrefill(undefined); }} />
       <QuickCheckInSheet open={showCheckIn} onOpenChange={setShowCheckIn} onComplete={handleCheckInComplete} userId={user?.id} />
       <NoTradeDaySheet open={showNoTradeDay} onOpenChange={setShowNoTradeDay} onComplete={handleNoTradeDayComplete} userId={user?.id} />
