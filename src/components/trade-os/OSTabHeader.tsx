@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { SessionStage } from "@/hooks/useSessionStage";
 
-const TABS: { key: SessionStage; label: string; icon: typeof Calendar }[] = [
-  { key: "plan", label: "Start Your Day", icon: Calendar },
-  { key: "live", label: "Go Live", icon: Radio },
-  { key: "review", label: "Review", icon: ClipboardCheck },
-  { key: "insights", label: "My Insights", icon: Brain },
+const TABS: { key: SessionStage; label: string; shortLabel: string; icon: typeof Calendar }[] = [
+  { key: "plan", label: "Start Your Day", shortLabel: "Plan", icon: Calendar },
+  { key: "live", label: "Go Live", shortLabel: "Live", icon: Radio },
+  { key: "review", label: "Review", shortLabel: "Review", icon: ClipboardCheck },
+  { key: "insights", label: "My Insights", shortLabel: "Insights", icon: Brain },
 ];
 
 
