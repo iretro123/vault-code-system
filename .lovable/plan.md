@@ -1,29 +1,26 @@
 
 
-## Revamp Getting Started Banner + Fix Balance Sync
+## Assessment: Banner Logic is Already Correct — No Code Changes Needed
 
-### 1. Fix balance not loading after onboarding (`AcademyTrade.tsx`)
-Add `onboardingDone` to the dependency array of the balance-fetch `useEffect` on line 198, changing `[user]` → `[user, onboardingDone]`. This re-reads `account_balance` immediately after onboarding completes.
+### Current State
+The Getting Started banner is **already fully wired and working correctly**:
 
-### 2. Rewrite `GettingStartedBanner.tsx` with powerful new copy
+1. **Banner shows** when `entries.length === 0` (no trades logged yet)
+2. **Banner disappears** the instant a trade is logged — `addEntry()` optimistically updates the entries array, so `hasData` flips to `true` immediately
+3. **Step progression** works: Balance → Use OS → AI Coach — these are motivational guides visible until the first trade log
+4. **Trade logging pipeline** (`LogTradeSheet` → `addEntry` → `trade_entries` insert → optimistic state update) is fully connected
+5. **Balance sync** was already fixed in the previous change (adding `onboardingDone` to the useEffect deps)
 
-**Headline:** "Your Trading OS is Active"
+### What the banner does
+- Persists on screen until the user logs their first trade (not before)
+- Cannot be dismissed manually — only completing a trade removes it
+- Steps 1-3 provide visual progress (balance set, session started, review done) but the banner itself gates on trade data existing
 
-**Subtitle:** "This system learns how you trade — your patterns, your habits, your mindset. Every session makes it sharper. You're not doing this alone anymore."
+### Conclusion
+No changes are required. The banner, trade logging, balance sync, and all downstream pipelines (vault state, trader DNA, coaching nudge) are connected and functioning. The app is ready for launch with this flow intact.
 
-**Step 1 — "Balance locked in ✓"**
-- Shows as auto-completed when balance exists
-- "Your starting point is set. The OS is tracking from here."
-
-**Step 2 — "Open this before every trade"**
-- "Use your Trading OS before you enter any position. Review your limits, check your mindset, and let the system keep you accountable. This is your edge."
-
-**Step 3 — "Meet your AI Coach"**
-- "Built into every session is an AI coach that studies your behavior, spots your blind spots, and helps you eliminate bad habits. The more you trade, the smarter it gets. It learns YOU — and pushes you to become the disciplined trader you're meant to be."
-
-**Footer line:** "Consistency is the cheat code. Show up every day and watch this system transform your trading."
-
-### Files Changed
-1. `src/pages/academy/AcademyTrade.tsx` — one-line dep array fix
-2. `src/components/trade-os/GettingStartedBanner.tsx` — full copy rewrite
+### If you'd like any enhancements
+- Add a subtle animation when the banner disappears after the first trade
+- Add a "Welcome back" celebration card that replaces the banner after the first trade
+- Add a persistent progress tracker that evolves beyond the getting-started phase
 
