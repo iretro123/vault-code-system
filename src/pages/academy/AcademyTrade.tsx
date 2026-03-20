@@ -1012,11 +1012,11 @@ const AcademyTrade = () => {
 
               {/* GO LIVE STAGE */}
               {activeStage === "live" && (
-                <div className={cn("space-y-3", !isMobile && "vault-launch-streak vault-stage-enter")}>
+                <div className={cn("space-y-4", !isMobile && "vault-launch-streak vault-stage-enter")}>
 
-                  {/* ═══ HERO HEADER: Vault Status + Inline Metrics ═══ */}
+                  {/* ═══ HERO HEADER: Vault Status ═══ */}
                   <div className={cn(
-                    "vault-hero-glow rounded-2xl p-5 space-y-2",
+                    "vault-hero-glow rounded-2xl py-8 px-5",
                     vaultState.vault_status === "GREEN" ? "vault-hero-glow--green" : 
                     vaultState.vault_status === "YELLOW" ? "vault-hero-glow--amber" : "vault-hero-glow--red"
                   )}
@@ -1030,41 +1030,27 @@ const AcademyTrade = () => {
                       borderRadius: "16px",
                     }}
                   >
-                    <div className="relative z-10 flex items-center gap-3">
+                    <div className="relative z-10 flex flex-col items-center text-center space-y-3">
                       <div className={cn(
-                        "flex items-center justify-center w-11 h-11 rounded-2xl border",
+                        "flex items-center justify-center w-14 h-14 rounded-2xl border",
                         vaultState.vault_status === "GREEN" ? "bg-emerald-500/[0.08] border-emerald-500/20" :
                         vaultState.vault_status === "YELLOW" ? "bg-amber-500/[0.08] border-amber-500/20" :
                         "bg-red-500/[0.08] border-red-500/20"
                       )}>
-                        <Shield className={cn("h-5 w-5",
+                        <Shield className={cn("h-7 w-7",
                           vaultState.vault_status === "GREEN" ? "text-emerald-400" :
                           vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
                         )} />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-[9px] text-muted-foreground/35 font-semibold uppercase tracking-[0.12em]">Vault Status</p>
-                        <p className={cn("text-xl font-bold tracking-tight",
+                      <div>
+                        <p className={cn("text-3xl font-black tracking-tight",
                           vaultState.vault_status === "GREEN" ? "text-emerald-400" :
                           vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
-                        )}>
-                          {vaultState.vault_status === "GREEN" ? "Clear" : vaultState.vault_status === "YELLOW" ? "Caution" : "Locked"}
+                        )} style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
+                          {vaultState.vault_status === "GREEN" ? "Vault Clear" : vaultState.vault_status === "YELLOW" ? "Vault Caution" : "Vault Locked"}
                         </p>
+                        <p className="text-sm text-foreground/50 font-medium mt-2">Trade your session. Stay inside your rules.</p>
                       </div>
-                    </div>
-                    <p className="relative z-10 text-[11px] text-foreground/40 font-medium">Trade your session. Stay inside your rules.</p>
-                    
-                    {/* Inline discipline pills */}
-                    <div className="relative z-10 pt-1">
-                      <DisciplineMetricsStrip
-                        compact
-                        vaultStatus={vaultState.vault_status}
-                        complianceRate={complianceRate}
-                        weeklyComplianceRate={weeklyComplianceRate}
-                        currentStreak={currentStreak}
-                        todayTrades={entries.filter(e => e.trade_date === new Date().toISOString().slice(0, 10))}
-                        lossStreak={vaultState.loss_streak ?? 0}
-                      />
                     </div>
                   </div>
 
