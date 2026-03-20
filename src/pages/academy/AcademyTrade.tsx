@@ -925,7 +925,7 @@ const AcademyTrade = () => {
                                   </Tooltip>
                                 </div>
                                 <div className="vault-metric-cell">
-                                  <p className="text-xl font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
+                                  <p className="text-xl md:text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
