@@ -814,7 +814,7 @@ const AcademyTrade = () => {
                                   ${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </p>
                               </div>
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg border-white/[0.08] text-muted-foreground/60" onClick={() => setShowBalanceModal(true)}>
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg border-white/[0.08] text-muted-foreground/60" onClick={() => setShowBalanceAdjustModal(true)}>
                                 <Wallet className="h-3 w-3 mr-1" /> Update
                               </Button>
                             </div>
