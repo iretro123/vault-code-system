@@ -853,7 +853,7 @@ const AcademyTrade = () => {
                         <div className="space-y-4 vault-stage-enter">
                           {/* ═══ HERO RISK CARD ═══ */}
                           <div className={cn(
-                            "vault-luxury-card py-6 px-5 md:py-4 md:px-4 space-y-5 md:space-y-3",
+                            "vault-luxury-card py-6 px-5 md:py-3 md:px-3 space-y-5 md:space-y-2",
                             effectiveRisk === 1 ? "ring-1 ring-emerald-500/15 shadow-[0_0_20px_hsla(160,84%,39%,0.06)]" :
                             effectiveRisk === 2 ? "ring-1 ring-amber-500/15 shadow-[0_0_20px_hsla(38,92%,50%,0.06)]" :
                             effectiveRisk === 3 ? "ring-1 ring-rose-500/15 shadow-[0_0_20px_hsla(0,72%,51%,0.06)]" : ""
