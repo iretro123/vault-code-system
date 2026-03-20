@@ -1212,7 +1212,7 @@ const AcademyTrade = () => {
                               }
                               setShowLogTrade(true);
                             }}
-                            className="flex flex-col items-center gap-2.5 p-6 md:p-4 rounded-xl border-2 border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] hover:border-emerald-500/40 transition-all active:scale-[0.97]"
+                            className="flex flex-col items-center gap-2.5 p-6 md:p-3 rounded-xl border-2 border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] hover:border-emerald-500/40 transition-all active:scale-[0.97]"
                           >
                             <CheckCircle2 className="h-8 w-8 md:h-6 md:w-6 text-emerald-400" />
                             <span className="text-sm font-bold text-emerald-400">Yes, I followed it</span>
