@@ -319,7 +319,25 @@ const AcademyTrade = () => {
       await clearAllAdjustments();
       const { error } = await supabase.from("profiles").update({ account_balance: 0 }).eq("user_id", user.id);
       if (error) throw error;
+
+      // Zero out today's vault_state so enforcement resets cleanly
+      const todayStr = new Date().toISOString().slice(0, 10);
+      await supabase.from("vault_state").update({
+        account_balance: 0,
+        daily_loss_limit: 0,
+        risk_remaining_today: 0,
+        max_contracts_allowed: 0,
+        max_trades_per_day: 0,
+        trades_remaining_today: 0,
+      }).eq("user_id", user.id).eq("date", todayStr);
+
       setStartingBalance(null); setShowResetConfirm(false); setResetInput(""); setShowBalanceModal(true);
+
+      // Refresh all downstream data
+      vaultRefetch();
+      refetchTrades();
+      refetchAdjustments();
+
       toast({ title: "Balance reset", description: "Set a new starting balance to continue tracking." });
     } catch { toast({ title: "Error resetting balance", variant: "destructive" }); }
     finally { setResetting(false); }
