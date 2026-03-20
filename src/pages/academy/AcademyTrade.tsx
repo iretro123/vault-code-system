@@ -1160,7 +1160,7 @@ const AcademyTrade = () => {
                           try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
                           setStage("review");
                         }}
-                        className="flex items-center justify-center gap-2 h-12 px-10 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_hsla(0,72%,51%,0.25)] max-w-xs w-full"
+                        className="flex items-center justify-center gap-2 h-12 px-10 md:h-10 md:px-8 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_hsla(0,72%,51%,0.25)] max-w-xs w-full"
                       >
                         <Square className="h-4 w-4" /> End Session & Review
                       </button>
