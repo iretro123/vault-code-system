@@ -77,7 +77,7 @@ export function NYSESessionBar({ className }: { className?: string }) {
   }, [zones, nowMin]);
 
   return (
-    <div className={cn("vault-obsidian-surface p-4 space-y-3", className)}>
+    <div className={cn("vault-obsidian-surface p-4 md:p-3 space-y-3", className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
