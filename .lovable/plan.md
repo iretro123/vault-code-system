@@ -1,34 +1,23 @@
 
 
-## Fix Balance Update Pipeline — Full Data Sync
-
-### Problem
-The "Update" button on the hero risk card saves the new balance to `profiles.account_balance` and updates local state, but:
-1. The `vault_state` row for today still has the **old** balance — vault limits, risk budgets, max contracts all stay stale
-2. The VaultStateContext is never refreshed after a balance update
-3. The tracked balance formula works locally but vault enforcement (trade permissions, risk limits) uses the stale DB value
+## Fix "Update" Button — Balance Modal Never Opens
 
 ### Root Cause
-`get_or_create_vault_state` only reads `profiles.account_balance` when **creating** a new day's row. Once today's row exists, changing the profile balance has zero effect on vault enforcement.
+The "Update" button (line 815) calls `setShowBalanceModal(true)`, but the modal's `open` prop is:
+```
+open={showBalanceModal && startingBalance === null}
+```
+Since clicking "Update" means a balance is already set (`startingBalance !== null`), the condition is always `false` and the modal never opens.
 
-### Fix — `AcademyTrade.tsx` → `handleStartingBalanceSave`
+This exists in **two places** — line 620 (mobile layout) and line 1401 (main layout).
 
-**After** the `profiles.update()` succeeds, add two steps:
-1. **Update today's vault_state row** with the new balance and recalculated limits (daily_loss_limit, risk_remaining_today, max_contracts_allowed) using the same tier/risk logic the RPC uses
-2. **Call `vaultRefetch()`** to refresh VaultStateContext so all downstream components (VaultCommandBar, VaultHUD, etc.) reflect the new balance immediately
-3. **Call `refetchTrades()` and `refetchAdjustments()`** to ensure tracked balance recalculates cleanly
+### Fix
+Change the modal `open` prop from `showBalanceModal && startingBalance === null` to just `showBalanceModal` in both locations. The modal already works for both initial set and update — `handleStartingBalanceSave` handles both cases correctly (updates profile + vault_state + refetches).
 
-This requires:
-- Destructuring `refetch` from `useVaultState()` (already available as `state` is used)
-- After `supabase.from("profiles").update(...)`, add `supabase.from("vault_state").update({ account_balance: balance, daily_loss_limit, risk_remaining_today, max_contracts_allowed }).eq("user_id", user.id).eq("date", todayStr)`
-- Then call `vaultRefetch()`, `refetchTrades()`, `refetchAdjustments()`
-
-The vault_state update will use the same `computeVaultLimits` function (already imported) to calculate the correct limits from the new balance, keeping the logic DRY.
-
-### Also fix: `handleResetBalance`
-Same problem — reset zeroes profiles but leaves vault_state stale. Add vault_state update + refetch after reset.
+Also pre-fill the modal's input with the current balance when updating, so the user sees their existing value. This requires passing a `defaultValue` prop to `SetStartingBalanceModal`.
 
 | File | Change |
 |------|--------|
-| `AcademyTrade.tsx` | Add vault_state DB update + refetch cascade in both `handleStartingBalanceSave` and `handleResetBalance` |
+| `AcademyTrade.tsx` lines 620, 1401 | Change `open={showBalanceModal && startingBalance === null}` → `open={showBalanceModal}` |
+| `SetStartingBalanceModal.tsx` | Add optional `defaultValue` prop, initialize `amount` state with it |
 
