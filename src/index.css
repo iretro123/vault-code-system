@@ -301,7 +301,7 @@ html {
   }
   @media (min-width: 768px) {
     .vault-luxury-card {
-      border-radius: 12px;
+      border-radius: 10px;
     }
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
@@ -729,7 +729,7 @@ html {
   }
   @media (min-width: 768px) {
     .vault-obsidian-surface {
-      border-radius: 12px;
+      border-radius: 10px;
     }
   }
 
@@ -764,7 +764,8 @@ html {
   }
   @media (min-width: 768px) {
     .vault-metric-cell {
-      padding: 0.375rem 0.5rem;
+      padding: 0.25rem 0.375rem;
+      border-radius: 8px;
     }
   }
 

@@ -92,10 +92,10 @@ function StageHeadline({ stage }: { stage: string }) {
   const h = STAGE_HEADLINES[stage];
   if (!h) return null;
   return (
-    <div className="py-6 text-center space-y-1">
-      <h2 className="text-2xl font-bold tracking-tight text-foreground" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{h.title}</h2>
+    <div className="py-6 md:py-3 text-center space-y-1">
+      <h2 className="text-2xl md:text-xl font-bold tracking-tight text-foreground" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{h.title}</h2>
       <p className="text-sm text-foreground/50 font-medium">{h.emotional}</p>
-      <div className="vault-divider-glow mx-auto w-2/3 mt-4" />
+      <div className="vault-divider-glow mx-auto w-2/3 mt-4 md:mt-2" />
     </div>
   );
 }
@@ -853,7 +853,7 @@ const AcademyTrade = () => {
                         <div className="space-y-4 vault-stage-enter">
                           {/* ═══ HERO RISK CARD ═══ */}
                           <div className={cn(
-                            "vault-luxury-card py-6 px-5 md:py-4 md:px-4 space-y-5 md:space-y-3",
+                            "vault-luxury-card py-6 px-5 md:py-3 md:px-3 space-y-5 md:space-y-2",
                             effectiveRisk === 1 ? "ring-1 ring-emerald-500/15 shadow-[0_0_20px_hsla(160,84%,39%,0.06)]" :
                             effectiveRisk === 2 ? "ring-1 ring-amber-500/15 shadow-[0_0_20px_hsla(38,92%,50%,0.06)]" :
                             effectiveRisk === 3 ? "ring-1 ring-rose-500/15 shadow-[0_0_20px_hsla(0,72%,51%,0.06)]" : ""
@@ -862,7 +862,7 @@ const AcademyTrade = () => {
                             <div className="relative z-10 flex items-center justify-between">
                               <div>
                                 <p className="text-[9px] text-muted-foreground/40 font-semibold uppercase tracking-[0.12em]">Account Balance</p>
-                                <p className="text-4xl md:text-3xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                                <p className="text-4xl md:text-2xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                                   ${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </p>
                               </div>
@@ -879,7 +879,7 @@ const AcademyTrade = () => {
                                   key={pct}
                                   onClick={() => updatePrefs({ risk_percent_override: pct })}
                                   className={cn(
-                                    "h-7 w-12 md:h-6 md:w-10 md:text-[10px] rounded-lg text-[11px] font-semibold transition-all duration-100",
+                                    "h-7 w-12 md:h-5 md:w-9 md:text-[10px] rounded-lg text-[11px] font-semibold transition-all duration-100",
                                     effectiveRisk === pct
                                       ? {
                                           1: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shadow-[0_0_8px_hsla(160,84%,39%,0.12)]",
@@ -896,9 +896,9 @@ const AcademyTrade = () => {
 
                             {/* 2×2 Core Metrics */}
                             <TooltipProvider delayDuration={200}>
-                              <div className="relative z-10 grid grid-cols-2 gap-2">
+                              <div className="relative z-10 grid grid-cols-2 gap-2 md:gap-1.5">
                                 <div className="vault-metric-cell">
-                                  <p className="text-xl md:text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
+                                  <p className="text-xl md:text-base font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Daily Loss <HelpCircle className="h-2.5 w-2.5" /></p>
@@ -907,7 +907,7 @@ const AcademyTrade = () => {
                                   </Tooltip>
                                 </div>
                                 <div className="vault-metric-cell">
-                                  <p className="text-xl md:text-lg font-bold tabular-nums text-foreground">${(riskBudget / MAX_LOSSES_PER_DAY).toFixed(0)}</p>
+                                  <p className="text-xl md:text-base font-bold tabular-nums text-foreground">${(riskBudget / MAX_LOSSES_PER_DAY).toFixed(0)}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Risk Per Trade <HelpCircle className="h-2.5 w-2.5" /></p>
@@ -916,7 +916,7 @@ const AcademyTrade = () => {
                                   </Tooltip>
                                 </div>
                                 <div className="vault-metric-cell">
-                                  <p className="text-xl md:text-lg font-bold tabular-nums text-foreground">{vaultLimits.max_contracts}</p>
+                                  <p className="text-xl md:text-base font-bold tabular-nums text-foreground">{vaultLimits.max_contracts}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
@@ -925,7 +925,7 @@ const AcademyTrade = () => {
                                   </Tooltip>
                                 </div>
                                 <div className="vault-metric-cell">
-                                  <p className="text-xl md:text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
+                                  <p className="text-xl md:text-base font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
@@ -944,7 +944,7 @@ const AcademyTrade = () => {
                                     key={dir}
                                     onClick={() => setLocalDirection(dir)}
                                     className={cn(
-                                      "h-8 px-4 md:h-7 md:px-3 rounded-lg text-[11px] font-semibold transition-all duration-100",
+                                      "h-8 px-4 md:h-6 md:px-2.5 rounded-lg text-[11px] font-semibold transition-all duration-100",
                                       localDirection === dir
                                         ? dir === "calls"
                                           ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
@@ -961,7 +961,7 @@ const AcademyTrade = () => {
                                 placeholder="SPY, QQQ..."
                                 value={localTicker}
                                 onChange={(e) => setLocalTicker(e.target.value.toUpperCase())}
-                                className="flex-1 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
+                                className="flex-1 h-8 md:h-6 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
                               />
                             </div>
                           </div>
@@ -993,7 +993,7 @@ const AcademyTrade = () => {
                             <div className="vault-divider-glow mx-auto w-1/2" />
                             <Button
                               className={cn(
-                                "w-full h-14 md:h-11 text-sm font-bold rounded-xl gap-2 vault-cta-shine shadow-[0_4px_24px_hsla(217,91%,60%,0.2)]",
+                                "w-full h-14 md:h-10 text-sm font-bold rounded-xl gap-2 vault-cta-shine shadow-[0_4px_24px_hsla(217,91%,60%,0.2)]",
                                 savingRules && "vault-armed-flash bg-emerald-600 hover:bg-emerald-600"
                               )}
                               onClick={handleLockRules}
@@ -1016,7 +1016,7 @@ const AcademyTrade = () => {
 
                   {/* ═══ HERO HEADER: Vault Status ═══ */}
                   <div className={cn(
-                    "vault-hero-glow rounded-2xl py-8 md:py-5 px-5",
+                    "vault-hero-glow rounded-2xl py-8 md:py-4 px-5",
                     vaultState.vault_status === "GREEN" ? "vault-hero-glow--green" : 
                     vaultState.vault_status === "YELLOW" ? "vault-hero-glow--amber" : "vault-hero-glow--red"
                   )}
@@ -1030,20 +1030,20 @@ const AcademyTrade = () => {
                       borderRadius: "16px",
                     }}
                   >
-                    <div className="relative z-10 flex flex-col items-center text-center space-y-3">
+                    <div className="relative z-10 flex flex-col items-center text-center space-y-3 md:space-y-2">
                       <div className={cn(
-                        "flex items-center justify-center w-14 h-14 md:w-10 md:h-10 rounded-2xl md:rounded-xl border",
+                        "flex items-center justify-center w-14 h-14 md:w-8 md:h-8 rounded-2xl md:rounded-xl border",
                         vaultState.vault_status === "GREEN" ? "bg-emerald-500/[0.08] border-emerald-500/20" :
                         vaultState.vault_status === "YELLOW" ? "bg-amber-500/[0.08] border-amber-500/20" :
                         "bg-red-500/[0.08] border-red-500/20"
                       )}>
-                        <Shield className={cn("h-7 w-7 md:h-5 md:w-5",
+                        <Shield className={cn("h-7 w-7 md:h-4 md:w-4",
                           vaultState.vault_status === "GREEN" ? "text-emerald-400" :
                           vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
                         )} />
                       </div>
                       <div>
-                        <p className={cn("text-3xl md:text-2xl font-black tracking-tight",
+                        <p className={cn("text-3xl md:text-xl font-black tracking-tight",
                           vaultState.vault_status === "GREEN" ? "text-emerald-400" :
                           vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
                         )} style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
@@ -1058,7 +1058,7 @@ const AcademyTrade = () => {
                   <NYSESessionBar className="my-1" />
 
                   {/* ═══ THREE MAJOR CARDS ═══ */}
-                  <div className="grid gap-2.5 md:grid-cols-3 mt-2">
+                  <div className="grid gap-2.5 md:gap-2 md:grid-cols-3 mt-2">
 
                     {/* Card 1: Your Limits */}
                     {(() => {
@@ -1069,7 +1069,7 @@ const AcademyTrade = () => {
                       const riskBudget = bal * (effectiveRisk / 100);
                       const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
                       return (
-                        <div className="vault-obsidian-surface p-4 md:p-3 space-y-2">
+                        <div className="vault-obsidian-surface p-4 md:p-2.5 space-y-2">
                           <LiveSessionMetrics
                             variant="compact"
                             dailyLossBuffer={vaultState.risk_remaining_today ?? riskBudget}
@@ -1085,7 +1085,7 @@ const AcademyTrade = () => {
                     })()}
 
                     {/* Card 2: Your Session */}
-                    <div className="vault-obsidian-surface p-4 md:p-3 space-y-2">
+                    <div className="vault-obsidian-surface p-4 md:p-2.5 space-y-2">
                       <SessionSetupCard onPhaseChange={setSessionPhase} />
                       {activePlan && activePlan.status === "planned" && (
                         <div className="flex items-center gap-2 pt-1 border-t border-white/[0.04]">
@@ -1107,7 +1107,7 @@ const AcademyTrade = () => {
                         maxTrades={MAX_LOSSES_PER_DAY}
                       />
                     ) : (
-                      <div className="vault-obsidian-surface p-4 md:p-3 flex items-center justify-center">
+                      <div className="vault-obsidian-surface p-4 md:p-2.5 flex items-center justify-center">
                         <div className="text-center space-y-2">
                           <p className="text-sm text-muted-foreground/40">No rules set.</p>
                           <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
@@ -1186,9 +1186,9 @@ const AcademyTrade = () => {
                   ) : (
                     <>
                       {/* Core Question Card */}
-                      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] py-6 px-5 md:py-4 md:px-4 space-y-5">
+                      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] py-6 px-5 md:py-3 md:px-3 space-y-5">
                         <div className="text-center space-y-2">
-                          <p className="text-xl md:text-lg font-bold text-foreground">Did you follow your rules today?</p>
+                          <p className="text-xl md:text-base font-bold text-foreground">Did you follow your rules today?</p>
                           <p className="text-sm text-foreground/40">Be honest — this is how you grow.</p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -1212,9 +1212,9 @@ const AcademyTrade = () => {
                               }
                               setShowLogTrade(true);
                             }}
-                            className="flex flex-col items-center gap-2.5 p-6 md:p-4 rounded-xl border-2 border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] hover:border-emerald-500/40 transition-all active:scale-[0.97]"
+                            className="flex flex-col items-center gap-2.5 p-6 md:p-3 rounded-xl border-2 border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] hover:border-emerald-500/40 transition-all active:scale-[0.97]"
                           >
-                            <CheckCircle2 className="h-8 w-8 md:h-6 md:w-6 text-emerald-400" />
+                            <CheckCircle2 className="h-8 w-8 md:h-5 md:w-5 text-emerald-400" />
                             <span className="text-sm font-bold text-emerald-400">Yes, I followed it</span>
                             <span className="text-[10px] text-emerald-400/60">Quick log from your rules</span>
                           </button>
@@ -1225,9 +1225,9 @@ const AcademyTrade = () => {
                               setLogPrefill({ planFollowed: "No" });
                               setShowLogTrade(true);
                             }}
-                            className="flex flex-col items-center gap-2.5 p-6 md:p-4 rounded-xl border-2 border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] hover:border-amber-500/40 transition-all active:scale-[0.97]"
+                            className="flex flex-col items-center gap-2.5 p-6 md:p-3 rounded-xl border-2 border-amber-500/25 bg-amber-500/[0.06] hover:bg-amber-500/[0.12] hover:border-amber-500/40 transition-all active:scale-[0.97]"
                           >
-                            <AlertTriangle className="h-8 w-8 md:h-6 md:w-6 text-amber-400" />
+                            <AlertTriangle className="h-8 w-8 md:h-5 md:w-5 text-amber-400" />
                             <span className="text-sm font-bold text-amber-400">No, I adjusted</span>
                             <span className="text-[10px] text-amber-400/60">Log what you actually did</span>
                           </button>
@@ -1255,7 +1255,7 @@ const AcademyTrade = () => {
                 <div className="space-y-3 vault-stage-enter">
                   <StageHeadline stage="insights" />
                   {entries.length < 3 ? (
-                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] py-8 px-5 md:py-5 md:px-4 space-y-4 text-center">
+                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] py-8 px-5 md:py-4 md:px-3 space-y-4 text-center">
                       <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 mx-auto">
                         <Lock className="h-4 w-4 text-primary" />
                       </div>
@@ -1301,7 +1301,7 @@ const AcademyTrade = () => {
                       {cachedAI && (
                         <div className="grid grid-cols-2 gap-2.5">
                           {/* Grade */}
-                          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 md:p-3">
+                          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5 md:p-2.5">
                             <p className="text-[9px] text-muted-foreground/60 font-semibold uppercase tracking-widest mb-1">Grade</p>
                             <p className={cn("text-2xl font-black",
                               cachedAI.riskGrade === "A" ? "text-emerald-400" :
