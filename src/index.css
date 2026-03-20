@@ -764,7 +764,8 @@ html {
   }
   @media (min-width: 768px) {
     .vault-metric-cell {
-      padding: 0.375rem 0.5rem;
+      padding: 0.25rem 0.375rem;
+      border-radius: 8px;
     }
   }
 
