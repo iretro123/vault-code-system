@@ -1003,69 +1003,95 @@ const AcademyTrade = () => {
                 </div>
               )}
 
-              {/* LIVE STAGE */}
+              {/* GO LIVE STAGE */}
               {activeStage === "live" && (
-                <div className="space-y-4">
-                  {/* ── Luxury Plan Summary ── */}
+                <div className="space-y-3">
+                  <StageHeadline stage="live" />
+
+                  {/* Vault Status */}
+                  <VaultStatusBadge status={vaultState.vault_status} />
+
+                  {/* Session Metrics */}
+                  {(() => {
+                    const bal = trackedBalance ?? vaultState.account_balance;
+                    const tier = detectTier(bal);
+                    const defaults = TIER_DEFAULTS[tier];
+                    const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
+                    const riskBudget = bal * (effectiveRisk / 100);
+                    const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
+                    return (
+                      <>
+                        <LiveSessionMetrics
+                          dailyLossBuffer={vaultState.risk_remaining_today ?? riskBudget}
+                          riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY}
+                          maxContracts={vaultLimits.max_contracts}
+                          tradesRemaining={vaultState.trades_remaining_today ?? MAX_LOSSES_PER_DAY}
+                          lossStreak={vaultState.loss_streak ?? 0}
+                          maxLossesPerDay={MAX_LOSSES_PER_DAY}
+                        />
+                        <RewardTargetsStrip riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY} compact />
+                      </>
+                    );
+                  })()}
+
+                  {/* Active rules summary */}
                   {activePlan && activePlan.status === "planned" && (
-                    <div className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4 space-y-3 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.12)]">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                        <span className="text-lg font-bold text-foreground tracking-tight">{activePlan.ticker || "—"}</span>
-                        <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full border",
-                          activePlan.direction === "calls"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : "bg-red-500/10 text-red-400 border-red-500/20"
-                        )}>
-                          {activePlan.direction === "calls" ? "Calls" : "Puts"}
-                        </span>
+                    <div className="rounded-xl border border-primary/15 bg-primary/[0.04] p-3 flex items-center gap-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold text-foreground">
+                          Rules Active{activePlan.ticker ? ` · ${activePlan.ticker}` : ""} · {activePlan.direction === "calls" ? "Calls" : "Puts"}
+                        </p>
+                        <p className="text-[10px] text-foreground/50">Max loss: ${Number(activePlan.max_loss_planned).toFixed(0)}</p>
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Contracts</p>
-                          <p className="text-xl font-bold tabular-nums text-foreground">{activePlan.contracts_planned}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Entry</p>
-                          <p className="text-xl font-bold tabular-nums text-foreground">${Number(activePlan.entry_price_planned).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Max Loss</p>
-                          <p className="text-xl font-bold tabular-nums text-red-400">${Number(activePlan.max_loss_planned).toFixed(0)}</p>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel Plan</Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
                     </div>
                   )}
 
                   {!activePlan && (
                     <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center space-y-2">
-                      <p className="text-sm text-muted-foreground/60">No active plan.</p>
+                      <p className="text-sm text-muted-foreground/60">No rules set for today.</p>
                       <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
-                        <Calendar className="h-3 w-3" /> Build a Plan
+                        <Calendar className="h-3 w-3" /> Start Your Day
                       </Button>
                     </div>
                   )}
 
-                  {/* ── Session Window ── */}
+                  {/* Session Window */}
                   <div className="space-y-2">
-                    <SectionLabel>Set Your Trading Window</SectionLabel>
+                    <SectionLabel>Session Timer</SectionLabel>
                     <SessionSetupCard onPhaseChange={setSessionPhase} />
                   </div>
 
-                  {/* ── End Session (red pill) ── */}
+                  {/* Focus Reminders */}
+                  {activePlan && (
+                    <FocusReminderCards
+                      direction={activePlan.direction}
+                      maxLoss={Number(activePlan.max_loss_planned)}
+                      maxTrades={MAX_LOSSES_PER_DAY}
+                    />
+                  )}
+
+                  {/* Quick Log Trade */}
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 gap-2 rounded-xl text-xs font-semibold border-white/[0.1]"
+                    onClick={() => handleLogWithCutoffCheck(activePlan || undefined)}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Quick Log Trade
+                  </Button>
+
+                  {/* End Session (red pill) */}
                   {sessionPhase && (
                     <div className="flex justify-center">
                       <button
                         onClick={() => {
-                          // Actually end the session — clear both localStorage and DB
                           clearSession();
                           if (user) clearSessionFromDB(user.id);
                           setSessionPhase(null);
                           setExecuting(false);
                           setExecutionStart(null);
                           try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
-                          // Go to review — no log popup
                           setStage("review");
                         }}
                         className="flex items-center justify-center gap-2 h-12 px-10 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)] max-w-xs w-full"
