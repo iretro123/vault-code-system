@@ -254,6 +254,31 @@ serve(async (req) => {
       }
     }
 
+    // Trader DNA — AI-built personality profile
+    const traderDna = traderDnaRes.data as any;
+    if (traderDna && traderDna.insights_version > 0) {
+      studentContext += `\nTrader DNA (AI Profile v${traderDna.insights_version}):\n`;
+      studentContext += `Trading Style: ${traderDna.trading_style}\n`;
+      studentContext += `Instruments: ${(traderDna.instruments || []).join(", ")}\n`;
+      studentContext += `Experience: ${traderDna.experience_level}\n`;
+      if (Array.isArray(traderDna.strengths) && traderDna.strengths.length) {
+        studentContext += `Strengths: ${traderDna.strengths.join("; ")}\n`;
+      }
+      if (Array.isArray(traderDna.weaknesses) && traderDna.weaknesses.length) {
+        studentContext += `Weaknesses: ${traderDna.weaknesses.join("; ")}\n`;
+      }
+      if (Array.isArray(traderDna.personality_tags) && traderDna.personality_tags.length) {
+        studentContext += `Personality: ${traderDna.personality_tags.join(", ")}\n`;
+      }
+      const rawProfile = traderDna.raw_profile as any;
+      if (rawProfile?.latest_summary) {
+        studentContext += `AI Assessment: ${rawProfile.latest_summary}\n`;
+      }
+      if (rawProfile?.latest_risk_rec) {
+        studentContext += `Risk Recommendation: ${rawProfile.latest_risk_rec}\n`;
+      }
+    }
+
     if (rules) {
       studentContext += `Trading Rules: Max ${rules.max_risk_per_trade}% risk/trade, Max ${rules.max_trades_per_day} trades/day, Max ${rules.max_daily_loss}% daily loss\n`;
       if (Array.isArray(rules.allowed_sessions) && rules.allowed_sessions.length) {
