@@ -132,7 +132,7 @@ const AcademyTrade = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
-  const { user, session } = useAuth();
+  const { user, session, profile } = useAuth();
   const { isPageEnabled } = useFeatureFlags();
   const { state: vaultState, refetch: vaultRefetch } = useVaultState();
   const { isAdminActive } = useAdminMode();
