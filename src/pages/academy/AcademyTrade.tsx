@@ -862,7 +862,7 @@ const AcademyTrade = () => {
                             <div className="relative z-10 flex items-center justify-between">
                               <div>
                                 <p className="text-[9px] text-muted-foreground/40 font-semibold uppercase tracking-[0.12em]">Account Balance</p>
-                                <p className="text-4xl md:text-3xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                                <p className="text-4xl md:text-2xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                                   ${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </p>
                               </div>
