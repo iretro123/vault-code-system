@@ -850,14 +850,19 @@ const AcademyTrade = () => {
                       };
 
                       return (
-                        <div className="space-y-3 vault-stage-enter">
+                        <div className="space-y-4 vault-stage-enter">
                           {/* ═══ HERO RISK CARD ═══ */}
-                          <div className="vault-luxury-card p-4 space-y-4">
+                          <div className={cn(
+                            "vault-luxury-card py-6 px-5 space-y-5",
+                            effectiveRisk === 1 ? "ring-1 ring-emerald-500/15 shadow-[0_0_20px_hsla(160,84%,39%,0.06)]" :
+                            effectiveRisk === 2 ? "ring-1 ring-amber-500/15 shadow-[0_0_20px_hsla(38,92%,50%,0.06)]" :
+                            effectiveRisk === 3 ? "ring-1 ring-rose-500/15 shadow-[0_0_20px_hsla(0,72%,51%,0.06)]" : ""
+                          )}>
                             {/* Balance + Update */}
                             <div className="relative z-10 flex items-center justify-between">
                               <div>
                                 <p className="text-[9px] text-muted-foreground/40 font-semibold uppercase tracking-[0.12em]">Account Balance</p>
-                                <p className="text-3xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                                <p className="text-4xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                                   ${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                 </p>
                               </div>
@@ -932,7 +937,7 @@ const AcademyTrade = () => {
                             </TooltipProvider>
 
                             {/* Direction + Ticker — inside hero card */}
-                            <div className="relative z-10 flex items-center gap-2 pt-1 border-t border-white/[0.04]">
+                            <div className="relative z-10 flex items-center gap-2 mt-4 pt-3 border-t border-white/[0.04]">
                               <div className="flex gap-1">
                                 {(["calls", "puts"] as const).map((dir) => (
                                   <button
@@ -959,11 +964,6 @@ const AcademyTrade = () => {
                                 className="flex-1 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
                               />
                             </div>
-
-                            {/* Tier summary */}
-                            <p className="relative z-10 text-[9px] text-muted-foreground/30 text-center">
-                              ${bal.toLocaleString()} · {tier} tier · {effectiveRisk}% risk
-                            </p>
                           </div>
 
                           {/* ═══ COLLAPSIBLE: Session & Targets ═══ */}
