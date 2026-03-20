@@ -1,33 +1,31 @@
 
 
-## Fix: Scroll to Top on Stage Change + Pipeline Audit
+## Redesign Balance Adjustment Modal for Mobile
 
 ### Problem
-When switching tabs (e.g., clicking "Start Your Day" from Live tab), the page stays scrolled to the bottom because no scroll-to-top is triggered on stage change.
+1. The Dialog's built-in `X` close button (`absolute right-4 top-4`) overlaps with the `-` (withdraw) button in the card header
+2. The modal looks like a plain card, not a premium luxury popup
 
-### Fix 1 — Scroll to top on stage change (`AcademyTrade.tsx`)
-Add a `useEffect` that watches `activeStage` and scrolls the `<main>` scroll container to the top:
+### Fix — Rewrite `BalanceAdjustmentModal.tsx`
 
-```tsx
-useEffect(() => {
-  const main = document.querySelector("main");
-  if (main) main.scrollTo({ top: 0, behavior: "smooth" });
-}, [activeStage]);
-```
+**Replace the current Dialog wrapper** with a custom luxury modal that:
 
-This covers all stage transitions: tab clicks, "Start Your Day" button, "Go Live" button, "View Insights" button, etc.
+1. **Adds its own close button** in a safe position (top-left or top-right with proper spacing above the card content) and hides the default Dialog `X` by passing a custom class
+2. **Applies luxury styling**: rounded-2xl, glassmorphism background, border glow, backdrop blur — matching the `.vault-luxury-card` aesthetic
+3. **Adds top padding** inside DialogContent so the close `X` doesn't overlap the `+`/`-` buttons
 
-### Fix 2 — Pipeline consistency checks
-Audit all `setStage()` call sites to ensure they don't have conflicting scroll or timing issues:
-- Line ~783: "Let's Start Live Trading" → `setStage("live")` ✓
-- Line ~818: Lock rules → `setTimeout(() => setStage("live"), 300)` — scroll will fire after the 300ms delay ✓
-- Line ~1085: "Start Your Day" from Live → `setStage("plan")` ✓
-- Line ~1123: End session → `setStage("review")` ✓
-- Line ~1144: "View Insights" → `setStage("insights")` ✓
-- Line ~473: Check-in complete → `setTimeout(() => setStage("insights"), 600)` ✓
+### Specific changes
 
-All paths will be covered by the single `useEffect` on `activeStage`.
+**`BalanceAdjustmentModal.tsx`**:
+- Add `rounded-2xl` and luxury border/glow styling to DialogContent
+- Add top padding (`pt-8`) so the default close X sits above the card header buttons
+- Add `[&>button:last-child]:right-3 [&>button:last-child]:top-3` to reposition the close button slightly, or override with a custom close button row
+
+**`BalanceAdjustmentCard.tsx`**:
+- Add an optional `isModal` prop that adds right-side padding to the header action buttons so they don't collide with the dialog close button
+- No logic changes — all add/withdraw/reset functionality stays identical
 
 ### Files changed
-- `src/pages/academy/AcademyTrade.tsx` — add one `useEffect` (~3 lines)
+- `src/components/trade-os/BalanceAdjustmentModal.tsx` — luxury styling + close button fix
+- `src/components/trade-os/BalanceAdjustmentCard.tsx` — add padding guard for modal context
 
