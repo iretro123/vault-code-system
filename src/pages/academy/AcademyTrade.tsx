@@ -163,6 +163,9 @@ const AcademyTrade = () => {
   const [cutoffOverride, setCutoffOverride] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [showNudge, setShowNudge] = useState(false);
+  const [localDirection, setLocalDirection] = useState<"calls" | "puts">("calls");
+  const [localTicker, setLocalTicker] = useState("");
+  const [savingRules, setSavingRules] = useState(false);
 
   const nudge = useCoachingNudge({ entries, totalPnl, startingBalance: startingBalance ?? 0, complianceRate });
   const { prefs, updatePrefs } = useUserPreferences();
