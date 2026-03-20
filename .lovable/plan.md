@@ -1,86 +1,43 @@
 
 
-## Shrink Pass v2 — Tighter Desktop at `md:` and `lg:`
+## Trade OS — Center Identity + Clean & Simplify
 
-From the screenshot, the hero risk card with `$18,332` balance and the 2×2 metric grid still dominates the viewport. The stage headline takes up significant vertical space. Everything needs another notch tighter.
+### Problem
+1. "Your Command Center" title is left-aligned, should be centered with the Trade OS pill
+2. "Your Trading Day" card duplicates balance (shown again in hero risk card) and trade count (shown in HUD)
+3. Stage breadcrumb trail (Start Your Day → Go Live → Review → My Insights) duplicates the OSTabHeader tabs
+4. "Yesterday" recap, compliance ring, max loss today line, and luminous dividers add clutter
 
----
+### Changes
 
-### Changes — `AcademyTrade.tsx`
+**File: `AcademyTrade.tsx`**
 
-**1. Stage Headline (line 95)**
-- `py-6` → `md:py-3`
-- Title: `text-2xl` → `md:text-xl`
-- Divider: `mt-4` → `md:mt-2`
+**1. Center the Trade OS Identity (lines 601–632)**
+Replace left-aligned layout with centered:
+- Trade OS pill: centered, same style
+- Title: "Trade OS" (not "Your Command Center"), centered, `text-2xl md:text-[28px]`
+- Remove the stage breadcrumb trail (lines 609–630) — tabs already handle this
+- Remove the bottom divider line (line 631)
+- Clean, minimal: just pill + title + thin subtitle
 
-**2. Hero Risk Card (line 856)**
-- Outer: `md:py-4 md:px-4` → `md:py-3 md:px-3`
-- `md:space-y-3` → `md:space-y-2`
-- Balance: `md:text-3xl` → `md:text-2xl`
-- "Account Balance" label: stays `text-[9px]`
-- Metric values: `md:text-lg` → `md:text-base`
-- Risk buttons: `md:h-6 md:w-10` → `md:h-5 md:w-9`
-- Direction buttons: `md:h-7 md:px-3` → `md:h-6 md:px-2.5`
-- Ticker input: `h-8` → `md:h-6`
-- Grid gap: `gap-2` → `md:gap-1.5`
+**2. Simplify "Your Trading Day" card (lines 634–738)**
+Strip it down to essential, non-duplicated info only:
+- Keep: Today P/L pill (unique, not shown elsewhere)
+- Keep: Day status dot + status text (e.g. "Rules locked — ready to trade")
+- Remove: Balance display (already in hero risk card)
+- Remove: Yesterday recap (noise)
+- Remove: Win rate / Rules % inline stats (shown in Session Stats collapsible)
+- Remove: Luminous divider + "X trades today · $X max loss today" line (duplicated in HUD/limits)
+- Remove: Compliance ring (shown in Session Stats)
+- Result: a slim, single-line status bar instead of a full card
 
-**3. Lock In CTA (line 994–996)**
-- `md:h-11` → `md:h-10`
-- `md:mt-4` stays
-
-**4. Go Live Hero Zone (line 1019)**
-- `md:py-5` → `md:py-4`
-- Shield container: `md:w-10 md:h-10` → `md:w-8 md:h-8`
-- Shield icon: `md:h-5 md:w-5` → `md:h-4 md:w-4`
-- Status label: `md:text-2xl` → `md:text-xl`
-- `space-y-3` → `md:space-y-2`
-- Hero border-radius inline style: `16px` → add md override
-
-**5. Three Major Cards (line 1061)**
-- `md:p-3` → `md:p-2.5`
-- `gap-2.5` → `md:gap-2`
-
-**6. Review Stage (line 1189)**
-- `md:py-4 md:px-4` → `md:py-3 md:px-3`
-- Question text: `md:text-lg` → `md:text-base`
-- Choice buttons: `md:p-4` → `md:p-3`
-- Icons: `md:h-6 md:w-6` → `md:h-5 md:w-5`
-
-**7. Insights Stage (line 1258)**
-- Unlock card: `md:py-5 md:px-4` → `md:py-4 md:px-3`
-- AI grid cards: `md:p-3` → `md:p-2.5`
-
-**8. End Session button (line 1163)**
-- Keep `md:h-10 md:px-8` (already tight)
-
----
-
-### Changes — `index.css`
-
-**9. vault-metric-cell** — tighten further at md:
-- `padding: 0.375rem 0.5rem` → `padding: 0.25rem 0.375rem`
-- Add `border-radius: 8px` at md (was 12px)
-
-**10. vault-obsidian-surface** — tighten at md:
-- Already `border-radius: 12px` → change to `10px`
-
-**11. vault-luxury-card** — tighten at md:
-- Already `border-radius: 12px` → change to `10px`
-
----
-
-### Changes — `NYSESessionBar.tsx`
-
-**12.** Already has `md:p-3` — no further change needed.
-
----
+**3. Clean up duplicated elements**
+- The "Your Trading Day" card becomes a slim contextual status strip: just the day state + today P/L badge, no card wrapper — more like a subtle info line between the identity and the OS card
 
 ### Summary
-
-Another round of `md:` responsive tightening. Balance goes from 3xl→2xl, metrics from lg→base, card padding from p-3→p-2.5, hero shield from w-10→w-8. Same luxury depth, just 15-20% tighter on desktop. No logic changes. Mobile untouched.
+3 targeted changes in one file. Centers the identity, strips duplicates from the Trading Day section, removes the redundant breadcrumb. Same premium feel, dramatically cleaner.
 
 | File | Scope |
 |------|-------|
-| `AcademyTrade.tsx` | Tighter md: overrides on all 4 stages + headline |
-| `index.css` | Smaller metric-cell padding + tighter border-radius |
+| `AcademyTrade.tsx` | Center identity, slim down Trading Day, remove breadcrumb |
 
