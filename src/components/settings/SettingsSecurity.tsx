@@ -64,6 +64,7 @@ export function SettingsSecurity() {
         .delete()
         .eq("user_id", user.id);
 
+      await refetchProfile();
       toast.success("Trade OS reset. Redirecting to onboarding…");
       navigate("/academy/trade");
     } catch {
