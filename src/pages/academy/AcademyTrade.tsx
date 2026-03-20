@@ -991,10 +991,10 @@ const AcademyTrade = () => {
                           <Button
                             className="w-full h-11 text-sm font-bold rounded-xl gap-2 shadow-[0_4px_20px_rgba(59,130,246,0.15)]"
                             onClick={handleLockRules}
-                            disabled={saving}
+                            disabled={savingRules}
                           >
                             <Shield className="h-4 w-4" />
-                            {saving ? "Locking..." : "Lock In Today's Rules"}
+                            {savingRules ? "Locking..." : "Lock In Today's Rules"}
                           </Button>
                         </div>
                       );
