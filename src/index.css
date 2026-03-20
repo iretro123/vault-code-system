@@ -729,7 +729,7 @@ html {
   }
   @media (min-width: 768px) {
     .vault-obsidian-surface {
-      border-radius: 12px;
+      border-radius: 10px;
     }
   }
 
