@@ -161,11 +161,10 @@ export function OSControlRail({
         <div className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-2.5 space-y-1">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="text-[11px] font-bold text-foreground">{activePlan.ticker || "—"}</span>
-            <span className="text-[10px] text-foreground/70">{activePlan.direction} · {activePlan.contracts_planned}ct</span>
+            <span className="text-[11px] font-bold text-foreground">Rules Locked</span>
           </div>
           <p className="text-[10px] text-foreground/70 pl-3">
-            ${Number(activePlan.entry_price_planned).toFixed(2)} · Max ${Number(activePlan.max_loss_planned).toFixed(0)}
+            {activePlan.ticker ? `${activePlan.ticker} · ` : ""}{activePlan.direction === "calls" ? "Calls" : "Puts"} · Max ${Number(activePlan.max_loss_planned).toFixed(0)}
           </p>
           {onLogFromPlan && dayState === "live_session" && (
             <button

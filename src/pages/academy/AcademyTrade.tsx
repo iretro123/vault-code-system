@@ -452,7 +452,7 @@ const AcademyTrade = () => {
 
   const handleQuickAction = useCallback(() => {
     switch (dayState) {
-      case "no_plan": handleScrollToPlanner(); break;
+      case "no_plan": setStage("plan"); break;
       case "plan_approved": setStage("live"); break;
       case "live_session":
         if (activePlan) handleLogWithCutoffCheck(activePlan);
