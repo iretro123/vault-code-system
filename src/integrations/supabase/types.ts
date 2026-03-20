@@ -2059,6 +2059,51 @@ export type Database = {
         }
         Relationships: []
       }
+      trader_dna: {
+        Row: {
+          created_at: string
+          experience_level: string
+          insights_version: number
+          instruments: string[]
+          last_analyzed_at: string | null
+          personality_tags: string[]
+          raw_profile: Json
+          strengths: Json
+          trading_style: string
+          updated_at: string
+          user_id: string
+          weaknesses: Json
+        }
+        Insert: {
+          created_at?: string
+          experience_level?: string
+          insights_version?: number
+          instruments?: string[]
+          last_analyzed_at?: string | null
+          personality_tags?: string[]
+          raw_profile?: Json
+          strengths?: Json
+          trading_style?: string
+          updated_at?: string
+          user_id: string
+          weaknesses?: Json
+        }
+        Update: {
+          created_at?: string
+          experience_level?: string
+          insights_version?: number
+          instruments?: string[]
+          last_analyzed_at?: string | null
+          personality_tags?: string[]
+          raw_profile?: Json
+          strengths?: Json
+          trading_style?: string
+          updated_at?: string
+          user_id?: string
+          weaknesses?: Json
+        }
+        Relationships: []
+      }
       trading_rules: {
         Row: {
           allowed_sessions: string[]

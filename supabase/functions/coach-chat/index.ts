@@ -122,6 +122,7 @@ serve(async (req) => {
       journalRes,
       profileRes,
       adjustmentsRes,
+      traderDnaRes,
     ] = await Promise.all([
       serviceClient
         .from("academy_modules")
@@ -172,6 +173,11 @@ serve(async (req) => {
         .from("balance_adjustments")
         .select("amount")
         .eq("user_id", user.id),
+      serviceClient
+        .from("trader_dna")
+        .select("trading_style, instruments, experience_level, strengths, weaknesses, personality_tags, raw_profile, insights_version, last_analyzed_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
     ]);
 
     const contextErrors = [
@@ -185,6 +191,7 @@ serve(async (req) => {
       journalRes.error,
       profileRes.error,
       adjustmentsRes.error,
+      traderDnaRes.error,
     ].filter(Boolean);
 
     if (contextErrors.length > 0) {
@@ -244,6 +251,31 @@ serve(async (req) => {
       }
       if (profile.role_level) {
         studentContext += `Claimed Role: ${profile.role_level}\n`;
+      }
+    }
+
+    // Trader DNA — AI-built personality profile
+    const traderDna = traderDnaRes.data as any;
+    if (traderDna && traderDna.insights_version > 0) {
+      studentContext += `\nTrader DNA (AI Profile v${traderDna.insights_version}):\n`;
+      studentContext += `Trading Style: ${traderDna.trading_style}\n`;
+      studentContext += `Instruments: ${(traderDna.instruments || []).join(", ")}\n`;
+      studentContext += `Experience: ${traderDna.experience_level}\n`;
+      if (Array.isArray(traderDna.strengths) && traderDna.strengths.length) {
+        studentContext += `Strengths: ${traderDna.strengths.join("; ")}\n`;
+      }
+      if (Array.isArray(traderDna.weaknesses) && traderDna.weaknesses.length) {
+        studentContext += `Weaknesses: ${traderDna.weaknesses.join("; ")}\n`;
+      }
+      if (Array.isArray(traderDna.personality_tags) && traderDna.personality_tags.length) {
+        studentContext += `Personality: ${traderDna.personality_tags.join(", ")}\n`;
+      }
+      const rawProfile = traderDna.raw_profile as any;
+      if (rawProfile?.latest_summary) {
+        studentContext += `AI Assessment: ${rawProfile.latest_summary}\n`;
+      }
+      if (rawProfile?.latest_risk_rec) {
+        studentContext += `Risk Recommendation: ${rawProfile.latest_risk_rec}\n`;
       }
     }
 

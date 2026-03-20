@@ -276,6 +276,11 @@ export function useTradeLog() {
         title: "Trade logged",
         description: `${sym} · ${pnlVal >= 0 ? "+" : "-"}$${Math.abs(pnlVal).toFixed(0)}`,
       });
+      // Fire-and-forget: trigger AI DNA update after every 5th trade
+      const newCount = entries.length + 1;
+      if (newCount % 5 === 0) {
+        supabase.functions.invoke("update-trader-dna").catch(() => {});
+      }
       return { error: null, data };
     } catch (error: any) {
       console.error("Error adding trade entry:", error);
