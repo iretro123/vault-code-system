@@ -122,6 +122,7 @@ serve(async (req) => {
       journalRes,
       profileRes,
       adjustmentsRes,
+      traderDnaRes,
     ] = await Promise.all([
       serviceClient
         .from("academy_modules")
@@ -172,6 +173,11 @@ serve(async (req) => {
         .from("balance_adjustments")
         .select("amount")
         .eq("user_id", user.id),
+      serviceClient
+        .from("trader_dna")
+        .select("trading_style, instruments, experience_level, strengths, weaknesses, personality_tags, raw_profile, insights_version, last_analyzed_at")
+        .eq("user_id", user.id)
+        .maybeSingle(),
     ]);
 
     const contextErrors = [
