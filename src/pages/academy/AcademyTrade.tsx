@@ -879,7 +879,7 @@ const AcademyTrade = () => {
                                   key={pct}
                                   onClick={() => updatePrefs({ risk_percent_override: pct })}
                                   className={cn(
-                                    "h-7 w-12 rounded-lg text-[11px] font-semibold transition-all duration-100",
+                                    "h-7 w-12 md:h-6 md:w-10 md:text-[10px] rounded-lg text-[11px] font-semibold transition-all duration-100",
                                     effectiveRisk === pct
                                       ? {
                                           1: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shadow-[0_0_8px_hsla(160,84%,39%,0.12)]",
