@@ -598,143 +598,51 @@ const AcademyTrade = () => {
     <>
       <div className="px-3 md:px-5 pb-6 max-w-7xl pt-2 space-y-1.5">
 
-        {/* ══════ TRADE OS IDENTITY ══════ */}
-        <div className="pt-4 pb-2 px-1">
+        {/* ══════ TRADE OS IDENTITY — CENTERED ══════ */}
+        <div className="pt-5 pb-1 flex flex-col items-center text-center">
           <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-[0.18em] text-primary px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 shadow-[0_0_12px_hsl(var(--primary)/0.15)]">
             Trade OS
           </span>
-          <h1 className="text-2xl md:text-[32px] font-bold text-foreground mt-2.5 tracking-tight leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
-            Your Command Center
+          <h1 className="text-2xl md:text-[28px] font-bold text-foreground mt-2 tracking-tight leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
+            Trade OS
           </h1>
-          <div className="flex items-center gap-2 mt-2">
-            {(["Start Your Day", "Go Live", "Review", "My Insights"] as const).map((label, i) => {
-              const stageKeys = ["plan", "live", "review", "insights"] as const;
-              const isActive = activeStage === stageKeys[i];
-              return (
-                <span key={label} className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "text-xs font-medium transition-colors",
-                      isActive
-                        ? "text-primary font-semibold"
-                        : "text-muted-foreground/40"
-                    )}
-                    style={isActive ? { textShadow: "0 0 10px hsl(var(--primary) / 0.5)" } : undefined}
-                  >
-                    {label}
-                  </span>
-                  {i < 3 && <span className="text-muted-foreground/20 text-xs">→</span>}
-                </span>
-              );
-            })}
-          </div>
-          <div className="mt-3 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+          <p className="text-[11px] text-muted-foreground/50 font-medium mt-1 tracking-wide">Your center of operations</p>
         </div>
 
-        {/* ══════ WELCOME HERO ══════ */}
+        {/* ══════ STATUS STRIP ══════ */}
         {showMetrics && (
-          <div className="vault-os-card p-4 md:p-5" style={{ background: "radial-gradient(ellipse at 50% 0%, hsl(var(--primary) / 0.06), transparent 70%), hsl(var(--card))" }}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/60 font-semibold">Your Trading Day</p>
-                <div className="flex items-baseline gap-2.5">
-                    <span className="text-4xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                      {trackedBalance !== null ? `$${trackedBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
-                    </span>
-                    {todayPnl !== 0 && (
-                      <span className={cn(
-                        "text-xs font-semibold tabular-nums px-2.5 py-0.5 rounded-full",
-                        todayPnl > 0
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_8px_rgba(52,211,153,0.15)]"
-                          : "bg-red-500/10 text-red-400 border border-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.15)]"
-                      )}>
-                        {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
-                      </span>
-                    )}
-                </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <div className="flex items-center gap-1.5">
-                    {dayState === "day_complete" ? (
-                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                    ) : (
-                      <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, dayState === "live_session" && "animate-pulse")} />
-                    )}
-                    <span className="text-[10px] text-muted-foreground/60 font-medium">
-                      {dayStateStatus}
-                    </span>
-                  </div>
-                </div>
-                {/* Yesterday recap + rolling stats */}
-                {(() => {
-                  const yesterdayDate = new Date();
-                  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-                  const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
-                  const yesterdayEntries = entries.filter((e) => e.trade_date === yesterdayStr);
-                  const yesterdayPnl = yesterdayEntries.reduce((s, e) => s + computePnl(e), 0);
-                  const isATH = trackedBalance !== null && allTimeHigh > 0 && trackedBalance >= allTimeHigh && entries.length > 1;
-                  return (
-                    <>
-                      {isATH && (
-                        <span className="vault-ath-shimmer inline-flex items-center gap-1 text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2.5 py-0.5 shadow-[0_0_10px_rgba(251,191,36,0.12)]">
-                          ★ New Personal Best
-                        </span>
-                      )}
-                      {entries.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px]">
-                          <span className="text-foreground/70">Yesterday: {yesterdayEntries.length > 0
-                            ? <><span className={yesterdayPnl >= 0 ? "text-emerald-400 font-semibold" : "text-red-400 font-semibold"}>{yesterdayPnl >= 0 ? "+" : "-"}${Math.abs(yesterdayPnl).toFixed(0)}</span> · {yesterdayEntries.length} trade{yesterdayEntries.length !== 1 ? "s" : ""}</>
-                            : <span className="text-foreground/50">No trades</span>}
-                          </span>
-                          {entries.length >= 3 && (
-                            <>
-                              <span className="text-foreground/30">·</span>
-                              <span className="text-foreground/70">Win rate <span className="text-foreground font-semibold">{last10WinRate}%</span></span>
-                              <span className="text-foreground/30">·</span>
-                              <span className="text-foreground/70">Rules <span className="text-foreground font-semibold">{weeklyComplianceRate}%</span></span>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-                {/* Luminous divider */}
-                <div className="h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent mt-2 mb-0.5" />
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] text-foreground/60 font-medium">
-                    {todayTradeCount} trades today
-                  </span>
-                  <span className="text-[10px] text-foreground/20">·</span>
-                  {(() => {
-                    const hudBal = trackedBalance ?? vaultState.account_balance;
-                    const hudTier = detectTier(hudBal);
-                    const hudRisk = hudBal * (TIER_DEFAULTS[hudTier].riskPercent / 100);
-                    return (
-                      <span className={cn("text-[10px] font-semibold tabular-nums", hudRisk <= 0 ? "text-red-400" : "text-foreground/60")}>
-                        ${hudRisk.toFixed(0)} max loss today
-                      </span>
-                    );
-                  })()}
-                </div>
-              </div>
-              {/* Compliance Ring */}
-              <div className="flex flex-col items-center shrink-0">
-                <div className="relative w-12 h-12">
-                  <svg width="48" height="48" viewBox="0 0 48 48" className="transform -rotate-90">
-                    <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(var(--muted) / 0.15)" strokeWidth="3" />
-                    <circle cx="24" cy="24" r="20" fill="none" stroke="hsl(142 71% 45%)" strokeWidth="3" strokeLinecap="round"
-                      strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 - (weeklyComplianceRate / 100) * 2 * Math.PI * 20}
-                      className="transition-all duration-500"
-                      style={{ filter: "drop-shadow(0 0 4px rgba(52,211,153,0.4))" }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="inline-block text-sm font-bold leading-none tabular-nums text-foreground translate-x-[1px]">{weeklyComplianceRate}%</span>
-                  </div>
-                </div>
-                <span className="text-[8px] text-foreground/60 font-medium mt-0.5">This week</span>
-              </div>
+          <div className="flex items-center justify-center gap-3 py-1.5">
+            <div className="flex items-center gap-1.5">
+              {dayState === "day_complete" ? (
+                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+              ) : (
+                <span className={cn("w-[5px] h-[5px] rounded-full", vaultStatusDot, dayState === "live_session" && "animate-pulse")} />
+              )}
+              <span className="text-[11px] text-muted-foreground/70 font-medium">
+                {dayStateStatus}
+              </span>
             </div>
+            {todayPnl !== 0 && (
+              <>
+                <span className="text-muted-foreground/20 text-xs">·</span>
+                <span className={cn(
+                  "text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-full",
+                  todayPnl > 0
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    : "bg-red-500/10 text-red-400 border border-red-500/20"
+                )}>
+                  {todayPnl > 0 ? "+" : "-"}${Math.abs(todayPnl).toFixed(0)} today
+                </span>
+              </>
+            )}
+            {trackedBalance !== null && allTimeHigh > 0 && trackedBalance >= allTimeHigh && entries.length > 1 && (
+              <>
+                <span className="text-muted-foreground/20 text-xs">·</span>
+                <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
+                  ★ ATH
+                </span>
+              </>
+            )}
           </div>
         )}
 
