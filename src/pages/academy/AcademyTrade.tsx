@@ -896,7 +896,7 @@ const AcademyTrade = () => {
 
                             {/* 2×2 Core Metrics */}
                             <TooltipProvider delayDuration={200}>
-                              <div className="relative z-10 grid grid-cols-2 gap-2">
+                              <div className="relative z-10 grid grid-cols-2 gap-2 md:gap-1.5">
                                 <div className="vault-metric-cell">
                                   <p className="text-xl md:text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
                                   <Tooltip>
