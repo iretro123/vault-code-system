@@ -1032,7 +1032,7 @@ const AcademyTrade = () => {
                   >
                     <div className="relative z-10 flex flex-col items-center text-center space-y-3">
                       <div className={cn(
-                        "flex items-center justify-center w-14 h-14 rounded-2xl border",
+                        "flex items-center justify-center w-14 h-14 md:w-10 md:h-10 rounded-2xl md:rounded-xl border",
                         vaultState.vault_status === "GREEN" ? "bg-emerald-500/[0.08] border-emerald-500/20" :
                         vaultState.vault_status === "YELLOW" ? "bg-amber-500/[0.08] border-amber-500/20" :
                         "bg-red-500/[0.08] border-red-500/20"
