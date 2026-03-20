@@ -1,43 +1,27 @@
 
 
-## Trade OS — Center Identity + Clean & Simplify
+## Remove Session Setup from "Start Your Day" — Keep it in "Go Live" Only
 
 ### Problem
-1. "Your Command Center" title is left-aligned, should be centered with the Trade OS pill
-2. "Your Trading Day" card duplicates balance (shown again in hero risk card) and trade count (shown in HUD)
-3. Stage breadcrumb trail (Start Your Day → Go Live → Review → My Insights) duplicates the OSTabHeader tabs
-4. "Yesterday" recap, compliance ring, max loss today line, and luminous dividers add clutter
+The `SessionSetupCard` (Set Your Session Window) appears in **two places**:
+1. **Start Your Day** — inside the "Session & Targets" collapsible (line 888)
+2. **Go Live** — as Card 2 "Your Session" (line 997)
 
-### Changes
+The session window belongs exclusively in Go Live. Having it in Start Your Day is confusing — that stage should only be about risk rules, direction, and ticker.
 
-**File: `AcademyTrade.tsx`**
+### Changes — `AcademyTrade.tsx`
 
-**1. Center the Trade OS Identity (lines 601–632)**
-Replace left-aligned layout with centered:
-- Trade OS pill: centered, same style
-- Title: "Trade OS" (not "Your Command Center"), centered, `text-2xl md:text-[28px]`
-- Remove the stage breadcrumb trail (lines 609–630) — tabs already handle this
-- Remove the bottom divider line (line 631)
-- Clean, minimal: just pill + title + thin subtitle
+**1. Remove `SessionSetupCard` from the "Session & Targets" collapsible (line 888)**
+- Delete `<SessionSetupCard onPhaseChange={setSessionPhase} />` from the collapsible
+- Rename the collapsible trigger from "Session & Targets" to just "Reward Targets" since only `RewardTargetsStrip` remains
+- Update the icon if needed (keep `Target`)
 
-**2. Simplify "Your Trading Day" card (lines 634–738)**
-Strip it down to essential, non-duplicated info only:
-- Keep: Today P/L pill (unique, not shown elsewhere)
-- Keep: Day status dot + status text (e.g. "Rules locked — ready to trade")
-- Remove: Balance display (already in hero risk card)
-- Remove: Yesterday recap (noise)
-- Remove: Win rate / Rules % inline stats (shown in Session Stats collapsible)
-- Remove: Luminous divider + "X trades today · $X max loss today" line (duplicated in HUD/limits)
-- Remove: Compliance ring (shown in Session Stats)
-- Result: a slim, single-line status bar instead of a full card
+**2. Keep everything in Go Live as-is (line 997)**
+- No changes — the session setup card stays in Go Live where it belongs
 
-**3. Clean up duplicated elements**
-- The "Your Trading Day" card becomes a slim contextual status strip: just the day state + today P/L badge, no card wrapper — more like a subtle info line between the identity and the OS card
+That's it — one surgical removal + label rename. The session phase callback on Go Live's instance already handles all phase tracking.
 
-### Summary
-3 targeted changes in one file. Centers the identity, strips duplicates from the Trading Day section, removes the redundant breadcrumb. Same premium feel, dramatically cleaner.
-
-| File | Scope |
-|------|-------|
-| `AcademyTrade.tsx` | Center identity, slim down Trading Day, remove breadcrumb |
+| File | Change |
+|------|--------|
+| `AcademyTrade.tsx` | Remove SessionSetupCard from Start Your Day collapsible, rename trigger label |
 
