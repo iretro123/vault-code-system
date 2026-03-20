@@ -1107,7 +1107,7 @@ const AcademyTrade = () => {
                         maxTrades={MAX_LOSSES_PER_DAY}
                       />
                     ) : (
-                      <div className="vault-obsidian-surface p-4 flex items-center justify-center">
+                      <div className="vault-obsidian-surface p-4 md:p-3 flex items-center justify-center">
                         <div className="text-center space-y-2">
                           <p className="text-sm text-muted-foreground/40">No rules set.</p>
                           <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
