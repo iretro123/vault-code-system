@@ -17,10 +17,11 @@ interface BalanceAdjustmentCardProps {
   onDeleteAdjustment: (id: string) => Promise<boolean>;
   adjustments: BalanceAdjustment[];
   resetting: boolean;
+  isModal?: boolean;
 }
 
 export function BalanceAdjustmentCard({
-  balance, onAddFunds, onWithdraw, onReset, onDeleteAdjustment, adjustments, resetting,
+  balance, onAddFunds, onWithdraw, onReset, onDeleteAdjustment, adjustments, resetting, isModal,
 }: BalanceAdjustmentCardProps) {
   const [mode, setMode] = useState<Mode>(null);
   const [amount, setAmount] = useState("");
@@ -64,7 +65,7 @@ export function BalanceAdjustmentCard({
             ${balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className={cn("flex items-center gap-1", isModal && "mr-6")}>
           <button
             onClick={() => setMode(mode === "add" ? null : "add")}
             className={cn(
