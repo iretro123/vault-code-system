@@ -710,6 +710,109 @@ html {
     .vault-fade-up,
     .vault-check-pop { animation: none; }
   }
+
+  /* ═══ Premium Obsidian Surface ═══ */
+  .vault-obsidian-surface {
+    background:
+      radial-gradient(ellipse 120% 80% at 50% 0%, hsla(217, 91%, 60%, 0.03) 0%, transparent 60%),
+      hsl(214, 26%, 8%);
+    border: 1px solid hsla(0, 0%, 100%, 0.04);
+    border-radius: 16px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 hsla(0, 0%, 100%, 0.03);
+  }
+
+  /* ═══ Vault Hero Glow — status-aware radial ═══ */
+  .vault-hero-glow {
+    position: relative;
+  }
+  .vault-hero-glow::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: radial-gradient(
+      ellipse 70% 100px at 50% 0%,
+      var(--vault-glow-color, hsla(217, 91%, 60%, 0.08)),
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+  .vault-hero-glow--green { --vault-glow-color: hsla(160, 84%, 39%, 0.1); }
+  .vault-hero-glow--amber { --vault-glow-color: hsla(38, 92%, 50%, 0.1); }
+  .vault-hero-glow--red { --vault-glow-color: hsla(0, 72%, 51%, 0.1); }
+
+  /* ═══ Metric Cell — frosted glass ═══ */
+  .vault-metric-cell {
+    background: hsla(0, 0%, 100%, 0.025);
+    border: 1px solid hsla(0, 0%, 100%, 0.05);
+    border-radius: 12px;
+    padding: 0.625rem 0.5rem;
+    text-align: center;
+  }
+
+  /* ═══ Stage Enter Animation ═══ */
+  .vault-stage-enter {
+    animation: vault-stage-enter-anim 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes vault-stage-enter-anim {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0px);
+    }
+  }
+
+  /* ═══ Launch Streak — desktop Go Live entrance ═══ */
+  .vault-launch-streak {
+    position: relative;
+    overflow: hidden;
+  }
+  .vault-launch-streak::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsla(0, 0%, 100%, 0.04),
+      hsla(217, 91%, 60%, 0.06),
+      hsla(0, 0%, 100%, 0.04),
+      transparent
+    );
+    animation: vault-launch-sweep 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes vault-launch-sweep {
+    from { left: -60%; }
+    to { left: 120%; }
+  }
+
+  /* ═══ Now-marker pulse for NYSE bar ═══ */
+  .vault-now-marker {
+    animation: vault-now-pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes vault-now-pulse {
+    0%, 100% { box-shadow: 0 0 6px 2px currentColor, 0 0 12px 4px currentColor; opacity: 1; }
+    50% { box-shadow: 0 0 10px 4px currentColor, 0 0 20px 8px currentColor; opacity: 0.85; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vault-stage-enter { animation: none; }
+    .vault-launch-streak::after { animation: none; display: none; }
+    .vault-now-marker { animation: none; }
+  }
 }
 
 /* ─── Referral modal backdrop override ─── */
