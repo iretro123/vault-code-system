@@ -51,6 +51,11 @@ import { SessionSetupCard, SessionCountdownLine, loadTimes, clearSession, clearS
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
+import { RewardTargetsStrip } from "@/components/trade-os/RewardTargetsStrip";
+import { ContractFrameworkCard } from "@/components/trade-os/ContractFrameworkCard";
+import { VaultStatusBadge } from "@/components/trade-os/VaultStatusBadge";
+import { LiveSessionMetrics } from "@/components/trade-os/LiveSessionMetrics";
+import { FocusReminderCards } from "@/components/trade-os/FocusReminderCards";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
