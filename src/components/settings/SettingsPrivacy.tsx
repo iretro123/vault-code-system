@@ -6,9 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function SettingsPrivacy() {
-  const { user } = useAuth();
+  const { user, refetchProfile } = useAuth();
+  const navigate = useNavigate();
   const [downloading, setDownloading] = useState(false);
 
   // Delete journal & progress gate
@@ -58,23 +60,34 @@ export function SettingsPrivacy() {
     if (deleteInput !== "DELETE" || !user) return;
     setDeleting(true);
     try {
-      // Delete trade entries, journal entries, and reset balance
+      // Delete trade entries, journal entries, vault data, trader_dna, and reset profile
       const [tradeRes, journalRes, profileRes] = await Promise.all([
         supabase.from("trade_entries").delete().eq("user_id", user.id),
         supabase.from("journal_entries").delete().eq("user_id", user.id),
-        supabase.from("profiles").update({ account_balance: 0 }).eq("user_id", user.id),
+        supabase.from("profiles").update({ account_balance: 0, onboarding_completed: false }).eq("user_id", user.id),
       ]);
 
       if (tradeRes.error) throw tradeRes.error;
       if (journalRes.error) throw journalRes.error;
       if (profileRes.error) throw profileRes.error;
 
+      // Clean up vault state, events, and trader_dna
+      await Promise.all([
+        supabase.from("vault_state").delete().eq("user_id", user.id),
+        supabase.from("vault_events").delete().eq("user_id", user.id),
+        (supabase.from("trader_dna" as any) as any).delete().eq("user_id", user.id),
+      ]);
+
       // Clear local cache
       try { localStorage.removeItem("va_cache_trade_entries"); } catch {}
 
+      // Refresh in-memory profile so onboarding gate sees onboarding_completed=false
+      await refetchProfile();
+
       setShowDeleteGate(false);
       setDeleteInput("");
-      toast.success("Journal & trade data deleted. Balance reset to $0.");
+      toast.success("All data deleted. Redirecting to onboarding…");
+      navigate("/academy/trade");
     } catch (e) {
       console.error("Error deleting journal/progress:", e);
       toast.error("Failed to delete data. Try again.");
