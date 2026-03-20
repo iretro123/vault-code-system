@@ -1001,96 +1001,137 @@ const AcademyTrade = () => {
 
               {/* GO LIVE STAGE */}
               {activeStage === "live" && (
-                <div className="space-y-3">
-                  <StageHeadline stage="live" />
+                <div className={cn("space-y-3", !isMobile && "vault-launch-streak vault-stage-enter")}>
 
-                  {/* Discipline Metrics Strip */}
-                  <DisciplineMetricsStrip
-                    vaultStatus={vaultState.vault_status}
-                    complianceRate={complianceRate}
-                    weeklyComplianceRate={weeklyComplianceRate}
-                    currentStreak={currentStreak}
-                    todayTrades={entries.filter(e => e.trade_date === new Date().toISOString().slice(0, 10))}
-                    lossStreak={vaultState.loss_streak ?? 0}
-                  />
-
-                  {/* Vault Status */}
-                  <VaultStatusBadge status={vaultState.vault_status} />
-
-                  {/* NYSE Session Timeline */}
-                  <NYSESessionBar />
-
-                  {/* Session Metrics */}
-                  {(() => {
-                    const bal = trackedBalance ?? vaultState.account_balance;
-                    const tier = detectTier(bal);
-                    const defaults = TIER_DEFAULTS[tier];
-                    const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
-                    const riskBudget = bal * (effectiveRisk / 100);
-                    const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
-                    return (
-                      <>
-                        <LiveSessionMetrics
-                          dailyLossBuffer={vaultState.risk_remaining_today ?? riskBudget}
-                          riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY}
-                          maxContracts={vaultLimits.max_contracts}
-                          tradesRemaining={vaultState.trades_remaining_today ?? MAX_LOSSES_PER_DAY}
-                          lossStreak={vaultState.loss_streak ?? 0}
-                          maxLossesPerDay={MAX_LOSSES_PER_DAY}
-                        />
-                        <RewardTargetsStrip riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY} compact />
-                      </>
-                    );
-                  })()}
-
-                  {/* Active rules summary */}
-                  {activePlan && activePlan.status === "planned" && (
-                    <div className="rounded-xl border border-primary/15 bg-primary/[0.04] p-3 flex items-center gap-3">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-foreground">
-                          Rules Active{activePlan.ticker ? ` · ${activePlan.ticker}` : ""} · {activePlan.direction === "calls" ? "Calls" : "Puts"}
-                        </p>
-                        <p className="text-[10px] text-foreground/50">Max loss: ${Number(activePlan.max_loss_planned).toFixed(0)}</p>
+                  {/* ═══ HERO HEADER: Vault Status + Inline Metrics ═══ */}
+                  <div className={cn(
+                    "vault-hero-glow rounded-2xl p-5 space-y-2",
+                    vaultState.vault_status === "GREEN" ? "vault-hero-glow--green" : 
+                    vaultState.vault_status === "YELLOW" ? "vault-hero-glow--amber" : "vault-hero-glow--red"
+                  )}
+                    style={{
+                      background: `radial-gradient(ellipse 90% 120px at 50% 0%, ${
+                        vaultState.vault_status === "GREEN" ? "hsla(160,84%,39%,0.06)" :
+                        vaultState.vault_status === "YELLOW" ? "hsla(38,92%,50%,0.06)" :
+                        "hsla(0,72%,51%,0.06)"
+                      }, transparent 70%), hsl(214,24%,11%)`,
+                      border: "1px solid hsla(0,0%,100%,0.05)",
+                      borderRadius: "16px",
+                    }}
+                  >
+                    <div className="relative z-10 flex items-center gap-3">
+                      <div className={cn(
+                        "flex items-center justify-center w-11 h-11 rounded-2xl border",
+                        vaultState.vault_status === "GREEN" ? "bg-emerald-500/[0.08] border-emerald-500/20" :
+                        vaultState.vault_status === "YELLOW" ? "bg-amber-500/[0.08] border-amber-500/20" :
+                        "bg-red-500/[0.08] border-red-500/20"
+                      )}>
+                        <Shield className={cn("h-5 w-5",
+                          vaultState.vault_status === "GREEN" ? "text-emerald-400" :
+                          vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
+                        )} />
                       </div>
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
+                      <div className="flex-1">
+                        <p className="text-[9px] text-muted-foreground/35 font-semibold uppercase tracking-[0.12em]">Vault Status</p>
+                        <p className={cn("text-xl font-bold tracking-tight",
+                          vaultState.vault_status === "GREEN" ? "text-emerald-400" :
+                          vaultState.vault_status === "YELLOW" ? "text-amber-400" : "text-red-400"
+                        )}>
+                          {vaultState.vault_status === "GREEN" ? "Clear" : vaultState.vault_status === "YELLOW" ? "Caution" : "Locked"}
+                        </p>
+                      </div>
                     </div>
-                  )}
-
-                  {!activePlan && (
-                    <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center space-y-2">
-                      <p className="text-sm text-muted-foreground/60">No rules set for today.</p>
-                      <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
-                        <Calendar className="h-3 w-3" /> Start Your Day
-                      </Button>
+                    <p className="relative z-10 text-[11px] text-foreground/40 font-medium">Trade your session. Stay inside your rules.</p>
+                    
+                    {/* Inline discipline pills */}
+                    <div className="relative z-10 pt-1">
+                      <DisciplineMetricsStrip
+                        compact
+                        vaultStatus={vaultState.vault_status}
+                        complianceRate={complianceRate}
+                        weeklyComplianceRate={weeklyComplianceRate}
+                        currentStreak={currentStreak}
+                        todayTrades={entries.filter(e => e.trade_date === new Date().toISOString().slice(0, 10))}
+                        lossStreak={vaultState.loss_streak ?? 0}
+                      />
                     </div>
-                  )}
-
-                  {/* Session Window */}
-                  <div className="space-y-2">
-                    <SectionLabel>Session Timer</SectionLabel>
-                    <SessionSetupCard onPhaseChange={setSessionPhase} />
                   </div>
 
-                  {/* Focus Reminders */}
-                  {activePlan && (
-                    <FocusReminderCards
-                      direction={activePlan.direction}
-                      maxLoss={Number(activePlan.max_loss_planned)}
-                      maxTrades={MAX_LOSSES_PER_DAY}
-                    />
-                  )}
+                  {/* ═══ NYSE SESSION BAR ═══ */}
+                  <NYSESessionBar />
 
-                  {/* Quick Log Trade */}
+                  {/* ═══ THREE MAJOR CARDS ═══ */}
+                  <div className="grid gap-2 md:grid-cols-3">
+
+                    {/* Card 1: Your Limits */}
+                    {(() => {
+                      const bal = trackedBalance ?? vaultState.account_balance;
+                      const tier = detectTier(bal);
+                      const defaults = TIER_DEFAULTS[tier];
+                      const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
+                      const riskBudget = bal * (effectiveRisk / 100);
+                      const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
+                      return (
+                        <div className="vault-obsidian-surface p-3.5 space-y-2">
+                          <p className="text-[9px] text-muted-foreground/35 font-semibold uppercase tracking-[0.12em]">Your Limits</p>
+                          <LiveSessionMetrics
+                            variant="compact"
+                            dailyLossBuffer={vaultState.risk_remaining_today ?? riskBudget}
+                            riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY}
+                            maxContracts={vaultLimits.max_contracts}
+                            tradesRemaining={vaultState.trades_remaining_today ?? MAX_LOSSES_PER_DAY}
+                            lossStreak={vaultState.loss_streak ?? 0}
+                            maxLossesPerDay={MAX_LOSSES_PER_DAY}
+                            rewardTargets={{ riskPerTrade: riskBudget / MAX_LOSSES_PER_DAY }}
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Card 2: Your Session */}
+                    <div className="vault-obsidian-surface p-3.5 space-y-2">
+                      <p className="text-[9px] text-muted-foreground/35 font-semibold uppercase tracking-[0.12em]">Your Session</p>
+                      <SessionSetupCard onPhaseChange={setSessionPhase} />
+                      {activePlan && activePlan.status === "planned" && (
+                        <div className="flex items-center gap-2 pt-1 border-t border-white/[0.04]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                          <p className="text-[10px] font-medium text-foreground/60 flex-1 truncate">
+                            {activePlan.ticker || "—"} · {activePlan.direction === "calls" ? "Calls" : "Puts"} · ${Number(activePlan.max_loss_planned).toFixed(0)} max
+                          </p>
+                          <button className="text-[9px] text-muted-foreground/30 hover:text-muted-foreground/60" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card 3: Your Focus */}
+                    {activePlan ? (
+                      <FocusReminderCards
+                        layout="unified"
+                        direction={activePlan.direction}
+                        maxLoss={Number(activePlan.max_loss_planned)}
+                        maxTrades={MAX_LOSSES_PER_DAY}
+                      />
+                    ) : (
+                      <div className="vault-obsidian-surface p-4 flex items-center justify-center">
+                        <div className="text-center space-y-2">
+                          <p className="text-sm text-muted-foreground/40">No rules set.</p>
+                          <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
+                            <Calendar className="h-3 w-3" /> Start Your Day
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ═══ ACTIONS ═══ */}
                   <Button
                     variant="outline"
-                    className="w-full h-10 gap-2 rounded-xl text-xs font-semibold border-white/[0.1]"
+                    className="w-full h-10 gap-2 rounded-xl text-xs font-semibold border-white/[0.08] hover:bg-white/[0.04]"
                     onClick={() => handleLogWithCutoffCheck(activePlan || undefined)}
                   >
                     <Plus className="h-3.5 w-3.5" /> Quick Log Trade
                   </Button>
 
-                  {/* End Session (red pill) */}
                   {sessionPhase && (
                     <div className="flex justify-center">
                       <button
@@ -1103,7 +1144,7 @@ const AcademyTrade = () => {
                           try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
                           setStage("review");
                         }}
-                        className="flex items-center justify-center gap-2 h-12 px-10 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)] max-w-xs w-full"
+                        className="flex items-center justify-center gap-2 h-12 px-10 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_hsla(0,72%,51%,0.25)] max-w-xs w-full"
                       >
                         <Square className="h-4 w-4" /> End Session & Review
                       </button>
