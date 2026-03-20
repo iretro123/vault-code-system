@@ -845,36 +845,38 @@ const AcademyTrade = () => {
                       };
 
                       return (
-                        <div className="space-y-2.5">
-                          {/* Daily Risk Rules Card */}
-                          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3.5 space-y-3">
+                        <div className="space-y-3 vault-stage-enter">
+                          {/* ═══ HERO RISK CARD ═══ */}
+                          <div className="vault-luxury-card p-4 space-y-4">
                             {/* Balance + Update */}
-                            <div className="flex items-center justify-between">
+                            <div className="relative z-10 flex items-center justify-between">
                               <div>
-                                <p className="text-[9px] text-muted-foreground/50 font-semibold uppercase tracking-wider">Account Balance</p>
-                                <p className="text-2xl font-bold tabular-nums text-foreground">${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                                <p className="text-[9px] text-muted-foreground/40 font-semibold uppercase tracking-[0.12em]">Account Balance</p>
+                                <p className="text-3xl font-bold tabular-nums text-foreground tracking-tight" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                                  ${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                </p>
                               </div>
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg border-white/[0.1] text-muted-foreground/70" onClick={() => setShowBalanceModal(true)}>
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg border-white/[0.08] text-muted-foreground/60" onClick={() => setShowBalanceModal(true)}>
                                 <Wallet className="h-3 w-3 mr-1" /> Update
                               </Button>
                             </div>
 
                             {/* Risk % Selector */}
-                            <div className="flex items-center justify-center gap-1 pt-1">
-                              <span className="text-[9px] text-muted-foreground/50 font-medium mr-1.5">Risk</span>
+                            <div className="relative z-10 flex items-center justify-center gap-1 pt-1">
+                              <span className="text-[9px] text-muted-foreground/40 font-medium mr-1.5">Risk</span>
                               {[1, 2, 3].map((pct) => (
                                 <button
                                   key={pct}
                                   onClick={() => updatePrefs({ risk_percent_override: pct })}
                                   className={cn(
-                                    "h-6 w-10 rounded-md text-[11px] font-semibold transition-all duration-100",
+                                    "h-7 w-12 rounded-lg text-[11px] font-semibold transition-all duration-100",
                                     effectiveRisk === pct
                                       ? {
-                                          1: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.15)]",
-                                          2: "bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.15)]",
-                                          3: "bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.15)]",
+                                          1: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shadow-[0_0_8px_hsla(160,84%,39%,0.12)]",
+                                          2: "bg-amber-500/15 text-amber-400 border border-amber-500/25 shadow-[0_0_8px_hsla(38,92%,50%,0.12)]",
+                                          3: "bg-rose-500/15 text-rose-400 border border-rose-500/25 shadow-[0_0_8px_hsla(0,72%,51%,0.12)]",
                                         }[pct]
-                                      : "bg-white/[0.04] text-muted-foreground/60 border border-white/[0.08] hover:bg-white/[0.08]"
+                                      : "bg-white/[0.03] text-muted-foreground/50 border border-white/[0.06] hover:bg-white/[0.06]"
                                   )}
                                 >
                                   {pct}%
@@ -882,119 +884,108 @@ const AcademyTrade = () => {
                               ))}
                             </div>
 
-                            {/* Metrics Grid */}
+                            {/* 2×2 Core Metrics */}
                             <TooltipProvider delayDuration={200}>
-                              <div className="grid grid-cols-3 gap-2">
-                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
-                                  <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
+                              <div className="relative z-10 grid grid-cols-2 gap-2">
+                                <div className="vault-metric-cell">
+                                  <p className="text-xl font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Daily Loss <HelpCircle className="h-2.5 w-2.5" /></p>
+                                      <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Daily Loss <HelpCircle className="h-2.5 w-2.5" /></p>
                                     </TooltipTrigger>
                                     <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades.</TooltipContent>
                                   </Tooltip>
                                 </div>
-                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
-                                  <p className="text-lg font-bold tabular-nums text-foreground">${(riskBudget / MAX_LOSSES_PER_DAY).toFixed(0)}</p>
+                                <div className="vault-metric-cell">
+                                  <p className="text-xl font-bold tabular-nums text-foreground">${(riskBudget / MAX_LOSSES_PER_DAY).toFixed(0)}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Per Trade <HelpCircle className="h-2.5 w-2.5" /></p>
+                                      <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Risk Per Trade <HelpCircle className="h-2.5 w-2.5" /></p>
                                     </TooltipTrigger>
                                     <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max risk on any single trade.</TooltipContent>
                                   </Tooltip>
                                 </div>
-                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
-                                  <p className="text-lg font-bold tabular-nums text-foreground">{vaultLimits.max_contracts}</p>
+                                <div className="vault-metric-cell">
+                                  <p className="text-xl font-bold tabular-nums text-foreground">{vaultLimits.max_contracts}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
+                                      <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
                                     </TooltipTrigger>
                                     <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max contracts per position.</TooltipContent>
                                   </Tooltip>
                                 </div>
-                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
-                                  <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
+                                <div className="vault-metric-cell">
+                                  <p className="text-xl font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
+                                      <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
                                     </TooltipTrigger>
                                     <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max losing trades before lockout.</TooltipContent>
-                                  </Tooltip>
-                                </div>
-                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
-                                  <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}L</p>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Stop After <HelpCircle className="h-2.5 w-2.5" /></p>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">Vault locks after this many losses.</TooltipContent>
-                                  </Tooltip>
-                                </div>
-                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
-                                  <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Spend <HelpCircle className="h-2.5 w-2.5" /></p>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max premium spend per position.</TooltipContent>
                                   </Tooltip>
                                 </div>
                               </div>
                             </TooltipProvider>
 
-                            <p className="text-[9px] text-muted-foreground/50 text-center">
-                              ${bal.toLocaleString()} · {tier} tier · {effectiveRisk}% risk
-                            </p>
-                          </div>
-
-                          {/* Direction + Ticker */}
-                          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
-                            <div className="flex items-center gap-2">
-                              <p className="text-[10px] text-muted-foreground/50 font-semibold">Direction</p>
-                              <div className="flex gap-1 flex-1">
+                            {/* Direction + Ticker — inside hero card */}
+                            <div className="relative z-10 flex items-center gap-2 pt-1 border-t border-white/[0.04]">
+                              <div className="flex gap-1">
                                 {(["calls", "puts"] as const).map((dir) => (
                                   <button
                                     key={dir}
                                     onClick={() => setLocalDirection(dir)}
                                     className={cn(
-                                      "flex-1 h-8 rounded-lg text-[11px] font-semibold transition-all duration-100",
+                                      "h-8 px-4 rounded-lg text-[11px] font-semibold transition-all duration-100",
                                       localDirection === dir
                                         ? dir === "calls"
                                           ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
                                           : "bg-red-500/15 text-red-400 border border-red-500/25"
-                                        : "bg-white/[0.04] text-muted-foreground/60 border border-white/[0.08] hover:bg-white/[0.08]"
+                                        : "bg-white/[0.03] text-muted-foreground/50 border border-white/[0.06] hover:bg-white/[0.06]"
                                     )}
                                   >
                                     {dir === "calls" ? "Calls" : "Puts"}
                                   </button>
                                 ))}
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-[10px] text-muted-foreground/50 font-semibold">Ticker</p>
                               <input
                                 type="text"
-                                placeholder="SPY, QQQ, etc."
+                                placeholder="SPY, QQQ..."
                                 value={localTicker}
                                 onChange={(e) => setLocalTicker(e.target.value.toUpperCase())}
-                                className="flex-1 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30"
+                                className="flex-1 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
                               />
                             </div>
+
+                            {/* Tier summary */}
+                            <p className="relative z-10 text-[9px] text-muted-foreground/30 text-center">
+                              ${bal.toLocaleString()} · {tier} tier · {effectiveRisk}% risk
+                            </p>
                           </div>
 
-                          {/* Reward Targets */}
-                          <RewardTargetsStrip riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY} />
+                          {/* ═══ COLLAPSIBLE: Session & Targets ═══ */}
+                          <Collapsible>
+                            <CollapsibleTrigger className="flex items-center justify-between w-full rounded-xl border border-white/[0.05] bg-white/[0.02] px-3.5 py-2.5 hover:bg-white/[0.04] transition-colors group">
+                              <div className="flex items-center gap-2">
+                                <Target className="h-3.5 w-3.5 text-primary/50" />
+                                <span className="text-[11px] font-semibold text-foreground/70">Session & Targets</span>
+                              </div>
+                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/30 transition-transform group-data-[state=open]:rotate-180" />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="pt-2 space-y-2">
+                              <RewardTargetsStrip riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY} />
+                              <SessionSetupCard onPhaseChange={setSessionPhase} />
+                            </CollapsibleContent>
+                          </Collapsible>
 
-                          {/* Contract Framework */}
+                          {/* ═══ COLLAPSIBLE: Contract Framework ═══ */}
                           <ContractFrameworkCard
                             accountBalance={bal}
                             riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY}
                             direction={localDirection}
                           />
 
-                          {/* Lock In CTA */}
+                          {/* ═══ LOCK IN CTA ═══ */}
                           <Button
-                            className="w-full h-11 text-sm font-bold rounded-xl gap-2 shadow-[0_4px_20px_rgba(59,130,246,0.15)]"
+                            className="w-full h-12 text-sm font-bold rounded-xl gap-2 vault-cta-shine shadow-[0_4px_24px_hsla(217,91%,60%,0.2)]"
                             onClick={handleLockRules}
                             disabled={savingRules}
                           >
