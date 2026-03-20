@@ -17,10 +17,11 @@ interface BalanceAdjustmentCardProps {
   onDeleteAdjustment: (id: string) => Promise<boolean>;
   adjustments: BalanceAdjustment[];
   resetting: boolean;
+  isModal?: boolean;
 }
 
 export function BalanceAdjustmentCard({
-  balance, onAddFunds, onWithdraw, onReset, onDeleteAdjustment, adjustments, resetting,
+  balance, onAddFunds, onWithdraw, onReset, onDeleteAdjustment, adjustments, resetting, isModal,
 }: BalanceAdjustmentCardProps) {
   const [mode, setMode] = useState<Mode>(null);
   const [amount, setAmount] = useState("");

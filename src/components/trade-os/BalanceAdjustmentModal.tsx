@@ -19,7 +19,7 @@ export function BalanceAdjustmentModal({
 }: BalanceAdjustmentModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 bg-card border-white/[0.08] overflow-hidden">
+      <DialogContent className="sm:max-w-md p-0 gap-0 rounded-2xl border-white/[0.12] bg-[hsl(var(--card))]/95 backdrop-blur-xl shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25),0_0_0_1px_hsl(var(--primary)/0.08)] overflow-hidden pt-8 [&>button:last-child]:top-2 [&>button:last-child]:right-2.5 [&>button:last-child]:z-50">
         <DialogTitle className="sr-only">Update Balance</DialogTitle>
         <BalanceAdjustmentCard
           balance={balance}
@@ -29,6 +29,7 @@ export function BalanceAdjustmentModal({
           onDeleteAdjustment={onDeleteAdjustment}
           adjustments={adjustments}
           resetting={resetting}
+          isModal
         />
       </DialogContent>
     </Dialog>
