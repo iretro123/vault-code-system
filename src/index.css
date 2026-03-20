@@ -298,6 +298,11 @@ html {
       hsl(214, 24%, 11%);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 16px;
+  }
+  @media (min-width: 768px) {
+    .vault-luxury-card {
+      border-radius: 12px;
+    }
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.3),
       0 2px 8px rgba(0, 0, 0, 0.2),
@@ -722,6 +727,11 @@ html {
       0 8px 32px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 hsla(0, 0%, 100%, 0.03);
   }
+  @media (min-width: 768px) {
+    .vault-obsidian-surface {
+      border-radius: 12px;
+    }
+  }
 
   /* ═══ Vault Hero Glow — status-aware radial ═══ */
   .vault-hero-glow {
@@ -751,6 +761,11 @@ html {
     border-radius: 12px;
     padding: 0.625rem 0.5rem;
     text-align: center;
+  }
+  @media (min-width: 768px) {
+    .vault-metric-cell {
+      padding: 0.375rem 0.5rem;
+    }
   }
 
   /* ═══ Stage Enter Animation ═══ */
