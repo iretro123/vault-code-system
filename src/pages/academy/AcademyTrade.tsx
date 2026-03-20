@@ -1055,7 +1055,7 @@ const AcademyTrade = () => {
                   </div>
 
                   {/* ═══ NYSE SESSION BAR ═══ */}
-                  <NYSESessionBar />
+                  <NYSESessionBar className="my-1" />
 
                   {/* ═══ THREE MAJOR CARDS ═══ */}
                   <div className="grid gap-2 md:grid-cols-3">
