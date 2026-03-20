@@ -1,78 +1,86 @@
 
 
-## Shrink Cards for Desktop/Laptop — Premium Retina Polish
+## Shrink Pass v2 — Tighter Desktop at `md:` and `lg:`
 
-The cards, hero sections, and metrics are sized generously for mobile but feel oversized on larger screens. This pass tightens spacing and font sizes at `md:` breakpoints while keeping the luxury retina feel.
+From the screenshot, the hero risk card with `$18,332` balance and the 2×2 metric grid still dominates the viewport. The stage headline takes up significant vertical space. Everything needs another notch tighter.
 
 ---
 
-### Changes — All in `AcademyTrade.tsx`
+### Changes — `AcademyTrade.tsx`
 
-**1. Hero Risk Card (Plan Stage, ~line 855)**
-- Outer padding: `py-6 px-5` → `md:py-4 md:px-4` (keep mobile sizes)
-- Balance font: `text-4xl` → `md:text-3xl`
-- Metric values (`text-xl`): → `md:text-lg`
-- Metric cell labels stay at `text-[8px]` (already small)
-- `space-y-5` → `md:space-y-3`
-- Risk % buttons: `h-7 w-12` → `md:h-6 md:w-10 md:text-[10px]`
-- Direction buttons: `h-8 px-4` → `md:h-7 md:px-3`
+**1. Stage Headline (line 95)**
+- `py-6` → `md:py-3`
+- Title: `text-2xl` → `md:text-xl`
+- Divider: `mt-4` → `md:mt-2`
 
-**2. Go Live Hero Zone (~line 1018)**
-- Outer padding: `py-8` → `md:py-5`
-- Shield icon container: `w-14 h-14` → `md:w-10 md:h-10` with `md:rounded-xl`
-- Shield icon: `h-7 w-7` → `md:h-5 md:w-5`
-- Status label: `text-3xl` → `md:text-2xl`
-- Subtitle: keep `text-sm`
+**2. Hero Risk Card (line 856)**
+- Outer: `md:py-4 md:px-4` → `md:py-3 md:px-3`
+- `md:space-y-3` → `md:space-y-2`
+- Balance: `md:text-3xl` → `md:text-2xl`
+- "Account Balance" label: stays `text-[9px]`
+- Metric values: `md:text-lg` → `md:text-base`
+- Risk buttons: `md:h-6 md:w-10` → `md:h-5 md:w-9`
+- Direction buttons: `md:h-7 md:px-3` → `md:h-6 md:px-2.5`
+- Ticker input: `h-8` → `md:h-6`
+- Grid gap: `gap-2` → `md:gap-1.5`
 
-**3. Three Major Cards Grid (~line 1061)**
-- Card padding: `p-4` → `md:p-3`
-- Grid gap: `gap-3` → `gap-2.5`
+**3. Lock In CTA (line 994–996)**
+- `md:h-11` → `md:h-10`
+- `md:mt-4` stays
 
-**4. Review Stage (~line 1189)**
-- Question card: `py-6 px-5` → `md:py-4 md:px-4`
-- Question text: `text-xl` → `md:text-lg`
-- Choice buttons: `p-6` → `md:p-4`
-- Icons: `h-8 w-8` → `md:h-6 md:w-6`
+**4. Go Live Hero Zone (line 1019)**
+- `md:py-5` → `md:py-4`
+- Shield container: `md:w-10 md:h-10` → `md:w-8 md:h-8`
+- Shield icon: `md:h-5 md:w-5` → `md:h-4 md:w-4`
+- Status label: `md:text-2xl` → `md:text-xl`
+- `space-y-3` → `md:space-y-2`
+- Hero border-radius inline style: `16px` → add md override
 
-**5. Insights Stage (~line 1258)**
-- Unlock card: `py-8 px-5` → `md:py-5 md:px-4`
-- AI grid: `gap-3` → `gap-2.5`, card padding `p-3.5` → `md:p-3`
+**5. Three Major Cards (line 1061)**
+- `md:p-3` → `md:p-2.5`
+- `gap-2.5` → `md:gap-2`
 
-**6. Lock In CTA (~line 994)**
-- Button height: `h-14` → `md:h-11`
-- `mt-6` → `md:mt-4`
+**6. Review Stage (line 1189)**
+- `md:py-4 md:px-4` → `md:py-3 md:px-3`
+- Question text: `md:text-lg` → `md:text-base`
+- Choice buttons: `md:p-4` → `md:p-3`
+- Icons: `md:h-6 md:w-6` → `md:h-5 md:w-5`
 
-**7. End Session button (~line 1163)**
-- Height: `h-12 px-10` → `md:h-10 md:px-8`
+**7. Insights Stage (line 1258)**
+- Unlock card: `md:py-5 md:px-4` → `md:py-4 md:px-3`
+- AI grid cards: `md:p-3` → `md:p-2.5`
+
+**8. End Session button (line 1163)**
+- Keep `md:h-10 md:px-8` (already tight)
 
 ---
 
 ### Changes — `index.css`
 
-**8. vault-metric-cell** (line 748)
-- Add `@media (min-width: 768px)` override: `padding: 0.375rem 0.5rem` (was 0.625rem)
+**9. vault-metric-cell** — tighten further at md:
+- `padding: 0.375rem 0.5rem` → `padding: 0.25rem 0.375rem`
+- Add `border-radius: 8px` at md (was 12px)
 
-**9. vault-obsidian-surface** (line 715)
-- Add media query: `border-radius: 12px` at md (was 16px — tighter on desktop)
+**10. vault-obsidian-surface** — tighten at md:
+- Already `border-radius: 12px` → change to `10px`
 
-**10. vault-luxury-card** (line 293)
-- Add media query: `border-radius: 12px` at md (was 16px)
+**11. vault-luxury-card** — tighten at md:
+- Already `border-radius: 12px` → change to `10px`
 
 ---
 
 ### Changes — `NYSESessionBar.tsx`
 
-**11.** Outer container padding: add `md:p-3` (was p-4 fixed). Bar track height stays h-7 (it's a signature element).
+**12.** Already has `md:p-3` — no further change needed.
 
 ---
 
 ### Summary
 
-All changes are responsive overrides at `md:` breakpoint. Mobile stays untouched. Desktop gets tighter padding, smaller fonts, smaller icons — same luxury depth and glow. No logic changes.
+Another round of `md:` responsive tightening. Balance goes from 3xl→2xl, metrics from lg→base, card padding from p-3→p-2.5, hero shield from w-10→w-8. Same luxury depth, just 15-20% tighter on desktop. No logic changes. Mobile untouched.
 
 | File | Scope |
 |------|-------|
-| `AcademyTrade.tsx` | Responsive class tweaks across all 4 stages |
-| `index.css` | Tighter metric-cell + card radius at md |
-| `NYSESessionBar.tsx` | Tighter container padding at md |
+| `AcademyTrade.tsx` | Tighter md: overrides on all 4 stages + headline |
+| `index.css` | Smaller metric-cell padding + tighter border-radius |
 
