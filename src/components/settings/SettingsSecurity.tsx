@@ -1,14 +1,27 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Mail, KeyRound } from "lucide-react";
+import { LogOut, Mail, KeyRound, RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export function SettingsSecurity() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [resetting, setResetting] = useState(false);
 
   const handleResetPassword = async () => {
     if (!user?.email) return;
@@ -22,6 +35,42 @@ export function SettingsSecurity() {
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const handleResetTradeOS = async () => {
+    if (!user) return;
+    setResetting(true);
+    try {
+      // Reset onboarding flag
+      await supabase
+        .from("profiles")
+        .update({ onboarding_completed: false } as any)
+        .eq("user_id", user.id);
+
+      // Delete trader_dna
+      await (supabase.from("trader_dna" as any) as any)
+        .delete()
+        .eq("user_id", user.id);
+
+      // Delete vault_state so it gets re-created on next load
+      await supabase
+        .from("vault_state")
+        .delete()
+        .eq("user_id", user.id);
+
+      // Delete vault_events for clean slate
+      await supabase
+        .from("vault_events")
+        .delete()
+        .eq("user_id", user.id);
+
+      toast.success("Trade OS reset. Redirecting to onboarding…");
+      navigate("/academy/trade");
+    } catch {
+      toast.error("Reset failed. Try again.");
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -50,6 +99,43 @@ export function SettingsSecurity() {
           <LogOut className="h-4 w-4" />
           Sign Out
         </Button>
+      </div>
+
+      {/* Reset Trade OS Section */}
+      <div className="pt-3 border-t border-border/40">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Trade OS</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Reset your entire Trade OS system to start fresh with onboarding.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full gap-2 justify-start text-destructive hover:text-destructive"
+              disabled={resetting}
+            >
+              {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              Reset Trade OS
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset Trade OS?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will erase your vault state, trader DNA, and risk settings. You'll go through the onboarding flow again from scratch. Your trade history and journal entries are preserved.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleResetTradeOS}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Yes, Reset Everything
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Card>
   );

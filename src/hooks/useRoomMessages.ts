@@ -128,8 +128,9 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
   const computeRole = useCallback(() => {
     if (userRole?.role === "operator") return "admin";
     const exp = (profile as any)?.academy_experience;
-    if (exp === "veteran") return "advanced";
-    if (exp === "active") return "intermediate";
+    // Support both legacy (veteran/active) and new (advanced/intermediate/beginner) values
+    if (exp === "veteran" || exp === "advanced") return "advanced";
+    if (exp === "active" || exp === "intermediate") return "intermediate";
     return "beginner";
   }, [userRole, profile]);
 
