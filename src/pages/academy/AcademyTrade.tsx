@@ -60,6 +60,8 @@ import { FocusReminderCards } from "@/components/trade-os/FocusReminderCards";
 import { NYSESessionBar } from "@/components/trade-os/NYSESessionBar";
 import { DisciplineMetricsStrip } from "@/components/trade-os/DisciplineMetricsStrip";
 
+import { TradeOSOnboarding } from "@/components/vault/TradeOSOnboarding";
+
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
 const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; emotional: string; guidance: string }> = {
@@ -132,7 +134,7 @@ const AcademyTrade = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
-  const { user, session } = useAuth();
+  const { user, session, profile } = useAuth();
   const { isPageEnabled } = useFeatureFlags();
   const { state: vaultState, refetch: vaultRefetch } = useVaultState();
   const { isAdminActive } = useAdminMode();
@@ -175,6 +177,7 @@ const AcademyTrade = () => {
   const [localDirection, setLocalDirection] = useState<"calls" | "puts">("calls");
   const [localTicker, setLocalTicker] = useState("");
   const [savingRules, setSavingRules] = useState(false);
+  const [onboardingDone, setOnboardingDone] = useState(false);
 
   const nudge = useCoachingNudge({ entries, totalPnl, startingBalance: startingBalance ?? 0, complianceRate });
   const { prefs, updatePrefs } = useUserPreferences();
@@ -517,6 +520,12 @@ const AcademyTrade = () => {
     }
   }, [dayState, activePlan]);
 
+  const handleOnboardingComplete = useCallback(async () => {
+    setOnboardingDone(true);
+    // Refetch vault state after onboarding seeds it
+    vaultRefetch();
+  }, [vaultRefetch]);
+
   if (balanceLoading || tradesLoading) {
     return (
       <>
@@ -528,6 +537,11 @@ const AcademyTrade = () => {
         </div>
       </>
     );
+  }
+
+  // ──── ONBOARDING GATE ────
+  if (profile && !profile.onboarding_completed && !onboardingDone) {
+    return <TradeOSOnboarding onComplete={handleOnboardingComplete} />;
   }
 
   const useOSLayout = isPageEnabled("trade-os");
