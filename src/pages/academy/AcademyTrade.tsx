@@ -1171,7 +1171,7 @@ const AcademyTrade = () => {
 
               {/* REVIEW STAGE */}
               {activeStage === "review" && (
-                <div className="space-y-4">
+                <div className="space-y-5 vault-stage-enter">
                   <StageHeadline stage="review" />
 
                   {todayStatus === "complete" ? (
