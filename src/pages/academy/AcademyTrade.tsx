@@ -528,6 +528,7 @@ const AcademyTrade = () => {
 
   if (balanceLoading || tradesLoading) {
     return (
+      <>
         <PageHeader title="My Trades" subtitle="Loading your trade data..." />
         <div className="px-4 md:px-6 pb-10 max-w-5xl">
           <div className="vault-glass-card p-8 text-center">
