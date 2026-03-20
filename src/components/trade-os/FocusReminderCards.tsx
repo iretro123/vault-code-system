@@ -7,6 +7,7 @@ interface FocusReminderCardsProps {
   sessionStart?: string;
   sessionCutoff?: string;
   sessionClose?: string;
+  layout?: "grid" | "unified";
 }
 
 export function FocusReminderCards({
@@ -16,8 +17,9 @@ export function FocusReminderCards({
   sessionStart,
   sessionCutoff,
   sessionClose,
+  layout = "grid",
 }: FocusReminderCardsProps) {
-  const cards = [
+  const sections = [
     {
       icon: Shield,
       title: "Today's Rules",
@@ -29,7 +31,7 @@ export function FocusReminderCards({
     },
     {
       icon: Clock,
-      title: "Session Rules",
+      title: "Session",
       items: [
         sessionStart ? `Start: ${sessionStart}` : "No start set",
         sessionCutoff ? `Cutoff: ${sessionCutoff}` : "No cutoff set",
@@ -47,9 +49,34 @@ export function FocusReminderCards({
     },
   ];
 
+  // ── Unified: single card with all sections ──
+  if (layout === "unified") {
+    return (
+      <div className="vault-obsidian-surface p-4 space-y-3">
+        {sections.map((section) => {
+          const Icon = section.icon;
+          return (
+            <div key={section.title} className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Icon className="h-3 w-3 text-primary/60" />
+                <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-wider">{section.title}</p>
+              </div>
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 pl-[18px]">
+                {section.items.map((item, i) => (
+                  <span key={i} className="text-[10px] text-foreground/50 font-medium">{item}</span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ── Grid: 3-card layout (original) ──
   return (
     <div className="grid gap-2 md:grid-cols-3">
-      {cards.map((card) => {
+      {sections.map((card) => {
         const Icon = card.icon;
         return (
           <div key={card.title} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
