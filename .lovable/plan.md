@@ -1,30 +1,27 @@
 
 
-## Fix Onboarding Sync + Experience Badge + Reset Button
+## Fix: Privacy Delete Should Also Reset Onboarding
 
-### Problems Found
-1. **Experience level never saved to profile**: `TradeOSOnboarding` writes `experience_level` to `trader_dna` but never updates `profiles.academy_experience` or `profiles.role_level` — so chat badges won't reflect the selection.
-2. **Chat role mapping mismatch**: `useRoomMessages.computeRole()` checks for `"veteran"` and `"active"` as experience values, but onboarding writes `"beginner"`, `"intermediate"`, `"advanced"`. These need to be aligned.
-3. **No reset onboarding option**: User wants a "Reset System" button in Settings that resets `onboarding_completed`, clears `trader_dna`, and forces the onboarding flow again.
+### Root Cause
+"Delete Journal & Progress" in `SettingsPrivacy.tsx` resets `account_balance` to 0 but never sets `onboarding_completed = false`. The onboarding gate in `AcademyTrade.tsx` checks `profile.onboarding_completed` — still `true` — so the onboarding flow never reappears. Additionally, `vault_state`, `vault_events`, and `trader_dna` are not cleaned up, and the cached profile in `useAuth` is never refreshed.
 
 ### Changes
 
-**1. `src/components/vault/TradeOSOnboarding.tsx`**
-After the `complete_onboarding` RPC call, add a profile update to set `academy_experience` and `role_level` to the selected experience level (`beginner`/`intermediate`/`advanced`).
+**1. `src/components/settings/SettingsPrivacy.tsx`**
+- After deleting trade entries and journal entries, also:
+  - Set `onboarding_completed = false` and `account_balance = 0` on the profile (already does balance)
+  - Delete `trader_dna` row for the user
+  - Delete `vault_state` row for the user
+  - Delete `vault_events` for the user
+- Call `refetchProfile()` from `useAuth` after all deletes complete, so the in-memory profile updates immediately
+- Navigate to `/academy/trade` so onboarding triggers
 
-**2. `src/hooks/useRoomMessages.ts`**
-Fix `computeRole()` to also recognize `"beginner"`, `"intermediate"`, `"advanced"` values (in addition to legacy `"veteran"`/`"active"`), so chat badges display correctly for new onboarding users.
+**2. `src/components/settings/SettingsSecurity.tsx`**
+- In `handleResetTradeOS`, also call `refetchProfile()` after resetting `onboarding_completed = false`, so the profile cache is updated without requiring a page reload
 
-**3. `src/components/settings/SettingsSecurity.tsx`**
-Add a "Reset Trade OS" button (with confirmation) that:
-- Sets `profiles.onboarding_completed = false`
-- Deletes the user's `trader_dna` row
-- Clears `vault_state` back to defaults
-- Navigates to `/academy/trade` to re-trigger onboarding
+### Technical Detail
+Both components need to import `refetchProfile` from `useAuth()` and call it after mutating the profile. Without this, the React state still holds the old `onboarding_completed: true` value from the cached profile, and the gate never fires.
 
-**4. `src/components/academy/ExperienceLevelBadge.tsx`**
-Already supports beginner/intermediate/advanced — no changes needed.
-
-### Testing
-After implementation, the flow will be: Onboarding → selects experience → badge shows in chat → can reset from Settings → sees onboarding again.
+### Data I need to reset now (via insert tool)
+- Set `onboarding_completed = false` for user `6f863212-a859-4812-9775-0b1388bc21b3` so onboarding shows immediately for testing
 
