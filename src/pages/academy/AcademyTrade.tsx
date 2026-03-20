@@ -60,6 +60,8 @@ import { FocusReminderCards } from "@/components/trade-os/FocusReminderCards";
 import { NYSESessionBar } from "@/components/trade-os/NYSESessionBar";
 import { DisciplineMetricsStrip } from "@/components/trade-os/DisciplineMetricsStrip";
 
+import { TradeOSOnboarding } from "@/components/vault/TradeOSOnboarding";
+
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
 const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; emotional: string; guidance: string }> = {
