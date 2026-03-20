@@ -1069,7 +1069,7 @@ const AcademyTrade = () => {
                       const riskBudget = bal * (effectiveRisk / 100);
                       const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
                       return (
-                        <div className="vault-obsidian-surface p-4 md:p-3 space-y-2">
+                        <div className="vault-obsidian-surface p-4 md:p-2.5 space-y-2">
                           <LiveSessionMetrics
                             variant="compact"
                             dailyLossBuffer={vaultState.risk_remaining_today ?? riskBudget}
