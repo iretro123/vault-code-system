@@ -898,7 +898,7 @@ const AcademyTrade = () => {
                             <TooltipProvider delayDuration={200}>
                               <div className="relative z-10 grid grid-cols-2 gap-2 md:gap-1.5">
                                 <div className="vault-metric-cell">
-                                  <p className="text-xl md:text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
+                                  <p className="text-xl md:text-base font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <p className="text-[8px] text-muted-foreground/40 font-semibold uppercase tracking-wider mt-0.5 inline-flex items-center gap-0.5 cursor-help">Max Daily Loss <HelpCircle className="h-2.5 w-2.5" /></p>
