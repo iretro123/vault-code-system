@@ -1058,7 +1058,7 @@ const AcademyTrade = () => {
                   <NYSESessionBar className="my-1" />
 
                   {/* ═══ THREE MAJOR CARDS ═══ */}
-                  <div className="grid gap-2 md:grid-cols-3">
+                  <div className="grid gap-3 md:grid-cols-3 mt-2">
 
                     {/* Card 1: Your Limits */}
                     {(() => {
