@@ -589,10 +589,11 @@ const AcademyTrade = () => {
             Your Command Center
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            {(["Plan", "Live", "Review", "Insights"] as const).map((stage, i) => {
-              const isActive = activeStage === stage.toLowerCase();
+            {(["Start Your Day", "Go Live", "Review", "My Insights"] as const).map((label, i) => {
+              const stageKeys = ["plan", "live", "review", "insights"] as const;
+              const isActive = activeStage === stageKeys[i];
               return (
-                <span key={stage} className="flex items-center gap-2">
+                <span key={label} className="flex items-center gap-2">
                   <span
                     className={cn(
                       "text-xs font-medium transition-colors",
@@ -602,7 +603,7 @@ const AcademyTrade = () => {
                     )}
                     style={isActive ? { textShadow: "0 0 10px hsl(var(--primary) / 0.5)" } : undefined}
                   >
-                    {stage}
+                    {label}
                   </span>
                   {i < 3 && <span className="text-muted-foreground/20 text-xs">→</span>}
                 </span>
