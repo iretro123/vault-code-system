@@ -4,7 +4,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { SessionStage } from "@/hooks/useSessionStage";
 
 const TABS: { key: SessionStage; label: string; shortLabel: string; icon: typeof Calendar }[] = [
-  { key: "plan", label: "Start Your Day", shortLabel: "Plan", icon: Calendar },
+  { key: "plan", label: "Start Your Day", shortLabel: "Start", icon: Calendar },
   { key: "live", label: "Go Live", shortLabel: "Live", icon: Radio },
   { key: "review", label: "Review", shortLabel: "Review", icon: ClipboardCheck },
   { key: "insights", label: "My Insights", shortLabel: "Insights", icon: Brain },
@@ -49,7 +49,7 @@ export function OSTabHeader({ activeStage, stageStatus, onSelect }: OSTabHeaderP
               ) : (
                 <Icon className={cn("h-3 w-3 shrink-0", isActive ? "text-primary" : "")} />
               )}
-              {isMobile && !isActive ? tab.shortLabel : tab.label}
+              {isMobile ? tab.shortLabel : tab.label}
               {/* Active indicator line */}
               {isActive && (
                 <span className="absolute bottom-0 left-1/4 right-1/4 h-[2px] rounded-full bg-gradient-to-r from-primary/60 via-primary to-primary/60" />
