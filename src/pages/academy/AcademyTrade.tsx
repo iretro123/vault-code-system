@@ -152,6 +152,7 @@ const AcademyTrade = () => {
   const [balanceSkipped, setBalanceSkipped] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showBalanceAdjustModal, setShowBalanceAdjustModal] = useState(false);
   const [resetInput, setResetInput] = useState("");
   const [resetting, setResetting] = useState(false);
   const [showLogTrade, setShowLogTrade] = useState(false);
