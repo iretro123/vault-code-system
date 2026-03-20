@@ -1110,12 +1110,6 @@ const AcademyTrade = () => {
                     </CollapsibleContent>
                   </Collapsible>
 
-  // Scroll to top on every stage change so users don't land at the bottom
-  useEffect(() => {
-    const main = document.querySelector("main");
-    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
-  }, [activeStage]);
-
 
                   {sessionPhase && (
                     <div className="flex justify-center mt-4">
