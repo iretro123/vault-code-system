@@ -61,25 +61,29 @@ import { DisciplineMetricsStrip } from "@/components/trade-os/DisciplineMetricsS
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
-const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidance: string }> = {
+const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; emotional: string; guidance: string }> = {
   plan: {
     title: "Start Your Day",
     subtitle: "Install your risk rules before you trade.",
+    emotional: "You know exactly what today looks like.",
     guidance: "Set your budget, direction, and session window. Lock in your rules to go live.",
   },
   live: {
     title: "Trade Your Session",
     subtitle: "Stay inside your rules.",
+    emotional: "You're locked in.",
     guidance: "Your rules are locked. Trade your session window, then end and review.",
   },
   review: {
     title: "Session Review",
     subtitle: "Did you follow your plan?",
+    emotional: "Tell the truth.",
     guidance: "Answer honestly, log your result, and close the day.",
   },
   insights: {
     title: "My Insights",
     subtitle: "AI-scanned behavior across your trades.",
+    emotional: "Your OS is learning you.",
     guidance: "AI scans your last 50 trades for leaks, edges, and patterns.",
   },
 };
@@ -88,9 +92,10 @@ function StageHeadline({ stage }: { stage: string }) {
   const h = STAGE_HEADLINES[stage];
   if (!h) return null;
   return (
-    <div className="px-0.5 pt-2 pb-1">
-      <h2 className="text-lg font-bold tracking-tight text-foreground leading-tight">{h.title}</h2>
-      <p className="text-[11px] text-muted-foreground/70 font-medium mt-0.5">{h.subtitle}</p>
+    <div className="py-6 text-center space-y-1">
+      <h2 className="text-2xl font-bold tracking-tight text-foreground" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{h.title}</h2>
+      <p className="text-sm text-foreground/50 font-medium">{h.emotional}</p>
+      <div className="vault-divider-glow mx-auto w-2/3 mt-4" />
     </div>
   );
 }
