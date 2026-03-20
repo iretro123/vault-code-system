@@ -51,19 +51,24 @@ import { SessionSetupCard, SessionCountdownLine, loadTimes, clearSession, clearS
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
+import { RewardTargetsStrip } from "@/components/trade-os/RewardTargetsStrip";
+import { ContractFrameworkCard } from "@/components/trade-os/ContractFrameworkCard";
+import { VaultStatusBadge } from "@/components/trade-os/VaultStatusBadge";
+import { LiveSessionMetrics } from "@/components/trade-os/LiveSessionMetrics";
+import { FocusReminderCards } from "@/components/trade-os/FocusReminderCards";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
 const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidance: string }> = {
   plan: {
-    title: "Pre-Market Plan",
-    subtitle: "Build your trade. Size it. Get approved.",
-    guidance: "Set your budget, build a plan, and hit 'Use This Plan & Begin' to go live.",
+    title: "Start Your Day",
+    subtitle: "Install your risk rules before you trade.",
+    guidance: "Set your budget, direction, and session window. Lock in your rules to go live.",
   },
   live: {
-    title: "Live Session",
-    subtitle: "Your plan is locked. Execute and end when done.",
-    guidance: "Set your trading window, trade your plan, then hit End Session.",
+    title: "Trade Your Session",
+    subtitle: "Stay inside your rules.",
+    guidance: "Your rules are locked. Trade your session window, then end and review.",
   },
   review: {
     title: "Session Review",
@@ -71,7 +76,7 @@ const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidanc
     guidance: "Answer honestly, log your result, and close the day.",
   },
   insights: {
-    title: "Performance Intelligence",
+    title: "My Insights",
     subtitle: "AI-scanned behavior across your trades.",
     guidance: "AI scans your last 50 trades for leaks, edges, and patterns.",
   },
@@ -129,7 +134,7 @@ const AcademyTrade = () => {
     allTimeWinRate, complianceRate, currentStreak, todayPnl, totalPnl, equityCurve, symbolStats, dayStats,
     last10WinRate, weeklyComplianceRate, bestStreak, allTimeHigh,
   } = useTradeLog();
-  const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, refetch: refetchPlan } = useApprovedPlans();
+  const { activePlan, todayPlans, loading: planLoading, cancelPlan, markLogged, savePlan, refetch: refetchPlan } = useApprovedPlans();
   const { adjustments, totalAdjustments, addAdjustment, removeAdjustment, clearAll: clearAllAdjustments, refetch: refetchAdjustments } = useBalanceAdjustments();
 
   const plannerRef = useRef<HTMLDivElement>(null);
@@ -158,6 +163,9 @@ const AcademyTrade = () => {
   const [cutoffOverride, setCutoffOverride] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
   const [showNudge, setShowNudge] = useState(false);
+  const [localDirection, setLocalDirection] = useState<"calls" | "puts">("calls");
+  const [localTicker, setLocalTicker] = useState("");
+  const [savingRules, setSavingRules] = useState(false);
 
   const nudge = useCoachingNudge({ entries, totalPnl, startingBalance: startingBalance ?? 0, complianceRate });
   const { prefs, updatePrefs } = useUserPreferences();
@@ -386,12 +394,15 @@ const AcademyTrade = () => {
   };
 
   const handleLogFromPlan = (plan: ApprovedPlan) => {
+    const isRiskOnly = plan.entry_price_planned === 0;
     setLogPlanId(plan.id);
     setLogPrefill({
       symbol: plan.ticker || "",
       direction: plan.direction === "calls" ? "Calls" : "Puts",
-      entryPrice: String(plan.entry_price_planned),
-      positionSize: String(plan.contracts_planned),
+      ...(isRiskOnly ? {} : {
+        entryPrice: String(plan.entry_price_planned),
+        positionSize: String(plan.contracts_planned),
+      }),
     });
     setShowLogTrade(true);
   };
@@ -441,7 +452,7 @@ const AcademyTrade = () => {
 
   const handleQuickAction = useCallback(() => {
     switch (dayState) {
-      case "no_plan": handleScrollToPlanner(); break;
+      case "no_plan": setStage("plan"); break;
       case "plan_approved": setStage("live"); break;
       case "live_session":
         if (activePlan) handleLogWithCutoffCheck(activePlan);
@@ -589,10 +600,11 @@ const AcademyTrade = () => {
             Your Command Center
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            {(["Plan", "Live", "Review", "Insights"] as const).map((stage, i) => {
-              const isActive = activeStage === stage.toLowerCase();
+            {(["Start Your Day", "Go Live", "Review", "My Insights"] as const).map((label, i) => {
+              const stageKeys = ["plan", "live", "review", "insights"] as const;
+              const isActive = activeStage === stageKeys[i];
               return (
-                <span key={stage} className="flex items-center gap-2">
+                <span key={label} className="flex items-center gap-2">
                   <span
                     className={cn(
                       "text-xs font-medium transition-colors",
@@ -602,7 +614,7 @@ const AcademyTrade = () => {
                     )}
                     style={isActive ? { textShadow: "0 0 10px hsl(var(--primary) / 0.5)" } : undefined}
                   >
-                    {stage}
+                    {label}
                   </span>
                   {i < 3 && <span className="text-muted-foreground/20 text-xs">→</span>}
                 </span>
@@ -764,37 +776,94 @@ const AcademyTrade = () => {
           {/* Content body */}
           <div className="px-2.5 pb-2.5">
 
-              {/* PLAN STAGE */}
+              {/* START YOUR DAY STAGE */}
               {activeStage === "plan" && (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <StageHeadline stage="plan" />
 
-                  {/* ═══ TODAY'S BUDGET — collapsible summary ═══ */}
-                  {(() => {
-                    const bal = trackedBalance ?? vaultState.account_balance;
-                    const tier = detectTier(bal);
-                    const defaults = TIER_DEFAULTS[tier];
-                    const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
-                    const riskBudget = bal * (effectiveRisk / 100);
-                    const positionCap = bal * (defaults.preferredSpendPercent / 100);
-                    return (
-                      <Collapsible>
-                        <CollapsibleTrigger className="flex items-center gap-2 w-full rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 hover:bg-white/[0.04] transition-colors">
-                          <span className="text-[10px] font-semibold text-foreground/70 flex-1 text-left">
-                            ${riskBudget.toFixed(0)} max loss · ${positionCap.toFixed(0)} max spend · {MAX_LOSSES_PER_DAY} trades
-                          </span>
-                          <ChevronDown className="h-3 w-3 text-muted-foreground/40" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <TooltipProvider delayDuration={200}>
-                          <div className="pt-2 pb-1 px-0.5">
+                  {todayStatus === "complete" ? (
+                    <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                      <p className="text-xs text-muted-foreground/60 font-medium">✓ Today's session is done. Come back tomorrow.</p>
+                    </div>
+                  ) : activePlan && activePlan.status === "planned" ? (
+                    /* Active plan exists — show risk rules summary + go live CTA */
+                    <div className="space-y-2.5">
+                      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                            <span className="text-xs font-bold text-foreground">Rules Locked</span>
+                            {activePlan.ticker && <span className="text-[10px] text-foreground/60">· {activePlan.ticker}</span>}
+                            <span className="text-[10px] text-foreground/60">· {activePlan.direction === "calls" ? "Calls" : "Puts"}</span>
+                          </div>
+                          <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
+                        </div>
+                        <p className="text-[10px] text-foreground/60 pl-3">
+                          Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · Max spend: ${Number(activePlan.cash_needed_planned).toFixed(0)}
+                        </p>
+                        <Button size="sm" className="w-full h-9 text-[11px] gap-1.5 rounded-lg font-semibold" onClick={() => { setStage("live"); }}>
+                          <Radio className="h-3.5 w-3.5" /> Let's Start Live Trading
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* No active plan — show daily risk setup ritual */
+                    (() => {
+                      const bal = trackedBalance ?? vaultState.account_balance;
+                      const tier = detectTier(bal);
+                      const defaults = TIER_DEFAULTS[tier];
+                      const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
+                      const riskBudget = bal * (effectiveRisk / 100);
+                      const positionCap = bal * (defaults.preferredSpendPercent / 100);
+                      const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
+
+                      const handleLockRules = async () => {
+                        setSavingRules(true);
+                        try {
+                          const { error } = await savePlan({
+                            ticker: localTicker || undefined,
+                            direction: localDirection,
+                            entry_price_planned: 0,
+                            contracts_planned: 0,
+                            stop_price_planned: null,
+                            max_loss_planned: riskBudget,
+                            cash_needed_planned: positionCap,
+                            approval_status: "auto_approved",
+                            account_balance_snapshot: bal,
+                            trade_loss_limit_snapshot: riskBudget,
+                            account_level_snapshot: tier,
+                          });
+                          if (error) throw error;
+                          refetchPlan();
+                          setTimeout(() => setStage("live"), 300);
+                        } catch {
+                          toast({ title: "Failed to lock rules", variant: "destructive" });
+                        } finally { setSavingRules(false); }
+                      };
+
+                      return (
+                        <div className="space-y-2.5">
+                          {/* Daily Risk Rules Card */}
+                          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3.5 space-y-3">
+                            {/* Balance + Update */}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-[9px] text-muted-foreground/50 font-semibold uppercase tracking-wider">Account Balance</p>
+                                <p className="text-2xl font-bold tabular-nums text-foreground">${bal.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                              </div>
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg border-white/[0.1] text-muted-foreground/70" onClick={() => setShowBalanceModal(true)}>
+                                <Wallet className="h-3 w-3 mr-1" /> Update
+                              </Button>
+                            </div>
+
                             {/* Risk % Selector */}
-                            <div className="flex items-center justify-center gap-1 mb-3">
+                            <div className="flex items-center justify-center gap-1 pt-1">
                               <span className="text-[9px] text-muted-foreground/50 font-medium mr-1.5">Risk</span>
                               {[1, 2, 3].map((pct) => (
                                 <button
                                   key={pct}
-                                  onClick={(e) => { e.stopPropagation(); updatePrefs({ risk_percent_override: pct }); }}
+                                  onClick={() => updatePrefs({ risk_percent_override: pct })}
                                   className={cn(
                                     "h-6 w-10 rounded-md text-[11px] font-semibold transition-all duration-100",
                                     effectiveRisk === pct
@@ -810,157 +879,222 @@ const AcademyTrade = () => {
                                 </button>
                               ))}
                             </div>
-                            <div className="grid grid-cols-4 gap-2">
-                              <div className="text-center">
-                                <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Loss <HelpCircle className="h-2.5 w-2.5" /></p>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades. Based on your balance and risk %.</TooltipContent>
-                                </Tooltip>
+
+                            {/* Metrics Grid */}
+                            <TooltipProvider delayDuration={200}>
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
+                                  <p className="text-lg font-bold tabular-nums text-foreground">${riskBudget.toFixed(0)}</p>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Daily Loss <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most you should lose today across all trades.</TooltipContent>
+                                  </Tooltip>
+                                </div>
+                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
+                                  <p className="text-lg font-bold tabular-nums text-foreground">${(riskBudget / MAX_LOSSES_PER_DAY).toFixed(0)}</p>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Per Trade <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max risk on any single trade.</TooltipContent>
+                                  </Tooltip>
+                                </div>
+                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
+                                  <p className="text-lg font-bold tabular-nums text-foreground">{vaultLimits.max_contracts}</p>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Contracts <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max contracts per position.</TooltipContent>
+                                  </Tooltip>
+                                </div>
+                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
+                                  <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max losing trades before lockout.</TooltipContent>
+                                  </Tooltip>
+                                </div>
+                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
+                                  <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}L</p>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Stop After <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">Vault locks after this many losses.</TooltipContent>
+                                  </Tooltip>
+                                </div>
+                                <div className="text-center rounded-lg bg-white/[0.03] border border-white/[0.06] py-2">
+                                  <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Spend <HelpCircle className="h-2.5 w-2.5" /></p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-[180px] text-xs">Max premium spend per position.</TooltipContent>
+                                  </Tooltip>
+                                </div>
                               </div>
-                              <div className="text-center">
-                                <p className="text-lg font-bold tabular-nums text-foreground">${positionCap.toFixed(0)}</p>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Spend <HelpCircle className="h-2.5 w-2.5" /></p>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The max dollar amount you should spend on a single options position.</TooltipContent>
-                                </Tooltip>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-lg font-bold tabular-nums text-foreground">{MAX_LOSSES_PER_DAY}</p>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Trades <HelpCircle className="h-2.5 w-2.5" /></p>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">How many losing trades you're allowed before the system locks you out for the day.</TooltipContent>
-                                </Tooltip>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-lg font-bold tabular-nums text-foreground">{computeVaultLimits(bal, vaultState.risk_mode || "STANDARD").max_contracts}</p>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <p className="text-[9px] text-foreground/50 font-medium inline-flex items-center gap-0.5 cursor-help">Max Size <HelpCircle className="h-2.5 w-2.5" /></p>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="bottom" className="max-w-[180px] text-xs">The most contracts you can hold in one position based on your risk budget.</TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </div>
-                            <p className="text-[9px] text-muted-foreground/50 text-center mt-2">
+                            </TooltipProvider>
+
+                            <p className="text-[9px] text-muted-foreground/50 text-center">
                               ${bal.toLocaleString()} · {tier} tier · {effectiveRisk}% risk
                             </p>
                           </div>
-                          </TooltipProvider>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    );
-                  })()}
 
-                  {activePlan && activePlan.status === "planned" && (
-                    <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.05] p-2 space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                          <span className="text-xs font-bold text-foreground">{activePlan.ticker || "—"}</span>
-                          <span className="text-[10px] text-foreground/60">{activePlan.direction === "calls" ? "Calls" : "Puts"} · {activePlan.contracts_planned}ct</span>
+                          {/* Direction + Ticker */}
+                          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2.5">
+                            <div className="flex items-center gap-2">
+                              <p className="text-[10px] text-muted-foreground/50 font-semibold">Direction</p>
+                              <div className="flex gap-1 flex-1">
+                                {(["calls", "puts"] as const).map((dir) => (
+                                  <button
+                                    key={dir}
+                                    onClick={() => setLocalDirection(dir)}
+                                    className={cn(
+                                      "flex-1 h-8 rounded-lg text-[11px] font-semibold transition-all duration-100",
+                                      localDirection === dir
+                                        ? dir === "calls"
+                                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
+                                          : "bg-red-500/15 text-red-400 border border-red-500/25"
+                                        : "bg-white/[0.04] text-muted-foreground/60 border border-white/[0.08] hover:bg-white/[0.08]"
+                                    )}
+                                  >
+                                    {dir === "calls" ? "Calls" : "Puts"}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-[10px] text-muted-foreground/50 font-semibold">Ticker</p>
+                              <input
+                                type="text"
+                                placeholder="SPY, QQQ, etc."
+                                value={localTicker}
+                                onChange={(e) => setLocalTicker(e.target.value.toUpperCase())}
+                                className="flex-1 h-8 rounded-lg bg-white/[0.04] border border-white/[0.08] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Reward Targets */}
+                          <RewardTargetsStrip riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY} />
+
+                          {/* Contract Framework */}
+                          <ContractFrameworkCard
+                            accountBalance={bal}
+                            riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY}
+                            direction={localDirection}
+                          />
+
+                          {/* Lock In CTA */}
+                          <Button
+                            className="w-full h-11 text-sm font-bold rounded-xl gap-2 shadow-[0_4px_20px_rgba(59,130,246,0.15)]"
+                            onClick={handleLockRules}
+                            disabled={savingRules}
+                          >
+                            <Shield className="h-4 w-4" />
+                            {savingRules ? "Locking..." : "Lock In Today's Rules"}
+                          </Button>
                         </div>
-                        <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
-                      </div>
-                      <p className="text-[10px] text-foreground/60 pl-3">
-                        Max risk: ${Number(activePlan.max_loss_planned).toFixed(0)} · Entry: ${Number(activePlan.entry_price_planned).toFixed(2)}
-                      </p>
-                      <Button size="sm" className="w-full h-8 text-[11px] gap-1 rounded-lg font-semibold" onClick={() => { setStage("live"); }}>
-                        <Radio className="h-3 w-3" /> Start Session
-                      </Button>
-                    </div>
-                  )}
-                  {!activePlan && todayStatus !== "complete" && dayState === "no_plan" && (
-                    <div ref={plannerRef}>
-                      <VaultTradePlanner
-                        balanceOverride={trackedBalance}
-                        activePlanOverride={activePlan}
-                        savePlanOverride={undefined}
-                        replaceWithNewOverride={undefined}
-                        onPlanSaved={() => { refetchPlan(); setTimeout(() => setStage("live"), 300); }}
-                        embedded
-                        riskPercentOverride={prefs?.risk_percent_override ?? null}
-                      />
-                    </div>
-                  )}
-                  {todayStatus === "complete" && (
-                    <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/15">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
-                      <p className="text-xs text-muted-foreground/60 font-medium">✓ Today's session is done. Come back tomorrow.</p>
-                    </div>
+                      );
+                    })()
                   )}
                 </div>
               )}
 
-              {/* LIVE STAGE */}
+              {/* GO LIVE STAGE */}
               {activeStage === "live" && (
-                <div className="space-y-4">
-                  {/* ── Luxury Plan Summary ── */}
+                <div className="space-y-3">
+                  <StageHeadline stage="live" />
+
+                  {/* Vault Status */}
+                  <VaultStatusBadge status={vaultState.vault_status} />
+
+                  {/* Session Metrics */}
+                  {(() => {
+                    const bal = trackedBalance ?? vaultState.account_balance;
+                    const tier = detectTier(bal);
+                    const defaults = TIER_DEFAULTS[tier];
+                    const effectiveRisk = (prefs?.risk_percent_override != null && prefs.risk_percent_override >= 1 && prefs.risk_percent_override <= 3) ? prefs.risk_percent_override : defaults.riskPercent;
+                    const riskBudget = bal * (effectiveRisk / 100);
+                    const vaultLimits = computeVaultLimits(bal, vaultState.risk_mode || "STANDARD");
+                    return (
+                      <>
+                        <LiveSessionMetrics
+                          dailyLossBuffer={vaultState.risk_remaining_today ?? riskBudget}
+                          riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY}
+                          maxContracts={vaultLimits.max_contracts}
+                          tradesRemaining={vaultState.trades_remaining_today ?? MAX_LOSSES_PER_DAY}
+                          lossStreak={vaultState.loss_streak ?? 0}
+                          maxLossesPerDay={MAX_LOSSES_PER_DAY}
+                        />
+                        <RewardTargetsStrip riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY} compact />
+                      </>
+                    );
+                  })()}
+
+                  {/* Active rules summary */}
                   {activePlan && activePlan.status === "planned" && (
-                    <div className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4 space-y-3 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.12)]">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
-                        <span className="text-lg font-bold text-foreground tracking-tight">{activePlan.ticker || "—"}</span>
-                        <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full border",
-                          activePlan.direction === "calls"
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                            : "bg-red-500/10 text-red-400 border-red-500/20"
-                        )}>
-                          {activePlan.direction === "calls" ? "Calls" : "Puts"}
-                        </span>
+                    <div className="rounded-xl border border-primary/15 bg-primary/[0.04] p-3 flex items-center gap-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold text-foreground">
+                          Rules Active{activePlan.ticker ? ` · ${activePlan.ticker}` : ""} · {activePlan.direction === "calls" ? "Calls" : "Puts"}
+                        </p>
+                        <p className="text-[10px] text-foreground/50">Max loss: ${Number(activePlan.max_loss_planned).toFixed(0)}</p>
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Contracts</p>
-                          <p className="text-xl font-bold tabular-nums text-foreground">{activePlan.contracts_planned}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Entry</p>
-                          <p className="text-xl font-bold tabular-nums text-foreground">${Number(activePlan.entry_price_planned).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-muted-foreground/50 font-medium uppercase tracking-wider">Max Loss</p>
-                          <p className="text-xl font-bold tabular-nums text-red-400">${Number(activePlan.max_loss_planned).toFixed(0)}</p>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel Plan</Button>
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] text-muted-foreground/50" onClick={() => handleCancelPlan(activePlan.id)}>Cancel</Button>
                     </div>
                   )}
 
                   {!activePlan && (
                     <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-center space-y-2">
-                      <p className="text-sm text-muted-foreground/60">No active plan.</p>
+                      <p className="text-sm text-muted-foreground/60">No rules set for today.</p>
                       <Button size="sm" className="gap-1 rounded-lg h-8 text-[11px]" onClick={() => setStage("plan")}>
-                        <Calendar className="h-3 w-3" /> Build a Plan
+                        <Calendar className="h-3 w-3" /> Start Your Day
                       </Button>
                     </div>
                   )}
 
-                  {/* ── Session Window ── */}
+                  {/* Session Window */}
                   <div className="space-y-2">
-                    <SectionLabel>Set Your Trading Window</SectionLabel>
+                    <SectionLabel>Session Timer</SectionLabel>
                     <SessionSetupCard onPhaseChange={setSessionPhase} />
                   </div>
 
-                  {/* ── End Session (red pill) ── */}
+                  {/* Focus Reminders */}
+                  {activePlan && (
+                    <FocusReminderCards
+                      direction={activePlan.direction}
+                      maxLoss={Number(activePlan.max_loss_planned)}
+                      maxTrades={MAX_LOSSES_PER_DAY}
+                    />
+                  )}
+
+                  {/* Quick Log Trade */}
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 gap-2 rounded-xl text-xs font-semibold border-white/[0.1]"
+                    onClick={() => handleLogWithCutoffCheck(activePlan || undefined)}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Quick Log Trade
+                  </Button>
+
+                  {/* End Session (red pill) */}
                   {sessionPhase && (
                     <div className="flex justify-center">
                       <button
                         onClick={() => {
-                          // Actually end the session — clear both localStorage and DB
                           clearSession();
                           if (user) clearSessionFromDB(user.id);
                           setSessionPhase(null);
                           setExecuting(false);
                           setExecutionStart(null);
                           try { localStorage.removeItem("va_executing_today"); localStorage.removeItem("va_execution_start"); } catch {}
-                          // Go to review — no log popup
                           setStage("review");
                         }}
                         className="flex items-center justify-center gap-2 h-12 px-10 rounded-full text-sm font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-[0_4px_20px_rgba(239,68,68,0.3)] max-w-xs w-full"
@@ -991,20 +1125,22 @@ const AcademyTrade = () => {
                       {/* Core Question Card */}
                       <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4">
                         <div className="text-center space-y-1">
-                          <p className="text-base font-bold text-foreground">Did you follow the plan you set?</p>
+                          <p className="text-base font-bold text-foreground">Did you follow your rules today?</p>
                           <p className="text-xs text-muted-foreground/60">Be honest — this is how you grow.</p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <button
                             onClick={() => {
-                              // Pre-fill from plan with planFollowed = Yes
                               if (activePlan) {
+                                const isRiskOnly = activePlan.entry_price_planned === 0;
                                 setLogPlanId(activePlan.id);
                                 setLogPrefill({
                                   symbol: activePlan.ticker || "",
                                   direction: activePlan.direction === "calls" ? "Calls" : "Puts",
-                                  entryPrice: String(activePlan.entry_price_planned),
-                                  positionSize: String(activePlan.contracts_planned),
+                                  ...(isRiskOnly ? {} : {
+                                    entryPrice: String(activePlan.entry_price_planned),
+                                    positionSize: String(activePlan.contracts_planned),
+                                  }),
                                   planFollowed: "Yes",
                                 });
                               } else {
@@ -1017,7 +1153,7 @@ const AcademyTrade = () => {
                           >
                             <CheckCircle2 className="h-7 w-7 text-emerald-400" />
                             <span className="text-sm font-bold text-emerald-400">Yes, I followed it</span>
-                            <span className="text-[10px] text-emerald-400/60">Quick log from your plan</span>
+                            <span className="text-[10px] text-emerald-400/60">Quick log from your rules</span>
                           </button>
                           <button
                             onClick={() => {

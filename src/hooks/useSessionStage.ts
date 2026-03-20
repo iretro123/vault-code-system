@@ -15,9 +15,9 @@ interface UseSessionStageInput {
 }
 
 const DAY_STATE_META: Record<DayState, { stage: SessionStage; status: string; cta: string }> = {
-  no_plan:        { stage: "plan",     status: "No plan — build one to start",           cta: "Build Plan" },
-  plan_approved:  { stage: "plan",     status: "Plan approved — set your session window", cta: "Start Session" },
-  live_session:   { stage: "live",     status: "Session active — execute your plan",      cta: "Log Result" },
+  no_plan:        { stage: "plan",     status: "Set your rules to start",                 cta: "Start Your Day" },
+  plan_approved:  { stage: "plan",     status: "Rules set — ready to go live",            cta: "Go Live" },
+  live_session:   { stage: "live",     status: "Session active — trade your rules",       cta: "Log Result" },
   review_pending: { stage: "review",   status: "Trades logged — complete your review",    cta: "Complete Review" },
   day_complete:   { stage: "insights", status: "Day complete",                            cta: "View Insights" },
 };
