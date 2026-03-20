@@ -1016,7 +1016,7 @@ const AcademyTrade = () => {
 
                   {/* ═══ HERO HEADER: Vault Status ═══ */}
                   <div className={cn(
-                    "vault-hero-glow rounded-2xl py-8 md:py-5 px-5",
+                    "vault-hero-glow rounded-2xl py-8 md:py-4 px-5",
                     vaultState.vault_status === "GREEN" ? "vault-hero-glow--green" : 
                     vaultState.vault_status === "YELLOW" ? "vault-hero-glow--amber" : "vault-hero-glow--red"
                   )}
