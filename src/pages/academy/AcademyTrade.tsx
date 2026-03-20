@@ -92,10 +92,10 @@ function StageHeadline({ stage }: { stage: string }) {
   const h = STAGE_HEADLINES[stage];
   if (!h) return null;
   return (
-    <div className="py-6 text-center space-y-1">
-      <h2 className="text-2xl font-bold tracking-tight text-foreground" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{h.title}</h2>
+    <div className="py-6 md:py-3 text-center space-y-1">
+      <h2 className="text-2xl md:text-xl font-bold tracking-tight text-foreground" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>{h.title}</h2>
       <p className="text-sm text-foreground/50 font-medium">{h.emotional}</p>
-      <div className="vault-divider-glow mx-auto w-2/3 mt-4" />
+      <div className="vault-divider-glow mx-auto w-2/3 mt-4 md:mt-2" />
     </div>
   );
 }
