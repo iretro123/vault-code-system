@@ -961,7 +961,7 @@ const AcademyTrade = () => {
                                 placeholder="SPY, QQQ..."
                                 value={localTicker}
                                 onChange={(e) => setLocalTicker(e.target.value.toUpperCase())}
-                                className="flex-1 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
+                                className="flex-1 h-8 md:h-6 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 text-[11px] text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
                               />
                             </div>
                           </div>
