@@ -56,14 +56,14 @@ type TodayStatus = "incomplete" | "in_progress" | "complete";
 
 const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidance: string }> = {
   plan: {
-    title: "Pre-Market Plan",
-    subtitle: "Build your trade. Size it. Get approved.",
-    guidance: "Set your budget, build a plan, and hit 'Use This Plan & Begin' to go live.",
+    title: "Start Your Day",
+    subtitle: "Install your risk rules before you trade.",
+    guidance: "Set your budget, direction, and session window. Lock in your rules to go live.",
   },
   live: {
-    title: "Live Session",
-    subtitle: "Your plan is locked. Execute and end when done.",
-    guidance: "Set your trading window, trade your plan, then hit End Session.",
+    title: "Trade Your Session",
+    subtitle: "Stay inside your rules.",
+    guidance: "Your rules are locked. Trade your session window, then end and review.",
   },
   review: {
     title: "Session Review",
@@ -71,7 +71,7 @@ const STAGE_HEADLINES: Record<string, { title: string; subtitle: string; guidanc
     guidance: "Answer honestly, log your result, and close the day.",
   },
   insights: {
-    title: "Performance Intelligence",
+    title: "My Insights",
     subtitle: "AI-scanned behavior across your trades.",
     guidance: "AI scans your last 50 trades for leaks, edges, and patterns.",
   },
