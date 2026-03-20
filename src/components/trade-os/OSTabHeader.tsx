@@ -4,10 +4,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { SessionStage } from "@/hooks/useSessionStage";
 
 const TABS: { key: SessionStage; label: string; icon: typeof Calendar }[] = [
-  { key: "plan", label: "Plan", icon: Calendar },
-  { key: "live", label: "Live", icon: Radio },
+  { key: "plan", label: "Start Your Day", icon: Calendar },
+  { key: "live", label: "Go Live", icon: Radio },
   { key: "review", label: "Review", icon: ClipboardCheck },
-  { key: "insights", label: "Insights", icon: Brain },
+  { key: "insights", label: "My Insights", icon: Brain },
 ];
 
 
