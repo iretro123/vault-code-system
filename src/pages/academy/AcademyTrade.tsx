@@ -56,6 +56,8 @@ import { ContractFrameworkCard } from "@/components/trade-os/ContractFrameworkCa
 import { VaultStatusBadge } from "@/components/trade-os/VaultStatusBadge";
 import { LiveSessionMetrics } from "@/components/trade-os/LiveSessionMetrics";
 import { FocusReminderCards } from "@/components/trade-os/FocusReminderCards";
+import { NYSESessionBar } from "@/components/trade-os/NYSESessionBar";
+import { DisciplineMetricsStrip } from "@/components/trade-os/DisciplineMetricsStrip";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
@@ -1011,8 +1013,21 @@ const AcademyTrade = () => {
                 <div className="space-y-3">
                   <StageHeadline stage="live" />
 
+                  {/* Discipline Metrics Strip */}
+                  <DisciplineMetricsStrip
+                    vaultStatus={vaultState.vault_status}
+                    complianceRate={complianceRate}
+                    weeklyComplianceRate={weeklyComplianceRate}
+                    currentStreak={currentStreak}
+                    todayTrades={entries.filter(e => e.trade_date === new Date().toISOString().slice(0, 10))}
+                    lossStreak={vaultState.loss_streak ?? 0}
+                  />
+
                   {/* Vault Status */}
                   <VaultStatusBadge status={vaultState.vault_status} />
+
+                  {/* NYSE Session Timeline */}
+                  <NYSESessionBar />
 
                   {/* Session Metrics */}
                   {(() => {
