@@ -191,6 +191,7 @@ serve(async (req) => {
       journalRes.error,
       profileRes.error,
       adjustmentsRes.error,
+      traderDnaRes.error,
     ].filter(Boolean);
 
     if (contextErrors.length > 0) {
