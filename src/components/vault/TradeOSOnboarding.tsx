@@ -110,6 +110,15 @@ export function TradeOSOnboarding({ onComplete }: TradeOSOnboardingProps) {
         raw_profile: { onboarded_at: new Date().toISOString(), initial_balance: balanceNum },
       });
 
+      // Sync experience level to profile for chat badges & role display
+      await supabase
+        .from("profiles")
+        .update({
+          academy_experience: experience,
+          role_level: experience,
+        } as any)
+        .eq("user_id", user.id);
+
       // Move to activation step
       setStep(4);
       await new Promise((r) => setTimeout(r, 2000));
