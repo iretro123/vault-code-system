@@ -1188,7 +1188,7 @@ const AcademyTrade = () => {
                       {/* Core Question Card */}
                       <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] py-6 px-5 md:py-3 md:px-3 space-y-5">
                         <div className="text-center space-y-2">
-                          <p className="text-xl md:text-lg font-bold text-foreground">Did you follow your rules today?</p>
+                          <p className="text-xl md:text-base font-bold text-foreground">Did you follow your rules today?</p>
                           <p className="text-sm text-foreground/40">Be honest — this is how you grow.</p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
