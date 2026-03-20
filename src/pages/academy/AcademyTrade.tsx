@@ -56,6 +56,8 @@ import { ContractFrameworkCard } from "@/components/trade-os/ContractFrameworkCa
 import { VaultStatusBadge } from "@/components/trade-os/VaultStatusBadge";
 import { LiveSessionMetrics } from "@/components/trade-os/LiveSessionMetrics";
 import { FocusReminderCards } from "@/components/trade-os/FocusReminderCards";
+import { NYSESessionBar } from "@/components/trade-os/NYSESessionBar";
+import { DisciplineMetricsStrip } from "@/components/trade-os/DisciplineMetricsStrip";
 
 type TodayStatus = "incomplete" | "in_progress" | "complete";
 
