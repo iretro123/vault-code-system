@@ -1085,7 +1085,7 @@ const AcademyTrade = () => {
                     })()}
 
                     {/* Card 2: Your Session */}
-                    <div className="vault-obsidian-surface p-4 md:p-3 space-y-2">
+                    <div className="vault-obsidian-surface p-4 md:p-2.5 space-y-2">
                       <SessionSetupCard onPhaseChange={setSessionPhase} />
                       {activePlan && activePlan.status === "planned" && (
                         <div className="flex items-center gap-2 pt-1 border-t border-white/[0.04]">
