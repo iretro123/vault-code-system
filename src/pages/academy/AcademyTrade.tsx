@@ -181,6 +181,7 @@ const AcademyTrade = () => {
 
   // Reset banner dismissal when phase changes
   useEffect(() => { setDismissedBanner(false); }, [sessionPhase]);
+
   useEffect(() => {
     if (!user) { setBalanceLoading(false); return; }
     (async () => {
@@ -238,6 +239,12 @@ const AcademyTrade = () => {
     sessionTimesSet,
     sessionPhase,
   });
+
+  // Scroll to top on every stage change so users don't land at the bottom
+  useEffect(() => {
+    const main = document.querySelector("main");
+    if (main) main.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeStage]);
 
   const cachedAI = useMemo(() => {
     try {
