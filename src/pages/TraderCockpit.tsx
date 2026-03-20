@@ -8,7 +8,7 @@ import { FlowSection } from "@/components/vault/FlowSection";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { EndOfDayReview } from "@/components/vault/EndOfDayReview";
 import { CockpitSidePanel } from "@/components/vault/CockpitSidePanel";
-import { V1Onboarding } from "@/components/vault/V1Onboarding";
+import { TradeOSOnboarding } from "@/components/vault/TradeOSOnboarding";
 import { TradingSessionToggle } from "@/components/vault/TradingSessionToggle";
 import { AuthGate } from "@/components/AuthGate";
 import { useAuth } from "@/hooks/useAuth";
