@@ -836,7 +836,7 @@ const AcademyTrade = () => {
                           setTimeout(() => setStage("live"), 300);
                         } catch {
                           toast({ title: "Failed to lock rules", variant: "destructive" });
-                        } finally { setSaving(false); }
+                        } finally { setSavingRules(false); }
                       };
 
                       return (
