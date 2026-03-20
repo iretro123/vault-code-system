@@ -530,6 +530,11 @@ const AcademyTrade = () => {
     );
   }
 
+  // ──── ONBOARDING GATE ────
+  if (profile && !profile.onboarding_completed && !onboardingDone) {
+    return <TradeOSOnboarding onComplete={handleOnboardingComplete} />;
+  }
+
   const useOSLayout = isPageEnabled("trade-os");
 
   // ──── CLASSIC LAYOUT (feature flag OFF) ────
