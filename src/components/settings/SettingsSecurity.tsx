@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function SettingsSecurity() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, refetchProfile } = useAuth();
   const navigate = useNavigate();
   const [resetting, setResetting] = useState(false);
 
