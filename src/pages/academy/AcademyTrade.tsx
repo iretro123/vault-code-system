@@ -1122,20 +1122,22 @@ const AcademyTrade = () => {
                       {/* Core Question Card */}
                       <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 space-y-4">
                         <div className="text-center space-y-1">
-                          <p className="text-base font-bold text-foreground">Did you follow the plan you set?</p>
+                          <p className="text-base font-bold text-foreground">Did you follow your rules today?</p>
                           <p className="text-xs text-muted-foreground/60">Be honest — this is how you grow.</p>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <button
                             onClick={() => {
-                              // Pre-fill from plan with planFollowed = Yes
                               if (activePlan) {
+                                const isRiskOnly = activePlan.entry_price_planned === 0;
                                 setLogPlanId(activePlan.id);
                                 setLogPrefill({
                                   symbol: activePlan.ticker || "",
                                   direction: activePlan.direction === "calls" ? "Calls" : "Puts",
-                                  entryPrice: String(activePlan.entry_price_planned),
-                                  positionSize: String(activePlan.contracts_planned),
+                                  ...(isRiskOnly ? {} : {
+                                    entryPrice: String(activePlan.entry_price_planned),
+                                    positionSize: String(activePlan.contracts_planned),
+                                  }),
                                   planFollowed: "Yes",
                                 });
                               } else {
@@ -1148,7 +1150,7 @@ const AcademyTrade = () => {
                           >
                             <CheckCircle2 className="h-7 w-7 text-emerald-400" />
                             <span className="text-sm font-bold text-emerald-400">Yes, I followed it</span>
-                            <span className="text-[10px] text-emerald-400/60">Quick log from your plan</span>
+                            <span className="text-[10px] text-emerald-400/60">Quick log from your rules</span>
                           </button>
                           <button
                             onClick={() => {
