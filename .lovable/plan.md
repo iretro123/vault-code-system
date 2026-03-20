@@ -1,182 +1,124 @@
 
 
-## Premium UI/UX Redesign — Luxury Presentation Pass
+## VAULT OS — "Steve Jobs Keynote" Presentation Pass
 
-### Problem Summary
-The current Trade OS renders too many equal-weight cards, creating a dense dashboard feel. The NYSE bar is thin and weak. The visual palette over-relies on flat blue. The experience needs stronger hierarchy, fewer visible elements, and a luxury AI fintech aesthetic.
-
-### Design Philosophy
-- **Obsidian/graphite base** with electric blue as accent only
-- **Three-card max** visible at any stage — progressive disclosure for the rest
-- **Hero-first** layout — one dominant element per stage, everything else subordinate
-- **Richer depth** — layered gradients, glass surfaces, subtle glow semantics
+### Philosophy
+One hero idea per screen. One main action. Maximum whitespace. Every element earns its place.
 
 ---
 
-### 1. Redesign NYSE Session Bar into Premium Hero Timeline
+### 1. StageHeadline Redesign
 
-**File: `NYSESessionBar.tsx` — full rewrite of JSX/styling (logic stays)**
+**File: `AcademyTrade.tsx` (lines 87–96)**
 
-Current: thin h-3 rounded-full bar with tiny labels — feels like a loading indicator.
+Current: small `text-lg` title with tiny subtitle crammed together.
 
-New design:
-- **Thick pill track**: `h-7 rounded-2xl` with layered glass background (`bg-gradient-to-b from-white/[0.04] to-white/[0.02]`, inner shadow, outer subtle border)
-- **Active zone**: filled with a gradient (`from-emerald-500/25 via-primary/20 to-primary/15`) with a soft outer glow (`box-shadow: 0 0 20px rgba(59,130,246,0.15)`)
-- **Amber caution zone**: gradient fill `from-amber-500/15 to-amber-500/10`
-- **Locked zone**: `from-red-500/10 to-red-500/[0.05]` with subtle cross-hatch overlay or dimmed opacity
-- **Now-marker**: larger `h-5 w-5` with double-ring glow effect (inner solid dot + outer ring + box-shadow pulse), `transition-[left] duration-1000`
-- **Time labels**: upgraded to `text-[10px]` with better spacing, positioned below the bar with connecting tick marks
-- **Header row**: "NYSE Session" label + ET time range, slightly larger text
-- **Overall container**: `rounded-2xl p-4` with `vault-premium-card` class for depth
+New: cinematic headline component with generous spacing.
+- Title: `text-2xl font-bold tracking-tight` with subtle text-shadow
+- Subtitle: `text-sm text-foreground/50` with `mt-1`
+- Container: `py-6 text-center` — centered, not left-aligned
+- Add a thin luminous divider line below: `h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent`
+- Each stage gets an emotional subtitle:
+  - Plan: "You know exactly what today looks like."
+  - Live: "You're locked in."
+  - Review: "Tell the truth."
+  - Insights: "Your OS is learning you."
 
-### 2. Redesign "Start Your Day" — Hero Risk Card + Progressive Disclosure
+### 2. Start Your Day — Iconic Simplification
 
-**File: `AcademyTrade.tsx` (plan stage, lines ~848–1007)**
+**File: `AcademyTrade.tsx` (plan stage, lines ~848–997)**
 
-Current: Daily Risk Rules card → Direction/Ticker card → RewardTargets → ContractFramework → CTA — 5 visible sections, all equal weight.
+Strip to 3 elements with dramatic whitespace:
 
-New layout — **3 visible elements max**:
+**A. Hero Risk Card** — keep but refine:
+- Add `py-6 px-5` padding (more breathing room)
+- Balance: bump to `text-4xl` (was 3xl)
+- Remove tier summary line at bottom (noise)
+- Add subtle status ring around the card based on risk level: emerald border glow for 1%, amber for 2%, rose for 3%
+- Direction + ticker row: add `mt-4` gap before it
 
-**A. Hero Risk Card** (single dominant card, `vault-luxury-card` class)
-- Top section: Account Balance (text-3xl, prominent) + Update button
-- Risk % selector (existing, kept inline)
-- **2×2 metric grid** (not 3×3) showing only the 4 most important:
-  - Max Daily Loss
-  - Risk Per Trade
-  - Max Contracts
-  - Max Trades
-- Remove "Stop After" and "Max Spend" from primary view — they're derivable
-- Direction toggle + Ticker input **moved inside** this card as a bottom section
-- Tier/risk summary line at bottom
-- The card should have the `vault-luxury-card` gradient and shimmer top-edge
+**B. Collapsibles** — keep Session & Targets and Contract Framework as-is (already collapsed)
 
-**B. Collapsible "Session & Targets" section** (collapsed by default)
-- Contains: Reward Targets Strip + Session Window preview
-- Single chevron-toggle, styled as a subtle expandable row
+**C. Lock In CTA** — elevate dramatically:
+- Add `mt-6` space above it
+- Make it `h-14` (was h-12)
+- Add a subtle top-line shimmer: thin gradient line above the button
+- After locking, show a brief "armed" confirmation state: the button transforms into a green "Rules Locked ✓" pill for 300ms before advancing
 
-**C. Collapsible "Contract Framework"** (already collapsible — keep as-is)
+### 3. Go Live — Cinematic Session Room
 
-**D. Primary CTA**: "Lock In Today's Rules" — keep but upgrade styling:
-- Add `vault-cta-shine` shimmer class
-- Slightly taller: `h-12`
-- Richer shadow: `shadow-[0_4px_24px_rgba(59,130,246,0.2)]`
+**File: `AcademyTrade.tsx` (live stage, lines ~1002–1153)**
 
-### 3. Redesign "Go Live" — Session Control Room with 3 Major Cards
+Restructure for dramatic simplicity:
 
-**File: `AcademyTrade.tsx` (live stage, lines ~1012–1120)**
+**A. Hero Zone** — make it the entire emotional center:
+- Remove the inline DisciplineMetricsStrip pills from the hero (too dense)
+- Vault Status icon: bump to `w-14 h-14` with `rounded-2xl`
+- Status label: `text-3xl font-black` (was text-xl)
+- Subtitle: `text-sm text-foreground/50 mt-2`
+- Add generous `py-8` padding
+- The entire hero should feel like one iconic object, not a card with stuff in it
 
-Current: DisciplineMetricsStrip → VaultStatusBadge → NYSEBar → LiveSessionMetrics → RewardTargets → Active Rules → Session Timer → FocusReminders → Log CTA → End CTA — 10 sections.
+**B. NYSE Session Bar** — add `mt-4 mb-4` for isolation. Already redesigned — keep as-is.
 
-New layout — **hero + 3 cards + actions**:
+**C. Three Cards Grid** — add `mt-2` spacing, keep `gap-3` (was gap-2)
+- Remove the "Your Limits" label from inside the card (it's already obvious from context)
+- Remove the "Your Session" label — instead lead with the timer
+- Remove the "Your Focus" label — lead with the first bullet
+- Each card gets `p-4` (was p-3.5) for more breathing room
 
-**A. Hero Header Zone** (not a card — just styled content at top)
-- Large Vault Status indicator: "Vault: Clear" with emerald glow dot, text-2xl
-- Subtitle: "Trade your session. Stay inside your rules."
-- Discipline score + session grade shown as **inline pills** next to the vault status (not separate cards)
+**D. Actions** — add `mt-6` above Quick Log Trade, `mt-3` between buttons
+- End Session button: add `mt-4` isolation
 
-**B. NYSE Session Bar** (prominent, hero-width — the redesigned premium version)
+**E. Move DisciplineMetricsStrip** to a collapsible "Session Stats" row below the 3 cards (not in hero). Compact pill format, collapsed by default.
 
-**C. Three major cards** (each `vault-glass-card` styled):
+### 4. Review — More Emotional Weight
 
-1. **"Your Limits"** — consolidates LiveSessionMetrics into a cleaner 2×2:
-   - Daily Buffer / Risk Per Trade / Trades Left / Max Contracts
-   - Remove Loss Streak and Stop Rule from the card face (tuck into tooltip or expandable)
-   - Add Reward Targets as a subtle inline row at the bottom of this card
+**File: `AcademyTrade.tsx` (review stage, lines ~1157–1234)**
 
-2. **"Your Session"** — consolidates Session Timer + Active Rules:
-   - Session timer/countdown at top
-   - Active plan summary (direction, ticker, max loss) below
-   - Cancel button tucked small
+- Center the question card: add `py-6` inside it
+- Question text: `text-xl font-bold` (was text-base)
+- "Be honest — this is how you grow." → `text-sm text-foreground/40 mt-2`
+- Two choice buttons: increase padding to `p-6`, icons to `h-8 w-8`
+- More whitespace between elements
 
-3. **"Your Focus"** — consolidates FocusReminderCards into a single card:
-   - 3 bullet points instead of 3 separate cards
-   - Cleaner, single-card presentation
+### 5. Insights — Cleaner Grid
 
-**D. Actions** (bottom):
-- Quick Log Trade button (keep)
-- End Session pill (keep)
+**File: `AcademyTrade.tsx` (insights stage, lines ~1238–1316)**
 
-**Remove from default view**: DisciplineMetricsStrip as a full 6-card row. Instead, show 2-3 key metrics as inline pills in the hero header.
+- Unlock card: center it vertically with more padding, make it feel like a milestone
+- AI Grid (Grade/Leak/Edge/Next): increase `gap-2` to `gap-3`, add `p-3.5` inside each card
 
-### 4. Upgrade DisciplineMetricsStrip — Compact Inline Mode
-
-**File: `DisciplineMetricsStrip.tsx`**
-
-Add a `compact` prop. When `compact=true`:
-- Render as a single-line horizontal row of small text pills (not cards)
-- Format: `Discipline 82% · Grade A · Streak 5 · Rules 91%`
-- Vault Status shown separately in the hero, so omit from compact strip
-- Reduce to 4 metrics max in compact mode
-- Style: `text-[10px] font-medium` pills with dot separators, no borders
-
-### 5. Upgrade Visual Language — CSS Additions
+### 6. CSS — Premium Motion & Branding
 
 **File: `src/index.css`**
 
-Add new utility classes:
+Add:
+- `.vault-armed-flash`: brief green flash keyframe (0.3s) for the "rules locked" confirmation
+- `.vault-divider-glow`: `h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent` as a reusable class
+- Increase `.vault-stage-enter` from 0.4s to 0.5s and add a slight scale: `from { scale(0.98) }` for more cinematic feel
 
-- **`.vault-obsidian-surface`**: deeper obsidian base (`hsl(214, 26%, 8%)`) with subtle noise texture via CSS, for use as card backgrounds that feel richer than `bg-white/[0.03]`
-- **`.vault-hero-glow`**: radial gradient glow behind hero elements, status-aware (green/amber/red variants via CSS custom property)
-- **`.vault-metric-cell`**: standardized metric cell with frosted glass, used consistently across both stages
-- **`.vault-stage-enter`**: `animation: fade-in 0.4s ease-out, scale-in 0.3s ease-out` for stage transitions
-- **`.vault-launch-streak`**: desktop-only keyframe — a brief luminous streak/pulse that plays once when entering Go Live (a horizontal light sweep across the hero area, 0.8s, plays once). Elegant and fast, not playful.
+### 7. NYSESessionBar — Minor Polish
 
-### 6. Stage Transition Animation
+**File: `NYSESessionBar.tsx`**
 
-**File: `AcademyTrade.tsx`**
-
-- Wrap each stage's content in a `div` with `className="animate-fade-in"` (already exists in the animation system)
-- For the Go Live stage specifically on desktop: add the `vault-launch-streak` class to the hero area on mount (remove after animation completes via `onAnimationEnd`)
-
-### 7. VaultStatusBadge — Upgrade to Hero Mode
-
-**File: `VaultStatusBadge.tsx`**
-
-Add a `hero` prop. When `hero=true`:
-- Render larger: text-2xl status label, bigger shield icon
-- Full-width with centered content
-- Richer glow: double-layer box-shadow
-- Background: status-tinted radial gradient (not just flat bg-opacity)
-
-When `hero=false`: keep current compact version.
-
-### 8. LiveSessionMetrics — Consolidate into "Your Limits" Card
-
-**File: `LiveSessionMetrics.tsx`**
-
-Refactor to accept a `variant` prop:
-- `variant="grid"` (current 3×2 grid — keep for backwards compat)
-- `variant="compact"` (new default for Go Live): 2×2 grid, only 4 metrics, with optional reward targets row at bottom
-- Remove Loss Streak and Stop Rule from the compact variant (show in expandable or tooltip)
-
-### 9. FocusReminderCards — Single Card Mode
-
-**File: `FocusReminderCards.tsx`**
-
-Add a `layout` prop:
-- `layout="grid"` (current 3-card grid)
-- `layout="unified"` (new): single card with all 3 sections as bullet groups inside one card, reducing visual density
+- Add `my-1` margin for vertical isolation
+- Current design is already good — no major changes needed
 
 ---
 
 ### Files Summary
 
-| File | Change Type | Description |
-|------|------------|-------------|
-| `NYSESessionBar.tsx` | Major restyle | Thick pill timeline, glass styling, larger marker |
-| `AcademyTrade.tsx` | Layout restructure | Hero card + 3 cards pattern for both stages |
-| `DisciplineMetricsStrip.tsx` | Add compact mode | Inline pill format for Go Live hero |
-| `VaultStatusBadge.tsx` | Add hero variant | Larger, richer for Go Live header |
-| `LiveSessionMetrics.tsx` | Add compact variant | 2×2 with inline rewards |
-| `FocusReminderCards.tsx` | Add unified layout | Single card instead of 3 |
-| `index.css` | New utilities | obsidian surface, hero glow, launch streak animation |
+| File | Change |
+|------|--------|
+| `AcademyTrade.tsx` | Spacing, hierarchy, hero sizing, remove noise, armed state |
+| `index.css` | Armed flash, divider glow, stage enter polish |
+| `NYSESessionBar.tsx` | Minor margin tweak |
 
 ### What Does NOT Change
-- Core logic, hooks, data flow
-- Database schema
+- Core logic, hooks, DB
 - 4-stage architecture
-- OSTabHeader, OSControlRail
-- Review and Insights stages
-- Mobile layout patterns
-- Auth, permissions, feature flags
+- Component files (VaultStatusBadge, LiveSessionMetrics, FocusReminderCards, etc.)
+- Review/Insights core logic
+- Mobile patterns
 
