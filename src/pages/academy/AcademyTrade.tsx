@@ -589,8 +589,8 @@ const AcademyTrade = () => {
               <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
             </div>
           )}
-          {!hasData && (
-            <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
+          {!hasData && !gettingStartedDismissed && (
+            <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} onDismiss={handleDismissGettingStarted} />
           )}
           {hasData && (
             <section className="space-y-2.5">
