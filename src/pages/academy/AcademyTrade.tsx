@@ -596,7 +596,7 @@ const AcademyTrade = () => {
             <section className="space-y-2.5">
               <SectionLabel>Performance</SectionLabel>
               <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
-              {equityCurve.length > 1 && startingBalance !== null && (
+              {startingBalance !== null && (
                 <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} adjustments={adjustments.map(a => ({ date: a.adjustment_date, amount: Number(a.amount) }))} winRate={allTimeWinRate} totalTrades={entries.length} />
               )}
             </section>
