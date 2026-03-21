@@ -173,7 +173,7 @@ const AcademyTrade = () => {
   const [sessionPhase, setSessionPhase] = useState<SessionPhaseLabel>(null);
   const [cutoffOverride, setCutoffOverride] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
-  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(() => profile?.getting_started_dismissed === true);
+  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(() => (profile as any)?.getting_started_dismissed === true);
   const [showNudge, setShowNudge] = useState(false);
   const [localDirection, setLocalDirection] = useState<"calls" | "puts">("calls");
   const [localTicker, setLocalTicker] = useState("");
