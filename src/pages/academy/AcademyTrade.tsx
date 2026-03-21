@@ -592,11 +592,11 @@ const AcademyTrade = () => {
           {!hasData && !gettingStartedDismissed && (
             <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} onDismiss={handleDismissGettingStarted} />
           )}
-          {hasData && (
+          {(hasData || startingBalance !== null) && (
             <section className="space-y-2.5">
               <SectionLabel>Performance</SectionLabel>
               <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
-              {equityCurve.length > 1 && startingBalance !== null && (
+              {startingBalance !== null && (
                 <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} adjustments={adjustments.map(a => ({ date: a.adjustment_date, amount: Number(a.amount) }))} winRate={allTimeWinRate} totalTrades={entries.length} />
               )}
             </section>
@@ -1383,8 +1383,11 @@ const AcademyTrade = () => {
               <p className="text-[10px] tracking-[0.1em] font-semibold text-muted-foreground/60 uppercase">Analytics</p>
             </div>
 
+            {/* Performance HUD */}
+            <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
+
             {/* Row 1: Equity Curve — full width */}
-            {equityCurve.length > 1 && startingBalance !== null && (
+            {startingBalance !== null && (
               <EquityCurveCard equityCurve={equityCurve} startingBalance={startingBalance} adjustments={adjustments.map(a => ({ date: a.adjustment_date, amount: Number(a.amount) }))} winRate={allTimeWinRate} totalTrades={entries.length} />
             )}
 
