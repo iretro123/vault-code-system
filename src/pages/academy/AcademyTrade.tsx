@@ -592,7 +592,7 @@ const AcademyTrade = () => {
           {!hasData && !gettingStartedDismissed && (
             <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} onDismiss={handleDismissGettingStarted} />
           )}
-          {hasData && (
+          {(hasData || startingBalance !== null) && (
             <section className="space-y-2.5">
               <SectionLabel>Performance</SectionLabel>
               <PerformanceHUD balance={trackedBalance} todayPnl={todayPnl} allTimeWinRate={allTimeWinRate} totalTrades={entries.length} complianceRate={complianceRate} currentStreak={currentStreak} />
