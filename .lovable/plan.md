@@ -1,16 +1,26 @@
 
 
-## Assessment: Banner Already Works Correctly
+## Add Dismissible X Button to Getting Started Banner with Confirmation
 
-The "Your Trading OS is Active" banner **already disappears permanently once a trade is logged**. Here's why:
+### What changes
 
-### How it works today
-- `hasData = entries.length > 0` — checks ALL trade entries for the user (not just today)
-- Banner renders only when `!hasData` (zero trades ever logged)
-- When `addEntry()` is called, entries are optimistically updated → `hasData` becomes `true` → banner vanishes instantly
-- On next login, `useTradeLog` fetches from `trade_entries` table → entries exist → banner stays hidden forever
-- Data is cached in localStorage (`va_cache_trade_entries`) for instant load
+**1. Database: Add `getting_started_dismissed` column to `profiles` table**
+- New nullable `boolean` column, default `false`
+- Persists the user's choice across sessions/devices
 
-### No changes required
-The banner is fully connected to the trade logging pipeline, persists its state via the database, and cannot reappear unless the user's trade entries are deleted (e.g., via the Privacy reset flow). This is production-ready.
+**2. `GettingStartedBanner.tsx` — Add X button + confirmation dialog**
+- White X button in the top-right corner of the banner card
+- Clicking X opens an AlertDialog requiring the user to type "CONFIRM"
+- Small warning: "This will permanently hide the Getting Started guide. Make sure you've completed all steps."
+- On confirm, calls `onDismiss()` callback
+
+**3. `AcademyTrade.tsx` — Wire dismiss logic**
+- Fetch `getting_started_dismissed` from the user's profile
+- Banner shows when `!hasData && !dismissed`
+- On dismiss: update `profiles.getting_started_dismissed = true` via Supabase, update local state immediately
+
+### Files changed
+1. **Migration** — `ALTER TABLE profiles ADD COLUMN getting_started_dismissed boolean NOT NULL DEFAULT false`
+2. **`src/components/trade-os/GettingStartedBanner.tsx`** — Add X button + AlertDialog with "CONFIRM" typed input
+3. **`src/pages/academy/AcademyTrade.tsx`** — Read dismissed state from profile, pass `onDismiss` prop, update DB on confirm
 
