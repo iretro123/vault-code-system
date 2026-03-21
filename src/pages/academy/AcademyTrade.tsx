@@ -755,8 +755,8 @@ const AcademyTrade = () => {
           </div>
         )}
 
-        {!hasData && (
-          <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
+        {!hasData && !gettingStartedDismissed && (
+          <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} onDismiss={handleDismissGettingStarted} />
         )}
 
         {/* ══════ HERO OS CARD ══════ */}
