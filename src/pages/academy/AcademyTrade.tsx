@@ -173,6 +173,7 @@ const AcademyTrade = () => {
   const [sessionPhase, setSessionPhase] = useState<SessionPhaseLabel>(null);
   const [cutoffOverride, setCutoffOverride] = useState(false);
   const [dismissedBanner, setDismissedBanner] = useState(false);
+  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(() => (profile as any)?.getting_started_dismissed === true);
   const [showNudge, setShowNudge] = useState(false);
   const [localDirection, setLocalDirection] = useState<"calls" | "puts">("calls");
   const [localTicker, setLocalTicker] = useState("");
@@ -184,6 +185,21 @@ const AcademyTrade = () => {
 
   // Reset banner dismissal when phase changes
   useEffect(() => { setDismissedBanner(false); }, [sessionPhase]);
+
+  // Sync getting_started_dismissed from profile when it loads
+  useEffect(() => {
+    if ((profile as any)?.getting_started_dismissed) setGettingStartedDismissed(true);
+  }, [profile]);
+
+  const handleDismissGettingStarted = async () => {
+    if (!user) return;
+    setGettingStartedDismissed(true);
+    try {
+      await supabase.from("profiles").update({ getting_started_dismissed: true } as any).eq("user_id", user.id);
+    } catch (e) {
+      console.error("Failed to persist getting started dismissal", e);
+    }
+  };
 
   useEffect(() => {
     if (!user) { setBalanceLoading(false); return; }
@@ -573,8 +589,8 @@ const AcademyTrade = () => {
               <Button size="sm" variant="outline" className="shrink-0 text-[11px] h-7 px-2.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10 rounded-full" onClick={() => setShowBalanceModal(true)}>Set Now</Button>
             </div>
           )}
-          {!hasData && (
-            <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
+          {!hasData && !gettingStartedDismissed && (
+            <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} onDismiss={handleDismissGettingStarted} />
           )}
           {hasData && (
             <section className="space-y-2.5">
@@ -739,8 +755,8 @@ const AcademyTrade = () => {
           </div>
         )}
 
-        {!hasData && (
-          <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} />
+        {!hasData && !gettingStartedDismissed && (
+          <GettingStartedBanner balanceSet={startingBalance !== null} onSetBalance={() => setShowBalanceModal(true)} todayStatus={todayStatus} onDismiss={handleDismissGettingStarted} />
         )}
 
         {/* ══════ HERO OS CARD ══════ */}
