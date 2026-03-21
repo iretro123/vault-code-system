@@ -1610,6 +1610,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           first_lesson_started: boolean
+          getting_started_dismissed: boolean
           id: string
           initialized_at: string | null
           intro_posted: boolean
@@ -1638,6 +1639,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           first_lesson_started?: boolean
+          getting_started_dismissed?: boolean
           id?: string
           initialized_at?: string | null
           intro_posted?: boolean
@@ -1666,6 +1668,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           first_lesson_started?: boolean
+          getting_started_dismissed?: boolean
           id?: string
           initialized_at?: string | null
           intro_posted?: boolean

@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN getting_started_dismissed boolean NOT NULL DEFAULT false;
