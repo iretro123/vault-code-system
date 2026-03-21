@@ -1,26 +1,16 @@
 
 
-## Assessment: Banner Logic is Already Correct — No Code Changes Needed
+## Assessment: Banner Already Works Correctly
 
-### Current State
-The Getting Started banner is **already fully wired and working correctly**:
+The "Your Trading OS is Active" banner **already disappears permanently once a trade is logged**. Here's why:
 
-1. **Banner shows** when `entries.length === 0` (no trades logged yet)
-2. **Banner disappears** the instant a trade is logged — `addEntry()` optimistically updates the entries array, so `hasData` flips to `true` immediately
-3. **Step progression** works: Balance → Use OS → AI Coach — these are motivational guides visible until the first trade log
-4. **Trade logging pipeline** (`LogTradeSheet` → `addEntry` → `trade_entries` insert → optimistic state update) is fully connected
-5. **Balance sync** was already fixed in the previous change (adding `onboardingDone` to the useEffect deps)
+### How it works today
+- `hasData = entries.length > 0` — checks ALL trade entries for the user (not just today)
+- Banner renders only when `!hasData` (zero trades ever logged)
+- When `addEntry()` is called, entries are optimistically updated → `hasData` becomes `true` → banner vanishes instantly
+- On next login, `useTradeLog` fetches from `trade_entries` table → entries exist → banner stays hidden forever
+- Data is cached in localStorage (`va_cache_trade_entries`) for instant load
 
-### What the banner does
-- Persists on screen until the user logs their first trade (not before)
-- Cannot be dismissed manually — only completing a trade removes it
-- Steps 1-3 provide visual progress (balance set, session started, review done) but the banner itself gates on trade data existing
-
-### Conclusion
-No changes are required. The banner, trade logging, balance sync, and all downstream pipelines (vault state, trader DNA, coaching nudge) are connected and functioning. The app is ready for launch with this flow intact.
-
-### If you'd like any enhancements
-- Add a subtle animation when the banner disappears after the first trade
-- Add a "Welcome back" celebration card that replaces the banner after the first trade
-- Add a persistent progress tracker that evolves beyond the getting-started phase
+### No changes required
+The banner is fully connected to the trade logging pipeline, persists its state via the database, and cannot reappear unless the user's trade entries are deleted (e.g., via the Privacy reset flow). This is production-ready.
 
