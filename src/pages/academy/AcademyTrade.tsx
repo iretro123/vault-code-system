@@ -186,6 +186,21 @@ const AcademyTrade = () => {
   // Reset banner dismissal when phase changes
   useEffect(() => { setDismissedBanner(false); }, [sessionPhase]);
 
+  // Sync getting_started_dismissed from profile when it loads
+  useEffect(() => {
+    if ((profile as any)?.getting_started_dismissed) setGettingStartedDismissed(true);
+  }, [profile]);
+
+  const handleDismissGettingStarted = async () => {
+    if (!user) return;
+    setGettingStartedDismissed(true);
+    try {
+      await supabase.from("profiles").update({ getting_started_dismissed: true } as any).eq("user_id", user.id);
+    } catch (e) {
+      console.error("Failed to persist getting started dismissal", e);
+    }
+  };
+
   useEffect(() => {
     if (!user) { setBalanceLoading(false); return; }
     (async () => {
