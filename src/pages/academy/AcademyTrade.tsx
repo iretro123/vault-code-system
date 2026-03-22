@@ -649,9 +649,7 @@ const AcademyTrade = () => {
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Review</SectionLabel>
-            {hasData && symbolStats.length > 0 && (
-              <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
-            )}
+            <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
             <WeeklyReviewCard hasData={hasData} entries={entries} />
           </section>
         </div>
@@ -1393,9 +1391,7 @@ const AcademyTrade = () => {
 
             {/* Row 2: Performance Breakdown + Recent Trades */}
             <div className="grid gap-2 md:grid-cols-2">
-              {symbolStats.length > 0 && (
-                <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
-              )}
+              <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
               <RecentTradesSection entries={entries} onExportCSV={exportCSV} onDelete={handleDeleteEntry} compact />
             </div>
 
