@@ -649,9 +649,7 @@ const AcademyTrade = () => {
           </section>
           <section className="space-y-2.5">
             <SectionLabel>Review</SectionLabel>
-            {hasData && symbolStats.length > 0 && (
-              <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
-            )}
+            <PerformanceBreakdownCard symbolStats={symbolStats} dayStats={dayStats} />
             <WeeklyReviewCard hasData={hasData} entries={entries} />
           </section>
         </div>
