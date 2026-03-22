@@ -1,26 +1,20 @@
 
 
-## Add Dismissible X Button to Getting Started Banner with Confirmation
+## Restore Performance Breakdown Card (Always Visible)
 
-### What changes
+### Changes
 
-**1. Database: Add `getting_started_dismissed` column to `profiles` table**
-- New nullable `boolean` column, default `false`
-- Persists the user's choice across sessions/devices
+**File: `src/pages/academy/AcademyTrade.tsx`**
 
-**2. `GettingStartedBanner.tsx` — Add X button + confirmation dialog**
-- White X button in the top-right corner of the banner card
-- Clicking X opens an AlertDialog requiring the user to type "CONFIRM"
-- Small warning: "This will permanently hide the Getting Started guide. Make sure you've completed all steps."
-- On confirm, calls `onDismiss()` callback
+1. **Classic layout (~line 652)**: Remove `hasData && symbolStats.length > 0` gate — render unconditionally.
+2. **OS layout (~line 1396)**: Remove `symbolStats.length > 0` gate — render unconditionally.
 
-**3. `AcademyTrade.tsx` — Wire dismiss logic**
-- Fetch `getting_started_dismissed` from the user's profile
-- Banner shows when `!hasData && !dismissed`
-- On dismiss: update `profiles.getting_started_dismissed = true` via Supabase, update local state immediately
+**File: `src/components/trade-os/PerformanceBreakdownCard.tsx`**
 
-### Files changed
-1. **Migration** — `ALTER TABLE profiles ADD COLUMN getting_started_dismissed boolean NOT NULL DEFAULT false`
-2. **`src/components/trade-os/GettingStartedBanner.tsx`** — Add X button + AlertDialog with "CONFIRM" typed input
-3. **`src/pages/academy/AcademyTrade.tsx`** — Read dismissed state from profile, pass `onDismiss` prop, update DB on confirm
+3. When both `symbolStats` and `dayStats` are empty, wrap the card content in a subtle "locked/greyed-out" style:
+   - Card gets `opacity-60` with a soft overlay message: "Log trades to unlock performance insights"
+   - The tab switcher and empty rows still render but are muted
+   - A small lock icon or dashed-border placeholder gives it a premium "coming soon" feel
+
+This keeps the card always visible, showing users what's coming while looking intentional rather than broken.
 
