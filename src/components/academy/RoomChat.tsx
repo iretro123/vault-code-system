@@ -32,6 +32,7 @@ import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { EmojiPicker } from "./chat/EmojiPicker";
 import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
+import { LinkPreviewCard } from "./chat/LinkPreviewCard";
 import { detectChatEffect, type ChatEffectType } from "@/lib/chatEffects";
 import { supabase } from "@/integrations/supabase/client";
 import logTradeEmoji from "@/assets/emoji/log-trade.svg";
@@ -66,6 +67,12 @@ interface RoomChatProps {
 }
 
 /* ── helpers ── */
+
+const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
+function extractFirstUrl(text: string): string | null {
+  const m = text.match(URL_REGEX);
+  return m?.[0] || null;
+}
 
 function getInitials(name: string) {
   return name.split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2) || "?";
@@ -254,11 +261,14 @@ function renderPlainBody(body: string, isOwnBubble = false) {
       });
     }
 
-    // Bold markdown
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    // Bold markdown + raw URLs
+    const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s<>"')\]]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
+      }
+      if (/^https?:\/\//.test(part)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{part}</a>;
       }
       return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
     });
@@ -1360,10 +1370,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </div>
                           </div>
                         )}
+                        {/* Link preview */}
+                        {(() => {
+                          const firstUrl = extractFirstUrl(msg.body);
+                          return firstUrl ? <LinkPreviewCard url={firstUrl} /> : null;
+                        })()}
                       </>
                     )}
 
-                    {/* Attachments (only if not deleted) */}
+
                     {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-1">
                         {msg.attachments.map((att: Attachment, idx: number) =>

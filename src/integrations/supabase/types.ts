@@ -1141,6 +1141,36 @@ export type Database = {
           },
         ]
       }
+      link_previews: {
+        Row: {
+          description: string | null
+          favicon: string | null
+          fetched_at: string
+          image: string | null
+          site_name: string | null
+          title: string | null
+          url: string
+        }
+        Insert: {
+          description?: string | null
+          favicon?: string | null
+          fetched_at?: string
+          image?: string | null
+          site_name?: string | null
+          title?: string | null
+          url: string
+        }
+        Update: {
+          description?: string | null
+          favicon?: string | null
+          fetched_at?: string
+          image?: string | null
+          site_name?: string | null
+          title?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       live_session_attendance: {
         Row: {
           clicked_at: string
