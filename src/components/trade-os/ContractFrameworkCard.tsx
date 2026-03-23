@@ -9,7 +9,7 @@ interface ContractFrameworkCardProps {
   maxContracts?: number;
 }
 
-export function ContractFrameworkCard({ accountBalance, riskPerTrade, direction }: ContractFrameworkCardProps) {
+export function ContractFrameworkCard({ accountBalance, riskPerTrade, direction, maxContracts: maxContractsProp }: ContractFrameworkCardProps) {
   const [open, setOpen] = useState(false);
 
   // Pure client-side guidance logic
