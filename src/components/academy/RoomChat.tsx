@@ -68,6 +68,12 @@ interface RoomChatProps {
 
 /* ── helpers ── */
 
+const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
+function extractFirstUrl(text: string): string | null {
+  const m = text.match(URL_REGEX);
+  return m?.[0] || null;
+}
+
 function getInitials(name: string) {
   return name.split(/\s+/).map((w) => w[0]).join("").toUpperCase().slice(0, 2) || "?";
 }
