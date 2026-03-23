@@ -6,6 +6,7 @@ interface ContractFrameworkCardProps {
   accountBalance: number;
   riskPerTrade: number;
   direction: string;
+  maxContracts?: number;
 }
 
 export function ContractFrameworkCard({ accountBalance, riskPerTrade, direction }: ContractFrameworkCardProps) {
