@@ -32,6 +32,7 @@ import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { EmojiPicker } from "./chat/EmojiPicker";
 import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
+import { LinkPreviewCard } from "./chat/LinkPreviewCard";
 import { detectChatEffect, type ChatEffectType } from "@/lib/chatEffects";
 import { supabase } from "@/integrations/supabase/client";
 import logTradeEmoji from "@/assets/emoji/log-trade.svg";
