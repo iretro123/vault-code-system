@@ -1367,10 +1367,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </div>
                           </div>
                         )}
+                        {/* Link preview */}
+                        {(() => {
+                          const firstUrl = extractFirstUrl(msg.body);
+                          return firstUrl ? <LinkPreviewCard url={firstUrl} /> : null;
+                        })()}
                       </>
                     )}
 
-                    {/* Attachments (only if not deleted) */}
+
                     {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-1">
                         {msg.attachments.map((att: Attachment, idx: number) =>
