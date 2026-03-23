@@ -28,7 +28,7 @@ export function ContractFrameworkCard({ accountBalance, riskPerTrade, direction,
       ? "ATM to near ATM — balance premium cost with movement"
       : "ATM preferred — you have budget for quality entries";
 
-  const maxContracts = Math.max(1, Math.floor(riskPerTrade / 30));
+  const maxContracts = maxContractsProp ?? Math.max(1, Math.floor(riskPerTrade / 30));
 
   const avoidToday = isMicro
     ? "Avoid far OTM contracts — low delta means low probability and fast decay"

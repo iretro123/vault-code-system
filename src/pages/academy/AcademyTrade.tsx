@@ -992,6 +992,7 @@ const AcademyTrade = () => {
                             accountBalance={bal}
                             riskPerTrade={riskBudget / MAX_LOSSES_PER_DAY}
                             direction={localDirection}
+                            maxContracts={vaultLimits.max_contracts}
                           />
 
                           {/* ═══ LOCK IN CTA ═══ */}
