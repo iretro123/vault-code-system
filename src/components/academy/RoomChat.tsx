@@ -261,11 +261,14 @@ function renderPlainBody(body: string, isOwnBubble = false) {
       });
     }
 
-    // Bold markdown
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    // Bold markdown + raw URLs
+    const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s<>"')\]]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
+      }
+      if (/^https?:\/\//.test(part)) {
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{part}</a>;
       }
       return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
     });
