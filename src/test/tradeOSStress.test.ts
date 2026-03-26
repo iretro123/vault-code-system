@@ -42,7 +42,7 @@ describe("Risk Engine — Account Scaling Stress", () => {
         } else {
           expect(limits.daily_loss_limit).toBe(limits.risk_per_trade * MAX_LOSSES_PER_DAY);
           expect(limits.max_trades_per_day).toBe(MAX_LOSSES_PER_DAY);
-          expect(limits.max_contracts).toBe(Math.floor(limits.risk_per_trade / TARGET_CONTRACT));
+          expect(limits.max_contracts).toBe(Math.max(1, Math.floor(limits.risk_per_trade / TARGET_CONTRACT)));
         }
 
         // max_contracts should scale: bigger account + higher risk = more contracts
