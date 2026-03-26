@@ -177,13 +177,12 @@ describe("Real User Scenarios", () => {
     expect(limits.risk_per_trade).toBe(100);
   });
 
-  it("$500 @ any mode → survival, 1 contract", () => {
+  it("$500 @ any mode → 1 contract", () => {
     for (const mode of ["CONSERVATIVE", "STANDARD", "AGGRESSIVE"]) {
       const resolved = resolveViableRiskMode(500, mode);
       expect(resolved.limits.max_contracts).toBe(1);
-      expect(resolved.limits.survival_mode).toBe(
-        mode === "AGGRESSIVE" ? false : true
-      );
+      // All modes at $500 result in survival (raw risk < $20)
+      expect(resolved.limits.survival_mode).toBe(true);
     }
   });
 });
