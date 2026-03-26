@@ -106,16 +106,12 @@ export function computeVaultLimits(
     };
   }
 
-  // Step 4 — Apply options-reality constraints
-  const risk_per_trade = Math.min(
-    Math.max(
-      Math.max(raw_risk_per_trade, TARGET_CONTRACT),
-      MIN_VIABLE_CONTRACT,
-    ),
-    MAX_CONTRACT,
-  );
+  // Step 4 — Risk per trade scales with account size (no artificial cap)
+  // Floor ensures at least one viable contract entry
+  const risk_per_trade = Math.max(raw_risk_per_trade, MIN_VIABLE_CONTRACT);
 
   // Step 5 — Derive enforcement values
+  // Max contracts = how many TARGET_CONTRACT-sized entries fit in the risk budget
   const daily_loss_limit = risk_per_trade * MAX_LOSSES_PER_DAY;
   const max_trades_per_day = MAX_LOSSES_PER_DAY;
   const max_contracts = Math.max(1, Math.floor(risk_per_trade / TARGET_CONTRACT));
