@@ -1,47 +1,28 @@
 
 
-## Discord-Style Link Previews in Community Chat
+## Fix: Preserve Chat Scroll Position When Switching Tabs
 
-### How it works
+### Problem
+When users switch to a different browser tab or app tab and return, the `active` prop change and visibility handlers trigger `scrollToBottomInstant()`, resetting the scroll position. The culprit is primarily the effect on line 521-525 that fires every time `active` becomes true.
 
-When a user posts a message containing a URL, the chat will detect it, render the URL as a clickable link, and display an embedded preview card below the message showing the site's title, description, and image (pulled from Open Graph / SEO meta tags).
+### Root Cause
+Three effects fight to scroll to bottom on re-activation:
+1. **Line 521-525**: `useEffect` on `[active]` — unconditionally scrolls to bottom when `active` becomes true, ignoring `userScrolledRef`
+2. **Line 527-535**: `useEffect` on `[active, loading, messages.length]` — also scrolls to bottom but respects `userScrolledRef`
+3. **`useSmartRefresh`** (line ref in hook): When tab becomes visible after 60s, invalidates queries → messages refetch → triggers the `[messages.length]` effect which resets scroll if `userScrolledRef` was cleared
 
-### Changes
+### Fix (1 file: `RoomChat.tsx`)
 
-**1. New Edge Function: `supabase/functions/unfurl-link/index.ts`**
-- Accepts a URL, fetches the page HTML server-side
-- Parses Open Graph meta tags (`og:title`, `og:description`, `og:image`, `og:site_name`, `og:favicon`)
-- Returns JSON with `{ title, description, image, siteName, favicon, url }`
-- Includes CORS headers, input validation (valid URL check), and a short timeout (5s) to avoid hanging
-- Caches results in a new `link_previews` table to avoid re-fetching the same URL
+**1. Remove the unconditional scroll on `[active]` (lines 521-525)**
+This effect ignores user scroll state. Delete it entirely — the other effects already handle initial load.
 
-**2. Database: New `link_previews` cache table**
-- Columns: `url` (text, primary key), `title`, `description`, `image`, `site_name`, `favicon`, `fetched_at` (timestamp)
-- No RLS needed — edge function uses service role; frontend reads via the edge function
-- Prevents redundant fetches for the same link shared multiple times
+**2. Guard the `[active, loading, messages.length]` effect (lines 527-535)**
+Already has `if (userScrolledRef.current) return;` — this is correct and will handle re-activation properly once the unconditional effect is removed.
 
-**3. New Component: `src/components/academy/chat/LinkPreviewCard.tsx`**
-- Compact Discord-style embed card: colored left border, site name, title, description (2-line clamp), and image thumbnail
-- Dark themed to match existing chat UI (`bg-white/[0.04]`, `border-white/[0.08]`)
-- Renders below the message bubble
-- Loading skeleton while fetching, graceful fallback (no card) if unfurl fails
-- Uses a custom `useLinkPreview(url)` hook that calls the edge function
+**3. Don't reset `userScrolledRef` on `active` changes**
+Currently `userScrolledRef` only resets on `roomSlug` change (line 538-540) — this is correct. But the unconditional effect on `[active]` was bypassing it. Removing that effect fixes the issue.
 
-**4. New Hook: `src/hooks/useLinkPreview.ts`**
-- Takes a URL string, calls `supabase.functions.invoke('unfurl-link', { body: { url } })`
-- Returns `{ data, loading, error }`
-- Client-side in-memory cache (Map) so repeated renders don't re-fetch
-
-**5. Update `renderPlainBody` in `RoomChat.tsx`**
-- Add URL detection regex to find raw URLs (https?://...) in message text
-- Render detected URLs as clickable links (already partially handled for markdown links)
-- Extract the first URL from the message body
-- Pass it to a new `<LinkPreviewCard url={firstUrl} />` rendered below the message content
-
-### File summary
-1. `supabase/functions/unfurl-link/index.ts` — new edge function
-2. Migration — `link_previews` cache table
-3. `src/components/academy/chat/LinkPreviewCard.tsx` — new preview card component
-4. `src/hooks/useLinkPreview.ts` — new hook
-5. `src/components/academy/RoomChat.tsx` — wire URL detection + preview card into message rendering
+### Summary
+- Delete the `useEffect` at lines 521-525 that forces scroll-to-bottom every time `active` changes
+- The remaining effects already respect `userScrolledRef`, so scroll position is preserved when switching tabs and returning
 
