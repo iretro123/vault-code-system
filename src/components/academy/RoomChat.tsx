@@ -519,12 +519,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }, [active, messages.length, scrollToBottomInstant]);
 
   useEffect(() => {
-    if (!active) return;
-    shouldAutoScroll.current = true;
-    requestAnimationFrame(() => scrollToBottomInstant());
-  }, [active]);
-
-  useEffect(() => {
     if (!active || loading) return;
     if (userScrolledRef.current) return;
     shouldAutoScroll.current = true;
