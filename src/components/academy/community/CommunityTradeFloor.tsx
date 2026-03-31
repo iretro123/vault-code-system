@@ -28,6 +28,7 @@ export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTra
             isAnnouncements={false}
             onThreadOpen={setThreadMessage}
             onSwitchTab={onSwitchTab}
+            active={active}
           />
         </div>
       </div>
