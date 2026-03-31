@@ -431,6 +431,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const initialScrollDone = useRef(false);
   const userScrolledRef = useRef(false);
   const autoScrollingRef = useRef(false);
+  const savedScrollRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit state
