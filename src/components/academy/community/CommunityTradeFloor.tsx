@@ -8,9 +8,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CommunityTradeFloorProps {
   onSwitchTab?: (tab: string) => void;
+  active?: boolean;
 }
 
-export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
+export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTradeFloorProps) {
   const isMobile = useIsMobile();
   const [threadMessage, setThreadMessage] = useState<any>(null);
 
@@ -27,6 +28,7 @@ export function CommunityTradeFloor({ onSwitchTab }: CommunityTradeFloorProps) {
             isAnnouncements={false}
             onThreadOpen={setThreadMessage}
             onSwitchTab={onSwitchTab}
+            active={active}
           />
         </div>
       </div>

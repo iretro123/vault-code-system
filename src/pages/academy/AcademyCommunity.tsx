@@ -88,7 +88,7 @@ const AcademyCommunity = () => {
 
           <div className="flex-1 overflow-hidden relative pb-3">
             <div className={cn("absolute inset-0", activeTab === "trade-floor" ? "block" : "hidden")}>
-              <CommunityTradeFloor onSwitchTab={handleTabChange} />
+              <CommunityTradeFloor onSwitchTab={handleTabChange} active={activeTab === "trade-floor"} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "announcements" ? "block" : "hidden")}>
               <RoomChat roomSlug="announcements" canPost={canPostRestricted} isAnnouncements={true} active={activeTab === "announcements"} compact />
