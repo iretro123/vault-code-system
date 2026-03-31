@@ -1420,7 +1420,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           return firstUrl ? <LinkPreviewCard url={firstUrl} /> : null;
                         })()}
                       </>
-                    )}
+                    ))
 
 
                     {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
