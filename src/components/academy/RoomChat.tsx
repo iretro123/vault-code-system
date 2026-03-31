@@ -29,6 +29,8 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
+import { SignalPostForm } from "./chat/SignalPostForm";
+import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
 import { EmojiPicker } from "./chat/EmojiPicker";
 import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
