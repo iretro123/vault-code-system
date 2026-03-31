@@ -1355,7 +1355,23 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           <span className="text-[10px] text-muted-foreground">esc to cancel · enter to save</span>
                         </div>
                       </div>
-                    ) : isRecap ? (
+                    ) : (() => {
+                      const signalAtt = msg.attachments?.find((a: any) => a.type === "signal-watchlist" || a.type === "signal-live") as SignalAttachment | undefined;
+                      if (signalAtt) {
+                        const chartAtt = msg.attachments?.find((a: any) => a.type === "image");
+                        return (
+                          <SignalCard
+                            signal={signalAtt}
+                            chartImageUrl={chartAtt?.url}
+                            userName={msg.user_name}
+                            userRole={msg.user_role}
+                            createdAt={msg.created_at}
+                            onImageClick={(src) => setLightboxImage({ src, alt: "Chart", filename: "chart" })}
+                          />
+                        );
+                      }
+                      return null;
+                    })() ?? (isRecap ? (
                       renderRecapCard(msg.body)
                     ) : !msg.is_deleted && isTradeFormatPost(msg.body) ? (
                       renderTradeCard(msg.body, msg.attachments)
