@@ -1371,7 +1371,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         );
                       }
                       return null;
-                    })() ?? (isRecap ? (
+                    })() || (isRecap ? (
                       renderRecapCard(msg.body)
                     ) : !msg.is_deleted && isTradeFormatPost(msg.body) ? (
                       renderTradeCard(msg.body, msg.attachments)
