@@ -1,28 +1,51 @@
 
+Goal: stop Community chat from jumping to the top when users switch browser tabs/app tabs and return, while still keeping new-message behavior correct.
 
-## Fix: Preserve Chat Scroll Position When Switching Tabs
+What I found
+- `RoomChat.tsx` still has aggressive auto-scroll behavior:
+  - an initial activation effect
+  - another `[active, loading, messages.length]` effect that calls `scrollToBottomInstant()` multiple times
+  - a `ResizeObserver` that can also force bottom scroll
+- There is no true per-room scroll memory. If the DOM/layout refreshes while the user is away, the component has no saved `scrollTop` to restore.
+- In `AcademyCommunity.tsx`, the non–Trade Floor tabs pass `active`, but `CommunityTradeFloor` does not pass an `active` prop into its `RoomChat`, so Trade Floor cannot properly know when it was hidden/shown.
 
-### Problem
-When users switch to a different browser tab or app tab and return, the `active` prop change and visibility handlers trigger `scrollToBottomInstant()`, resetting the scroll position. The culprit is primarily the effect on line 521-525 that fires every time `active` becomes true.
+Implementation plan
 
-### Root Cause
-Three effects fight to scroll to bottom on re-activation:
-1. **Line 521-525**: `useEffect` on `[active]` — unconditionally scrolls to bottom when `active` becomes true, ignoring `userScrolledRef`
-2. **Line 527-535**: `useEffect` on `[active, loading, messages.length]` — also scrolls to bottom but respects `userScrolledRef`
-3. **`useSmartRefresh`** (line ref in hook): When tab becomes visible after 60s, invalidates queries → messages refetch → triggers the `[messages.length]` effect which resets scroll if `userScrolledRef` was cleared
+1. Fix Trade Floor active-state wiring
+- Update `CommunityTradeFloor.tsx` to accept an `active` prop.
+- Pass that prop down to its `RoomChat`.
+- Update `AcademyCommunity.tsx` to send `active={activeTab === "trade-floor"}` to `CommunityTradeFloor`.
 
-### Fix (1 file: `RoomChat.tsx`)
+2. Add real scroll-position persistence in `RoomChat.tsx`
+- Store `scrollTop` per room in a ref/map keyed by `roomSlug`.
+- Save position on user scroll and when the tab/page becomes hidden.
+- On re-activation, restore the saved `scrollTop` instead of forcing bottom scroll if the user was not at the bottom.
 
-**1. Remove the unconditional scroll on `[active]` (lines 521-525)**
-This effect ignores user scroll state. Delete it entirely — the other effects already handle initial load.
+3. Tighten auto-scroll rules
+- Keep auto-scroll only for these cases:
+  - first load of a room with no saved position
+  - user is already at bottom and a new message arrives
+  - user taps “New messages”
+- Prevent re-activation effects and `ResizeObserver` from overriding a saved reading position.
 
-**2. Guard the `[active, loading, messages.length]` effect (lines 527-535)**
-Already has `if (userScrolledRef.current) return;` — this is correct and will handle re-activation properly once the unconditional effect is removed.
+4. Preserve current UX for active readers
+- If the user is at bottom, continue snapping to the latest message normally.
+- If the user is reading history, keep their exact place and continue showing the “New messages” button.
 
-**3. Don't reset `userScrolledRef` on `active` changes**
-Currently `userScrolledRef` only resets on `roomSlug` change (line 538-540) — this is correct. But the unconditional effect on `[active]` was bypassing it. Removing that effect fixes the issue.
+5. Verify across all community channels
+- Apply the same behavior to:
+  - Trade Floor
+  - Signals
+  - Wins
+  - Announcements
+- Make sure room switching still resets appropriately when moving to a different room, but browser/app tab switching does not.
 
-### Summary
-- Delete the `useEffect` at lines 521-525 that forces scroll-to-bottom every time `active` changes
-- The remaining effects already respect `userScrolledRef`, so scroll position is preserved when switching tabs and returning
+Files to update
+- `src/pages/academy/AcademyCommunity.tsx`
+- `src/components/academy/community/CommunityTradeFloor.tsx`
+- `src/components/academy/RoomChat.tsx`
 
+Expected result
+- When a user leaves Community and comes back, the chat stays where they left it.
+- If they were at the bottom, they stay at the live edge.
+- If they were scrolled up, they return to that exact reading position instead of bouncing to top or bottom.
