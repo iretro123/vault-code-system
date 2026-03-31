@@ -1356,7 +1356,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         </div>
                       </div>
                     ) : (() => {
-                      const signalAtt = msg.attachments?.find((a: any) => a.type === "signal-watchlist" || a.type === "signal-live") as SignalAttachment | undefined;
+                      const signalAtt = msg.attachments?.find((a: any) => a.type === "signal-watchlist" || a.type === "signal-live") as unknown as SignalAttachment | undefined;
                       if (signalAtt) {
                         const chartAtt = msg.attachments?.find((a: any) => a.type === "image");
                         return (
