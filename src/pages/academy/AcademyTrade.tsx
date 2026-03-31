@@ -48,7 +48,7 @@ import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner"
 import { OSControlRail } from "@/components/trade-os/OSControlRail";
 import { useCoachingNudge } from "@/hooks/useCoachingNudge";
 import { CoachingNudgeModal } from "@/components/academy/CoachingNudgeModal";
-import { SessionSetupCard, SessionCountdownLine, loadTimes, clearSession, clearSessionFromDB } from "@/components/trade-os/SessionSetupCard";
+import { SessionSetupCard, SessionCountdownLine, loadTimes, fmt12h, clearSession, clearSessionFromDB } from "@/components/trade-os/SessionSetupCard";
 import type { SessionTimes } from "@/components/trade-os/SessionSetupCard";
 import type { SessionPhaseLabel } from "@/components/trade-os/SessionSetupCard";
 import { Progress } from "@/components/ui/progress";
@@ -1113,6 +1113,9 @@ const AcademyTrade = () => {
                         direction={activePlan.direction}
                         maxLoss={Number(activePlan.max_loss_planned)}
                         maxTrades={MAX_LOSSES_PER_DAY}
+                        sessionStart={(() => { const t = loadTimes(); return t ? fmt12h(t.start) : undefined; })()}
+                        sessionCutoff={(() => { const t = loadTimes(); return t ? fmt12h(t.cutoff) : undefined; })()}
+                        sessionClose={(() => { const t = loadTimes(); return t ? fmt12h(t.hardClose) : undefined; })()}
                       />
                     ) : (
                       <div className="vault-obsidian-surface p-4 md:p-2.5 flex items-center justify-center">
