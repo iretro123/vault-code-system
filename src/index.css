@@ -973,18 +973,16 @@ html {
 /* ── Signal Cards ── */
 
 .vault-signal-card {
-  border-radius: 20px;
-  border: 1px solid hsla(0, 0%, 100%, 0.08);
-  background: linear-gradient(165deg, hsla(220, 25%, 14%, 0.98) 0%, hsla(220, 18%, 7%, 1) 100%);
+  border-radius: 16px;
+  border: 1px solid hsla(0, 0%, 100%, 0.06);
+  background: linear-gradient(168deg, hsla(220, 22%, 13%, 0.98) 0%, hsla(220, 18%, 7%, 1) 100%);
   overflow: hidden;
   position: relative;
-  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
-  backdrop-filter: blur(12px);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .vault-signal-card:hover {
-  border-color: hsla(0, 0%, 100%, 0.15);
-  transform: translateY(-1px);
+  border-color: hsla(0, 0%, 100%, 0.1);
 }
 
 /* Shimmer top edge */
@@ -995,79 +993,76 @@ html {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, hsla(0, 0%, 100%, 0.06) 20%, hsla(0, 0%, 100%, 0.15) 50%, hsla(0, 0%, 100%, 0.06) 80%, transparent 100%);
   z-index: 1;
+  background: linear-gradient(90deg, transparent 0%, hsla(0, 0%, 100%, 0.06) 20%, hsla(0, 0%, 100%, 0.12) 50%, hsla(0, 0%, 100%, 0.06) 80%, transparent 100%);
 }
 
-/* Inner glow overlay */
+/* Inner ambient glow */
 .vault-signal-card::after {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  border-radius: 20px;
+  height: 80px;
+  border-radius: 16px 16px 0 0;
   pointer-events: none;
-  opacity: 0;
+  opacity: 0.5;
   transition: opacity 200ms ease;
 }
 
 .vault-signal-card:hover::after {
-  opacity: 1;
+  opacity: 0.8;
 }
 
-/* Watchlist */
+/* Watchlist — sky aura */
 .vault-signal-watchlist {
-  box-shadow: 0 0 30px -10px hsla(200, 80%, 55%, 0.15), 0 12px 32px -10px hsla(0, 0%, 0%, 0.5);
+  box-shadow:
+    0 0 24px -8px hsla(200, 80%, 55%, 0.1),
+    0 8px 28px -8px hsla(0, 0%, 0%, 0.45),
+    inset 0 1px 0 0 hsla(200, 80%, 55%, 0.06);
 }
 
 .vault-signal-watchlist::before {
-  background: linear-gradient(90deg, transparent 0%, hsla(200, 80%, 55%, 0.12) 20%, hsla(200, 80%, 55%, 0.35) 50%, hsla(200, 80%, 55%, 0.12) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, hsla(200, 80%, 55%, 0.1) 20%, hsla(200, 80%, 55%, 0.25) 50%, hsla(200, 80%, 55%, 0.1) 80%, transparent 100%);
 }
 
 .vault-signal-watchlist::after {
-  background: radial-gradient(ellipse at top center, hsla(200, 80%, 55%, 0.04) 0%, transparent 70%);
+  background: radial-gradient(ellipse at 50% 0%, hsla(200, 80%, 55%, 0.04) 0%, transparent 70%);
 }
 
-.vault-signal-watchlist:hover::after {
-  opacity: 1;
-}
-
-/* Live Calls */
+/* Live Calls — emerald aura */
 .vault-signal-live-calls {
-  box-shadow: 0 0 30px -10px hsla(155, 70%, 45%, 0.18), 0 12px 32px -10px hsla(0, 0%, 0%, 0.5);
-  border-left: 3px solid hsla(155, 70%, 45%, 0.5);
+  box-shadow:
+    0 0 24px -8px hsla(155, 70%, 45%, 0.12),
+    0 8px 28px -8px hsla(0, 0%, 0%, 0.45),
+    inset 0 1px 0 0 hsla(155, 70%, 45%, 0.06);
+  border-left: 2px solid hsla(155, 70%, 45%, 0.35);
 }
 
 .vault-signal-live-calls::before {
-  background: linear-gradient(90deg, transparent 0%, hsla(155, 70%, 45%, 0.12) 20%, hsla(155, 70%, 45%, 0.35) 50%, hsla(155, 70%, 45%, 0.12) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, hsla(155, 70%, 45%, 0.1) 20%, hsla(155, 70%, 45%, 0.25) 50%, hsla(155, 70%, 45%, 0.1) 80%, transparent 100%);
 }
 
 .vault-signal-live-calls::after {
-  background: radial-gradient(ellipse at top left, hsla(155, 70%, 45%, 0.05) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 30% 0%, hsla(155, 70%, 45%, 0.04) 0%, transparent 60%);
 }
 
-.vault-signal-live-calls:hover::after {
-  opacity: 1;
-}
-
-/* Live Puts */
+/* Live Puts — red aura */
 .vault-signal-live-puts {
-  box-shadow: 0 0 30px -10px hsla(0, 70%, 50%, 0.18), 0 12px 32px -10px hsla(0, 0%, 0%, 0.5);
-  border-left: 3px solid hsla(0, 70%, 50%, 0.5);
+  box-shadow:
+    0 0 24px -8px hsla(0, 70%, 50%, 0.12),
+    0 8px 28px -8px hsla(0, 0%, 0%, 0.45),
+    inset 0 1px 0 0 hsla(0, 70%, 50%, 0.06);
+  border-left: 2px solid hsla(0, 70%, 50%, 0.35);
 }
 
 .vault-signal-live-puts::before {
-  background: linear-gradient(90deg, transparent 0%, hsla(0, 70%, 50%, 0.12) 20%, hsla(0, 70%, 50%, 0.35) 50%, hsla(0, 70%, 50%, 0.12) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, hsla(0, 70%, 50%, 0.1) 20%, hsla(0, 70%, 50%, 0.25) 50%, hsla(0, 70%, 50%, 0.1) 80%, transparent 100%);
 }
 
 .vault-signal-live-puts::after {
-  background: radial-gradient(ellipse at top left, hsla(0, 70%, 50%, 0.05) 0%, transparent 60%);
-}
-
-.vault-signal-live-puts:hover::after {
-  opacity: 1;
+  background: radial-gradient(ellipse at 30% 0%, hsla(0, 70%, 50%, 0.04) 0%, transparent 60%);
 }
 
 /* TradingView link embed */
@@ -1075,15 +1070,15 @@ html {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, hsla(200, 60%, 50%, 0.08) 0%, hsla(200, 40%, 30%, 0.06) 100%);
-  border: 1px solid hsla(200, 60%, 50%, 0.15);
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: hsla(200, 40%, 50%, 0.06);
+  border: 1px solid hsla(200, 50%, 50%, 0.1);
   text-decoration: none;
   transition: background 120ms ease, border-color 120ms ease;
 }
 
 .vault-signal-tv-link:hover {
-  background: linear-gradient(135deg, hsla(200, 60%, 50%, 0.14) 0%, hsla(200, 40%, 30%, 0.1) 100%);
-  border-color: hsla(200, 60%, 50%, 0.3);
+  background: hsla(200, 40%, 50%, 0.12);
+  border-color: hsla(200, 50%, 50%, 0.25);
 }

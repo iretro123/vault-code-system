@@ -37,9 +37,9 @@ interface SignalCardProps {
 }
 
 const BIAS_CONFIG = {
-  bullish: { label: "Bullish", icon: TrendingUp, cls: "text-emerald-400 bg-emerald-500/15 border-emerald-500/25" },
-  bearish: { label: "Bearish", icon: TrendingDown, cls: "text-red-400 bg-red-500/15 border-red-500/25" },
-  neutral: { label: "Neutral", icon: Minus, cls: "text-zinc-400 bg-zinc-500/15 border-zinc-500/25" },
+  bullish: { label: "Bullish", icon: TrendingUp, cls: "text-emerald-400 bg-emerald-500/15 border-emerald-500/20" },
+  bearish: { label: "Bearish", icon: TrendingDown, cls: "text-red-400 bg-red-500/15 border-red-500/20" },
+  neutral: { label: "Neutral", icon: Minus, cls: "text-zinc-400 bg-zinc-500/15 border-zinc-500/20" },
 };
 
 function TvLinkButton({ url }: { url: string }) {
@@ -50,12 +50,12 @@ function TvLinkButton({ url }: { url: string }) {
       rel="noopener noreferrer"
       className="vault-signal-tv-link group"
     >
-      <BarChart3 className="h-4 w-4 text-sky-400 shrink-0" />
+      <BarChart3 className="h-3.5 w-3.5 text-sky-400 shrink-0" />
       <div className="flex-1 min-w-0">
-        <span className="text-[11px] font-semibold text-sky-400 uppercase tracking-wide">TradingView Chart</span>
-        <p className="text-[11px] text-foreground/50 truncate">{url}</p>
+        <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-wide">TradingView</span>
+        <p className="text-[10px] text-foreground/40 truncate">{url}</p>
       </div>
-      <ExternalLink className="h-3.5 w-3.5 text-foreground/30 group-hover:text-sky-400 transition-colors shrink-0" />
+      <ExternalLink className="h-3 w-3 text-foreground/25 group-hover:text-sky-400 transition-colors shrink-0" />
     </a>
   );
 }
@@ -79,63 +79,53 @@ function WatchlistCard({ signal, chartImageUrl, userName, userRole, createdAt, o
   const BiasIcon = bias.icon;
 
   return (
-    <div className="vault-signal-card vault-signal-watchlist max-w-full sm:max-w-[540px] mt-2">
+    <div className="vault-signal-card vault-signal-watchlist max-w-full sm:max-w-[520px] mt-2">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4">
-        <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
-          <Radar className="h-5 w-5 text-sky-400" />
+      <div className="flex items-center gap-2.5 px-4 py-3">
+        <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
+          <Radar className="h-4 w-4 text-sky-400" />
         </div>
-        <div className="flex flex-col flex-1 min-w-0">
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-400/80">Watching</span>
-          <span className="text-[22px] font-extrabold text-foreground tracking-tight leading-tight">{signal.ticker}</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-sky-400">Watching</span>
+          <span className="text-[18px] font-bold text-foreground tracking-tight">{signal.ticker}</span>
         </div>
-        <span className={cn("inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full border", bias.cls)}>
-          <BiasIcon className="h-3.5 w-3.5" />
+        <span className={cn("inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border", bias.cls)}>
+          <BiasIcon className="h-3 w-3" />
           {bias.label}
         </span>
       </div>
 
-      {/* Divider */}
-      <div className="h-px bg-white/[0.06] mx-4" />
+      <div className="h-px bg-white/[0.06]" />
 
       {/* Content */}
-      <div className="px-5 py-4 space-y-3">
+      <div className="px-4 py-3 space-y-3">
         {signal.levels && (
-          <div className="bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.05]">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Key Levels</span>
-            <p className="text-[15px] text-foreground font-semibold mt-0.5 tracking-tight">{signal.levels}</p>
+          <div>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Key Levels</span>
+            <p className="text-[14px] text-foreground font-medium mt-0.5">{signal.levels}</p>
           </div>
         )}
 
         {chartImageUrl && (
-          <button
-            type="button"
-            onClick={() => onImageClick?.(chartImageUrl)}
-            className="block w-full group"
-          >
-            <img
-              src={chartImageUrl}
-              alt="Chart"
-              loading="lazy"
-              className="w-full rounded-xl border border-white/[0.08] group-hover:border-white/[0.18] transition-all object-contain max-h-[300px] group-hover:shadow-lg"
-            />
+          <button type="button" onClick={() => onImageClick?.(chartImageUrl)} className="block w-full group">
+            <img src={chartImageUrl} alt="Chart" loading="lazy" className="w-full rounded-lg border border-white/[0.08] group-hover:border-white/[0.15] transition-colors object-contain max-h-[280px]" />
           </button>
         )}
 
         {signal.tvLink && <TvLinkButton url={signal.tvLink} />}
 
         {signal.notes && (
-          <p className="text-[14px] text-foreground/75 leading-relaxed italic pl-3 border-l-2 border-sky-500/20">"{signal.notes}"</p>
+          <p className="text-[13px] text-foreground/80 leading-relaxed italic">"{signal.notes}"</p>
         )}
       </div>
 
       {/* Author */}
-      <div className="h-px bg-white/[0.06] mx-4" />
-      <div className="flex items-center gap-2 px-5 py-3">
-        <ChatAvatar userName={userName} size="h-6 w-6" />
-        <span className="text-[12px] font-medium text-foreground/70">{userName}</span>
+      <div className="h-px bg-white/[0.06]" />
+      <div className="flex items-center gap-2 px-4 py-2.5">
+        <ChatAvatar userName={userName} size="h-5 w-5" />
+        <span className="text-[11px] font-medium text-foreground/70">{userName}</span>
         <AcademyRoleBadge roleName={userRole} />
-        <span className="text-[11px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>
       </div>
     </div>
   );
@@ -145,90 +135,69 @@ function LiveSignalCard({ signal, chartImageUrl, userName, userRole, createdAt, 
   const isCalls = signal.direction === "calls";
 
   return (
-    <div className={cn("vault-signal-card mt-2 max-w-full sm:max-w-[540px]", isCalls ? "vault-signal-live-calls" : "vault-signal-live-puts")}>
+    <div className={cn("vault-signal-card mt-2 max-w-full sm:max-w-[520px]", isCalls ? "vault-signal-live-calls" : "vault-signal-live-puts")}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4">
+      <div className="flex items-center gap-2.5 px-4 py-3">
         <div className={cn(
-          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
-          isCalls ? "bg-emerald-500/10 border-emerald-500/25" : "bg-red-500/10 border-red-500/25"
+          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border",
+          isCalls ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20"
         )}>
-          <Crosshair className={cn("h-5 w-5", isCalls ? "text-emerald-400" : "text-red-400")} />
+          <Crosshair className={cn("h-4 w-4", isCalls ? "text-emerald-400" : "text-red-400")} />
         </div>
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className={cn(
-            "text-[11px] font-extrabold uppercase tracking-[0.15em] w-fit px-2.5 py-0.5 rounded-full",
-            isCalls ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25" : "bg-red-500/15 text-red-400 border border-red-500/25"
+            "text-[11px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded-full",
+            isCalls ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "bg-red-500/15 text-red-400 border border-red-500/20"
           )}>
             {isCalls ? "CALLS" : "PUTS"}
           </span>
-          <div className="flex items-baseline gap-2 mt-0.5">
-            <span className="text-[22px] font-extrabold text-foreground tracking-tight leading-tight">{signal.ticker}</span>
-            {signal.strike && (
-              <span className="text-[15px] text-foreground/50 font-semibold">${signal.strike}</span>
-            )}
-          </div>
+          <span className="text-[18px] font-bold text-foreground tracking-tight">{signal.ticker}</span>
+          {signal.strike && (
+            <span className="text-[14px] text-foreground/60 font-medium">${signal.strike} Strike</span>
+          )}
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="h-px bg-white/[0.06] mx-4" />
+      <div className="h-px bg-white/[0.06]" />
 
       {/* Metadata strip */}
-      <div className="flex items-center gap-6 px-5 py-3 bg-white/[0.02]">
-        {signal.strike && (
-          <div>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Strike</span>
-            <p className="text-[14px] text-foreground font-bold">${signal.strike}</p>
-          </div>
-        )}
+      <div className="flex items-center gap-4 px-4 py-2.5 bg-white/[0.02]">
         {signal.exp && (
           <div>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Exp</span>
-            <p className="text-[14px] text-foreground font-bold">{signal.exp}</p>
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">Exp</span>
+            <p className="text-[13px] text-foreground font-semibold">{signal.exp}</p>
           </div>
         )}
         {signal.fill && (
           <div>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-semibold">Fill</span>
-            <p className={cn("text-[14px] font-bold", isCalls ? "text-emerald-400" : "text-red-400")}>${signal.fill}</p>
+            <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">Fill</span>
+            <p className="text-[13px] text-foreground font-semibold">${signal.fill}</p>
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="px-5 py-4 space-y-3">
+      <div className="px-4 py-3 space-y-3">
         {chartImageUrl && (
-          <button
-            type="button"
-            onClick={() => onImageClick?.(chartImageUrl)}
-            className="block w-full group"
-          >
-            <img
-              src={chartImageUrl}
-              alt="Chart"
-              loading="lazy"
-              className="w-full rounded-xl border border-white/[0.08] group-hover:border-white/[0.18] transition-all object-contain max-h-[300px] group-hover:shadow-lg"
-            />
+          <button type="button" onClick={() => onImageClick?.(chartImageUrl)} className="block w-full group">
+            <img src={chartImageUrl} alt="Chart" loading="lazy" className="w-full rounded-lg border border-white/[0.08] group-hover:border-white/[0.15] transition-colors object-contain max-h-[280px]" />
           </button>
         )}
 
         {signal.tvLink && <TvLinkButton url={signal.tvLink} />}
 
         {signal.notes && (
-          <p className={cn(
-            "text-[14px] text-foreground/75 leading-relaxed italic pl-3 border-l-2",
-            isCalls ? "border-emerald-500/20" : "border-red-500/20"
-          )}>"{signal.notes}"</p>
+          <p className="text-[13px] text-foreground/80 leading-relaxed italic">"{signal.notes}"</p>
         )}
       </div>
 
       {/* Author */}
-      <div className="h-px bg-white/[0.06] mx-4" />
-      <div className="flex items-center gap-2 px-5 py-3">
-        <ChatAvatar userName={userName} size="h-6 w-6" />
-        <span className="text-[12px] font-medium text-foreground/70">{userName}</span>
+      <div className="h-px bg-white/[0.06]" />
+      <div className="flex items-center gap-2 px-4 py-2.5">
+        <ChatAvatar userName={userName} size="h-5 w-5" />
+        <span className="text-[11px] font-medium text-foreground/70">{userName}</span>
         <AcademyRoleBadge roleName={userRole} />
-        <span className="text-[11px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>
+        <span className="text-[10px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>
       </div>
     </div>
   );
