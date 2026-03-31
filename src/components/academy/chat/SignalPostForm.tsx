@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Radar, Crosshair, ImagePlus, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Radar, Crosshair, ImagePlus, X, ChevronDown, ChevronUp, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,6 +28,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
   // Shared
   const [ticker, setTicker] = useState("");
   const [notes, setNotes] = useState("");
+  const [tvLink, setTvLink] = useState("");
   const [chartFile, setChartFile] = useState<File | null>(null);
   const [chartPreview, setChartPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -45,6 +46,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
   const reset = () => {
     setTicker("");
     setNotes("");
+    setTvLink("");
     setChartFile(null);
     setChartPreview(null);
     setBias("bullish");
@@ -85,7 +87,6 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
     const attachments: Attachment[] = [];
     let chartUrl: string | undefined;
 
-    // Upload chart image if present
     if (chartFile) {
       setUploading(true);
       try {
@@ -135,7 +136,8 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
       setUploading(false);
     }
 
-    // Build signal attachment
+    const trimmedTvLink = tvLink.trim() || undefined;
+
     if (mode === "watchlist") {
       attachments.push({
         type: "signal-watchlist" as any,
@@ -143,6 +145,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
         bias,
         levels: levels.trim() || undefined,
         notes: notes.trim() || undefined,
+        tvLink: trimmedTvLink,
       } as any);
     } else {
       attachments.push({
@@ -153,16 +156,17 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
         exp: exp.trim() || undefined,
         fill: fill.trim() || undefined,
         notes: notes.trim() || undefined,
+        tvLink: trimmedTvLink,
       } as any);
     }
 
-    // Build readable body text as fallback
     const bodyLines: string[] = [];
     if (mode === "watchlist") {
       bodyLines.push(`**👁 Watchlist Signal**`);
       bodyLines.push(`**Ticker:** ${ticker.trim().toUpperCase()}`);
       bodyLines.push(`**Bias:** ${bias.charAt(0).toUpperCase() + bias.slice(1)}`);
       if (levels.trim()) bodyLines.push(`**Key Levels:** ${levels.trim()}`);
+      if (trimmedTvLink) bodyLines.push(`**Chart:** ${trimmedTvLink}`);
       if (notes.trim()) bodyLines.push(`**Notes:** ${notes.trim()}`);
     } else {
       bodyLines.push(`**🎯 Live Signal**`);
@@ -171,6 +175,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
       bodyLines.push(`**Strike:** $${strike.trim()}`);
       if (exp.trim()) bodyLines.push(`**Exp:** ${exp.trim()}`);
       if (fill.trim()) bodyLines.push(`**Fill:** $${fill.trim()}`);
+      if (trimmedTvLink) bodyLines.push(`**Chart:** ${trimmedTvLink}`);
       if (notes.trim()) bodyLines.push(`**Notes:** ${notes.trim()}`);
     }
 
@@ -236,7 +241,6 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
       <div className="p-3 space-y-2.5">
         {mode === "watchlist" ? (
           <>
-            {/* Ticker + Bias */}
             <div className="flex gap-2">
               <Input
                 value={ticker}
@@ -273,7 +277,6 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
           </>
         ) : (
           <>
-            {/* Direction + Ticker */}
             <div className="flex gap-2">
               <div className="flex rounded-lg border border-white/[0.08] overflow-hidden shrink-0">
                 <button
@@ -308,7 +311,6 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
                 className="flex-1 h-9 bg-white/[0.04] border-white/[0.08] text-sm font-semibold uppercase"
               />
             </div>
-            {/* Strike + Exp + Fill */}
             <div className="flex gap-2">
               <Input
                 value={strike}
@@ -331,6 +333,17 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
             </div>
           </>
         )}
+
+        {/* TradingView link */}
+        <div className="flex items-center gap-2">
+          <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Input
+            value={tvLink}
+            onChange={(e) => setTvLink(e.target.value)}
+            placeholder="TradingView link (optional)"
+            className="h-9 bg-white/[0.04] border-white/[0.08] text-sm"
+          />
+        </div>
 
         {/* Notes */}
         <Textarea
