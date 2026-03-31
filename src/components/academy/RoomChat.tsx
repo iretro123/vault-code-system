@@ -29,6 +29,8 @@ import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
+import { SignalPostForm } from "./chat/SignalPostForm";
+import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
 import { EmojiPicker } from "./chat/EmojiPicker";
 import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
@@ -1353,7 +1355,23 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           <span className="text-[10px] text-muted-foreground">esc to cancel · enter to save</span>
                         </div>
                       </div>
-                    ) : isRecap ? (
+                    ) : (() => {
+                      const signalAtt = msg.attachments?.find((a: any) => a.type === "signal-watchlist" || a.type === "signal-live") as unknown as SignalAttachment | undefined;
+                      if (signalAtt) {
+                        const chartAtt = msg.attachments?.find((a: any) => a.type === "image");
+                        return (
+                          <SignalCard
+                            signal={signalAtt}
+                            chartImageUrl={chartAtt?.url}
+                            userName={msg.user_name}
+                            userRole={msg.user_role}
+                            createdAt={msg.created_at}
+                            onImageClick={(src) => setLightboxImage({ src, alt: "Chart", filename: "chart" })}
+                          />
+                        );
+                      }
+                      return null;
+                    })() || (isRecap ? (
                       renderRecapCard(msg.body)
                     ) : !msg.is_deleted && isTradeFormatPost(msg.body) ? (
                       renderTradeCard(msg.body, msg.attachments)
@@ -1402,12 +1420,18 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           return firstUrl ? <LinkPreviewCard url={firstUrl} /> : null;
                         })()}
                       </>
-                    )}
+                    ))}
 
 
-                    {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
+                    {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (() => {
+                      const hasSignal = msg.attachments.some((a: any) => a.type === "signal-watchlist" || a.type === "signal-live");
+                      const displayAtts = hasSignal
+                        ? msg.attachments.filter((a: any) => a.type !== "signal-watchlist" && a.type !== "signal-live" && a.type !== "image")
+                        : msg.attachments;
+                      if (displayAtts.length === 0) return null;
+                      return (
                       <div className="flex flex-wrap gap-2 mt-1">
-                        {msg.attachments.map((att: Attachment, idx: number) =>
+                        {displayAtts.map((att: Attachment, idx: number) =>
                           att.type === "image" ? (() => {
                             const isGif = att.mime === "image/gif" || att.filename === "gif";
                             return (
@@ -1457,7 +1481,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           )
                         )}
                       </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Hover action bar — Discord-style floating toolbar, absolutely positioned to avoid reflow */}
                     {!msg.is_deleted && !isEditing && (
@@ -1617,6 +1642,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         <div className="px-5 pt-2 bg-card border-t border-white/[0.06] pb-[calc(3.5rem+env(safe-area-inset-bottom,8px))] md:pb-4">
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
+          ) : roomSlug === "daily-setups" ? (
+            <SignalPostForm onSubmit={handleSend} sending={sending} roomSlug={roomSlug} />
           ) : (
             <div className="relative space-y-2">
               {/* Template chips */}
