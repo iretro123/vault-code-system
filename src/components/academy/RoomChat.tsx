@@ -583,9 +583,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     const el = containerRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    savedScrollRef.current = el.scrollTop;
     if (!atBottom) userScrolledRef.current = true;
     shouldAutoScroll.current = atBottom;
     if (atBottom) {
+      userScrolledRef.current = false;
       seenMessageCount.current = messages.length;
       setShowJumpToLatest(false);
     }
