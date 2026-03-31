@@ -1481,7 +1481,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           )
                         )}
                       </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Hover action bar — Discord-style floating toolbar, absolutely positioned to avoid reflow */}
                     {!msg.is_deleted && !isEditing && (
