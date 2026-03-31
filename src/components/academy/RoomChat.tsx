@@ -496,19 +496,39 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     }
   }, [editingId]);
 
+  // ── Save scroll position when tab/page hides ──
   useEffect(() => {
-    if (!userScrolledRef.current && messages.length > 0) {
+    const savePosition = () => {
+      const el = containerRef.current;
+      if (el) savedScrollRef.current = el.scrollTop;
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") savePosition();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
+  // Save scroll when active prop goes false (switching community tabs)
+  useEffect(() => {
+    if (!active) {
+      const el = containerRef.current;
+      if (el) savedScrollRef.current = el.scrollTop;
+    }
+  }, [active]);
+
+  // ── New messages arrived ──
+  useEffect(() => {
+    if (shouldAutoScroll.current && messages.length > 0) {
       scrollToBottomInstant();
       return;
     }
-    if (shouldAutoScroll.current && containerRef.current) {
-      containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
-      seenMessageCount.current = messages.length;
-    } else if (messages.length > seenMessageCount.current) {
+    if (messages.length > seenMessageCount.current && seenMessageCount.current > 0) {
       setShowJumpToLatest(true);
     }
   }, [messages.length, scrollToBottomInstant]);
 
+  // ── Initial scroll on first activation ──
   useEffect(() => {
     if (!active || messages.length === 0) return;
     if (initialScrollDone.current) return;
@@ -519,19 +539,28 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     setTimeout(scrollToBottomInstant, 50);
   }, [active, messages.length, scrollToBottomInstant]);
 
+  // ── Re-activation: restore saved position instead of forcing bottom ──
   useEffect(() => {
-    if (!active || loading) return;
-    if (userScrolledRef.current) return;
-    shouldAutoScroll.current = true;
-    scrollToBottomInstant();
-    requestAnimationFrame(() => scrollToBottomInstant());
-    setTimeout(scrollToBottomInstant, 150);
-    setTimeout(scrollToBottomInstant, 400);
-  }, [active, loading, messages.length, scrollToBottomInstant]);
+    if (!active || loading || !initialScrollDone.current) return;
+    if (userScrolledRef.current && savedScrollRef.current !== null) {
+      const el = containerRef.current;
+      if (el) {
+        autoScrollingRef.current = true;
+        el.scrollTop = savedScrollRef.current;
+        requestAnimationFrame(() => { autoScrollingRef.current = false; });
+      }
+      return;
+    }
+    if (!userScrolledRef.current) {
+      shouldAutoScroll.current = true;
+      scrollToBottomInstant();
+    }
+  }, [active, loading, scrollToBottomInstant]);
 
   useEffect(() => {
     initialScrollDone.current = false;
     userScrolledRef.current = false;
+    savedScrollRef.current = null;
   }, [roomSlug]);
 
   useEffect(() => {
@@ -539,7 +568,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     const el = containerRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(() => {
-      if (shouldAutoScroll.current || !initialScrollDone.current) {
+      if (shouldAutoScroll.current && !userScrolledRef.current) {
         scrollToBottomInstant();
       }
     });
