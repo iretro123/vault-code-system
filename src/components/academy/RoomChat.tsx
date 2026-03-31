@@ -1423,9 +1423,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     ))}
 
 
-                    {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (
+                    {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (() => {
+                      const hasSignal = msg.attachments.some((a: any) => a.type === "signal-watchlist" || a.type === "signal-live");
+                      const displayAtts = hasSignal
+                        ? msg.attachments.filter((a: any) => a.type !== "signal-watchlist" && a.type !== "signal-live" && a.type !== "image")
+                        : msg.attachments;
+                      if (displayAtts.length === 0) return null;
+                      return (
                       <div className="flex flex-wrap gap-2 mt-1">
-                        {msg.attachments.map((att: Attachment, idx: number) =>
+                        {displayAtts.map((att: Attachment, idx: number) =>
                           att.type === "image" ? (() => {
                             const isGif = att.mime === "image/gif" || att.filename === "gif";
                             return (
