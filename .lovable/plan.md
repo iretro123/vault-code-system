@@ -1,51 +1,62 @@
 
-Goal: stop Community chat from jumping to the top when users switch browser tabs/app tabs and return, while still keeping new-message behavior correct.
 
-What I found
-- `RoomChat.tsx` still has aggressive auto-scroll behavior:
-  - an initial activation effect
-  - another `[active, loading, messages.length]` effect that calls `scrollToBottomInstant()` multiple times
-  - a `ResizeObserver` that can also force bottom scroll
-- There is no true per-room scroll memory. If the DOM/layout refreshes while the user is away, the component has no saved `scrollTop` to restore.
-- In `AcademyCommunity.tsx`, the non–Trade Floor tabs pass `active`, but `CommunityTradeFloor` does not pass an `active` prop into its `RoomChat`, so Trade Floor cannot properly know when it was hidden/shown.
+## Premium Signal System — Watchlist + Live Signal Cards
 
-Implementation plan
+### Two signal types for coaches/admins in the Signals tab
 
-1. Fix Trade Floor active-state wiring
-- Update `CommunityTradeFloor.tsx` to accept an `active` prop.
-- Pass that prop down to its `RoomChat`.
-- Update `AcademyCommunity.tsx` to send `active={activeTab === "trade-floor"}` to `CommunityTradeFloor`.
+**1. Watchlist Signal** — "What We're Watching"
+- Ticker, Bias (Bullish/Bearish/Neutral), Key Levels, Notes, Chart image (optional)
+- Rendered as a subtle blue-tinted luxury card with a radar icon
 
-2. Add real scroll-position persistence in `RoomChat.tsx`
-- Store `scrollTop` per room in a ref/map keyed by `roomSlug`.
-- Save position on user scroll and when the tab/page becomes hidden.
-- On re-activation, restore the saved `scrollTop` instead of forcing bottom scroll if the user was not at the bottom.
+**2. Live Signal** — "Active Trade Alert"
+- Direction (Calls/Puts), Ticker, Strike, Expiration, Fill Price, Notes, Chart image (optional)
+- Rendered with green (Calls) or red (Puts) accent glow, crosshair icon
 
-3. Tighten auto-scroll rules
-- Keep auto-scroll only for these cases:
-  - first load of a room with no saved position
-  - user is already at bottom and a new message arrives
-  - user taps “New messages”
-- Prevent re-activation effects and `ResizeObserver` from overriding a saved reading position.
+Both include chart image upload support using the existing file upload flow.
 
-4. Preserve current UX for active readers
-- If the user is at bottom, continue snapping to the latest message normally.
-- If the user is reading history, keep their exact place and continue showing the “New messages” button.
+### Changes
 
-5. Verify across all community channels
-- Apply the same behavior to:
-  - Trade Floor
-  - Signals
-  - Wins
-  - Announcements
-- Make sure room switching still resets appropriately when moving to a different room, but browser/app tab switching does not.
+**New: `src/components/academy/chat/SignalPostForm.tsx`**
+- Dual-mode toggle form: Watchlist vs Live Signal
+- Only visible to users with `canPost` permission in `daily-setups` room
+- Watchlist fields: Ticker, Bias toggle, Key Levels, Notes, Chart image upload
+- Live Signal fields: Direction toggle, Ticker, Strike, Exp date, Fill, Notes, Chart image upload
+- On submit: sends structured body text + stores signal metadata in `attachments` JSONB as `{ type: "signal-watchlist", ... }` or `{ type: "signal-live", ... }` alongside any uploaded image attachments
+- Replaces the default text input in the Signals tab
 
-Files to update
-- `src/pages/academy/AcademyCommunity.tsx`
-- `src/components/academy/community/CommunityTradeFloor.tsx`
-- `src/components/academy/RoomChat.tsx`
+**New: `src/components/academy/chat/SignalCard.tsx`**
+- Detects signal attachment type and renders a premium card
+- Watchlist card: blue-tinted top glow, radar icon, bias pill, levels strip, chart image, notes, author row
+- Live Signal card: green/red directional accent, crosshair icon, metadata grid (strike/exp/fill), chart image, notes, author row
+- Dark-theme luxury styling matching `vault-luxury-card` aesthetic
+- Compact, scannable — all key info visible at a glance
 
-Expected result
-- When a user leaves Community and comes back, the chat stays where they left it.
-- If they were at the bottom, they stay at the live edge.
-- If they were scrolled up, they return to that exact reading position instead of bouncing to top or bottom.
+**Update: `src/components/academy/RoomChat.tsx`**
+- In message renderer (~line 1400): detect signal attachments → render `<SignalCard>` instead of plain text body for those messages
+- In composer area (~line 1618): when `roomSlug === "daily-setups"` and `canPost`, show `<SignalPostForm>` instead of `<TradeRecapForm>` or default input
+- Import both new components
+
+**Update: `src/index.css`**
+- Add signal card CSS classes:
+  - `.vault-signal-card` — base signal card (inherits luxury card aesthetic)
+  - `.vault-signal-watchlist` — subtle blue top-glow
+  - `.vault-signal-live-calls` — green accent edge glow
+  - `.vault-signal-live-puts` — red accent edge glow
+
+### Technical details
+
+- No database migration needed — signal data stored in existing `attachments` JSONB column
+- Signal attachment schemas:
+  - Watchlist: `{ type: "signal-watchlist", ticker, bias, levels, notes }`
+  - Live: `{ type: "signal-live", direction, ticker, strike, exp, fill, notes }`
+- Chart images stored as regular `{ type: "image", url, filename, size, mime }` attachments alongside the signal attachment
+- Existing `Attachment` type in `useRoomMessages.ts` already supports this — signal attachments use a broader type union
+- Old plain-text messages continue rendering normally (backward compatible)
+- The `handleSend` function already accepts `(text, attachments)` — the form composes both and calls it
+
+### File summary
+1. `src/components/academy/chat/SignalPostForm.tsx` — new dual-mode posting form
+2. `src/components/academy/chat/SignalCard.tsx` — new premium signal card renderer
+3. `src/components/academy/RoomChat.tsx` — wire form + card into Signals channel
+4. `src/index.css` — signal card luxury CSS classes
+
