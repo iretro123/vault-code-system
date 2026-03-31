@@ -269,4 +269,4 @@ export async function clearSessionFromDB(userId: string) {
   }
 }
 
-export { loadTimes, type SessionTimes };
+export { loadTimes, fmt12h, type SessionTimes };
