@@ -112,7 +112,7 @@ function WatchlistCard({ signal, chartImageUrl, userName, userRole, createdAt, o
       <div className="flex items-center gap-2 px-4 py-2.5">
         <ChatAvatar userName={userName} size="h-5 w-5" />
         <span className="text-[11px] font-medium text-foreground/70">{userName}</span>
-        <AcademyRoleBadge role={userRole} />
+        <AcademyRoleBadge roleName={userRole} />
         <span className="text-[10px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>
       </div>
     </div>
