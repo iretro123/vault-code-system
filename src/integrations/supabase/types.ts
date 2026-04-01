@@ -2791,8 +2791,16 @@ export type Database = {
         Returns: {
           academy_experience: string
           avatar_url: string
+          bio: string
+          created_at: string
+          display_name: string
           role_level: string
+          social_instagram: string
+          social_tiktok: string
+          social_twitter: string
+          social_youtube: string
           user_id: string
+          username: string
         }[]
       }
       get_daily_vault_status: {
