@@ -1633,6 +1633,7 @@ export type Database = {
           account_balance: number
           ai_focus_cache: Json | null
           avatar_url: string | null
+          banner_url: string | null
           bio: string
           created_at: string
           default_trading_style: string
@@ -1667,6 +1668,7 @@ export type Database = {
           account_balance?: number
           ai_focus_cache?: Json | null
           avatar_url?: string | null
+          banner_url?: string | null
           bio?: string
           created_at?: string
           default_trading_style?: string
@@ -1701,6 +1703,7 @@ export type Database = {
           account_balance?: number
           ai_focus_cache?: Json | null
           avatar_url?: string | null
+          banner_url?: string | null
           bio?: string
           created_at?: string
           default_trading_style?: string
@@ -2791,6 +2794,7 @@ export type Database = {
         Returns: {
           academy_experience: string
           avatar_url: string
+          banner_url: string
           bio: string
           created_at: string
           display_name: string
