@@ -21,6 +21,10 @@ export interface PublicProfile {
 
 const profileCache = new Map<string, PublicProfile>();
 
+export function clearProfileCache(userId: string) {
+  profileCache.delete(userId);
+}
+
 export function usePublicProfile(userId: string | null) {
   const [profile, setProfile] = useState<PublicProfile | null>(
     userId ? profileCache.get(userId) ?? null : null
