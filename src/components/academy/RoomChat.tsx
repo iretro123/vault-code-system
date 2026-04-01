@@ -1544,7 +1544,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <button
                               key={r.emoji}
                               type="button"
-                              onClick={() => toggleReaction(msg.id, r.emoji as ReactionEmoji)}
+                              onClick={() => toggleReaction(msg.id, r.emoji)}
                               className={cn(
                                 "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
                                 r.reacted
