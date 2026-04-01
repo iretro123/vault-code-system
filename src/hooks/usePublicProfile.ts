@@ -30,6 +30,14 @@ export function usePublicProfile(userId: string | null) {
     userId ? profileCache.get(userId) ?? null : null
   );
   const [loading, setLoading] = useState(false);
+  const [version, setVersion] = useState(0);
+
+  const refetch = useCallback(() => {
+    if (userId) {
+      profileCache.delete(userId);
+      setVersion((v) => v + 1);
+    }
+  }, [userId]);
 
   const fetchProfile = useCallback(async () => {
     if (!userId) return;
@@ -84,11 +92,11 @@ export function usePublicProfile(userId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, version]);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
-  return { profile, loading };
+  return { profile, loading, refetch };
 }
