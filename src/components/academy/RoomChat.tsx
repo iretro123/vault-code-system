@@ -1556,20 +1556,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </button>
                           ))}
 
-                          {/* Hover add-reaction trigger — only when reactions row is visible */}
-                          <span className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-75">
-                            {ALLOWED_EMOJIS.filter(
-                              (e) => !reactions.some((r) => r.emoji === e && r.reacted)
-                            ).map((emoji) => (
-                              <button
-                                key={emoji}
-                                type="button"
-                                onClick={() => toggleReaction(msg.id, emoji)}
-                                className="px-1 py-0.5 rounded hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
-                              >
-                                {renderReactionEmoji(emoji, "h-3 w-3")}
-                              </button>
-                            ))}
+                          {/* Hover add-reaction trigger */}
+                          <span className="inline-flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-75">
+                            <EmojiReactionPicker
+                              onSelect={(e) => toggleReaction(msg.id, e)}
+                              triggerClassName="px-1 py-0.5 rounded text-muted-foreground hover:text-foreground"
+                            />
                           </span>
                         </div>
                       );
