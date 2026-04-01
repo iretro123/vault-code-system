@@ -190,7 +190,7 @@ const Signup = () => {
       }
 
       localStorage.removeItem("va_cache_student_access");
-      navigate("/academy");
+      navigate("/academy/profile");
     }
 
     setLoading(false);

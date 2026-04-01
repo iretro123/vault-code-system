@@ -5,7 +5,10 @@ import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import { ExperienceLevelBadge } from "@/components/academy/ExperienceLevelBadge";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
 import { useUserPresence } from "@/hooks/useUserPresence";
-import { Loader2, BookOpen, Calendar } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { generateBannerGradient } from "@/lib/bannerGradient";
+import { Loader2, BookOpen, Calendar, Pencil } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* ── Social icons (inline SVG for brand accuracy) ── */
 
@@ -56,10 +59,13 @@ interface UserProfileCardProps {
 export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
   const { profile, loading } = usePublicProfile(userId);
   const { online } = useUserPresence(userId);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const isOwnProfile = user?.id === userId;
 
   if (loading || !profile) {
     return (
-      <div className="vault-profile-card w-[280px] p-6 flex items-center justify-center">
+      <div className="vault-profile-card w-[300px] p-6 flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
@@ -70,25 +76,39 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
     ? format(new Date(profile.created_at), "MMM yyyy")
     : null;
 
+  const bannerStyle = profile.banner_url
+    ? { backgroundImage: `url(${profile.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: generateBannerGradient(profile.user_id) };
+
   return (
-    <div className="vault-profile-card w-[280px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-      {/* Banner gradient */}
-      <div className="h-16 bg-gradient-to-br from-primary/30 via-primary/10 to-transparent relative">
-        <div className="absolute -bottom-7 left-4">
+    <div className="vault-profile-card w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      {/* Banner */}
+      <div className="h-20 relative" style={bannerStyle}>
+        {isOwnProfile && (
+          <button
+            onClick={() => { onClose(); navigate("/academy/settings"); }}
+            className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+            title="Edit Profile"
+          >
+            <Pencil className="h-3.5 w-3.5 text-white" />
+          </button>
+        )}
+        {/* Avatar overlapping banner */}
+        <div className="absolute -bottom-9 left-4">
           <div className="relative">
-            <div className="vault-profile-avatar-ring rounded-full p-[2px]">
-              <div className="rounded-full overflow-hidden bg-card">
+            <div className="vault-profile-avatar-ring rounded-full p-[2.5px]">
+              <div className="rounded-full overflow-hidden bg-[hsl(220,15%,10%)] border-[3px] border-[hsl(220,15%,10%)]">
                 <ChatAvatar
                   avatarUrl={profile.avatar_url}
                   userName={profile.display_name || "?"}
-                  size="h-14 w-14"
+                  size="h-[4.5rem] w-[4.5rem]"
                 />
               </div>
             </div>
             {/* Online indicator */}
             <div
-              className={`absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${
-                online ? "bg-emerald-500" : "bg-zinc-500"
+              className={`absolute bottom-1 right-1 h-4 w-4 rounded-full border-[3px] border-[hsl(220,15%,10%)] ${
+                online ? "bg-emerald-500" : "bg-zinc-600"
               }`}
             />
           </div>
@@ -96,7 +116,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
       </div>
 
       {/* Body */}
-      <div className="pt-10 px-4 pb-4 space-y-3">
+      <div className="pt-12 px-4 pb-4 space-y-3">
         {/* Name + username */}
         <div>
           <h3 className="text-[15px] font-bold text-foreground leading-tight">
@@ -123,7 +143,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
         )}
 
         {/* Divider */}
-        <div className="h-px bg-white/[0.06]" />
+        <div className="h-px bg-border/50" />
 
         {/* Stats strip */}
         <div className="flex items-center gap-4">
@@ -142,7 +162,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
         {/* Social links */}
         {hasSocials && (
           <>
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-border/50" />
             <div className="flex items-center gap-1.5">
               {SOCIAL_LINKS.map((s) => {
                 const handle = profile[s.key];
@@ -155,7 +175,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-7 w-7 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center transition-colors"
+                    className="h-7 w-7 rounded-lg bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors"
                     title={s.label}
                   >
                     <Icon className="h-3.5 w-3.5" />

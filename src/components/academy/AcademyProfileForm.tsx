@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TIMEZONES, formatTimezone } from "@/lib/timezones";
-import { Loader2, Check, Upload, X } from "lucide-react";
+import { Loader2, Check, Upload, X, ImageIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { generateBannerGradient } from "@/lib/bannerGradient";
 
 const ROLE_LEVELS = [
   { value: "beginner", label: "Beginner" },
@@ -65,6 +66,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [roleLevel, setRoleLevel] = useState("beginner");
@@ -79,7 +81,9 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
   const [avatarIcon, setAvatarIcon] = useState(AVATAR_ICONS[0].id);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -106,6 +110,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       setSocialInstagram((profile as any).social_instagram || "");
       setSocialTiktok((profile as any).social_tiktok || "");
       setSocialYoutube((profile as any).social_youtube || "");
+      setBannerUrl((profile as any).banner_url || null);
     }
   }, [profile]);
 
@@ -201,6 +206,63 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     }
   };
 
+  const handleBannerSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!ACCEPTED_TYPES.includes(file.type)) { toast.error("JPG, PNG, or WebP only."); return; }
+    if (file.size > MAX_FILE_SIZE) { toast.error("Max 5 MB."); return; }
+
+    setUploadingBanner(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) { toast.error("Session expired. Please sign in again."); setUploadingBanner(false); return; }
+
+      // Crop to 4:1 banner ratio
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const targetW = Math.min(img.width, 1280);
+          const targetH = Math.round(targetW / 4);
+          const sourceH = Math.min(img.height, img.width / 4);
+          const sy = (img.height - sourceH) / 2;
+          const canvas = document.createElement("canvas");
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("Canvas")); return; }
+          ctx.drawImage(img, 0, sy, img.width, sourceH, 0, 0, targetW, targetH);
+          canvas.toBlob((b) => b ? resolve(b) : reject(new Error("Crop failed")), "image/webp", 0.85);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Load failed")); };
+        img.src = url;
+      });
+
+      const path = `${user.id}/banner-${Date.now()}.webp`;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const formData = new FormData();
+      formData.append("", blob);
+      formData.append("cacheControl", "3600");
+      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/avatars/${path}`, {
+        method: "POST",
+        headers: { "apikey": supabaseKey, "authorization": `Bearer ${accessToken}`, "x-upsert": "true" },
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      setBannerUrl(publicUrl);
+    } catch (err) {
+      console.error("[BannerUpload]", err);
+      toast.error("Banner upload failed. Please try again.");
+    } finally {
+      setUploadingBanner(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -210,6 +272,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       timezone,
       phone_number: phoneNumber.trim() || null,
       avatar_url: avatarUrl,
+      banner_url: bannerUrl,
       bio: bio.trim(),
       social_twitter: socialTwitter.trim() || null,
       social_instagram: socialInstagram.trim() || null,
@@ -256,8 +319,45 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     );
   };
 
+  const bannerStyle = bannerUrl
+    ? { backgroundImage: `url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: generateBannerGradient(user?.id || "default") };
+
   return (
     <div className="space-y-5">
+      {/* Banner */}
+      <Card className="p-5 space-y-3">
+        <Label className="text-xs text-muted-foreground">Banner</Label>
+        <div className="relative rounded-xl overflow-hidden h-24" style={bannerStyle}>
+          <input ref={bannerInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={handleBannerSelect} />
+          <div className="absolute inset-0 flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={uploadingBanner}
+              onClick={() => bannerInputRef.current?.click()}
+              className="gap-1.5 bg-black/50 hover:bg-black/70 text-white border-0"
+            >
+              {uploadingBanner ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+              {uploadingBanner ? "Uploading…" : bannerUrl ? "Change" : "Upload Banner"}
+            </Button>
+            {bannerUrl && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setBannerUrl(null)}
+                className="bg-black/50 hover:bg-black/70 text-white border-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground/60">4:1 ratio recommended · Max 5 MB · Leave blank for unique default</p>
+      </Card>
+
       {/* Avatar */}
       <Card className="p-5 space-y-4">
         <Label className="text-xs text-muted-foreground">Avatar</Label>
