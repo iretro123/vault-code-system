@@ -319,8 +319,45 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     );
   };
 
+  const bannerStyle = bannerUrl
+    ? { backgroundImage: `url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : { background: generateBannerGradient(user?.id || "default") };
+
   return (
     <div className="space-y-5">
+      {/* Banner */}
+      <Card className="p-5 space-y-3">
+        <Label className="text-xs text-muted-foreground">Banner</Label>
+        <div className="relative rounded-xl overflow-hidden h-24" style={bannerStyle}>
+          <input ref={bannerInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden" onChange={handleBannerSelect} />
+          <div className="absolute inset-0 flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={uploadingBanner}
+              onClick={() => bannerInputRef.current?.click()}
+              className="gap-1.5 bg-black/50 hover:bg-black/70 text-white border-0"
+            >
+              {uploadingBanner ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
+              {uploadingBanner ? "Uploading…" : bannerUrl ? "Change" : "Upload Banner"}
+            </Button>
+            {bannerUrl && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setBannerUrl(null)}
+                className="bg-black/50 hover:bg-black/70 text-white border-0"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground/60">4:1 ratio recommended · Max 5 MB · Leave blank for unique default</p>
+      </Card>
+
       {/* Avatar */}
       <Card className="p-5 space-y-4">
         <Label className="text-xs text-muted-foreground">Avatar</Label>
