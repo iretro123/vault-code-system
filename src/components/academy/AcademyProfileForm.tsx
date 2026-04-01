@@ -101,6 +101,11 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       }
       setTimezone((profile as any).timezone || "America/New_York");
       setPhoneNumber((profile as any).phone_number || "");
+      setBio((profile as any).bio || "");
+      setSocialTwitter((profile as any).social_twitter || "");
+      setSocialInstagram((profile as any).social_instagram || "");
+      setSocialTiktok((profile as any).social_tiktok || "");
+      setSocialYoutube((profile as any).social_youtube || "");
     }
   }, [profile]);
 
