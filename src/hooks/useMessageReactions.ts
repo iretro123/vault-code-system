@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const ALLOWED_EMOJIS = ["👍", "🔥", "💀"] as const;
-export type ReactionEmoji = (typeof ALLOWED_EMOJIS)[number];
-export { ALLOWED_EMOJIS };
+const QUICK_EMOJIS = ["👍", "🔥", "💀"] as const;
+export type ReactionEmoji = string;
+export { QUICK_EMOJIS };
 
 interface ReactionRow {
   id: string;
