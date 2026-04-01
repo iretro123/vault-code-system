@@ -1260,11 +1260,20 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <div className={cn("w-9 shrink-0", startsNewGroup ? "h-9" : "h-5")}>
                     {showHdr ? (
                       msgProfile ? (
-                        <ChatAvatar
-                          avatarUrl={msgProfile.avatar_url}
-                          userName={msg.user_name}
-                          size="h-9 w-9"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                              <ChatAvatar
+                                avatarUrl={msgProfile.avatar_url}
+                                userName={msg.user_name}
+                                size="h-9 w-9"
+                              />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent side="right" align="start" sideOffset={8} className="p-0 border-0 bg-transparent shadow-none w-auto">
+                            <UserProfileCard userId={msg.user_id} onClose={() => {}} />
+                          </PopoverContent>
+                        </Popover>
                       ) : (
                         <div className="w-9 h-9 rounded-full bg-white/[0.06] animate-pulse" />
                       )
