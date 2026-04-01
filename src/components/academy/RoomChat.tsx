@@ -1288,12 +1288,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <div className="flex-1 min-w-0">
                     {showHdr && (
                       <div className="flex items-center gap-2 mb-0.5 min-h-[22px]">
-                        <span className={cn(
-                          "text-[13px] font-semibold tracking-[-0.01em]",
-                          isCeoOrAdmin ? "text-amber-400" : "text-foreground"
-                        )}>
-                          {msg.user_name}
-                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className={cn(
+                              "text-[13px] font-semibold tracking-[-0.01em] hover:underline cursor-pointer focus:outline-none",
+                              isCeoOrAdmin ? "text-amber-400" : "text-foreground"
+                            )}>
+                              {msg.user_name}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent side="right" align="start" sideOffset={8} className="p-0 border-0 bg-transparent shadow-none w-auto">
+                            <UserProfileCard userId={msg.user_id} onClose={() => {}} />
+                          </PopoverContent>
+                        </Popover>
                          {msgProfile ? (
                            <>
                              <AcademyRoleBadge roleName={msgAcademyRole} />
