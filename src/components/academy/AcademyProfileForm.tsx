@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TIMEZONES, formatTimezone } from "@/lib/timezones";
-import { Loader2, Check, Upload, X } from "lucide-react";
+import { Loader2, Check, Upload, X, ImageIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { generateBannerGradient } from "@/lib/bannerGradient";
 
 const ROLE_LEVELS = [
   { value: "beginner", label: "Beginner" },
