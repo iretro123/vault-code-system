@@ -110,6 +110,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       setSocialInstagram((profile as any).social_instagram || "");
       setSocialTiktok((profile as any).social_tiktok || "");
       setSocialYoutube((profile as any).social_youtube || "");
+      setBannerUrl((profile as any).banner_url || null);
     }
   }, [profile]);
 
