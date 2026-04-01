@@ -137,11 +137,9 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
       if (error) throw error;
 
       clearProfileCache(user.id);
+      refetch();
       toast.success("Profile updated");
       setEditMode(false);
-      // Force re-render by closing and letting parent re-open or by relying on refetch
-      // The hook will refetch since cache was cleared
-      window.dispatchEvent(new CustomEvent("profile-updated", { detail: user.id }));
     } catch (err: any) {
       toast.error(err.message || "Failed to save");
     } finally {
