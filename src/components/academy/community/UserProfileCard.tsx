@@ -58,7 +58,7 @@ interface UserProfileCardProps {
 }
 
 export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
-  const { profile, loading } = usePublicProfile(userId);
+  const { profile, loading, refetch } = usePublicProfile(userId);
   const { online } = useUserPresence(userId);
   const { user } = useAuth();
   const isOwnProfile = user?.id === userId;
