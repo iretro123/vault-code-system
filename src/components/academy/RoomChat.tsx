@@ -1489,7 +1489,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <div className="absolute -top-4 right-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-10">
                         <div className="flex items-center gap-0.5 rounded-lg bg-card border border-white/[0.08] shadow-md px-1 py-0.5">
                           {/* Quick reactions */}
-                          {!isAnnouncements && ALLOWED_EMOJIS.map((emoji) => (
+                          {!isAnnouncements && QUICK_EMOJIS.map((emoji) => (
                             <button
                               key={emoji}
                               type="button"
@@ -1500,6 +1500,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               {renderReactionEmoji(emoji)}
                             </button>
                           ))}
+                          {/* Full emoji picker */}
+                          {!isAnnouncements && (
+                            <EmojiReactionPicker onSelect={(e) => toggleReaction(msg.id, e)} />
+                          )}
                           {/* Reply */}
                           {!isAnnouncements && onThreadOpen && (
                             <button
