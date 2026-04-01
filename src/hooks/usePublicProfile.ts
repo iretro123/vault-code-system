@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface PublicProfile {
   user_id: string;
   avatar_url: string | null;
+  banner_url: string | null;
   display_name: string | null;
   username: string | null;
   role_level: string;
