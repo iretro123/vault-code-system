@@ -1,14 +1,15 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import { format } from "date-fns";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import { ExperienceLevelBadge } from "@/components/academy/ExperienceLevelBadge";
-import { usePublicProfile } from "@/hooks/usePublicProfile";
+import { usePublicProfile, clearProfileCache } from "@/hooks/usePublicProfile";
 import { useUserPresence } from "@/hooks/useUserPresence";
 import { useAuth } from "@/hooks/useAuth";
 import { generateBannerGradient } from "@/lib/bannerGradient";
-import { Loader2, BookOpen, Calendar, Pencil } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, BookOpen, Calendar, Pencil, X, Camera, Save, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 /* ── Social icons (inline SVG for brand accuracy) ── */
 
@@ -45,7 +46,7 @@ function YouTubeIcon({ className }: { className?: string }) {
 }
 
 const SOCIAL_LINKS = [
-  { key: "social_twitter" as const, icon: XIcon, label: "X", baseUrl: "https://x.com/" },
+  { key: "social_twitter" as const, icon: XIcon, label: "X / Twitter", baseUrl: "https://x.com/" },
   { key: "social_instagram" as const, icon: InstagramIcon, label: "Instagram", baseUrl: "https://instagram.com/" },
   { key: "social_tiktok" as const, icon: TikTokIcon, label: "TikTok", baseUrl: "https://tiktok.com/@" },
   { key: "social_youtube" as const, icon: YouTubeIcon, label: "YouTube", baseUrl: "https://youtube.com/@" },
@@ -60,8 +61,93 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
   const { profile, loading } = usePublicProfile(userId);
   const { online } = useUserPresence(userId);
   const { user } = useAuth();
-  const navigate = useNavigate();
   const isOwnProfile = user?.id === userId;
+
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [bio, setBio] = useState("");
+  const [socials, setSocials] = useState({ social_twitter: "", social_instagram: "", social_tiktok: "", social_youtube: "" });
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [clearBanner, setClearBanner] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const enterEditMode = () => {
+    if (!profile) return;
+    setBio(profile.bio || "");
+    setSocials({
+      social_twitter: profile.social_twitter || "",
+      social_instagram: profile.social_instagram || "",
+      social_tiktok: profile.social_tiktok || "",
+      social_youtube: profile.social_youtube || "",
+    });
+    setBannerFile(null);
+    setBannerPreview(null);
+    setClearBanner(false);
+    setEditMode(true);
+  };
+
+  const cancelEdit = () => {
+    setEditMode(false);
+    setBannerFile(null);
+    setBannerPreview(null);
+  };
+
+  const handleBannerSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Banner must be under 5 MB");
+      return;
+    }
+    setBannerFile(file);
+    setBannerPreview(URL.createObjectURL(file));
+    setClearBanner(false);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      let newBannerUrl: string | null | undefined = undefined;
+
+      if (clearBanner) {
+        newBannerUrl = null;
+      } else if (bannerFile) {
+        const ext = bannerFile.name.split(".").pop() || "webp";
+        const path = `${user.id}/banner-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("avatars").upload(path, bannerFile, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        newBannerUrl = urlData.publicUrl;
+      }
+
+      const updates: Record<string, any> = {
+        bio: bio.trim(),
+        social_twitter: socials.social_twitter.trim() || null,
+        social_instagram: socials.social_instagram.trim() || null,
+        social_tiktok: socials.social_tiktok.trim() || null,
+        social_youtube: socials.social_youtube.trim() || null,
+      };
+      if (newBannerUrl !== undefined) {
+        updates.banner_url = newBannerUrl;
+      }
+
+      const { error } = await supabase.from("profiles").update(updates).eq("user_id", user.id);
+      if (error) throw error;
+
+      clearProfileCache(user.id);
+      toast.success("Profile updated");
+      setEditMode(false);
+      // Force re-render by closing and letting parent re-open or by relying on refetch
+      // The hook will refetch since cache was cleared
+      window.dispatchEvent(new CustomEvent("profile-updated", { detail: user.id }));
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading || !profile) {
     return (
@@ -72,21 +158,119 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
   }
 
   const hasSocials = SOCIAL_LINKS.some((s) => profile[s.key]);
-  const memberSince = profile.created_at
-    ? format(new Date(profile.created_at), "MMM yyyy")
-    : null;
+  const memberSince = profile.created_at ? format(new Date(profile.created_at), "MMM yyyy") : null;
 
-  const bannerStyle = profile.banner_url
-    ? { backgroundImage: `url(${profile.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: generateBannerGradient(profile.user_id) };
+  const currentBannerStyle = (() => {
+    if (editMode) {
+      if (clearBanner) return { background: generateBannerGradient(profile.user_id) };
+      if (bannerPreview) return { backgroundImage: `url(${bannerPreview})`, backgroundSize: "cover", backgroundPosition: "center" };
+    }
+    return profile.banner_url
+      ? { backgroundImage: `url(${profile.banner_url})`, backgroundSize: "cover", backgroundPosition: "center" }
+      : { background: generateBannerGradient(profile.user_id) };
+  })();
 
+  /* ── EDIT MODE ── */
+  if (editMode) {
+    return (
+      <div className="vault-profile-card w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Banner with edit overlay */}
+        <div className="h-20 relative group" style={currentBannerStyle}>
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <button
+              onClick={() => bannerInputRef.current?.click()}
+              className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+              title="Upload Banner"
+            >
+              <Camera className="h-4 w-4 text-white" />
+            </button>
+            {(profile.banner_url || bannerPreview) && !clearBanner && (
+              <button
+                onClick={() => { setClearBanner(true); setBannerFile(null); setBannerPreview(null); }}
+                className="h-8 w-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                title="Remove Banner"
+              >
+                <Trash2 className="h-4 w-4 text-white" />
+              </button>
+            )}
+          </div>
+          <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={handleBannerSelect} />
+          {/* Close edit */}
+          <button
+            onClick={cancelEdit}
+            className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors z-10"
+          >
+            <X className="h-3.5 w-3.5 text-white" />
+          </button>
+          {/* Avatar */}
+          <div className="absolute -bottom-9 left-4">
+            <div className="vault-profile-avatar-ring rounded-full p-[2.5px]">
+              <div className="rounded-full overflow-hidden bg-[hsl(220,15%,10%)] border-[3px] border-[hsl(220,15%,10%)]">
+                <ChatAvatar avatarUrl={profile.avatar_url} userName={profile.display_name || "?"} size="h-[4.5rem] w-[4.5rem]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Edit form body */}
+        <div className="pt-12 px-4 pb-4 space-y-3">
+          <h3 className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wider">Edit Profile</h3>
+
+          {/* Bio */}
+          <div>
+            <label className="text-[11px] text-muted-foreground mb-1 block">Bio</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, 160))}
+              rows={3}
+              placeholder="Write a short bio…"
+              className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-[12px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
+            />
+            <span className="text-[10px] text-muted-foreground/50 float-right">{bio.length}/160</span>
+          </div>
+
+          {/* Social links */}
+          <div className="space-y-2">
+            <label className="text-[11px] text-muted-foreground block">Social Links</label>
+            {SOCIAL_LINKS.map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.key} className="flex items-center gap-2">
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <input
+                    type="text"
+                    value={socials[s.key]}
+                    onChange={(e) => setSocials((prev) => ({ ...prev, [s.key]: e.target.value }))}
+                    placeholder={s.label}
+                    className="flex-1 h-8 rounded-lg border border-border/50 bg-background/50 px-2.5 text-[12px] text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Save button */}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full h-9 rounded-xl bg-primary text-primary-foreground text-[13px] font-medium hover:brightness-110 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── VIEW MODE ── */
   return (
     <div className="vault-profile-card w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
       {/* Banner */}
-      <div className="h-20 relative" style={bannerStyle}>
+      <div className="h-20 relative" style={currentBannerStyle}>
         {isOwnProfile && (
           <button
-            onClick={() => { onClose(); navigate("/academy/settings"); }}
+            onClick={enterEditMode}
             className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
             title="Edit Profile"
           >
@@ -98,11 +282,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
           <div className="relative">
             <div className="vault-profile-avatar-ring rounded-full p-[2.5px]">
               <div className="rounded-full overflow-hidden bg-[hsl(220,15%,10%)] border-[3px] border-[hsl(220,15%,10%)]">
-                <ChatAvatar
-                  avatarUrl={profile.avatar_url}
-                  userName={profile.display_name || "?"}
-                  size="h-[4.5rem] w-[4.5rem]"
-                />
+                <ChatAvatar avatarUrl={profile.avatar_url} userName={profile.display_name || "?"} size="h-[4.5rem] w-[4.5rem]" />
               </div>
             </div>
             {/* Online indicator */}
