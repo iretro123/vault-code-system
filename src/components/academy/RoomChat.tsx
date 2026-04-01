@@ -32,6 +32,7 @@ import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { SignalPostForm } from "./chat/SignalPostForm";
 import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
 import { EmojiPicker } from "./chat/EmojiPicker";
+import { EmojiReactionPicker } from "./chat/EmojiReactionPicker";
 import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
 import { LinkPreviewCard } from "./chat/LinkPreviewCard";
