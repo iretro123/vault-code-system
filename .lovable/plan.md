@@ -1,62 +1,42 @@
 
 
-## Premium Signal System — Watchlist + Live Signal Cards
+## Expanded Emoji Reaction Picker
 
-### Two signal types for coaches/admins in the Signals tab
+### Current State
+- Only 3 reactions: 👍 🔥 💀 (with custom SVG icons for each)
+- Hardcoded in `ALLOWED_EMOJIS` array
+- Custom SVG files exist in `src/assets/emoji/` for those 3
 
-**1. Watchlist Signal** — "What We're Watching"
-- Ticker, Bias (Bullish/Bearish/Neutral), Key Levels, Notes, Chart image (optional)
-- Rendered as a subtle blue-tinted luxury card with a radar icon
+### Answer: No DB or uploads needed
+You do **not** need to upload PNGs to the database. We'll use **native Unicode emojis** for the expanded set — the same approach Discord uses. The existing 3 custom SVGs stay for the "quick reaction" bar, and the full picker uses native emoji characters which render on all devices.
 
-**2. Live Signal** — "Active Trade Alert"
-- Direction (Calls/Puts), Ticker, Strike, Expiration, Fill Price, Notes, Chart image (optional)
-- Rendered with green (Calls) or red (Puts) accent glow, crosshair icon
+### Plan
 
-Both include chart image upload support using the existing file upload flow.
+**1. Expand the emoji set — `src/hooks/useMessageReactions.ts`**
+- Change `ALLOWED_EMOJIS` from a 3-item tuple to a larger list (~20-30 curated emojis) organized by category
+- Keep the type flexible: `ReactionEmoji` becomes `string` so any emoji from the picker works
+- The `getReactions` function already handles arbitrary emoji strings from the DB — just remove the filter that only shows `ALLOWED_EMOJIS`
 
-### Changes
+**2. New emoji picker component — `src/components/academy/chat/EmojiReactionPicker.tsx`**
+- A dropdown/popover triggered by a smiley-face button in the hover action bar
+- Curated grid of ~30 emojis organized in categories (Smileys, Hands, Objects, Symbols)
+- Example set: 👍 👎 ❤️ 🔥 💀 😂 😭 🤣 💯 🎯 💪 🙏 👀 🤝 💰 📈 📉 🚀 ⚡ 🧠 😤 🤔 😎 🥶 💎 🫡 ✅ ❌ 🎉 👏
+- Clean dark-theme grid matching the existing UI
+- Click an emoji → calls `toggleReaction(messageId, emoji)` → popover closes
+- Renders native Unicode (no images needed for the expanded set)
 
-**New: `src/components/academy/chat/SignalPostForm.tsx`**
-- Dual-mode toggle form: Watchlist vs Live Signal
-- Only visible to users with `canPost` permission in `daily-setups` room
-- Watchlist fields: Ticker, Bias toggle, Key Levels, Notes, Chart image upload
-- Live Signal fields: Direction toggle, Ticker, Strike, Exp date, Fill, Notes, Chart image upload
-- On submit: sends structured body text + stores signal metadata in `attachments` JSONB as `{ type: "signal-watchlist", ... }` or `{ type: "signal-live", ... }` alongside any uploaded image attachments
-- Replaces the default text input in the Signals tab
+**3. Update hover action bar — `src/components/academy/RoomChat.tsx`**
+- Keep the 3 quick-reaction buttons (👍 🔥 💀 with SVG icons) in the hover toolbar
+- Add a "+" or smiley-face button that opens the `EmojiReactionPicker` popover
+- In the reactions row below messages, render the 3 SVG emojis with their icons and all others as native Unicode text
+- Update the "add more reactions" hover area to use the picker instead of showing only the 3 missing emojis
 
-**New: `src/components/academy/chat/SignalCard.tsx`**
-- Detects signal attachment type and renders a premium card
-- Watchlist card: blue-tinted top glow, radar icon, bias pill, levels strip, chart image, notes, author row
-- Live Signal card: green/red directional accent, crosshair icon, metadata grid (strike/exp/fill), chart image, notes, author row
-- Dark-theme luxury styling matching `vault-luxury-card` aesthetic
-- Compact, scannable — all key info visible at a glance
+**4. Update `renderReactionEmoji` function**
+- If emoji is one of the 3 with custom SVGs → render the SVG icon
+- Otherwise → render the native Unicode character (slightly larger for readability)
 
-**Update: `src/components/academy/RoomChat.tsx`**
-- In message renderer (~line 1400): detect signal attachments → render `<SignalCard>` instead of plain text body for those messages
-- In composer area (~line 1618): when `roomSlug === "daily-setups"` and `canPost`, show `<SignalPostForm>` instead of `<TradeRecapForm>` or default input
-- Import both new components
-
-**Update: `src/index.css`**
-- Add signal card CSS classes:
-  - `.vault-signal-card` — base signal card (inherits luxury card aesthetic)
-  - `.vault-signal-watchlist` — subtle blue top-glow
-  - `.vault-signal-live-calls` — green accent edge glow
-  - `.vault-signal-live-puts` — red accent edge glow
-
-### Technical details
-
-- No database migration needed — signal data stored in existing `attachments` JSONB column
-- Signal attachment schemas:
-  - Watchlist: `{ type: "signal-watchlist", ticker, bias, levels, notes }`
-  - Live: `{ type: "signal-live", direction, ticker, strike, exp, fill, notes }`
-- Chart images stored as regular `{ type: "image", url, filename, size, mime }` attachments alongside the signal attachment
-- Existing `Attachment` type in `useRoomMessages.ts` already supports this — signal attachments use a broader type union
-- Old plain-text messages continue rendering normally (backward compatible)
-- The `handleSend` function already accepts `(text, attachments)` — the form composes both and calls it
-
-### File summary
-1. `src/components/academy/chat/SignalPostForm.tsx` — new dual-mode posting form
-2. `src/components/academy/chat/SignalCard.tsx` — new premium signal card renderer
-3. `src/components/academy/RoomChat.tsx` — wire form + card into Signals channel
-4. `src/index.css` — signal card luxury CSS classes
+### Files
+1. `src/components/academy/chat/EmojiReactionPicker.tsx` — new popover component
+2. `src/hooks/useMessageReactions.ts` — widen emoji type, update `getReactions` to handle any emoji
+3. `src/components/academy/RoomChat.tsx` — add picker trigger to hover bar, update reaction rendering
 
