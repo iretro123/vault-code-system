@@ -58,6 +58,7 @@ export function usePublicProfile(userId: string | null) {
         const result: PublicProfile = {
           user_id: row.user_id,
           avatar_url: row.avatar_url,
+          banner_url: row.banner_url ?? null,
           display_name: row.display_name,
           username: row.username,
           role_level: row.role_level,
