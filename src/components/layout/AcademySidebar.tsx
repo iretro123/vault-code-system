@@ -138,7 +138,7 @@ export function AcademySidebar() {
 
         {/* Search */}
 
-        <SidebarGroup>
+        <SidebarGroup className="hidden md:block">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>

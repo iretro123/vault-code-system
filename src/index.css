@@ -1082,3 +1082,147 @@ html {
   background: hsla(200, 40%, 50%, 0.12);
   border-color: hsla(200, 50%, 50%, 0.25);
 }
+
+/* ── Vault Spotlight Search ── */
+
+@keyframes spotlight-in {
+  from { opacity: 0; transform: scale(0.97) translateY(-8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.vault-spotlight-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18vh;
+  background: hsla(220, 20%, 4%, 0.75);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  animation: spotlight-in 100ms ease-out;
+}
+
+.vault-spotlight-container {
+  width: 100%;
+  max-width: 540px;
+  animation: spotlight-in 100ms ease-out;
+}
+
+.vault-spotlight-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: hsla(220, 18%, 10%, 0.92);
+  border: 1px solid hsla(220, 30%, 50%, 0.12);
+  box-shadow:
+    0 0 0 1px hsla(220, 30%, 50%, 0.06),
+    0 8px 32px -8px hsla(220, 40%, 4%, 0.6),
+    0 0 60px -20px hsla(217, 92%, 68%, 0.08);
+}
+
+.vault-spotlight-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  caret-color: hsl(217, 92%, 68%);
+}
+
+.vault-spotlight-input::placeholder {
+  color: hsla(220, 14%, 55%, 0.5);
+  font-weight: 400;
+}
+
+.vault-spotlight-kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: hsla(220, 14%, 55%, 0.5);
+  background: hsla(220, 14%, 55%, 0.08);
+  border: 1px solid hsla(220, 14%, 55%, 0.1);
+  border-radius: 5px;
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.vault-spotlight-kbd-inline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: hsla(220, 14%, 55%, 0.45);
+  background: hsla(220, 14%, 55%, 0.06);
+  border: 1px solid hsla(220, 14%, 55%, 0.08);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.vault-spotlight-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.vault-spotlight-results {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 14px;
+  background: hsla(220, 18%, 10%, 0.92);
+  border: 1px solid hsla(220, 30%, 50%, 0.08);
+  box-shadow: 0 8px 32px -8px hsla(220, 40%, 4%, 0.5);
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.vault-spotlight-group-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsla(220, 14%, 55%, 0.5);
+  padding: 8px 10px 4px;
+}
+
+.vault-spotlight-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 80ms ease;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.vault-spotlight-item:hover,
+.vault-spotlight-item-active {
+  background: hsla(217, 92%, 68%, 0.08);
+}
+
+.vault-spotlight-shimmer {
+  height: 44px;
+  margin: 4px 8px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    hsla(220, 14%, 55%, 0.04) 0%,
+    hsla(220, 14%, 55%, 0.08) 50%,
+    hsla(220, 14%, 55%, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
