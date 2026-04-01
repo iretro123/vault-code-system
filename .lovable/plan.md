@@ -1,66 +1,78 @@
 
 
-## User Profile Card — Discord-Style Popover in Community Chat
+## Premium Profile System Upgrade
 
-### What it is
-When a user clicks on someone's avatar or username in the community chat, a premium popover card appears showing that user's public profile — avatar, display name, role, experience level, member since date, bio, social links, and progress stats. Like Discord's profile popup but with iOS luxury styling.
+### Overview
+Replace transparent/glass profile cards with solid dark premium surfaces. Add `banner_url` column to profiles for unique user banners. Upgrade the profile card, profile editing, and post-signup onboarding to feel personal and polished.
 
-### Database changes
+### Database Changes
 
-**Add columns to `profiles` table** (migration):
+**Migration 1 — Add `banner_url` to profiles + update RPC:**
 ```sql
 ALTER TABLE public.profiles
-  ADD COLUMN IF NOT EXISTS bio text NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS social_twitter text DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS social_instagram text DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS social_tiktok text DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS social_youtube text DEFAULT NULL;
+  ADD COLUMN IF NOT EXISTS banner_url text DEFAULT NULL;
+
+-- Update get_community_profiles to return banner_url
+CREATE OR REPLACE FUNCTION public.get_community_profiles(_user_ids uuid[])
+RETURNS TABLE(...existing cols..., banner_url text)
+-- re-create with banner_url included
 ```
 
-No new RLS needed — profiles already have a public SELECT for `get_community_profiles`. We'll update that RPC to also return these new fields.
+**Storage:** The `avatars` bucket already exists with proper RLS. Banners will also be stored in the same bucket under `{user_id}/banner-{timestamp}.webp`.
 
-**Update `get_community_profiles` RPC** to include `bio`, `social_twitter`, `social_instagram`, `social_tiktok`, `social_youtube`, `display_name`, `username`, `created_at`.
+### File Changes
 
-### Privacy model
-- **Public** (shown on card): avatar, display name, username, role, experience level, bio, social links (only if user filled them), member since date, lessons completed count
-- **Private** (never shown): email, phone, account balance, discipline score, trading style, timezone
+**1. `src/index.css` — Replace glass styles with solid dark**
+- `.vault-profile-card`: remove `backdrop-filter`, `hsla` background. Use solid `hsl(var(--card))` with clean border and shadow
+- `.vault-profile-avatar-ring`: keep gradient glow but on solid background
+- Keep the enter animation
 
-### New component: `UserProfileCard.tsx`
+**2. `src/components/academy/community/UserProfileCard.tsx` — Full redesign**
+- Solid dark card background (`bg-[hsl(220,15%,10%)]`), no transparency/blur
+- Banner area: show user's `banner_url` if set, otherwise generate a unique gradient from their `user_id` (hash-based hue rotation — no two feel the same)
+- Larger avatar (18x18) with a solid-bordered ring, positioned overlapping the banner
+- Clean sections: name/username, badges, bio, social pills, stats
+- Add pencil edit icon (visible only when viewing your own profile) — links to `/academy/settings`
+- Online indicator with solid border matching card background
 
-A popover/floating card rendered via Radix Popover, triggered by clicking avatar or username in chat.
+**3. `src/hooks/usePublicProfile.ts` — Add `banner_url` to PublicProfile type and fetch**
 
-**Design — iOS luxury, not Lovable basic:**
-- Frosted glass background (`backdrop-blur-xl bg-white/[0.06]`)
-- Large avatar at top with subtle ring glow
-- Display name + username + role badge + experience badge
-- "Member since" date
-- Bio section (max 160 chars, soft muted text)
-- Social links row — small branded icon pills (Twitter/X, Instagram, TikTok, YouTube) — only shown if user has set them
-- Progress stats strip: lessons completed, days active (from `lesson_progress` count + `vault_daily_checklist` count)
-- Smooth scale-in animation
-- Width ~280px, max-height capped
+**4. `src/components/academy/AcademyProfileForm.tsx` — Add banner editing**
+- New "Banner" section at top of form with:
+  - Preview of current banner (or generated default)
+  - Upload button (same flow as avatar: crop to 4:1 ratio, max 5MB, webp)
+  - Clear button to reset to default gradient
+- Bio field already exists — keep as-is
+- Avatar + banner editing with clear pencil/edit icons
+- Fast, single-card layout — no clutter
 
-### Chat integration — `RoomChat.tsx`
+**5. `src/pages/academy/AcademyProfile.tsx` — Upgrade onboarding profile page**
+- After signup, new users land here (already routed via `profile_completed` gate)
+- Redesign as a clean welcome screen:
+  - "Welcome to Vault Academy" header
+  - Step indicators: Banner → Avatar → Bio (all on one page, scrollable)
+  - Each section is a compact card with clear edit affordance
+  - "Continue" button at bottom sets `profile_completed = true`
+  - All fields optional — user can skip and continue
+  - Clean, fast, no overload
 
-- Wrap avatar + username in a clickable trigger
-- On click: fetch the user's full public profile from `profiles` table (single query, cached)
-- Open the `UserProfileCard` popover anchored to the avatar
-- Clicking outside or pressing ESC closes it
+**6. `src/pages/Signup.tsx` — After successful signup, navigate to `/academy/profile` instead of `/academy`**
+- Change line 193: `navigate("/academy/profile")` so new users hit the welcome/profile setup
 
-### Settings integration — `AcademyProfileForm.tsx` or `SettingsProfile.tsx`
+**7. `src/lib/bannerGradient.ts` — New utility**
+- `generateBannerGradient(userId: string): string` — deterministic gradient CSS from user ID hash
+- Uses hue rotation so every user gets a unique-feeling default banner
+- Returns a CSS `background` string
 
-Add fields for bio and social links so users can fill them in from their settings page.
+### Design Rules Followed
+- No glass/transparency — solid dark surfaces everywhere
+- Pencil edit icon clearly visible on own profile card
+- Responsive: card works on desktop popover and could be used on mobile
+- No hidden actions — edit is one click
+- Banner defaults are unique per user via hash-based gradient generation
+- All uploads use existing `avatars` bucket with established RLS
 
-### New hook: `usePublicProfile.ts`
-
-Fetches a single user's public profile data (bio, socials, created_at, lesson count) by user_id. Caches results for the session.
-
-### Files
-1. **New migration** — add `bio`, `social_twitter`, `social_instagram`, `social_tiktok`, `social_youtube` to `profiles`
-2. **New migration** — update `get_community_profiles` RPC to return extended fields
-3. **`src/components/academy/community/UserProfileCard.tsx`** — new luxury profile popover component
-4. **`src/hooks/usePublicProfile.ts`** — new hook to fetch public profile + progress stats
-5. **`src/components/academy/RoomChat.tsx`** — make avatar/username clickable, trigger popover
-6. **`src/components/academy/AcademyProfileForm.tsx`** — add bio + social link fields
-7. **`src/index.css`** — profile card animation + glow styles
+### Privacy Model (Unchanged)
+- Public: avatar, banner, display name, username, role, bio, socials, member since, lessons completed
+- Private: email, phone, balance, discipline score, trading style, timezone
 
