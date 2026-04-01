@@ -4,7 +4,7 @@ import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./communit
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
-import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
+import { useMessageReactions, QUICK_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { useChatModeration } from "@/hooks/useChatModeration";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
@@ -32,6 +32,7 @@ import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { SignalPostForm } from "./chat/SignalPostForm";
 import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
 import { EmojiPicker } from "./chat/EmojiPicker";
+import { EmojiReactionPicker } from "./chat/EmojiReactionPicker";
 import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
 import { LinkPreviewCard } from "./chat/LinkPreviewCard";
@@ -1489,7 +1490,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <div className="absolute -top-4 right-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-10">
                         <div className="flex items-center gap-0.5 rounded-lg bg-card border border-white/[0.08] shadow-md px-1 py-0.5">
                           {/* Quick reactions */}
-                          {!isAnnouncements && ALLOWED_EMOJIS.map((emoji) => (
+                          {!isAnnouncements && QUICK_EMOJIS.map((emoji) => (
                             <button
                               key={emoji}
                               type="button"
@@ -1500,6 +1501,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               {renderReactionEmoji(emoji)}
                             </button>
                           ))}
+                          {/* Full emoji picker */}
+                          {!isAnnouncements && (
+                            <EmojiReactionPicker onSelect={(e) => toggleReaction(msg.id, e)} />
+                          )}
                           {/* Reply */}
                           {!isAnnouncements && onThreadOpen && (
                             <button
@@ -1539,7 +1544,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <button
                               key={r.emoji}
                               type="button"
-                              onClick={() => toggleReaction(msg.id, r.emoji as ReactionEmoji)}
+                              onClick={() => toggleReaction(msg.id, r.emoji)}
                               className={cn(
                                 "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
                                 r.reacted
@@ -1552,20 +1557,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             </button>
                           ))}
 
-                          {/* Hover add-reaction trigger — only when reactions row is visible */}
-                          <span className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-75">
-                            {ALLOWED_EMOJIS.filter(
-                              (e) => !reactions.some((r) => r.emoji === e && r.reacted)
-                            ).map((emoji) => (
-                              <button
-                                key={emoji}
-                                type="button"
-                                onClick={() => toggleReaction(msg.id, emoji)}
-                                className="px-1 py-0.5 rounded hover:bg-white/[0.08] text-muted-foreground hover:text-foreground transition-colors"
-                              >
-                                {renderReactionEmoji(emoji, "h-3 w-3")}
-                              </button>
-                            ))}
+                          {/* Hover add-reaction trigger */}
+                          <span className="inline-flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-75">
+                            <EmojiReactionPicker
+                              onSelect={(e) => toggleReaction(msg.id, e)}
+                              triggerClassName="px-1 py-0.5 rounded text-muted-foreground hover:text-foreground"
+                            />
                           </span>
                         </div>
                       );
