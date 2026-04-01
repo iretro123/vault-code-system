@@ -7,6 +7,14 @@ export interface ChatProfile {
   role_level: string;
   academy_experience: string;
   academy_role_name?: string | null;
+  bio?: string;
+  social_twitter?: string | null;
+  social_instagram?: string | null;
+  social_tiktok?: string | null;
+  social_youtube?: string | null;
+  display_name?: string | null;
+  username?: string | null;
+  created_at?: string;
 }
 
 // ── Global profile cache (survives component remounts) ──

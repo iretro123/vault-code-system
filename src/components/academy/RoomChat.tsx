@@ -10,6 +10,8 @@ import { useChatModeration } from "@/hooks/useChatModeration";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useMentionAutocomplete, parseMentions, getMentionLabel, getMentionInsertText, type MentionUser } from "@/hooks/useMentionAutocomplete";
 import { ChatAvatar } from "@/lib/chatAvatars";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { UserProfileCard } from "./community/UserProfileCard";
 import { Button } from "@/components/ui/button";
 import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign, FileText } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
@@ -1258,11 +1260,20 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <div className={cn("w-9 shrink-0", startsNewGroup ? "h-9" : "h-5")}>
                     {showHdr ? (
                       msgProfile ? (
-                        <ChatAvatar
-                          avatarUrl={msgProfile.avatar_url}
-                          userName={msg.user_name}
-                          size="h-9 w-9"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                              <ChatAvatar
+                                avatarUrl={msgProfile.avatar_url}
+                                userName={msg.user_name}
+                                size="h-9 w-9"
+                              />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent side="right" align="start" sideOffset={8} className="p-0 border-0 bg-transparent shadow-none w-auto">
+                            <UserProfileCard userId={msg.user_id} onClose={() => {}} />
+                          </PopoverContent>
+                        </Popover>
                       ) : (
                         <div className="w-9 h-9 rounded-full bg-white/[0.06] animate-pulse" />
                       )
@@ -1277,12 +1288,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <div className="flex-1 min-w-0">
                     {showHdr && (
                       <div className="flex items-center gap-2 mb-0.5 min-h-[22px]">
-                        <span className={cn(
-                          "text-[13px] font-semibold tracking-[-0.01em]",
-                          isCeoOrAdmin ? "text-amber-400" : "text-foreground"
-                        )}>
-                          {msg.user_name}
-                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className={cn(
+                              "text-[13px] font-semibold tracking-[-0.01em] hover:underline cursor-pointer focus:outline-none",
+                              isCeoOrAdmin ? "text-amber-400" : "text-foreground"
+                            )}>
+                              {msg.user_name}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent side="right" align="start" sideOffset={8} className="p-0 border-0 bg-transparent shadow-none w-auto">
+                            <UserProfileCard userId={msg.user_id} onClose={() => {}} />
+                          </PopoverContent>
+                        </Popover>
                          {msgProfile ? (
                            <>
                              <AcademyRoleBadge roleName={msgAcademyRole} />

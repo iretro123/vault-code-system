@@ -1633,6 +1633,7 @@ export type Database = {
           account_balance: number
           ai_focus_cache: Json | null
           avatar_url: string | null
+          bio: string
           created_at: string
           default_trading_style: string
           discipline_score: number
@@ -1651,6 +1652,10 @@ export type Database = {
           phone_number: string | null
           profile_completed: boolean
           role_level: string
+          social_instagram: string | null
+          social_tiktok: string | null
+          social_twitter: string | null
+          social_youtube: string | null
           timezone: string
           updated_at: string
           user_id: string
@@ -1662,6 +1667,7 @@ export type Database = {
           account_balance?: number
           ai_focus_cache?: Json | null
           avatar_url?: string | null
+          bio?: string
           created_at?: string
           default_trading_style?: string
           discipline_score?: number
@@ -1680,6 +1686,10 @@ export type Database = {
           phone_number?: string | null
           profile_completed?: boolean
           role_level?: string
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
           timezone?: string
           updated_at?: string
           user_id: string
@@ -1691,6 +1701,7 @@ export type Database = {
           account_balance?: number
           ai_focus_cache?: Json | null
           avatar_url?: string | null
+          bio?: string
           created_at?: string
           default_trading_style?: string
           discipline_score?: number
@@ -1709,6 +1720,10 @@ export type Database = {
           phone_number?: string | null
           profile_completed?: boolean
           role_level?: string
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_twitter?: string | null
+          social_youtube?: string | null
           timezone?: string
           updated_at?: string
           user_id?: string
@@ -2776,8 +2791,16 @@ export type Database = {
         Returns: {
           academy_experience: string
           avatar_url: string
+          bio: string
+          created_at: string
+          display_name: string
           role_level: string
+          social_instagram: string
+          social_tiktok: string
+          social_twitter: string
+          social_youtube: string
           user_id: string
+          username: string
         }[]
       }
       get_daily_vault_status: {

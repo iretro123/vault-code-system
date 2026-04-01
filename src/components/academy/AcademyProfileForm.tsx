@@ -70,6 +70,11 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const [roleLevel, setRoleLevel] = useState("beginner");
   const [timezone, setTimezone] = useState("America/New_York");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [bio, setBio] = useState("");
+  const [socialTwitter, setSocialTwitter] = useState("");
+  const [socialInstagram, setSocialInstagram] = useState("");
+  const [socialTiktok, setSocialTiktok] = useState("");
+  const [socialYoutube, setSocialYoutube] = useState("");
   const [avatarMode, setAvatarMode] = useState<AvatarMode>("initials");
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
   const [avatarIcon, setAvatarIcon] = useState(AVATAR_ICONS[0].id);
@@ -96,6 +101,11 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       }
       setTimezone((profile as any).timezone || "America/New_York");
       setPhoneNumber((profile as any).phone_number || "");
+      setBio((profile as any).bio || "");
+      setSocialTwitter((profile as any).social_twitter || "");
+      setSocialInstagram((profile as any).social_instagram || "");
+      setSocialTiktok((profile as any).social_tiktok || "");
+      setSocialYoutube((profile as any).social_youtube || "");
     }
   }, [profile]);
 
@@ -200,6 +210,11 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       timezone,
       phone_number: phoneNumber.trim() || null,
       avatar_url: avatarUrl,
+      bio: bio.trim(),
+      social_twitter: socialTwitter.trim() || null,
+      social_instagram: socialInstagram.trim() || null,
+      social_tiktok: socialTiktok.trim() || null,
+      social_youtube: socialYoutube.trim() || null,
     };
     if (isOnboarding) {
       updateData.profile_completed = true;
@@ -332,6 +347,38 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
           <Label className="text-xs">Phone Number</Label>
           <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+1 555 000 0000" maxLength={20} />
           <p className="text-[10px] text-muted-foreground/60">For important account/support alerts only</p>
+        </div>
+      </Card>
+
+      {/* Bio & Socials */}
+      <Card className="p-5 space-y-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Bio</Label>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="Tell the community a bit about yourself…"
+            maxLength={160}
+            rows={2}
+            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+          />
+          <p className="text-[10px] text-muted-foreground/60">{bio.length}/160 characters</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">X (Twitter)</Label>
+          <Input value={socialTwitter} onChange={(e) => setSocialTwitter(e.target.value)} placeholder="@username" maxLength={50} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Instagram</Label>
+          <Input value={socialInstagram} onChange={(e) => setSocialInstagram(e.target.value)} placeholder="@username" maxLength={50} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">TikTok</Label>
+          <Input value={socialTiktok} onChange={(e) => setSocialTiktok(e.target.value)} placeholder="@username" maxLength={50} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">YouTube</Label>
+          <Input value={socialYoutube} onChange={(e) => setSocialYoutube(e.target.value)} placeholder="@channel" maxLength={50} />
         </div>
       </Card>
 
