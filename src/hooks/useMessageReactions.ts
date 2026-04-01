@@ -101,16 +101,17 @@ export function useMessageReactions(roomSlug: string, userId?: string) {
   const getReactions = useCallback(
     (messageId: string): ReactionSummary[] => {
       const rows = reactionsMap.get(messageId) || [];
+      // Collect all unique emojis from actual reactions
+      const emojiSet = new Set<string>();
+      for (const r of rows) emojiSet.add(r.emoji);
       const summaries: ReactionSummary[] = [];
-      for (const emoji of ALLOWED_EMOJIS) {
+      for (const emoji of emojiSet) {
         const matching = rows.filter((r) => r.emoji === emoji);
-        if (matching.length > 0) {
-          summaries.push({
-            emoji,
-            count: matching.length,
-            reacted: matching.some((r) => r.user_id === userId),
-          });
-        }
+        summaries.push({
+          emoji,
+          count: matching.length,
+          reacted: matching.some((r) => r.user_id === userId),
+        });
       }
       return summaries;
     },

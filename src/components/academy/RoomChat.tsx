@@ -4,7 +4,7 @@ import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./communit
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
-import { useMessageReactions, ALLOWED_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
+import { useMessageReactions, QUICK_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { useChatModeration } from "@/hooks/useChatModeration";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
