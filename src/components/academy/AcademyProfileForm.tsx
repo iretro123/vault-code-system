@@ -206,6 +206,63 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
     }
   };
 
+  const handleBannerSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!ACCEPTED_TYPES.includes(file.type)) { toast.error("JPG, PNG, or WebP only."); return; }
+    if (file.size > MAX_FILE_SIZE) { toast.error("Max 5 MB."); return; }
+
+    setUploadingBanner(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) { toast.error("Session expired. Please sign in again."); setUploadingBanner(false); return; }
+
+      // Crop to 4:1 banner ratio
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const targetW = Math.min(img.width, 1280);
+          const targetH = Math.round(targetW / 4);
+          const sourceH = Math.min(img.height, img.width / 4);
+          const sy = (img.height - sourceH) / 2;
+          const canvas = document.createElement("canvas");
+          canvas.width = targetW;
+          canvas.height = targetH;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("Canvas")); return; }
+          ctx.drawImage(img, 0, sy, img.width, sourceH, 0, 0, targetW, targetH);
+          canvas.toBlob((b) => b ? resolve(b) : reject(new Error("Crop failed")), "image/webp", 0.85);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Load failed")); };
+        img.src = url;
+      });
+
+      const path = `${user.id}/banner-${Date.now()}.webp`;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const formData = new FormData();
+      formData.append("", blob);
+      formData.append("cacheControl", "3600");
+      const uploadRes = await fetch(`${supabaseUrl}/storage/v1/object/avatars/${path}`, {
+        method: "POST",
+        headers: { "apikey": supabaseKey, "authorization": `Bearer ${accessToken}`, "x-upsert": "true" },
+        body: formData,
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      setBannerUrl(publicUrl);
+    } catch (err) {
+      console.error("[BannerUpload]", err);
+      toast.error("Banner upload failed. Please try again.");
+    } finally {
+      setUploadingBanner(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -215,6 +272,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       timezone,
       phone_number: phoneNumber.trim() || null,
       avatar_url: avatarUrl,
+      banner_url: bannerUrl,
       bio: bio.trim(),
       social_twitter: socialTwitter.trim() || null,
       social_instagram: socialInstagram.trim() || null,
