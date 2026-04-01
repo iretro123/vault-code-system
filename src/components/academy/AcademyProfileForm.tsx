@@ -66,6 +66,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState("");
   const [roleLevel, setRoleLevel] = useState("beginner");
@@ -80,7 +81,9 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const [avatarColor, setAvatarColor] = useState(AVATAR_COLORS[0]);
   const [avatarIcon, setAvatarIcon] = useState(AVATAR_ICONS[0].id);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
