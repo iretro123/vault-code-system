@@ -210,6 +210,11 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
       timezone,
       phone_number: phoneNumber.trim() || null,
       avatar_url: avatarUrl,
+      bio: bio.trim(),
+      social_twitter: socialTwitter.trim() || null,
+      social_instagram: socialInstagram.trim() || null,
+      social_tiktok: socialTiktok.trim() || null,
+      social_youtube: socialYoutube.trim() || null,
     };
     if (isOnboarding) {
       updateData.profile_completed = true;
