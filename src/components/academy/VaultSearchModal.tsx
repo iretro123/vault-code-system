@@ -77,7 +77,7 @@ export function VaultSearchModal({ open, onOpenChange }: VaultSearchModalProps) 
           .from("academy_modules")
           .select("id, title, subtitle, slug")
           .eq("visible", true)
-          .or(`title.ilike.${searchTerm},subtitle.ilike.${searchTerm}`)
+          .or(`title.ilike."%${trimmed}%",subtitle.ilike."%${trimmed}%"`)
           .limit(5),
         supabase
           .from("academy_lessons")
