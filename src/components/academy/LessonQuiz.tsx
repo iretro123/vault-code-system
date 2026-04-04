@@ -191,7 +191,7 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
           <p className="text-xs text-muted-foreground mb-1">
             Question {currentQ + 1} of {questions.length}
           </p>
-          <h4 className="text-base font-semibold text-foreground leading-snug">{q.question}</h4>
+          <h4 className="text-lg font-bold text-foreground leading-snug">{q.question}</h4>
         </div>
 
         {/* Options */}
