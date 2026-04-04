@@ -78,17 +78,21 @@ export function NextGroupCallCard() {
   const isLive = diff <= 0 && now < start + session.duration_minutes * 60 * 1000;
   const countdown = splitCountdown(Math.max(0, diff));
 
-  const Pill = ({ value, label }: { value: number; label: string }) => (
+  const Pill = ({ value, label, glow }: { value: number; label: string; glow?: boolean }) => (
     <div className="flex flex-col items-center">
       <div
-        className="min-w-[48px] text-center rounded-lg px-2.5 py-2 font-mono text-lg font-bold tracking-wider bg-primary/[0.08] border border-primary/[0.15] text-primary"
+        className={`min-w-[48px] text-center rounded-lg px-2.5 py-2 font-mono text-xl font-bold tracking-wider text-white bg-white/[0.06] border border-white/[0.10] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${glow ? "ring-1 ring-white/[0.08]" : ""}`}
       >
         {String(value).padStart(2, "0")}
       </div>
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mt-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mt-1.5">
         {label}
       </span>
     </div>
+  );
+
+  const ColonSep = () => (
+    <span className="text-white/30 font-mono text-xl font-bold animate-pulse mb-4">:</span>
   );
 
   return (
@@ -106,14 +110,19 @@ export function NextGroupCallCard() {
         )}
       </div>
 
-      <h3 className="text-base font-semibold text-foreground mb-4">{session.title}</h3>
+      <h3 className="text-base font-semibold text-white mb-4">{session.title}</h3>
 
       {!isLive && diff > 0 && (
-        <div className="flex items-center justify-center gap-3 mb-5">
-          {countdown.d > 0 && <Pill value={countdown.d} label="Days" />}
-          <Pill value={countdown.h} label="Hrs" />
-          <Pill value={countdown.m} label="Min" />
-          <Pill value={countdown.s} label="Sec" />
+        <div className="flex flex-col items-center gap-2 mb-5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">Starts In</span>
+          <div className="flex items-center gap-2">
+            {countdown.d > 0 && <><Pill value={countdown.d} label="Days" /><ColonSep /></>}
+            <Pill value={countdown.h} label="Hrs" />
+            <ColonSep />
+            <Pill value={countdown.m} label="Min" />
+            <ColonSep />
+            <Pill value={countdown.s} label="Sec" glow />
+          </div>
         </div>
       )}
 
