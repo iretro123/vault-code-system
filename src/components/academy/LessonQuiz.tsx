@@ -235,17 +235,6 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
 
       {/* Body */}
       <div className="px-6 py-6 space-y-5">
-        {/* Teaching line */}
-        <div
-          className="rounded-xl px-4 py-3 flex items-start gap-3"
-          style={{
-            background: "hsl(217 91% 60% / 0.05)",
-            borderLeft: "2px solid hsl(217 91% 60% / 0.4)",
-          }}
-        >
-          <Lightbulb className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-          <p className="text-sm text-foreground/80 leading-relaxed">{q.teach}</p>
-        </div>
 
         {/* Question */}
         <div>
