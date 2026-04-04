@@ -1,38 +1,24 @@
 
 
-## Inline Profile Editing from Profile Card
+## Add YouTube Video to Chapter 10 — Vault Archive
 
-### Problem
-The pencil icon on UserProfileCard navigates to `/academy/settings`, which loads `SettingsProfile` — a component that has NO banner, bio, or social link editing. The full profile form (`AcademyProfileForm`) lives on `/academy/profile` but isn't accessible from the card. Users have no way to edit their banner, bio, or socials from the profile popover.
+### Current State
+The module `chapter-10-vault-archive-legacy-replays-advanced-library` exists in the database but has **zero lessons**. The system already supports YouTube embedding via `video_url` on `academy_lessons` — the `AcademyModule` page extracts the YouTube ID and renders an iframe.
 
-### Solution
-Add an **inline edit mode** directly inside `UserProfileCard`. When the user clicks the pencil icon, the card expands into an edit form (banner, avatar, bio, socials) — no navigation away. Changes save to DB and sync the card immediately.
+### What to do
 
-### File Changes
+**1. Insert a lesson into `academy_lessons`**
 
-**1. `src/components/academy/community/UserProfileCard.tsx`**
-- Add `editMode` state toggle (pencil icon flips card to edit mode, X flips back)
-- In edit mode, render:
-  - Banner: clickable overlay with upload button + clear button (reuse same upload logic from AcademyProfileForm)
-  - Bio: editable textarea (max 160 chars)
-  - Social links: 4 compact inputs (Twitter, Instagram, TikTok, YouTube)
-  - Save button at bottom
-- On save: update `profiles` table with new values, clear the `usePublicProfile` cache for this user, flip back to view mode
-- Card width stays ~300px, scrolls internally if needed
-- Keep the premium solid dark styling
+Insert one lesson row with:
+- `module_slug`: `chapter-10-vault-archive-legacy-replays-advanced-library`
+- `module_title`: `Chapter 10 — Vault Archive (Legacy Replays & Advanced Library)`
+- `lesson_title`: `Vault Archive — Legacy Replays`
+- `video_url`: `https://youtu.be/yGXIxEGEQRM`
+- `sort_order`: `1`
+- `visible`: `true`
 
-**2. `src/hooks/usePublicProfile.ts`**
-- Export a `clearProfileCache(userId)` function so the card can invalidate the cache after saving
-- After save, refetch and update the displayed profile
+This is a single database insert — no code changes needed. The existing `AcademyModule` page will automatically render the YouTube embed via `getEmbedUrl()` which already handles `youtu.be/` short links.
 
-### What stays the same
-- View mode layout unchanged
-- Privacy model unchanged
-- Non-own-profile cards unchanged
-- The settings page profile form still works independently
-
-### Technical Details
-- Banner upload reuses the same `avatars` bucket + crop logic already in `AcademyProfileForm`
-- Save does a single `supabase.from('profiles').update(...)` call
-- No new DB changes needed — all columns already exist
+### Files changed
+None — this is a data-only change (one DB insert).
 
