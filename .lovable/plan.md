@@ -1,52 +1,39 @@
 
 
-## Dashboard Optimization — Simplified, Futuristic Layout
+## Dashboard Cards Overhaul — Match Luxury Design System + Inline Video Player
 
-### Overview
-Redesign the Academy dashboard to match the reference screenshot's clean card-based flow. Remove 3 cards (Trade OS, Coach bio, Live Calls list) and replace with 3 new premium cards: **Next Group Call** (with live countdown timer), **Start Learning** (latest uploaded lesson), and **Ask Coach** (inline input that opens coach drawer).
-
-### Current Dashboard Layout
-1. HeroHeader (greeting + Quick button) — **KEEP**
-2. GameplanCard ("Your Onboarding") + MyTradesCard grid — **KEEP GameplanCard, REMOVE MyTradesCard**
-3. CoachCard (RZ bio + "Meet Your Personal Trading Coach") — **REMOVE**
-4. LiveCallsCard (list of upcoming calls) — **REMOVE**
-5. QuickAccessRow (5 icon buttons) — **REMOVE**
-
-### New Dashboard Layout (top to bottom)
-1. **HeroHeader** — keep as-is
-2. **GameplanCard** — keep, full width (remove the grid split with MyTradesCard)
-3. **NextGroupCallCard** — NEW: shows next scheduled `live_sessions` row, live countdown timer (days/hours/minutes/seconds), "View Calls →" button linking to `/academy/live`. Gold/amber accent like reference.
-4. **StartLearningCard** — NEW: queries `academy_lessons` ordered by `created_at DESC LIMIT 1`, shows module title, lesson title, duration estimate, "Start Module →" button. Green dot + "START LEARNING" badge.
-5. **AskCoachCard** — NEW: clean card with icon, description text, input field. Clicking send or pressing Enter opens the coach drawer (dispatches `toggle-coach-drawer` event). Minimalist like reference.
+### Problem
+The three new cards (Next Group Call, Start Learning, Ask Coach) use amber/gold buttons and styling that doesn't match the existing design system. The design system uses **blue as the primary accent** with dark luxury cards. The "Start Learning" card also just navigates away — the user wants an **inline video player** right on the dashboard.
 
 ### Changes
 
-**File: `src/components/academy/dashboard/NextGroupCallCard.tsx`** — NEW
-- Query `live_sessions` for next upcoming session (`session_date > now()`, order ASC, limit 1)
-- Live countdown timer using `setInterval` every second — displays days/hours/minutes/seconds in styled pill badges (dark bg, amber text like reference)
-- "View Calls →" full-width amber/gold gradient button → navigates to `/academy/live`
-- `vault-luxury-card` wrapper with subtle gold border accent
+**File: `src/components/academy/dashboard/StartLearningCard.tsx`** — Major rewrite
+- Fetch the latest lesson including `video_url` field
+- Show a **video thumbnail/preview** area (extract YouTube thumbnail from video URL, or show a dark preview with a centered play button)
+- When user clicks play, expand an inline iframe video player (same `getEmbedUrl` logic from AcademyModule) — no navigation away
+- Replace amber/gold button with the design system's **blue primary** button (`bg-primary hover:bg-primary/90`)
+- Use blue accent for "START LEARNING" badge instead of emerald
+- Add a "Watch Now" button that toggles the video player open/closed
 
-**File: `src/components/academy/dashboard/StartLearningCard.tsx`** — NEW
-- Query `academy_lessons` joined with `academy_modules` for the most recently created visible lesson
-- Shows: green "START LEARNING" badge, module title (small caps), lesson title (bold white), duration, "Start Module →" amber button
-- Links to `/academy/learn/{module_slug}` or the module page
+**File: `src/components/academy/dashboard/NextGroupCallCard.tsx`** — Restyle
+- Replace all amber/gold colors with **blue primary** accent (`text-primary`, `bg-primary`)
+- Countdown pills: use `bg-primary/[0.08]` background with `text-primary` text instead of amber
+- Button: `bg-primary text-white` solid button instead of gold gradient
+- Icon color: `text-primary` instead of `text-amber-400`
 
-**File: `src/components/academy/dashboard/AskCoachCard.tsx`** — NEW
-- Icon + "Ask Coach" title + subtitle text
-- Text input with send button
-- On submit: opens coach drawer via `window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))` — the input is just a trigger, not actual message sending
-- Clean dark card, subtle border
+**File: `src/components/academy/dashboard/AskCoachCard.tsx`** — Restyle
+- Already uses `text-primary` — keep as-is, just ensure the input border and send button match the luxury card system
+- Refine input styling to match the dark card aesthetic better
 
-**File: `src/pages/academy/AcademyHome.tsx`** — MODIFY
-- Remove imports: `MyTradesCard`, `CoachCard`, `LiveCallsCard`, `QuickAccessRow`
-- Remove the `lg:grid-cols-5` grid — make `GameplanCard` full width
-- Add the 3 new cards below GameplanCard in a vertical stack
-- Order: HeroHeader → GameplanCard → NextGroupCallCard → StartLearningCard → AskCoachCard
+### Video Thumbnail Logic
+Extract YouTube video ID from URL → construct thumbnail: `https://img.youtube.com/vi/{VIDEO_ID}/hqdefault.jpg`. For non-YouTube, show a dark placeholder with a play icon. Clicking opens an inline iframe embed within the card.
 
-### Design Language
-- All cards use `vault-luxury-card` class
-- Gold/amber accent for CTAs (matching reference's warm gold buttons)
-- Countdown pills: dark rounded backgrounds with amber text
-- Clean spacing, no clutter, futuristic dark aesthetic
+### Design Consistency
+- All buttons: `bg-primary text-white rounded-xl` (no more gold gradients)
+- All badges/labels: `text-primary` blue accent
+- All cards: `vault-luxury-card` with existing dark background system
+- Countdown pills: dark bg with blue text
+
+### Helper
+- Extract `getEmbedUrl` and a new `getYouTubeThumbnail` as shared utils (or inline in StartLearningCard)
 
