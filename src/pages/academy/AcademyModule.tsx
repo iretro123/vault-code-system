@@ -22,6 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import LessonQuiz from "@/components/academy/LessonQuiz";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -415,6 +416,9 @@ const AcademyModule = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Quiz */}
+                  <LessonQuiz moduleSlug={moduleSlug} lessonId={activeLesson.id} />
                 </div>
               </div>
 
