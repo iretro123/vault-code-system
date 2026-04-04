@@ -1,24 +1,59 @@
 
 
-## Add YouTube Video to Chapter 10 — Vault Archive
+## Add Video Title + Interactive Quiz to Chapter 10
 
-### Current State
-The module `chapter-10-vault-archive-legacy-replays-advanced-library` exists in the database but has **zero lessons**. The system already supports YouTube embedding via `video_url` on `academy_lessons` — the `AcademyModule` page extracts the YouTube ID and renders an iframe.
+### Overview
+Two changes to the Chapter 10 lesson page:
+1. Update the lesson title in the database to the full training session name
+2. Build an inline quiz component below the video/notes section with the 6-question "leapfrog style" quiz
 
-### What to do
+### Database Change (Data Update via Insert Tool)
 
-**1. Insert a lesson into `academy_lessons`**
+Update the lesson title:
+```sql
+UPDATE academy_lessons 
+SET lesson_title = 'Trading Imbalances + Liquidity (Full Breakdown) — Group Training Session'
+WHERE module_slug = 'chapter-10-vault-archive-legacy-replays-advanced-library' 
+AND video_url LIKE '%yGXIxEGEQRM%';
+```
 
-Insert one lesson row with:
-- `module_slug`: `chapter-10-vault-archive-legacy-replays-advanced-library`
-- `module_title`: `Chapter 10 — Vault Archive (Legacy Replays & Advanced Library)`
-- `lesson_title`: `Vault Archive — Legacy Replays`
-- `video_url`: `https://youtu.be/yGXIxEGEQRM`
-- `sort_order`: `1`
-- `visible`: `true`
+### New Component: `src/components/academy/LessonQuiz.tsx`
 
-This is a single database insert — no code changes needed. The existing `AcademyModule` page will automatically render the YouTube embed via `getEmbedUrl()` which already handles `youtu.be/` short links.
+A self-contained quiz component with:
+- 6 hardcoded questions (matched to this specific lesson by a quiz ID/slug system)
+- Each question: 1-line teaching prompt → question → 3 choices
+- Wrong answer: show hint (not the answer), allow retry up to 3 attempts
+- After 3 wrong: reveal correct answer + explanation, auto-advance
+- Correct answer: show explanation, green confirmation, advance
+- Completion screen: "You don't need more indicators. You needed a map."
+- Progress dots at top showing which question user is on
+- Premium dark solid card styling (no glass)
+- Smooth transitions between questions
 
-### Files changed
-None — this is a data-only change (one DB insert).
+Quiz data structure (hardcoded array for this lesson):
+```ts
+interface QuizQuestion {
+  teach: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  hint: string;
+  explanation: string;
+}
+```
+
+State: `currentQ`, `attempts` per question, `revealed` (show answer after 3 tries), `completed`
+
+### File Change: `src/pages/academy/AcademyModule.tsx`
+
+After the Study Notes section (~line 417), render `<LessonQuiz moduleSlug={moduleSlug} lessonId={activeLesson.id} />`. The component internally checks if a quiz exists for the given lesson and renders nothing if not.
+
+### Quiz-Lesson Mapping
+
+For now, hardcode the quiz data inside `LessonQuiz.tsx` keyed by `module_slug`. This keeps it simple — one file, no DB schema changes. Future quizzes can be added to the same map.
+
+### Files
+1. **DB update** — rename lesson title
+2. **`src/components/academy/LessonQuiz.tsx`** — new quiz component (all 6 questions, hint/retry logic, completion screen)
+3. **`src/pages/academy/AcademyModule.tsx`** — render `<LessonQuiz>` below study notes
 
