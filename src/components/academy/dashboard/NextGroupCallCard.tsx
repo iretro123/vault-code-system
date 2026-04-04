@@ -55,7 +55,7 @@ export function NextGroupCallCard() {
 
   if (!session) {
     return (
-      <div className="vault-luxury-card p-6">
+      <div className="vault-luxury-card p-6 h-full flex flex-col">
         <div className="flex items-center gap-3 mb-3">
           <Video className="h-5 w-5 text-primary" />
           <span className="text-xs font-bold uppercase tracking-[0.12em] text-primary/80">
@@ -65,7 +65,7 @@ export function NextGroupCallCard() {
         <p className="text-sm text-muted-foreground">No upcoming calls scheduled.</p>
         <button
           onClick={() => navigate("/academy/live")}
-          className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
+          className="mt-auto w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
         >
           View Calls <ArrowRight className="h-4 w-4" />
         </button>
@@ -96,7 +96,7 @@ export function NextGroupCallCard() {
   );
 
   return (
-    <div className="vault-luxury-card p-6">
+    <div className="vault-luxury-card p-6 h-full flex flex-col">
       <div className="flex items-center gap-3 mb-2">
         <Video className="h-5 w-5 text-primary" />
         <span className="text-xs font-bold uppercase tracking-[0.12em] text-primary/80">
@@ -128,7 +128,7 @@ export function NextGroupCallCard() {
 
       <button
         onClick={() => navigate("/academy/live")}
-        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
+        className="mt-auto w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
       >
         {isLive ? "Join Now" : "View Calls"} <ArrowRight className="h-4 w-4" />
       </button>

@@ -75,7 +75,7 @@ export function StartLearningCard() {
   const embedUrl = getEmbedUrl(lesson.video_url);
 
   return (
-    <div className="vault-luxury-card p-6">
+    <div className="vault-luxury-card p-6 h-full flex flex-col">
       <div className="flex items-center gap-3 mb-2">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -132,21 +132,23 @@ export function StartLearningCard() {
         </button>
       )}
 
-      <button
-        onClick={() => setPlaying(true)}
-        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
-      >
-        <Play className="h-4 w-4" /> Watch Now
-      </button>
-
-      {hasQuiz && (
+      <div className="mt-auto space-y-2">
         <button
-          onClick={() => navigate(`/academy/learn/${lesson.module_slug}`)}
-          className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-150 active:scale-[0.97]"
+          onClick={() => setPlaying(true)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
         >
-          <GraduationCap className="h-4 w-4" /> Take the Quiz
+          <Play className="h-4 w-4" /> Watch Now
         </button>
-      )}
+
+        {hasQuiz && (
+          <button
+            onClick={() => navigate(`/academy/learn/${lesson.module_slug}`)}
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-150 active:scale-[0.97]"
+          >
+            <GraduationCap className="h-4 w-4" /> Take the Quiz
+          </button>
+        )}
+      </div>
     </div>
   );
 }
