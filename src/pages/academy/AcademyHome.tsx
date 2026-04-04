@@ -7,12 +7,9 @@ import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
 import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
-import { MyTradesCard } from "@/components/academy/dashboard/MyTradesCard";
-
-import { CoachCard } from "@/components/academy/dashboard/CoachCard";
-import { LiveCallsCard } from "@/components/academy/dashboard/LiveCallsCard";
-import { ToolkitCard } from "@/components/academy/dashboard/ToolkitCard";
-import { QuickAccessRow } from "@/components/academy/dashboard/QuickAccessRow";
+import { NextGroupCallCard } from "@/components/academy/dashboard/NextGroupCallCard";
+import { StartLearningCard } from "@/components/academy/dashboard/StartLearningCard";
+import { AskCoachCard } from "@/components/academy/dashboard/AskCoachCard";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
 import { ClaimRoleModal } from "@/components/academy/ClaimRoleModal";
 import { toast } from "sonner";
@@ -122,20 +119,13 @@ const AcademyHome = () => {
         <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
         
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
-          <div className="lg:col-span-3">
-            <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
-          </div>
-          <div className="lg:col-span-2">
-            <MyTradesCard />
-          </div>
-        </div>
+        <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
 
-        <CoachCard />
+        <NextGroupCallCard />
 
-        <LiveCallsCard />
+        <StartLearningCard />
 
-        <QuickAccessRow />
+        <AskCoachCard />
       </div>
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
