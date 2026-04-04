@@ -92,7 +92,7 @@ export function NextGroupCallCard() {
   );
 
   const ColonSep = () => (
-    <span className="text-white/30 font-mono text-xl font-bold animate-pulse mb-4">:</span>
+    <span className="text-white/30 font-mono text-xl font-bold mb-4">:</span>
   );
 
   return (
