@@ -1,38 +1,32 @@
 
 
-## Luxury Quiz Upgrade
+## Add Cartoony White Mascot Logo to Quiz Card
 
-### Overview
-Elevate the quiz from a basic card to a premium, polished component matching the Vault luxury design system — layered backgrounds, subtle glows, refined typography, smooth micro-interactions.
+### Change
 
-### Changes
+**File: `src/components/academy/LessonQuiz.tsx`** — lines 188-198
 
-**File: `src/components/academy/LessonQuiz.tsx`** — full visual overhaul:
+Restructure the header to `justify-between` layout and replace the small PenLine icon on the left with just the text. On the **right side**, add a cartoony white mascot — a simple inline SVG of a round smiley character holding a pencil, rendered in white. Think chibi/cartoon style: big round head, dot eyes, curved smile, tiny pencil in hand.
 
-1. **Outer card** — Replace flat `bg-[hsl(var(--card))]` with layered radial gradient background (dark center, subtle blue edge glow), thicker border with `border-white/[0.06]`, and `shadow-[0_10px_40px_rgba(0,0,0,0.5)]` for depth
+**Current layout:**
+```
+[pencil-icon] [VAULT ACADEMY QUIZ]
+```
 
-2. **Header** — Add a subtle top-edge shimmer line (1px gradient from transparent → primary → transparent), make "VAULT OS QUIZ" use letter-spacing (`tracking-widest`), add a small shield/brain icon beside it
+**New layout:**
+```
+[VAULT ACADEMY QUIZ]  ─────  [cartoony mascot logo]
+              subtitle          (white, ~40x40px)
+```
 
-3. **Progress bar** — Replace plain dots with segmented glass-style bar (like XPProgressBar), completed segments glow primary blue with a subtle pulse on the active segment
+The mascot SVG will be a simple inline illustration:
+- Round head with two dot eyes and a curved smile
+- Small body/arm holding a pencil at an angle
+- All white (`fill="white"`) with slight opacity variations for depth
+- Sized at `h-10 w-10`, no background badge — just the character floating
 
-4. **Teaching line** — Upgrade to a premium inset card with left accent border (2px solid primary), slightly deeper background, and a `Lightbulb` icon instead of emoji
+Also add the same mascot (slightly larger) to the completion screen next to the trophy.
 
-5. **Question text** — Bigger (`text-xl`), white, bold, with slight text-shadow for depth
-
-6. **Answer options** — Larger touch targets (`py-4`), letter badges with ring borders, hover lift effect (`hover:-translate-y-0.5 hover:shadow-lg`), correct = emerald glow border + bg, wrong = red glow, idle = subtle border with hover brightening
-
-7. **Hint card** — Amber left-border accent, slightly more prominent
-
-8. **Explanation card** — Emerald left-border accent, clean
-
-9. **Next button** — Full-width gradient button with subtle glow on hover (`shadow-[0_0_16px_hsl(217_91%_60%/0.15)]`)
-
-10. **Completion screen** — Trophy with animated glow ring, score displayed as a large fraction, quote in italic serif-like styling, "Retake" button ghost-styled
-
-**File: `src/index.css`** — Add 2 small utility animations:
-- `.vault-quiz-glow` — subtle pulsing blue glow for active progress segment
-- `.vault-quiz-trophy-ring` — rotating ring animation for completion trophy
-
-### Result
-The quiz feels like a premium interactive experience — clean, dark, elevated with subtle depth cues and micro-interactions. No glass/transparency — solid dark luxury surfaces throughout.
+### Files changed
+- `src/components/academy/LessonQuiz.tsx` — header restructure + inline SVG mascot
 
