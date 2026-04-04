@@ -1,35 +1,45 @@
 
 
-## Add "Take the Quiz" Button to Dashboard
+## Luxury White Countdown Timer for Next Group Call
 
 ### Overview
-Add a conditional "Take the Quiz" button to the StartLearningCard on the dashboard. It only shows when a quiz is available (currently Chapter 10). Tapping it navigates to the module page where the quiz renders inline. Fully responsive for both mobile and desktop.
+Restyle the countdown timer pills to white text on dark elevated surfaces with a premium gamified feel — glowing separators, subtle pulse on seconds, and a "STARTS IN" label.
 
-### Changes
+### Changes — `src/components/academy/dashboard/NextGroupCallCard.tsx`
 
-**File: `src/components/academy/dashboard/StartLearningCard.tsx`**
+**Pill component (lines 81-92)** — Replace blue-tinted pills with luxury white design:
+- Background: `bg-white/[0.06]` with `border border-white/[0.10]` — dark glass tile
+- Text: `text-white font-mono text-xl font-bold` — crisp white digits
+- Label: `text-white/40` instead of `text-muted-foreground/50`
+- Add subtle inner glow via `shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]`
 
-1. Import the `QUIZ_MAP` keys (or hardcode the slug check) and `useNavigate`
-2. After the "Watch Now" button, add a conditional "Take the Quiz" button that appears only when the current lesson's `module_slug` has a quiz entry in `QUIZ_MAP`
-3. The button navigates to `/academy/learn/chapter-10-vault-archive-legacy-replays-advanced-library` (the module page where LessonQuiz auto-renders)
-4. Style: ghost/outline variant with a distinctive icon (e.g. `Trophy` or `GraduationCap`), sits below the Watch Now button, full width, responsive sizing
+**Countdown section (lines 111-118)** — Add gamified elements:
+- Add a "STARTS IN" micro-label above the pills (`text-[10px] uppercase tracking-[0.2em] text-white/30`)
+- Add animated colon separators between pills (`:` characters that pulse with `animate-pulse`)
+- Seconds pill gets a subtle ring animation: `ring-1 ring-white/[0.08]` with a pulsing glow
 
-**File: `src/components/academy/LessonQuiz.tsx`**
+**Header badge (line 98)** — Keep `text-primary` for the "Next Group Call" label (blue accent per design system)
 
-5. Export the `QUIZ_MAP` keys so the StartLearningCard can check availability without duplicating data:
-   ```ts
-   export const QUIZ_SLUGS = Object.keys(QUIZ_MAP);
-   ```
+**Session title (line 109)** — Change to `text-white` for stronger contrast
 
-### Quiz Availability Logic
-```ts
-import { QUIZ_SLUGS } from "@/components/academy/LessonQuiz";
-const hasQuiz = lesson && QUIZ_SLUGS.includes(lesson.module_slug);
+### Visual Result
+```text
+┌─────────────────────────────────┐
+│  📹  NEXT GROUP CALL            │
+│  Session Title Here             │
+│                                 │
+│         STARTS IN               │
+│   ┌──┐   ┌──┐   ┌──┐   ┌──┐   │
+│   │05│ : │12│ : │34│ : │08│   │
+│   │HR│   │HR│   │MN│   │SC│   │
+│   └──┘   └──┘   └──┘   └──┘   │
+│                                 │
+│     [ View Calls → ]            │
+└─────────────────────────────────┘
 ```
 
-If `hasQuiz` is true, render the "Take the Quiz" button below "Watch Now". Otherwise, nothing extra shows.
+White digits on dark tiles, pulsing colon separators, seconds pill with subtle glow ring. Clean, premium, gamified countdown feel.
 
-### Responsive
-- Mobile (current 390px viewport): full-width stacked buttons, comfortable tap targets (py-3)
-- Desktop: same full-width layout within the card, consistent with existing card design
+### Files changed
+- `src/components/academy/dashboard/NextGroupCallCard.tsx`
 
