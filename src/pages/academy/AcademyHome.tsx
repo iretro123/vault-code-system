@@ -117,15 +117,17 @@ const AcademyHome = () => {
     <>
       <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl animate-fade-in">
         <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
-        
 
         <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
 
-        <NextGroupCallCard />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <NextGroupCallCard />
+          <StartLearningCard />
+        </div>
 
-        <StartLearningCard />
-
-        <AskCoachCard />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <AskCoachCard />
+        </div>
       </div>
 
       <DailyCheckInModal open={checkInOpen} onOpenChange={setCheckInOpen} />
