@@ -55,7 +55,7 @@ export function NextGroupCallCard() {
 
   if (!session) {
     return (
-      <div className="vault-luxury-card p-6 h-full flex flex-col">
+      <div className="vault-luxury-card p-6 flex flex-col">
         <div className="flex items-center gap-3 mb-3">
           <Video className="h-5 w-5 text-primary" />
           <span className="text-xs font-bold uppercase tracking-[0.12em] text-primary/80">
