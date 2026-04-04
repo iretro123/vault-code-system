@@ -416,6 +416,9 @@ const AcademyModule = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Quiz */}
+                  <LessonQuiz moduleSlug={moduleSlug} lessonId={activeLesson.id} />
                 </div>
               </div>
 
