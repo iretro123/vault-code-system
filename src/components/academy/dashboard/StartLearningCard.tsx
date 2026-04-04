@@ -29,6 +29,10 @@ export function StartLearningCard() {
   const [lesson, setLesson] = useState<LatestLesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const navigate = useNavigate();
+
+  const QUIZ_SLUGS = Object.keys(QUIZ_MAP);
+  const hasQuiz = lesson && QUIZ_SLUGS.includes(lesson.module_slug);
 
   useEffect(() => {
     (async () => {
