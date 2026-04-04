@@ -367,7 +367,7 @@ const AcademyModule = () => {
               </div>
 
               {/* Lesson info */}
-              <div className="px-6 py-5 flex-1">
+              <div className="px-6 py-5 flex-1 pb-32">
                 <div className="max-w-3xl mx-auto">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
