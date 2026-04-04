@@ -1,24 +1,38 @@
 
 
-## Fix Quiz Readability — Clear Title + Bold Question
+## Luxury Quiz Upgrade
 
-### Problem
-The quiz header says "How Price Actually Moves (Simple Mode)" in small muted text — students don't know what it is. The question text is too small and not prominent enough. Needs a clear "VAULT OS QUIZ" label and the question in full white bold.
+### Overview
+Elevate the quiz from a basic card to a premium, polished component matching the Vault luxury design system — layered backgrounds, subtle glows, refined typography, smooth micro-interactions.
 
 ### Changes
 
-**File: `src/components/academy/LessonQuiz.tsx`**
+**File: `src/components/academy/LessonQuiz.tsx`** — full visual overhaul:
 
-1. **Header section** (~line 161-181): Replace the small muted subtitle with a prominent "VAULT OS QUIZ" title in bold white, with the topic name as a smaller subtitle below it
+1. **Outer card** — Replace flat `bg-[hsl(var(--card))]` with layered radial gradient background (dark center, subtle blue edge glow), thicker border with `border-white/[0.06]`, and `shadow-[0_10px_40px_rgba(0,0,0,0.5)]` for depth
 
-2. **Question text** (~line 190-195): Make the question larger (`text-lg`), full white (`text-white`), and bold (`font-bold`) so it stands out clearly. Keep "Question X of 6" as a small label above.
+2. **Header** — Add a subtle top-edge shimmer line (1px gradient from transparent → primary → transparent), make "VAULT OS QUIZ" use letter-spacing (`tracking-widest`), add a small shield/brain icon beside it
 
-3. **Teaching line** (~line 186-188): Keep as-is but ensure it reads as a "lesson hint" before the question
+3. **Progress bar** — Replace plain dots with segmented glass-style bar (like XPProgressBar), completed segments glow primary blue with a subtle pulse on the active segment
 
-4. **Answer options** (~line 198-230): Bump text size slightly for readability
+4. **Teaching line** — Upgrade to a premium inset card with left accent border (2px solid primary), slightly deeper background, and a `Lightbulb` icon instead of emoji
+
+5. **Question text** — Bigger (`text-xl`), white, bold, with slight text-shadow for depth
+
+6. **Answer options** — Larger touch targets (`py-4`), letter badges with ring borders, hover lift effect (`hover:-translate-y-0.5 hover:shadow-lg`), correct = emerald glow border + bg, wrong = red glow, idle = subtle border with hover brightening
+
+7. **Hint card** — Amber left-border accent, slightly more prominent
+
+8. **Explanation card** — Emerald left-border accent, clean
+
+9. **Next button** — Full-width gradient button with subtle glow on hover (`shadow-[0_0_16px_hsl(217_91%_60%/0.15)]`)
+
+10. **Completion screen** — Trophy with animated glow ring, score displayed as a large fraction, quote in italic serif-like styling, "Retake" button ghost-styled
+
+**File: `src/index.css`** — Add 2 small utility animations:
+- `.vault-quiz-glow` — subtle pulsing blue glow for active progress segment
+- `.vault-quiz-trophy-ring` — rotating ring animation for completion trophy
 
 ### Result
-- Big bold "VAULT OS QUIZ" at the top — instantly clear what this is
-- Question in large white bold text — impossible to miss
-- Answers clearly listed below with good spacing
+The quiz feels like a premium interactive experience — clean, dark, elevated with subtle depth cues and micro-interactions. No glass/transparency — solid dark luxury surfaces throughout.
 
