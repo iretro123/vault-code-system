@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, X } from "lucide-react";
+import { Play, X, GraduationCap } from "lucide-react";
+import { QUIZ_MAP } from "@/components/academy/LessonQuiz";
 
 interface LatestLesson {
   id: string;
@@ -27,6 +29,10 @@ export function StartLearningCard() {
   const [lesson, setLesson] = useState<LatestLesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const navigate = useNavigate();
+
+  const QUIZ_SLUGS = Object.keys(QUIZ_MAP);
+  const hasQuiz = lesson && QUIZ_SLUGS.includes(lesson.module_slug);
 
   useEffect(() => {
     (async () => {
@@ -132,6 +138,15 @@ export function StartLearningCard() {
       >
         <Play className="h-4 w-4" /> Watch Now
       </button>
+
+      {hasQuiz && (
+        <button
+          onClick={() => navigate(`/academy/learn/${lesson.module_slug}`)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-150 active:scale-[0.97]"
+        >
+          <GraduationCap className="h-4 w-4" /> Take the Quiz
+        </button>
+      )}
     </div>
   );
 }
