@@ -126,9 +126,9 @@ export function NextGroupCallCard() {
         </div>
       )}
 
-      <button style={{marginTop: 'auto'}}
+      <button
         onClick={() => navigate("/academy/live")}
-        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
+        className="mt-auto w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
       >
         {isLive ? "Join Now" : "View Calls"} <ArrowRight className="h-4 w-4" />
       </button>
