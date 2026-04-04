@@ -187,14 +187,30 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
 
       {/* Header */}
       <div className="px-6 pt-5 pb-4 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, hsl(217 91% 60% / 0.2), hsl(217 91% 60% / 0.05))", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
-            <PenLine className="h-4.5 w-4.5 text-primary" />
-          </div>
+        <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-foreground tracking-[0.2em] uppercase">VAULT ACADEMY QUIZ</h3>
             <p className="text-xs text-muted-foreground mt-0.5">How Price Actually Moves</p>
           </div>
+          <svg viewBox="0 0 64 64" className="h-10 w-10 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Head */}
+            <circle cx="32" cy="24" r="16" fill="white" opacity="0.95"/>
+            {/* Eyes */}
+            <circle cx="26" cy="22" r="2.2" fill="hsl(214,22%,12%)"/>
+            <circle cx="38" cy="22" r="2.2" fill="hsl(214,22%,12%)"/>
+            {/* Smile */}
+            <path d="M26 28 Q32 34 38 28" stroke="hsl(214,22%,12%)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+            {/* Body */}
+            <path d="M24 40 Q32 46 40 40 L40 38 Q32 42 24 38 Z" fill="white" opacity="0.8"/>
+            {/* Pencil in right hand */}
+            <line x1="42" y1="36" x2="54" y2="52" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+            <polygon points="54,52 56,56 52,54" fill="white" opacity="0.9"/>
+            <line x1="42" y1="36" x2="44" y2="38" stroke="hsl(217,91%,60%)" strokeWidth="2.5" strokeLinecap="round"/>
+            {/* Graduation cap */}
+            <polygon points="20,14 32,8 44,14 32,18" fill="white" opacity="0.85"/>
+            <line x1="32" y1="18" x2="32" y2="12" stroke="white" strokeWidth="1.5" opacity="0.6"/>
+            <circle cx="32" cy="11" r="1.2" fill="white" opacity="0.6"/>
+          </svg>
         </div>
 
         {/* Segmented progress bar */}
