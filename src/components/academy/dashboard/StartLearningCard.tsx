@@ -132,7 +132,7 @@ export function StartLearningCard() {
         </button>
       )}
 
-      <button
+      <div className="mt-auto"><button
         onClick={() => setPlaying(true)}
         className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
       >
