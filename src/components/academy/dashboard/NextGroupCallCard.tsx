@@ -67,7 +67,7 @@ export function NextGroupCallCard() {
           onClick={() => navigate("/academy/live")}
           className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
         >
-          View Replays <ArrowRight className="h-4 w-4" />
+          View Calls <ArrowRight className="h-4 w-4" />
         </button>
       </div>
     );
