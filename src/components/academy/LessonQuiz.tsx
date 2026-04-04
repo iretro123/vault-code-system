@@ -208,7 +208,7 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
                 onClick={() => handleSelect(i)}
                 disabled={showExplanation || revealed}
                 className={cn(
-                  "w-full text-left px-4 py-3.5 rounded-xl border text-sm font-medium transition-all duration-200",
+                  "w-full text-left px-4 py-3.5 rounded-xl border text-[15px] font-medium transition-all duration-200",
                   showCorrectHighlight
                     ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
                     : showWrongHighlight
