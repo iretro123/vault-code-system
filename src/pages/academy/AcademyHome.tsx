@@ -8,6 +8,7 @@ import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
 import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
 import { NextGroupCallCard } from "@/components/academy/dashboard/NextGroupCallCard";
+import { CommunityCard } from "@/components/academy/dashboard/CommunityCard";
 import { StartLearningCard } from "@/components/academy/dashboard/StartLearningCard";
 import { AskCoachCard } from "@/components/academy/dashboard/AskCoachCard";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
@@ -121,7 +122,10 @@ const AcademyHome = () => {
         <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-          <NextGroupCallCard />
+          <div className="flex flex-col gap-5">
+            <NextGroupCallCard />
+            <CommunityCard />
+          </div>
           <StartLearningCard />
         </div>
 
