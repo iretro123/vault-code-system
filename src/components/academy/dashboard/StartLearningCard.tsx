@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, X } from "lucide-react";
+import { Play, X, GraduationCap } from "lucide-react";
+import { QUIZ_MAP } from "@/components/academy/LessonQuiz";
 
 interface LatestLesson {
   id: string;

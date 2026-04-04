@@ -12,7 +12,7 @@ interface QuizQuestion {
   explanation: string;
 }
 
-const QUIZ_MAP: Record<string, QuizQuestion[]> = {
+export const QUIZ_MAP: Record<string, QuizQuestion[]> = {
   "chapter-10-vault-archive-legacy-replays-advanced-library": [
     {
       teach: "Price moves to where money is sitting.",
