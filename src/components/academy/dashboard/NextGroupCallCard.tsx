@@ -57,19 +57,15 @@ export function NextGroupCallCard() {
     return (
       <div className="vault-luxury-card p-6">
         <div className="flex items-center gap-3 mb-3">
-          <Video className="h-5 w-5 text-amber-400" />
-          <span className="text-xs font-bold uppercase tracking-[0.12em] text-amber-400/80">
+          <Video className="h-5 w-5 text-primary" />
+          <span className="text-xs font-bold uppercase tracking-[0.12em] text-primary/80">
             Next Group Call
           </span>
         </div>
         <p className="text-sm text-muted-foreground">No upcoming calls scheduled.</p>
         <button
           onClick={() => navigate("/academy/live")}
-          className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all duration-150 active:scale-[0.97]"
-          style={{
-            background: "linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(32 95% 44%) 100%)",
-            color: "#1a1a1a",
-          }}
+          className="mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
         >
           View Replays <ArrowRight className="h-4 w-4" />
         </button>
@@ -85,12 +81,7 @@ export function NextGroupCallCard() {
   const Pill = ({ value, label }: { value: number; label: string }) => (
     <div className="flex flex-col items-center">
       <div
-        className="min-w-[48px] text-center rounded-lg px-2.5 py-2 font-mono text-lg font-bold tracking-wider"
-        style={{
-          background: "rgba(245, 158, 11, 0.08)",
-          border: "1px solid rgba(245, 158, 11, 0.15)",
-          color: "hsl(38 92% 50%)",
-        }}
+        className="min-w-[48px] text-center rounded-lg px-2.5 py-2 font-mono text-lg font-bold tracking-wider bg-primary/[0.08] border border-primary/[0.15] text-primary"
       >
         {String(value).padStart(2, "0")}
       </div>
@@ -101,13 +92,10 @@ export function NextGroupCallCard() {
   );
 
   return (
-    <div
-      className="vault-luxury-card p-6"
-      style={{ borderColor: "rgba(245, 158, 11, 0.1)" }}
-    >
+    <div className="vault-luxury-card p-6">
       <div className="flex items-center gap-3 mb-2">
-        <Video className="h-5 w-5 text-amber-400" />
-        <span className="text-xs font-bold uppercase tracking-[0.12em] text-amber-400/80">
+        <Video className="h-5 w-5 text-primary" />
+        <span className="text-xs font-bold uppercase tracking-[0.12em] text-primary/80">
           Next Group Call
         </span>
         {isLive && (
@@ -131,11 +119,7 @@ export function NextGroupCallCard() {
 
       <button
         onClick={() => navigate("/academy/live")}
-        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all duration-150 active:scale-[0.97] hover:brightness-110"
-        style={{
-          background: "linear-gradient(135deg, hsl(38 92% 50%) 0%, hsl(32 95% 44%) 100%)",
-          color: "#1a1a1a",
-        }}
+        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
       >
         {isLive ? "Join Now" : "View Calls"} <ArrowRight className="h-4 w-4" />
       </button>

@@ -22,13 +22,7 @@ export function AskCoachCard() {
         Got a question about trading, setups, or your progress? Ask anything.
       </p>
 
-      <div
-        className="flex items-center gap-2 rounded-xl px-4 py-3"
-        style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
-        }}
-      >
+      <div className="flex items-center gap-2 rounded-xl px-4 py-3 bg-muted/30 border border-border/50">
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
