@@ -159,9 +159,8 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
     <div className="rounded-2xl bg-[hsl(var(--card))] border border-border overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b border-border">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-          How Price Actually Moves (Simple Mode)
-        </p>
+        <h3 className="text-lg font-bold text-foreground tracking-tight">VAULT OS QUIZ</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">How Price Actually Moves</p>
         {/* Progress dots */}
         <div className="flex items-center gap-1.5">
           {questions.map((_, i) => (
