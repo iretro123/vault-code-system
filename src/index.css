@@ -1252,3 +1252,22 @@ html {
     transform: scale(1) translateY(0);
   }
 }
+
+/* Vault Quiz — premium animations */
+@keyframes vault-quiz-glow-pulse {
+  0%, 100% { box-shadow: 0 0 4px hsl(217 91% 60% / 0.3); }
+  50% { box-shadow: 0 0 12px hsl(217 91% 60% / 0.5); }
+}
+
+.vault-quiz-glow {
+  animation: vault-quiz-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes vault-quiz-trophy-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.vault-quiz-trophy-ring {
+  animation: vault-quiz-trophy-spin 8s linear infinite;
+}
