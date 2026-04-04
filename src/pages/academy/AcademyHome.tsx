@@ -8,6 +8,7 @@ import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { HeroHeader } from "@/components/academy/dashboard/HeroHeader";
 import { GameplanCard } from "@/components/academy/dashboard/GameplanCard";
 import { NextGroupCallCard } from "@/components/academy/dashboard/NextGroupCallCard";
+import { CommunityCard } from "@/components/academy/dashboard/CommunityCard";
 import { StartLearningCard } from "@/components/academy/dashboard/StartLearningCard";
 import { AskCoachCard } from "@/components/academy/dashboard/AskCoachCard";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
