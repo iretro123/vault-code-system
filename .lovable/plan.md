@@ -1,45 +1,53 @@
 
 
-## Luxury White Countdown Timer for Next Group Call
+## Fix Desktop Dashboard Layout — Clean, Balanced, Premium
 
-### Overview
-Restyle the countdown timer pills to white text on dark elevated surfaces with a premium gamified feel — glowing separators, subtle pulse on seconds, and a "STARTS IN" label.
+### Problems
+1. **Next Group Call card** has massive empty space below the button — it stretches to match the taller StartLearningCard but content doesn't fill it
+2. **Ask Coach card** sits alone in a half-width grid row, looking unbalanced
+3. Overall layout feels loose and unfinished on desktop
 
-### Changes — `src/components/academy/dashboard/NextGroupCallCard.tsx`
+### Solution
 
-**Pill component (lines 81-92)** — Replace blue-tinted pills with luxury white design:
-- Background: `bg-white/[0.06]` with `border border-white/[0.10]` — dark glass tile
-- Text: `text-white font-mono text-xl font-bold` — crisp white digits
-- Label: `text-white/40` instead of `text-muted-foreground/50`
-- Add subtle inner glow via `shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]`
+**File: `src/pages/academy/AcademyHome.tsx`** (lines 123-130)
 
-**Countdown section (lines 111-118)** — Add gamified elements:
-- Add a "STARTS IN" micro-label above the pills (`text-[10px] uppercase tracking-[0.2em] text-white/30`)
-- Add animated colon separators between pills (`:` characters that pulse with `animate-pulse`)
-- Seconds pill gets a subtle ring animation: `ring-1 ring-white/[0.08]` with a pulsing glow
+Remove the grid wrapper around AskCoachCard and place it in the same 2-column grid as the other two cards, making a 2x2 layout:
 
-**Header badge (line 98)** — Keep `text-primary` for the "Next Group Call" label (blue accent per design system)
-
-**Session title (line 109)** — Change to `text-white` for stronger contrast
-
-### Visual Result
-```text
-┌─────────────────────────────────┐
-│  📹  NEXT GROUP CALL            │
-│  Session Title Here             │
-│                                 │
-│         STARTS IN               │
-│   ┌──┐   ┌──┐   ┌──┐   ┌──┐   │
-│   │05│ : │12│ : │34│ : │08│   │
-│   │HR│   │HR│   │MN│   │SC│   │
-│   └──┘   └──┘   └──┘   └──┘   │
-│                                 │
-│     [ View Calls → ]            │
-└─────────────────────────────────┘
+```
+Row 1: NextGroupCallCard | StartLearningCard
+Row 2: AskCoachCard      | (empty or span full)
 ```
 
-White digits on dark tiles, pulsing colon separators, seconds pill with subtle glow ring. Clean, premium, gamified countdown feel.
+Change AskCoachCard to span full width below (no grid wrapper), just a plain card:
+
+```tsx
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+  <NextGroupCallCard />
+  <StartLearningCard />
+</div>
+
+<AskCoachCard />
+```
+
+**File: `src/components/academy/dashboard/NextGroupCallCard.tsx`**
+
+Add `h-full flex flex-col` to the card wrapper and push the button to the bottom with `mt-auto` so the card fills its grid cell gracefully without awkward empty space:
+
+- Line 99: `vault-luxury-card p-6` → `vault-luxury-card p-6 h-full flex flex-col`
+- Line 129 button: add `mt-auto` so it pins to the bottom
+- Same for empty state (line 58): add `h-full flex flex-col` and `mt-auto` on button
+
+**File: `src/components/academy/dashboard/StartLearningCard.tsx`**
+
+Same treatment — add `h-full flex flex-col` to the card wrapper and `mt-auto` to the button group so both cards in the row align buttons at the bottom.
+
+### Result
+- Both cards in the row stretch to equal height with content at top and buttons pinned at bottom
+- AskCoachCard spans full width below, clean and balanced
+- No wasted whitespace, premium desktop feel
 
 ### Files changed
+- `src/pages/academy/AcademyHome.tsx`
 - `src/components/academy/dashboard/NextGroupCallCard.tsx`
+- `src/components/academy/dashboard/StartLearningCard.tsx`
 
