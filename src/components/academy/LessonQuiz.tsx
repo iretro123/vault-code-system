@@ -159,9 +159,8 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
     <div className="rounded-2xl bg-[hsl(var(--card))] border border-border overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-5 pb-4 border-b border-border">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-          How Price Actually Moves (Simple Mode)
-        </p>
+        <h3 className="text-lg font-bold text-foreground tracking-tight">VAULT OS QUIZ</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">How Price Actually Moves</p>
         {/* Progress dots */}
         <div className="flex items-center gap-1.5">
           {questions.map((_, i) => (
@@ -192,7 +191,7 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
           <p className="text-xs text-muted-foreground mb-1">
             Question {currentQ + 1} of {questions.length}
           </p>
-          <h4 className="text-base font-semibold text-foreground leading-snug">{q.question}</h4>
+          <h4 className="text-lg font-bold text-foreground leading-snug">{q.question}</h4>
         </div>
 
         {/* Options */}
@@ -209,7 +208,7 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
                 onClick={() => handleSelect(i)}
                 disabled={showExplanation || revealed}
                 className={cn(
-                  "w-full text-left px-4 py-3.5 rounded-xl border text-sm font-medium transition-all duration-200",
+                  "w-full text-left px-4 py-3.5 rounded-xl border text-[15px] font-medium transition-all duration-200",
                   showCorrectHighlight
                     ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
                     : showWrongHighlight
