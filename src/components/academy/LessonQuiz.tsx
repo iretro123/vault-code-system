@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Check, X, ArrowRight, RotateCcw, Trophy, Lightbulb, ShieldCheck } from "lucide-react";
+import { Check, X, ArrowRight, RotateCcw, Trophy, Lightbulb, PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface QuizQuestion {
@@ -187,11 +187,15 @@ const LessonQuiz = ({ moduleSlug }: LessonQuizProps) => {
 
       {/* Header */}
       <div className="px-6 pt-5 pb-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4.5 w-4.5 text-primary" />
-          <h3 className="text-sm font-bold text-foreground tracking-[0.2em] uppercase">VAULT OS QUIZ</h3>
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, hsl(217 91% 60% / 0.2), hsl(217 91% 60% / 0.05))", border: "1px solid hsl(217 91% 60% / 0.15)" }}>
+            <PenLine className="h-4.5 w-4.5 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground tracking-[0.2em] uppercase">VAULT ACADEMY QUIZ</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">How Price Actually Moves</p>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground">How Price Actually Moves</p>
 
         {/* Segmented progress bar */}
         <div className="flex gap-[3px] h-[6px] rounded-[3px] p-[1px]" style={{ background: "hsl(214 22% 10%)", border: "1px solid hsl(0 0% 100% / 0.04)" }}>
