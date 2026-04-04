@@ -138,6 +138,15 @@ export function StartLearningCard() {
       >
         <Play className="h-4 w-4" /> Watch Now
       </button>
+
+      {hasQuiz && (
+        <button
+          onClick={() => navigate(`/academy/learn/${lesson.module_slug}`)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-150 active:scale-[0.97]"
+        >
+          <GraduationCap className="h-4 w-4" /> Take the Quiz
+        </button>
+      )}
     </div>
   );
 }
