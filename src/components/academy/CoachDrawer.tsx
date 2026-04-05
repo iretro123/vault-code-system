@@ -694,10 +694,10 @@ export function CoachDrawer() {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center max-w-md">
-                      {starterChips.map((chip) => (
+                       {starterChips.map((chip) => (
                         <button
                           key={chip}
-                          onClick={() => handleChatSend(chip)}
+                          onClick={() => { startNewConversation(); setTimeout(() => handleChatSendRef.current(chip), 50); }}
                           className="text-sm px-4 py-2.5 rounded-xl border border-primary/15 bg-primary/[0.04] text-muted-foreground hover:text-foreground hover:bg-primary/[0.08] hover:border-primary/25 transition-all duration-150"
                         >
                           {chip}
