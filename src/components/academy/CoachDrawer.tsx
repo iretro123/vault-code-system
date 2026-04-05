@@ -653,13 +653,13 @@ export function CoachDrawer() {
                   >
                     <History className="h-4 w-4" />
                   </button>
-                  {chatMessages.length > 0 && (
+                   {chatMessages.length > 0 && (
                     <button
-                      onClick={() => setChatMessages([])}
-                      className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06] text-xs"
+                      onClick={startNewConversation}
+                      className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06] text-xs font-medium"
                       title="New Chat"
                     >
-                      New
+                      New Chat
                     </button>
                   )}
                 </>
