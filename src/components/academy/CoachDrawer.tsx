@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   MessageSquare, X, Loader2, Send, ChevronLeft, Image,
   Clock, CheckCircle2, AlertCircle, History, Copy, Check,
-  ChevronDown, ChevronUp, Sparkles, Brain, Play,
+  ChevronDown, ChevronUp, Sparkles, Brain, Play, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,6 +89,44 @@ function parseVideoRecommendations(content: string): VideoRecommendation[] {
     recs.push({ lessonTitle: match[1], moduleTitle: match[2].trim() });
   }
   return recs;
+}
+
+// Parse navigation links from AI response
+const NAV_PATTERN = /🔗\s*\*\*Go to:\*\*\s*(.+?)\s*\(([^)]+)\)/g;
+
+interface NavigationLink {
+  label: string;
+  path: string;
+}
+
+function parseNavigationLinks(content: string): NavigationLink[] {
+  const links: NavigationLink[] = [];
+  let match;
+  const regex = new RegExp(NAV_PATTERN.source, "g");
+  while ((match = regex.exec(content)) !== null) {
+    links.push({ label: match[1].trim(), path: match[2].trim() });
+  }
+  return links;
+}
+
+function NavLinkCard({ link, onClick }: { link: NavigationLink; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="group w-full flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/[0.06] to-emerald-500/[0.02] p-3 hover:border-emerald-500/40 hover:from-emerald-500/[0.10] hover:to-emerald-500/[0.04] transition-all duration-200 text-left"
+    >
+      <div className="shrink-0 h-10 w-10 rounded-lg bg-emerald-500/15 flex items-center justify-center group-hover:bg-emerald-500/25 transition-colors">
+        <ChevronRight className="h-4 w-4 text-emerald-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground truncate">{link.label}</p>
+        <p className="text-xs text-muted-foreground truncate">{link.path}</p>
+      </div>
+      <span className="shrink-0 text-[11px] font-medium text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        Open →
+      </span>
+    </button>
+  );
 }
 
 function VideoCard({ rec, onClick }: { rec: VideoRecommendation; onClick: () => void }) {
@@ -711,9 +749,15 @@ export function CoachDrawer() {
                     const videoRecs = msg.role === "assistant" && !msg.isStreaming
                       ? parseVideoRecommendations(msg.content)
                       : [];
-                    // Strip video lines from displayed content
+                    const navLinks = msg.role === "assistant" && !msg.isStreaming
+                      ? parseNavigationLinks(msg.content)
+                      : [];
+                    // Strip video lines and nav link lines from displayed content
                     const displayContent = msg.role === "assistant"
-                      ? msg.content.replace(/(?:📺\s*)?\*\*Recommended Lesson:\*\*\s*"[^"]+"\s*in\s*.+/g, "").trim()
+                      ? msg.content
+                          .replace(/(?:📺\s*)?\*\*Recommended Lesson:\*\*\s*"[^"]+"\s*in\s*.+/g, "")
+                          .replace(/🔗\s*\*\*Go to:\*\*\s*.+?\([^)]+\)/g, "")
+                          .trim()
                       : msg.content;
 
                     return (
@@ -744,7 +788,14 @@ export function CoachDrawer() {
                                   ))}
                                 </div>
                               )}
-                              {/* Inline images */}
+                              {/* Navigation link cards */}
+                              {navLinks.length > 0 && (
+                                <div className="pt-2 space-y-2">
+                                  {navLinks.map((link, idx) => (
+                                    <NavLinkCard key={idx} link={link} onClick={() => { navigate(link.path); setOpen(false); }} />
+                                  ))}
+                                </div>
+                              )}
                               {msg.images && msg.images.length > 0 && (
                                 <div className="pt-2 space-y-2">
                                   {msg.images.map((img, idx) => (
