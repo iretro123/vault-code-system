@@ -307,6 +307,7 @@ export function CoachDrawer() {
 
   // ── Chat send (streaming) ──
   const handleChatSend = async (overrideText?: string) => {
+    handleChatSendRef.current = handleChatSend;
     const text = overrideText || chatInput.trim();
     if (!text || chatLoading) return;
     setChatInput("");
