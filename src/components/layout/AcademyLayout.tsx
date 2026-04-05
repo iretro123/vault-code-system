@@ -21,6 +21,7 @@ import { ArrowLeft, Loader2, ShieldAlert, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 
 /** Inner layout that lives inside SidebarProvider so useSidebar() works. */
 function AcademyLayoutInner() {
