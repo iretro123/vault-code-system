@@ -154,9 +154,20 @@ export function CoachDrawer() {
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent)?.detail;
-      if (detail?.tab === "coach") setTab("coach");
-      else if (detail?.tab === "instant") setTab("instant");
-      setOpen((prev) => !prev);
+      const incomingQuestion = detail?.question as string | undefined;
+
+      if (incomingQuestion) {
+        // Force open + send the question immediately
+        setTab("instant");
+        setOpen(true);
+        setChatInput(incomingQuestion);
+        // Auto-send after a tick so state settles
+        setTimeout(() => handleChatSend(incomingQuestion), 80);
+      } else {
+        if (detail?.tab === "coach") setTab("coach");
+        else if (detail?.tab === "instant") setTab("instant");
+        setOpen((prev) => !prev);
+      }
     };
     window.addEventListener("toggle-coach-drawer", handler);
     return () => window.removeEventListener("toggle-coach-drawer", handler);

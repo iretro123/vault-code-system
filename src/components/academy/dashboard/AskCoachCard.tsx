@@ -5,7 +5,9 @@ export function AskCoachCard() {
   const [value, setValue] = useState("");
 
   const handleSubmit = () => {
-    window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
+    const detail: Record<string, string> = { tab: "instant" };
+    if (value.trim()) detail.question = value.trim();
+    window.dispatchEvent(new CustomEvent("toggle-coach-drawer", { detail }));
     setValue("");
   };
 
