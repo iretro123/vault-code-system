@@ -1,0 +1,1 @@
+UPDATE public.academy_lessons SET visible = false WHERE module_slug = 'chapter-1-vault-install-start-march-21st-release' AND sort_order > 1;
