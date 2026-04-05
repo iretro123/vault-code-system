@@ -374,7 +374,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
         {/* Step 6 — Activation */}
         <OnboardingStep active={step === 6}>
-          <div className="flex flex-col items-center gap-8 py-12">
+          <div className="flex flex-col items-center gap-8 py-12 relative">
             {activated ? (
               <>
                 <div className="h-24 w-24 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center shadow-[0_0_60px_hsl(var(--primary)/0.25)] animate-scale-in">
@@ -388,6 +388,13 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
                     Welcome aboard, {firstName || "Trader"}. Let's build something great.
                   </p>
                 </div>
+                <Button
+                  onClick={handleDismiss}
+                  className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
+                >
+                  Go to Dashboard
+                  <ChevronRight className="h-5 w-5 ml-1" />
+                </Button>
               </>
             ) : (
               <>
