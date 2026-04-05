@@ -1271,3 +1271,8 @@ html {
 .vault-quiz-trophy-ring {
   animation: vault-quiz-trophy-spin 8s linear infinite;
 }
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
