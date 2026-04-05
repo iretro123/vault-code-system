@@ -56,6 +56,7 @@ const GOAL_OPTIONS: { value: TradingGoal; label: string; icon: typeof Target }[]
 ];
 
 export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
+  const navigate = useNavigate();
   const { user, profile, refetchProfile } = useAuth();
   const [step, setStep] = useState(0);
 
