@@ -455,6 +455,9 @@ export function CoachDrawer() {
     requestOSPermission();
   };
 
+  // Keep ref in sync so the event listener always calls latest version
+  handleChatSendRef.current = handleChatSend;
+
   // ── Coach handoff ──
   const handleHandoffToCoach = () => {
     const lastUserMsg = [...chatMessages].reverse().find((m) => m.role === "user");
