@@ -378,7 +378,7 @@ const Signup = () => {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Important Agreement</p>
+                    <p className="text-[13px] font-semibold text-foreground">Performance Guarantee</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       {agreementChecked ? (
                         <span className="text-emerald-400/90 font-medium">✓ Agreement accepted</span>
