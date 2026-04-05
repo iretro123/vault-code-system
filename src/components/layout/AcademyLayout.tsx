@@ -36,9 +36,16 @@ function AcademyLayoutInner() {
   const isOnline = useOnlineStatus();
   const lastPageRef = useRef("");
   const hadUserRef = useRef(false);
+  const [referralOpen, setReferralOpen] = useState(false);
   useSmartNotifications();
   useSmartRefresh();
   usePresenceHeartbeat();
+
+  useEffect(() => {
+    const handler = () => setReferralOpen(true);
+    window.addEventListener("open-referral-modal", handler);
+    return () => window.removeEventListener("open-referral-modal", handler);
+  }, []);
 
   const isCommunity = location.pathname.startsWith("/academy/community");
   const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
