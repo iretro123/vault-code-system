@@ -1,25 +1,38 @@
 
 
-## Fix: Week Schedule Sheet — Mobile Safe Area + Desktop Layout
+## Fix: Week Schedule Sheet — Mobile Position, Date Filtering, Week Swiping & Sound
 
 ### Problems
-1. **Mobile**: Bottom sheet content gets clipped by iPhone home indicator and Android nav buttons — needs safe area padding at the bottom
-2. **Desktop**: Full-width bottom sheet looks awkward on wide screens — should be a centered dialog or side panel instead
+1. **Mobile position**: Sheet sits too low, clipped by iPhone/Android nav bars — needs to match desktop centered approach
+2. **Old sessions showing**: No date filtering — past/completed sessions from previous weeks still appear
+3. **No week navigation**: Users can only see the current week, no way to peek at next week
+4. **No swipe sound**: Missing the tactile iOS feedback when switching days/weeks
 
 ### Fix
 
-**`src/components/academy/live/WeekScheduleSheet.tsx`**
+**`src/components/academy/live/WeekScheduleSheet.tsx`** — full rework
 
-**Mobile safe area fix:**
-- Change `pb-6` on the session cards container (line 141) to `pb-[calc(1.5rem+env(safe-area-inset-bottom,16px))]` — this pushes content above the iPhone home bar and Android nav buttons
-- Add `pb-[env(safe-area-inset-bottom,8px)]` to the SheetContent itself as extra safety
-- Reduce `max-h-[85vh]` to `max-h-[80vh]` on mobile to sit higher above the bottom nav
+**Mobile position fix:**
+- Change mobile `max-h-[80vh]` to `max-h-[70vh]` and add `bottom-[env(safe-area-inset-bottom,20px)]` so it floats above the home bar
+- Match desktop: use the same centered modal approach on mobile too — `rounded-2xl`, proper inset, no full-width bottom sheet
 
-**Desktop layout upgrade:**
-- On `md:` and above, switch from `side="bottom"` to a centered modal/dialog style using responsive classes
-- Add `md:max-w-lg md:mx-auto md:rounded-2xl md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:max-h-[70vh]` to SheetContent so on desktop it renders as a clean centered card instead of a full-width bottom sheet
-- Add `md:inset-x-0` so it centers horizontally on desktop
+**Filter only today + future sessions:**
+- In `daySessions` filter, add check: only show sessions where `session_date >= start of today` (skip past sessions entirely)
+- Exception: if viewing a past day in the current week strip, show "No sessions" empty state
+
+**Week swiping (Week 1 / Week 2):**
+- Add `weekOffset` state (0 = this week, 1 = next week)
+- Compute `weekStart` as `startOfWeek(now) + weekOffset * 7 days`
+- Add left/right chevron buttons flanking a "This Week" / "Next Week" label above the day strip
+- Support touch swipe gesture on the day strip area: swipe left → next week, swipe right → previous week (clamped to 0–1)
+- Reset `selectedDay` to 0 (Monday) when switching weeks, unless it's the current week where it defaults to today
+
+**iOS swipe sound:**
+- Import `playCheckSound` from `nativeFeedback.ts` (already has the clean tone system)
+- Add a new `playSwipeSound` function: a single short 880Hz tone (15ms, gain 0.015) — subtle, clean, iOS-like tick
+- Fire on week change and day tap
 
 ### Files Changed
 - `src/components/academy/live/WeekScheduleSheet.tsx`
+- `src/lib/nativeFeedback.ts` (add `playSwipeSound`)
 
