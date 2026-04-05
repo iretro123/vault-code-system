@@ -236,6 +236,7 @@ const AcademyLive = () => {
   const [notifySending, setNotifySending] = useState(false);
   const [liveToggleSending, setLiveToggleSending] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
   const isMockMode = searchParams.get("mockLive") === "1";
