@@ -20,7 +20,7 @@ import {
   EyeOff,
   CalendarCheck,
 } from "lucide-react";
-import { ReferralModal } from "@/components/academy/ReferralModal";
+
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
