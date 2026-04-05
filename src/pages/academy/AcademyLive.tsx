@@ -358,7 +358,15 @@ const AcademyLive = () => {
     ok ? toast.success("Link copied") : toast.error("Failed to copy");
   };
 
-  const scrollToSchedule = () => { document.getElementById("live-full-schedule")?.scrollIntoView({ behavior: "smooth" }); };
+  const openSchedule = () => setScheduleOpen(true);
+
+  const buildGCalUrl = (s: LiveSession) => {
+    const start = new Date(s.session_date);
+    const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60_000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const params = new URLSearchParams({ action: "TEMPLATE", text: s.title, dates: `${fmt(start)}/${fmt(end)}`, details: `${s.description}\n\nJoin: ${s.join_url || "TBD"}`, ctz: "America/New_York" });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
 
   if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="Live Sessions" />;
 
