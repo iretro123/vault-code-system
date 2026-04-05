@@ -153,6 +153,14 @@ export function CoachDrawer() {
   // Ref to always hold the latest handleChatSend
   const handleChatSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
 
+  // ── Start a truly fresh conversation ──
+  const startNewConversation = useCallback(() => {
+    setChatMessages([]);
+    setChatInput("");
+    setChatLoading(false);
+    setShowHistory(false);
+  }, []);
+
   // Listen for sidebar toggle event
   useEffect(() => {
     const handler = (e: Event) => {
@@ -160,21 +168,26 @@ export function CoachDrawer() {
       const incomingQuestion = detail?.question as string | undefined;
 
       if (incomingQuestion) {
-        // Force open + send the question immediately
+        // Fresh thread + send question
+        startNewConversation();
         setTab("instant");
         setOpen(true);
-        setChatInput(incomingQuestion);
-        // Use ref so we always call the latest version
+        // Use ref so we always call the latest version after state clears
         setTimeout(() => handleChatSendRef.current(incomingQuestion), 100);
       } else {
         if (detail?.tab === "coach") setTab("coach");
         else if (detail?.tab === "instant") setTab("instant");
-        setOpen((prev) => !prev);
+        setOpen((prev) => {
+          const willOpen = !prev;
+          // Reset to fresh chat when opening (not when closing)
+          if (willOpen) startNewConversation();
+          return willOpen;
+        });
       }
     };
     window.addEventListener("toggle-coach-drawer", handler);
     return () => window.removeEventListener("toggle-coach-drawer", handler);
-  }, []);
+  }, [startNewConversation]);
 
   // ESC to close
   useEffect(() => {
