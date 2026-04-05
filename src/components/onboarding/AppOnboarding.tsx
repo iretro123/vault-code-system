@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 import { OnboardingProgressBar, OnboardingStep } from "./OnboardingStep";
 import { VaultTourCarousel } from "./VaultTourCarousel";
 import {
@@ -54,7 +55,8 @@ const GOAL_OPTIONS: { value: TradingGoal; label: string; icon: typeof Target }[]
   { value: "stay_accountable", label: "Stay accountable", icon: Users },
 ];
 
-export function AppOnboarding() {
+export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
+  const navigate = useNavigate();
   const { user, profile, refetchProfile } = useAuth();
   const [step, setStep] = useState(0);
 
@@ -81,8 +83,24 @@ export function AppOnboarding() {
 
   const next = () => setStep((s) => s + 1);
 
+  const handleDismiss = useCallback(async () => {
+    if (isPreview) {
+      // In preview mode, just navigate away without touching DB
+      const url = new URL(window.location.href);
+      url.searchParams.delete("preview-onboarding");
+      window.history.replaceState({}, "", url.toString());
+      window.location.reload();
+      return;
+    }
+    await refetchProfile();
+  }, [isPreview, refetchProfile]);
+
   const handleActivate = useCallback(async () => {
     if (!user) return;
+    if (isPreview) {
+      setActivated(true);
+      return;
+    }
     setSubmitting(true);
     try {
       const displayName = [firstName, lastName].filter(Boolean).join(" ") || "Trader";
@@ -111,16 +129,16 @@ export function AppOnboarding() {
 
       setActivated(true);
 
-      // Auto-advance after 2s
+      // Auto-advance after 1.5s
       setTimeout(async () => {
         await refetchProfile();
-      }, 2000);
+      }, 1500);
     } catch (e) {
       console.error("Onboarding activation failed:", e);
     } finally {
       setSubmitting(false);
     }
-  }, [user, firstName, lastName, experience, goal, detectedTz, refetchProfile]);
+  }, [user, firstName, lastName, experience, goal, detectedTz, refetchProfile, isPreview]);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-y-auto">
@@ -356,7 +374,7 @@ export function AppOnboarding() {
 
         {/* Step 6 — Activation */}
         <OnboardingStep active={step === 6}>
-          <div className="flex flex-col items-center gap-8 py-12">
+          <div className="flex flex-col items-center gap-8 py-12 relative">
             {activated ? (
               <>
                 <div className="h-24 w-24 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center shadow-[0_0_60px_hsl(var(--primary)/0.25)] animate-scale-in">
@@ -370,6 +388,13 @@ export function AppOnboarding() {
                     Welcome aboard, {firstName || "Trader"}. Let's build something great.
                   </p>
                 </div>
+                <Button
+                  onClick={handleDismiss}
+                  className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
+                >
+                  Go to Dashboard
+                  <ChevronRight className="h-5 w-5 ml-1" />
+                </Button>
               </>
             ) : (
               <>
