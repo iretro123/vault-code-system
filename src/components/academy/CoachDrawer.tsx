@@ -749,9 +749,15 @@ export function CoachDrawer() {
                     const videoRecs = msg.role === "assistant" && !msg.isStreaming
                       ? parseVideoRecommendations(msg.content)
                       : [];
-                    // Strip video lines from displayed content
+                    const navLinks = msg.role === "assistant" && !msg.isStreaming
+                      ? parseNavigationLinks(msg.content)
+                      : [];
+                    // Strip video lines and nav link lines from displayed content
                     const displayContent = msg.role === "assistant"
-                      ? msg.content.replace(/(?:📺\s*)?\*\*Recommended Lesson:\*\*\s*"[^"]+"\s*in\s*.+/g, "").trim()
+                      ? msg.content
+                          .replace(/(?:📺\s*)?\*\*Recommended Lesson:\*\*\s*"[^"]+"\s*in\s*.+/g, "")
+                          .replace(/🔗\s*\*\*Go to:\*\*\s*.+?\([^)]+\)/g, "")
+                          .trim()
                       : msg.content;
 
                     return (
