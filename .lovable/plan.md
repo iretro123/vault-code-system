@@ -1,41 +1,25 @@
 
 
-## Luxury Weekly Schedule Drawer for /academy/live
+## Fix: Week Schedule Sheet — Mobile Safe Area + Desktop Layout
 
-### Current Behavior
-"Full Schedule" button scrolls to a plain list at the bottom of the page. On mobile it's easy to miss and feels utilitarian.
+### Problems
+1. **Mobile**: Bottom sheet content gets clipped by iPhone home indicator and Android nav buttons — needs safe area padding at the bottom
+2. **Desktop**: Full-width bottom sheet looks awkward on wide screens — should be a centered dialog or side panel instead
 
-### New Behavior
-"Full Schedule" opens a premium bottom sheet / drawer with a horizontally scrollable day picker (Mon–Sun) showing the current week. Tapping a day highlights it and filters sessions for that day. Each session card shows time, title, type badge, duration, and a "Join" or "Add to Calendar" action. Empty days show a rest-day message.
+### Fix
 
-### Design Language
-- Bottom sheet drawer (Sheet component from ui/sheet) sliding up on mobile, side drawer on desktop
-- Horizontal day strip at top: 7 pill-shaped day buttons with the day name + date number, active day gets primary blue ring + fill
-- Today auto-selected and marked with a dot indicator
-- Session cards use the vault-luxury-card style with radial gradient backgrounds
-- Session type color-coded: blue dot for Live Trading, amber for Q&A, emerald for Market Prep
-- Smooth fade-in animation on day switch
-- No scroll-to-bottom behavior anymore — the button opens the sheet instead
+**`src/components/academy/live/WeekScheduleSheet.tsx`**
 
-### Implementation
+**Mobile safe area fix:**
+- Change `pb-6` on the session cards container (line 141) to `pb-[calc(1.5rem+env(safe-area-inset-bottom,16px))]` — this pushes content above the iPhone home bar and Android nav buttons
+- Add `pb-[env(safe-area-inset-bottom,8px)]` to the SheetContent itself as extra safety
+- Reduce `max-h-[85vh]` to `max-h-[80vh]` on mobile to sit higher above the bottom nav
 
-**`src/components/academy/live/WeekScheduleSheet.tsx`** (new)
-- Props: `open`, `onOpenChange`, `sessions: LiveSession[]`, `onJoin`, `onCalendar`
-- Compute current week (Mon–Sun) dates
-- State: `selectedDay` index (default = today's index in the week, or 0)
-- Horizontal scrollable day strip with 7 buttons
-- Filter sessions by selected day
-- Render session cards or empty state per day
-- Uses Sheet from ui/sheet with `side="bottom"` on mobile
-
-**`src/pages/academy/AcademyLive.tsx`**
-- Add `scheduleOpen` state
-- Change both "Full Schedule" buttons' `onClick` from `scrollToSchedule` to `setScheduleOpen(true)`
-- Remove the `scrollToSchedule` function
-- Keep the `#live-full-schedule` section as-is for desktop full view (optional fallback), but the button now opens the sheet
-- Import and render `<WeekScheduleSheet>`
+**Desktop layout upgrade:**
+- On `md:` and above, switch from `side="bottom"` to a centered modal/dialog style using responsive classes
+- Add `md:max-w-lg md:mx-auto md:rounded-2xl md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:max-h-[70vh]` to SheetContent so on desktop it renders as a clean centered card instead of a full-width bottom sheet
+- Add `md:inset-x-0` so it centers horizontally on desktop
 
 ### Files Changed
-- `src/components/academy/live/WeekScheduleSheet.tsx` (new)
-- `src/pages/academy/AcademyLive.tsx`
+- `src/components/academy/live/WeekScheduleSheet.tsx`
 
