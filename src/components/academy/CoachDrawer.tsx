@@ -523,7 +523,7 @@ export function CoachDrawer() {
   const displayName = profile?.display_name || user.email?.split("@")[0] || "Trader";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom,16px))]">
+    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center p-3 pt-5 pb-[calc(4.75rem+env(safe-area-inset-bottom,20px))] md:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/65 backdrop-blur-[6px]"
