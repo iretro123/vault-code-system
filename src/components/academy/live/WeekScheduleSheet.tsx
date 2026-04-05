@@ -138,7 +138,7 @@ export function WeekScheduleSheet({ open, onOpenChange, sessions, onJoin, onCale
         </div>
 
         {/* Session Cards */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6 pt-2 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,16px))] pt-2 space-y-3">
           {daySessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div
