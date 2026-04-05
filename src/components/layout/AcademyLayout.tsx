@@ -114,6 +114,11 @@ function AcademyLayoutInner() {
     );
   }
 
+  // First-login onboarding gate
+  if (!(profile as any)?.profile_completed) {
+    return <AppOnboarding />;
+  }
+
   return (
     <div className="h-[100dvh] flex w-full bg-background relative overflow-hidden">
       {/* FluxCharts-inspired ambient background — layered radials, vignette */}
