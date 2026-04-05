@@ -1,38 +1,22 @@
 
 
-## Fix: Week Schedule Sheet — Mobile Position, Date Filtering, Week Swiping & Sound
+## Fix: Vault AI Coach Drawer — Mobile Fit & Sizing
 
-### Problems
-1. **Mobile position**: Sheet sits too low, clipped by iPhone/Android nav bars — needs to match desktop centered approach
-2. **Old sessions showing**: No date filtering — past/completed sessions from previous weeks still appear
-3. **No week navigation**: Users can only see the current week, no way to peek at next week
-4. **No swipe sound**: Missing the tactile iOS feedback when switching days/weeks
+### Problem
+On mobile, the drawer uses `h-[100dvh]` which makes it full-screen but the composer at the bottom gets clipped by the iPhone home indicator / Android nav buttons. The card is also too tall — it should feel like a floating card, not a full-screen takeover.
 
 ### Fix
 
-**`src/components/academy/live/WeekScheduleSheet.tsx`** — full rework
+**`src/components/academy/CoachDrawer.tsx`**
 
-**Mobile position fix:**
-- Change mobile `max-h-[80vh]` to `max-h-[70vh]` and add `bottom-[env(safe-area-inset-bottom,20px)]` so it floats above the home bar
-- Match desktop: use the same centered modal approach on mobile too — `rounded-2xl`, proper inset, no full-width bottom sheet
+**Line 534 — Modal container classes:**
+- Change `h-[100dvh]` to `h-[calc(100dvh-3rem)]` on mobile so it floats with breathing room at top
+- Add `mb-[env(safe-area-inset-bottom,0px)]` to push it above the home bar
+- Add `rounded-2xl` on mobile (currently only `rounded-t-2xl`)
 
-**Filter only today + future sessions:**
-- In `daySessions` filter, add check: only show sessions where `session_date >= start of today` (skip past sessions entirely)
-- Exception: if viewing a past day in the current week strip, show "No sessions" empty state
-
-**Week swiping (Week 1 / Week 2):**
-- Add `weekOffset` state (0 = this week, 1 = next week)
-- Compute `weekStart` as `startOfWeek(now) + weekOffset * 7 days`
-- Add left/right chevron buttons flanking a "This Week" / "Next Week" label above the day strip
-- Support touch swipe gesture on the day strip area: swipe left → next week, swipe right → previous week (clamped to 0–1)
-- Reset `selectedDay` to 0 (Monday) when switching weeks, unless it's the current week where it defaults to today
-
-**iOS swipe sound:**
-- Import `playCheckSound` from `nativeFeedback.ts` (already has the clean tone system)
-- Add a new `playSwipeSound` function: a single short 880Hz tone (15ms, gain 0.015) — subtle, clean, iOS-like tick
-- Fire on week change and day tap
+**Line 783 — Composer bottom padding:**
+- Change `pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]` to `pb-[calc(1rem+env(safe-area-inset-bottom,12px))]` — more generous padding so the input and send button are fully visible and tappable
 
 ### Files Changed
-- `src/components/academy/live/WeekScheduleSheet.tsx`
-- `src/lib/nativeFeedback.ts` (add `playSwipeSound`)
+- `src/components/academy/CoachDrawer.tsx`
 
