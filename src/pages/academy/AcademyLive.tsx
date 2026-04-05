@@ -400,7 +400,7 @@ const AcademyLive = () => {
           </div>
           <div className="flex items-center gap-2 pt-2">
             {canManage && <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}><Plus className="h-3.5 w-3.5" /> Create</Button>}
-            <button className="live-btn-glass py-2.5 px-4" onClick={scrollToSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
+            <button className="live-btn-glass py-2.5 px-4" onClick={openSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
           </div>
         </div>
       </header>
