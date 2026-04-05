@@ -539,7 +539,7 @@ const AcademyLive = () => {
                 <span className={cn("font-semibold", monthCount >= 6 ? "text-emerald-400" : monthCount >= 3 ? "text-amber-400" : "text-white/40")}>{monthCount >= 6 ? "Consistent" : monthCount >= 3 ? "Building" : "Getting started"}</span>
               </div>
             </div>
-            <button className="live-btn-glass w-full justify-center py-2.5 gap-2" onClick={scrollToSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
+            <button className="live-btn-glass w-full justify-center py-2.5 gap-2" onClick={openSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
             {weekList.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
