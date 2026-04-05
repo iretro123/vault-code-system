@@ -6,6 +6,7 @@ import { MobileNav } from "./MobileNav";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
+import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
