@@ -115,11 +115,9 @@ function AcademyLayoutInner() {
   }
 
   // First-login onboarding gate
-  // TEMP: force onboarding preview for testing — remove after review
-  const FORCE_ONBOARDING_PREVIEW = true;
-
-  if (FORCE_ONBOARDING_PREVIEW || !(profile as any)?.profile_completed) {
-    return <AppOnboarding />;
+  const searchParams = new URLSearchParams(window.location.search);
+  if (searchParams.has("preview-onboarding") || !(profile as any)?.profile_completed) {
+    return <AppOnboarding isPreview={searchParams.has("preview-onboarding")} />;
   }
 
   return (

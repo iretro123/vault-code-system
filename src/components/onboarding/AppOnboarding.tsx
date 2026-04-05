@@ -54,7 +54,7 @@ const GOAL_OPTIONS: { value: TradingGoal; label: string; icon: typeof Target }[]
   { value: "stay_accountable", label: "Stay accountable", icon: Users },
 ];
 
-export function AppOnboarding() {
+export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
   const { user, profile, refetchProfile } = useAuth();
   const [step, setStep] = useState(0);
 
