@@ -114,11 +114,11 @@ function AcademyLayoutInner() {
     );
   }
 
-  // First-login onboarding gate (+ admin preview override)
-  const searchParams = new URLSearchParams(window.location.search);
-  const isPreview = searchParams.has("preview-onboarding");
+  // First-login onboarding gate
+  // TEMP: force onboarding preview for testing — remove after review
+  const FORCE_ONBOARDING_PREVIEW = true;
 
-  if (isPreview || !(profile as any)?.profile_completed) {
+  if (FORCE_ONBOARDING_PREVIEW || !(profile as any)?.profile_completed) {
     return <AppOnboarding />;
   }
 
