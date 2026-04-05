@@ -780,7 +780,7 @@ export function CoachDrawer() {
               </div>
 
               {/* ── Composer (bottom-pinned) ── */}
-              <div className="shrink-0 border-t border-white/[0.06] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
+              <div className="shrink-0 border-t border-white/[0.06] px-4 py-3 pb-[calc(1rem+env(safe-area-inset-bottom,12px))]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <div className="flex items-end gap-2">
                   <textarea
                     ref={chatInputRef}
