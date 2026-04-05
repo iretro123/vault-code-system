@@ -411,8 +411,8 @@ const Signup = () => {
                       <ShieldCheck className="h-5.5 w-5.5 text-primary" />
                     </div>
                     <div>
-                      <h2 className="text-[15px] font-bold text-foreground tracking-tight">Important Agreement</h2>
-                      <p className="text-[11px] text-muted-foreground/80 mt-0.5">Please read carefully before proceeding</p>
+                      <h2 className="text-[15px] font-bold text-foreground tracking-tight">VAULT OS Conditional Performance Guarantee</h2>
+                      <p className="text-[11px] text-muted-foreground/80 mt-0.5">Please read all terms carefully before proceeding</p>
                     </div>
                   </div>
                 </div>
