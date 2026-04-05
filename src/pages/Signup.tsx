@@ -423,23 +423,114 @@ const Signup = () => {
                   style={{ touchAction: "pan-y" }}
                 >
                   <div className="px-4 sm:px-6 py-4 bg-black/20">
-                    <p className="text-[11.5px] leading-[1.75] text-muted-foreground/90">
-                      By creating an account and using Vault Trading Academy and VAULT OS, you acknowledge and agree that the platform provides educational, informational, analytical, journaling, tracking, and risk-management tools only. Nothing on the platform, including content, alerts, analytics, calculators, coaching, live sessions, community discussions, performance tracking, or any other feature, constitutes financial, investment, trading, legal, or tax advice, or a recommendation to buy, sell, hold, or enter any security, option, or financial instrument.
-                      <br /><br />
-                      You understand that trading and investing involve substantial risk and may result in partial or total loss of capital. Past performance does not guarantee future results. Vault Trading Academy and VAULT OS do not guarantee profits, performance, success, or any specific outcome.
-                      <br /><br />
-                      You acknowledge that you are solely responsible for your decisions, orders, entries, exits, position sizing, risk management, broker selections, account activity, and all results arising from your trading or investing activity. You agree that any action you take based on information, tools, or features provided through the platform is taken at your own risk.
-                      <br /><br />
-                      You understand and agree that Vault Trading Academy may collect, use, store, and process your personal information in accordance with its Privacy Policy and may use service providers and infrastructure providers to operate the platform, process payments, maintain accounts, support analytics, and secure the Services.
-                      <br /><br />
-                      If account connectivity features are offered, you understand that Vault Trading Academy may allow you to connect financial accounts through third-party providers such as Plaid. If you choose to use such features, you authorize the processing of the financial data made available through those integrations for purposes such as analytics, account tracking, performance insights, and related platform functionality. Vault Trading Academy does not collect or store your bank login credentials.
-                      <br /><br />
-                      You understand that third-party services, brokerages, banks, payment processors, and integrations may experience outages, delays, interruptions, inaccuracies, security events, or other failures, and Vault Trading Academy is not responsible for the acts, omissions, errors, data issues, service interruptions, or decisions of any third party.
-                      <br /><br />
-                      To the fullest extent permitted by law, you agree that Vault Trading Academy, VAULT OS, and their owners, affiliates, officers, employees, contractors, educators, coaches, agents, and service providers shall not be liable for any direct, indirect, incidental, consequential, special, exemplary, trading, business, financial, data, or other losses or damages arising from or related to your use of the platform, your inability to use the platform, your reliance on any content or feature, or your trading or investment activity.
-                      <br /><br />
-                      You further acknowledge that your use of the platform is subject to the Terms of Service and Privacy Policy, including provisions regarding account use, payments, subscriptions, cancellations, refunds, data practices, and platform rules. If you do not agree, do not create an account or use the platform.
-                    </p>
+                    <div className="text-[11.5px] leading-[1.75] text-muted-foreground/90 space-y-4">
+                      <p className="text-[13px] font-bold text-foreground tracking-tight uppercase">VAULT OS CONDITIONAL PERFORMANCE GUARANTEE</p>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">1. Overview</p>
+                        <p>Vault Trading Academy LLC ("Company") offers a conditional performance-based guarantee (the "Guarantee") to eligible users of VAULT OS.</p>
+                        <p>This Guarantee is not unconditional and applies only under strict compliance with all VAULT OS rules and requirements.</p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">2. Guarantee Statement</p>
+                        <p>If a user fully complies with all VAULT OS risk management rules and system requirements, and still experiences a complete loss of their trading account ("Account Loss"), the Company may issue a refund of the Program fees paid, subject to verification and approval.</p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">3. Definition of Account Loss</p>
+                        <p>"Account Loss" means a substantial depletion of the trading account balance as determined by the Company based on submitted records and system data.</p>
+                        <p>The Company retains sole discretion in determining whether an Account Loss qualifies under this definition.</p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">4. Eligibility Requirements (All Must Be Met)</p>
+                        <p>To qualify for the Guarantee, the user must:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>Use VAULT OS as their primary and exclusive trading structure</li>
+                          <li>Follow all VAULT OS risk rules, including but not limited to:
+                            <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                              <li>position sizing limits</li>
+                              <li>daily loss limits</li>
+                              <li>trade frequency limits</li>
+                            </ul>
+                          </li>
+                          <li>Immediately stop trading when system limits are reached</li>
+                          <li>Accurately log all trades within VAULT OS</li>
+                          <li>Maintain a minimum compliance level as determined by the Company</li>
+                          <li>Provide complete and verifiable records upon request, including broker statements</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">5. Disqualification (Guarantee Void)</p>
+                        <p>The Guarantee is automatically void if any of the following occur:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>Failure to follow VAULT OS rules at any time</li>
+                          <li>Trading outside the VAULT OS system or executing unlogged trades</li>
+                          <li>Ignoring or overriding risk limits or stop conditions</li>
+                          <li>Incomplete, inaccurate, or falsified data</li>
+                          <li>Use of multiple or undisclosed accounts</li>
+                          <li>Any attempt to manipulate, exploit, or abuse the Guarantee</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">6. Scope of Refund</p>
+                        <p>Applies only to fees paid directly to Vault Trading Academy LLC</p>
+                        <p className="mt-1">Does not include:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>trading losses</li>
+                          <li>brokerage or platform losses</li>
+                          <li>third-party fees or expenses</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">7. Verification & Review</p>
+                        <p>All claims are subject to:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>Full review and verification by the Company</li>
+                          <li>Evaluation of system data, trade logs, and supporting documentation</li>
+                        </ul>
+                        <p className="mt-1">The Company reserves sole and final discretion in determining eligibility and approval of any refund request.</p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">8. Time Limit for Claims</p>
+                        <p>All claims must be submitted within [X days] of the alleged Account Loss, along with all required documentation.</p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">9. No Guarantee of Results</p>
+                        <p>The Company does not guarantee trading profits, success, or financial outcomes.</p>
+                        <p>This Guarantee exists solely to reinforce proper use of the VAULT OS system.</p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">10. Anti-Fraud Policy</p>
+                        <p>Any suspected fraud, misrepresentation, or abuse will result in:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>Immediate disqualification</li>
+                          <li>Termination of access</li>
+                          <li>Denial of current and future claims</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">11. Limitation of Liability</p>
+                        <p>To the maximum extent permitted by law:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-1">
+                          <li>The Company's liability is limited strictly to the amount paid for the Program</li>
+                          <li>The Company is not liable for any trading or financial losses</li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold text-foreground mb-1">12. Acceptance of Terms</p>
+                        <p>By purchasing or using VAULT OS, the user acknowledges and agrees to these terms in full.</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
