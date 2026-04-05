@@ -1658,6 +1658,7 @@ export type Database = {
           social_twitter: string | null
           social_youtube: string | null
           timezone: string
+          trading_goal: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -1693,6 +1694,7 @@ export type Database = {
           social_twitter?: string | null
           social_youtube?: string | null
           timezone?: string
+          trading_goal?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -1728,6 +1730,7 @@ export type Database = {
           social_twitter?: string | null
           social_youtube?: string | null
           timezone?: string
+          trading_goal?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null
