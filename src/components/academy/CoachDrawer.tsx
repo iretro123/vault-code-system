@@ -531,7 +531,7 @@ export function CoachDrawer() {
       />
 
       {/* Modal */}
-      <div className="relative w-[min(860px,calc(100vw-32px))] rounded-t-2xl md:rounded-xl border border-white/[0.10] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-200 h-[100dvh] md:h-auto md:max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="relative w-[min(860px,calc(100vw-32px))] rounded-2xl md:rounded-xl border border-white/[0.10] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-200 h-[calc(100dvh-3rem)] mb-[env(safe-area-inset-bottom,0px)] md:h-auto md:max-h-[85vh] md:mb-0 flex flex-col overflow-hidden">
 
         {/* ── Premium Vault AI Header ── */}
         <div className="px-6 pt-5 pb-3 shrink-0 relative">
@@ -780,7 +780,7 @@ export function CoachDrawer() {
               </div>
 
               {/* ── Composer (bottom-pinned) ── */}
-              <div className="shrink-0 border-t border-white/[0.06] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
+              <div className="shrink-0 border-t border-white/[0.06] px-4 py-3 pb-[calc(1rem+env(safe-area-inset-bottom,12px))]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <div className="flex items-end gap-2">
                   <textarea
                     ref={chatInputRef}
