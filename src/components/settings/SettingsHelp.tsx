@@ -25,7 +25,7 @@ export function SettingsHelp() {
         </Button>
 
         <Button variant="outline" asChild className="w-full gap-2 justify-start">
-          <a href="mailto:support@vaultacademy.com">
+          <a href="mailto:vault@vaulttradingacademy.com">
             <Mail className="h-4 w-4" />
             Contact Support
           </a>
