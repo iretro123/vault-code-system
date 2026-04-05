@@ -83,8 +83,24 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
   const next = () => setStep((s) => s + 1);
 
+  const handleDismiss = useCallback(async () => {
+    if (isPreview) {
+      // In preview mode, just navigate away without touching DB
+      const url = new URL(window.location.href);
+      url.searchParams.delete("preview-onboarding");
+      window.history.replaceState({}, "", url.toString());
+      window.location.reload();
+      return;
+    }
+    await refetchProfile();
+  }, [isPreview, refetchProfile]);
+
   const handleActivate = useCallback(async () => {
     if (!user) return;
+    if (isPreview) {
+      setActivated(true);
+      return;
+    }
     setSubmitting(true);
     try {
       const displayName = [firstName, lastName].filter(Boolean).join(" ") || "Trader";
@@ -113,16 +129,16 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
       setActivated(true);
 
-      // Auto-advance after 2s
+      // Auto-advance after 1.5s
       setTimeout(async () => {
         await refetchProfile();
-      }, 2000);
+      }, 1500);
     } catch (e) {
       console.error("Onboarding activation failed:", e);
     } finally {
       setSubmitting(false);
     }
-  }, [user, firstName, lastName, experience, goal, detectedTz, refetchProfile]);
+  }, [user, firstName, lastName, experience, goal, detectedTz, refetchProfile, isPreview]);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-y-auto">
