@@ -180,14 +180,13 @@ export function CommunityCard() {
       className="vault-luxury-card relative overflow-hidden p-6 flex flex-col cursor-pointer group"
       onClick={() => navigate("/academy/community")}
     >
-      {/* Animated candlestick background */}
-      <CandlestickCanvas />
-
-      {/* Dark overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30 pointer-events-none" />
+      {/* Animated candlestick background — low opacity so text pops */}
+      <div className="absolute inset-0 opacity-[0.18] pointer-events-none">
+        <CandlestickCanvas />
+      </div>
 
       {/* Blue accent glow */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom_right,hsl(var(--primary)/0.12),transparent_60%)]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_bottom_right,hsl(var(--primary)/0.10),transparent_60%)]" />
 
       <div className="relative z-10 flex flex-col">
         {/* Header */}
