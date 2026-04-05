@@ -606,6 +606,14 @@ const AcademyLive = () => {
             </section>
           )}
         </div>
+
+        <WeekScheduleSheet
+          open={scheduleOpen}
+          onOpenChange={setScheduleOpen}
+          sessions={sessions}
+          onJoin={(s) => trackZoomClick(s)}
+          onCalendar={(s) => window.open(buildGCalUrl(s), '_blank')}
+        />
       </div>
     </div>
   );
