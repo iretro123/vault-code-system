@@ -544,11 +544,7 @@ const Signup = () => {
                       className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:shadow-[0_0_10px_rgba(59,130,246,0.4)] transition-all duration-150"
                     />
                     <label htmlFor="agreement-modal" className="text-[11.5px] leading-[1.55] text-foreground/70 cursor-pointer select-none">
-                      I have read and agree to the{" "}
-                      <a href="https://vaulttradingacademy.com/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Terms of Service</a>
-                      {" "}and{" "}
-                      <a href="https://vaulttradingacademy.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Privacy Policy</a>
-                      , understand that VAULT OS is for educational and analytical purposes only, acknowledge the risks of trading and investing, consent to the processing of my information as described, and accept full responsibility for my decisions, account activity, and results.
+                      I have read and agree to the VAULT OS Conditional Performance Guarantee, including all eligibility requirements, disqualification conditions, and limitations of liability. I understand this is not a guarantee of trading profits or success.
                     </label>
                   </div>
                   <Button
