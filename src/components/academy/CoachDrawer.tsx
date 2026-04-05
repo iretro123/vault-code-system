@@ -424,21 +424,28 @@ export function CoachDrawer() {
       }
 
       // Auto-insert static chart examples if AI mentions the trigger phrase
+      // AND the conversation actually discussed supply/demand topics
       const lowerReply = assistantSoFar.toLowerCase();
       const chartTriggerPhrases = ["real chart examples", "show you what that looks like", "chart examples to show"];
       const shouldShowCharts = chartTriggerPhrases.some((p) => lowerReply.includes(p));
       if (shouldShowCharts) {
-        setTimeout(() => {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: "",
-              images: CHART_EXAMPLES.map((c) => ({ type: "image_url", image_url: { url: c.src } })),
-              isStreaming: false,
-            },
-          ]);
-        }, 400);
+        // Verify the conversation context is actually about supply/demand/zones
+        const recentContext = allMessages.slice(-4).map(m => m.content.toLowerCase()).join(" ") + " " + lowerReply;
+        const topicKeywords = ["supply", "demand", "zone", "imbalance", "order block", "fvg", "fair value"];
+        const topicMatch = topicKeywords.some(k => recentContext.includes(k));
+        if (topicMatch) {
+          setTimeout(() => {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "",
+                images: CHART_EXAMPLES.map((c) => ({ type: "image_url", image_url: { url: c.src } })),
+                isStreaming: false,
+              },
+            ]);
+          }, 400);
+        }
       }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
