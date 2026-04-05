@@ -1,51 +1,27 @@
 
 
-## Fix: GHL Funnel Purchasers Blocked at Signup
+## Fix: AskCoachCard Text Not Passed to Coach Drawer
 
-### Root Cause
-When users purchase through your GHL funnels, GHL processes the payment via your Stripe account. However, GHL may not always create a formal Stripe **Customer** object — it can process payments as one-off charges or payment intents where the email is stored on the charge/invoice, not as a searchable customer record. The current `check-stripe-customer` function only calls `customers.list?email=...`, which misses these users.
-
-Your `GHL_API_KEY` and `GHL_LOCATION_ID` secrets are already configured. Anyone who purchased through your GHL funnel exists as a **contact** in your GHL location — so we add that as a verification source.
+### Problem
+When a user types a question in the AskCoachCard input and hits Enter/Send, the drawer opens but the text is lost. The user has to retype their question. This is because:
+1. `AskCoachCard` dispatches `toggle-coach-drawer` without including the typed text
+2. `CoachDrawer` doesn't look for any `question` field in the event detail
 
 ### Changes
 
-**1. `supabase/functions/check-stripe-customer/index.ts`**
+**1. `src/components/academy/dashboard/AskCoachCard.tsx`**
+- Pass the typed text in the CustomEvent detail: `new CustomEvent("toggle-coach-drawer", { detail: { tab: "instant", question: value } })`
+- Only clear `value` after dispatching
+- If input is empty, still open the drawer (current behavior)
 
-Add two new verification steps:
+**2. `src/components/academy/CoachDrawer.tsx`** (event handler ~line 154)
+- In the `toggle-coach-drawer` handler, check for `detail?.question`
+- If a question string is present: set `tab` to `"instant"`, set `chatInput` to the question text, force `open` to `true` (not toggle), and auto-trigger `handleChatSend` after a short delay so the AI starts responding immediately
+- If no question: keep current toggle behavior
 
-- **Step 1.5 (Stripe subscriptions search)**: After the existing customer check, use the Stripe Search API: `GET /v1/subscriptions/search?query=status:'active' AND metadata['email']:'{email}'` — but more practically, if a customer was found but we want to also catch subscriptions created without a customer lookup, search charges by `receipt_email`. This catches GHL-processed payments.
-
-- **Step 3.5 (GHL Contacts API)**: Before the slow Whop scan, call `GET https://services.leadconnectorhq.com/contacts/search/duplicate?locationId={GHL_LOCATION_ID}&email={email}` with `Authorization: Bearer {GHL_API_KEY}` and `Version: 2021-07-28`. If a contact is found → return `{ found: true, status: "active" }`.
-
-New verification order:
-```text
-1. Stripe customers by email (existing)
-2. Stripe charges by receipt_email (NEW)
-3. allowed_signups whitelist (existing)
-4. GHL contacts API (NEW)
-5. Whop members (existing fallback)
-```
-
-**2. `supabase/functions/provision-manual-access/index.ts`**
-
-Add **PATH D** after the Stripe fallback (PATH C):
-
-- Call the same GHL contacts API endpoint
-- If contact found, provision with `source: "ghl"`
-- This auto-creates the `students` + `student_access` records on signup
-
-**3. `src/pages/Signup.tsx`**
-
-Add support text below the "Already have an account? Sign in" line (after line 578):
-
-```
-Having issues registering? Text us +1 727-270-8738
-```
-
-Small muted text, same style as the sign-in link.
+This way, typing a question in the dashboard card opens the drawer and immediately sends it to the AI coach — no retyping needed.
 
 ### Files Changed
-- `supabase/functions/check-stripe-customer/index.ts`
-- `supabase/functions/provision-manual-access/index.ts`
-- `src/pages/Signup.tsx`
+- `src/components/academy/dashboard/AskCoachCard.tsx`
+- `src/components/academy/CoachDrawer.tsx`
 
