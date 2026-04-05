@@ -25,6 +25,7 @@ import { format, isPast, isThisWeek, startOfMonth } from "date-fns";
 import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import { useLiveNow } from "@/hooks/useLiveNow";
+import { WeekScheduleSheet } from "@/components/academy/live/WeekScheduleSheet";
 
 import liveSessionPrep from "@/assets/live-session-prep.jpg";
 import liveSessionTrading from "@/assets/live-session-trading.jpg";
@@ -235,6 +236,7 @@ const AcademyLive = () => {
   const [notifySending, setNotifySending] = useState(false);
   const [liveToggleSending, setLiveToggleSending] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [searchParams] = useSearchParams();
 
   const isMockMode = searchParams.get("mockLive") === "1";
@@ -356,7 +358,15 @@ const AcademyLive = () => {
     ok ? toast.success("Link copied") : toast.error("Failed to copy");
   };
 
-  const scrollToSchedule = () => { document.getElementById("live-full-schedule")?.scrollIntoView({ behavior: "smooth" }); };
+  const openSchedule = () => setScheduleOpen(true);
+
+  const buildGCalUrl = (s: LiveSession) => {
+    const start = new Date(s.session_date);
+    const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60_000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const params = new URLSearchParams({ action: "TEMPLATE", text: s.title, dates: `${fmt(start)}/${fmt(end)}`, details: `${s.description}\n\nJoin: ${s.join_url || "TBD"}`, ctz: "America/New_York" });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
 
   if (!hasAccess && !accessLoading) return <PremiumGate status={status} pageName="Live Sessions" />;
 
@@ -390,7 +400,7 @@ const AcademyLive = () => {
           </div>
           <div className="flex items-center gap-2 pt-2">
             {canManage && <Button size="sm" className="gap-1.5" onClick={() => setShowAdd(true)}><Plus className="h-3.5 w-3.5" /> Create</Button>}
-            <button className="live-btn-glass py-2.5 px-4" onClick={scrollToSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
+            <button className="live-btn-glass py-2.5 px-4" onClick={openSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
           </div>
         </div>
       </header>
@@ -529,7 +539,7 @@ const AcademyLive = () => {
                 <span className={cn("font-semibold", monthCount >= 6 ? "text-emerald-400" : monthCount >= 3 ? "text-amber-400" : "text-white/40")}>{monthCount >= 6 ? "Consistent" : monthCount >= 3 ? "Building" : "Getting started"}</span>
               </div>
             </div>
-            <button className="live-btn-glass w-full justify-center py-2.5 gap-2" onClick={scrollToSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
+            <button className="live-btn-glass w-full justify-center py-2.5 gap-2" onClick={openSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
             {weekList.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
@@ -596,6 +606,14 @@ const AcademyLive = () => {
             </section>
           )}
         </div>
+
+        <WeekScheduleSheet
+          open={scheduleOpen}
+          onOpenChange={setScheduleOpen}
+          sessions={sessions}
+          onJoin={(s) => trackZoomClick(s)}
+          onCalendar={(s) => window.open(buildGCalUrl(s), '_blank')}
+        />
       </div>
     </div>
   );
