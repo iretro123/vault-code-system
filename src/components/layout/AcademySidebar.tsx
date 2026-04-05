@@ -60,7 +60,7 @@ export function AcademySidebar() {
   const [inboxOpen, setInboxOpen] = useState(() => {
     try { return localStorage.getItem("va_inbox_open") === "true"; } catch { return false; }
   });
-  const [referralOpen, setReferralOpen] = useState(false);
+  
   const [searchOpen, setSearchOpen] = useState(false);
 
   const handleInboxChange = (open: boolean) => {
