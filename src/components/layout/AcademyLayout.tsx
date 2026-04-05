@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PlayerIdentity } from "./PlayerIdentity";
 import { AcademySidebar } from "./AcademySidebar";
@@ -6,6 +6,7 @@ import { MobileNav } from "./MobileNav";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
+import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
@@ -35,9 +36,16 @@ function AcademyLayoutInner() {
   const isOnline = useOnlineStatus();
   const lastPageRef = useRef("");
   const hadUserRef = useRef(false);
+  const [referralOpen, setReferralOpen] = useState(false);
   useSmartNotifications();
   useSmartRefresh();
   usePresenceHeartbeat();
+
+  useEffect(() => {
+    const handler = () => setReferralOpen(true);
+    window.addEventListener("open-referral-modal", handler);
+    return () => window.removeEventListener("open-referral-modal", handler);
+  }, []);
 
   const isCommunity = location.pathname.startsWith("/academy/community");
   const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
@@ -155,6 +163,7 @@ function AcademyLayoutInner() {
 
         <CoachDrawer />
         <MobileNav />
+        <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />
       </div>
 
       {showBlockModal && (

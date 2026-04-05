@@ -20,7 +20,7 @@ import {
   EyeOff,
   CalendarCheck,
 } from "lucide-react";
-import { ReferralModal } from "@/components/academy/ReferralModal";
+
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,7 +60,7 @@ export function AcademySidebar() {
   const [inboxOpen, setInboxOpen] = useState(() => {
     try { return localStorage.getItem("va_inbox_open") === "true"; } catch { return false; }
   });
-  const [referralOpen, setReferralOpen] = useState(false);
+  
   const [searchOpen, setSearchOpen] = useState(false);
 
   const handleInboxChange = (open: boolean) => {
@@ -257,7 +257,7 @@ export function AcademySidebar() {
         {/* Share Vault Card */}
         {!collapsed && (
           <button
-            onClick={() => { if (isMobile) setOpenMobile(false); setReferralOpen(true); }}
+            onClick={() => { if (isMobile) setOpenMobile(false); window.dispatchEvent(new CustomEvent("open-referral-modal")); }}
             className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow overflow-hidden"
             style={{ background: '#0F1319' }}
           >
@@ -320,7 +320,7 @@ export function AcademySidebar() {
         </div>
 
         <InboxDrawer open={inboxOpen} onOpenChange={handleInboxChange} />
-        <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />
+        
         <VaultSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       </SidebarFooter>
     </Sidebar>
