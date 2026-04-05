@@ -150,6 +150,9 @@ export function CoachDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
 
+  // Ref to always hold the latest handleChatSend
+  const handleChatSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
+
   // Listen for sidebar toggle event
   useEffect(() => {
     const handler = (e: Event) => {
@@ -161,8 +164,8 @@ export function CoachDrawer() {
         setTab("instant");
         setOpen(true);
         setChatInput(incomingQuestion);
-        // Auto-send after a tick so state settles
-        setTimeout(() => handleChatSend(incomingQuestion), 80);
+        // Use ref so we always call the latest version
+        setTimeout(() => handleChatSendRef.current(incomingQuestion), 100);
       } else {
         if (detail?.tab === "coach") setTab("coach");
         else if (detail?.tab === "instant") setTab("instant");
@@ -420,21 +423,28 @@ export function CoachDrawer() {
       }
 
       // Auto-insert static chart examples if AI mentions the trigger phrase
+      // AND the conversation actually discussed supply/demand topics
       const lowerReply = assistantSoFar.toLowerCase();
       const chartTriggerPhrases = ["real chart examples", "show you what that looks like", "chart examples to show"];
       const shouldShowCharts = chartTriggerPhrases.some((p) => lowerReply.includes(p));
       if (shouldShowCharts) {
-        setTimeout(() => {
-          setChatMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: "",
-              images: CHART_EXAMPLES.map((c) => ({ type: "image_url", image_url: { url: c.src } })),
-              isStreaming: false,
-            },
-          ]);
-        }, 400);
+        // Verify the conversation context is actually about supply/demand/zones
+        const recentContext = allMessages.slice(-4).map(m => m.content.toLowerCase()).join(" ") + " " + lowerReply;
+        const topicKeywords = ["supply", "demand", "zone", "imbalance", "order block", "fvg", "fair value"];
+        const topicMatch = topicKeywords.some(k => recentContext.includes(k));
+        if (topicMatch) {
+          setTimeout(() => {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: "",
+                images: CHART_EXAMPLES.map((c) => ({ type: "image_url", image_url: { url: c.src } })),
+                isStreaming: false,
+              },
+            ]);
+          }, 400);
+        }
       }
     } catch (e: any) {
       toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
@@ -444,6 +454,9 @@ export function CoachDrawer() {
     setChatLoading(false);
     requestOSPermission();
   };
+
+  // Keep ref in sync so the event listener always calls latest version
+  handleChatSendRef.current = handleChatSend;
 
   // ── Coach handoff ──
   const handleHandoffToCoach = () => {
@@ -518,7 +531,7 @@ export function CoachDrawer() {
       />
 
       {/* Modal */}
-      <div className="relative w-[min(860px,calc(100vw-32px))] rounded-t-2xl md:rounded-xl border border-white/[0.10] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-200 h-[95vh] md:h-auto md:max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="relative w-[min(860px,calc(100vw-32px))] rounded-t-2xl md:rounded-xl border border-white/[0.10] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-200 h-[100dvh] md:h-auto md:max-h-[85vh] flex flex-col overflow-hidden">
 
         {/* ── Premium Vault AI Header ── */}
         <div className="px-6 pt-5 pb-3 shrink-0 relative">
@@ -767,7 +780,7 @@ export function CoachDrawer() {
               </div>
 
               {/* ── Composer (bottom-pinned) ── */}
-              <div className="shrink-0 border-t border-white/[0.06] px-4 py-3" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
+              <div className="shrink-0 border-t border-white/[0.06] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]" style={{ background: 'linear-gradient(180deg, #0E1218 0%, #0A0E14 100%)' }}>
                 <div className="flex items-end gap-2">
                   <textarea
                     ref={chatInputRef}
