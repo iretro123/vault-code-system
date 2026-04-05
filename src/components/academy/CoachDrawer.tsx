@@ -150,6 +150,9 @@ export function CoachDrawer() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("instant");
 
+  // Ref to always hold the latest handleChatSend
+  const handleChatSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
+
   // Listen for sidebar toggle event
   useEffect(() => {
     const handler = (e: Event) => {
@@ -161,8 +164,8 @@ export function CoachDrawer() {
         setTab("instant");
         setOpen(true);
         setChatInput(incomingQuestion);
-        // Auto-send after a tick so state settles
-        setTimeout(() => handleChatSend(incomingQuestion), 80);
+        // Use ref so we always call the latest version
+        setTimeout(() => handleChatSendRef.current(incomingQuestion), 100);
       } else {
         if (detail?.tab === "coach") setTab("coach");
         else if (detail?.tab === "instant") setTab("instant");
