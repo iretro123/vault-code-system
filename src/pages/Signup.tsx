@@ -576,9 +576,11 @@ const Signup = () => {
             Already have an account?
             <Link to="/auth" className="text-primary hover:underline ml-1 font-medium">Sign in</Link>
           </p>
-          <p className="text-center text-[11px] text-muted-foreground/60 mt-2">
-            Having issues registering? Text us{" "}
-            <a href="sms:+17272708738" className="text-primary/80 hover:underline">+1 727-270-8738</a>
+          <p className="text-center text-[11px] text-muted-foreground/40 mt-3 tracking-wide">
+            Need help?{" "}
+            <a href="sms:+17272708738" className="text-primary/60 hover:text-primary transition-colors duration-200 hover:underline">
+              Tap here to text support
+            </a>
           </p>
         </div>
       </div>
