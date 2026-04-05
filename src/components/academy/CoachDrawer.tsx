@@ -788,7 +788,14 @@ export function CoachDrawer() {
                                   ))}
                                 </div>
                               )}
-                              {/* Inline images */}
+                              {/* Navigation link cards */}
+                              {navLinks.length > 0 && (
+                                <div className="pt-2 space-y-2">
+                                  {navLinks.map((link, idx) => (
+                                    <NavLinkCard key={idx} link={link} onClick={() => { navigate(link.path); setOpen(false); }} />
+                                  ))}
+                                </div>
+                              )}
                               {msg.images && msg.images.length > 0 && (
                                 <div className="pt-2 space-y-2">
                                   {msg.images.map((img, idx) => (
