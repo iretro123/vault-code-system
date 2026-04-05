@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   MessageSquare, X, Loader2, Send, ChevronLeft, Image,
   Clock, CheckCircle2, AlertCircle, History, Copy, Check,
-  ChevronDown, ChevronUp, Sparkles, Brain, Play,
+  ChevronDown, ChevronUp, Sparkles, Brain, Play, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
