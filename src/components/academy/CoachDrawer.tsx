@@ -153,6 +153,14 @@ export function CoachDrawer() {
   // Ref to always hold the latest handleChatSend
   const handleChatSendRef = useRef<(text?: string) => Promise<void>>(async () => {});
 
+  // ── Start a truly fresh conversation ──
+  const startNewConversation = useCallback(() => {
+    setChatMessages([]);
+    setChatInput("");
+    setChatLoading(false);
+    setShowHistory(false);
+  }, []);
+
   // Listen for sidebar toggle event
   useEffect(() => {
     const handler = (e: Event) => {
@@ -160,21 +168,26 @@ export function CoachDrawer() {
       const incomingQuestion = detail?.question as string | undefined;
 
       if (incomingQuestion) {
-        // Force open + send the question immediately
+        // Fresh thread + send question
+        startNewConversation();
         setTab("instant");
         setOpen(true);
-        setChatInput(incomingQuestion);
-        // Use ref so we always call the latest version
+        // Use ref so we always call the latest version after state clears
         setTimeout(() => handleChatSendRef.current(incomingQuestion), 100);
       } else {
         if (detail?.tab === "coach") setTab("coach");
         else if (detail?.tab === "instant") setTab("instant");
-        setOpen((prev) => !prev);
+        setOpen((prev) => {
+          const willOpen = !prev;
+          // Reset to fresh chat when opening (not when closing)
+          if (willOpen) startNewConversation();
+          return willOpen;
+        });
       }
     };
     window.addEventListener("toggle-coach-drawer", handler);
     return () => window.removeEventListener("toggle-coach-drawer", handler);
-  }, []);
+  }, [startNewConversation]);
 
   // ESC to close
   useEffect(() => {
@@ -640,13 +653,13 @@ export function CoachDrawer() {
                   >
                     <History className="h-4 w-4" />
                   </button>
-                  {chatMessages.length > 0 && (
+                   {chatMessages.length > 0 && (
                     <button
-                      onClick={() => setChatMessages([])}
-                      className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06] text-xs"
+                      onClick={startNewConversation}
+                      className="text-muted-foreground hover:text-foreground p-1.5 rounded-md hover:bg-white/[0.06] text-xs font-medium"
                       title="New Chat"
                     >
-                      New
+                      New Chat
                     </button>
                   )}
                 </>
@@ -681,10 +694,10 @@ export function CoachDrawer() {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center max-w-md">
-                      {starterChips.map((chip) => (
+                       {starterChips.map((chip) => (
                         <button
                           key={chip}
-                          onClick={() => handleChatSend(chip)}
+                          onClick={() => { startNewConversation(); setTimeout(() => handleChatSendRef.current(chip), 50); }}
                           className="text-sm px-4 py-2.5 rounded-xl border border-primary/15 bg-primary/[0.04] text-muted-foreground hover:text-foreground hover:bg-primary/[0.08] hover:border-primary/25 transition-all duration-150"
                         >
                           {chip}
