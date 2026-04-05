@@ -69,6 +69,10 @@ export async function hapticNotification() {
   }
 }
 
+export async function playSwipeSound() {
+  await playTone(880, 15, 0.015);
+}
+
 export async function hapticStrong() {
   if (!isNativePlatform()) return;
   try {
