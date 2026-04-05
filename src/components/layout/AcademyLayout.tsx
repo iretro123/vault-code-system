@@ -114,8 +114,11 @@ function AcademyLayoutInner() {
     );
   }
 
-  // First-login onboarding gate
-  if (!(profile as any)?.profile_completed) {
+  // First-login onboarding gate (+ admin preview override)
+  const searchParams = new URLSearchParams(window.location.search);
+  const isPreview = searchParams.has("preview-onboarding");
+
+  if (isPreview || !(profile as any)?.profile_completed) {
     return <AppOnboarding />;
   }
 
