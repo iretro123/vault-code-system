@@ -75,7 +75,7 @@ export function WeekScheduleSheet({ open, onOpenChange, sessions, onJoin, onCale
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t border-white/[0.08] bg-[hsl(214,24%,8%)] p-0 max-h-[85vh] flex flex-col"
+        className="rounded-t-3xl border-t border-white/[0.08] bg-[hsl(214,24%,8%)] p-0 max-h-[80vh] flex flex-col pb-[env(safe-area-inset-bottom,8px)] md:rounded-2xl md:max-w-lg md:mx-auto md:inset-x-0 md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:max-h-[70vh] md:border"
       >
         {/* Header */}
         <SheetHeader className="px-5 pt-5 pb-0">
@@ -138,7 +138,7 @@ export function WeekScheduleSheet({ open, onOpenChange, sessions, onJoin, onCale
         </div>
 
         {/* Session Cards */}
-        <div className="flex-1 overflow-y-auto px-4 pb-6 pt-2 space-y-3">
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,16px))] pt-2 space-y-3">
           {daySessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div
