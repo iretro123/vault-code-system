@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { OnboardingProgressBar, OnboardingStep } from "./OnboardingStep";
 import { VaultTourCarousel } from "./VaultTourCarousel";
 import {
