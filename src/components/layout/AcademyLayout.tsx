@@ -163,6 +163,7 @@ function AcademyLayoutInner() {
 
         <CoachDrawer />
         <MobileNav />
+        <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />
       </div>
 
       {showBlockModal && (

@@ -320,7 +320,7 @@ export function AcademySidebar() {
         </div>
 
         <InboxDrawer open={inboxOpen} onOpenChange={handleInboxChange} />
-        <ReferralModal open={referralOpen} onOpenChange={setReferralOpen} />
+        
         <VaultSearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       </SidebarFooter>
     </Sidebar>
