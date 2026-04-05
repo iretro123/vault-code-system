@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, MessageSquare, Users, TrendingUp } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-/* Animated candlestick canvas background */
+/* Animated scrolling candlestick canvas background */
 function CandlestickCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -13,76 +13,97 @@ function CandlestickCanvas() {
     if (!ctx) return;
 
     let animId: number;
+    let w = 0;
+    let h = 0;
     const dpr = window.devicePixelRatio || 1;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      w = rect.width;
+      h = rect.height;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
 
-    // Generate candle data
-    const candleCount = 14;
-    type Candle = { open: number; close: number; high: number; low: number; x: number };
-    let candles: Candle[] = [];
-    let tick = 0;
+    type Candle = { open: number; close: number; high: number; low: number };
+    const candles: Candle[] = [];
+    const spacing = 28;
+    const maxCandles = 25;
+    let scrollX = 0;
+    let targetClose = h * 0.5;
+    let lastPrice = h * 0.5;
+    let frameCount = 0;
 
-    const generateCandles = (w: number, h: number) => {
-      const spacing = w / (candleCount + 1);
-      let price = h * 0.6;
-      candles = [];
-      for (let i = 0; i < candleCount; i++) {
-        const change = (Math.random() - 0.45) * h * 0.12;
-        const open = price;
-        const close = price + change;
-        const high = Math.min(open, close) - Math.random() * h * 0.06;
-        const low = Math.max(open, close) + Math.random() * h * 0.06;
-        candles.push({ open, close, high, low, x: spacing * (i + 1) });
-        price = close;
-      }
+    const addCandle = () => {
+      const change = (Math.random() - 0.45) * h * 0.1;
+      const open = lastPrice;
+      const close = open + change;
+      const high = Math.min(open, close) - Math.random() * h * 0.05 - 2;
+      const low = Math.max(open, close) + Math.random() * h * 0.05 + 2;
+      candles.push({ open, close, high, low });
+      lastPrice = close;
+      if (candles.length > maxCandles) candles.shift();
     };
 
-    const rect = canvas.getBoundingClientRect();
-    generateCandles(rect.width, rect.height);
+    // Seed initial candles shifted right
+    for (let i = 0; i < 18; i++) addCandle();
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
     const draw = () => {
-      const r = canvas.getBoundingClientRect();
-      const w = r.width;
-      const h = r.height;
       ctx.clearRect(0, 0, w, h);
 
-      // Grid lines
-      ctx.strokeStyle = "rgba(255,255,255,0.03)";
-      ctx.lineWidth = 1;
-      for (let y = 0; y < h; y += 20) {
+      // Grid
+      ctx.strokeStyle = "rgba(255,255,255,0.04)";
+      ctx.lineWidth = 0.5;
+      for (let y = 0; y < h; y += 24) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(w, y);
         ctx.stroke();
       }
-      for (let x = 0; x < w; x += 25) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-        ctx.stroke();
+
+      // Scroll offset — candles anchored to the right
+      scrollX += 0.35;
+      frameCount++;
+
+      // Spawn new candle every ~80 frames
+      if (frameCount % 80 === 0) {
+        addCandle();
+        targetClose = lastPrice + (Math.random() - 0.5) * h * 0.08;
+        targetClose = Math.max(h * 0.2, Math.min(h * 0.8, targetClose));
       }
 
-      // Candles
-      const candleW = Math.max(6, w / (candleCount * 2.5));
+      // Animate last candle smoothly
+      if (candles.length > 0) {
+        const last = candles[candles.length - 1];
+        last.close = lerp(last.close, targetClose, 0.02);
+        last.high = Math.min(last.high, Math.min(last.open, last.close) - 2);
+        last.low = Math.max(last.low, Math.max(last.open, last.close) + 2);
+      }
+
+      const candleW = Math.max(7, spacing * 0.45);
+      const totalWidth = candles.length * spacing;
+      // Anchor right edge of chart to right side of canvas
+      const baseX = w - totalWidth + scrollX % spacing;
+
       candles.forEach((c, i) => {
+        const cx = baseX + i * spacing;
+        if (cx < -spacing || cx > w + spacing) return;
+
         const isGreen = c.close < c.open;
-        const green = "rgba(34,197,94,0.6)";
-        const red = "rgba(239,68,68,0.5)";
+        const green = "rgba(34,197,94,0.7)";
+        const red = "rgba(239,68,68,0.6)";
         const color = isGreen ? green : red;
 
         // Wick
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(c.x, c.high);
-        ctx.lineTo(c.x, c.low);
+        ctx.moveTo(cx, c.high);
+        ctx.lineTo(cx, c.low);
         ctx.stroke();
 
         // Body
@@ -90,37 +111,50 @@ function CandlestickCanvas() {
         const bodyH = Math.max(3, Math.abs(c.close - c.open));
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.roundRect(c.x - candleW / 2, top, candleW, bodyH, 1.5);
+        ctx.roundRect(cx - candleW / 2, top, candleW, bodyH, 2);
         ctx.fill();
 
-        // Glow on green candles
+        // Glow on green
         if (isGreen) {
-          ctx.shadowColor = "rgba(34,197,94,0.15)";
-          ctx.shadowBlur = 8;
+          ctx.shadowColor = "rgba(34,197,94,0.2)";
+          ctx.shadowBlur = 10;
           ctx.fill();
           ctx.shadowColor = "transparent";
           ctx.shadowBlur = 0;
         }
       });
 
-      // Animate last candle
-      tick++;
-      if (tick % 60 === 0 && candles.length > 0) {
+      // Glowing price line from last candle to right edge
+      if (candles.length > 0) {
         const last = candles[candles.length - 1];
-        const shift = (Math.random() - 0.5) * 4;
-        last.close = Math.max(10, Math.min(h - 10, last.close + shift));
-        last.high = Math.min(last.high, Math.min(last.open, last.close) - 2);
-        last.low = Math.max(last.low, Math.max(last.open, last.close) + 2);
+        const lastX = baseX + (candles.length - 1) * spacing;
+        const priceY = last.close;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(34,197,94,0.5)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(lastX, priceY);
+        ctx.lineTo(w, priceY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Glow dot
+        ctx.beginPath();
+        ctx.arc(lastX, priceY, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(34,197,94,0.8)";
+        ctx.shadowColor = "rgba(34,197,94,0.6)";
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.restore();
       }
 
       animId = requestAnimationFrame(draw);
     };
 
     draw();
-    const ro = new ResizeObserver(() => {
-      resize();
-      generateCandles(canvas.getBoundingClientRect().width, canvas.getBoundingClientRect().height);
-    });
+    const ro = new ResizeObserver(() => resize());
     ro.observe(canvas);
 
     return () => {
