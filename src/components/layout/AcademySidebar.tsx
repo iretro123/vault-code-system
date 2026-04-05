@@ -257,7 +257,7 @@ export function AcademySidebar() {
         {/* Share Vault Card */}
         {!collapsed && (
           <button
-            onClick={() => { if (isMobile) setOpenMobile(false); setReferralOpen(true); }}
+            onClick={() => { if (isMobile) setOpenMobile(false); window.dispatchEvent(new CustomEvent("open-referral-modal")); }}
             className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow overflow-hidden"
             style={{ background: '#0F1319' }}
           >
