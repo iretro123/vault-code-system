@@ -18,6 +18,7 @@ interface LiveSession {
   status: string;
   is_replay: boolean;
   replay_url: string | null;
+  created_by: string | null;
 }
 
 interface WeekScheduleSheetProps {
