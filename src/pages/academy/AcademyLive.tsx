@@ -25,6 +25,7 @@ import { format, isPast, isThisWeek, startOfMonth } from "date-fns";
 import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import { useLiveNow } from "@/hooks/useLiveNow";
+import { WeekScheduleSheet } from "@/components/academy/live/WeekScheduleSheet";
 
 import liveSessionPrep from "@/assets/live-session-prep.jpg";
 import liveSessionTrading from "@/assets/live-session-trading.jpg";
