@@ -89,6 +89,7 @@ export async function ensureProfile(
           discipline_score: 0,
           timezone: detectedTz,
           phone_number: opts?.phone_number || null,
+          avatar_url: randomAvatarUrl(),
         });
       } else {
         console.error("Error creating profile:", insertError);
