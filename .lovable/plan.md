@@ -1,39 +1,66 @@
 
 
-## Redesign Activity Ticker — Remove LIVE, Add Real Activity Data, Auto-Swipe Slower
+## Fix Activity Ticker — Continuous Slide Animation + Fetch Real Data
 
-### Changes to `src/components/academy/dashboard/ActivityTicker.tsx`
+### Two Problems
 
-**1. Remove the "LIVE" indicator** — Delete the green pulsing dot + "LIVE" label and the separator line next to it.
+**Problem 1: Data not loading.** The tables `live_session_attendance`, `journal_entries`, and `lesson_progress` all have RLS policies that restrict SELECT to `auth.uid() = user_id`. So users can only see their OWN activity — the ticker can never show other students' activity.
 
-**2. Fetch real user activity from 3 sources** (instead of just wins + lessons):
-   - `live_session_attendance` → "{firstName} joined a live call"
-   - `journal_entries` → "{firstName} journaled a trade"  
-   - `lesson_progress` joined with `academy_lessons` → "{firstName} watched a lesson"
-   
-   For journal entries and attendance, fetch the user's `display_name` from `profiles` using the `user_id`. Query last 7 days, limit 10 each.
+**Fix:** Create a `security definer` database function `get_recent_activity()` that returns anonymized recent activity (user_id + type + timestamp) from all three tables. This bypasses RLS safely and only exposes minimal data (first names via the existing `get_community_profiles` RPC).
 
-**3. Add a new type** `"journal" | "call" | "lesson"` with appropriate icons (PenLine for journal, Video for call, BookOpen for lesson).
+**Problem 2: No sliding animation.** The current implementation uses a crossfade (opacity + translateX toggle), which just fades between cards. The user wants the original continuous marquee-style slide where items scroll horizontally on their own.
 
-**4. Slow down auto-swipe** — Change interval from 4000ms to 5000ms for a more relaxed pace.
+**Fix:** Replace the crossfade with a CSS `@keyframes` marquee animation — items laid out in a row, duplicated for seamless looping, scrolling left continuously at a comfortable pace (~20s per cycle).
 
-**5. Keep the same luxury dark card styling** — radial gradient, shimmer top edge, dot indicators, crossfade + translateX transition. Just remove the LIVE section.
+### Database Migration
 
-### Data Fetching Logic
-
+```sql
+CREATE OR REPLACE FUNCTION public.get_recent_activity()
+RETURNS TABLE (
+  activity_id text,
+  user_id uuid,
+  activity_type text,
+  activity_at timestamptz
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  (SELECT 'c-' || id::text, user_id, 'call', clicked_at
+   FROM live_session_attendance
+   WHERE clicked_at >= now() - interval '7 days'
+   ORDER BY clicked_at DESC LIMIT 5)
+  UNION ALL
+  (SELECT 'j-' || id::text, user_id, 'journal', created_at
+   FROM journal_entries
+   WHERE created_at >= now() - interval '7 days'
+   ORDER BY created_at DESC LIMIT 5)
+  UNION ALL
+  (SELECT 'l-' || id::text, user_id, 'lesson', completed_at
+   FROM lesson_progress
+   WHERE completed = true AND completed_at >= now() - interval '7 days'
+   ORDER BY completed_at DESC LIMIT 5)
+$$;
 ```
-// 3 parallel queries:
-1. live_session_attendance (last 7d) → get user_id, join profiles for display_name
-2. journal_entries (last 7d) → get user_id, join profiles for display_name  
-3. lesson_progress + academy_lessons (last 7d, completed=true) → get user_id, lesson title
 
-// Since lesson_progress and journal_entries don't have user names,
-// collect all unique user_ids, then batch-fetch first names from profiles table
-```
+### Component Changes (`ActivityTicker.tsx`)
 
-### File
+1. Replace the 3 parallel Supabase queries with a single `supabase.rpc("get_recent_activity")` call
+2. Keep the `get_community_profiles` call for display names
+3. Replace the crossfade carousel with a **CSS marquee animation**:
+   - Items laid out in a flex row, duplicated (render the list twice side-by-side)
+   - `@keyframes scroll` moves `translateX(0)` → `translateX(-50%)` 
+   - Duration: `items.length * 8` seconds (slow, readable pace)
+   - `mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent)` for smooth edge fade
+4. Keep the luxury dark card styling (radial gradient, shimmer border, shadow)
+5. Remove dot indicators (not needed for continuous scroll)
+6. Max 3 items displayed, shuffled from the results
+
+### Files
 
 | File | Change |
 |------|--------|
-| `src/components/academy/dashboard/ActivityTicker.tsx` | Remove LIVE indicator, fetch from 3 real activity tables, slow interval to 5s |
+| Database migration | New `get_recent_activity()` security definer function |
+| `src/components/academy/dashboard/ActivityTicker.tsx` | Use RPC for data, replace crossfade with CSS marquee slide |
 
