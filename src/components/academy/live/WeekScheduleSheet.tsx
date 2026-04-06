@@ -211,7 +211,7 @@ export function WeekScheduleSheet({ open, onOpenChange, sessions, onJoin, onCale
             <EmptyDay isToday={isToday(weekDays[selectedDay])} isPast={weekDays[selectedDay] < todayStart} />
           ) : (
             daySessions.map((session) => (
-              <SessionCard key={session.id} session={session} onJoin={onJoin} onCalendar={onCalendar} />
+              <SessionCard key={session.id} session={session} onJoin={onJoin} onCalendar={onCalendar} userTZ={userTZ} tzLabel={tzLabel} />
             ))
           )}
         </div>
