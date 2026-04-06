@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, PenLine, Video } from "lucide-react";
+import { BookOpen, PenLine, Trophy, Video } from "lucide-react";
 
 interface TickerItem {
   id: string;
   text: string;
-  type: "call" | "journal" | "lesson";
+  type: "call" | "journal" | "lesson" | "win";
+  userId: string;
 }
 
 const CACHE_KEY = "va_activity_ticker_v2";
@@ -58,6 +59,12 @@ const icon = (type: TickerItem["type"]) => {
           <BookOpen className="h-3 w-3 text-blue-400" />
         </span>
       );
+    case "win":
+      return (
+        <span className="relative flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/15 shrink-0">
+          <Trophy className="h-3 w-3 text-yellow-400" />
+        </span>
+      );
   }
 };
 
@@ -103,22 +110,33 @@ export function ActivityTicker() {
         const name = getName(r.user_id);
         switch (r.activity_type) {
           case "call":
-            result.push({ id: r.activity_id, text: `${name} joined a live call`, type: "call" });
+            result.push({ id: r.activity_id, text: `${name} joined a live call`, type: "call", userId: r.user_id });
             break;
           case "journal":
-            result.push({ id: r.activity_id, text: `${name} journaled a trade`, type: "journal" });
+            result.push({ id: r.activity_id, text: `${name} journaled a trade`, type: "journal", userId: r.user_id });
             break;
           case "lesson":
-            result.push({ id: r.activity_id, text: `${name} watched a lesson`, type: "lesson" });
+            result.push({ id: r.activity_id, text: `${name} watched a lesson`, type: "lesson", userId: r.user_id });
+            break;
+          case "win":
+            result.push({ id: r.activity_id, text: `${name} posted a win`, type: "win", userId: r.user_id });
             break;
         }
       }
 
       if (result.length === 0) return;
 
-      const shuffled = shuffle(result).slice(0, 3);
-      setItems(shuffled);
-      writeCache(shuffled);
+      // Deduplicate: max 1 item per user
+      const seen = new Set<string>();
+      const unique = result.filter(item => {
+        if (seen.has(item.userId)) return false;
+        seen.add(item.userId);
+        return true;
+      });
+
+      const final = shuffle(unique).slice(0, 5);
+      setItems(final);
+      writeCache(final);
     };
 
     fetchAll();
