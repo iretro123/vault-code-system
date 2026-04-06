@@ -178,7 +178,7 @@ function NextUpCard({ events, userTZ }: { events: MarketEvent[]; userTZ: string 
           </h3>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-xs font-mono font-semibold text-muted-foreground">
-              {formatTimeET(nextEvent.time_et)} ET
+              {formatEventTime(nextEvent.time_et, nextEvent.date, userTZ)} {tzLabel}
             </span>
             <span
               className={cn(
