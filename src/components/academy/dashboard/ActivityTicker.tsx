@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, PenLine, Video } from "lucide-react";
 
@@ -38,9 +38,31 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+const icon = (type: TickerItem["type"]) => {
+  switch (type) {
+    case "call":
+      return (
+        <span className="relative flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 shrink-0">
+          <Video className="h-3 w-3 text-emerald-400" />
+        </span>
+      );
+    case "journal":
+      return (
+        <span className="relative flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 shrink-0">
+          <PenLine className="h-3 w-3 text-amber-400" />
+        </span>
+      );
+    case "lesson":
+      return (
+        <span className="relative flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/15 shrink-0">
+          <BookOpen className="h-3 w-3 text-blue-400" />
+        </span>
+      );
+  }
+};
+
 export function ActivityTicker() {
   const [items, setItems] = useState<TickerItem[]>(() => readCache() ?? []);
-  const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
     const cached = readCache();
@@ -49,42 +71,21 @@ export function ActivityTicker() {
       return;
     }
 
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString();
-
     const fetchAll = async () => {
-      const [attendanceRes, journalRes, lessonsRes] = await Promise.all([
-        supabase
-          .from("live_session_attendance")
-          .select("id, user_id, clicked_at")
-          .gte("clicked_at", since)
-          .order("clicked_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("journal_entries")
-          .select("id, user_id, created_at")
-          .gte("created_at", since)
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("lesson_progress")
-          .select("id, user_id, completed_at")
-          .eq("completed", true)
-          .gte("completed_at", since)
-          .order("completed_at", { ascending: false })
-          .limit(10),
-      ]);
+      const { data: activities } = await supabase.rpc("get_recent_activity");
 
-      // Collect unique user_ids to fetch display names
+      if (!activities || activities.length === 0) return;
+
       const allUserIds = new Set<string>();
-      (attendanceRes.data ?? []).forEach((r: any) => allUserIds.add(r.user_id));
-      (journalRes.data ?? []).forEach((r: any) => allUserIds.add(r.user_id));
-      (lessonsRes.data ?? []).forEach((r: any) => allUserIds.add(r.user_id));
+      for (const a of activities) {
+        if ((a as any).user_id) allUserIds.add((a as any).user_id);
+      }
 
       if (allUserIds.size === 0) return;
 
-      // Batch fetch display names from profiles
-      const { data: profiles } = await supabase
-        .rpc("get_community_profiles", { _user_ids: Array.from(allUserIds) });
+      const { data: profiles } = await supabase.rpc("get_community_profiles", {
+        _user_ids: Array.from(allUserIds),
+      });
 
       const nameMap = new Map<string, string>();
       if (profiles) {
@@ -97,18 +98,21 @@ export function ActivityTicker() {
       const getName = (uid: string) => nameMap.get(uid) || "A student";
 
       const result: TickerItem[] = [];
-
-      (attendanceRes.data ?? []).forEach((r: any) => {
-        result.push({ id: `c-${r.id}`, text: `${getName(r.user_id)} joined a live call`, type: "call" });
-      });
-
-      (journalRes.data ?? []).forEach((r: any) => {
-        result.push({ id: `j-${r.id}`, text: `${getName(r.user_id)} journaled a trade`, type: "journal" });
-      });
-
-      (lessonsRes.data ?? []).forEach((r: any) => {
-        result.push({ id: `l-${r.id}`, text: `${getName(r.user_id)} watched a lesson`, type: "lesson" });
-      });
+      for (const a of activities) {
+        const r = a as any;
+        const name = getName(r.user_id);
+        switch (r.activity_type) {
+          case "call":
+            result.push({ id: r.activity_id, text: `${name} joined a live call`, type: "call" });
+            break;
+          case "journal":
+            result.push({ id: r.activity_id, text: `${name} journaled a trade`, type: "journal" });
+            break;
+          case "lesson":
+            result.push({ id: r.activity_id, text: `${name} watched a lesson`, type: "lesson" });
+            break;
+        }
+      }
 
       if (result.length === 0) return;
 
@@ -120,87 +124,46 @@ export function ActivityTicker() {
     fetchAll();
   }, []);
 
-  // Auto-rotate every 5s
-  useEffect(() => {
-    if (items.length < 2) return;
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % items.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [items.length]);
+  if (items.length === 0) return null;
 
-  const displayItems = useMemo(() => items.slice(0, 3), [items]);
-
-  if (displayItems.length === 0) return null;
-
-  const icon = (type: TickerItem["type"]) => {
-    switch (type) {
-      case "call":
-        return (
-          <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/15">
-            <Video className="h-3.5 w-3.5 text-emerald-400" />
-          </span>
-        );
-      case "journal":
-        return (
-          <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/15">
-            <PenLine className="h-3.5 w-3.5 text-amber-400" />
-          </span>
-        );
-      case "lesson":
-        return (
-          <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/15">
-            <BookOpen className="h-3.5 w-3.5 text-blue-400" />
-          </span>
-        );
-    }
-  };
+  const duration = items.length * 8;
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl border border-white/[0.06] px-4 py-3"
+      className="relative overflow-hidden rounded-2xl border border-white/[0.06] px-0 py-3"
       style={{
-        background: "radial-gradient(ellipse at top, rgba(59,130,246,0.08), transparent 70%), hsl(222,20%,10%)",
+        background:
+          "radial-gradient(ellipse at top, rgba(59,130,246,0.08), transparent 70%), hsl(222,20%,10%)",
         boxShadow: "0 0 20px rgba(59,130,246,0.05), 0 10px 30px rgba(0,0,0,0.4)",
+        maskImage: "linear-gradient(to right, transparent, black 6%, black 94%, transparent)",
+        WebkitMaskImage: "linear-gradient(to right, transparent, black 6%, black 94%, transparent)",
       }}
     >
       {/* Shimmer top edge */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
 
-      <div className="flex items-center gap-3">
-        {/* Card content — crossfade */}
-        <div className="flex-1 relative h-6 overflow-hidden">
-          {displayItems.map((item, i) => (
-            <div
-              key={item.id}
-              className="absolute inset-0 flex items-center gap-2 transition-all duration-500 ease-in-out"
-              style={{
-                opacity: i === activeIndex % displayItems.length ? 1 : 0,
-                transform: i === activeIndex % displayItems.length ? "translateX(0)" : "translateX(12px)",
-              }}
-            >
-              {icon(item.type)}
-              <span className="text-xs font-medium text-white/70 truncate">{item.text}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Dot indicators */}
-        {displayItems.length > 1 && (
-          <div className="flex items-center gap-1 shrink-0">
-            {displayItems.map((_, i) => (
-              <span
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                  i === activeIndex % displayItems.length
-                    ? "bg-primary"
-                    : "bg-white/20"
-                }`}
-              />
-            ))}
+      <div
+        className="flex items-center gap-8 whitespace-nowrap"
+        style={{
+          animation: `ticker-scroll ${duration}s linear infinite`,
+          width: "max-content",
+        }}
+      >
+        {/* Render items twice for seamless loop */}
+        {[...items, ...items].map((item, i) => (
+          <div key={`${item.id}-${i}`} className="flex items-center gap-2 px-2">
+            {icon(item.type)}
+            <span className="text-xs font-medium text-white/70">{item.text}</span>
           </div>
-        )}
+        ))}
       </div>
+
+      <style>{`
+        @keyframes ticker-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 }
