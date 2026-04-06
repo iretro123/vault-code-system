@@ -11,6 +11,14 @@ interface Props {
 
 /* ── helpers ── */
 
+function formatTimeET(t: string | null): string {
+  if (!t) return "—";
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 function impactColor(impact: string) {
   if (impact === "high") return "bg-red-500";
   if (impact === "medium") return "bg-amber-400";
@@ -164,7 +172,7 @@ function NextUpCard({ events }: { events: MarketEvent[] }) {
           </h3>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-xs font-mono font-semibold text-muted-foreground">
-              {nextEvent.time_et} ET
+              {formatTimeET(nextEvent.time_et)} ET
             </span>
             <span
               className={cn(
@@ -278,7 +286,7 @@ export function EconomicCalendarTab({ active }: Props) {
                         <div className={cn("w-1 shrink-0", impactColor(e.impact))} />
                         <div className="flex-1 px-4 py-3 flex items-center gap-3">
                           <div className="w-14 shrink-0">
-                            <p className="text-xs font-mono font-semibold text-foreground">{e.time_et || "—"}</p>
+                            <p className="text-xs font-mono font-semibold text-foreground">{formatTimeET(e.time_et)}</p>
                             <p className="text-[9px] text-muted-foreground/50">ET</p>
                           </div>
                           <div className="flex-1 min-w-0">
