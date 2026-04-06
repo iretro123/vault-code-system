@@ -45,8 +45,10 @@ function getSessionLabel(title: string, type: string) {
 }
 
 export function WeekScheduleSheet({ open, onOpenChange, sessions, onJoin, onCalendar }: WeekScheduleSheetProps) {
+  const { profile } = useAuth();
+  const userTZ = getUserTimezone(profile?.timezone);
+  const tzLabel = getTZAbbr(userTZ);
   const now = new Date();
-  const todayStart = startOfDay(now);
   const [weekOffset, setWeekOffset] = useState(0);
 
   const weekStart = useMemo(
