@@ -169,7 +169,7 @@ function NextUpCard({ events, userTZ }: { events: MarketEvent[]; userTZ: string 
         </span>
       </div>
 
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-semibold text-foreground truncate">
             {nextEvent.event_name}
