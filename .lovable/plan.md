@@ -1,53 +1,81 @@
 
 
-## Fix: Countdown Timer Showing Wrong Time
+## Global Timezone Awareness — Show All Times in the User's Local Timezone
 
-### Root Cause
+### Current State
 
-`todayETDate()` (line 67-82) has two bugs:
+The app already detects the user's IANA timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone` and saves it to the `profiles.timezone` column on signup. It also backfills it on login if empty. However, **no component actually reads the user's timezone to convert times**. The economic calendar hardcodes ET display, live sessions render in raw UTC/local browser time inconsistently, and the `Profile` TypeScript interface in `useAuth.tsx` doesn't even expose `timezone`.
 
-1. **DST detection uses the user's local timezone** (line 78: `now.getTimezoneOffset()`), not New York's. If the user is in UTC, PST, or anywhere non-ET, the DST check is wrong.
+### What Changes
 
-2. **Double timezone conversion** — line 74 creates a `Date` by parsing `"2026-04-06T13:00:00"` which JS interprets as **local time**, then adds the ET offset. This is wrong — it should be treated as UTC before adding the offset, or better yet, use a reliable method.
+**1. Expose timezone from auth context**
 
-### Fix
+Add `timezone` to the `Profile` interface in `useAuth.tsx` so every component can access `profile.timezone`.
 
-Replace `todayETDate` with a correct implementation that uses `Intl.DateTimeFormat` to reliably get the current ET time and compute the target:
+**2. Create a shared timezone conversion utility**
 
+New file `src/lib/userTime.ts` with helpers:
+- `formatInUserTZ(date, formatStr, tz)` — wraps `date-fns-tz` (already available via date-fns) or uses `Intl.DateTimeFormat` to render any UTC/ISO timestamp in the user's saved timezone
+- `formatTimeInTZ(isoDate, tz)` — returns "2:30 PM" in the given timezone
+- `formatDateTimeInTZ(isoDate, tz)` — returns "Apr 10, 2:30 PM EST"
+- `getUserTZLabel(tz)` — returns short label like "EST", "PST", "GMT+1"
+
+Uses `Intl.DateTimeFormat` with the user's IANA timezone — no extra dependencies needed.
+
+**3. Economic Calendar — show times in user's TZ**
+
+Update `EconomicCalendarTab.tsx`:
+- Read `profile.timezone` from `useAuth()`
+- Convert stored ET times to the user's timezone for display (e.g., a user in PST sees "5:30 AM PT" instead of "8:30 AM ET")
+- Show the user's TZ abbreviation instead of hardcoded "ET"
+- Countdown timer already works correctly (uses absolute UTC timestamps) — no change needed
+
+**4. Live Sessions — show times in user's TZ**
+
+Update `AcademyLive.tsx` and `WeekScheduleSheet.tsx`:
+- Session dates are stored as ISO/UTC timestamps — use the new helpers to display them in the user's timezone
+- Add TZ label suffix (e.g., "9:25 PM EST" → "6:25 PM PST" for a west coast user)
+
+**5. NYSE Session Bar — add user TZ context**
+
+The `NYSESessionBar.tsx` correctly tracks ET market hours (it must stay in ET since NYSE operates in ET). No change to the bar logic, but add a small label showing the user's equivalent local time range.
+
+### Technical Details
+
+**Timezone conversion approach** (no new dependencies):
 ```typescript
-function todayETDate(timeET: string): Date {
-  const [h, m] = timeET.split(":").map(Number);
-  // Get today's date in ET
-  const now = new Date();
-  const etDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-  // Build ISO string as UTC, then subtract the actual ET offset
-  // Use Intl to find the real ET offset right now
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    timeZoneName: "shortOffset",
+export function formatTimeInTZ(isoOrDate: string | Date, tz: string): string {
+  const d = new Date(isoOrDate);
+  return d.toLocaleTimeString("en-US", {
+    timeZone: tz,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
-  const parts = formatter.formatToParts(now);
-  const tzPart = parts.find((p) => p.type === "timeZoneName")?.value || "GMT-4";
-  // Parse offset like "GMT-4" or "GMT-5"
-  const offsetMatch = tzPart.match(/GMT([+-]\d+)/);
-  const etOffsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : -4;
-  // Build the UTC timestamp for the target ET time
-  const targetUTC = new Date(`${etDateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00Z`);
-  // Subtract the ET offset to convert ET→UTC (ET is behind UTC, offset is negative)
-  return new Date(targetUTC.getTime() - etOffsetHours * 60 * 60 * 1000);
+}
+
+export function getTZAbbr(tz: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    timeZoneName: "short",
+  }).formatToParts(new Date());
+  return parts.find(p => p.type === "timeZoneName")?.value || "";
 }
 ```
 
-This correctly:
-- Gets today's date in ET (handles midnight boundary)
-- Detects the real ET offset using `Intl` (works for any user timezone)
-- Builds the target as UTC, then adjusts for the ET offset
+**Economic calendar ET→user TZ conversion:**
+The `time_et` column stores times like "08:30". To convert: build a UTC Date from the event date + ET time + ET offset, then format in the user's TZ using `Intl`.
 
-### File
+### Files
 
-| File | Change |
+| File | Action |
 |------|--------|
-| `src/components/academy/community/EconomicCalendarTab.tsx` | Replace `todayETDate` function (lines 67-82) with correct timezone math |
+| `src/lib/userTime.ts` | **Create** — shared timezone formatting utilities |
+| `src/hooks/useAuth.tsx` | Add `timezone` to Profile interface (line 8-23) |
+| `src/components/academy/community/EconomicCalendarTab.tsx` | Use user TZ for time display + countdown label |
+| `src/pages/academy/AcademyLive.tsx` | Format session times in user TZ |
+| `src/components/academy/live/WeekScheduleSheet.tsx` | Format session times in user TZ |
+| `src/components/academy/dashboard/NextGroupCallCard.tsx` | Format countdown session time in user TZ |
 
-One function, ~15 lines. The countdown timer will now show the correct hours/minutes/seconds regardless of the user's timezone.
+No database changes needed — `profiles.timezone` already exists and is populated.
 
