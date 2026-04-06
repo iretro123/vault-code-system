@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, PenLine, Video } from "lucide-react";
+import { BookOpen, PenLine, Trophy, Video } from "lucide-react";
 
 interface TickerItem {
   id: string;
