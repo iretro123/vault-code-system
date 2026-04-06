@@ -293,8 +293,8 @@ export function EconomicCalendarTab({ active }: Props) {
                         <div className={cn("w-1 shrink-0", impactColor(e.impact))} />
                         <div className="flex-1 px-4 py-3 flex items-center gap-3">
                           <div className="w-14 shrink-0">
-                            <p className="text-xs font-mono font-semibold text-foreground">{formatTimeET(e.time_et)}</p>
-                            <p className="text-[9px] text-muted-foreground/50">ET</p>
+                            <p className="text-xs font-mono font-semibold text-foreground">{formatEventTime(e.time_et, e.date, userTZ)}</p>
+                            <p className="text-[9px] text-muted-foreground/50">{tzLabel}</p>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{e.event_name}</p>
