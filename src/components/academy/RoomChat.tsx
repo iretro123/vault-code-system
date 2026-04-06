@@ -216,14 +216,14 @@ function renderRecapCard(body: string) {
   );
 }
 
-function renderMentions(text: string, isOwnBubble = false): React.ReactNode {
+function renderMentions(text: string): React.ReactNode {
   // Split on @word patterns and highlight them
   const parts = text.split(/(@\w+)/g);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
     if (/^@\w+/.test(part)) {
       return (
-        <span key={i} className={isOwnBubble ? "text-white font-semibold" : "text-primary font-semibold"}>
+        <span key={i} className="text-primary font-semibold">
           {part}
         </span>
       );
@@ -232,7 +232,7 @@ function renderMentions(text: string, isOwnBubble = false): React.ReactNode {
   });
 }
 
-function renderPlainBody(body: string, isOwnBubble = false) {
+function renderPlainBody(body: string) {
   // Split quote block from rest of message
   const lines = body.split("\n");
   const quoteLines: string[] = [];
@@ -259,10 +259,10 @@ function renderPlainBody(body: string, isOwnBubble = false) {
         }
         const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (linkMatch) {
-          return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
+          return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-primary underline">{linkMatch[1]}</a>;
         }
         if (!part) return null;
-        return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
+        return <span key={i}>{renderMentions(part)}</span>;
       });
     }
 
@@ -270,12 +270,12 @@ function renderPlainBody(body: string, isOwnBubble = false) {
     const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s<>"')\]]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
-        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
+        return <span key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</span>;
       }
       if (/^https?:\/\//.test(part)) {
-        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{part}</a>;
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-primary underline">{part}</a>;
       }
-      return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
+      return <span key={i}>{renderMentions(part)}</span>;
     });
   };
 
@@ -284,12 +284,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
   return (
     <>
       {quoteLines.length > 0 && (
-        <div className={cn(
-          "border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug",
-          isOwnBubble
-            ? "border-white/40 bg-white/10 text-white/70"
-            : "border-primary/40 bg-primary/[0.06] text-[hsl(220,10%,40%)]"
-        )}>
+        <div className="border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug border-primary/40 bg-primary/[0.06] text-muted-foreground">
           {renderInline(quoteLines.join(" "))}
         </div>
       )}
@@ -1249,8 +1244,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                  <div
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-white/[0.03] transition-colors duration-75",
-                    startsNewGroup ? "mt-2 pt-2 pb-1" : (isGroupedWithNext ? "py-[2px]" : "pt-[2px] pb-0.5"),
+                    "group relative flex gap-3 px-4 hover:bg-white/[0.02] transition-colors duration-75",
+                    startsNewGroup ? "pt-1.5 pb-0.5" : (isGroupedWithNext ? "py-[1px]" : "pt-[1px] pb-0.5"),
+                    startsNewGroup && "mt-[1px]",
                     isEditing && "bg-white/[0.04]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-500/[0.04]"
@@ -1411,26 +1407,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     ) : (
                       <>
                         {msg.body && msg.body !== "📎 Attachment" && (
-                           <div className="inline-block max-w-[88%]">
-                            <div className={cn(
-                              "rounded-xl px-3.5 py-2",
-                              startsNewGroup ? "mt-0.5" : "mt-0",
-                              isCeoOrAdmin
-                                ? "bg-amber-500/[0.08] border border-amber-500/20"
-                                : isOwn
-                                  ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,54%)] text-white border border-primary/70 shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
-                                  : "bg-white/[0.06] border border-white/[0.06]"
-                            )}>
-                              <p className={cn(
-                                "text-[13px] leading-[1.6] whitespace-pre-line",
-                                isOwn && !isCeoOrAdmin ? "text-white" : "text-foreground"
-                              )}>
-                                {renderPlainBody(msg.body, isOwn && !isCeoOrAdmin)}
-                              </p>
-                              {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
-                                <span className={cn("text-[10px] mt-0.5 block", isOwn && !isCeoOrAdmin ? "text-white/60" : "text-muted-foreground")}>(edited)</span>
-                              )}
-                            </div>
+                          <div className={startsNewGroup ? "mt-0.5" : "mt-0"}>
+                            <p className="text-[14px] md:text-[13px] leading-[1.55] whitespace-pre-line text-foreground">
+                              {renderPlainBody(msg.body)}
+                            </p>
+                            {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
+                              <span className="text-[10px] mt-0.5 block text-muted-foreground">(edited)</span>
+                            )}
                           </div>
                         )}
                         {/* Link preview */}
