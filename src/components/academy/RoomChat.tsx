@@ -1262,9 +1262,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                  <div
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-white/[0.02] transition-colors duration-75",
-                    startsNewGroup ? "pt-1.5 pb-0.5" : (isGroupedWithNext ? "py-[1px]" : "pt-[1px] pb-0.5"),
-                    startsNewGroup && "mt-[1px]",
+                    "group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75",
+                    startsNewGroup ? "pt-3 pb-1" : (isGroupedWithNext ? "py-0.5" : "pt-0.5 pb-1"),
+                    startsNewGroup && "mt-1",
                     isEditing && "bg-white/[0.04]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-500/[0.04]"
