@@ -45,7 +45,7 @@ import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
-import { OSControlRail } from "@/components/trade-os/OSControlRail";
+
 import { useCoachingNudge } from "@/hooks/useCoachingNudge";
 import { CoachingNudgeModal } from "@/components/academy/CoachingNudgeModal";
 import { SessionSetupCard, SessionCountdownLine, loadTimes, fmt12h, clearSession, clearSessionFromDB } from "@/components/trade-os/SessionSetupCard";
@@ -759,30 +759,7 @@ const AcademyTrade = () => {
 
         {/* ══════ HERO OS CARD ══════ */}
         <div className="vault-os-card overflow-hidden">
-          <div className="flex">
-            {/* ── LEFT GUIDE RAIL (inside card) ── */}
-            <div className="hidden lg:block w-[240px] shrink-0 border-r border-white/[0.06]">
-              <OSControlRail
-                activePlan={activePlan}
-                trackedBalance={trackedBalance}
-                vaultAccountBalance={vaultState.account_balance}
-                todayTradeCount={todayTradeCount}
-                maxTradesPerDay={vaultState.max_trades_per_day}
-                vaultStatus={vaultState.vault_status}
-                lastBlockReason={vaultState.last_block_reason}
-                dayState={dayState}
-                dayStateStatus={dayStateStatus}
-                dayStateCta={dayStateCta}
-                onQuickAction={handleQuickAction}
-                onLogFromPlan={handleLogFromPlan}
-                activeStage={activeStage}
-                stageStatus={stageStatus}
-                onSelectStage={setStage}
-              />
-            </div>
-
-            {/* ── RIGHT: Tabs + Content ── */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
@@ -1373,8 +1350,7 @@ const AcademyTrade = () => {
               </div>
             </button>
           )}
-          </div>{/* close right: tabs+content */}
-          </div>{/* close flex inside card */}
+          </div>{/* close content */}
         </div>{/* close vault-os-card */}
 
         {/* ══════ LOWER ANALYTICS ══════ */}
