@@ -1,54 +1,73 @@
 
+Goal: make the dashboard activity ticker feel mixed, current, and real instead of repeatedly showing only “joined a live call.”
 
-## Fix Activity Ticker — Show 5 Max Items From Different Users, Add Win Activity Type
+What’s happening now
+- It does update, but only on first load and then from a 5-minute local cache.
+- While the page stays open, it does not refresh itself.
+- The current dedupe logic keeps the first activity seen per user, and the RPC currently returns grouped unions in a fixed order. That means call activity often “wins” over journal, lesson, or win activity for the same student.
+- Result: the bar can look stale and overly biased toward one activity type.
 
-### Problem
+Implementation plan
 
-1. The ticker only shows max 3 items (hardcoded `slice(0, 3)`) — should be 5
-2. The RPC function `get_recent_activity` doesn't include "posted a win" activity type (from `academy_messages` where `room_slug = 'wins'`)
-3. Currently there are 5 unique users with real activity across calls, journals, and lessons — but only 2-3 show because of the slice
+1. Rework activity selection so it truly mixes activity types
+- Keep using real backend activity only.
+- Update `get_recent_activity()` so the final result is globally ordered by newest activity instead of effectively grouped by source.
+- Return a slightly larger recent pool from each source, then sort all rows by timestamp desc before sending them back.
+- Keep sources:
+  - joined a live call
+  - journaled a trade
+  - watched a lesson
+  - posted a win
 
-### Changes
+2. Improve the client-side mixing logic
+- In `ActivityTicker.tsx`, stop taking the first activity per user from the raw list.
+- Build a balanced feed that:
+  - keeps max 5 different users
+  - prefers variety across activity types when possible
+  - falls back gracefully if one type has less data
+- This avoids 4–5 entries all feeling like the same event category.
 
-**Database Migration** — Update `get_recent_activity()` to:
-- Add a 4th UNION for wins: `SELECT from academy_messages WHERE room_slug = 'wins'` (last 30 days, limit 5)
-- Keep the existing 3 activity sources (calls, journals, lessons)
-- This ensures when students post wins, they show up in the ticker
+3. Keep it up to date automatically
+- Add background refresh in the ticker while the dashboard is open, e.g. every 60–90 seconds.
+- Also refresh when the tab becomes visible again.
+- Keep the cache, but make it “stale-while-refresh”:
+  - show cached items immediately for speed
+  - then fetch fresh data in the background
+  - replace the ticker when newer activity is found
+- This keeps the bar feeling alive without flicker.
 
-**Component (`ActivityTicker.tsx`)** — Two changes:
-1. Change `slice(0, 3)` → `slice(0, 5)` to show up to 5 items
-2. Add a "win" type with a trophy/star icon and text like "{Name} posted a win"
-3. Add deduplication logic: pick at most 1 item per user so 5 items = 5 different students
-4. Add `"win"` to the TickerItem type union and icon switch
+4. Preserve the current motion style
+- Keep the continuous self-sliding marquee behavior the user liked.
+- Do not switch back to a static card or manual carousel.
+- Keep the luxury dark look and smooth slower movement.
 
-### Technical Detail
+5. Small copy improvements for realism
+- Use consistent short activity copy:
+  - “Edward joined a live call”
+  - “Mia journaled a trade”
+  - “Chris watched a lesson”
+  - “Jordan posted a win”
+- If needed, optionally tune freshness wording later (“this morning”, “today”), but only if the timestamps support it cleanly.
 
-Updated RPC adds:
-```sql
-UNION ALL
-(SELECT 'w-' || id::text, user_id, 'win'::text, created_at
- FROM academy_messages
- WHERE room_slug = 'wins' AND created_at >= now() - interval '30 days'
- ORDER BY created_at DESC LIMIT 5)
-```
+Files involved
+- `supabase/migrations/...`  
+  Update `get_recent_activity()` so results are globally sorted and include enough recent rows from each source for better mixing.
+- `src/components/academy/dashboard/ActivityTicker.tsx`  
+  Add stale-while-refresh behavior, periodic refresh, visibility refresh, and smarter unique-user mixed selection.
 
-Dedup logic in component:
-```ts
-// Pick one item per unique user, max 5
-const seen = new Set<string>();
-const unique = result.filter(item => {
-  const uid = item.userId;
-  if (seen.has(uid)) return false;
-  seen.add(uid);
-  return true;
-});
-const final = shuffle(unique).slice(0, 5);
-```
+Technical notes
+- The main bug is not fake data; it’s selection bias:
+  - SQL unions are source-grouped
+  - client dedupes too early
+  - cache blocks frequent refresh
+- Best fix pattern:
+  1. fetch more real rows
+  2. globally sort by recency
+  3. mix types on the client
+  4. refresh automatically while open
 
-### Files
-
-| File | Change |
-|------|--------|
-| Database migration | Update `get_recent_activity()` to add wins source |
-| `src/components/academy/dashboard/ActivityTicker.tsx` | Max 5 items, 1 per user, add "win" type with icon |
-
+Expected outcome
+- The ticker will still move on its own.
+- It will show up to 5 real students.
+- It will rotate across calls, journals, lessons, and wins instead of mostly showing call activity.
+- It will stay fresher while users remain on the dashboard.
