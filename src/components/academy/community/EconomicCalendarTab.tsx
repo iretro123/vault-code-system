@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useEconomicCalendar, type MarketEvent } from "@/hooks/useEconomicCalendar";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
+import { etTimeToUTCDate, formatTimeInTZ, getTZAbbr, getUserTimezone } from "@/lib/userTime";
 
 interface Props {
   active: boolean;
