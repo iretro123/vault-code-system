@@ -238,7 +238,7 @@ function parseFearGreedMeterEvents(html: string): any[] {
 
 function isLikelyEventName(line: string): boolean {
   const keywords = [
-    "CPI", "PPI", "FOMC", "Fed", "Federal", "NFP", "Nonfarm", "Non-Farm",
+    "CPI", "PPI", "FOMC", "Fed", "Federal", "NFP", "Nonfarm", "Non-Farm", "Fed Meeting",
     "GDP", "Unemployment", "Jobless", "Employment", "Payroll", "Retail Sales",
     "Consumer", "Producer", "Interest Rate", "Housing", "PMI", "ISM",
     "Trade Balance", "Durable Goods", "Industrial Production", "Existing Home",
