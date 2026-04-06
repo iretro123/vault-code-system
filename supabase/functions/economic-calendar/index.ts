@@ -254,7 +254,7 @@ function classifyImpact(name: string): string {
   const upper = name.toUpperCase();
   const high = ["FOMC", "FEDERAL FUNDS", "FED INTEREST", "CPI", "CONSUMER PRICE",
     "NFP", "NONFARM", "NON-FARM", "GDP", "GROSS DOMESTIC", "FED CHAIR",
-    "INFLATION REPORT", "JOBS REPORT", "PCE", "CORE PCE"];
+    "INFLATION REPORT", "JOBS REPORT", "PCE", "CORE PCE", "FED MEETING"];
   const medium = ["PPI", "PRODUCER PRICE", "UNEMPLOYMENT", "JOBLESS", "RETAIL SALES",
     "PMI", "ISM", "DURABLE GOODS", "EMPLOYMENT", "PAYROLL", "HOUSING",
     "CONSUMER CONFIDENCE", "MICHIGAN", "TRADE BALANCE"];
