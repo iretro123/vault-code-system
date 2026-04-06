@@ -1,58 +1,57 @@
 
 
-## Add "Calendar" Tab — Robinhood-Style Economic & Earnings Feed
+## Redesign Calendar Tab — Premium Earnings Whisper + News Cockpit
 
-### Overview
-A new "Calendar" tab next to Wins in the Community page. Premium iOS/Robinhood-inspired design — clean cards, high-contrast typography, color-coded impact levels, sticky daily habit creator. Data fetched live from Finnhub (free API).
+### Problem
+Current calendar tab is a flat list of rows with no visual hierarchy, no date context on earnings, no sectioning — it looks like a basic data dump. Needs to feel like a premium trading intelligence cockpit.
 
-### What's Needed First
-**Finnhub API key** (free) — sign up at [finnhub.io](https://finnhub.io), grab the free key from your dashboard. I'll prompt you to add it as a secret before building.
+### Design Overhaul
 
-### Architecture
+**Two distinct sections with visual separation:**
 
-```text
-Community Tabs:  Chat | Signals | Wins | Calendar
-                                          ↓
-                            EconomicCalendarTab.tsx
-                                    ↓
-                          useEconomicCalendar.ts
-                                    ↓
-                    Edge Function: economic-calendar
-                                    ↓
-                          Finnhub API (free tier)
-```
+#### 1. Economic News Section (Top)
+- **"News & Events" header** with live pulse dot
+- **Today's highlight card** — if there's a high-impact event today, show it as a hero card with large text, countdown timer ("Drops in 2h 15m"), and glowing red/amber border based on impact
+- **Weekly timeline** — keep the day pills but make them larger, more Robinhood-like with event count badges
+- **Event rows redesigned** — taller cards, left impact bar stays but add time in large mono font on left side, event name prominent, Prev/Est/Act in a clean 3-column grid on right with subtle dividers
+- **Group by time of day** — "Pre-Market (8:30 AM ET)" / "Market Hours" / "After Hours" sub-headers
 
-### Design Vision — Robinhood/iOS Native Feel
+#### 2. Earnings Section (Bottom)
+- **"Earnings This Week" header** with calendar icon
+- **Date-grouped earnings** — group by date with sticky date headers ("Monday, Apr 7" / "Tuesday, Apr 8")
+- **Earnings cards redesigned** — each card shows:
+  - Large ticker in bold mono (left)
+  - Company timing badge ("BMO" / "AMC") with color coding
+  - Date shown explicitly ("Apr 7")
+  - EPS Est / EPS Act in clean columns
+  - Revenue Est if available
+- **Visual density** — compact but readable, show 8-10 per visible scroll area
+- Cards get a subtle green/red tint when actual beats/misses estimate
 
-- **Sticky date header** — "Monday, Apr 7" pinned at top, scrolls with content
-- **Time-grouped sections** — "Pre-Market · 8:30 AM", "Market Open · 9:30 AM" — Robinhood-style time dividers
-- **Event cards** — Full-width rows, left color bar (red = high impact, amber = medium, muted = low), clean mono values for Previous/Forecast/Actual
-- **Earnings section** — Ticker pills in monospace font, EPS estimates, "Before Open" / "After Close" badges
-- **This Week timeline** — Horizontal scrollable day pills (Mon–Fri) with dot indicators for event density
-- **Empty state** — "Markets are quiet today" with next event countdown
-- **Pull-to-refresh** with subtle haptic-style animation
-- **Skeleton loading** — Robinhood shimmer placeholders
+#### 3. Additional Premium Touches
+- **"Market Pulse" status strip** at very top — one-liner: "3 high-impact events this week · 47 earnings reports"
+- **Smooth skeleton loading** with shimmer
+- **Auto-refresh indicator** — small "Updated 5m ago" timestamp
+- **Filter pills** — "All" / "High Impact Only" / "Earnings Only" toggle
 
-### Implementation Steps
-
-1. **Add `FINNHUB_API_KEY` secret** — prompt user via secrets tool
-2. **Create edge function** `supabase/functions/economic-calendar/index.ts` — fetches `/calendar/economic` + `/calendar/earnings` from Finnhub, returns combined sorted data with CORS
-3. **Create hook** `src/hooks/useEconomicCalendar.ts` — React Query, 30min stale time, buckets data into Today/This Week/Earnings
-4. **Build component** `src/components/academy/community/EconomicCalendarTab.tsx` — the full Robinhood-style feed with all sections described above
-5. **Wire into Community** `src/pages/academy/AcademyCommunity.tsx` — add "Calendar" tab to TABS array, render component in tab content
+### Hook Fix
+The current hook makes a duplicate call (supabase.functions.invoke AND fetch). Remove the first dead call. Also group earnings by date for the new UI.
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `supabase/functions/economic-calendar/index.ts` | Create |
-| `src/hooks/useEconomicCalendar.ts` | Create |
-| `src/components/academy/community/EconomicCalendarTab.tsx` | Create |
-| `src/pages/academy/AcademyCommunity.tsx` | Modify — add 4th tab |
+| `src/components/academy/community/EconomicCalendarTab.tsx` | Full rewrite |
+| `src/hooks/useEconomicCalendar.ts` | Fix duplicate fetch, add date-grouped earnings |
 
-### Why This Is Sticky
-- Students open this every morning before trading — builds daily habit
-- High-impact event alerts create urgency ("CPI drops in 2h")
-- Earnings section helps them avoid surprise moves
-- No other trading education platform embeds this directly in the community — differentiator
+Edge function stays as-is — data is fine, only the UI needs the overhaul.
+
+### Key Design Tokens
+- Cards: `bg-card/80 border border-white/[0.06] rounded-2xl` (vault-luxury style)
+- Impact high: red-500 bar + `bg-red-500/5` card tint
+- Impact medium: amber-400 bar
+- Earnings beat: subtle `bg-emerald-500/5` tint
+- Earnings miss: subtle `bg-red-500/5` tint
+- Typography: mono for numbers/tickers, semibold for labels
+- Spacing: generous padding (px-4 py-3.5), 16px border radius
 
