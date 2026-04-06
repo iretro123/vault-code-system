@@ -1,44 +1,34 @@
 
 
-## Fix: Message Spacing + Discord-Style Reply Rendering
+## Required Avatar During Onboarding + Backfill Existing Users
 
-### Problems
-1. **Messages too cramped** — grouped messages use `py-[1px]` and new groups use `pt-1.5 pb-0.5`, giving almost zero breathing room between different users' messages
-2. **Reply quotes are flat text blocks** — when someone replies, the quoted text shows as a generic left-border block with no visual connection to the original message (no "arm" connector like Discord)
+### What we're doing
+1. Add a new **"Choose Your Avatar" step** in the onboarding flow (AppOnboarding.tsx) so every new user MUST pick an avatar before activating their vault
+2. **Backfill existing users** who have no avatar_url set — assign them a random icon-based avatar from the existing icon library
+3. Save the chosen avatar to the profile on activation
 
 ### Changes
 
-**`src/components/academy/RoomChat.tsx`**
+**`src/components/onboarding/AppOnboarding.tsx`** — Add avatar step between Identity (step 1) and Experience (step 2):
+- Add new step (becomes step 2, bumping everything else up by 1 — total steps become 0-7)
+- Show a grid of the existing `AVATAR_ICONS` (from `avatarIcons.tsx`) with color picker using `AVATAR_COLORS`
+- Also show an "Upload Photo" option using the same crop-to-square + storage upload logic from `AcademyProfileForm`
+- User must select at least an icon OR upload a photo to continue — Continue button disabled until avatar is set
+- Store chosen avatar as `avatarUrl` state, save it in `handleActivate` as `avatar_url` in the profile update
+- Update `OnboardingProgressBar` total from 6 to 7 steps
+- Add avatar preview in the summary step
 
-#### 1) Increase message spacing to match Discord
-- New message groups (different user): change from `pt-1.5 pb-0.5 mt-[1px]` to `pt-3 pb-1 mt-1` — gives clear visual separation between users
-- Grouped follow-ups (same user): change from `py-[1px]` to `py-0.5` — slight breathing room without feeling cramped
-- This matches Discord where each new user block has noticeable top spacing
+**`src/lib/ensureProfile.ts`** — Auto-assign random avatar on profile creation:
+- When inserting a new profile, generate a random avatar_url using format `icon:{randomIcon}|{randomColor}` from the AVATAR_ICONS and AVATAR_COLORS arrays
+- This ensures even if onboarding is somehow skipped, the user has a visible avatar
 
-#### 2) Redesign reply/quote rendering to Discord-style with connector arm
-Replace the current flat `border-l-2` quote block in `renderPlainBody` with a Discord-style reply indicator:
-
-- Add a new component rendered **above** the message body (not inline) when quote lines are detected
-- The reply indicator shows: a curved connector arm (`┌─`), small avatar placeholder circle, the replying-to username in bold, and a truncated preview of the original message
-- Styling: `flex items-center gap-1.5 text-[12px] text-muted-foreground ml-6 mb-0.5` with a small `╭` SVG/border-radius connector line going from the reply preview down to the actual message
-- The connector uses a `before:` pseudo-element or a small inline SVG curve (2px wide, ~16px tall, border-left + border-top with rounded corner)
-- Remove the old `border-l-2 pl-2.5 bg-primary/[0.06]` block quote style for replies — keep it only for manually typed `>` quotes that aren't reply-formatted
-
-#### 3) Distinguish reply quotes from manual quotes
-- Reply quotes follow pattern: `> **@username:** text` — render as Discord-style reply with arm
-- Manual quotes (just `> some text` without the `@username:` pattern) — keep existing left-border style
-
-### Visual Result
-```text
-Before:
- │ quoted text here
- actual reply text
-
-After (Discord-style):
- ╭─ 🔵 username: quoted preview...
- actual reply text
-```
+**Migration** — Backfill existing profiles with no avatar:
+- Run an UPDATE on `profiles` where `avatar_url IS NULL OR avatar_url = ''` 
+- Use a SQL function to assign random icon avatars: pick a random icon ID from a predefined list and a random HSL color
+- This is a one-time data fix for all existing users without avatars
 
 ### Files Changed
-- `src/components/academy/RoomChat.tsx`
+- `src/components/onboarding/AppOnboarding.tsx` — new avatar selection step
+- `src/lib/ensureProfile.ts` — random default avatar on profile creation
+- Migration SQL — backfill existing users with random icon avatars
 
