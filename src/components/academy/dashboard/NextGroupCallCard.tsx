@@ -115,7 +115,8 @@ export function NextGroupCallCard() {
         )}
       </div>
 
-      <h3 className="text-base font-semibold text-white mb-4">{session.title}</h3>
+      <h3 className="text-base font-semibold text-white mb-1">{session.title}</h3>
+      <p className="text-xs text-muted-foreground mb-4">{formatTimeInTZ(session.session_date, userTZ)} {tzLabel}</p>
 
       {!isLive && diff > 0 && (
         <div className="flex flex-col items-center gap-2 mb-5">

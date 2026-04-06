@@ -485,7 +485,7 @@ const AcademyLive = () => {
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-white mt-3">{nextSession.title}</h2>
                 {nextSession.description && <p className="text-sm text-white/50 mt-1">{nextSession.description}</p>}
-                <p className="text-sm font-semibold text-white mt-2">{format(new Date(nextSession.session_date), "EEEE, MMMM d")} at {formatTime(nextSession.session_date)} EST{nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}</p>
+                <p className="text-sm font-semibold text-white mt-2">{formatDateInTZ(nextSession.session_date, userTZ)} at {formatTimeInTZ(nextSession.session_date, userTZ)} {tzLabel}{nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}</p>
                 <p className="text-xs text-white/30 mt-1">Bring notebook · headphones · charts ready</p>
                 <div className="flex items-center gap-3 mt-6 flex-wrap">
                   {nextSession.join_url && <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); trackZoomClick(nextSession); }}><button className={cn("live-btn-primary", isLiveNow && "!bg-gradient-to-r !from-red-600 !to-red-500 hover:!shadow-[0_0_20px_4px_rgba(239,68,68,0.25)]")}><ExternalLink className="h-4 w-4" /> {isLiveNow ? "Join Live Now" : "Join Zoom"}</button></a>}
