@@ -250,10 +250,14 @@ function SessionCard({
   session,
   onJoin,
   onCalendar,
+  userTZ,
+  tzLabel,
 }: {
   session: LiveSession;
   onJoin?: (s: LiveSession) => void;
   onCalendar?: (s: LiveSession) => void;
+  userTZ: string;
+  tzLabel: string;
 }) {
   const dotColor = getSessionDot(session.session_type + session.title);
   const label = getSessionLabel(session.title, session.session_type);
@@ -287,7 +291,6 @@ function SessionCard({
         </div>
         <span className="text-xs font-semibold text-white/40 tabular-nums">
           {formatTimeInTZ(session.session_date, userTZ)} {tzLabel}
-        </span>
         </span>
       </div>
 
