@@ -5,7 +5,8 @@ import { BookOpen, PenLine, Video } from "lucide-react";
 interface TickerItem {
   id: string;
   text: string;
-  type: "call" | "journal" | "lesson";
+  type: "call" | "journal" | "lesson" | "win";
+  userId: string;
 }
 
 const CACHE_KEY = "va_activity_ticker_v2";
