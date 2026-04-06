@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 export interface EconomicEvent {
   id: string;
@@ -48,14 +48,6 @@ async function fetchCalendar(): Promise<CalendarResponse> {
   const from = getDateStr(0);
   const to = getDateStr(14);
 
-  const { data, error } = await supabase.functions.invoke("economic-calendar", {
-    body: null,
-    headers: { "Content-Type": "application/json" },
-    method: "GET",
-  });
-
-  // supabase.functions.invoke doesn't support query params well for GET,
-  // so we'll use fetch directly
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const url = `https://${projectId}.supabase.co/functions/v1/economic-calendar?from=${from}&to=${to}`;
 
@@ -73,7 +65,7 @@ export function useEconomicCalendar() {
   const query = useQuery({
     queryKey: ["economic-calendar"],
     queryFn: fetchCalendar,
-    staleTime: 30 * 60 * 1000, // 30 min
+    staleTime: 30 * 60 * 1000,
     refetchInterval: 30 * 60 * 1000,
   });
 
@@ -87,14 +79,33 @@ export function useEconomicCalendar() {
     (e) => e.date > today && e.country === "US"
   );
 
-  const upcomingEarnings = (query.data?.earnings || []).slice(0, 20);
+  const allUsEvents = (query.data?.events || []).filter(
+    (e) => e.country === "US"
+  );
+
+  const upcomingEarnings = (query.data?.earnings || []).slice(0, 40);
+
+  // Group earnings by date
+  const earningsByDate: Record<string, EarningsEvent[]> = {};
+  upcomingEarnings.forEach((e) => {
+    if (!earningsByDate[e.date]) earningsByDate[e.date] = [];
+    earningsByDate[e.date].push(e);
+  });
+
+  // Stats
+  const highImpactCount = allUsEvents.filter((e) => e.impact === "high").length;
+  const earningsCount = upcomingEarnings.length;
 
   return {
     ...query,
     todayEvents,
     thisWeekEvents,
     upcomingEarnings,
+    earningsByDate,
+    highImpactCount,
+    earningsCount,
     allEvents: query.data?.events || [],
     allEarnings: query.data?.earnings || [],
+    lastUpdated: query.dataUpdatedAt,
   };
 }
