@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { OnboardingProgressBar, OnboardingStep } from "./OnboardingStep";
 import { VaultTourCarousel } from "./VaultTourCarousel";
+import { AVATAR_ICONS } from "@/lib/avatarIcons";
+import { ChatAvatar } from "@/lib/chatAvatars";
 import {
   Loader2,
   ChevronRight,
@@ -17,7 +19,20 @@ import {
   Users,
   Bell,
   Sparkles,
+  Camera,
+  Upload,
 } from "lucide-react";
+
+const AVATAR_COLORS = [
+  "hsl(220, 70%, 55%)",
+  "hsl(260, 65%, 55%)",
+  "hsl(340, 65%, 55%)",
+  "hsl(160, 60%, 45%)",
+  "hsl(30, 80%, 55%)",
+  "hsl(190, 70%, 50%)",
+  "hsl(0, 70%, 55%)",
+  "hsl(280, 60%, 60%)",
+];
 
 type ExperienceLevel = "beginner" | "intermediate" | "advanced";
 type TradingGoal =
@@ -71,15 +86,54 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
     }
   })();
 
-  // Step 2 — Experience
+  // Step 2 — Avatar
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  // Step 3 — Experience
   const [experience, setExperience] = useState<ExperienceLevel | null>(null);
 
-  // Step 4 — Goal
+  // Step 5 — Goal
   const [goal, setGoal] = useState<TradingGoal | null>(null);
 
   // Final
   const [submitting, setSubmitting] = useState(false);
   const [activated, setActivated] = useState(false);
+
+  const handleIconSelect = (iconId: string) => {
+    setSelectedIcon(iconId);
+    setAvatarUrl(`icon:${iconId}|${selectedColor}`);
+  };
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+    if (selectedIcon) {
+      setAvatarUrl(`icon:${selectedIcon}|${color}`);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { contentType: file.type, upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(urlData.publicUrl);
+      setSelectedIcon(null);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const next = () => setStep((s) => s + 1);
 
@@ -117,6 +171,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           academy_experience: roleLevel,
           trading_goal: goal || null,
           profile_completed: true,
+          avatar_url: avatarUrl || null,
         } as any)
         .eq("user_id", user.id);
 
@@ -138,7 +193,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
     } finally {
       setSubmitting(false);
     }
-  }, [user, firstName, lastName, experience, goal, detectedTz, refetchProfile, isPreview]);
+  }, [user, firstName, lastName, experience, goal, avatarUrl, detectedTz, refetchProfile, isPreview]);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-y-auto">
@@ -157,7 +212,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
       />
 
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-10 min-h-[100dvh]">
-        {step > 0 && step < 6 && <OnboardingProgressBar current={step} />}
+        {step > 0 && step < 7 && <OnboardingProgressBar current={step} />}
 
         {/* Step 0 — Welcome */}
         <OnboardingStep active={step === 0}>
@@ -237,8 +292,104 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           </div>
         </OnboardingStep>
 
-        {/* Step 2 — Experience */}
+        {/* Step 2 — Avatar */}
         <OnboardingStep active={step === 2}>
+          <div className="flex flex-col gap-6 w-full py-4">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                Choose Your Avatar
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Pick an icon or upload a photo. This is how others see you.
+              </p>
+            </div>
+
+            {/* Preview */}
+            <div className="flex justify-center">
+              <div className="h-20 w-20">
+                {avatarUrl ? (
+                  <ChatAvatar avatarUrl={avatarUrl} userName={firstName || "T"} size="h-20 w-20 text-2xl" />
+                ) : (
+                  <div className="h-20 w-20 rounded-full bg-white/[0.06] border-2 border-dashed border-white/[0.15] flex items-center justify-center">
+                    <Camera className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Color picker */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+                Color
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {AVATAR_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => handleColorSelect(color)}
+                    className={cn(
+                      "h-8 w-8 rounded-full transition-all",
+                      selectedColor === color ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-110" : "hover:scale-105"
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Icon grid */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+                Icon
+              </label>
+              <div className="grid grid-cols-5 gap-2">
+                {AVATAR_ICONS.map((icon) => (
+                  <button
+                    key={icon.id}
+                    onClick={() => handleIconSelect(icon.id)}
+                    className={cn(
+                      "h-14 w-14 rounded-xl flex items-center justify-center p-2.5 transition-all",
+                      selectedIcon === icon.id
+                        ? "bg-primary/20 border-2 border-primary/50 scale-105"
+                        : "bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
+                    )}
+                    style={{ color: selectedColor }}
+                  >
+                    {icon.svg}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Upload option */}
+            <label className="w-full flex items-center justify-center gap-2 h-12 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] transition-colors cursor-pointer">
+              {uploadingPhoto ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <Upload className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-sm text-muted-foreground">Upload a photo instead</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploadingPhoto}
+              />
+            </label>
+
+            <Button
+              onClick={next}
+              disabled={!avatarUrl}
+              className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
+            >
+              Continue
+            </Button>
+          </div>
+        </OnboardingStep>
+
+        {/* Step 3 — Experience */}
+        <OnboardingStep active={step === 3}>
           <div className="flex flex-col gap-6 w-full py-4">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
@@ -281,15 +432,15 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           </div>
         </OnboardingStep>
 
-        {/* Step 3 — Vault Tour */}
-        <OnboardingStep active={step === 3}>
+        {/* Step 4 — Vault Tour */}
+        <OnboardingStep active={step === 4}>
           <div className="w-full py-4">
             <VaultTourCarousel onComplete={next} />
           </div>
         </OnboardingStep>
 
-        {/* Step 4 — Trading Goal */}
-        <OnboardingStep active={step === 4}>
+        {/* Step 5 — Trading Goal */}
+        <OnboardingStep active={step === 5}>
           <div className="flex flex-col gap-6 w-full py-4">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
@@ -335,10 +486,10 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           </div>
         </OnboardingStep>
 
-        {/* Step 5 — Notifications */}
-        <OnboardingStep active={step === 5}>
+        {/* Step 6 — Notifications */}
+        <OnboardingStep active={step === 6}>
           <div className="flex flex-col items-center gap-8 py-12">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/5 border border-amber-500/10 flex items-center justify-center">
+            <div className="h-20 w-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <Bell className="h-10 w-10 text-foreground" strokeWidth={1.5} />
             </div>
             <div className="text-center space-y-2">
@@ -372,8 +523,8 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           </div>
         </OnboardingStep>
 
-        {/* Step 6 — Activation */}
-        <OnboardingStep active={step === 6}>
+        {/* Step 7 — Activation */}
+        <OnboardingStep active={step === 7}>
           <div className="flex flex-col items-center gap-8 py-12 relative">
             {activated ? (
               <>
@@ -410,6 +561,12 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
                 {/* Summary */}
                 <div className="w-full rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Avatar</span>
+                    <div className="h-8 w-8">
+                      <ChatAvatar avatarUrl={avatarUrl} userName={firstName || "T"} size="h-8 w-8" />
+                    </div>
+                  </div>
                   <SummaryRow label="Name" value={[firstName, lastName].filter(Boolean).join(" ") || "—"} />
                   <SummaryRow label="Experience" value={experience ? experience.charAt(0).toUpperCase() + experience.slice(1) : "—"} />
                   <SummaryRow label="Goal" value={GOAL_OPTIONS.find((g) => g.value === goal)?.label || "—"} />
@@ -426,7 +583,6 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
                   ) : (
                     "Activate My Vault"
                   )}
-                  {/* Shimmer overlay */}
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                 </Button>
               </>

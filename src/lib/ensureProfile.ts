@@ -1,5 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const ICON_IDS = ["diamond","circles","hexagon","triangle","bars","cross","shield","sword","crown","lightning","controller","candle","target","rocket","bull","star","wave","grid","ring","eye","flame"];
+const AVATAR_COLORS = ["hsl(220, 70%, 55%)","hsl(260, 65%, 55%)","hsl(340, 65%, 55%)","hsl(160, 60%, 45%)","hsl(30, 80%, 55%)","hsl(190, 70%, 50%)","hsl(0, 70%, 55%)","hsl(280, 60%, 60%)"];
+
+function randomAvatarUrl(): string {
+  const icon = ICON_IDS[Math.floor(Math.random() * ICON_IDS.length)];
+  const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+  return `icon:${icon}|${color}`;
+}
+
 /**
  * Generates a short random ID for default usernames
  */
@@ -65,6 +74,7 @@ export async function ensureProfile(
       discipline_score: 0,
       timezone: detectedTz,
       phone_number: opts?.phone_number || null,
+      avatar_url: randomAvatarUrl(),
     });
 
     if (insertError) {
@@ -79,6 +89,7 @@ export async function ensureProfile(
           discipline_score: 0,
           timezone: detectedTz,
           phone_number: opts?.phone_number || null,
+          avatar_url: randomAvatarUrl(),
         });
       } else {
         console.error("Error creating profile:", insertError);
