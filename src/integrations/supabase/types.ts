@@ -2974,9 +2974,9 @@ export type Database = {
       get_recent_activity: {
         Args: never
         Returns: {
-          activity_at: string
           activity_id: string
           activity_type: string
+          created_at: string
           user_id: string
         }[]
       }
