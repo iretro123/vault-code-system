@@ -23,6 +23,9 @@ function splitCountdown(ms: number) {
 
 export function NextGroupCallCard() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const userTZ = getUserTimezone(profile?.timezone);
+  const tzLabel = getTZAbbr(userTZ);
   const [session, setSession] = useState<LiveSession | null>(null);
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
