@@ -82,6 +82,7 @@ export function CommunityWins() {
   }
 
   return (
+    <>
     <div className="overflow-y-auto h-full">
       <div className="max-w-[900px] mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
