@@ -1,549 +1,372 @@
-import { useState, useEffect } from "react";
-import { CalendarDays, TrendingUp, RefreshCw, Zap, Clock, BarChart3, Filter } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useEconomicCalendar, EconomicEvent, EarningsEvent } from "@/hooks/useEconomicCalendar";
+import { useEconomicCalendar, type MarketEvent, type MarketEarning } from "@/hooks/useEconomicCalendar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, parseISO, isToday, startOfWeek, addDays, differenceInMinutes, differenceInHours } from "date-fns";
+import { format, parseISO, differenceInMilliseconds, formatDistanceToNowStrict } from "date-fns";
+import { Clock, AlertTriangle, BarChart3, Zap } from "lucide-react";
 
-/* ── types ───────────────────────────────────────────── */
-
-type FilterMode = "all" | "high" | "earnings";
-
-/* ── helpers ─────────────────────────────────────────── */
-
-function impactLabel(impact: string) {
-  if (impact === "high") return "High Impact";
-  if (impact === "medium") return "Medium";
-  return "Low";
+interface Props {
+  active: boolean;
 }
 
-function formatVal(v: number | null, unit: string) {
+/* ── helpers ── */
+
+function impactColor(impact: string) {
+  if (impact === "high") return "bg-red-500";
+  if (impact === "medium") return "bg-amber-400";
+  return "bg-muted-foreground/40";
+}
+
+function impactGlow(impact: string) {
+  if (impact === "high") return "shadow-[0_0_20px_rgba(239,68,68,0.15)]";
+  if (impact === "medium") return "shadow-[0_0_16px_rgba(251,191,36,0.10)]";
+  return "";
+}
+
+function formatNum(v: number | null) {
   if (v === null || v === undefined) return "—";
-  return `${v}${unit === "%" ? "%" : ""}`;
+  return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
-function groupByDate(events: EconomicEvent[]) {
-  const map: Record<string, EconomicEvent[]> = {};
-  events.forEach((e) => {
-    if (!map[e.date]) map[e.date] = [];
-    map[e.date].push(e);
-  });
-  return map;
-}
-
-function weekDayPills(eventCounts: Record<string, number>) {
-  const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-  return Array.from({ length: 5 }, (_, i) => {
-    const d = addDays(start, i);
-    const dateStr = format(d, "yyyy-MM-dd");
-    return {
-      date: dateStr,
-      label: format(d, "EEE"),
-      dayNum: format(d, "d"),
-      isToday: isToday(d),
-      count: eventCounts[dateStr] || 0,
-    };
-  });
-}
-
-function getCountdown(time: string | null, dateStr: string): string | null {
-  if (!time) return null;
+function dayLabel(dateStr: string) {
   try {
-    const [h, m] = time.split(":").map(Number);
-    const eventDate = parseISO(dateStr);
-    eventDate.setHours(h, m, 0, 0);
-    const now = new Date();
-    const diffMin = differenceInMinutes(eventDate, now);
-    if (diffMin < 0) return null;
-    if (diffMin < 60) return `Drops in ${diffMin}m`;
-    const hrs = differenceInHours(eventDate, now);
-    const remainMin = diffMin - hrs * 60;
-    return `Drops in ${hrs}h ${remainMin}m`;
+    return format(parseISO(dateStr), "EEEE, MMM d");
   } catch {
-    return null;
+    return dateStr;
   }
 }
 
-function timeSinceUpdate(ts: number): string {
-  if (!ts) return "";
-  const min = Math.floor((Date.now() - ts) / 60000);
-  if (min < 1) return "Just now";
-  if (min < 60) return `${min}m ago`;
-  return `${Math.floor(min / 60)}h ago`;
+function shortDay(dateStr: string) {
+  try {
+    return format(parseISO(dateStr), "MMM d");
+  } catch {
+    return dateStr;
+  }
 }
 
-/* ── sub-components ──────────────────────────────────── */
-
-function MarketPulseStrip({ highCount, earningsCount, lastUpdated, onRefresh, isFetching }: {
-  highCount: number; earningsCount: number; lastUpdated: number; onRefresh: () => void; isFetching: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.04]">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Market Pulse</span>
-        </div>
-        <span className="text-[11px] text-muted-foreground">
-          {highCount > 0 && <><span className="text-red-400 font-semibold">{highCount}</span> high-impact events</>}
-          {highCount > 0 && earningsCount > 0 && " · "}
-          {earningsCount > 0 && <><span className="text-foreground font-semibold">{earningsCount}</span> earnings reports</>}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        {lastUpdated > 0 && (
-          <span className="text-[10px] text-muted-foreground/60">{timeSinceUpdate(lastUpdated)}</span>
-        )}
-        <button
-          onClick={onRefresh}
-          disabled={isFetching}
-          className="p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors disabled:opacity-40"
-        >
-          <RefreshCw className={cn("w-3.5 h-3.5 text-muted-foreground", isFetching && "animate-spin")} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function FilterPills({ active, onChange }: { active: FilterMode; onChange: (f: FilterMode) => void }) {
-  const pills: { key: FilterMode; label: string; icon: React.ElementType }[] = [
-    { key: "all", label: "All", icon: BarChart3 },
-    { key: "high", label: "High Impact", icon: Zap },
-    { key: "earnings", label: "Earnings", icon: TrendingUp },
-  ];
-  return (
-    <div className="flex items-center gap-1.5 px-5 py-3">
-      {pills.map((p) => (
-        <button
-          key={p.key}
-          onClick={() => onChange(p.key)}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all",
-            active === p.key
-              ? "bg-primary/15 text-primary border border-primary/20"
-              : "bg-white/[0.03] text-muted-foreground border border-white/[0.04] hover:bg-white/[0.06]"
-          )}
-        >
-          <p.icon className="w-3 h-3" />
-          {p.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function HeroEventCard({ event }: { event: EconomicEvent }) {
-  const [countdown, setCountdown] = useState<string | null>(null);
+/* ── countdown hook ── */
+function useCountdown(targetDate: string | null, targetTime: string | null) {
+  const [label, setLabel] = useState("");
 
   useEffect(() => {
-    const update = () => setCountdown(getCountdown(event.time, event.date));
-    update();
-    const iv = setInterval(update, 30000);
-    return () => clearInterval(iv);
-  }, [event.time, event.date]);
+    if (!targetDate) return;
+    const tick = () => {
+      const timeStr = targetTime || "09:30:00";
+      const target = new Date(`${targetDate}T${timeStr}`);
+      const diff = differenceInMilliseconds(target, new Date());
+      if (diff <= 0) {
+        setLabel("Now");
+        return;
+      }
+      const h = Math.floor(diff / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      if (h > 24) {
+        setLabel(`in ${Math.floor(h / 24)}d ${h % 24}h`);
+      } else {
+        setLabel(`in ${h}h ${m}m`);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [targetDate, targetTime]);
 
-  const isHigh = event.impact === "high";
+  return label;
+}
 
+/* ── sub-components ── */
+
+function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn(
-      "mx-5 mb-4 rounded-2xl border p-5 relative overflow-hidden",
-      isHigh
-        ? "border-red-500/20 bg-red-500/[0.03]"
-        : "border-amber-400/20 bg-amber-400/[0.03]"
+      "bg-white/[0.03] border border-white/[0.06] rounded-2xl",
+      className
     )}>
-      {/* Glow effect */}
-      <div className={cn(
-        "absolute inset-0 opacity-20 pointer-events-none",
-        isHigh
-          ? "bg-gradient-to-br from-red-500/10 via-transparent to-transparent"
-          : "bg-gradient-to-br from-amber-400/10 via-transparent to-transparent"
-      )} />
-
-      <div className="relative flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <Zap className={cn("w-4 h-4", isHigh ? "text-red-400" : "text-amber-400")} />
-            <span className={cn(
-              "text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md",
-              isHigh ? "bg-red-500/15 text-red-400" : "bg-amber-400/15 text-amber-400"
-            )}>
-              {impactLabel(event.impact)}
-            </span>
-            {event.time && (
-              <span className="text-[11px] text-muted-foreground font-mono">{event.time} ET</span>
-            )}
-          </div>
-          <h3 className="text-[16px] font-bold text-foreground leading-tight mb-1">{event.event}</h3>
-          {countdown && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <Clock className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[12px] font-semibold text-primary">{countdown}</span>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-5 shrink-0">
-          <DataCol label="Prev" value={formatVal(event.prev, event.unit)} />
-          <DataCol label="Est" value={formatVal(event.estimate, event.unit)} />
-          <DataCol label="Act" value={formatVal(event.actual, event.unit)} highlight={event.actual !== null} />
-        </div>
-      </div>
+      {children}
     </div>
   );
 }
 
-function DataCol({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function SectionHeader({ icon: Icon, title, badge }: { icon: React.ElementType; title: string; badge?: string }) {
   return (
-    <div className="text-center min-w-[48px]">
-      <p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider font-semibold mb-1">{label}</p>
-      <p className={cn(
-        "text-[15px] font-mono font-bold leading-none",
-        highlight ? "text-primary" : "text-foreground/80"
-      )}>{value}</p>
-    </div>
-  );
-}
-
-function WeekPills({ days, selectedDay, onSelect }: {
-  days: ReturnType<typeof weekDayPills>; selectedDay: string | null; onSelect: (d: string | null) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2 px-5 py-3">
-      {days.map((day) => (
-        <button
-          key={day.date}
-          onClick={() => onSelect(selectedDay === day.date ? null : day.date)}
-          className={cn(
-            "flex flex-col items-center gap-1 min-w-[52px] px-3 py-2.5 rounded-2xl transition-all relative",
-            selectedDay === day.date
-              ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-              : day.isToday
-              ? "bg-primary/10 text-primary border border-primary/15"
-              : "bg-white/[0.03] text-muted-foreground border border-white/[0.04] hover:bg-white/[0.06]"
-          )}
-        >
-          <span className="text-[9px] font-bold uppercase tracking-wider">{day.label}</span>
-          <span className="text-[16px] font-bold leading-none">{day.dayNum}</span>
-          {day.count > 0 && (
-            <span className={cn(
-              "absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center",
-              selectedDay === day.date
-                ? "bg-primary-foreground text-primary"
-                : "bg-primary text-primary-foreground"
-            )}>
-              {day.count}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function SectionHeader({ icon: Icon, label, count }: { icon: React.ElementType; label: string; count?: number }) {
-  return (
-    <div className="flex items-center gap-2 px-5 pt-6 pb-3">
+    <div className="flex items-center gap-2.5 mb-3">
       <Icon className="w-4 h-4 text-primary" />
-      <span className="text-[12px] font-bold uppercase tracking-widest text-foreground">{label}</span>
-      {count !== undefined && count > 0 && (
-        <span className="ml-auto text-[10px] font-semibold text-muted-foreground bg-white/[0.04] px-2 py-0.5 rounded-full">{count}</span>
+      <h3 className="text-sm font-semibold text-foreground tracking-wide">{title}</h3>
+      {badge && (
+        <span className="ml-auto text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-white/[0.04] px-2.5 py-0.5 rounded-full">
+          {badge}
+        </span>
       )}
     </div>
   );
 }
 
-function EventCard({ event }: { event: EconomicEvent }) {
+function DataCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center">
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{label}</p>
+      <p className="text-sm font-mono font-semibold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+/* ── Hero Card ── */
+function NextMajorEventCard({ event }: { event: MarketEvent }) {
+  const countdown = useCountdown(event.date, event.time_et);
   const isHigh = event.impact === "high";
-  const isMedium = event.impact === "medium";
 
   return (
-    <div className={cn(
-      "flex items-stretch gap-0 mx-5 mb-2 rounded-2xl border overflow-hidden transition-colors",
-      isHigh ? "border-red-500/10 bg-red-500/[0.02] hover:border-red-500/20" :
-      isMedium ? "border-amber-400/10 bg-amber-400/[0.02] hover:border-amber-400/15" :
-      "border-white/[0.04] bg-card/60 hover:border-white/[0.08]"
+    <GlassCard className={cn(
+      "p-5 relative overflow-hidden",
+      isHigh
+        ? "border-red-500/20 shadow-[0_0_30px_rgba(239,68,68,0.08)]"
+        : "border-amber-400/20 shadow-[0_0_24px_rgba(251,191,36,0.06)]"
     )}>
-      {/* Impact bar */}
       <div className={cn(
-        "w-1 shrink-0",
-        isHigh ? "bg-red-500" : isMedium ? "bg-amber-400" : "bg-muted-foreground/30"
+        "absolute top-0 left-0 w-full h-[2px]",
+        isHigh
+          ? "bg-gradient-to-r from-red-500/60 via-red-500/20 to-transparent"
+          : "bg-gradient-to-r from-amber-400/60 via-amber-400/20 to-transparent"
       )} />
 
-      <div className="flex-1 flex items-center justify-between px-4 py-3.5 min-w-0">
-        <div className="flex items-center gap-3.5 min-w-0 flex-1">
-          {/* Time */}
-          {event.time && (
-            <span className="text-[13px] font-mono font-semibold text-muted-foreground shrink-0 min-w-[52px]">
-              {event.time}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-foreground truncate leading-tight">{event.event}</p>
-            <span className={cn(
-              "inline-block mt-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md",
-              isHigh ? "bg-red-500/10 text-red-400" :
-              isMedium ? "bg-amber-400/10 text-amber-400" :
-              "bg-white/[0.04] text-muted-foreground"
-            )}>
-              {impactLabel(event.impact)}
-            </span>
-          </div>
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Next Major Event</p>
+          <h2 className="text-lg font-bold text-foreground leading-tight">{event.event_name}</h2>
         </div>
+        <div className={cn(
+          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold",
+          isHigh ? "bg-red-500/10 text-red-400" : "bg-amber-400/10 text-amber-400"
+        )}>
+          <Zap className="w-3 h-3" />
+          {countdown || "—"}
+        </div>
+      </div>
 
-        {/* Data columns */}
-        <div className="flex items-center gap-1 shrink-0 pl-4">
-          <div className="flex items-center gap-4 px-3 py-1.5 rounded-xl bg-white/[0.02]">
-            <DataCol label="Prev" value={formatVal(event.prev, event.unit)} />
-            <div className="w-px h-6 bg-white/[0.06]" />
-            <DataCol label="Est" value={formatVal(event.estimate, event.unit)} />
-            <div className="w-px h-6 bg-white/[0.06]" />
-            <DataCol label="Act" value={formatVal(event.actual, event.unit)} highlight={event.actual !== null} />
-          </div>
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-xs text-muted-foreground">{shortDay(event.date)}</span>
+        {event.time_et && (
+          <span className="text-xs font-mono text-muted-foreground">{event.time_et} ET</span>
+        )}
+        <span className={cn(
+          "px-2 py-0.5 rounded text-[10px] font-bold uppercase",
+          isHigh ? "bg-red-500/10 text-red-400" : "bg-amber-400/10 text-amber-400"
+        )}>
+          {event.impact}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 pt-3 border-t border-white/[0.04]">
+        <DataCell label="Previous" value={formatNum(event.prev)} />
+        <DataCell label="Forecast" value={formatNum(event.estimate)} />
+        <DataCell label="Actual" value={formatNum(event.actual)} />
+      </div>
+    </GlassCard>
+  );
+}
+
+/* ── Event Row ── */
+function EventCard({ event }: { event: MarketEvent }) {
+  return (
+    <div className={cn(
+      "flex items-stretch gap-0 rounded-xl overflow-hidden bg-white/[0.02] border border-white/[0.04]",
+      impactGlow(event.impact)
+    )}>
+      <div className={cn("w-1 shrink-0", impactColor(event.impact))} />
+      <div className="flex-1 px-3.5 py-3 flex items-center gap-3">
+        <div className="w-16 shrink-0">
+          <p className="text-xs font-mono font-semibold text-foreground">{event.time_et || "—"}</p>
+          <p className="text-[10px] text-muted-foreground">ET</p>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{event.event_name}</p>
+        </div>
+        <div className="hidden sm:grid grid-cols-3 gap-4 shrink-0 w-48">
+          <DataCell label="Prev" value={formatNum(event.prev)} />
+          <DataCell label="Est" value={formatNum(event.estimate)} />
+          <DataCell label="Act" value={formatNum(event.actual)} />
         </div>
       </div>
     </div>
   );
 }
 
-function DateDivider({ dateStr }: { dateStr: string }) {
-  const d = parseISO(dateStr);
-  const label = isToday(d) ? "Today" : format(d, "EEEE, MMM d");
-  return (
-    <div className="sticky top-0 z-10 flex items-center gap-2 px-5 py-2.5 bg-background/95 backdrop-blur-sm">
-      <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-      <span className="text-[11px] font-bold text-foreground tracking-wide">{label}</span>
-      {isToday(d) && (
-        <span className="ml-auto text-[10px] text-muted-foreground">{format(new Date(), "MMMM d, yyyy")}</span>
-      )}
-    </div>
-  );
-}
-
-function EarningCard({ earning }: { earning: EarningsEvent }) {
-  const hasBeat = earning.epsActual !== null && earning.epsEstimate !== null && earning.epsActual > earning.epsEstimate;
-  const hasMiss = earning.epsActual !== null && earning.epsEstimate !== null && earning.epsActual < earning.epsEstimate;
+/* ── Earning Card ── */
+function EarningCard({ earning }: { earning: MarketEarning }) {
+  const beat =
+    earning.eps_actual !== null && earning.eps_estimate !== null
+      ? earning.eps_actual > earning.eps_estimate
+      : null;
 
   return (
     <div className={cn(
-      "flex items-center justify-between mx-5 mb-2 px-4 py-3.5 rounded-2xl border transition-colors",
-      hasBeat ? "border-emerald-500/10 bg-emerald-500/[0.02]" :
-      hasMiss ? "border-red-500/10 bg-red-500/[0.02]" :
-      "border-white/[0.04] bg-card/60 hover:border-white/[0.08]"
+      "flex items-center gap-3 px-3.5 py-3 rounded-xl border border-white/[0.04]",
+      beat === true && "bg-emerald-500/[0.03]",
+      beat === false && "bg-red-500/[0.03]",
+      beat === null && "bg-white/[0.02]"
     )}>
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Ticker */}
-        <span className="text-[14px] font-mono font-black text-foreground bg-white/[0.05] px-2.5 py-1 rounded-lg tracking-wider min-w-[56px] text-center">
-          {earning.symbol}
-        </span>
-        <div className="flex flex-col gap-0.5">
-          {/* Timing badge */}
-          <span className={cn(
-            "inline-flex w-fit text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md",
-            earning.hour === "Before Open" || earning.hour === "bmo"
-              ? "bg-amber-400/10 text-amber-400"
-              : earning.hour === "After Close" || earning.hour === "amc"
-              ? "bg-blue-400/10 text-blue-400"
-              : "bg-white/[0.04] text-muted-foreground"
-          )}>
-            {earning.hour === "Before Open" || earning.hour === "bmo" ? "BMO" :
-             earning.hour === "After Close" || earning.hour === "amc" ? "AMC" :
-             earning.hour || "TBD"}
-          </span>
-          {/* Date */}
-          <span className="text-[10px] text-muted-foreground/60 font-medium">
-            {format(parseISO(earning.date), "MMM d")}
-          </span>
+      <div className="w-16 shrink-0">
+        <p className="text-sm font-mono font-bold text-foreground">{earning.symbol}</p>
+      </div>
+      <span className={cn(
+        "px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0",
+        earning.hour === "Before Open"
+          ? "bg-amber-400/10 text-amber-400"
+          : earning.hour === "After Close"
+          ? "bg-blue-400/10 text-blue-400"
+          : "bg-white/[0.06] text-muted-foreground"
+      )}>
+        {earning.hour === "Before Open" ? "BMO" : earning.hour === "After Close" ? "AMC" : earning.hour}
+      </span>
+      <div className="flex-1 hidden sm:flex items-center gap-4 justify-end">
+        <div className="text-right">
+          <p className="text-[10px] text-muted-foreground">EPS Est</p>
+          <p className="text-xs font-mono font-semibold text-foreground">{formatNum(earning.eps_estimate)}</p>
         </div>
-      </div>
-
-      <div className="flex items-center gap-1 shrink-0">
-        <div className="flex items-center gap-4 px-3 py-1.5 rounded-xl bg-white/[0.02]">
-          <DataCol label="EPS Est" value={earning.epsEstimate !== null ? `$${earning.epsEstimate}` : "—"} />
-          <div className="w-px h-6 bg-white/[0.06]" />
-          <DataCol
-            label="EPS Act"
-            value={earning.epsActual !== null ? `$${earning.epsActual}` : "—"}
-            highlight={earning.epsActual !== null}
-          />
-          {earning.revenueEstimate !== null && (
-            <>
-              <div className="w-px h-6 bg-white/[0.06]" />
-              <DataCol label="Rev Est" value={`$${(earning.revenueEstimate / 1e9).toFixed(1)}B`} />
-            </>
-          )}
+        <div className="text-right">
+          <p className="text-[10px] text-muted-foreground">EPS Act</p>
+          <p className={cn(
+            "text-xs font-mono font-semibold",
+            beat === true ? "text-emerald-400" : beat === false ? "text-red-400" : "text-foreground"
+          )}>{formatNum(earning.eps_actual)}</p>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4 p-5">
-      <div className="flex items-center gap-3">
-        <Skeleton className="w-1.5 h-1.5 rounded-full" />
-        <Skeleton className="h-3 w-24" />
-      </div>
-      <Skeleton className="h-24 w-full rounded-2xl" />
-      <div className="flex gap-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-[52px] rounded-2xl" />
-        ))}
-      </div>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <Skeleton className="w-1 h-14 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-2/3" />
-            <Skeleton className="h-3 w-1/3" />
+        {earning.revenue_estimate !== null && (
+          <div className="text-right">
+            <p className="text-[10px] text-muted-foreground">Rev Est</p>
+            <p className="text-xs font-mono font-semibold text-foreground">
+              {`$${(earning.revenue_estimate / 1e9).toFixed(1)}B`}
+            </p>
           </div>
-          <div className="flex gap-3">
-            <Skeleton className="h-10 w-12 rounded-xl" />
-            <Skeleton className="h-10 w-12 rounded-xl" />
-            <Skeleton className="h-10 w-12 rounded-xl" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
-        <CalendarDays className="w-7 h-7 text-primary" />
+        )}
       </div>
-      <p className="text-[15px] font-bold text-foreground mb-1.5">Markets are quiet</p>
-      <p className="text-[12px] text-muted-foreground max-w-[260px] leading-relaxed">
-        No US economic events or earnings scheduled right now. Check back tomorrow morning.
-      </p>
     </div>
   );
 }
 
-/* ── main component ──────────────────────────────────── */
+/* ── Loading Skeleton ── */
+function CalendarSkeleton() {
+  return (
+    <div className="space-y-5 p-5">
+      <Skeleton className="h-32 w-full rounded-2xl" />
+      <div className="space-y-2.5">
+        {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+      </div>
+      <Skeleton className="h-8 w-40 rounded-lg" />
+      <div className="space-y-2.5">
+        {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}
+      </div>
+    </div>
+  );
+}
 
-export function EconomicCalendarTab({ active }: { active: boolean }) {
+/* ── MAIN ── */
+export function EconomicCalendarTab({ active }: Props) {
   const {
-    todayEvents, thisWeekEvents, upcomingEarnings, earningsByDate,
-    isLoading, isError, refetch, isFetching,
-    highImpactCount, earningsCount, lastUpdated,
+    isLoading,
+    todayEvents,
+    thisWeekHighImpact,
+    nextMajorEvent,
+    earningsByDate,
+    highImpactCount,
+    earningsCount,
+    lastUpdated,
   } = useEconomicCalendar();
 
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterMode>("all");
-
-  // Build event counts per day
-  const dayCounts: Record<string, number> = {};
-  const today = new Date().toISOString().split("T")[0];
-  todayEvents.forEach(() => { dayCounts[today] = (dayCounts[today] || 0) + 1; });
-  thisWeekEvents.forEach((e) => { dayCounts[e.date] = (dayCounts[e.date] || 0) + 1; });
-
-  const days = weekDayPills(dayCounts);
-
-  // Grouped week events
-  const weekGrouped = groupByDate(thisWeekEvents);
-  const filteredWeek = selectedDay ? { [selectedDay]: weekGrouped[selectedDay] || [] } : weekGrouped;
-
-  // Hero event — first high-impact event today
-  const heroEvent = todayEvents.find((e) => e.impact === "high");
-
-  // Filter visibility
-  const showEconomic = filter === "all" || filter === "high";
-  const showEarnings = filter === "all" || filter === "earnings";
-  const highOnly = filter === "high";
-
   if (!active) return null;
+  if (isLoading) return <CalendarSkeleton />;
+
+  const updatedAgo = lastUpdated
+    ? formatDistanceToNowStrict(lastUpdated, { addSuffix: true })
+    : null;
+
+  const sortedEarningsDates = Object.keys(earningsByDate).sort();
 
   return (
-    <div className="h-full overflow-y-auto scrollbar-thin">
+    <div className="h-full overflow-y-auto overscroll-contain px-4 py-5 space-y-6">
       {/* Market Pulse Strip */}
-      <MarketPulseStrip
-        highCount={highImpactCount}
-        earningsCount={earningsCount}
-        lastUpdated={lastUpdated}
-        onRefresh={() => refetch()}
-        isFetching={isFetching}
-      />
-
-      {/* Filter Pills */}
-      <FilterPills active={filter} onChange={setFilter} />
-
-      {isLoading ? (
-        <LoadingSkeleton />
-      ) : isError ? (
-        <div className="flex flex-col items-center py-16 text-center px-6">
-          <p className="text-[13px] text-muted-foreground">Unable to load market data. Try refreshing.</p>
+      <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          <span className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{highImpactCount}</span> high-impact events
+            <span className="mx-1.5 text-white/10">·</span>
+            <span className="font-semibold text-foreground">{earningsCount}</span> earnings reports
+          </span>
         </div>
-      ) : todayEvents.length === 0 && thisWeekEvents.length === 0 && upcomingEarnings.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <>
-          {/* ── Economic News ──────────────────────── */}
-          {showEconomic && (
-            <>
-              {/* Hero Card */}
-              {heroEvent && !selectedDay && (
-                <HeroEventCard event={heroEvent} />
-              )}
+        {updatedAgo && (
+          <span className="text-[10px] text-muted-foreground/60">Updated {updatedAgo}</span>
+        )}
+      </div>
 
-              {/* Week Pills */}
-              <WeekPills days={days} selectedDay={selectedDay} onSelect={setSelectedDay} />
+      {/* A. Next Major Event */}
+      {nextMajorEvent && <NextMajorEventCard event={nextMajorEvent} />}
 
-              {/* Today's Events */}
-              {todayEvents.length > 0 && !selectedDay && (
-                <>
-                  <DateDivider dateStr={today} />
-                  {todayEvents
-                    .filter((e) => !highOnly || e.impact === "high")
-                    .filter((e) => !heroEvent || e.id !== heroEvent.id)
-                    .sort((a, b) => (a.impact === "high" ? -1 : b.impact === "high" ? 1 : 0))
-                    .map((e) => <EventCard key={e.id} event={e} />)}
-                </>
-              )}
+      {/* B. Today's Events */}
+      <section>
+        <SectionHeader icon={Clock} title="Today's U.S. Events" badge={`${todayEvents.length}`} />
+        {todayEvents.length === 0 ? (
+          <GlassCard className="px-5 py-8 text-center">
+            <p className="text-sm text-muted-foreground">No events scheduled today.</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Check back tomorrow for upcoming releases.</p>
+          </GlassCard>
+        ) : (
+          <div className="space-y-2">
+            {todayEvents.map((e) => <EventCard key={e.id} event={e} />)}
+          </div>
+        )}
+      </section>
 
-              {/* This Week */}
-              {Object.keys(filteredWeek).length > 0 && (
-                <>
-                  {!selectedDay && <SectionHeader icon={CalendarDays} label="This Week" />}
-                  {Object.entries(filteredWeek)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([date, events]) => {
-                      const filtered = (events || []).filter((e) => !highOnly || e.impact === "high");
-                      if (filtered.length === 0) return null;
-                      return (
-                        <div key={date}>
-                          <DateDivider dateStr={date} />
-                          {filtered
-                            .sort((a, b) => (a.impact === "high" ? -1 : b.impact === "high" ? 1 : 0))
-                            .map((e) => <EventCard key={e.id} event={e} />)}
-                        </div>
-                      );
-                    })}
-                </>
-              )}
-            </>
-          )}
-
-          {/* ── Earnings ───────────────────────────── */}
-          {showEarnings && upcomingEarnings.length > 0 && (
-            <>
-              <SectionHeader icon={TrendingUp} label="Earnings This Week" count={upcomingEarnings.length} />
-              {Object.entries(earningsByDate)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([date, earnings]) => (
-                  <div key={date}>
-                    <DateDivider dateStr={date} />
-                    {earnings.map((e) => <EarningCard key={e.id} earning={e} />)}
+      {/* C. This Week High Impact */}
+      {thisWeekHighImpact.length > 0 && (
+        <section>
+          <SectionHeader icon={AlertTriangle} title="This Week — High Impact" badge={`${thisWeekHighImpact.length}`} />
+          {(() => {
+            const grouped: Record<string, MarketEvent[]> = {};
+            thisWeekHighImpact.forEach((e) => {
+              if (!grouped[e.date]) grouped[e.date] = [];
+              grouped[e.date].push(e);
+            });
+            return Object.entries(grouped)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([date, events]) => (
+                <div key={date} className="mb-3">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-semibold mb-1.5 sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
+                    {dayLabel(date)}
+                  </p>
+                  <div className="space-y-1.5">
+                    {events.map((e) => <EventCard key={e.id} event={e} />)}
                   </div>
-                ))}
-            </>
-          )}
-
-          <div className="h-8" />
-        </>
+                </div>
+              ));
+          })()}
+        </section>
       )}
+
+      {/* D. Upcoming Earnings */}
+      <section>
+        <SectionHeader icon={BarChart3} title="Upcoming Earnings" badge={`${earningsCount}`} />
+        {sortedEarningsDates.length === 0 ? (
+          <GlassCard className="px-5 py-8 text-center">
+            <p className="text-sm text-muted-foreground">No upcoming earnings data available.</p>
+          </GlassCard>
+        ) : (
+          sortedEarningsDates.map((date) => (
+            <div key={date} className="mb-4">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-semibold mb-1.5 sticky top-0 bg-background/80 backdrop-blur-sm py-1 z-10">
+                {dayLabel(date)}
+              </p>
+              <div className="space-y-1.5">
+                {earningsByDate[date].map((e) => <EarningCard key={e.id} earning={e} />)}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+
+      <div className="h-4" />
     </div>
   );
 }
