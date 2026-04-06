@@ -759,30 +759,7 @@ const AcademyTrade = () => {
 
         {/* ══════ HERO OS CARD ══════ */}
         <div className="vault-os-card overflow-hidden">
-          <div className="flex">
-            {/* ── LEFT GUIDE RAIL (inside card) ── */}
-            <div className="hidden lg:block w-[240px] shrink-0 border-r border-white/[0.06]">
-              <OSControlRail
-                activePlan={activePlan}
-                trackedBalance={trackedBalance}
-                vaultAccountBalance={vaultState.account_balance}
-                todayTradeCount={todayTradeCount}
-                maxTradesPerDay={vaultState.max_trades_per_day}
-                vaultStatus={vaultState.vault_status}
-                lastBlockReason={vaultState.last_block_reason}
-                dayState={dayState}
-                dayStateStatus={dayStateStatus}
-                dayStateCta={dayStateCta}
-                onQuickAction={handleQuickAction}
-                onLogFromPlan={handleLogFromPlan}
-                activeStage={activeStage}
-                stageStatus={stageStatus}
-                onSelectStage={setStage}
-              />
-            </div>
-
-            {/* ── RIGHT: Tabs + Content ── */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0">
           {/* Tabs */}
           <OSTabHeader activeStage={activeStage} stageStatus={stageStatus} onSelect={setStage} />
 
