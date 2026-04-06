@@ -8,7 +8,7 @@ interface TickerItem {
   type: "call" | "journal" | "lesson";
 }
 
-const CACHE_KEY = "va_activity_ticker";
+const CACHE_KEY = "va_activity_ticker_v2";
 const CACHE_TTL = 5 * 60_000;
 
 function readCache(): TickerItem[] | null {
