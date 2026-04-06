@@ -37,6 +37,8 @@ Deno.serve(async (req) => {
         );
         const econData = await econRes.json();
         const rawEvents = Array.isArray(econData) ? econData : [];
+        console.log(`FMP economic: ${rawEvents.length} raw events, sample countries: ${[...new Set(rawEvents.slice(0,20).map((e:any)=>e.country))].join(',')}`);
+        if (rawEvents.length > 0) console.log("FMP sample:", JSON.stringify(rawEvents[0]).slice(0, 300));
 
         const events = rawEvents
           .filter((e: any) => (e.country || "").toUpperCase() === "US")
