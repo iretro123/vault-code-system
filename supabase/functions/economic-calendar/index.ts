@@ -56,7 +56,6 @@ Deno.serve(async (req) => {
       }));
 
       if (events.length > 0) {
-        // Delete old events, then insert fresh
         await sb.from("market_events").delete().lt("date", from);
         const { error: evErr } = await sb
           .from("market_events")
@@ -64,7 +63,7 @@ Deno.serve(async (req) => {
         if (evErr) console.error("market_events upsert error:", evErr.message);
       }
 
-      // Normalize + deduplicate earnings (Finnhub can return dupes)
+      // Normalize + deduplicate earnings
       const earningsMap = new Map();
       (earningsData?.earningsCalendar || []).forEach((e: any) => {
         const id = `earn-${e.symbol}-${e.date}`;
@@ -91,7 +90,6 @@ Deno.serve(async (req) => {
 
       if (earnings.length > 0) {
         await sb.from("market_earnings").delete().lt("date", from);
-        // Batch upserts in chunks to avoid conflicts
         for (let i = 0; i < earnings.length; i += 50) {
           const chunk = earnings.slice(i, i + 50);
           const { error: earnErr } = await sb
@@ -114,8 +112,6 @@ Deno.serve(async (req) => {
     // ── DEFAULT MODE: read cached data from Supabase tables ──
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Forward the user's auth header so RLS works
     const authHeader = req.headers.get("Authorization") || `Bearer ${anonKey}`;
     const sb = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
