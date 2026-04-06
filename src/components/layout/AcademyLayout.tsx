@@ -69,9 +69,8 @@ function AcademyLayoutInner() {
     logActivity("page_view", segment);
   }, [location.pathname]);
 
-  // Wait for auth AND fresh profile to be fully resolved before any gate decisions
-  const profileReady = !loading && !!user && !!profile;
-  if (loading || !profileReady || !hydrated) {
+  // 1. Wait for auth to finish loading
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">
@@ -88,8 +87,27 @@ function AcademyLayoutInner() {
     );
   }
 
+  // 2. No user → redirect immediately (don't wait for profile/hydration)
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // 3. User exists but profile/hydration still loading
+  if (!profile || !hydrated) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">
+          <Skeleton className="h-5 w-32" />
+          <div className="ml-auto flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
   }
 
   const accessStatus = (profile as any)?.access_status ?? "trial";
