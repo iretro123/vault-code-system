@@ -28,7 +28,7 @@ const AcademyCommunity = () => {
   const userId = session?.user?.id || null;
 
   const activeRoomSlug = TABS.find((t) => t.key === activeTab)?.roomSlug || "trade-floor";
-  const { counts, markRead } = useUnreadCounts(activeRoomSlug, userId);
+  const { counts, markRead } = useUnreadCounts(activeRoomSlug || "trade-floor", userId);
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
