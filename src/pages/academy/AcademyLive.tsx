@@ -224,7 +224,9 @@ const SESSION_TYPES = [
 const AcademyLive = () => {
   const { sessions: realSessions, loading, refetch } = useLiveSessions();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const userTZ = getUserTimezone(profile?.timezone);
+  const tzLabel = getTZAbbr(userTZ);
   const { isAdminActive } = useAdminMode();
   const { hasPermission, isCEO } = useAcademyPermissions();
   const canManage = isAdminActive && hasPermission("manage_live_sessions");
