@@ -312,8 +312,19 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     setReferralLoading(false);
   }, [user]);
 
+  // Reset hydrated when user changes to prevent stale state across sessions
+  const prevUserRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (authLoading) return;
+
+    const currentUid = user?.id ?? null;
+    // If the user changed (login/logout/switch), reset hydrated to force fresh load
+    if (prevUserRef.current !== currentUid) {
+      setHydrated(false);
+      prevUserRef.current = currentUid;
+    }
+
     if (!user) {
       setOnboarding(null);
       setNotificationUnreadCount(0);
