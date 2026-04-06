@@ -171,6 +171,21 @@ export function CommunityWins() {
         </div>
       </div>
     </div>
+
+    {shareWin && (
+      <ShareWinModal
+        open={!!shareWin}
+        onOpenChange={(v) => { if (!v) setShareWin(null); }}
+        win={{
+          userName: shareWin.user_name,
+          roleName: getProfile(shareWin.user_id)?.academy_role_name || undefined,
+          body: shareWin.body,
+          imageUrl: ((shareWin.attachments as any[]) ?? []).find((a: any) => a.type === "image")?.url,
+          createdAt: shareWin.created_at,
+        }}
+      />
+    )}
+    </>
   );
 }
 
