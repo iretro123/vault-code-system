@@ -45,7 +45,7 @@ import { WeeklyReviewCard } from "@/components/trade-os/WeeklyReviewCard";
 import { OSTabHeader } from "@/components/trade-os/OSTabHeader";
 import { TodaysLimitsSection } from "@/components/vault/TodaysLimitsSection";
 import { VaultTradePlanner } from "@/components/vault-planner/VaultTradePlanner";
-import { OSControlRail } from "@/components/trade-os/OSControlRail";
+
 import { useCoachingNudge } from "@/hooks/useCoachingNudge";
 import { CoachingNudgeModal } from "@/components/academy/CoachingNudgeModal";
 import { SessionSetupCard, SessionCountdownLine, loadTimes, fmt12h, clearSession, clearSessionFromDB } from "@/components/trade-os/SessionSetupCard";
