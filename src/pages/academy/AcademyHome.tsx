@@ -12,7 +12,6 @@ import { CommunityCard } from "@/components/academy/dashboard/CommunityCard";
 import { StartLearningCard } from "@/components/academy/dashboard/StartLearningCard";
 import { AskCoachCard } from "@/components/academy/dashboard/AskCoachCard";
 import { ActivityTicker } from "@/components/academy/dashboard/ActivityTicker";
-import { ActivityTicker } from "@/components/academy/dashboard/ActivityTicker";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
 import { ClaimRoleModal } from "@/components/academy/ClaimRoleModal";
 import { toast } from "sonner";
