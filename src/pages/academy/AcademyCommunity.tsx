@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { RoomChat } from "@/components/academy/RoomChat";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
+import { EconomicCalendarTab } from "@/components/academy/community/EconomicCalendarTab";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/hooks/useAuth";
