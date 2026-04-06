@@ -232,7 +232,7 @@ function renderMentions(text: string, isOwnBubble = false): React.ReactNode {
   });
 }
 
-function renderPlainBody(body: string, isOwnBubble = false) {
+function renderPlainBody(body: string) {
   // Split quote block from rest of message
   const lines = body.split("\n");
   const quoteLines: string[] = [];
@@ -259,10 +259,10 @@ function renderPlainBody(body: string, isOwnBubble = false) {
         }
         const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (linkMatch) {
-          return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{linkMatch[1]}</a>;
+          return <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-primary underline">{linkMatch[1]}</a>;
         }
         if (!part) return null;
-        return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
+        return <span key={i}>{renderMentions(part)}</span>;
       });
     }
 
@@ -270,12 +270,12 @@ function renderPlainBody(body: string, isOwnBubble = false) {
     const parts = text.split(/(\*\*[^*]+\*\*|https?:\/\/[^\s<>"')\]]+)/g);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
-        return <span key={i} className={cn("font-semibold", isOwnBubble ? "text-white" : "text-foreground")}>{part.slice(2, -2)}</span>;
+        return <span key={i} className="font-semibold text-foreground">{part.slice(2, -2)}</span>;
       }
       if (/^https?:\/\//.test(part)) {
-        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={isOwnBubble ? "text-white/90 underline" : "text-primary underline"}>{part}</a>;
+        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-primary underline">{part}</a>;
       }
-      return <span key={i}>{renderMentions(part, isOwnBubble)}</span>;
+      return <span key={i}>{renderMentions(part)}</span>;
     });
   };
 
@@ -284,12 +284,7 @@ function renderPlainBody(body: string, isOwnBubble = false) {
   return (
     <>
       {quoteLines.length > 0 && (
-        <div className={cn(
-          "border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug",
-          isOwnBubble
-            ? "border-white/40 bg-white/10 text-white/70"
-            : "border-primary/40 bg-primary/[0.06] text-[hsl(220,10%,40%)]"
-        )}>
+        <div className="border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug border-primary/40 bg-primary/[0.06] text-muted-foreground">
           {renderInline(quoteLines.join(" "))}
         </div>
       )}
