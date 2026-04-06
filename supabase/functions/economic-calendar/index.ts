@@ -15,15 +15,10 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode");
 
-    // ── REFRESH MODE: called by pg_cron, fetches Finnhub → upserts into DB ──
+    // ── REFRESH MODE: called by pg_cron ──
     if (mode === "refresh") {
-      const apiKey = Deno.env.get("FINNHUB_API_KEY");
-      if (!apiKey) {
-        return new Response(
-          JSON.stringify({ error: "FINNHUB_API_KEY not configured" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      const fmpKey = Deno.env.get("FMP_API_KEY");
+      const finnhubKey = Deno.env.get("FINNHUB_API_KEY");
 
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -32,84 +27,103 @@ Deno.serve(async (req) => {
       const from = getDateStr(0);
       const to = getDateStr(14);
 
-      const [econRes, earningsRes] = await Promise.all([
-        fetch(`https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${apiKey}`),
-        fetch(`https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&token=${apiKey}`),
-      ]);
+      let eventsCount = 0;
+      let earningsCount = 0;
 
-      const econData = await econRes.json();
-      const earningsData = await earningsRes.json();
+      // ── Economic Calendar: FMP ──
+      if (fmpKey) {
+        const econRes = await fetch(
+          `https://financialmodelingprep.com/api/v3/economic_calendar?from=${from}&to=${to}&apikey=${fmpKey}`
+        );
+        const econData = await econRes.json();
+        const rawEvents = Array.isArray(econData) ? econData : [];
+        console.log(`FMP economic: ${rawEvents.length} raw events, sample countries: ${[...new Set(rawEvents.slice(0,20).map((e:any)=>e.country))].join(',')}`);
+        if (rawEvents.length > 0) console.log("FMP sample:", JSON.stringify(rawEvents[0]).slice(0, 300));
 
-      // Normalize + upsert economic events
-      const events = (econData?.economicCalendar || []).map((e: any) => ({
-        id: `econ-${e.event}-${e.time || e.date}`,
-        date: e.date,
-        time_et: e.time || null,
-        country: e.country || "US",
-        event_name: e.event,
-        impact: e.impact === 3 ? "high" : e.impact === 2 ? "medium" : "low",
-        actual: e.actual ?? null,
-        estimate: e.estimate ?? null,
-        prev: e.prev ?? null,
-        unit: e.unit || "",
-        fetched_at: new Date().toISOString(),
-      }));
+        const events = rawEvents
+          .filter((e: any) => (e.country || "").toUpperCase() === "US")
+          .map((e: any) => ({
+            id: `econ-${slugify(e.event)}-${e.date}`,
+            date: (e.date || "").split("T")[0],
+            time_et: extractTime(e.date) || null,
+            country: "US",
+            event_name: e.event || "Unknown",
+            impact: (e.impact || "Low").toLowerCase(),
+            actual: parseNum(e.actual),
+            estimate: parseNum(e.estimate ?? e.consensus),
+            prev: parseNum(e.previous),
+            unit: e.unit || e.currency || "",
+            fetched_at: new Date().toISOString(),
+          }));
 
-      if (events.length > 0) {
-        await sb.from("market_events").delete().lt("date", from);
-        const { error: evErr } = await sb
-          .from("market_events")
-          .upsert(events, { onConflict: "id" });
-        if (evErr) console.error("market_events upsert error:", evErr.message);
+        if (events.length > 0) {
+          await sb.from("market_events").delete().lt("date", from);
+          for (let i = 0; i < events.length; i += 50) {
+            const chunk = events.slice(i, i + 50);
+            const { error } = await sb
+              .from("market_events")
+              .upsert(chunk, { onConflict: "id" });
+            if (error) console.error("market_events upsert:", error.message);
+          }
+        }
+        eventsCount = events.length;
+      } else {
+        console.error("FMP_API_KEY not configured — skipping economic calendar");
       }
 
-      // Normalize + deduplicate earnings
-      const earningsMap = new Map();
-      (earningsData?.earningsCalendar || []).forEach((e: any) => {
-        const id = `earn-${e.symbol}-${e.date}`;
-        if (!earningsMap.has(id)) earningsMap.set(id, e);
-      });
-      const earnings = Array.from(earningsMap.values()).map((e: any) => ({
-        id: `earn-${e.symbol}-${e.date}`,
-        date: e.date,
-        symbol: e.symbol,
-        hour:
-          e.hour === "bmo"
-            ? "Before Open"
-            : e.hour === "amc"
-            ? "After Close"
-            : e.hour || "TBD",
-        eps_estimate: e.epsEstimate ?? null,
-        eps_actual: e.epsActual ?? null,
-        revenue_estimate: e.revenueEstimate ?? null,
-        revenue_actual: e.revenueActual ?? null,
-        quarter: e.quarter ?? null,
-        year: e.year ?? null,
-        fetched_at: new Date().toISOString(),
-      }));
+      // ── Earnings Calendar: Finnhub ──
+      if (finnhubKey) {
+        const earningsRes = await fetch(
+          `https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&token=${finnhubKey}`
+        );
+        const earningsData = await earningsRes.json();
 
-      if (earnings.length > 0) {
-        await sb.from("market_earnings").delete().lt("date", from);
-        for (let i = 0; i < earnings.length; i += 50) {
-          const chunk = earnings.slice(i, i + 50);
-          const { error: earnErr } = await sb
-            .from("market_earnings")
-            .upsert(chunk, { onConflict: "id" });
-          if (earnErr) console.error("market_earnings upsert error:", earnErr.message);
+        const earningsMap = new Map();
+        (earningsData?.earningsCalendar || []).forEach((e: any) => {
+          const id = `earn-${e.symbol}-${e.date}`;
+          if (!earningsMap.has(id)) earningsMap.set(id, e);
+        });
+        const earnings = Array.from(earningsMap.values()).map((e: any) => ({
+          id: `earn-${e.symbol}-${e.date}`,
+          date: e.date,
+          symbol: e.symbol,
+          hour:
+            e.hour === "bmo"
+              ? "Before Open"
+              : e.hour === "amc"
+              ? "After Close"
+              : e.hour || "TBD",
+          eps_estimate: e.epsEstimate ?? null,
+          eps_actual: e.epsActual ?? null,
+          revenue_estimate: e.revenueEstimate ?? null,
+          revenue_actual: e.revenueActual ?? null,
+          quarter: e.quarter ?? null,
+          year: e.year ?? null,
+          fetched_at: new Date().toISOString(),
+        }));
+
+        if (earnings.length > 0) {
+          await sb.from("market_earnings").delete().lt("date", from);
+          for (let i = 0; i < earnings.length; i += 50) {
+            const chunk = earnings.slice(i, i + 50);
+            const { error } = await sb
+              .from("market_earnings")
+              .upsert(chunk, { onConflict: "id" });
+            if (error) console.error("market_earnings upsert:", error.message);
+          }
         }
+        earningsCount = earnings.length;
+      } else {
+        console.error("FINNHUB_API_KEY not configured — skipping earnings");
       }
 
       return new Response(
-        JSON.stringify({
-          ok: true,
-          events_count: events.length,
-          earnings_count: earnings.length,
-        }),
+        JSON.stringify({ ok: true, events_count: eventsCount, earnings_count: earningsCount }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // ── DEFAULT MODE: read cached data from Supabase tables ──
+    // ── DEFAULT MODE: read cached data ──
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const authHeader = req.headers.get("Authorization") || `Bearer ${anonKey}`;
@@ -121,25 +135,12 @@ Deno.serve(async (req) => {
     const twoWeeks = getDateStr(14);
 
     const [eventsResult, earningsResult] = await Promise.all([
-      sb
-        .from("market_events")
-        .select("*")
-        .gte("date", today)
-        .lte("date", twoWeeks)
-        .order("date", { ascending: true }),
-      sb
-        .from("market_earnings")
-        .select("*")
-        .gte("date", today)
-        .lte("date", twoWeeks)
-        .order("date", { ascending: true }),
+      sb.from("market_events").select("*").gte("date", today).lte("date", twoWeeks).order("date", { ascending: true }),
+      sb.from("market_earnings").select("*").gte("date", today).lte("date", twoWeeks).order("date", { ascending: true }),
     ]);
 
     return new Response(
-      JSON.stringify({
-        events: eventsResult.data || [],
-        earnings: earningsResult.data || [],
-      }),
+      JSON.stringify({ events: eventsResult.data || [], earnings: earningsResult.data || [] }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
@@ -154,4 +155,26 @@ function getDateStr(daysOffset: number): string {
   const d = new Date();
   d.setDate(d.getDate() + daysOffset);
   return d.toISOString().split("T")[0];
+}
+
+function slugify(s: string): string {
+  return (s || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+}
+
+function extractTime(dateStr: string): string | null {
+  if (!dateStr || !dateStr.includes("T")) return null;
+  try {
+    const d = new Date(dateStr);
+    const h = d.getUTCHours().toString().padStart(2, "0");
+    const m = d.getUTCMinutes().toString().padStart(2, "0");
+    return `${h}:${m}`;
+  } catch {
+    return null;
+  }
+}
+
+function parseNum(v: any): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
 }
