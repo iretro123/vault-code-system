@@ -1,49 +1,84 @@
 
 
-## Manual Data Fix + Countdown Timer for Economic Calendar
+## Fix: App Stuck at Loading Screen
 
-### What Changes
+### Root Cause
 
-**1. Insert missing events from Forex Factory screenshot**
+When a user's refresh token expires (confirmed in auth logs: `refresh_token_not_found`), the app enters an unrecoverable loading state:
 
-The current database has 25 events but is missing key Friday Apr 10 items (CPI reports, UoM data) and some impact levels are wrong. Will:
-- Add Core CPI m/m, CPI m/m, CPI y/y for Apr 10 (all HIGH impact)
-- Add Prelim UoM Consumer Sentiment and Inflation Expectations for Apr 10
-- Add GDP Price Index q/q for Apr 9
-- Fix ISM Services impact from "medium" → "high"
-- Update Durable Goods estimate to match FF data (0.5% for core)
+1. `getSession()` returns a stale session from localStorage (Supabase doesn't validate tokens on `getSession`)
+2. `user` gets set to the stale user object
+3. `fetchUserData()` tries to query `profiles` table — fails silently (401 or returns null due to expired JWT)
+4. `profile` stays `null`, `loading` becomes `false`
+5. AcademyLayout checks: `profileReady = !loading && !!user && !!profile` → **false forever**
+6. The spinner shows indefinitely — no redirect to auth, no recovery
 
-**2. Add countdown timer for today's next upcoming event**
+### Fix
 
-At the top of the calendar, show a "Next Up" hero card for the nearest future event today with a live countdown using the same Pill/Colon style from `NextGroupCallCard`:
-- Glass card with event name, time, impact badge
-- Countdown pills: `HH : MM : SS`
-- Only shows for today's events that haven't passed yet
-- Disappears when no more events today
+**File: `src/hooks/useAuth.tsx`** — lines 120-180
 
-**3. Premium UI polish**
+In `fetchUserData`, after the profile query, if `profileData` is null (no profile returned):
+1. Attempt `supabase.auth.refreshSession()` to get a fresh token
+2. If refresh succeeds, retry the profile query once
+3. If refresh fails OR retry still returns null, sign out the user cleanly (clears stale tokens, redirects to /auth)
 
-- "Next Up" card: `bg-white/[0.03] backdrop-blur border border-white/[0.06] rounded-2xl` with subtle glow for high-impact
-- Keep current event list below but add subtle "TODAY" highlight on today's date section
-- Impact badges get slightly larger with icon dots
+This ensures expired sessions never leave users stuck — they either recover silently or get redirected to login.
 
-### Files
+```typescript
+async function fetchUserData(userId: string) {
+  try {
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-| File | Action |
+    // If profile fetch failed or returned null, try refreshing the session
+    if (!profileData) {
+      console.warn("[Auth] No profile data — attempting session refresh");
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.warn("[Auth] Session refresh failed — signing out", refreshError.message);
+        await signOutCleanup();
+        return;
+      }
+      // Retry profile fetch with fresh token
+      const { data: retryData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!retryData) {
+        console.warn("[Auth] Profile still null after refresh — signing out");
+        await signOutCleanup();
+        return;
+      }
+      // Use retry data (fall through to existing profile handling)
+      handleProfile(retryData, userId);
+    } else {
+      handleProfile(profileData, userId);
+    }
+    // ... rest of role fetching stays the same
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    // On unexpected errors, also attempt recovery
+    await signOutCleanup();
+  } finally {
+    setLoading(false);
+  }
+}
+```
+
+The `signOutCleanup` helper consolidates the sign-out + state clearing logic that's already duplicated in multiple places.
+
+### Impact on Existing Users
+- Users with valid sessions: zero change — profile query succeeds on first try, skip recovery
+- Users with expired tokens: automatically recover (refresh works) or get cleanly redirected to login (refresh fails)
+- No UI changes, no new routes, no database changes
+
+### Files Changed
+
+| File | Change |
 |------|--------|
-| `market_events` table | Insert ~7 missing events, update ~2 impact levels via SQL |
-| `src/components/academy/community/EconomicCalendarTab.tsx` | Add countdown timer hero card + today highlight |
-
-### Data to Insert
-
-| Event | Date | Time | Impact | Forecast | Previous |
-|-------|------|------|--------|----------|----------|
-| Core CPI m/m | Apr 10 | 08:30 | high | 0.3% | 0.2% |
-| CPI m/m | Apr 10 | 08:30 | high | 1.0% | 0.3% |
-| CPI y/y | Apr 10 | 08:30 | high | 3.4% | 2.4% |
-| Prelim UoM Consumer Sentiment | Apr 10 | 10:00 | medium | 52.1 | — |
-| Prelim UoM Inflation Expectations | Apr 10 | 10:00 | medium | — | — |
-| GDP Price Index q/q | Apr 9 | 08:30 | medium | 3.8% | 3.8% |
-
-Update ISM Services impact → "high"
+| `src/hooks/useAuth.tsx` | Add session recovery logic in `fetchUserData` when profile is null |
 
