@@ -1,50 +1,30 @@
 
 
-## Fix: Loading Spinner Deadlock in AcademyLayout
+## Convert Calendar Times from Military (24h) to Standard (12h AM/PM) ET
 
-### Root Cause
+### Problem
+Times like `08:30`, `10:00`, `14:30` display in 24-hour military format. Need standard 12-hour with AM/PM, all labeled ET.
 
-Line 74 of `AcademyLayout.tsx`:
+### Solution
+Add a helper function `formatTimeET(time: string | null)` that converts "08:30" → "8:30 AM", "14:30" → "2:30 PM", etc.
+
+Replace raw `time_et` display in two places:
+1. **Next Up hero card** (line 167): `{nextEvent.time_et} ET` → `{formatTimeET(nextEvent.time_et)} ET`
+2. **Event row** (line 281): `{e.time_et || "—"}` → `{formatTimeET(e.time_et)}`
+
+### Helper
 ```typescript
-if (loading || !profileReady || !hydrated) { return <spinner> }
-if (!user) { return <Navigate to="/auth"> }
-```
-
-`profileReady = !loading && !!user && !!profile` — when there's no user (logged out, expired session, or the new `signOutCleanup` kicks in), `profileReady` is always `false`. The spinner gate catches this BEFORE the `/auth` redirect on line 91 is ever reached. Result: infinite spinner.
-
-### Fix
-
-**File: `src/components/layout/AcademyLayout.tsx`** — lines 72-93
-
-Reorder the gates so "no user" is checked right after auth loading finishes, before the profile/hydration check:
-
-```typescript
-// 1. Wait for auth to finish
-if (loading) {
-  return <spinner>;
-}
-
-// 2. No user → redirect immediately (don't wait for profile/hydration)
-if (!user) {
-  return <Navigate to="/auth" replace />;
-}
-
-// 3. User exists but profile/hydration still loading
-if (!profile || !hydrated) {
-  return <spinner>;
+function formatTimeET(t: string | null): string {
+  if (!t) return "—";
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }
 ```
 
-This ensures:
-- Expired sessions that trigger `signOutCleanup` → user becomes null → immediate redirect to `/auth`
-- Fresh logins → wait for profile + hydration → then render
-- No impact on existing authenticated users (profile loads, hydrated becomes true, everything proceeds as before)
-
-### Files
-
+### File
 | File | Change |
 |------|--------|
-| `src/components/layout/AcademyLayout.tsx` | Reorder loading/auth/profile gates (lines 72-93) |
-
-One file, ~5 lines changed. Zero risk to authenticated users.
+| `src/components/academy/community/EconomicCalendarTab.tsx` | Add `formatTimeET` helper, use it in 2 display locations |
 
