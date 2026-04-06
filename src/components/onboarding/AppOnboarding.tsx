@@ -212,7 +212,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
       />
 
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-10 min-h-[100dvh]">
-        {step > 0 && step < 6 && <OnboardingProgressBar current={step} />}
+        {step > 0 && step < 7 && <OnboardingProgressBar current={step} />}
 
         {/* Step 0 — Welcome */}
         <OnboardingStep active={step === 0}>
