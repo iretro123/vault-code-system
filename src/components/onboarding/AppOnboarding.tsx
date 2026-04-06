@@ -171,6 +171,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           academy_experience: roleLevel,
           trading_goal: goal || null,
           profile_completed: true,
+          avatar_url: avatarUrl || null,
         } as any)
         .eq("user_id", user.id);
 
