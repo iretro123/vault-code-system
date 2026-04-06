@@ -86,15 +86,54 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
     }
   })();
 
-  // Step 2 — Experience
+  // Step 2 — Avatar
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  // Step 3 — Experience
   const [experience, setExperience] = useState<ExperienceLevel | null>(null);
 
-  // Step 4 — Goal
+  // Step 5 — Goal
   const [goal, setGoal] = useState<TradingGoal | null>(null);
 
   // Final
   const [submitting, setSubmitting] = useState(false);
   const [activated, setActivated] = useState(false);
+
+  const handleIconSelect = (iconId: string) => {
+    setSelectedIcon(iconId);
+    setAvatarUrl(`icon:${iconId}|${selectedColor}`);
+  };
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+    if (selectedIcon) {
+      setAvatarUrl(`icon:${selectedIcon}|${color}`);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { contentType: file.type, upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(urlData.publicUrl);
+      setSelectedIcon(null);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const next = () => setStep((s) => s + 1);
 
