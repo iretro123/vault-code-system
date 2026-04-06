@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { RoomChat } from "@/components/academy/RoomChat";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
+import { EconomicCalendarTab } from "@/components/academy/community/EconomicCalendarTab";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +12,7 @@ const TABS = [
   { key: "trade-floor", label: "Chat", roomSlug: "trade-floor" },
   { key: "daily-setups", label: "Signals", roomSlug: "daily-setups" },
   { key: "wins", label: "Wins", roomSlug: "wins-proof" },
+  { key: "calendar", label: "Calendar", roomSlug: null },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -26,7 +28,7 @@ const AcademyCommunity = () => {
   const userId = session?.user?.id || null;
 
   const activeRoomSlug = TABS.find((t) => t.key === activeTab)?.roomSlug || "trade-floor";
-  const { counts, markRead } = useUnreadCounts(activeRoomSlug, userId);
+  const { counts, markRead } = useUnreadCounts(activeRoomSlug || "trade-floor", userId);
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
@@ -94,6 +96,9 @@ const AcademyCommunity = () => {
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />
+            </div>
+            <div className={cn("absolute inset-0", activeTab === "calendar" ? "block" : "hidden")}>
+              <EconomicCalendarTab active={activeTab === "calendar"} />
             </div>
           </div>
         </div>
