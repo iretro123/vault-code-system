@@ -281,11 +281,29 @@ function renderPlainBody(body: string) {
 
   const restText = restLines.join("\n").trim();
 
+  // Detect Discord-style reply: quote starts with **@username:**
+  const quoteText = quoteLines.join(" ");
+  const replyMatch = quoteText.match(/^\*\*@([^:]+):\*\*\s*(.*)$/);
+  const isReplyQuote = quoteLines.length > 0 && replyMatch;
+
   return (
     <>
-      {quoteLines.length > 0 && (
-        <div className="border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug border-primary/40 bg-primary/[0.06] text-muted-foreground">
-          {renderInline(quoteLines.join(" "))}
+      {isReplyQuote && (
+        <div className="flex items-center gap-1.5 ml-0 mb-0.5 relative pl-6">
+          {/* Connector arm */}
+          <div className="absolute left-[7px] top-[3px] w-[14px] h-[12px] border-l-2 border-t-2 border-muted-foreground/30 rounded-tl-md" />
+          <div className="flex items-center gap-1 text-[12px] text-muted-foreground truncate max-w-[85%] cursor-pointer hover:text-foreground/70 transition-colors">
+            <div className="w-4 h-4 rounded-full bg-primary/20 shrink-0 flex items-center justify-center">
+              <span className="text-[8px] font-bold text-primary">@</span>
+            </div>
+            <span className="font-semibold text-primary/80 shrink-0">{replyMatch[1]}</span>
+            <span className="truncate">{replyMatch[2] || "Click to see message"}</span>
+          </div>
+        </div>
+      )}
+      {!isReplyQuote && quoteLines.length > 0 && (
+        <div className="border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug border-muted-foreground/30 bg-white/[0.02] text-muted-foreground">
+          {renderInline(quoteText)}
         </div>
       )}
       {restText && <span>{renderInline(restText)}</span>}
@@ -1244,9 +1262,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               <ContextMenuTrigger asChild>
                  <div
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-white/[0.02] transition-colors duration-75",
-                    startsNewGroup ? "pt-1.5 pb-0.5" : (isGroupedWithNext ? "py-[1px]" : "pt-[1px] pb-0.5"),
-                    startsNewGroup && "mt-[1px]",
+                    "group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75",
+                    startsNewGroup ? "pt-3 pb-1" : (isGroupedWithNext ? "py-0.5" : "pt-0.5 pb-1"),
+                    startsNewGroup && "mt-1",
                     isEditing && "bg-white/[0.04]",
                     isCeoOrAdmin && "border-l-2 border-l-amber-500/40",
                     isOfficialAnnouncement && "bg-amber-500/[0.04]"
