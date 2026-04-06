@@ -148,6 +148,10 @@ function NextUpCard({ events, userTZ }: { events: MarketEvent[]; userTZ: string 
 
   const countdown = splitCountdown(diff);
   const isHigh = nextEvent.impact === "high";
+  const tzLabel = getTZAbbr(userTZ);
+
+  const countdown = splitCountdown(diff);
+  const isHigh = nextEvent.impact === "high";
 
   return (
     <div
