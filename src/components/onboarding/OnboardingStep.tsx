@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 export function OnboardingProgressBar({ current }: { current: number }) {
   return (
