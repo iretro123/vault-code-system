@@ -227,6 +227,9 @@ function CalendarSkeleton() {
 
 export function EconomicCalendarTab({ active }: Props) {
   const { isLoading, allEvents } = useEconomicCalendar();
+  const { profile } = useAuth();
+  const userTZ = getUserTimezone(profile?.timezone);
+  const tzLabel = getTZAbbr(userTZ);
 
   if (!active) return null;
   if (isLoading) return <CalendarSkeleton />;
@@ -251,7 +254,7 @@ export function EconomicCalendarTab({ active }: Props) {
       </div>
 
       {/* Next Up countdown hero */}
-      <NextUpCard events={allEvents} />
+      <NextUpCard events={allEvents} userTZ={userTZ} />
 
       {dates.length === 0 ? (
         <div className="text-center py-16">
