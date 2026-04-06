@@ -3,10 +3,11 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { format, startOfWeek, addDays, isSameDay, isToday, startOfDay } from "date-fns";
-import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import { Clock, ExternalLink, CalendarPlus, Coffee, ChevronLeft, ChevronRight } from "lucide-react";
 import { playSwipeSound } from "@/lib/nativeFeedback";
+import { formatTimeInTZ, getTZAbbr, getUserTimezone } from "@/lib/userTime";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LiveSession {
   id: string;
