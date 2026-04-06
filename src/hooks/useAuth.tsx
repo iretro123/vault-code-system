@@ -76,6 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
         
         if (newSession?.user) {
+          // Clear stale cached profile immediately on user change to prevent flash
+          const cachedUid = profile?.id || (profile as any)?.user_id;
+          if (cachedUid && cachedUid !== newSession.user.id) {
+            setProfile(null);
+            setUserRole(null);
+            setLoading(true);
+          }
           // Defer data fetching to avoid blocking auth state
           setTimeout(async () => {
             // Ensure profile exists on first login
@@ -85,6 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setUserRole(null);
+          try {
+            localStorage.removeItem(PROFILE_CACHE_KEY);
+            localStorage.removeItem(ROLE_CACHE_KEY);
+          } catch {}
         }
       }
     );

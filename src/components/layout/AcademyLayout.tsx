@@ -69,7 +69,9 @@ function AcademyLayoutInner() {
     logActivity("page_view", segment);
   }, [location.pathname]);
 
-  if (loading || !hydrated) {
+  // Wait for auth AND fresh profile to be fully resolved before any gate decisions
+  const profileReady = !loading && !!user && !!profile;
+  if (loading || !profileReady || !hydrated) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">

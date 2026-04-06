@@ -1,0 +1,1 @@
+UPDATE profiles SET onboarding_completed = true WHERE profile_completed = true AND (onboarding_completed = false OR onboarding_completed IS NULL);
