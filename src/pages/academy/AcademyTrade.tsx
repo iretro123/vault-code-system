@@ -1350,8 +1350,7 @@ const AcademyTrade = () => {
               </div>
             </button>
           )}
-          </div>{/* close right: tabs+content */}
-          </div>{/* close flex inside card */}
+          </div>{/* close content */}
         </div>{/* close vault-os-card */}
 
         {/* ══════ LOWER ANALYTICS ══════ */}
