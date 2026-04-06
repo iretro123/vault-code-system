@@ -11,6 +11,7 @@ import { NextGroupCallCard } from "@/components/academy/dashboard/NextGroupCallC
 import { CommunityCard } from "@/components/academy/dashboard/CommunityCard";
 import { StartLearningCard } from "@/components/academy/dashboard/StartLearningCard";
 import { AskCoachCard } from "@/components/academy/dashboard/AskCoachCard";
+import { ActivityTicker } from "@/components/academy/dashboard/ActivityTicker";
 import { DailyCheckInModal } from "@/components/academy/DailyCheckInModal";
 import { ClaimRoleModal } from "@/components/academy/ClaimRoleModal";
 import { toast } from "sonner";
@@ -118,6 +119,8 @@ const AcademyHome = () => {
     <>
       <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl animate-fade-in">
         <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
+
+        <ActivityTicker />
 
         <GameplanCard onCheckIn={() => setCheckInOpen(true)} onClaimRole={() => setClaimRoleOpen(true)} />
 

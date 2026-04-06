@@ -5,7 +5,8 @@ import { useMessageReactions, type ReactionEmoji } from "@/hooks/useMessageReact
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
-import { Loader2, Trophy, Flame } from "lucide-react";
+import { Loader2, Trophy, Flame, Share2 } from "lucide-react";
+import { ShareWinModal } from "./ShareWinModal";
 import { formatDateTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ const WINS_CACHE_KEY = "vault_wins_cache";
 
 export function CommunityWins() {
   const { user } = useAuth();
+  const [shareWin, setShareWin] = useState<WinMessage | null>(null);
   const [wins, setWins] = useState<WinMessage[]>(() => {
     try {
       const cached = localStorage.getItem(WINS_CACHE_KEY);
@@ -80,6 +82,7 @@ export function CommunityWins() {
   }
 
   return (
+    <>
     <div className="overflow-y-auto h-full">
       <div className="max-w-[900px] mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -140,8 +143,8 @@ export function CommunityWins() {
                     <p className="text-[15px] text-[hsl(220,10%,35%)] leading-[1.65] whitespace-pre-line line-clamp-4">{win.body}</p>
                   )}
 
-                  {/* Fire reaction */}
-                  <div className="flex items-center pt-1">
+                  {/* Fire reaction + Share */}
+                  <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => toggleReaction(win.id, "🔥" as ReactionEmoji)}
                       className={cn(
@@ -154,6 +157,13 @@ export function CommunityWins() {
                       <Flame className="h-4 w-4" />
                       {fireReaction?.count ?? 0}
                     </button>
+                    <button
+                      onClick={() => setShareWin(win)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all bg-[hsl(220,10%,95%)] border-[hsl(220,10%,85%)] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] hover:bg-[hsl(220,10%,90%)]"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Share
+                    </button>
                   </div>
                 </div>
               </div>
@@ -162,6 +172,21 @@ export function CommunityWins() {
         </div>
       </div>
     </div>
+
+    {shareWin && (
+      <ShareWinModal
+        open={!!shareWin}
+        onOpenChange={(v) => { if (!v) setShareWin(null); }}
+        win={{
+          userName: shareWin.user_name,
+          roleName: getProfile(shareWin.user_id)?.academy_role_name || undefined,
+          body: shareWin.body,
+          imageUrl: ((shareWin.attachments as any[]) ?? []).find((a: any) => a.type === "image")?.url,
+          createdAt: shareWin.created_at,
+        }}
+      />
+    )}
+    </>
   );
 }
 
