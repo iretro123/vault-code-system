@@ -1,59 +1,41 @@
 
 
-## Build: Share Win Cards + Social Proof Activity Ticker
+## Redesign Activity Ticker — Luxury Card Carousel (Max 3 Items)
 
-### Feature 1: Share Win Cards
+### What Changes
 
-**What**: A "Share" button on each win card in the Wins tab that generates a premium branded image (dark gradient background, Vault logo watermark, trade details, user avatar, referral QR/link). User downloads it and posts to IG Stories, X, etc.
+Replace the infinite scrolling marquee with a **single-card auto-swipe carousel** showing 3 activity items max. Each item displays as its own luxury dark card that fades/slides to the next one every ~4 seconds.
 
-**How it works**:
-1. New `ShareWinModal` component — opens when user taps "Share" on a win card
-2. Uses HTML Canvas API (`<canvas>`) to render a 1080×1920 (IG Story ratio) branded card client-side:
-   - Dark gradient background with subtle Vault branding
-   - User's display name + role badge
-   - Win details (ticker, P&L, setup type, lesson learned) parsed from the structured fields
-   - Trade screenshot if attached
-   - Vault logo watermark + "vault-code-system.lovable.app" URL
-   - User's referral link as text at the bottom (e.g., "Join me → vault-code-system.lovable.app/ref/{userId}")
-3. "Download Image" button saves the canvas as PNG
-4. On mobile (Capacitor), uses native share sheet via `navigator.share()` for direct IG/X sharing
-5. No edge function needed — fully client-side canvas rendering
+### Design
 
-**Files**:
-| File | Action |
+- **Max 3 items** picked from recent wins + lesson completions (shuffled)
+- **One card visible at a time**, auto-rotating with a smooth crossfade + slight translateX transition (~500ms)
+- **Dark luxury card style** matching vault-luxury-card system: dark radial gradient background, 1px blue shimmer top border, subtle shadow
+- **Personalized text**: "Edward just posted a win", "Alex completed Module 3", "A student finished a lesson"
+- **Colored icon glow** per type (amber for wins, blue for lessons)
+- **3 dot indicators** at the bottom showing which card is active (blue dot = active)
+- **"LIVE" pulse** — small green pulsing dot + "LIVE" label on the left
+
+### Implementation
+
+**File: `src/components/academy/dashboard/ActivityTicker.tsx`** — Full rewrite:
+
+1. Keep existing data fetching logic (wins + lessons from Supabase, localStorage cache)
+2. Slice to max 3 items instead of 15
+3. Replace CSS marquee with a `useState` index that auto-increments every 4s via `setInterval`
+4. Render one item at a time with `transition-all duration-500` (opacity + translateX)
+5. Dark card styling:
+   ```
+   bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.08),transparent_70%)]
+   bg-[hsl(222,20%,10%)] border border-white/[0.06]
+   shadow-[0_0_20px_rgba(59,130,246,0.05)]
+   ```
+6. 3 small dots at bottom right showing position
+7. Green pulsing "LIVE" indicator at left edge
+
+### File
+
+| File | Change |
 |------|--------|
-| `src/components/academy/community/ShareWinModal.tsx` | **Create** — canvas-based branded image generator + download/share UI |
-| `src/components/academy/community/CommunityWins.tsx` | Add "Share" button next to the 🔥 reaction on each win card |
-
----
-
-### Feature 2: Social Proof Activity Ticker
-
-**What**: A subtle auto-scrolling horizontal ticker below the HeroHeader on the dashboard showing real-time community activity like "Jake logged a $450 win", "Sarah hit a 7-day streak", "Mike completed Module 3."
-
-**How it works**:
-1. New `ActivityTicker` component — horizontal marquee-style strip
-2. Fetches recent activity from 3 existing tables (no new tables needed):
-   - `academy_messages` where `room_slug = 'wins-proof'` → "{name} posted a win"
-   - `vault_daily_checklist` recent completions → "{name} checked in"
-   - `lesson_progress` recent completions → "{name} completed a lesson"
-3. Queries last 24h of activity, picks 10-15 items, shuffles them
-4. Renders as a CSS `@keyframes` marquee (no JS animation — pure CSS for performance)
-5. Uses display names from profiles, respects privacy (first name only)
-6. Subtle styling: small text, muted colors, blends with the dark dashboard aesthetic
-
-**Files**:
-| File | Action |
-|------|--------|
-| `src/components/academy/dashboard/ActivityTicker.tsx` | **Create** — fetches recent activity + renders CSS marquee |
-| `src/pages/academy/AcademyHome.tsx` | Add `<ActivityTicker />` between HeroHeader and GameplanCard |
-
----
-
-### Technical Notes
-
-- **Share Win Card rendering**: Uses native Canvas 2D API. Draws gradient background → text → optional image → branding. Exports via `canvas.toDataURL("image/png")` then triggers download with an `<a>` tag or `navigator.share()`.
-- **Activity Ticker data**: Single `useActivityFeed` hook makes 3 parallel queries with `.limit(10)` each. Caches in localStorage with 5-min TTL. No realtime subscription needed — refreshes on mount.
-- **No database changes** — both features use existing tables only.
-- **No edge functions** — both features are fully client-side.
+| `src/components/academy/dashboard/ActivityTicker.tsx` | Full rewrite — luxury single-card carousel, max 3 items, auto-swipe |
 
