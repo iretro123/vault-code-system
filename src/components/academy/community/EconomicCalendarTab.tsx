@@ -65,20 +65,21 @@ function nowMinutesET(): number {
 
 /** Get a Date object for today at a given ET time string like "08:30" */
 function todayETDate(timeET: string): Date {
-  // Build an approximate target: use today's date string in ET timezone
-  const now = new Date();
-  const etDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); // YYYY-MM-DD
-  // Create date as if in ET, then convert
   const [h, m] = timeET.split(":").map(Number);
-  // Use Intl to find the current ET offset
-  const utcNow = new Date(`${etDateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`);
-  // Rough ET offset detection
-  const jan = new Date(now.getFullYear(), 0, 1);
-  const jul = new Date(now.getFullYear(), 6, 1);
-  const isDST = now.getTimezoneOffset() < Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-  // ET is UTC-5 (EST) or UTC-4 (EDT)
-  const etOffsetHours = isDST ? 4 : 5;
-  return new Date(utcNow.getTime() + etOffsetHours * 60 * 60 * 1000);
+  const now = new Date();
+  const etDateStr = now.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  // Use Intl to find the real ET offset right now
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    timeZoneName: "shortOffset",
+  });
+  const parts = formatter.formatToParts(now);
+  const tzPart = parts.find((p) => p.type === "timeZoneName")?.value || "GMT-4";
+  const offsetMatch = tzPart.match(/GMT([+-]\d+)/);
+  const etOffsetHours = offsetMatch ? parseInt(offsetMatch[1], 10) : -4;
+  // Build UTC timestamp for the target ET time, then adjust for ET offset
+  const targetUTC = new Date(`${etDateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00Z`);
+  return new Date(targetUTC.getTime() - etOffsetHours * 60 * 60 * 1000);
 }
 
 /* ── countdown components (matching NextGroupCallCard style) ── */
