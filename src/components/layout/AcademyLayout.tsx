@@ -116,8 +116,12 @@ function AcademyLayoutInner() {
 
   // First-login onboarding gate
   const searchParams = new URLSearchParams(window.location.search);
-  if (searchParams.has("preview-onboarding") || !(profile as any)?.profile_completed) {
-    return <AppOnboarding isPreview={searchParams.has("preview-onboarding")} />;
+  const isPreview = searchParams.has("preview-onboarding");
+  const profileCompleted = (profile as any)?.profile_completed;
+  const onboardingCompleted = (profile as any)?.onboarding_completed;
+  // Show onboarding only for genuinely new users — skip if they've already been active
+  if (isPreview || (!profileCompleted && !onboardingCompleted)) {
+    return <AppOnboarding isPreview={isPreview} />;
   }
 
   return (
