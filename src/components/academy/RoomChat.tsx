@@ -1407,26 +1407,13 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     ) : (
                       <>
                         {msg.body && msg.body !== "📎 Attachment" && (
-                           <div className="inline-block max-w-[88%]">
-                            <div className={cn(
-                              "rounded-xl px-3.5 py-2",
-                              startsNewGroup ? "mt-0.5" : "mt-0",
-                              isCeoOrAdmin
-                                ? "bg-amber-500/[0.08] border border-amber-500/20"
-                                : isOwn
-                                  ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,54%)] text-white border border-primary/70 shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
-                                  : "bg-white/[0.06] border border-white/[0.06]"
-                            )}>
-                              <p className={cn(
-                                "text-[13px] leading-[1.6] whitespace-pre-line",
-                                isOwn && !isCeoOrAdmin ? "text-white" : "text-foreground"
-                              )}>
-                                {renderPlainBody(msg.body, isOwn && !isCeoOrAdmin)}
-                              </p>
-                              {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
-                                <span className={cn("text-[10px] mt-0.5 block", isOwn && !isCeoOrAdmin ? "text-white/60" : "text-muted-foreground")}>(edited)</span>
-                              )}
-                            </div>
+                          <div className={startsNewGroup ? "mt-0.5" : "mt-0"}>
+                            <p className="text-[14px] md:text-[13px] leading-[1.55] whitespace-pre-line text-foreground">
+                              {renderPlainBody(msg.body)}
+                            </p>
+                            {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
+                              <span className="text-[10px] mt-0.5 block text-muted-foreground">(edited)</span>
+                            )}
                           </div>
                         )}
                         {/* Link preview */}
