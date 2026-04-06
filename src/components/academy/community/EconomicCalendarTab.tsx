@@ -98,7 +98,7 @@ function Pill({ value, label, glow }: { value: number; label: string; glow?: boo
     <div className="flex flex-col items-center">
       <div
         className={cn(
-          "min-w-[48px] text-center rounded-lg px-2.5 py-2 font-mono text-xl font-bold tracking-wider text-white",
+          "min-w-[40px] sm:min-w-[48px] text-center rounded-lg px-2 sm:px-2.5 py-2 font-mono text-lg sm:text-xl font-bold tracking-wider text-white",
           "bg-white/[0.06] border border-white/[0.10] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
           glow && "ring-1 ring-white/[0.08]"
         )}
