@@ -1,34 +1,21 @@
 
 
-## Required Avatar During Onboarding + Backfill Existing Users
+## Fix: Assign Icon Avatars to Users With Initials-Only Avatars
 
-### What we're doing
-1. Add a new **"Choose Your Avatar" step** in the onboarding flow (AppOnboarding.tsx) so every new user MUST pick an avatar before activating their vault
-2. **Backfill existing users** who have no avatar_url set — assign them a random icon-based avatar from the existing icon library
-3. Save the chosen avatar to the profile on activation
+### Problem
+11 users have `initials:hsl(...)` as their `avatar_url`, which renders only their text initials in a colored circle — no actual avatar graphic. This includes JerX and stjohntrades. These users were likely created before the backfill migration or the migration used the wrong format for them.
 
-### Changes
+### Fix
 
-**`src/components/onboarding/AppOnboarding.tsx`** — Add avatar step between Identity (step 1) and Experience (step 2):
-- Add new step (becomes step 2, bumping everything else up by 1 — total steps become 0-7)
-- Show a grid of the existing `AVATAR_ICONS` (from `avatarIcons.tsx`) with color picker using `AVATAR_COLORS`
-- Also show an "Upload Photo" option using the same crop-to-square + storage upload logic from `AcademyProfileForm`
-- User must select at least an icon OR upload a photo to continue — Continue button disabled until avatar is set
-- Store chosen avatar as `avatarUrl` state, save it in `handleActivate` as `avatar_url` in the profile update
-- Update `OnboardingProgressBar` total from 6 to 7 steps
-- Add avatar preview in the summary step
+**Database migration** — Update all `initials:` avatar URLs to random `icon:` avatars:
+- Run an UPDATE on `profiles` where `avatar_url LIKE 'initials:%'`
+- Assign each user a random icon from the existing icon library (diamond, hexagon, shield, etc.) with a random color
+- Uses the same `icon:{id}|{color}` format that the onboarding and backfill systems use
+- 11 users affected: BAILEY BAILEY, Elliott Lee, Francis V, JerX, John Doe, Karen Greenfield, Kenya, Maria Cordero, Michael Zamora, stjohntrades, Wid
 
-**`src/lib/ensureProfile.ts`** — Auto-assign random avatar on profile creation:
-- When inserting a new profile, generate a random avatar_url using format `icon:{randomIcon}|{randomColor}` from the AVATAR_ICONS and AVATAR_COLORS arrays
-- This ensures even if onboarding is somehow skipped, the user has a visible avatar
-
-**Migration** — Backfill existing profiles with no avatar:
-- Run an UPDATE on `profiles` where `avatar_url IS NULL OR avatar_url = ''` 
-- Use a SQL function to assign random icon avatars: pick a random icon ID from a predefined list and a random HSL color
-- This is a one-time data fix for all existing users without avatars
+### Technical Detail
+The SQL will use `random()` to pick from the icon/color arrays, converting each `initials:` URL to a proper `icon:` URL so `ChatAvatar` renders an actual graphic instead of just letters.
 
 ### Files Changed
-- `src/components/onboarding/AppOnboarding.tsx` — new avatar selection step
-- `src/lib/ensureProfile.ts` — random default avatar on profile creation
-- Migration SQL — backfill existing users with random icon avatars
+- Migration SQL only (no code changes needed — the rendering logic already handles `icon:` format correctly)
 
