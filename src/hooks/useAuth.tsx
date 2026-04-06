@@ -20,6 +20,7 @@ interface Profile {
   role_level: string;
   intro_posted: boolean;
   first_lesson_started: boolean;
+  timezone: string | null;
 }
 
 interface UserRole {

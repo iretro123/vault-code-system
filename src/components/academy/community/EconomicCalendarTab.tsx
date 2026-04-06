@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useEconomicCalendar, type MarketEvent } from "@/hooks/useEconomicCalendar";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
+import { etTimeToUTCDate, formatTimeInTZ, getTZAbbr, getUserTimezone } from "@/lib/userTime";
 
 interface Props {
   active: boolean;
@@ -11,12 +13,11 @@ interface Props {
 
 /* ── helpers ── */
 
-function formatTimeET(t: string | null): string {
+/** Format an ET time string "08:30" into the user's local timezone */
+function formatEventTime(t: string | null, eventDate: string, userTZ: string): string {
   if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+  const utcDate = etTimeToUTCDate(eventDate, t);
+  return formatTimeInTZ(utcDate, userTZ);
 }
 
 function impactColor(impact: string) {
@@ -117,7 +118,7 @@ function ColonSep() {
 
 /* ── Next Up Hero Card ── */
 
-function NextUpCard({ events }: { events: MarketEvent[] }) {
+function NextUpCard({ events, userTZ }: { events: MarketEvent[]; userTZ: string }) {
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -147,6 +148,8 @@ function NextUpCard({ events }: { events: MarketEvent[] }) {
 
   const countdown = splitCountdown(diff);
   const isHigh = nextEvent.impact === "high";
+  const tzLabel = getTZAbbr(userTZ);
+
 
   return (
     <div
@@ -173,7 +176,7 @@ function NextUpCard({ events }: { events: MarketEvent[] }) {
           </h3>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-xs font-mono font-semibold text-muted-foreground">
-              {formatTimeET(nextEvent.time_et)} ET
+              {formatEventTime(nextEvent.time_et, nextEvent.date, userTZ)} {tzLabel}
             </span>
             <span
               className={cn(
@@ -224,6 +227,9 @@ function CalendarSkeleton() {
 
 export function EconomicCalendarTab({ active }: Props) {
   const { isLoading, allEvents } = useEconomicCalendar();
+  const { profile } = useAuth();
+  const userTZ = getUserTimezone(profile?.timezone);
+  const tzLabel = getTZAbbr(userTZ);
 
   if (!active) return null;
   if (isLoading) return <CalendarSkeleton />;
@@ -248,7 +254,7 @@ export function EconomicCalendarTab({ active }: Props) {
       </div>
 
       {/* Next Up countdown hero */}
-      <NextUpCard events={allEvents} />
+      <NextUpCard events={allEvents} userTZ={userTZ} />
 
       {dates.length === 0 ? (
         <div className="text-center py-16">
@@ -287,8 +293,8 @@ export function EconomicCalendarTab({ active }: Props) {
                         <div className={cn("w-1 shrink-0", impactColor(e.impact))} />
                         <div className="flex-1 px-4 py-3 flex items-center gap-3">
                           <div className="w-14 shrink-0">
-                            <p className="text-xs font-mono font-semibold text-foreground">{formatTimeET(e.time_et)}</p>
-                            <p className="text-[9px] text-muted-foreground/50">ET</p>
+                            <p className="text-xs font-mono font-semibold text-foreground">{formatEventTime(e.time_et, e.date, userTZ)}</p>
+                            <p className="text-[9px] text-muted-foreground/50">{tzLabel}</p>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{e.event_name}</p>

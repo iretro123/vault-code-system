@@ -3,10 +3,11 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { format, startOfWeek, addDays, isSameDay, isToday, startOfDay } from "date-fns";
-import { formatTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import { Clock, ExternalLink, CalendarPlus, Coffee, ChevronLeft, ChevronRight } from "lucide-react";
 import { playSwipeSound } from "@/lib/nativeFeedback";
+import { formatTimeInTZ, getTZAbbr, getUserTimezone } from "@/lib/userTime";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LiveSession {
   id: string;
@@ -44,6 +45,9 @@ function getSessionLabel(title: string, type: string) {
 }
 
 export function WeekScheduleSheet({ open, onOpenChange, sessions, onJoin, onCalendar }: WeekScheduleSheetProps) {
+  const { profile } = useAuth();
+  const userTZ = getUserTimezone(profile?.timezone);
+  const tzLabel = getTZAbbr(userTZ);
   const now = new Date();
   const todayStart = startOfDay(now);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -208,7 +212,7 @@ export function WeekScheduleSheet({ open, onOpenChange, sessions, onJoin, onCale
             <EmptyDay isToday={isToday(weekDays[selectedDay])} isPast={weekDays[selectedDay] < todayStart} />
           ) : (
             daySessions.map((session) => (
-              <SessionCard key={session.id} session={session} onJoin={onJoin} onCalendar={onCalendar} />
+              <SessionCard key={session.id} session={session} onJoin={onJoin} onCalendar={onCalendar} userTZ={userTZ} tzLabel={tzLabel} />
             ))
           )}
         </div>
@@ -247,10 +251,14 @@ function SessionCard({
   session,
   onJoin,
   onCalendar,
+  userTZ,
+  tzLabel,
 }: {
   session: LiveSession;
   onJoin?: (s: LiveSession) => void;
   onCalendar?: (s: LiveSession) => void;
+  userTZ: string;
+  tzLabel: string;
 }) {
   const dotColor = getSessionDot(session.session_type + session.title);
   const label = getSessionLabel(session.title, session.session_type);
@@ -283,7 +291,7 @@ function SessionCard({
           )}
         </div>
         <span className="text-xs font-semibold text-white/40 tabular-nums">
-          {formatTime(session.session_date)} ET
+          {formatTimeInTZ(session.session_date, userTZ)} {tzLabel}
         </span>
       </div>
 

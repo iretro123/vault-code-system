@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Video, ArrowRight } from "lucide-react";
+import { formatTimeInTZ, getTZAbbr, getUserTimezone } from "@/lib/userTime";
 
 interface LiveSession {
   id: string;
@@ -21,6 +23,9 @@ function splitCountdown(ms: number) {
 
 export function NextGroupCallCard() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const userTZ = getUserTimezone(profile?.timezone);
+  const tzLabel = getTZAbbr(userTZ);
   const [session, setSession] = useState<LiveSession | null>(null);
   const [now, setNow] = useState(Date.now());
   const [loading, setLoading] = useState(true);
@@ -110,7 +115,8 @@ export function NextGroupCallCard() {
         )}
       </div>
 
-      <h3 className="text-base font-semibold text-white mb-4">{session.title}</h3>
+      <h3 className="text-base font-semibold text-white mb-1">{session.title}</h3>
+      <p className="text-xs text-muted-foreground mb-4">{formatTimeInTZ(session.session_date, userTZ)} {tzLabel}</p>
 
       {!isLive && diff > 0 && (
         <div className="flex flex-col items-center gap-2 mb-5">
