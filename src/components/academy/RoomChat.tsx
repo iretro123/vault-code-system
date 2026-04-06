@@ -216,14 +216,14 @@ function renderRecapCard(body: string) {
   );
 }
 
-function renderMentions(text: string, isOwnBubble = false): React.ReactNode {
+function renderMentions(text: string): React.ReactNode {
   // Split on @word patterns and highlight them
   const parts = text.split(/(@\w+)/g);
   if (parts.length === 1) return text;
   return parts.map((part, i) => {
     if (/^@\w+/.test(part)) {
       return (
-        <span key={i} className={isOwnBubble ? "text-white font-semibold" : "text-primary font-semibold"}>
+        <span key={i} className="text-primary font-semibold">
           {part}
         </span>
       );
