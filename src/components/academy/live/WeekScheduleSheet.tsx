@@ -286,7 +286,8 @@ function SessionCard({
           )}
         </div>
         <span className="text-xs font-semibold text-white/40 tabular-nums">
-          {formatTime(session.session_date)} ET
+          {formatTimeInTZ(session.session_date, userTZ)} {tzLabel}
+        </span>
         </span>
       </div>
 
