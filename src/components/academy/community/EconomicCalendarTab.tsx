@@ -13,12 +13,11 @@ interface Props {
 
 /* ── helpers ── */
 
-function formatTimeET(t: string | null): string {
+/** Format an ET time string "08:30" into the user's local timezone */
+function formatEventTime(t: string | null, eventDate: string, userTZ: string): string {
   if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+  const utcDate = etTimeToUTCDate(eventDate, t);
+  return formatTimeInTZ(utcDate, userTZ);
 }
 
 function impactColor(impact: string) {
