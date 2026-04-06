@@ -1,111 +1,146 @@
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
-export interface EconomicEvent {
+export interface MarketEvent {
   id: string;
-  type: "economic";
   date: string;
-  time: string | null;
+  time_et: string | null;
   country: string;
-  event: string;
+  event_name: string;
   impact: "high" | "medium" | "low";
   actual: number | null;
   estimate: number | null;
   prev: number | null;
   unit: string;
+  fetched_at: string;
 }
 
-export interface EarningsEvent {
+export interface MarketEarning {
   id: string;
-  type: "earnings";
   date: string;
   symbol: string;
   hour: string;
-  epsEstimate: number | null;
-  epsActual: number | null;
-  revenueEstimate: number | null;
-  revenueActual: number | null;
+  eps_estimate: number | null;
+  eps_actual: number | null;
+  revenue_estimate: number | null;
+  revenue_actual: number | null;
   quarter: number | null;
   year: number | null;
+  fetched_at: string;
 }
 
-interface CalendarResponse {
-  events: EconomicEvent[];
-  earnings: EarningsEvent[];
-}
+const KEY_EVENT_KEYWORDS = [
+  "FOMC",
+  "Federal Funds Rate",
+  "Fed Interest Rate",
+  "CPI",
+  "Consumer Price Index",
+  "PPI",
+  "Producer Price Index",
+  "Nonfarm Payrolls",
+  "Non-Farm",
+  "NFP",
+  "GDP",
+  "Gross Domestic Product",
+  "Unemployment Rate",
+  "Initial Jobless Claims",
+  "Fed Chair",
+  "Federal Reserve",
+];
 
-function getDateStr(offset: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return d.toISOString().split("T")[0];
+function isKeyEvent(name: string): boolean {
+  const upper = name.toUpperCase();
+  return KEY_EVENT_KEYWORDS.some((kw) => upper.includes(kw.toUpperCase()));
 }
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
 }
 
-async function fetchCalendar(): Promise<CalendarResponse> {
-  const from = getDateStr(0);
-  const to = getDateStr(14);
+async function fetchEvents(): Promise<MarketEvent[]> {
+  const today = todayStr();
+  const twoWeeks = new Date();
+  twoWeeks.setDate(twoWeeks.getDate() + 14);
+  const toStr = twoWeeks.toISOString().split("T")[0];
 
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-  const url = `https://${projectId}.supabase.co/functions/v1/economic-calendar?from=${from}&to=${to}`;
+  const { data, error } = await supabase
+    .from("market_events")
+    .select("*")
+    .gte("date", today)
+    .lte("date", toStr)
+    .eq("country", "US")
+    .order("date", { ascending: true });
 
-  const res = await fetch(url, {
-    headers: {
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-  });
+  if (error) throw error;
+  return (data || []) as MarketEvent[];
+}
 
-  if (!res.ok) throw new Error("Failed to fetch calendar data");
-  return res.json();
+async function fetchEarnings(): Promise<MarketEarning[]> {
+  const today = todayStr();
+  const twoWeeks = new Date();
+  twoWeeks.setDate(twoWeeks.getDate() + 14);
+  const toStr = twoWeeks.toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("market_earnings")
+    .select("*")
+    .gte("date", today)
+    .lte("date", toStr)
+    .order("date", { ascending: true })
+    .limit(100);
+
+  if (error) throw error;
+  return (data || []) as MarketEarning[];
 }
 
 export function useEconomicCalendar() {
-  const query = useQuery({
-    queryKey: ["economic-calendar"],
-    queryFn: fetchCalendar,
-    staleTime: 30 * 60 * 1000,
-    refetchInterval: 30 * 60 * 1000,
+  const eventsQuery = useQuery({
+    queryKey: ["market-events"],
+    queryFn: fetchEvents,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: 15 * 60 * 1000,
   });
 
+  const earningsQuery = useQuery({
+    queryKey: ["market-earnings"],
+    queryFn: fetchEarnings,
+    staleTime: 15 * 60 * 1000,
+    refetchInterval: 15 * 60 * 1000,
+  });
+
+  const allEvents = eventsQuery.data || [];
+  const allEarnings = earningsQuery.data || [];
   const today = todayStr();
 
-  const todayEvents = (query.data?.events || []).filter(
-    (e) => e.date === today && e.country === "US"
+  const todayEvents = allEvents.filter((e) => e.date === today);
+  const thisWeekHighImpact = allEvents.filter(
+    (e) => e.impact === "high" && e.date > today
   );
 
-  const thisWeekEvents = (query.data?.events || []).filter(
-    (e) => e.date > today && e.country === "US"
-  );
-
-  const allUsEvents = (query.data?.events || []).filter(
-    (e) => e.country === "US"
-  );
-
-  const upcomingEarnings = (query.data?.earnings || []).slice(0, 40);
+  // Next major event (FOMC, CPI, etc.)
+  const nextMajorEvent =
+    allEvents.find((e) => isKeyEvent(e.event_name) && e.date >= today) || null;
 
   // Group earnings by date
-  const earningsByDate: Record<string, EarningsEvent[]> = {};
-  upcomingEarnings.forEach((e) => {
+  const earningsByDate: Record<string, MarketEarning[]> = {};
+  allEarnings.forEach((e) => {
     if (!earningsByDate[e.date]) earningsByDate[e.date] = [];
     earningsByDate[e.date].push(e);
   });
 
-  // Stats
-  const highImpactCount = allUsEvents.filter((e) => e.impact === "high").length;
-  const earningsCount = upcomingEarnings.length;
+  const highImpactCount = allEvents.filter((e) => e.impact === "high").length;
 
   return {
-    ...query,
+    isLoading: eventsQuery.isLoading || earningsQuery.isLoading,
+    isError: eventsQuery.isError || earningsQuery.isError,
+    allEvents,
+    allEarnings,
     todayEvents,
-    thisWeekEvents,
-    upcomingEarnings,
+    thisWeekHighImpact,
+    nextMajorEvent,
     earningsByDate,
     highImpactCount,
-    earningsCount,
-    allEvents: query.data?.events || [],
-    allEarnings: query.data?.earnings || [],
-    lastUpdated: query.dataUpdatedAt,
+    earningsCount: allEarnings.length,
+    lastUpdated: eventsQuery.dataUpdatedAt || earningsQuery.dataUpdatedAt,
   };
 }
