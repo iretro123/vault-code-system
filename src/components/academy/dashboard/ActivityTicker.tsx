@@ -59,6 +59,12 @@ const icon = (type: TickerItem["type"]) => {
           <BookOpen className="h-3 w-3 text-blue-400" />
         </span>
       );
+    case "win":
+      return (
+        <span className="relative flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/15 shrink-0">
+          <Trophy className="h-3 w-3 text-yellow-400" />
+        </span>
+      );
   }
 };
 
