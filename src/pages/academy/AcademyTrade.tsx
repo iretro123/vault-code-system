@@ -704,7 +704,7 @@ const AcademyTrade = () => {
           <h1 className="text-2xl md:text-[28px] font-bold text-foreground mt-2 tracking-tight leading-tight" style={{ textShadow: "0 2px 12px rgba(0,0,0,0.25)" }}>
             Trade OS
           </h1>
-          <p className="text-[11px] text-muted-foreground/50 font-medium mt-1 tracking-wide">Your center of operations</p>
+          <p className="text-[11px] text-muted-foreground/50 font-medium mt-1 tracking-wide"><p className="text-[11px] text-muted-foreground/50 font-medium mt-1 tracking-wide">Open this before every session.</p></p>
         </div>
 
         {/* ══════ STATUS STRIP ══════ */}
