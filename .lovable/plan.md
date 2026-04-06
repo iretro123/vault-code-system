@@ -1,54 +1,49 @@
 
 
-## Upgrade Economic Calendar — Scrape MarketWatch Instead of FearGreedMeter
-
-### Problem
-FearGreedMeter parsing is unreliable and missing most of this week's events. Forex Factory is fully JS-rendered and blocks scraping. We need a source that returns clean, structured data with times, forecasts, actuals, and previous values.
-
-### Solution
-**Switch to MarketWatch** (`marketwatch.com/economy-politics/calendar`). It returns a clean HTML table with:
-- Time in ET (e.g. "8:30 am")
-- Report name (e.g. "CPI year over year", "Initial jobless claims")
-- Period (e.g. "March", "Q4")
-- Actual value (filled after release)
-- Median Forecast
-- Previous value
-
-This gives us 30+ events per week including Fed speakers, all the key releases (CPI, PPI, PCE, GDP, NFP, ISM, jobless claims, housing, consumer sentiment), and two weeks of forward-looking data.
+## Manual Data Fix + Countdown Timer for Economic Calendar
 
 ### What Changes
 
-**File: `supabase/functions/economic-calendar/index.ts`**
+**1. Insert missing events from Forex Factory screenshot**
 
-Replace the `parseFearGreedMeterEvents` scraping block with:
-1. Fetch `https://www.marketwatch.com/economy-politics/calendar` as HTML/text
-2. Parse the markdown-style table rows — MarketWatch returns clean table structure
-3. Extract date headers (e.g. "MONDAY, APRIL 6"), time ET, report name, period, actual, forecast, previous
-4. Normalize into existing `market_events` table columns: `id`, `date`, `time_et`, `country`, `event_name`, `impact`, `actual`, `estimate`, `prev`, `unit`
-5. Classify impact using existing keyword logic (FOMC/CPI/NFP/GDP = high, PPI/PMI/housing = medium, etc.)
-6. Parse numeric values from strings like "55.4%", "$10.0 billion", "202,000"
+The current database has 25 events but is missing key Friday Apr 10 items (CPI reports, UoM data) and some impact levels are wrong. Will:
+- Add Core CPI m/m, CPI m/m, CPI y/y for Apr 10 (all HIGH impact)
+- Add Prelim UoM Consumer Sentiment and Inflation Expectations for Apr 10
+- Add GDP Price Index q/q for Apr 9
+- Fix ISM Services impact from "medium" → "high"
+- Update Durable Goods estimate to match FF data (0.5% for core)
 
-Remove all `parseFearGreedMeterEvents`, `isLikelyEventName`, `extractTimeFromNearbyLines` helper functions — replaced by cleaner MarketWatch parsing.
+**2. Add countdown timer for today's next upcoming event**
 
-Keep Finnhub for earnings (already working with 418 records).
+At the top of the calendar, show a "Next Up" hero card for the nearest future event today with a live countdown using the same Pill/Colon style from `NextGroupCallCard`:
+- Glass card with event name, time, impact badge
+- Countdown pills: `HH : MM : SS`
+- Only shows for today's events that haven't passed yet
+- Disappears when no more events today
 
-### Data Quality Improvement
+**3. Premium UI polish**
 
-| Field | FearGreedMeter | MarketWatch |
-|-------|---------------|-------------|
-| Time ET | Unreliable extraction | Clean "8:30 am" format |
-| Forecast | Not available | Median forecast included |
-| Previous | Not available | Previous value included |
-| Actual | Not available | Filled after release |
-| Period | Not available | "March", "Q4", etc. |
-| Fed speakers | Missing | Included with times |
-| Coverage | ~10-15 events | 30+ events per week |
+- "Next Up" card: `bg-white/[0.03] backdrop-blur border border-white/[0.06] rounded-2xl` with subtle glow for high-impact
+- Keep current event list below but add subtle "TODAY" highlight on today's date section
+- Impact badges get slightly larger with icon dots
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `supabase/functions/economic-calendar/index.ts` | Replace FearGreedMeter scraping with MarketWatch parsing |
+| `market_events` table | Insert ~7 missing events, update ~2 impact levels via SQL |
+| `src/components/academy/community/EconomicCalendarTab.tsx` | Add countdown timer hero card + today highlight |
 
-No new tables, no new secrets, no UI changes. The `useEconomicCalendar` hook and `EconomicCalendarTab` component already render whatever is in `market_events` — they'll now show richer data with forecasts, actuals, and previous values.
+### Data to Insert
+
+| Event | Date | Time | Impact | Forecast | Previous |
+|-------|------|------|--------|----------|----------|
+| Core CPI m/m | Apr 10 | 08:30 | high | 0.3% | 0.2% |
+| CPI m/m | Apr 10 | 08:30 | high | 1.0% | 0.3% |
+| CPI y/y | Apr 10 | 08:30 | high | 3.4% | 2.4% |
+| Prelim UoM Consumer Sentiment | Apr 10 | 10:00 | medium | 52.1 | — |
+| Prelim UoM Inflation Expectations | Apr 10 | 10:00 | medium | — | — |
+| GDP Price Index q/q | Apr 9 | 08:30 | medium | 3.8% | 3.8% |
+
+Update ISM Services impact → "high"
 
