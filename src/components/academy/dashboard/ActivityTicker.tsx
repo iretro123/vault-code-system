@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, BookOpen } from "lucide-react";
+import { BookOpen, PenLine, Video } from "lucide-react";
 
 interface TickerItem {
   id: string;
   text: string;
-  type: "win" | "lesson";
+  type: "call" | "journal" | "lesson";
 }
 
 const CACHE_KEY = "va_activity_ticker";
@@ -52,13 +52,16 @@ export function ActivityTicker() {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString();
 
     const fetchAll = async () => {
-      const [winsRes, lessonsRes] = await Promise.all([
+      const [attendanceRes, journalRes, lessonsRes] = await Promise.all([
         supabase
-          .from("academy_messages")
-          .select("id, user_name, created_at")
-          .eq("room_slug", "wins-proof")
-          .eq("is_deleted", false)
-          .is("parent_message_id", null)
+          .from("live_session_attendance")
+          .select("id, user_id, clicked_at")
+          .gte("clicked_at", since)
+          .order("clicked_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("journal_entries")
+          .select("id, user_id, created_at")
           .gte("created_at", since)
           .order("created_at", { ascending: false })
           .limit(10),
@@ -71,15 +74,40 @@ export function ActivityTicker() {
           .limit(10),
       ]);
 
+      // Collect unique user_ids to fetch display names
+      const allUserIds = new Set<string>();
+      (attendanceRes.data ?? []).forEach((r: any) => allUserIds.add(r.user_id));
+      (journalRes.data ?? []).forEach((r: any) => allUserIds.add(r.user_id));
+      (lessonsRes.data ?? []).forEach((r: any) => allUserIds.add(r.user_id));
+
+      if (allUserIds.size === 0) return;
+
+      // Batch fetch display names from profiles
+      const { data: profiles } = await supabase
+        .rpc("get_community_profiles", { _user_ids: Array.from(allUserIds) });
+
+      const nameMap = new Map<string, string>();
+      if (profiles) {
+        for (const p of profiles) {
+          const first = ((p as any).display_name || "A student").split(" ")[0];
+          nameMap.set((p as any).user_id, first);
+        }
+      }
+
+      const getName = (uid: string) => nameMap.get(uid) || "A student";
+
       const result: TickerItem[] = [];
 
-      (winsRes.data ?? []).forEach((w: any) => {
-        const firstName = (w.user_name || "A trader").split(" ")[0];
-        result.push({ id: `w-${w.id}`, text: `${firstName} just posted a win 🏆`, type: "win" });
+      (attendanceRes.data ?? []).forEach((r: any) => {
+        result.push({ id: `c-${r.id}`, text: `${getName(r.user_id)} joined a live call`, type: "call" });
       });
 
-      (lessonsRes.data ?? []).forEach((l: any) => {
-        result.push({ id: `l-${l.id}`, text: `A student completed a lesson 📚`, type: "lesson" });
+      (journalRes.data ?? []).forEach((r: any) => {
+        result.push({ id: `j-${r.id}`, text: `${getName(r.user_id)} journaled a trade`, type: "journal" });
+      });
+
+      (lessonsRes.data ?? []).forEach((r: any) => {
+        result.push({ id: `l-${r.id}`, text: `${getName(r.user_id)} watched a lesson`, type: "lesson" });
       });
 
       if (result.length === 0) return;
@@ -92,12 +120,12 @@ export function ActivityTicker() {
     fetchAll();
   }, []);
 
-  // Auto-rotate every 4s
+  // Auto-rotate every 5s
   useEffect(() => {
     if (items.length < 2) return;
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % items.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [items.length]);
 
@@ -105,14 +133,18 @@ export function ActivityTicker() {
 
   if (displayItems.length === 0) return null;
 
-  const current = displayItems[activeIndex % displayItems.length];
-
   const icon = (type: TickerItem["type"]) => {
     switch (type) {
-      case "win":
+      case "call":
+        return (
+          <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/15">
+            <Video className="h-3.5 w-3.5 text-emerald-400" />
+          </span>
+        );
+      case "journal":
         return (
           <span className="relative flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/15">
-            <Trophy className="h-3.5 w-3.5 text-amber-400" />
+            <PenLine className="h-3.5 w-3.5 text-amber-400" />
           </span>
         );
       case "lesson":
@@ -136,18 +168,6 @@ export function ActivityTicker() {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
 
       <div className="flex items-center gap-3">
-        {/* LIVE pulse */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-          </span>
-          <span className="text-[10px] font-semibold tracking-wider text-emerald-400/80 uppercase">Live</span>
-        </div>
-
-        {/* Separator */}
-        <div className="w-px h-4 bg-white/[0.08] shrink-0" />
-
         {/* Card content — crossfade */}
         <div className="flex-1 relative h-6 overflow-hidden">
           {displayItems.map((item, i) => (
