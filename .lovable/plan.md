@@ -1,41 +1,39 @@
 
 
-## Redesign Activity Ticker — Luxury Card Carousel (Max 3 Items)
+## Redesign Activity Ticker — Remove LIVE, Add Real Activity Data, Auto-Swipe Slower
 
-### What Changes
+### Changes to `src/components/academy/dashboard/ActivityTicker.tsx`
 
-Replace the infinite scrolling marquee with a **single-card auto-swipe carousel** showing 3 activity items max. Each item displays as its own luxury dark card that fades/slides to the next one every ~4 seconds.
+**1. Remove the "LIVE" indicator** — Delete the green pulsing dot + "LIVE" label and the separator line next to it.
 
-### Design
+**2. Fetch real user activity from 3 sources** (instead of just wins + lessons):
+   - `live_session_attendance` → "{firstName} joined a live call"
+   - `journal_entries` → "{firstName} journaled a trade"  
+   - `lesson_progress` joined with `academy_lessons` → "{firstName} watched a lesson"
+   
+   For journal entries and attendance, fetch the user's `display_name` from `profiles` using the `user_id`. Query last 7 days, limit 10 each.
 
-- **Max 3 items** picked from recent wins + lesson completions (shuffled)
-- **One card visible at a time**, auto-rotating with a smooth crossfade + slight translateX transition (~500ms)
-- **Dark luxury card style** matching vault-luxury-card system: dark radial gradient background, 1px blue shimmer top border, subtle shadow
-- **Personalized text**: "Edward just posted a win", "Alex completed Module 3", "A student finished a lesson"
-- **Colored icon glow** per type (amber for wins, blue for lessons)
-- **3 dot indicators** at the bottom showing which card is active (blue dot = active)
-- **"LIVE" pulse** — small green pulsing dot + "LIVE" label on the left
+**3. Add a new type** `"journal" | "call" | "lesson"` with appropriate icons (PenLine for journal, Video for call, BookOpen for lesson).
 
-### Implementation
+**4. Slow down auto-swipe** — Change interval from 4000ms to 5000ms for a more relaxed pace.
 
-**File: `src/components/academy/dashboard/ActivityTicker.tsx`** — Full rewrite:
+**5. Keep the same luxury dark card styling** — radial gradient, shimmer top edge, dot indicators, crossfade + translateX transition. Just remove the LIVE section.
 
-1. Keep existing data fetching logic (wins + lessons from Supabase, localStorage cache)
-2. Slice to max 3 items instead of 15
-3. Replace CSS marquee with a `useState` index that auto-increments every 4s via `setInterval`
-4. Render one item at a time with `transition-all duration-500` (opacity + translateX)
-5. Dark card styling:
-   ```
-   bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.08),transparent_70%)]
-   bg-[hsl(222,20%,10%)] border border-white/[0.06]
-   shadow-[0_0_20px_rgba(59,130,246,0.05)]
-   ```
-6. 3 small dots at bottom right showing position
-7. Green pulsing "LIVE" indicator at left edge
+### Data Fetching Logic
+
+```
+// 3 parallel queries:
+1. live_session_attendance (last 7d) → get user_id, join profiles for display_name
+2. journal_entries (last 7d) → get user_id, join profiles for display_name  
+3. lesson_progress + academy_lessons (last 7d, completed=true) → get user_id, lesson title
+
+// Since lesson_progress and journal_entries don't have user names,
+// collect all unique user_ids, then batch-fetch first names from profiles table
+```
 
 ### File
 
 | File | Change |
 |------|--------|
-| `src/components/academy/dashboard/ActivityTicker.tsx` | Full rewrite — luxury single-card carousel, max 3 items, auto-swipe |
+| `src/components/academy/dashboard/ActivityTicker.tsx` | Remove LIVE indicator, fetch from 3 real activity tables, slow interval to 5s |
 
