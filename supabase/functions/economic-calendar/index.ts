@@ -17,7 +17,6 @@ Deno.serve(async (req) => {
 
     // ── REFRESH MODE: called by pg_cron ──
     if (mode === "refresh") {
-      const fmpKey = Deno.env.get("FMP_API_KEY");
       const finnhubKey = Deno.env.get("FINNHUB_API_KEY");
 
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -30,31 +29,19 @@ Deno.serve(async (req) => {
       let eventsCount = 0;
       let earningsCount = 0;
 
-      // ── Economic Calendar: FMP ──
-      if (fmpKey) {
-        const econRes = await fetch(
-          `https://financialmodelingprep.com/api/v3/economic_calendar?from=${from}&to=${to}&apikey=${fmpKey}`
-        );
-        const econData = await econRes.json();
-        const rawEvents = Array.isArray(econData) ? econData : [];
-        console.log(`FMP economic: ${rawEvents.length} raw events, sample countries: ${[...new Set(rawEvents.slice(0,20).map((e:any)=>e.country))].join(',')}`);
-        if (rawEvents.length > 0) console.log("FMP sample:", JSON.stringify(rawEvents[0]).slice(0, 300));
+      // ── Economic Calendar: Scrape feargreedmeter.com ──
+      try {
+        const fgmRes = await fetch("https://feargreedmeter.com/events", {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; VaultBot/1.0)",
+            Accept: "text/html",
+          },
+        });
+        const html = await fgmRes.text();
+        console.log(`FearGreedMeter HTML length: ${html.length}`);
 
-        const events = rawEvents
-          .filter((e: any) => (e.country || "").toUpperCase() === "US")
-          .map((e: any) => ({
-            id: `econ-${slugify(e.event)}-${e.date}`,
-            date: (e.date || "").split("T")[0],
-            time_et: extractTime(e.date) || null,
-            country: "US",
-            event_name: e.event || "Unknown",
-            impact: (e.impact || "Low").toLowerCase(),
-            actual: parseNum(e.actual),
-            estimate: parseNum(e.estimate ?? e.consensus),
-            prev: parseNum(e.previous),
-            unit: e.unit || e.currency || "",
-            fetched_at: new Date().toISOString(),
-          }));
+        const events = parseFearGreedMeterEvents(html);
+        console.log(`Parsed ${events.length} economic events from feargreedmeter.com`);
 
         if (events.length > 0) {
           await sb.from("market_events").delete().lt("date", from);
@@ -65,10 +52,10 @@ Deno.serve(async (req) => {
               .upsert(chunk, { onConflict: "id" });
             if (error) console.error("market_events upsert:", error.message);
           }
+          eventsCount = events.length;
         }
-        eventsCount = events.length;
-      } else {
-        console.error("FMP_API_KEY not configured — skipping economic calendar");
+      } catch (err) {
+        console.error("Failed to scrape feargreedmeter.com:", (err as Error).message);
       }
 
       // ── Earnings Calendar: Finnhub ──
@@ -151,6 +138,148 @@ Deno.serve(async (req) => {
   }
 });
 
+// ── Parse feargreedmeter.com/events HTML ──
+function parseFearGreedMeterEvents(html: string): any[] {
+  const events: any[] = [];
+
+  // The page has event blocks with dates and event names
+  // Pattern: date headers followed by event entries
+  // Look for structured event data in the HTML
+
+  // Extract event blocks - they typically have a date, title, and sometimes time/details
+  // Try multiple parsing strategies
+
+  // Strategy 1: Look for event cards/blocks with dates
+  const datePattern = /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[\s·,]+([A-Z][a-z]+)\s+(\d{1,2}),?\s*(\d{4})?/gi;
+  const eventTitlePattern = /<h[2-4][^>]*>([^<]+)<\/h[2-4]>/gi;
+
+  // Strategy 2: Look for structured data - many calendar sites use JSON-LD or structured divs
+  const jsonLdMatch = html.match(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+  if (jsonLdMatch) {
+    try {
+      const ld = JSON.parse(jsonLdMatch[1]);
+      console.log("Found JSON-LD data:", JSON.stringify(ld).slice(0, 200));
+    } catch {}
+  }
+
+  // Strategy 3: Parse the visible text content for event patterns
+  // Remove HTML tags to get clean text
+  const text = html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, "\n")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#\d+;/g, "")
+    .replace(/\n{3,}/g, "\n\n");
+
+  // Look for date + event name patterns in the text
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+
+  let currentDate: string | null = null;
+  const currentYear = new Date().getFullYear();
+
+  const monthMap: Record<string, string> = {
+    jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
+    jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
+    january: "01", february: "02", march: "03", april: "04",
+    june: "06", july: "07", august: "08", september: "09",
+    october: "10", november: "11", december: "12",
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Match date patterns like "Apr 09, 2026" or "April 9, 2026" or "Thu · Apr 09"
+    const dateMatch = line.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[\s·,]*([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})?/i)
+      || line.match(/([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})/i);
+
+    if (dateMatch) {
+      const monthStr = dateMatch[1].toLowerCase();
+      const day = dateMatch[2].padStart(2, "0");
+      const year = dateMatch[3] || currentYear.toString();
+      const month = monthMap[monthStr];
+      if (month) {
+        currentDate = `${year}-${month}-${day}`;
+        continue;
+      }
+    }
+
+    // If we have a current date, check if this line looks like an event name
+    if (currentDate && isLikelyEventName(line)) {
+      // Look ahead for time info
+      const timeStr = extractTimeFromNearbyLines(lines, i);
+      const impact = classifyImpact(line);
+
+      events.push({
+        id: `econ-${slugify(line)}-${currentDate}`,
+        date: currentDate,
+        time_et: timeStr,
+        country: "US",
+        event_name: line,
+        impact,
+        actual: null,
+        estimate: null,
+        prev: null,
+        unit: "",
+        fetched_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  // Deduplicate by id
+  const seen = new Set<string>();
+  return events.filter((e) => {
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  });
+}
+
+function isLikelyEventName(line: string): boolean {
+  const keywords = [
+    "CPI", "PPI", "FOMC", "Fed", "Federal", "NFP", "Nonfarm", "Non-Farm", "Fed Meeting",
+    "GDP", "Unemployment", "Jobless", "Employment", "Payroll", "Retail Sales",
+    "Consumer", "Producer", "Interest Rate", "Housing", "PMI", "ISM",
+    "Trade Balance", "Durable Goods", "Industrial Production", "Existing Home",
+    "New Home", "Building Permits", "Consumer Confidence", "Michigan",
+    "PCE", "Core PCE", "Treasury", "Beige Book", "Minutes",
+    "Inflation", "Jobs Report", "Labor", "Wage",
+  ];
+  const upper = line.toUpperCase();
+  return keywords.some((kw) => upper.includes(kw.toUpperCase())) && line.length < 120;
+}
+
+function classifyImpact(name: string): string {
+  const upper = name.toUpperCase();
+  const high = ["FOMC", "FEDERAL FUNDS", "FED INTEREST", "CPI", "CONSUMER PRICE",
+    "NFP", "NONFARM", "NON-FARM", "GDP", "GROSS DOMESTIC", "FED CHAIR",
+    "INFLATION REPORT", "JOBS REPORT", "PCE", "CORE PCE", "FED MEETING"];
+  const medium = ["PPI", "PRODUCER PRICE", "UNEMPLOYMENT", "JOBLESS", "RETAIL SALES",
+    "PMI", "ISM", "DURABLE GOODS", "EMPLOYMENT", "PAYROLL", "HOUSING",
+    "CONSUMER CONFIDENCE", "MICHIGAN", "TRADE BALANCE"];
+
+  if (high.some((kw) => upper.includes(kw))) return "high";
+  if (medium.some((kw) => upper.includes(kw))) return "medium";
+  return "low";
+}
+
+function extractTimeFromNearbyLines(lines: string[], idx: number): string | null {
+  // Check current line and next 2 lines for time patterns
+  for (let j = idx; j < Math.min(idx + 3, lines.length); j++) {
+    const timeMatch = lines[j].match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?\s*(E[SDT]T|Eastern)?/i);
+    if (timeMatch) {
+      let h = parseInt(timeMatch[1]);
+      const m = timeMatch[2];
+      const ampm = timeMatch[3]?.toUpperCase();
+      if (ampm === "PM" && h < 12) h += 12;
+      if (ampm === "AM" && h === 12) h = 0;
+      return `${h.toString().padStart(2, "0")}:${m}`;
+    }
+  }
+  return null;
+}
+
 function getDateStr(daysOffset: number): string {
   const d = new Date();
   d.setDate(d.getDate() + daysOffset);
@@ -159,22 +288,4 @@ function getDateStr(daysOffset: number): string {
 
 function slugify(s: string): string {
   return (s || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
-}
-
-function extractTime(dateStr: string): string | null {
-  if (!dateStr || !dateStr.includes("T")) return null;
-  try {
-    const d = new Date(dateStr);
-    const h = d.getUTCHours().toString().padStart(2, "0");
-    const m = d.getUTCMinutes().toString().padStart(2, "0");
-    return `${h}:${m}`;
-  } catch {
-    return null;
-  }
-}
-
-function parseNum(v: any): number | null {
-  if (v === null || v === undefined || v === "") return null;
-  const n = Number(v);
-  return isNaN(n) ? null : n;
 }
