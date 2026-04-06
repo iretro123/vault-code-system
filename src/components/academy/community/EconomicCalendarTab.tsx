@@ -11,6 +11,14 @@ interface Props {
 
 /* ── helpers ── */
 
+function formatTimeET(t: string | null): string {
+  if (!t) return "—";
+  const [h, m] = t.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+}
+
 function impactColor(impact: string) {
   if (impact === "high") return "bg-red-500";
   if (impact === "medium") return "bg-amber-400";
