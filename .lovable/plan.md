@@ -1,57 +1,93 @@
 
 
-## Redesign Calendar Tab — Premium Earnings Whisper + News Cockpit
+## Upgrade Calendar Tab — Premium Market Intelligence Cockpit
 
-### Problem
-Current calendar tab is a flat list of rows with no visual hierarchy, no date context on earnings, no sectioning — it looks like a basic data dump. Needs to feel like a premium trading intelligence cockpit.
+### What Changes
 
-### Design Overhaul
+The existing Calendar tab gets a major upgrade: server-side data caching (no more live API calls per user), premium glass-card UI redesign, and curated market event sections focused on what traders actually need.
 
-**Two distinct sections with visual separation:**
+### Architecture Change
 
-#### 1. Economic News Section (Top)
-- **"News & Events" header** with live pulse dot
-- **Today's highlight card** — if there's a high-impact event today, show it as a hero card with large text, countdown timer ("Drops in 2h 15m"), and glowing red/amber border based on impact
-- **Weekly timeline** — keep the day pills but make them larger, more Robinhood-like with event count badges
-- **Event rows redesigned** — taller cards, left impact bar stays but add time in large mono font on left side, event name prominent, Prev/Est/Act in a clean 3-column grid on right with subtle dividers
-- **Group by time of day** — "Pre-Market (8:30 AM ET)" / "Market Hours" / "After Hours" sub-headers
+```text
+Current:  User opens tab → Edge function → Finnhub API (every request)
+New:      Cron job (every 6h) → Edge function → Finnhub → Supabase table
+          User opens tab → Read from Supabase table (instant, cached)
+```
 
-#### 2. Earnings Section (Bottom)
-- **"Earnings This Week" header** with calendar icon
-- **Date-grouped earnings** — group by date with sticky date headers ("Monday, Apr 7" / "Tuesday, Apr 8")
-- **Earnings cards redesigned** — each card shows:
-  - Large ticker in bold mono (left)
-  - Company timing badge ("BMO" / "AMC") with color coding
-  - Date shown explicitly ("Apr 7")
-  - EPS Est / EPS Act in clean columns
-  - Revenue Est if available
-- **Visual density** — compact but readable, show 8-10 per visible scroll area
-- Cards get a subtle green/red tint when actual beats/misses estimate
+### Step 1: Create `market_events` and `market_earnings` Tables
 
-#### 3. Additional Premium Touches
-- **"Market Pulse" status strip** at very top — one-liner: "3 high-impact events this week · 47 earnings reports"
-- **Smooth skeleton loading** with shimmer
-- **Auto-refresh indicator** — small "Updated 5m ago" timestamp
-- **Filter pills** — "All" / "High Impact Only" / "Earnings Only" toggle
+Two tables to cache normalized data server-side:
 
-### Hook Fix
-The current hook makes a duplicate call (supabase.functions.invoke AND fetch). Remove the first dead call. Also group earnings by date for the new UI.
+**`market_events`** — economic calendar events
+- `id` (text PK), `date`, `time_et`, `country`, `event_name`, `impact` (high/medium/low), `actual`, `estimate`, `prev`, `unit`, `fetched_at`
+
+**`market_earnings`** — earnings calendar
+- `id` (text PK), `date`, `symbol`, `hour`, `eps_estimate`, `eps_actual`, `revenue_estimate`, `revenue_actual`, `quarter`, `year`, `fetched_at`
+
+RLS: SELECT for authenticated users (read-only). No INSERT/UPDATE/DELETE from client.
+
+### Step 2: Update Edge Function `economic-calendar`
+
+Add two modes:
+- **`?mode=refresh`** — called by cron, fetches Finnhub, upserts into tables, requires service role key
+- **Default GET** — reads from Supabase tables (fast cached response), no Finnhub call
+
+### Step 3: Schedule Cron Job
+
+Use `pg_cron` + `pg_net` to call the edge function with `?mode=refresh` every 6 hours.
+
+### Step 4: Update `useEconomicCalendar` Hook
+
+Switch from calling the edge function to querying the Supabase tables directly via the JS client. Add client-side filtering for key event types (FOMC, CPI, PPI, NFP, GDP, unemployment, Fed).
+
+### Step 5: Redesign `EconomicCalendarTab` UI
+
+Full rewrite with premium Vault OS glass-card design. Four distinct sections:
+
+**A. Next Major Event (Hero Card)**
+- Full-width glass card with glowing border based on impact
+- Large event name, countdown timer, date/time in ET
+- Prev / Forecast / Actual columns
+- Only shows FOMC, CPI, PPI, NFP, GDP, or unemployment events
+
+**B. Today's U.S. Market Events**
+- Stacked glass cards for each event happening today
+- Left impact bar (red/amber/muted), time in ET, event name
+- Clean 3-column data grid (Prev / Est / Act)
+- Empty state: "No events scheduled today"
+
+**C. This Week's High Impact Events**
+- Date-grouped sections with sticky headers
+- Only high-impact US events shown
+- Same card style as Today section
+
+**D. Upcoming Earnings**
+- Date-grouped earnings with monospace ticker pills
+- BMO/AMC timing badges
+- EPS estimate + revenue columns
+- Subtle beat/miss tinting when actuals available
+
+**Design tokens:**
+- Cards: `bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl`
+- Section spacing: `space-y-6`, `px-5 py-4`
+- Impact colors: red-500 (high), amber-400 (medium), muted (low)
+- Typography: mono for numbers/times, semibold labels, bold section headers
+- No tables — all card-based layout
+- Mobile: single column stacked. Desktop: single column (it lives inside a tab panel)
 
 ### Files
 
 | File | Action |
 |------|--------|
-| `src/components/academy/community/EconomicCalendarTab.tsx` | Full rewrite |
-| `src/hooks/useEconomicCalendar.ts` | Fix duplicate fetch, add date-grouped earnings |
+| Migration | Create `market_events` + `market_earnings` tables with RLS |
+| `supabase/functions/economic-calendar/index.ts` | Rewrite: add refresh mode + read-from-DB mode |
+| `supabase/config.toml` | Add pg_cron/pg_net extension enablement if needed |
+| `src/hooks/useEconomicCalendar.ts` | Rewrite: query Supabase tables directly |
+| `src/components/academy/community/EconomicCalendarTab.tsx` | Full UI rewrite with glass-card premium design |
+| pg_cron SQL (via insert tool) | Schedule 6-hour refresh job |
 
-Edge function stays as-is — data is fine, only the UI needs the overhaul.
-
-### Key Design Tokens
-- Cards: `bg-card/80 border border-white/[0.06] rounded-2xl` (vault-luxury style)
-- Impact high: red-500 bar + `bg-red-500/5` card tint
-- Impact medium: amber-400 bar
-- Earnings beat: subtle `bg-emerald-500/5` tint
-- Earnings miss: subtle `bg-red-500/5` tint
-- Typography: mono for numbers/tickers, semibold for labels
-- Spacing: generous padding (px-4 py-3.5), 16px border radius
+### What Stays the Same
+- The "Calendar" tab position in the Community page
+- The `AcademyCommunity.tsx` page structure — no changes needed
+- Finnhub as data source (just cached server-side now)
 
