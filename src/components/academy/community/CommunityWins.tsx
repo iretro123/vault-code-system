@@ -142,8 +142,8 @@ export function CommunityWins() {
                     <p className="text-[15px] text-[hsl(220,10%,35%)] leading-[1.65] whitespace-pre-line line-clamp-4">{win.body}</p>
                   )}
 
-                  {/* Fire reaction */}
-                  <div className="flex items-center pt-1">
+                  {/* Fire reaction + Share */}
+                  <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={() => toggleReaction(win.id, "🔥" as ReactionEmoji)}
                       className={cn(
@@ -155,6 +155,13 @@ export function CommunityWins() {
                     >
                       <Flame className="h-4 w-4" />
                       {fireReaction?.count ?? 0}
+                    </button>
+                    <button
+                      onClick={() => setShareWin(win)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all bg-[hsl(220,10%,95%)] border-[hsl(220,10%,85%)] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] hover:bg-[hsl(220,10%,90%)]"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Share
                     </button>
                   </div>
                 </div>
