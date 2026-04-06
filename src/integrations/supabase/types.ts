@@ -2971,6 +2971,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_recent_activity: {
+        Args: never
+        Returns: {
+          activity_at: string
+          activity_id: string
+          activity_type: string
+          user_id: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
