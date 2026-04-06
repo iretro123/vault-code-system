@@ -97,6 +97,9 @@ const AcademyCommunity = () => {
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />
             </div>
+            <div className={cn("absolute inset-0", activeTab === "calendar" ? "block" : "hidden")}>
+              <EconomicCalendarTab active={activeTab === "calendar"} />
+            </div>
           </div>
         </div>
       </div>
