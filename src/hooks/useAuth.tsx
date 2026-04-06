@@ -55,6 +55,16 @@ function readCache<T>(key: string, fallback: T): T {
   } catch { return fallback; }
 }
 
+const CACHE_KEYS = [
+  PROFILE_CACHE_KEY, ROLE_CACHE_KEY,
+  "va_cache_inbox", "va_cache_referral", "va_cache_onboarding",
+  "va_inbox_open", "va_cache_academy_rbac", "va_cache_user_tasks",
+  "va_cache_pb_chapters", "va_cache_pb_progress", "va_cache_scoreboard",
+  "va_cache_live_dash", "va_cache_modules", "va_cache_lessons",
+  "va_cache_live_sessions", "va_cache_trade_entries", "va_cache_student_access",
+  "va_cache_ai_focus", "va_cache_lesson_progress", "va_cache_hot_tickers",
+];
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -62,11 +72,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole | null>(() => readCache(ROLE_CACHE_KEY, null));
   const [loading, setLoading] = useState(true);
 
+  /** Consolidated sign-out + state clearing */
+  async function signOutCleanup() {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setUserRole(null);
+    try { CACHE_KEYS.forEach(k => localStorage.removeItem(k)); } catch {}
+    setLoading(false);
+  }
+
+  /** Handle a valid profile row — ban check, state update, timezone backfill */
+  async function handleProfile(profileData: any, userId: string) {
+    // Block revoked/banned users immediately
+    if (profileData.access_status === "revoked" || profileData.is_banned) {
+      console.warn("[Auth] User is revoked/banned — signing out");
+      await signOutCleanup();
+      return false;
+    }
+
+    setProfile(profileData as Profile);
+    try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch {}
+
+    // Backfill timezone only if truly empty
+    const tz = profileData.timezone;
+    if (!tz) {
+      try {
+        const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (detected) {
+          await supabase.from("profiles").update({ timezone: detected }).eq("user_id", userId);
+        }
+      } catch {}
+    }
+    return true;
+  }
+
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        // Catch recovery redirects and send to reset page
         if (event === "PASSWORD_RECOVERY") {
           window.location.href = "/reset-password";
           return;
@@ -74,39 +118,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(newSession);
         setUser(newSession?.user ?? null);
-        
+
         if (newSession?.user) {
-          // Clear stale cached profile immediately on user change to prevent flash
           const cachedUid = profile?.id || (profile as any)?.user_id;
           if (cachedUid && cachedUid !== newSession.user.id) {
             setProfile(null);
             setUserRole(null);
             setLoading(true);
           }
-          // Defer data fetching to avoid blocking auth state
           setTimeout(async () => {
-            // Ensure profile exists on first login
             await ensureProfile(newSession.user.id, newSession.user.email);
             fetchUserData(newSession.user.id);
           }, 0);
         } else {
           setProfile(null);
           setUserRole(null);
-          try {
-            localStorage.removeItem(PROFILE_CACHE_KEY);
-            localStorage.removeItem(ROLE_CACHE_KEY);
-          } catch {}
+          try { localStorage.removeItem(PROFILE_CACHE_KEY); localStorage.removeItem(ROLE_CACHE_KEY); } catch {}
         }
       }
     );
 
-    // THEN get initial session
     supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
-      
+
       if (initialSession?.user) {
-        // Ensure profile exists
         await ensureProfile(initialSession.user.id, initialSession.user.email);
         fetchUserData(initialSession.user.id);
       } else {
@@ -116,155 +152,109 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
- 
-   async function fetchUserData(userId: string) {
-     try {
-       // Fetch profile
-       const { data: profileData } = await supabase
-         .from("profiles")
-         .select("*")
-         .eq("user_id", userId)
-         .maybeSingle();
- 
-          if (profileData) {
-            // Block revoked/banned users immediately
-            if (profileData.access_status === "revoked" || profileData.is_banned) {
-              console.warn("[Auth] User is revoked/banned — signing out");
-              await supabase.auth.signOut();
-              setSession(null);
-              setUser(null);
-              setProfile(null);
-              setUserRole(null);
-              try {
-                localStorage.removeItem(PROFILE_CACHE_KEY);
-                localStorage.removeItem(ROLE_CACHE_KEY);
-              } catch {}
-              setLoading(false);
-              return;
-            }
 
-            setProfile(profileData as Profile);
-            try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch {}
-            
-            // Backfill timezone only if truly empty
-            const tz = (profileData as any).timezone;
-            if (!tz) {
-              try {
-                const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                if (detected) {
-                  await supabase
-                    .from("profiles")
-                    .update({ timezone: detected })
-                    .eq("user_id", userId);
-                }
-              } catch {}
-            }
-          }
- 
-       // Fetch user role
-       const { data: roleData } = await supabase
-         .from("user_roles")
-         .select("role, subscription_status")
-         .eq("user_id", userId)
-         .maybeSingle();
- 
-       if (roleData) {
-         setUserRole(roleData as UserRole);
-         try { localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(roleData)); } catch {}
-       }
-     } catch (error) {
-       console.error("Error fetching user data:", error);
-     } finally {
-       setLoading(false);
-     }
-   }
- 
-   async function signUp(email: string, password: string) {
-     const { error } = await supabase.auth.signUp({
-       email,
-       password,
-       options: {
-         emailRedirectTo: window.location.origin,
-       },
-     });
-     return { error };
-   }
- 
-   async function signIn(email: string, password: string) {
-     const { error } = await supabase.auth.signInWithPassword({
-       email,
-       password,
-     });
-     return { error };
-   }
- 
-   async function signOut() {
-     await supabase.auth.signOut();
-     setProfile(null);
-     setUserRole(null);
-     try {
-         localStorage.removeItem(PROFILE_CACHE_KEY);
-         localStorage.removeItem(ROLE_CACHE_KEY);
-         localStorage.removeItem("va_cache_inbox");
-         localStorage.removeItem("va_cache_referral");
-         localStorage.removeItem("va_cache_onboarding");
-         localStorage.removeItem("va_inbox_open");
-         localStorage.removeItem("va_cache_academy_rbac");
-         localStorage.removeItem("va_cache_user_tasks");
-         localStorage.removeItem("va_cache_pb_chapters");
-         localStorage.removeItem("va_cache_pb_progress");
-         localStorage.removeItem("va_cache_scoreboard");
-          localStorage.removeItem("va_cache_live_dash");
-          localStorage.removeItem("va_cache_modules");
-          localStorage.removeItem("va_cache_lessons");
-          localStorage.removeItem("va_cache_live_sessions");
-          localStorage.removeItem("va_cache_trade_entries");
-          localStorage.removeItem("va_cache_student_access");
-          localStorage.removeItem("va_cache_ai_focus");
-          localStorage.removeItem("va_cache_lesson_progress");
-          localStorage.removeItem("va_cache_hot_tickers");
-      } catch {}
-   }
- 
-   function hasRole(role: AppRole): boolean {
-     if (!userRole) return false;
-     return userRole.role === role;
-   }
- 
-   function hasMinRole(minRole: AppRole): boolean {
-     if (!userRole) return false;
-     const userRoleIndex = roleHierarchy.indexOf(userRole.role);
-     const minRoleIndex = roleHierarchy.indexOf(minRole);
-     return userRoleIndex >= minRoleIndex;
-   }
- 
-    async function refetchProfile() {
-      if (user) {
-        await fetchUserData(user.id);
+  async function fetchUserData(userId: string) {
+    try {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      // If profile fetch failed or returned null, try refreshing the session
+      if (!profileData) {
+        console.warn("[Auth] No profile data — attempting session refresh");
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.warn("[Auth] Session refresh failed — signing out", refreshError.message);
+          await signOutCleanup();
+          return;
+        }
+        // Retry profile fetch with fresh token
+        const { data: retryData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (!retryData) {
+          console.warn("[Auth] Profile still null after refresh — signing out");
+          await signOutCleanup();
+          return;
+        }
+        const ok = await handleProfile(retryData, userId);
+        if (!ok) return;
+      } else {
+        const ok = await handleProfile(profileData, userId);
+        if (!ok) return;
       }
-    }
 
-    const value = {
-      user,
-      session,
-      profile,
-      userRole,
-      loading,
-      signUp,
-      signIn,
-      signOut,
-      hasRole,
-      hasMinRole,
-      refetchProfile,
-    };
- 
-   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
- }
- 
- export function useAuth() {
-   const context = useContext(AuthContext);
-   if (context === undefined) {
-     throw new Error("useAuth must be used within an AuthProvider");
-   }
-   return context;
- }
+      // Fetch user role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role, subscription_status")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (roleData) {
+        setUserRole(roleData as UserRole);
+        try { localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(roleData)); } catch {}
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      await signOutCleanup();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function signUp(email: string, password: string) {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    return { error };
+  }
+
+  async function signIn(email: string, password: string) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
+  }
+
+  async function signOut() {
+    await signOutCleanup();
+  }
+
+  function hasRole(role: AppRole): boolean {
+    if (!userRole) return false;
+    return userRole.role === role;
+  }
+
+  function hasMinRole(minRole: AppRole): boolean {
+    if (!userRole) return false;
+    const userRoleIndex = roleHierarchy.indexOf(userRole.role);
+    const minRoleIndex = roleHierarchy.indexOf(minRole);
+    return userRoleIndex >= minRoleIndex;
+  }
+
+  async function refetchProfile() {
+    if (user) {
+      await fetchUserData(user.id);
+    }
+  }
+
+  const value = {
+    user, session, profile, userRole, loading,
+    signUp, signIn, signOut, hasRole, hasMinRole, refetchProfile,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}
