@@ -193,7 +193,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
     } finally {
       setSubmitting(false);
     }
-  }, [user, firstName, lastName, experience, goal, detectedTz, refetchProfile, isPreview]);
+  }, [user, firstName, lastName, experience, goal, avatarUrl, detectedTz, refetchProfile, isPreview]);
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-y-auto">
