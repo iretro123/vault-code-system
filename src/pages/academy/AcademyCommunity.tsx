@@ -11,7 +11,6 @@ const TABS = [
   { key: "trade-floor", label: "Chat", roomSlug: "trade-floor" },
   { key: "daily-setups", label: "Signals", roomSlug: "daily-setups" },
   { key: "wins", label: "Wins", roomSlug: "wins-proof" },
-  { key: "announcements", label: "Announcements", roomSlug: "announcements" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -89,9 +88,6 @@ const AcademyCommunity = () => {
           <div className="flex-1 overflow-hidden relative pb-3">
             <div className={cn("absolute inset-0", activeTab === "trade-floor" ? "block" : "hidden")}>
               <CommunityTradeFloor onSwitchTab={handleTabChange} active={activeTab === "trade-floor"} />
-            </div>
-            <div className={cn("absolute inset-0", activeTab === "announcements" ? "block" : "hidden")}>
-              <RoomChat roomSlug="announcements" canPost={canPostRestricted} isAnnouncements={true} active={activeTab === "announcements"} compact />
             </div>
             <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
               <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} compact />
