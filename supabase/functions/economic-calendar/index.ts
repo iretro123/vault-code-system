@@ -64,8 +64,13 @@ Deno.serve(async (req) => {
         if (evErr) console.error("market_events upsert error:", evErr.message);
       }
 
-      // Normalize + upsert earnings
-      const earnings = (earningsData?.earningsCalendar || []).map((e: any) => ({
+      // Normalize + deduplicate earnings (Finnhub can return dupes)
+      const earningsMap = new Map();
+      (earningsData?.earningsCalendar || []).forEach((e: any) => {
+        const id = `earn-${e.symbol}-${e.date}`;
+        if (!earningsMap.has(id)) earningsMap.set(id, e);
+      });
+      const earnings = Array.from(earningsMap.values()).map((e: any) => ({
         id: `earn-${e.symbol}-${e.date}`,
         date: e.date,
         symbol: e.symbol,
@@ -86,10 +91,14 @@ Deno.serve(async (req) => {
 
       if (earnings.length > 0) {
         await sb.from("market_earnings").delete().lt("date", from);
-        const { error: earnErr } = await sb
-          .from("market_earnings")
-          .upsert(earnings, { onConflict: "id" });
-        if (earnErr) console.error("market_earnings upsert error:", earnErr.message);
+        // Batch upserts in chunks to avoid conflicts
+        for (let i = 0; i < earnings.length; i += 50) {
+          const chunk = earnings.slice(i, i + 50);
+          const { error: earnErr } = await sb
+            .from("market_earnings")
+            .upsert(chunk, { onConflict: "id" });
+          if (earnErr) console.error("market_earnings upsert error:", earnErr.message);
+        }
       }
 
       return new Response(
