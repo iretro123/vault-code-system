@@ -1,30 +1,28 @@
 
 
-## Convert Calendar Times from Military (24h) to Standard (12h AM/PM) ET
+## Add "President Trump Speaks" Event to Calendar
 
-### Problem
-Times like `08:30`, `10:00`, `14:30` display in 24-hour military format. Need standard 12-hour with AM/PM, all labeled ET.
+### What
+Insert one new high-impact event for today (2026-04-06): **President Trump Speaks** at **1:00 PM ET**.
 
-### Solution
-Add a helper function `formatTimeET(time: string | null)` that converts "08:30" → "8:30 AM", "14:30" → "2:30 PM", etc.
+### Database Insert
 
-Replace raw `time_et` display in two places:
-1. **Next Up hero card** (line 167): `{nextEvent.time_et} ET` → `{formatTimeET(nextEvent.time_et)} ET`
-2. **Event row** (line 281): `{e.time_et || "—"}` → `{formatTimeET(e.time_et)}`
-
-### Helper
-```typescript
-function formatTimeET(t: string | null): string {
-  if (!t) return "—";
-  const [h, m] = t.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
-}
+```sql
+INSERT INTO market_events (id, date, time_et, country, event_name, impact, actual, estimate, prev, unit, fetched_at)
+VALUES (
+  'mw-president-trump-speaks-2026-04-06',
+  '2026-04-06',
+  '13:00',
+  'US',
+  'President Trump Speaks',
+  'high',
+  NULL, NULL, NULL, '',
+  NOW()
+);
 ```
 
-### File
-| File | Change |
-|------|--------|
-| `src/components/academy/community/EconomicCalendarTab.tsx` | Add `formatTimeET` helper, use it in 2 display locations |
+One row, no code changes. The calendar UI will pick it up automatically and show it as a high-impact event at 1:00 PM ET.
+
+### Files
+No file changes needed — database insert only.
 
