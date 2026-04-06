@@ -172,7 +172,7 @@ function NextUpCard({ events }: { events: MarketEvent[] }) {
           </h3>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-xs font-mono font-semibold text-muted-foreground">
-              {nextEvent.time_et} ET
+              {formatTimeET(nextEvent.time_et)} ET
             </span>
             <span
               className={cn(
