@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { BookOpen, PenLine, Trophy, Video } from "lucide-react";
 
@@ -9,8 +9,9 @@ interface TickerItem {
   userId: string;
 }
 
-const CACHE_KEY = "va_activity_ticker_v2";
-const CACHE_TTL = 5 * 60_000;
+const CACHE_KEY = "va_activity_ticker_v3";
+const CACHE_TTL = 60_000; // 1 min cache
+const REFRESH_INTERVAL = 75_000; // 75s background refresh
 
 function readCache(): TickerItem[] | null {
   try {
@@ -37,6 +38,38 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/** Pick up to 5 unique users, preferring variety across activity types */
+function mixActivities(items: TickerItem[]): TickerItem[] {
+  const types: TickerItem["type"][] = ["call", "journal", "lesson", "win"];
+  const buckets = new Map<string, TickerItem[]>();
+  for (const t of types) buckets.set(t, []);
+  for (const item of items) {
+    buckets.get(item.type)?.push(item);
+  }
+
+  const result: TickerItem[] = [];
+  const usedUsers = new Set<string>();
+
+  // Round-robin across types to ensure mix
+  let added = true;
+  while (result.length < 5 && added) {
+    added = false;
+    for (const t of shuffle(types)) {
+      if (result.length >= 5) break;
+      const bucket = buckets.get(t)!;
+      const idx = bucket.findIndex((b) => !usedUsers.has(b.userId));
+      if (idx !== -1) {
+        const pick = bucket.splice(idx, 1)[0];
+        usedUsers.add(pick.userId);
+        result.push(pick);
+        added = true;
+      }
+    }
+  }
+
+  return shuffle(result);
 }
 
 const icon = (type: TickerItem["type"]) => {
@@ -70,24 +103,21 @@ const icon = (type: TickerItem["type"]) => {
 
 export function ActivityTicker() {
   const [items, setItems] = useState<TickerItem[]>(() => readCache() ?? []);
+  const mountedRef = useRef(true);
+  const fetchingRef = useRef(false);
 
-  useEffect(() => {
-    const cached = readCache();
-    if (cached && cached.length > 0) {
-      setItems(cached);
-      return;
-    }
+  const fetchActivity = useCallback(async () => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
 
-    const fetchAll = async () => {
+    try {
       const { data: activities } = await supabase.rpc("get_recent_activity");
-
-      if (!activities || activities.length === 0) return;
+      if (!activities || activities.length === 0 || !mountedRef.current) return;
 
       const allUserIds = new Set<string>();
       for (const a of activities) {
         if ((a as any).user_id) allUserIds.add((a as any).user_id);
       }
-
       if (allUserIds.size === 0) return;
 
       const { data: profiles } = await supabase.rpc("get_community_profiles", {
@@ -104,43 +134,59 @@ export function ActivityTicker() {
 
       const getName = (uid: string) => nameMap.get(uid) || "A student";
 
-      const result: TickerItem[] = [];
+      const allItems: TickerItem[] = [];
       for (const a of activities) {
         const r = a as any;
         const name = getName(r.user_id);
         switch (r.activity_type) {
           case "call":
-            result.push({ id: r.activity_id, text: `${name} joined a live call`, type: "call", userId: r.user_id });
+            allItems.push({ id: r.activity_id, text: `${name} joined a live call`, type: "call", userId: r.user_id });
             break;
           case "journal":
-            result.push({ id: r.activity_id, text: `${name} journaled a trade`, type: "journal", userId: r.user_id });
+            allItems.push({ id: r.activity_id, text: `${name} journaled a trade`, type: "journal", userId: r.user_id });
             break;
           case "lesson":
-            result.push({ id: r.activity_id, text: `${name} watched a lesson`, type: "lesson", userId: r.user_id });
+            allItems.push({ id: r.activity_id, text: `${name} watched a lesson`, type: "lesson", userId: r.user_id });
             break;
           case "win":
-            result.push({ id: r.activity_id, text: `${name} posted a win`, type: "win", userId: r.user_id });
+            allItems.push({ id: r.activity_id, text: `${name} posted a win`, type: "win", userId: r.user_id });
             break;
         }
       }
 
-      if (result.length === 0) return;
+      if (allItems.length === 0 || !mountedRef.current) return;
 
-      // Deduplicate: max 1 item per user
-      const seen = new Set<string>();
-      const unique = result.filter(item => {
-        if (seen.has(item.userId)) return false;
-        seen.add(item.userId);
-        return true;
-      });
-
-      const final = shuffle(unique).slice(0, 5);
-      setItems(final);
-      writeCache(final);
-    };
-
-    fetchAll();
+      const final = mixActivities(allItems);
+      if (final.length > 0) {
+        setItems(final);
+        writeCache(final);
+      }
+    } finally {
+      fetchingRef.current = false;
+    }
   }, []);
+
+  // Initial load: show cache immediately, then fetch fresh
+  useEffect(() => {
+    mountedRef.current = true;
+    fetchActivity();
+    return () => { mountedRef.current = false; };
+  }, [fetchActivity]);
+
+  // Background refresh interval
+  useEffect(() => {
+    const interval = setInterval(fetchActivity, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchActivity]);
+
+  // Refresh on tab visibility
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchActivity();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [fetchActivity]);
 
   if (items.length === 0) return null;
 
@@ -157,7 +203,6 @@ export function ActivityTicker() {
         WebkitMaskImage: "linear-gradient(to right, transparent, black 6%, black 94%, transparent)",
       }}
     >
-      {/* Shimmer top edge */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/30 to-transparent" />
 
       <div
@@ -167,7 +212,6 @@ export function ActivityTicker() {
           width: "max-content",
         }}
       >
-        {/* Render items twice for seamless loop */}
         {[...items, ...items].map((item, i) => (
           <div key={`${item.id}-${i}`} className="flex items-center gap-2 px-2">
             {icon(item.type)}
