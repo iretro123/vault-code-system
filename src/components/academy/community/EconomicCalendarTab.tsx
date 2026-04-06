@@ -194,7 +194,7 @@ function NextUpCard({ events, userTZ }: { events: MarketEvent[]; userTZ: string 
         </div>
 
         {/* Countdown pills */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <Pill value={countdown.h} label="Hrs" />
           <ColonSep />
           <Pill value={countdown.m} label="Min" />
