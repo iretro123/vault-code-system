@@ -1246,6 +1246,90 @@ export type Database = {
         }
         Relationships: []
       }
+      market_earnings: {
+        Row: {
+          date: string
+          eps_actual: number | null
+          eps_estimate: number | null
+          fetched_at: string
+          hour: string | null
+          id: string
+          quarter: number | null
+          revenue_actual: number | null
+          revenue_estimate: number | null
+          symbol: string
+          year: number | null
+        }
+        Insert: {
+          date: string
+          eps_actual?: number | null
+          eps_estimate?: number | null
+          fetched_at?: string
+          hour?: string | null
+          id: string
+          quarter?: number | null
+          revenue_actual?: number | null
+          revenue_estimate?: number | null
+          symbol: string
+          year?: number | null
+        }
+        Update: {
+          date?: string
+          eps_actual?: number | null
+          eps_estimate?: number | null
+          fetched_at?: string
+          hour?: string | null
+          id?: string
+          quarter?: number | null
+          revenue_actual?: number | null
+          revenue_estimate?: number | null
+          symbol?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
+      market_events: {
+        Row: {
+          actual: number | null
+          country: string
+          date: string
+          estimate: number | null
+          event_name: string
+          fetched_at: string
+          id: string
+          impact: string
+          prev: number | null
+          time_et: string | null
+          unit: string | null
+        }
+        Insert: {
+          actual?: number | null
+          country?: string
+          date: string
+          estimate?: number | null
+          event_name: string
+          fetched_at?: string
+          id: string
+          impact?: string
+          prev?: number | null
+          time_et?: string | null
+          unit?: string | null
+        }
+        Update: {
+          actual?: number | null
+          country?: string
+          date?: string
+          estimate?: number | null
+          event_name?: string
+          fetched_at?: string
+          id?: string
+          impact?: string
+          prev?: number | null
+          time_et?: string | null
+          unit?: string | null
+        }
+        Relationships: []
+      }
       message_reactions: {
         Row: {
           created_at: string
