@@ -18,7 +18,6 @@ Deno.serve(async (req) => {
     // ── REFRESH MODE: called by pg_cron ──
     if (mode === "refresh") {
       const finnhubKey = Deno.env.get("FINNHUB_API_KEY");
-
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const sb = createClient(supabaseUrl, serviceKey);
@@ -29,19 +28,19 @@ Deno.serve(async (req) => {
       let eventsCount = 0;
       let earningsCount = 0;
 
-      // ── Economic Calendar: Scrape feargreedmeter.com ──
+      // ── Economic Calendar: Scrape MarketWatch ──
       try {
-        const fgmRes = await fetch("https://feargreedmeter.com/events", {
+        const mwRes = await fetch("https://www.marketwatch.com/economy-politics/calendar", {
           headers: {
-            "User-Agent": "Mozilla/5.0 (compatible; VaultBot/1.0)",
-            Accept: "text/html",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml",
           },
         });
-        const html = await fgmRes.text();
-        console.log(`FearGreedMeter HTML length: ${html.length}`);
+        const html = await mwRes.text();
+        console.log(`MarketWatch HTML length: ${html.length}`);
 
-        const events = parseFearGreedMeterEvents(html);
-        console.log(`Parsed ${events.length} economic events from feargreedmeter.com`);
+        const events = parseMarketWatchEvents(html);
+        console.log(`Parsed ${events.length} economic events from MarketWatch`);
 
         if (events.length > 0) {
           await sb.from("market_events").delete().lt("date", from);
@@ -55,7 +54,7 @@ Deno.serve(async (req) => {
           eventsCount = events.length;
         }
       } catch (err) {
-        console.error("Failed to scrape feargreedmeter.com:", (err as Error).message);
+        console.error("Failed to scrape MarketWatch:", (err as Error).message);
       }
 
       // ── Earnings Calendar: Finnhub ──
@@ -138,96 +137,102 @@ Deno.serve(async (req) => {
   }
 });
 
-// ── Parse feargreedmeter.com/events HTML ──
-function parseFearGreedMeterEvents(html: string): any[] {
+// ── Parse MarketWatch economic calendar HTML table ──
+function parseMarketWatchEvents(html: string): any[] {
   const events: any[] = [];
 
-  // The page has event blocks with dates and event names
-  // Pattern: date headers followed by event entries
-  // Look for structured event data in the HTML
-
-  // Extract event blocks - they typically have a date, title, and sometimes time/details
-  // Try multiple parsing strategies
-
-  // Strategy 1: Look for event cards/blocks with dates
-  const datePattern = /(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[\s·,]+([A-Z][a-z]+)\s+(\d{1,2}),?\s*(\d{4})?/gi;
-  const eventTitlePattern = /<h[2-4][^>]*>([^<]+)<\/h[2-4]>/gi;
-
-  // Strategy 2: Look for structured data - many calendar sites use JSON-LD or structured divs
-  const jsonLdMatch = html.match(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
-  if (jsonLdMatch) {
-    try {
-      const ld = JSON.parse(jsonLdMatch[1]);
-      console.log("Found JSON-LD data:", JSON.stringify(ld).slice(0, 200));
-    } catch {}
+  // Extract the table body content
+  const tbodyMatch = html.match(/<tbody>([\s\S]*?)<\/tbody>/i);
+  if (!tbodyMatch) {
+    console.error("No <tbody> found in MarketWatch HTML");
+    return events;
   }
 
-  // Strategy 3: Parse the visible text content for event patterns
-  // Remove HTML tags to get clean text
-  const text = html
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<[^>]+>/g, "\n")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#\d+;/g, "")
-    .replace(/\n{3,}/g, "\n\n");
-
-  // Look for date + event name patterns in the text
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const tbody = tbodyMatch[1];
+  // Split into rows
+  const rows = tbody.split(/<tr[^>]*>/i).filter((r) => r.includes("<td"));
 
   let currentDate: string | null = null;
   const currentYear = new Date().getFullYear();
 
   const monthMap: Record<string, string> = {
-    jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-    jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12",
     january: "01", february: "02", march: "03", april: "04",
-    june: "06", july: "07", august: "08", september: "09",
-    october: "10", november: "11", december: "12",
+    may: "05", june: "06", july: "07", august: "08",
+    september: "09", october: "10", november: "11", december: "12",
   };
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const row of rows) {
+    // Extract all <td> cell contents
+    const cells: string[] = [];
+    const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let m;
+    while ((m = tdRegex.exec(row)) !== null) {
+      // Strip HTML tags from cell content
+      cells.push(m[1].replace(/<[^>]+>/g, "").trim());
+    }
 
-    // Match date patterns like "Apr 09, 2026" or "April 9, 2026" or "Thu · Apr 09"
-    const dateMatch = line.match(/(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*[\s·,]*([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})?/i)
-      || line.match(/([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})/i);
+    if (cells.length < 2) continue;
+
+    const firstCell = cells[0];
+
+    // Check if this is a date header row (bold day name like "MONDAY, APRIL 6")
+    const dateMatch = firstCell.match(
+      /(?:MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY),?\s+([A-Z]+)\s+(\d{1,2})/i
+    );
 
     if (dateMatch) {
       const monthStr = dateMatch[1].toLowerCase();
       const day = dateMatch[2].padStart(2, "0");
-      const year = dateMatch[3] || currentYear.toString();
       const month = monthMap[monthStr];
       if (month) {
+        // Handle year boundary (if month is Jan/Feb and current month is Nov/Dec)
+        let year = currentYear;
+        const currentMonth = new Date().getMonth() + 1;
+        const parsedMonth = parseInt(month);
+        if (currentMonth >= 11 && parsedMonth <= 2) year++;
+
         currentDate = `${year}-${month}-${day}`;
-        continue;
       }
+      continue;
     }
 
-    // If we have a current date, check if this line looks like an event name
-    if (currentDate && isLikelyEventName(line)) {
-      // Look ahead for time info
-      const timeStr = extractTimeFromNearbyLines(lines, i);
-      const impact = classifyImpact(line);
+    // Regular event row: Time | Report | Period | Actual | Forecast | Previous
+    if (!currentDate) continue;
 
-      events.push({
-        id: `econ-${slugify(line)}-${currentDate}`,
-        date: currentDate,
-        time_et: timeStr,
-        country: "US",
-        event_name: line,
-        impact,
-        actual: null,
-        estimate: null,
-        prev: null,
-        unit: "",
-        fetched_at: new Date().toISOString(),
-      });
-    }
+    const timeRaw = cells[0] || "";
+    const reportName = cells[1] || "";
+    if (!reportName) continue;
+
+    // Parse time to 24h format
+    const timeEt = parseTimeET(timeRaw);
+
+    // Parse numeric values
+    const actual = cells.length > 3 ? parseNumericValue(cells[3]) : null;
+    const forecast = cells.length > 4 ? parseNumericValue(cells[4]) : null;
+    const previous = cells.length > 5 ? parseNumericValue(cells[5]) : null;
+
+    // Determine unit from the raw strings
+    const unit = detectUnit(cells[4] || cells[5] || cells[3] || "");
+
+    const impact = classifyImpact(reportName);
+    const id = `mw-${slugify(reportName)}-${currentDate}`;
+
+    events.push({
+      id,
+      date: currentDate,
+      time_et: timeEt,
+      country: "US",
+      event_name: reportName,
+      impact,
+      actual,
+      estimate: forecast,
+      prev: previous,
+      unit,
+      fetched_at: new Date().toISOString(),
+    });
   }
 
-  // Deduplicate by id
+  // Deduplicate
   const seen = new Set<string>();
   return events.filter((e) => {
     if (seen.has(e.id)) return false;
@@ -236,48 +241,55 @@ function parseFearGreedMeterEvents(html: string): any[] {
   });
 }
 
-function isLikelyEventName(line: string): boolean {
-  const keywords = [
-    "CPI", "PPI", "FOMC", "Fed", "Federal", "NFP", "Nonfarm", "Non-Farm", "Fed Meeting",
-    "GDP", "Unemployment", "Jobless", "Employment", "Payroll", "Retail Sales",
-    "Consumer", "Producer", "Interest Rate", "Housing", "PMI", "ISM",
-    "Trade Balance", "Durable Goods", "Industrial Production", "Existing Home",
-    "New Home", "Building Permits", "Consumer Confidence", "Michigan",
-    "PCE", "Core PCE", "Treasury", "Beige Book", "Minutes",
-    "Inflation", "Jobs Report", "Labor", "Wage",
-  ];
-  const upper = line.toUpperCase();
-  return keywords.some((kw) => upper.includes(kw.toUpperCase())) && line.length < 120;
+function parseTimeET(raw: string): string | null {
+  const m = raw.match(/(\d{1,2}):(\d{2})\s*(a\.?m\.?|p\.?m\.?|am|pm)/i);
+  if (!m) return null;
+  let h = parseInt(m[1]);
+  const min = m[2];
+  const ampm = m[3].replace(/\./g, "").toUpperCase();
+  if (ampm === "PM" && h < 12) h += 12;
+  if (ampm === "AM" && h === 12) h = 0;
+  return `${h.toString().padStart(2, "0")}:${min}`;
+}
+
+function parseNumericValue(raw: string): number | null {
+  if (!raw || raw === "--" || raw === "N/A" || raw === "n/a") return null;
+  // Remove $, commas, "billion", "million", "%" etc — keep the number
+  const cleaned = raw.replace(/[$,]/g, "").replace(/\s*(billion|million|thousand|%)/gi, "").trim();
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+}
+
+function detectUnit(raw: string): string {
+  if (!raw) return "";
+  if (raw.includes("%")) return "%";
+  if (/billion/i.test(raw)) return "billion";
+  if (/million/i.test(raw)) return "million";
+  if (/thousand/i.test(raw)) return "thousand";
+  return "";
 }
 
 function classifyImpact(name: string): string {
   const upper = name.toUpperCase();
-  const high = ["FOMC", "FEDERAL FUNDS", "FED INTEREST", "CPI", "CONSUMER PRICE",
+  const high = [
+    "FOMC", "FEDERAL FUNDS", "FED INTEREST", "CPI", "CONSUMER PRICE",
     "NFP", "NONFARM", "NON-FARM", "GDP", "GROSS DOMESTIC", "FED CHAIR",
-    "INFLATION REPORT", "JOBS REPORT", "PCE", "CORE PCE", "FED MEETING"];
-  const medium = ["PPI", "PRODUCER PRICE", "UNEMPLOYMENT", "JOBLESS", "RETAIL SALES",
-    "PMI", "ISM", "DURABLE GOODS", "EMPLOYMENT", "PAYROLL", "HOUSING",
-    "CONSUMER CONFIDENCE", "MICHIGAN", "TRADE BALANCE"];
+    "INFLATION", "JOBS REPORT", "PCE", "CORE PCE", "FED MEETING",
+    "PAYROLLS", "EMPLOYMENT SITUATION",
+  ];
+  const medium = [
+    "PPI", "PRODUCER PRICE", "UNEMPLOYMENT", "JOBLESS", "RETAIL SALES",
+    "PMI", "ISM", "DURABLE", "EMPLOYMENT", "PAYROLL", "HOUSING",
+    "CONSUMER CONFIDENCE", "MICHIGAN", "TRADE BALANCE", "CONSUMER CREDIT",
+    "PERSONAL INCOME", "PERSONAL SPENDING", "EXISTING HOME", "NEW HOME",
+    "BUILDING PERMITS", "INDUSTRIAL PRODUCTION",
+  ];
 
   if (high.some((kw) => upper.includes(kw))) return "high";
   if (medium.some((kw) => upper.includes(kw))) return "medium";
+  // Fed speakers → medium
+  if (/\b(FED|FEDERAL RESERVE|SPEAKS|SPEECH)\b/i.test(upper)) return "medium";
   return "low";
-}
-
-function extractTimeFromNearbyLines(lines: string[], idx: number): string | null {
-  // Check current line and next 2 lines for time patterns
-  for (let j = idx; j < Math.min(idx + 3, lines.length); j++) {
-    const timeMatch = lines[j].match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?\s*(E[SDT]T|Eastern)?/i);
-    if (timeMatch) {
-      let h = parseInt(timeMatch[1]);
-      const m = timeMatch[2];
-      const ampm = timeMatch[3]?.toUpperCase();
-      if (ampm === "PM" && h < 12) h += 12;
-      if (ampm === "AM" && h === 12) h = 0;
-      return `${h.toString().padStart(2, "0")}:${m}`;
-    }
-  }
-  return null;
 }
 
 function getDateStr(daysOffset: number): string {
