@@ -15,12 +15,12 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const mode = url.searchParams.get("mode");
 
-    // ── REFRESH MODE: called by pg_cron, fetches Finnhub → upserts into DB ──
+    // ── REFRESH MODE: called by pg_cron, fetches FMP → upserts into DB ──
     if (mode === "refresh") {
-      const apiKey = Deno.env.get("FINNHUB_API_KEY");
+      const apiKey = Deno.env.get("FMP_API_KEY");
       if (!apiKey) {
         return new Response(
-          JSON.stringify({ error: "FINNHUB_API_KEY not configured" }),
+          JSON.stringify({ error: "FMP_API_KEY not configured" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -33,40 +33,46 @@ Deno.serve(async (req) => {
       const to = getDateStr(14);
 
       const [econRes, earningsRes] = await Promise.all([
-        fetch(`https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${apiKey}`),
-        fetch(`https://finnhub.io/api/v1/calendar/earnings?from=${from}&to=${to}&token=${apiKey}`),
+        fetch(`https://financialmodelingprep.com/api/v3/economic_calendar?from=${from}&to=${to}&apikey=${apiKey}`),
+        fetch(`https://financialmodelingprep.com/api/v3/earning_calendar?from=${from}&to=${to}&apikey=${apiKey}`),
       ]);
 
       const econData = await econRes.json();
       const earningsData = await earningsRes.json();
 
-      // Normalize + upsert economic events
-      const events = (econData?.economicCalendar || []).map((e: any) => ({
-        id: `econ-${e.event}-${e.time || e.date}`,
-        date: e.date,
-        time_et: e.time || null,
-        country: e.country || "US",
-        event_name: e.event,
-        impact: e.impact === 3 ? "high" : e.impact === 2 ? "medium" : "low",
-        actual: e.actual ?? null,
-        estimate: e.estimate ?? null,
-        prev: e.prev ?? null,
-        unit: e.unit || "",
-        fetched_at: new Date().toISOString(),
-      }));
+      // Normalize FMP economic events → market_events
+      const rawEvents = Array.isArray(econData) ? econData : [];
+      const events = rawEvents
+        .filter((e: any) => e.country === "US")
+        .map((e: any) => ({
+          id: `econ-${slugify(e.event)}-${e.date}`,
+          date: e.date,
+          time_et: extractTime(e.date) || null,
+          country: e.country || "US",
+          event_name: e.event,
+          impact: (e.impact || "Low").toLowerCase(),
+          actual: e.actual ?? null,
+          estimate: e.estimate ?? e.consensus ?? null,
+          prev: e.previous ?? null,
+          unit: e.unit || e.currency || "",
+          fetched_at: new Date().toISOString(),
+        }));
 
       if (events.length > 0) {
-        // Delete old events, then insert fresh
         await sb.from("market_events").delete().lt("date", from);
-        const { error: evErr } = await sb
-          .from("market_events")
-          .upsert(events, { onConflict: "id" });
-        if (evErr) console.error("market_events upsert error:", evErr.message);
+        for (let i = 0; i < events.length; i += 50) {
+          const chunk = events.slice(i, i + 50);
+          const { error: evErr } = await sb
+            .from("market_events")
+            .upsert(chunk, { onConflict: "id" });
+          if (evErr) console.error("market_events upsert error:", evErr.message);
+        }
       }
 
-      // Normalize + deduplicate earnings (Finnhub can return dupes)
+      // Normalize FMP earnings → market_earnings
+      const rawEarnings = Array.isArray(earningsData) ? earningsData : [];
       const earningsMap = new Map();
-      (earningsData?.earningsCalendar || []).forEach((e: any) => {
+      rawEarnings.forEach((e: any) => {
         const id = `earn-${e.symbol}-${e.date}`;
         if (!earningsMap.has(id)) earningsMap.set(id, e);
       });
@@ -75,23 +81,22 @@ Deno.serve(async (req) => {
         date: e.date,
         symbol: e.symbol,
         hour:
-          e.hour === "bmo"
+          e.time === "bmo"
             ? "Before Open"
-            : e.hour === "amc"
+            : e.time === "amc"
             ? "After Close"
-            : e.hour || "TBD",
-        eps_estimate: e.epsEstimate ?? null,
-        eps_actual: e.epsActual ?? null,
-        revenue_estimate: e.revenueEstimate ?? null,
-        revenue_actual: e.revenueActual ?? null,
-        quarter: e.quarter ?? null,
-        year: e.year ?? null,
+            : e.time || "TBD",
+        eps_estimate: e.epsEstimated ?? null,
+        eps_actual: e.eps ?? null,
+        revenue_estimate: e.revenueEstimated ?? null,
+        revenue_actual: e.revenue ?? null,
+        quarter: e.fiscalDateEnding ? getQuarterFromDate(e.fiscalDateEnding) : null,
+        year: e.fiscalDateEnding ? new Date(e.fiscalDateEnding).getFullYear() : null,
         fetched_at: new Date().toISOString(),
       }));
 
       if (earnings.length > 0) {
         await sb.from("market_earnings").delete().lt("date", from);
-        // Batch upserts in chunks to avoid conflicts
         for (let i = 0; i < earnings.length; i += 50) {
           const chunk = earnings.slice(i, i + 50);
           const { error: earnErr } = await sb
@@ -114,8 +119,6 @@ Deno.serve(async (req) => {
     // ── DEFAULT MODE: read cached data from Supabase tables ──
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Forward the user's auth header so RLS works
     const authHeader = req.headers.get("Authorization") || `Bearer ${anonKey}`;
     const sb = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -158,4 +161,33 @@ function getDateStr(daysOffset: number): string {
   const d = new Date();
   d.setDate(d.getDate() + daysOffset);
   return d.toISOString().split("T")[0];
+}
+
+function slugify(s: string): string {
+  return (s || "unknown")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+}
+
+function extractTime(dateStr: string): string | null {
+  if (!dateStr || !dateStr.includes("T")) return null;
+  try {
+    const d = new Date(dateStr);
+    const h = d.getUTCHours().toString().padStart(2, "0");
+    const m = d.getUTCMinutes().toString().padStart(2, "0");
+    return `${h}:${m}`;
+  } catch {
+    return null;
+  }
+}
+
+function getQuarterFromDate(dateStr: string): number | null {
+  try {
+    const m = new Date(dateStr).getMonth();
+    return Math.floor(m / 3) + 1;
+  } catch {
+    return null;
+  }
 }
