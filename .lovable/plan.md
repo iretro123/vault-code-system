@@ -1,84 +1,50 @@
 
 
-## Fix: App Stuck at Loading Screen
+## Fix: Loading Spinner Deadlock in AcademyLayout
 
 ### Root Cause
 
-When a user's refresh token expires (confirmed in auth logs: `refresh_token_not_found`), the app enters an unrecoverable loading state:
+Line 74 of `AcademyLayout.tsx`:
+```typescript
+if (loading || !profileReady || !hydrated) { return <spinner> }
+if (!user) { return <Navigate to="/auth"> }
+```
 
-1. `getSession()` returns a stale session from localStorage (Supabase doesn't validate tokens on `getSession`)
-2. `user` gets set to the stale user object
-3. `fetchUserData()` tries to query `profiles` table — fails silently (401 or returns null due to expired JWT)
-4. `profile` stays `null`, `loading` becomes `false`
-5. AcademyLayout checks: `profileReady = !loading && !!user && !!profile` → **false forever**
-6. The spinner shows indefinitely — no redirect to auth, no recovery
+`profileReady = !loading && !!user && !!profile` — when there's no user (logged out, expired session, or the new `signOutCleanup` kicks in), `profileReady` is always `false`. The spinner gate catches this BEFORE the `/auth` redirect on line 91 is ever reached. Result: infinite spinner.
 
 ### Fix
 
-**File: `src/hooks/useAuth.tsx`** — lines 120-180
+**File: `src/components/layout/AcademyLayout.tsx`** — lines 72-93
 
-In `fetchUserData`, after the profile query, if `profileData` is null (no profile returned):
-1. Attempt `supabase.auth.refreshSession()` to get a fresh token
-2. If refresh succeeds, retry the profile query once
-3. If refresh fails OR retry still returns null, sign out the user cleanly (clears stale tokens, redirects to /auth)
-
-This ensures expired sessions never leave users stuck — they either recover silently or get redirected to login.
+Reorder the gates so "no user" is checked right after auth loading finishes, before the profile/hydration check:
 
 ```typescript
-async function fetchUserData(userId: string) {
-  try {
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
+// 1. Wait for auth to finish
+if (loading) {
+  return <spinner>;
+}
 
-    // If profile fetch failed or returned null, try refreshing the session
-    if (!profileData) {
-      console.warn("[Auth] No profile data — attempting session refresh");
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.warn("[Auth] Session refresh failed — signing out", refreshError.message);
-        await signOutCleanup();
-        return;
-      }
-      // Retry profile fetch with fresh token
-      const { data: retryData } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (!retryData) {
-        console.warn("[Auth] Profile still null after refresh — signing out");
-        await signOutCleanup();
-        return;
-      }
-      // Use retry data (fall through to existing profile handling)
-      handleProfile(retryData, userId);
-    } else {
-      handleProfile(profileData, userId);
-    }
-    // ... rest of role fetching stays the same
-  } catch (error) {
-    console.error("Error fetching user data:", error);
-    // On unexpected errors, also attempt recovery
-    await signOutCleanup();
-  } finally {
-    setLoading(false);
-  }
+// 2. No user → redirect immediately (don't wait for profile/hydration)
+if (!user) {
+  return <Navigate to="/auth" replace />;
+}
+
+// 3. User exists but profile/hydration still loading
+if (!profile || !hydrated) {
+  return <spinner>;
 }
 ```
 
-The `signOutCleanup` helper consolidates the sign-out + state clearing logic that's already duplicated in multiple places.
+This ensures:
+- Expired sessions that trigger `signOutCleanup` → user becomes null → immediate redirect to `/auth`
+- Fresh logins → wait for profile + hydration → then render
+- No impact on existing authenticated users (profile loads, hydrated becomes true, everything proceeds as before)
 
-### Impact on Existing Users
-- Users with valid sessions: zero change — profile query succeeds on first try, skip recovery
-- Users with expired tokens: automatically recover (refresh works) or get cleanly redirected to login (refresh fails)
-- No UI changes, no new routes, no database changes
-
-### Files Changed
+### Files
 
 | File | Change |
 |------|--------|
-| `src/hooks/useAuth.tsx` | Add session recovery logic in `fetchUserData` when profile is null |
+| `src/components/layout/AcademyLayout.tsx` | Reorder loading/auth/profile gates (lines 72-93) |
+
+One file, ~5 lines changed. Zero risk to authenticated users.
 
