@@ -118,7 +118,7 @@ function ColonSep() {
 
 /* ── Next Up Hero Card ── */
 
-function NextUpCard({ events }: { events: MarketEvent[] }) {
+function NextUpCard({ events, userTZ }: { events: MarketEvent[]; userTZ: string }) {
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
