@@ -5,7 +5,8 @@ import { useMessageReactions, type ReactionEmoji } from "@/hooks/useMessageReact
 import { useChatProfiles } from "@/hooks/useChatProfiles";
 import { ChatAvatar } from "@/lib/chatAvatars";
 import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
-import { Loader2, Trophy, Flame } from "lucide-react";
+import { Loader2, Trophy, Flame, Share2 } from "lucide-react";
+import { ShareWinModal } from "./ShareWinModal";
 import { formatDateTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 
