@@ -1,23 +1,24 @@
 
 
-## Fix Trade OS Card Container Width — Stop Text Cutoff
+## Update Trade OS Subtitle Copy
 
-### Problem
-The previous change set the container to `max-w-2xl` (672px), which is too narrow for the 3-column card grid in the "Go Live" stage. At 672px, each of the three cards gets ~200px, causing text labels like "DAILY BUFFER", "RISK / TRADE", "Set Your Session Window" to overflow and become unreadable.
+### Change
+Replace the subtitle "Your center of operations" with something that communicates the daily ritual purpose — concise, confident, beginner-proof.
 
-### Fix
-Widen the container from `max-w-2xl` to `max-w-3xl` (768px). This gives each card in the 3-column grid ~240px — enough room for all labels and values to render cleanly, while still being much narrower than the old `max-w-7xl` (1280px). The layout stays centered and focused.
+**Proposed copy:** `"Open this before every session."`
+
+This aligns with the Trade OS design philosophy (one hero idea, one action) and the getting-started ritual step 2 ("Open this before every trade"). It's direct, tells the user exactly when to use it, and reinforces the daily habit.
 
 ### File: `src/pages/academy/AcademyTrade.tsx`
 
-**Line 697** — Change:
+**Line 707** — Change:
 ```
-max-w-2xl mx-auto
+Your center of operations
 ```
 To:
 ```
-max-w-3xl mx-auto
+Open this before every session.
 ```
 
-One line change. The 3-column "Go Live" grid, metric cells, session window card, and focus card will all have proper breathing room.
+One line, no structural changes.
 
