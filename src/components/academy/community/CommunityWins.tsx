@@ -24,6 +24,7 @@ const WINS_CACHE_KEY = "vault_wins_cache";
 
 export function CommunityWins() {
   const { user } = useAuth();
+  const [shareWin, setShareWin] = useState<WinMessage | null>(null);
   const [wins, setWins] = useState<WinMessage[]>(() => {
     try {
       const cached = localStorage.getItem(WINS_CACHE_KEY);
