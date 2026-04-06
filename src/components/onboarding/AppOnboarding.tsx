@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { OnboardingProgressBar, OnboardingStep } from "./OnboardingStep";
 import { VaultTourCarousel } from "./VaultTourCarousel";
+import { AVATAR_ICONS } from "@/lib/avatarIcons";
+import { ChatAvatar } from "@/lib/chatAvatars";
 import {
   Loader2,
   ChevronRight,
@@ -17,7 +19,20 @@ import {
   Users,
   Bell,
   Sparkles,
+  Camera,
+  Upload,
 } from "lucide-react";
+
+const AVATAR_COLORS = [
+  "hsl(220, 70%, 55%)",
+  "hsl(260, 65%, 55%)",
+  "hsl(340, 65%, 55%)",
+  "hsl(160, 60%, 45%)",
+  "hsl(30, 80%, 55%)",
+  "hsl(190, 70%, 50%)",
+  "hsl(0, 70%, 55%)",
+  "hsl(280, 60%, 60%)",
+];
 
 type ExperienceLevel = "beginner" | "intermediate" | "advanced";
 type TradingGoal =
