@@ -197,6 +197,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
       }, 1500);
     } catch (e) {
       console.error("Onboarding activation failed:", e);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
