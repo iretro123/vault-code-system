@@ -82,15 +82,14 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claims?.claims) {
+    const { data: { user: caller }, error: userError } = await userClient.auth.getUser();
+    if (userError || !caller) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const callerId = claims.claims.sub as string;
+    const callerId = caller.id;
 
     // Check operator role using service client
     const admin = createClient(supabaseUrl, serviceKey);
