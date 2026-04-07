@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatTimeInTZ, getUserTimezone } from "@/lib/userTime";
 import { useNavigate } from "react-router-dom";
 import { Plus, ChevronDown, TrendingUp, MessageSquare, Sparkles, BookOpen, Video, Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 interface Props {
   firstName: string;
   onCheckIn: () => void;
+  timezone?: string | null;
 }
 
 const CREATE_ITEMS = [
@@ -34,24 +36,25 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-function useStatusLine(userId: string | undefined) {
+function useStatusLine(userId: string | undefined, profileTZ?: string | null) {
   const [message, setMessage] = useState<string | null>(null);
+  const tz = getUserTimezone(profileTZ);
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
 
-    resolveStatus(userId).then((msg) => {
+    resolveStatus(userId, tz).then((msg) => {
       if (!cancelled) setMessage(msg);
     });
 
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, tz]);
 
   return message;
 }
 
-async function resolveStatus(userId: string): Promise<string> {
+async function resolveStatus(userId: string, tz: string): Promise<string> {
   const now = new Date();
   const monday = new Date(now);
   monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
@@ -82,10 +85,24 @@ async function resolveStatus(userId: string): Promise<string> {
   ]);
 
   if (liveRes.data && liveRes.data.length > 0) {
-    const sessionDate = new Date(liveRes.data[0].session_date);
+    const session = liveRes.data[0];
+    const sessionDate = new Date(session.session_date);
     const isToday = sessionDate <= endOfToday;
-    const label = isToday ? "Live session tonight" : "Live session tomorrow";
-    return `${label}: "${liveRes.data[0].title}"`;
+    const hourStr = sessionDate.toLocaleString("en-US", { timeZone: tz, hour: "numeric", hour12: false });
+    const hourNum = parseInt(hourStr, 10);
+    const timeStr = formatTimeInTZ(session.session_date, tz);
+
+    let label: string;
+    if (!isToday) {
+      label = `Live session tomorrow at ${timeStr}`;
+    } else if (hourNum < 12) {
+      label = `Live session today at ${timeStr}`;
+    } else if (hourNum < 17) {
+      label = `Live session this afternoon at ${timeStr}`;
+    } else {
+      label = `Live session tonight at ${timeStr}`;
+    }
+    return `${label} — "${session.title}"`;
   }
   if ((journalRes.count ?? 0) === 0) {
     return "No journal entries this week. Log a trade to stay accountable.";
@@ -219,13 +236,13 @@ function ParticleCanvas() {
   );
 }
 
-export function HeroHeader({ firstName, onCheckIn }: Props) {
+export function HeroHeader({ firstName, onCheckIn, timezone }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const { hasAccess, status, isAdminBypass } = useStudentAccess();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const statusLine = useStatusLine(user?.id);
+  const statusLine = useStatusLine(user?.id, timezone);
 
   const showUpgrade = !hasAccess && !isAdminBypass;
   const isPastDue = status === "past_due";
