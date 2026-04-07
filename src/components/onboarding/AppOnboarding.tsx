@@ -102,6 +102,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
   // Final
   const [submitting, setSubmitting] = useState(false);
   const [activated, setActivated] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
 
   const handleIconSelect = (iconId: string) => {
     setSelectedIcon(iconId);
