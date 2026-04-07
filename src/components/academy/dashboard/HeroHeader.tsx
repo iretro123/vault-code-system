@@ -236,7 +236,7 @@ function ParticleCanvas() {
   );
 }
 
-export function HeroHeader({ firstName, onCheckIn }: Props) {
+export function HeroHeader({ firstName, onCheckIn, timezone }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();

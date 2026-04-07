@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { formatTimeInTZ, getUserTimezone } from "@/lib/userTime";
 
 type StatusKey = "streak" | "missed_journal" | "live_tonight" | "weekly_review" | "default";
 
@@ -11,19 +12,20 @@ interface StatusMessage {
 }
 
 export function DashboardStatusLine() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [message, setMessage] = useState<string | null>(null);
+  const tz = getUserTimezone(profile?.timezone);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
 
-    resolveStatus(user.id).then((msg) => {
+    resolveStatus(user.id, tz).then((msg) => {
       if (!cancelled) setMessage(msg);
     });
 
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, tz]);
 
   if (!message) return null;
 
@@ -32,7 +34,7 @@ export function DashboardStatusLine() {
   );
 }
 
-async function resolveStatus(userId: string): Promise<string> {
+async function resolveStatus(userId: string, tz: string): Promise<string> {
   const now = new Date();
   const todayDate = now.toISOString().slice(0, 10);
   const monday = new Date(now);
@@ -72,12 +74,26 @@ async function resolveStatus(userId: string): Promise<string> {
 
   // Live session
   if (liveRes.data && liveRes.data.length > 0) {
-    const sessionDate = new Date(liveRes.data[0].session_date);
+    const session = liveRes.data[0];
+    const sessionDate = new Date(session.session_date);
     const isToday = sessionDate <= endOfToday;
-    const label = isToday ? "Live session tonight" : "Live session tomorrow";
+    const hourStr = sessionDate.toLocaleString("en-US", { timeZone: tz, hour: "numeric", hour12: false });
+    const hourNum = parseInt(hourStr, 10);
+    const timeStr = formatTimeInTZ(session.session_date, tz);
+
+    let label: string;
+    if (!isToday) {
+      label = `Live session tomorrow at ${timeStr}`;
+    } else if (hourNum < 12) {
+      label = `Live session today at ${timeStr}`;
+    } else if (hourNum < 17) {
+      label = `Live session this afternoon at ${timeStr}`;
+    } else {
+      label = `Live session tonight at ${timeStr}`;
+    }
     messages.push({
       key: "live_tonight",
-      text: `${label}: "${liveRes.data[0].title}"`,
+      text: `${label} — "${session.title}"`,
       priority: 1,
     });
   }

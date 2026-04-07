@@ -118,7 +118,7 @@ const AcademyHome = () => {
   return (
     <>
       <div className="px-4 md:px-6 pt-6 md:pt-8 pb-10 space-y-6 max-w-6xl animate-fade-in">
-        <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} />
+        <HeroHeader firstName={firstName} onCheckIn={() => setCheckInOpen(true)} timezone={profile?.timezone} />
 
         <ActivityTicker />
 
