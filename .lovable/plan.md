@@ -1,31 +1,19 @@
 
 
-## Hide Two Lessons From Members
+## Hide Lesson: "How to Setup Your First Brokerage (March 21st)"
 
-### What
-Set `visible = false` on two specific lessons so they are hidden from regular members but still visible to admins/coaches (with a "Hidden" badge).
+Set `visible = false` on this lesson so members can't see it. Admins/coaches will still see it with a "Hidden" badge.
 
-### Lessons to Hide
-1. **"What Is the Stock Market? (March 21st)"** — in Chapter 2 (Risk Management)
-   - ID: `383ab622-322f-450a-9b50-cc3a961fb9b7`
-2. **"Chapter Intro: Why Structure Comes Before Setups"** — in Chapter 3 (Trading Psychology)
-   - ID: `53c26d02-48b4-4a27-a4f9-35af90630c9b`
+### Data Update
 
-### How
-One database migration:
 ```sql
 UPDATE academy_lessons SET visible = false, updated_at = now()
-WHERE id IN (
-  '383ab622-322f-450a-9b50-cc3a961fb9b7',
-  '53c26d02-48b4-4a27-a4f9-35af90630c9b'
-);
+WHERE id = '19b901e9-3f6f-4057-abcc-63e49bbd399e';
 ```
 
-No code changes needed — the frontend already filters `visible = false` lessons for non-admin users and shows a "Hidden" badge for admins.
+No code changes needed — the frontend already filters hidden lessons for non-admin users.
 
-### File
-
-| File | Change |
-|------|--------|
-| Database migration | Set `visible = false` on 2 lessons |
+| Target | Change |
+|--------|--------|
+| Database (`academy_lessons`) | Set `visible = false` on lesson ID `19b901e9-...` |
 
