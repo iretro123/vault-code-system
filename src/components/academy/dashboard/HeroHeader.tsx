@@ -35,19 +35,20 @@ function getGreeting(): string {
   return "Good evening";
 }
 
-function useStatusLine(userId: string | undefined) {
+function useStatusLine(userId: string | undefined, profileTZ?: string | null) {
   const [message, setMessage] = useState<string | null>(null);
+  const tz = getUserTimezone(profileTZ);
 
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
 
-    resolveStatus(userId).then((msg) => {
+    resolveStatus(userId, tz).then((msg) => {
       if (!cancelled) setMessage(msg);
     });
 
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, tz]);
 
   return message;
 }
