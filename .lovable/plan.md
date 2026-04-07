@@ -1,62 +1,45 @@
 
 
-## Fix: Status Line Says "Tonight" for a 9 AM Session
+## Fix: Vault AI Coach — Bad Responses, Broken Links, Poor Quality
 
-### Problem
-Line 87 in `HeroHeader.tsx` hardcodes `"Live session tonight"` for any session happening today, regardless of time. A 9 AM session should not say "tonight."
+### Problems Identified
 
-### Root Cause
-```ts
-const label = isToday ? "Live session tonight" : "Live session tomorrow";
-```
-No check on the actual hour of the session — it always says "tonight" if the session is today.
+After reviewing the full edge function and CoachDrawer code:
+
+**1. Unstable AI Model**
+The coach uses `google/gemini-3-flash-preview` — a preview model. Preview models are experimental and produce inconsistent, lower-quality responses. This is the primary cause of "bad coding, bad inputs, bad responses."
+
+**2. Navigation Links Don't Work**
+The AI is instructed to output links in a very specific format: `🔗 **Go to:** Label (/path)`. The frontend regex `NAV_PATTERN` only matches this exact pattern. If the AI outputs even slightly different formatting (which preview models do frequently — extra spaces, missing emoji, different bold syntax), the link never renders as a clickable card. The user sees raw markdown text instead of a button.
+
+**3. Video Recommendations Break Similarly**
+Same issue — the pattern `📺 **Recommended Lesson:** "Title" in Module` must be exact. Preview models often deviate.
+
+**4. System Prompt Overload**
+The system prompt is ~3,500 words with 10+ rule sections. Preview models struggle with long instruction sets and start ignoring rules or hallucinating formats.
 
 ### Fix
 
-**File: `src/components/academy/dashboard/HeroHeader.tsx`**
+**1. Upgrade AI Model** (edge function)
+Switch from `google/gemini-3-flash-preview` to `google/gemini-2.5-flash` — stable, fast, high-quality, and excellent at following structured output instructions.
 
-Replace the hardcoded "tonight" / "tomorrow" logic (lines 84-88) with time-aware labels:
+**2. Add Resilient Link Parsing** (CoachDrawer.tsx)
+Make the nav link regex more flexible to catch common AI format variations:
+- Handle with or without emoji
+- Handle extra whitespace
+- Also detect standard markdown links like `[Label](/path)` that point to academy routes
+- Same treatment for video recommendation patterns
 
-1. Get the user's timezone from their profile (or fall back to browser)
-2. Check the session's hour in the user's local time
-3. Pick the right label:
-   - **Today, before 12 PM** → `"Live session today at 9:00 AM"`
-   - **Today, 12 PM–5 PM** → `"Live session this afternoon at 2:00 PM"`
-   - **Today, after 5 PM** → `"Live session tonight at 7:00 PM"`
-   - **Tomorrow** → `"Live session tomorrow at 9:00 AM"`
-4. Use `formatTimeInTZ()` from `src/lib/userTime.ts` to display the time in the user's timezone
+**3. Tighten System Prompt** (edge function)
+Reduce the system prompt by ~40% — remove redundant sections, consolidate rules, and make the output format instructions clearer and harder to deviate from. The format instructions move to a dedicated "OUTPUT FORMAT" section at the end (models pay most attention to the start and end of prompts).
 
-This also requires passing `profile?.timezone` into `useStatusLine` so times are localized.
+**4. Add Fallback Navigation Detection** (CoachDrawer.tsx)
+If the AI outputs a path like `/academy/live` anywhere in a markdown link, detect it and render it as a clickable NavLinkCard — even if the format doesn't match the emoji pattern.
 
-### Technical Detail
-
-```ts
-// New logic replacing line 84-88
-if (liveRes.data && liveRes.data.length > 0) {
-  const session = liveRes.data[0];
-  const sessionDate = new Date(session.session_date);
-  const isToday = sessionDate <= endOfToday;
-  const hour = sessionDate.toLocaleString("en-US", { timeZone: tz, hour: "numeric", hour12: false });
-  const hourNum = parseInt(hour, 10);
-  const timeStr = formatTimeInTZ(session.session_date, tz);
-  
-  let label: string;
-  if (!isToday) {
-    label = `Live session tomorrow at ${timeStr}`;
-  } else if (hourNum < 12) {
-    label = `Live session today at ${timeStr}`;
-  } else if (hourNum < 17) {
-    label = `Live session this afternoon at ${timeStr}`;
-  } else {
-    label = `Live session tonight at ${timeStr}`;
-  }
-  return `${label} — "${session.title}"`;
-}
-```
-
-### Changes
+### Files
 
 | File | Change |
 |------|--------|
-| `src/components/academy/dashboard/HeroHeader.tsx` | Pass user timezone into `useStatusLine`/`resolveStatus`, replace hardcoded "tonight" with time-aware label using `formatTimeInTZ` |
+| `supabase/functions/coach-chat/index.ts` | Switch model to `google/gemini-2.5-flash`, tighten system prompt |
+| `src/components/academy/CoachDrawer.tsx` | Make nav link + video regex more resilient, add markdown link fallback detection |
 
