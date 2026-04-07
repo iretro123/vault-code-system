@@ -549,10 +549,17 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
                 </div>
                 <Button
                   onClick={handleDismiss}
+                  disabled={dismissing}
                   className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
                 >
-                  Go to Dashboard
-                  <ChevronRight className="h-5 w-5 ml-1" />
+                  {dismissing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      Go to Dashboard
+                      <ChevronRight className="h-5 w-5 ml-1" />
+                    </>
+                  )}
                 </Button>
               </>
             ) : (
