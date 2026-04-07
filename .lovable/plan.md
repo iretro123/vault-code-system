@@ -1,61 +1,48 @@
 
 
-## Fix: Onboarding Stuck in Infinite Loop — Real User Affected
+## Bulletproof Onboarding for All New Users
 
-### Root Cause Found
+### Current Status
+The root cause (writing `first_name`/`last_name` to non-existent columns) is already fixed. The update payload now only uses valid columns. However, two failure modes remain that could still trap users:
 
-The `handleActivate` function in `AppOnboarding.tsx` (line 163-177) tries to write **`first_name`** and **`last_name`** to the `profiles` table — but **those columns don't exist**. The table only has `display_name`.
+### Remaining Issues
 
-PostgREST rejects the entire update when it encounters unknown columns. Because the code uses `as any` to bypass TypeScript and doesn't check the update response for errors, the failure is completely silent. The critical flags `profile_completed` and `onboarding_completed` never get set to `true`.
+**1. Silent failure — no user feedback**
+If `handleActivate` fails (network error, RLS issue, any DB problem), the catch block on line 192 only does `console.error`. The user sees the spinner stop but gets no error message and no way to retry. They're stuck on "Activate My Vault" with no indication anything went wrong.
 
-Result: every time the user finishes onboarding and hits "Activate", nothing actually saves. When they reload, the gate check on line 143 sees `!profileCompleted && !onboardingCompleted` → shows onboarding again. Infinite loop.
+**2. "Access Dashboard" button can dead-end**
+After activation succeeds, the "Go to Dashboard" button calls `handleDismiss` → `refetchProfile()`. This just re-fetches the profile and relies on `AcademyLayout` to detect `profile_completed = true` and swap out the onboarding screen. If the refetch fails or is slow, nothing happens — the button appears broken.
 
-This user (goldringtransportation@gmail.com) has completed onboarding 3 times. Their profile still shows `profile_completed: false`, `onboarding_completed: false`.
+### Fix
 
-### Fix (2 parts)
+**File: `src/components/onboarding/AppOnboarding.tsx`**
 
-**1. Code fix — `AppOnboarding.tsx`**
+1. Add a visible error toast in the catch block so users know activation failed and can retry
+2. Add a fallback in `handleDismiss`: if `refetchProfile` doesn't navigate away within 2 seconds, force-navigate to `/academy` with a page reload as a safety net
+3. Add a loading state to the "Go to Dashboard" button so it doesn't feel broken during the refetch
 
-Remove `first_name` and `last_name` from the update payload. The `display_name` field already combines them. Also add error checking on the update response so failures aren't silent.
+### Technical Detail
 
 ```ts
-// Before (broken)
-await supabase.from("profiles").update({
-  first_name: firstName,    // ← DOES NOT EXIST
-  last_name: lastName,      // ← DOES NOT EXIST
-  display_name: displayName,
-  ...
-} as any)
+// In catch block (line 192):
+catch (e) {
+  console.error("Onboarding activation failed:", e);
+  toast({ title: "Something went wrong", description: "Please try again.", variant: "destructive" });
+}
 
-// After (fixed)
-const { error: updateErr } = await supabase.from("profiles").update({
-  display_name: displayName,
-  timezone: detectedTz,
-  role_level: roleLevel,
-  academy_experience: roleLevel,
-  trading_goal: goal || null,
-  profile_completed: true,
-  onboarding_completed: true,
-  avatar_url: avatarUrl || null,
-}).eq("user_id", user.id);
-
-if (updateErr) throw updateErr;
+// In handleDismiss — add timeout fallback:
+const handleDismiss = useCallback(async () => {
+  if (isPreview) { /* existing preview logic */ return; }
+  setDismissing(true);
+  await refetchProfile();
+  // Safety net: if still on onboarding after 2s, force reload
+  setTimeout(() => {
+    window.location.href = "/academy";
+  }, 2000);
+}, [isPreview, refetchProfile]);
 ```
-
-**2. Data fix — Unblock the stuck user**
-
-Database migration to set `profile_completed = true` and `onboarding_completed = true` for this user so they can access the dashboard immediately without re-doing onboarding a 4th time.
-
-```sql
-UPDATE profiles
-SET profile_completed = true, onboarding_completed = true, updated_at = now()
-WHERE user_id = '817547b7-2739-45bf-8a3b-0c3c3d817f1e';
-```
-
-### Files
 
 | File | Change |
 |------|--------|
-| `src/components/onboarding/AppOnboarding.tsx` | Remove non-existent `first_name`/`last_name` columns, add error handling |
-| Database migration | Unblock stuck user by setting completion flags |
+| `src/components/onboarding/AppOnboarding.tsx` | Add error toast on activation failure, add loading + fallback navigation on "Go to Dashboard" |
 
