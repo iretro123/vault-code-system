@@ -1,45 +1,48 @@
 
 
-## Fix: Vault AI Coach — Bad Responses, Broken Links, Poor Quality
+## Fix: Signal/Watchlist Form Losing Data + Make Posting Easier
 
-### Problems Identified
+### Problem 1: Form resets when switching tabs or navigating away
+The `SignalPostForm` stores all field values in local `useState`. While the community sub-tabs use CSS `hidden/block` (keeping components mounted), if you navigate away from the Community page entirely (e.g. click Dashboard, then come back), the whole component tree unmounts and all form state is lost. The user has to retype everything.
 
-After reviewing the full edge function and CoachDrawer code:
-
-**1. Unstable AI Model**
-The coach uses `google/gemini-3-flash-preview` — a preview model. Preview models are experimental and produce inconsistent, lower-quality responses. This is the primary cause of "bad coding, bad inputs, bad responses."
-
-**2. Navigation Links Don't Work**
-The AI is instructed to output links in a very specific format: `🔗 **Go to:** Label (/path)`. The frontend regex `NAV_PATTERN` only matches this exact pattern. If the AI outputs even slightly different formatting (which preview models do frequently — extra spaces, missing emoji, different bold syntax), the link never renders as a clickable card. The user sees raw markdown text instead of a button.
-
-**3. Video Recommendations Break Similarly**
-Same issue — the pattern `📺 **Recommended Lesson:** "Title" in Module` must be exact. Preview models often deviate.
-
-**4. System Prompt Overload**
-The system prompt is ~3,500 words with 10+ rule sections. Preview models struggle with long instruction sets and start ignoring rules or hallucinating formats.
+### Problem 2: Posting a watchlist has too much friction
+You have to click "Post Signal" to expand the form, then fill in fields. For daily watchlist posts that happen every morning, this should be faster.
 
 ### Fix
 
-**1. Upgrade AI Model** (edge function)
-Switch from `google/gemini-3-flash-preview` to `google/gemini-2.5-flash` — stable, fast, high-quality, and excellent at following structured output instructions.
+**File: `src/components/academy/chat/SignalPostForm.tsx`**
 
-**2. Add Resilient Link Parsing** (CoachDrawer.tsx)
-Make the nav link regex more flexible to catch common AI format variations:
-- Handle with or without emoji
-- Handle extra whitespace
-- Also detect standard markdown links like `[Label](/path)` that point to academy routes
-- Same treatment for video recommendation patterns
+1. **Persist draft to sessionStorage** — Save all form field values (ticker, bias, levels, notes, tvLink, mode, direction, strike, exp, fill, open state) to `sessionStorage` on every change. Restore on mount. Clear on successful submit. This means switching tabs, navigating away, or even refreshing won't lose your draft.
 
-**3. Tighten System Prompt** (edge function)
-Reduce the system prompt by ~40% — remove redundant sections, consolidate rules, and make the output format instructions clearer and harder to deviate from. The format instructions move to a dedicated "OUTPUT FORMAT" section at the end (models pay most attention to the start and end of prompts).
+2. **Auto-expand when draft exists** — If there's a saved draft with data, automatically open the form instead of showing the collapsed "Post Signal" button.
 
-**4. Add Fallback Navigation Detection** (CoachDrawer.tsx)
-If the AI outputs a path like `/academy/live` anywhere in a markdown link, detect it and render it as a clickable NavLinkCard — even if the format doesn't match the emoji pattern.
+3. **Streamline watchlist mode** — Add a "Quick Watchlist" shortcut: a single row with ticker input + bias toggle + post button for rapid watchlist entries. The full expanded form is still available for adding levels, notes, charts, etc. This lets you fire off a watchlist item in seconds.
 
-### Files
+4. **Visual "unsaved draft" indicator** — Show a small dot on the collapsed "Post Signal" button when a draft exists, so you know there's unfinished work.
+
+### Technical Detail
+
+```ts
+const DRAFT_KEY = `vault_signal_draft_${roomSlug}`;
+
+// Save draft on every field change
+useEffect(() => {
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+    open, mode, ticker, bias, levels, notes, tvLink,
+    direction, strike, exp, fill,
+  }));
+}, [open, mode, ticker, bias, levels, notes, tvLink, direction, strike, exp, fill]);
+
+// Restore on mount
+const [ticker, setTicker] = useState(() => {
+  const saved = sessionStorage.getItem(DRAFT_KEY);
+  return saved ? JSON.parse(saved).ticker || "" : "";
+});
+```
+
+### Changes
 
 | File | Change |
 |------|--------|
-| `supabase/functions/coach-chat/index.ts` | Switch model to `google/gemini-2.5-flash`, tighten system prompt |
-| `src/components/academy/CoachDrawer.tsx` | Make nav link + video regex more resilient, add markdown link fallback detection |
+| `src/components/academy/chat/SignalPostForm.tsx` | Add sessionStorage draft persistence, auto-expand on draft, quick watchlist mode, draft indicator |
 
