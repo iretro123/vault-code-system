@@ -141,14 +141,18 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
   const handleDismiss = useCallback(async () => {
     if (isPreview) {
-      // In preview mode, just navigate away without touching DB
       const url = new URL(window.location.href);
       url.searchParams.delete("preview-onboarding");
       window.history.replaceState({}, "", url.toString());
       window.location.reload();
       return;
     }
+    setDismissing(true);
     await refetchProfile();
+    // Safety net: if layout didn't swap away after 2s, force reload
+    setTimeout(() => {
+      window.location.href = "/academy";
+    }, 2000);
   }, [isPreview, refetchProfile]);
 
   const handleActivate = useCallback(async () => {
