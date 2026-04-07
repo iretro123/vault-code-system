@@ -1656,10 +1656,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         </div>
       ) : canPost ? (
         <div className="px-5 pt-2 bg-card border-t border-white/[0.06] pb-[calc(3.5rem+env(safe-area-inset-bottom,8px))] md:pb-4">
+          {roomSlug === "daily-setups" && (
+            <SignalPostForm onSubmit={handleSend} sending={sending} roomSlug={roomSlug} />
+          )}
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
-          ) : roomSlug === "daily-setups" ? (
-            <SignalPostForm onSubmit={handleSend} sending={sending} roomSlug={roomSlug} />
           ) : (
             <div className="relative space-y-2">
               {/* Template chips */}
