@@ -72,40 +72,46 @@ interface ChatMessage {
   isStreaming?: boolean;
 }
 
-// Parse video recommendations from AI response
-const VIDEO_PATTERN = /(?:📺\s*)?\*\*Recommended Lesson:\*\*\s*"([^"]+)"\s*in\s*(.+)/g;
-
-interface VideoRecommendation {
-  lessonTitle: string;
-  moduleTitle: string;
-  moduleSlug?: string;
-}
-
+// Parse video recommendations from AI response — resilient to format variations
 function parseVideoRecommendations(content: string): VideoRecommendation[] {
   const recs: VideoRecommendation[] = [];
+  // Match: optional emoji, optional bold, "Recommended Lesson:", quoted title, "in" module
+  const regex = /📺?\s*\*{0,2}Recommended Lesson:?\*{0,2}\s*"([^"]+)"\s*in\s*(.+)/gi;
   let match;
-  const regex = new RegExp(VIDEO_PATTERN.source, "g");
   while ((match = regex.exec(content)) !== null) {
-    recs.push({ lessonTitle: match[1], moduleTitle: match[2].trim() });
+    recs.push({ lessonTitle: match[1], moduleTitle: match[2].trim().replace(/\*+$/, "").trim() });
   }
   return recs;
 }
 
-// Parse navigation links from AI response
-const NAV_PATTERN = /🔗\s*\*\*Go to:\*\*\s*(.+?)\s*\(([^)]+)\)/g;
-
-interface NavigationLink {
-  label: string;
-  path: string;
-}
+// Parse navigation links from AI response — resilient to format variations
+const ACADEMY_ROUTES = ["/academy/home", "/academy/learn", "/academy/trade", "/academy/community", "/academy/live", "/academy/vault-os", "/academy/playbook", "/academy/settings", "/academy/journal", "/academy/progress"];
 
 function parseNavigationLinks(content: string): NavigationLink[] {
   const links: NavigationLink[] = [];
+  const seen = new Set<string>();
+
+  // Pattern 1: 🔗 **Go to:** Label (/path) — with flexible formatting
+  const emojiRegex = /🔗?\s*\*{0,2}Go to:?\*{0,2}\s*(.+?)\s*\(([^)]+)\)/gi;
   let match;
-  const regex = new RegExp(NAV_PATTERN.source, "g");
-  while ((match = regex.exec(content)) !== null) {
-    links.push({ label: match[1].trim(), path: match[2].trim() });
+  while ((match = emojiRegex.exec(content)) !== null) {
+    const path = match[2].trim();
+    if (!seen.has(path)) {
+      seen.add(path);
+      links.push({ label: match[1].replace(/\*+/g, "").trim(), path });
+    }
   }
+
+  // Pattern 2: Standard markdown links [Label](/academy/...) 
+  const mdRegex = /\[([^\]]+)\]\((\/academy\/[^)]+)\)/gi;
+  while ((match = mdRegex.exec(content)) !== null) {
+    const path = match[2].trim();
+    if (!seen.has(path) && ACADEMY_ROUTES.some(r => path.startsWith(r))) {
+      seen.add(path);
+      links.push({ label: match[1].trim(), path });
+    }
+  }
+
   return links;
 }
 
