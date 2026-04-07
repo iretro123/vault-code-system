@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { OnboardingProgressBar, OnboardingStep } from "./OnboardingStep";
 import { VaultTourCarousel } from "./VaultTourCarousel";
 import { AVATAR_ICONS } from "@/lib/avatarIcons";
@@ -101,6 +102,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
   // Final
   const [submitting, setSubmitting] = useState(false);
   const [activated, setActivated] = useState(false);
+  const [dismissing, setDismissing] = useState(false);
 
   const handleIconSelect = (iconId: string) => {
     setSelectedIcon(iconId);
@@ -139,14 +141,18 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
   const handleDismiss = useCallback(async () => {
     if (isPreview) {
-      // In preview mode, just navigate away without touching DB
       const url = new URL(window.location.href);
       url.searchParams.delete("preview-onboarding");
       window.history.replaceState({}, "", url.toString());
       window.location.reload();
       return;
     }
+    setDismissing(true);
     await refetchProfile();
+    // Safety net: if layout didn't swap away after 2s, force reload
+    setTimeout(() => {
+      window.location.href = "/academy";
+    }, 2000);
   }, [isPreview, refetchProfile]);
 
   const handleActivate = useCallback(async () => {
@@ -191,6 +197,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
       }, 1500);
     } catch (e) {
       console.error("Onboarding activation failed:", e);
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -542,10 +549,17 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
                 </div>
                 <Button
                   onClick={handleDismiss}
+                  disabled={dismissing}
                   className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
                 >
-                  Go to Dashboard
-                  <ChevronRight className="h-5 w-5 ml-1" />
+                  {dismissing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      Go to Dashboard
+                      <ChevronRight className="h-5 w-5 ml-1" />
+                    </>
+                  )}
                 </Button>
               </>
             ) : (
