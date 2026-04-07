@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 interface Props {
   firstName: string;
   onCheckIn: () => void;
+  timezone?: string | null;
 }
 
 const CREATE_ITEMS = [
