@@ -72,6 +72,17 @@ interface ChatMessage {
   isStreaming?: boolean;
 }
 
+interface VideoRecommendation {
+  lessonTitle: string;
+  moduleTitle: string;
+  moduleSlug?: string;
+}
+
+interface NavigationLink {
+  label: string;
+  path: string;
+}
+
 // Parse video recommendations from AI response — resilient to format variations
 function parseVideoRecommendations(content: string): VideoRecommendation[] {
   const recs: VideoRecommendation[] = [];
