@@ -242,7 +242,7 @@ export function HeroHeader({ firstName, onCheckIn }: Props) {
   const isMobile = useIsMobile();
   const { hasAccess, status, isAdminBypass } = useStudentAccess();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const statusLine = useStatusLine(user?.id);
+  const statusLine = useStatusLine(user?.id, timezone);
 
   const showUpgrade = !hasAccess && !isAdminBypass;
   const isPastDue = status === "past_due";
