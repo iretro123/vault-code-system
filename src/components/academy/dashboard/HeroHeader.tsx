@@ -53,7 +53,7 @@ function useStatusLine(userId: string | undefined, profileTZ?: string | null) {
   return message;
 }
 
-async function resolveStatus(userId: string): Promise<string> {
+async function resolveStatus(userId: string, tz: string): Promise<string> {
   const now = new Date();
   const monday = new Date(now);
   monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
@@ -84,10 +84,24 @@ async function resolveStatus(userId: string): Promise<string> {
   ]);
 
   if (liveRes.data && liveRes.data.length > 0) {
-    const sessionDate = new Date(liveRes.data[0].session_date);
+    const session = liveRes.data[0];
+    const sessionDate = new Date(session.session_date);
     const isToday = sessionDate <= endOfToday;
-    const label = isToday ? "Live session tonight" : "Live session tomorrow";
-    return `${label}: "${liveRes.data[0].title}"`;
+    const hourStr = sessionDate.toLocaleString("en-US", { timeZone: tz, hour: "numeric", hour12: false });
+    const hourNum = parseInt(hourStr, 10);
+    const timeStr = formatTimeInTZ(session.session_date, tz);
+
+    let label: string;
+    if (!isToday) {
+      label = `Live session tomorrow at ${timeStr}`;
+    } else if (hourNum < 12) {
+      label = `Live session today at ${timeStr}`;
+    } else if (hourNum < 17) {
+      label = `Live session this afternoon at ${timeStr}`;
+    } else {
+      label = `Live session tonight at ${timeStr}`;
+    }
+    return `${label} — "${session.title}"`;
   }
   if ((journalRes.count ?? 0) === 0) {
     return "No journal entries this week. Log a trade to stay accountable.";
