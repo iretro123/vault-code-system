@@ -160,11 +160,9 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
       const displayName = [firstName, lastName].filter(Boolean).join(" ") || "Trader";
       const roleLevel = experience || "beginner";
 
-      await supabase
+      const { error: updateErr } = await supabase
         .from("profiles")
         .update({
-          first_name: firstName,
-          last_name: lastName,
           display_name: displayName,
           timezone: detectedTz,
           role_level: roleLevel,
@@ -175,6 +173,8 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           avatar_url: avatarUrl || null,
         } as any)
         .eq("user_id", user.id);
+
+      if (updateErr) throw updateErr;
 
       await supabase
         .from("onboarding_state")
