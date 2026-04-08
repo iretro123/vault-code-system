@@ -100,14 +100,28 @@ serve(async (req) => {
       });
     }
 
-    const { messages } = await req.json();
+    const { messages: rawMessages } = await req.json();
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    if (!rawMessages || !Array.isArray(rawMessages) || rawMessages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages array is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Input validation: cap message count and content length to prevent abuse
+    const MAX_MESSAGES = 20;
+    const MAX_CONTENT_LENGTH = 2000;
+    if (rawMessages.length > MAX_MESSAGES) {
+      return new Response(JSON.stringify({ error: "Too many messages. Start a new conversation." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const messages = rawMessages.map((m: any) => ({
+      role: m.role === "user" ? "user" : "assistant",
+      content: String(m.content || "").slice(0, MAX_CONTENT_LENGTH),
+    }));
 
     // ── Fetch student context ──
     const serviceClient = createClient(supabaseUrl, supabaseServiceKey);

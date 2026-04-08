@@ -81,7 +81,11 @@ Deno.serve(async (req) => {
     const displayName = existingProfile.display_name || "";
 
     // Generate a single recovery link
-    const redirectTo = origin ? `${origin}/reset-password` : "https://vault-code-system.lovable.app/reset-password";
+    // Validate origin against allowlist to prevent open-redirect / token theft
+    const safeOrigin = (origin && ALLOWED_ORIGINS.includes(origin))
+      ? origin
+      : "https://vault-code-system.lovable.app";
+    const redirectTo = `${safeOrigin}/reset-password`;
     const { data: linkData, error: linkError } = await sb.auth.admin.generateLink({
       type: "recovery",
       email: normalizedEmail,
