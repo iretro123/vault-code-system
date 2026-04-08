@@ -330,7 +330,7 @@ ${studentContext || "No student data available."}`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: fullSystemPrompt },
-          ...messages.map((m: any) => ({ role: m.role, content: m.content })),
+          ...messages,
         ],
         stream: true,
       }),
