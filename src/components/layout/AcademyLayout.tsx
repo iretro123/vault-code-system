@@ -27,8 +27,17 @@ import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
-  const everHydratedRef = useRef(false);
-  if (hydrated) everHydratedRef.current = true;
+  // Persist hydration flag to sessionStorage so tab discards don't reset it
+  const everHydratedRef = useRef(() => {
+    try { return sessionStorage.getItem("va_ever_hydrated") === "1"; } catch { return false; }
+  });
+  const [everHydrated, setEverHydrated] = useState(everHydratedRef.current);
+  useEffect(() => {
+    if (hydrated && !everHydrated) {
+      setEverHydrated(true);
+      try { sessionStorage.setItem("va_ever_hydrated", "1"); } catch {}
+    }
+  }, [hydrated, everHydrated]);
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
