@@ -235,24 +235,12 @@ function _startRealtime(userId: string) {
     )
     .subscribe();
 
-  // Reconciliation on visibility change + focus
-  const handleVisibility = () => {
-    if (document.visibilityState === "visible") {
-      _fetchAllCounts(userId);
-    }
-  };
-  const handleFocus = () => {
-    _fetchAllCounts(userId);
-  };
-  document.addEventListener("visibilitychange", handleVisibility);
-  window.addEventListener("focus", handleFocus);
+  // No per-hook visibility listeners — useSmartRefresh handles global resume
 
   return () => {
     supabase.removeChannel(msgChannel);
     supabase.removeChannel(readsChannel);
     supabase.removeChannel(prefsChannel);
-    document.removeEventListener("visibilitychange", handleVisibility);
-    window.removeEventListener("focus", handleFocus);
     _channelActive = false;
   };
 }

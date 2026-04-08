@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,20 +13,17 @@ interface AccessState {
   tier: string | null;
   productKey: string | null;
   hasAccess: boolean;
-  loading: boolean;
-  error: string | null;
   lastUpdated: number | null;
 }
 
 const CACHE_KEY = "va_cache_student_access";
-const CACHE_TTL = 60_000; // 60s
 
-function readCache(): (AccessState & { ts: number }) | null {
+function readCache(): AccessState | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (Date.now() - parsed.ts > CACHE_TTL) return null;
+    if (Date.now() - (parsed.ts || 0) > 60_000) return null;
     return parsed;
   } catch {
     return null;
@@ -38,113 +36,75 @@ function writeCache(state: AccessState) {
   } catch {}
 }
 
+async function fetchAccessState(userId: string): Promise<AccessState> {
+  const { data, error } = await supabase.rpc("get_my_access_state" as any);
+
+  if (error) {
+    const fallback = readCache();
+    if (fallback) return fallback;
+    throw error;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    const result: AccessState = { status: "none", tier: null, productKey: null, hasAccess: false, lastUpdated: Date.now() };
+    writeCache(result);
+    return result;
+  }
+
+  const status = (["active", "trialing", "past_due", "canceled"].includes(row.status) ? row.status : "none") as AccessStatus;
+  const result: AccessState = {
+    status,
+    tier: row.tier ?? null,
+    productKey: row.product_key ?? null,
+    hasAccess: row.has_access === true,
+    lastUpdated: Date.now(),
+  };
+  writeCache(result);
+  return result;
+}
+
 export function useStudentAccess() {
   const { user, profile } = useAuth();
   const { isCEO, isAdmin, isCoach, isOperator, resolved: permResolved } = useAcademyPermissions();
+  const queryClient = useQueryClient();
+  const retryAttemptedRef = useRef(false);
 
   const cached = readCache();
-  const [state, setState] = useState<AccessState>({
-    status: cached?.status ?? "none",
-    tier: cached?.tier ?? null,
-    productKey: cached?.productKey ?? null,
-    hasAccess: cached?.hasAccess ?? false,
-    loading: !cached,
-    error: null,
-    lastUpdated: cached?.lastUpdated ?? null,
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["student-access", user?.id],
+    queryFn: () => fetchAccessState(user!.id),
+    enabled: !!user?.id,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    placeholderData: cached ?? undefined,
+    refetchOnWindowFocus: false,
   });
 
-  const mountedRef = useRef(true);
-  const retryAttemptedRef = useRef(false);
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  const state = data ?? { status: "none" as AccessStatus, tier: null, productKey: null, hasAccess: false, lastUpdated: null };
 
-  const fetchAccess = useCallback(async () => {
-    if (!user?.id) {
-      console.log("[AccessGate] No user, setting none");
-      setState({ status: "none", tier: null, productKey: null, hasAccess: false, loading: false, error: null, lastUpdated: null });
-      return;
-    }
-
-    console.log("[AccessGate] Fetching access for", user.id);
-
-    const { data, error } = await supabase.rpc("get_my_access_state" as any);
-
-    if (!mountedRef.current) return;
-
-    if (error) {
-      console.error("[AccessGate] RPC error:", error.message);
-      // Preserve cached state on network failure to prevent AccessBlockModal from flashing
-      const fallback = readCache();
-      if (fallback) {
-        setState({ status: fallback.status, tier: fallback.tier, productKey: fallback.productKey, hasAccess: fallback.hasAccess, loading: false, error: error.message, lastUpdated: fallback.lastUpdated });
-      } else {
-        setState((prev) => ({ ...prev, loading: false, error: error.message }));
-      }
-      return;
-    }
-
-    const row = Array.isArray(data) ? data[0] : data;
-
-    if (!row) {
-      console.log("[AccessGate] No access row found → none");
-      const newState: AccessState = { status: "none", tier: null, productKey: null, hasAccess: false, loading: false, error: null, lastUpdated: Date.now() };
-      setState(newState);
-      writeCache(newState);
-      return;
-    }
-
-    const status = (["active", "trialing", "past_due", "canceled"].includes(row.status) ? row.status : "none") as AccessStatus;
-    const newState: AccessState = {
-      status,
-      tier: row.tier ?? null,
-      productKey: row.product_key ?? null,
-      hasAccess: row.has_access === true,
-      loading: false,
-      error: null,
-      lastUpdated: Date.now(),
-    };
-    console.log("[AccessGate] Resolved:", newState.status, "hasAccess:", newState.hasAccess);
-    setState(newState);
-    writeCache(newState);
-  }, [user?.id]);
-
-  // Initial fetch
+  // Auto-retry provisioning once per session
   useEffect(() => {
-    fetchAccess();
-  }, [fetchAccess]);
-
-  // Auto-retry provisioning: if status is "none" and user is logged in,
-  // attempt to call provision-manual-access ONE TIME per session.
-  // This catches users who signed up before the auth-header fix,
-  // or whose provisioning silently failed for any reason.
-  useEffect(() => {
-    if (state.loading) return;
+    if (isLoading) return;
     if (state.status !== "none") return;
     if (!user?.id) return;
     if (retryAttemptedRef.current) return;
-
     retryAttemptedRef.current = true;
 
     const userEmail = (profile as any)?.email || user.email;
-    if (!userEmail) {
-      console.log("[AccessGate] No email available for auto-provision retry");
-      return;
-    }
+    if (!userEmail) return;
 
     (async () => {
       try {
-        console.log("[AccessGate] Status is 'none' — attempting auto-provision for", userEmail);
-
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) {
-          console.log("[AccessGate] No session token for auto-provision");
-          return;
-        }
+        if (!session?.access_token) return;
 
         const res = await fetch(`${SUPABASE_URL}/functions/v1/provision-manual-access`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             email: userEmail.trim().toLowerCase(),
@@ -153,29 +113,27 @@ export function useStudentAccess() {
         });
 
         const result = await res.json();
-        console.log("[AccessGate] Auto-provision result:", result);
-
-        if (result.provisioned === true && mountedRef.current) {
-          console.log("[AccessGate] Auto-provision succeeded — refreshing access");
-          await fetchAccess();
+        if (result.provisioned === true) {
+          queryClient.invalidateQueries({ queryKey: ["student-access", user.id] });
         }
-      } catch (err) {
-        console.error("[AccessGate] Auto-provision error:", err);
-      }
+      } catch {}
     })();
-  }, [state.loading, state.status, user?.id, profile, fetchAccess]);
+  }, [isLoading, state.status, user?.id, profile]);
 
-  // Admin/operator bypass
   const adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator);
+
+  const refetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["student-access", user?.id] });
+  }, [queryClient, user?.id]);
 
   return {
     status: state.status,
     tier: state.tier,
     productKey: state.productKey,
     hasAccess: adminBypass ? true : state.hasAccess,
-    loading: state.loading || !permResolved,
-    error: state.error,
-    refetch: fetchAccess,
+    loading: isLoading || !permResolved,
+    error: error?.message ?? null,
+    refetch,
     lastUpdated: state.lastUpdated,
     isAdminBypass: adminBypass,
   };

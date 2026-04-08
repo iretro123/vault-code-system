@@ -173,19 +173,10 @@ export function ActivityTicker() {
     return () => { mountedRef.current = false; };
   }, [fetchActivity]);
 
-  // Background refresh interval
+  // Background refresh interval only — no per-component visibility listener
   useEffect(() => {
     const interval = setInterval(fetchActivity, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchActivity]);
-
-  // Refresh on tab visibility
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") fetchActivity();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [fetchActivity]);
 
   if (items.length === 0) return null;

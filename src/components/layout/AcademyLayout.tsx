@@ -27,8 +27,16 @@ import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
-  const everHydratedRef = useRef(false);
-  if (hydrated) everHydratedRef.current = true;
+  // Persist hydration flag to sessionStorage so tab discards don't reset it
+  const [everHydrated, setEverHydrated] = useState(() => {
+    try { return sessionStorage.getItem("va_ever_hydrated") === "1"; } catch { return false; }
+  });
+  useEffect(() => {
+    if (hydrated && !everHydrated) {
+      setEverHydrated(true);
+      try { sessionStorage.setItem("va_ever_hydrated", "1"); } catch {}
+    }
+  }, [hydrated, everHydrated]);
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -94,8 +102,8 @@ function AcademyLayoutInner() {
     return <Navigate to="/auth" replace />;
   }
 
-  // 3. User exists but profile/hydration still loading
-  if (!profile || (!hydrated && !everHydratedRef.current)) {
+  // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
+  if (!profile || (!hydrated && !everHydrated)) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">
