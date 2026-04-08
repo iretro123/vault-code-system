@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
       console.warn("[check-membership] WHOP_API_KEY not set, skipping Whop check");
     }
 
-    // --- 6. Not found anywhere ---
+    // --- 6. Not found anywhere — return generic response to prevent email enumeration ---
     console.log("[check-membership] Not found:", normalizedEmail);
     return new Response(
       JSON.stringify({ found: false }),

@@ -9,6 +9,12 @@ const corsHeaders = {
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_VERSION = "2021-04-15";
 
+// Trusted origins for password reset links — reject anything else
+const ALLOWED_ORIGINS = [
+  "https://vault-code-system.lovable.app",
+  "https://id-preview--3f554d41-bb0c-4e4a-ac27-d63167a6e1a4.lovable.app",
+];
+
 async function ghlFetch(path: string, apiKey: string, body: Record<string, unknown>) {
   const res = await fetch(`${GHL_BASE}${path}`, {
     method: "POST",
@@ -75,7 +81,11 @@ Deno.serve(async (req) => {
     const displayName = existingProfile.display_name || "";
 
     // Generate a single recovery link
-    const redirectTo = origin ? `${origin}/reset-password` : "https://vault-code-system.lovable.app/reset-password";
+    // Validate origin against allowlist to prevent open-redirect / token theft
+    const safeOrigin = (origin && ALLOWED_ORIGINS.includes(origin))
+      ? origin
+      : "https://vault-code-system.lovable.app";
+    const redirectTo = `${safeOrigin}/reset-password`;
     const { data: linkData, error: linkError } = await sb.auth.admin.generateLink({
       type: "recovery",
       email: normalizedEmail,

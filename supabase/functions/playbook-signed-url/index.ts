@@ -36,11 +36,28 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Use service role to generate signed URL for private bucket
+  const userId = claimsData.claims.sub;
+
+  // Use service role to check entitlement and generate signed URL
   const serviceClient = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
+
+  // Verify user has active access before issuing signed URL
+  const { data: access } = await serviceClient
+    .from("student_access")
+    .select("status")
+    .eq("user_id", userId)
+    .eq("product_key", "vault_academy")
+    .maybeSingle();
+
+  if (!access || !["active", "trialing"].includes(access.status)) {
+    return new Response(JSON.stringify({ error: "Access required" }), {
+      status: 403,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const bucket = "playbook";
   const objectPath = "vault-playbook.pdf";
