@@ -1,48 +1,51 @@
 
 
-## Fix: Signal/Watchlist Form Losing Data + Make Posting Easier
+## Fix: App Flashing / Blue Screen When Returning to Tab
 
-### Problem 1: Form resets when switching tabs or navigating away
-The `SignalPostForm` stores all field values in local `useState`. While the community sub-tabs use CSS `hidden/block` (keeping components mounted), if you navigate away from the Community page entirely (e.g. click Dashboard, then come back), the whole component tree unmounts and all form state is lost. The user has to retype everything.
+### What's Happening
 
-### Problem 2: Posting a watchlist has too much friction
-You have to click "Post Signal" to expand the form, then fill in fields. For daily watchlist posts that happen every morning, this should be faster.
+When you leave the Vault tab for 60+ seconds and come back, three things fire simultaneously:
 
-### Fix
+1. **`useSmartRefresh`** invalidates every single query in the app at once and shows a "Syncing..." toast
+2. All those queries go into loading state, which causes components to show spinners/skeletons
+3. The dark blue ambient background shows through while content reloads — creating the "blue flash"
 
-**File: `src/components/academy/chat/SignalPostForm.tsx`**
+The VaultStateContext also resets its loading flag during background refreshes, which can cascade into full-screen loading screens.
 
-1. **Persist draft to sessionStorage** — Save all form field values (ticker, bias, levels, notes, tvLink, mode, direction, strike, exp, fill, open state) to `sessionStorage` on every change. Restore on mount. Clear on successful submit. This means switching tabs, navigating away, or even refreshing won't lose your draft.
+### Fix Plan
 
-2. **Auto-expand when draft exists** — If there's a saved draft with data, automatically open the form instead of showing the collapsed "Post Signal" button.
+**1. Rewrite `useSmartRefresh` to be gentle (src/hooks/useSmartRefresh.ts)**
+- Instead of `queryClient.invalidateQueries()` (which marks ALL queries stale and refetches everything at once), use `queryClient.refetchQueries({ type: 'active' })` which silently refetches only mounted queries without resetting their cached data
+- Remove the "Syncing..." toast — users don't need to see this
+- Increase threshold from 60s to 5 minutes — 60s is too aggressive
 
-3. **Streamline watchlist mode** — Add a "Quick Watchlist" shortcut: a single row with ticker input + bias toggle + post button for rapid watchlist entries. The full expanded form is still available for adding levels, notes, charts, etc. This lets you fire off a watchlist item in seconds.
+**2. Fix VaultStateContext background refresh (src/contexts/VaultStateContext.tsx)**
+- Never set `loading: true` on a background refetch — only show loading on the very first fetch when there's no data yet
+- The `refreshing` flag already exists for this purpose but the condition is wrong
 
-4. **Visual "unsaved draft" indicator** — Show a small dot on the collapsed "Post Signal" button when a draft exists, so you know there's unfinished work.
+**3. Prevent AcademyLayout full-screen flash (src/components/layout/AcademyLayout.tsx)**  
+- The layout shows a full-screen spinner whenever `!hydrated` (line 96). During a smart refresh, if `hydrated` briefly flips, the entire UI disappears and shows a spinner over the dark blue background
+- Fix: once hydrated is true, never show the loading screen again in that session — use a ref to track "was ever hydrated"
 
 ### Technical Detail
 
-```ts
-const DRAFT_KEY = `vault_signal_draft_${roomSlug}`;
+```text
+Before (tab return):
+  useSmartRefresh → invalidateQueries() → ALL data = stale
+    → loading spinners everywhere → blue background visible → "Syncing..." toast
+    → 200-500ms later: data arrives → UI re-renders
 
-// Save draft on every field change
-useEffect(() => {
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-    open, mode, ticker, bias, levels, notes, tvLink,
-    direction, strike, exp, fill,
-  }));
-}, [open, mode, ticker, bias, levels, notes, tvLink, direction, strike, exp, fill]);
-
-// Restore on mount
-const [ticker, setTicker] = useState(() => {
-  const saved = sessionStorage.getItem(DRAFT_KEY);
-  return saved ? JSON.parse(saved).ticker || "" : "";
-});
+After (tab return):  
+  useSmartRefresh → refetchQueries({ type: 'active' }) → data updates silently
+    → UI stays rendered with old data → new data swaps in seamlessly
+    → no toast, no flash, no spinners
 ```
 
-### Changes
+### Files
 
 | File | Change |
 |------|--------|
-| `src/components/academy/chat/SignalPostForm.tsx` | Add sessionStorage draft persistence, auto-expand on draft, quick watchlist mode, draft indicator |
+| `src/hooks/useSmartRefresh.ts` | Use `refetchQueries` instead of `invalidateQueries`, remove toast, increase threshold to 5 min |
+| `src/contexts/VaultStateContext.tsx` | Never set `loading: true` during background refetches |
+| `src/components/layout/AcademyLayout.tsx` | Use a ref so once hydrated, never show the loading screen again |
 
