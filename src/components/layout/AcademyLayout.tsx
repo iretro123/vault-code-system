@@ -27,6 +27,8 @@ import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
+  const everHydratedRef = useRef(false);
+  if (hydrated) everHydratedRef.current = true;
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -93,7 +95,7 @@ function AcademyLayoutInner() {
   }
 
   // 3. User exists but profile/hydration still loading
-  if (!profile || !hydrated) {
+  if (!profile || (!hydrated && !everHydratedRef.current)) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">

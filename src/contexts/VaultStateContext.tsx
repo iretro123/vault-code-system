@@ -69,9 +69,11 @@ export function VaultStateProvider({ children }: { children: React.ReactNode }) 
     if (!userId || inFlight.current) return;
     inFlight.current = true;
 
-    if (!isBackground && !hasData.current) {
+    // Only show loading spinner on the very first fetch (no cached data yet)
+    if (!hasData.current) {
       setLoading(true);
-    } else {
+    }
+    if (isBackground) {
       setRefreshing(true);
     }
 

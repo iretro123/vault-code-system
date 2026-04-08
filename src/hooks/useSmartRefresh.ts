@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
-const STALE_THRESHOLD = 60_000; // 60s — only refresh if hidden that long
+const STALE_THRESHOLD = 5 * 60_000; // 5 minutes
 
 export function useSmartRefresh() {
   const queryClient = useQueryClient();
@@ -18,10 +17,8 @@ export function useSmartRefresh() {
         supabase.realtime.setAuth(token);
       }
 
-      // Invalidate all mounted queries (background refetch)
-      queryClient.invalidateQueries();
-
-      toast.info("Syncing...", { duration: 2000, id: "smart-refresh" });
+      // Silently refetch only active/mounted queries — no cache reset, no loading states
+      queryClient.refetchQueries({ type: "active" });
     };
 
     const onVisibility = () => {
