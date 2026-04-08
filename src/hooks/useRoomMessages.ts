@@ -310,16 +310,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     fetchMessages();
   }, [fetchMessages]);
 
-  // Re-fetch when browser tab becomes visible after being hidden
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === "visible" && hasFetchedRef.current) {
-        fetchMessages();
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [fetchMessages]);
+  // No per-hook visibility listener — useSmartRefresh handles global resume
 
   // Re-fetch when activation key changes (tab re-activated)
   useEffect(() => {

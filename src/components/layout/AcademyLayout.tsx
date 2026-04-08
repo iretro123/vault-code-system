@@ -103,8 +103,8 @@ function AcademyLayoutInner() {
     return <Navigate to="/auth" replace />;
   }
 
-  // 3. User exists but profile/hydration still loading
-  if (!profile || (!hydrated && !everHydratedRef.current)) {
+  // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
+  if (!profile || (!hydrated && !everHydrated)) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">

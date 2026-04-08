@@ -174,15 +174,9 @@ export function useDailyVaultStatus(): DailyVaultStatus {
       )
       .subscribe();
 
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        debouncedRefetch();
-      }
-    };
-    document.addEventListener("visibilitychange", onVisible);
+    // No per-hook visibility listener — useSmartRefresh handles global resume
 
     return () => {
-      document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(channel);
     };
   }, [userId, fetchDailyStatus, debouncedRefetch]);
