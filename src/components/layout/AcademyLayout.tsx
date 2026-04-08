@@ -28,10 +28,9 @@ function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
   // Persist hydration flag to sessionStorage so tab discards don't reset it
-  const everHydratedRef = useRef(() => {
+  const [everHydrated, setEverHydrated] = useState(() => {
     try { return sessionStorage.getItem("va_ever_hydrated") === "1"; } catch { return false; }
   });
-  const [everHydrated, setEverHydrated] = useState(everHydratedRef.current);
   useEffect(() => {
     if (hydrated && !everHydrated) {
       setEverHydrated(true);
