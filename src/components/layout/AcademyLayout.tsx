@@ -27,6 +27,8 @@ import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
   const { hydrated } = useAcademyData();
+  const everHydratedRef = useRef(false);
+  if (hydrated) everHydratedRef.current = true;
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
