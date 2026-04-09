@@ -1,104 +1,56 @@
 
 
-## Performance & Polish Overhaul
+## Improve Text Readability — Match Discord-Level Font Sizes
 
-### Problems Found
+### Problem
+The app uses tiny font sizes across chat, learn, and community pages. Discord uses **15px** for message body, **14px** for usernames, and **12px** for timestamps. Our app currently uses **13–14px** for messages (13px on desktop), **13px** for usernames, **11px** for timestamps, and **11–12px** for community tabs. This makes everything feel cramped and hard to read.
 
-1. **Too many realtime channels** — Up to 15+ Supabase realtime channels open simultaneously (vault-state, inbox, unread x3, live-now, daily-vault, room messages, reactions, typing, thread, notifications, presence per-user, daily-setups). Each keeps a WebSocket alive and fires re-renders on events. This is the single biggest source of sluggishness.
+### Changes
 
-2. **Waterfall data fetching on boot** — `AcademyDataContext` fires 4 parallel fetches (onboarding, notifications, inbox, referrals), but `useSmartNotifications`, `useLoginReminder`, `useRoleEvolution`, and `useStudentAccess` each fire their own independent DB calls too. That's 10+ sequential/parallel DB round-trips before the dashboard renders useful content.
+#### 1. Chat message body — bump to 15px
+**File: `src/components/academy/RoomChat.tsx`**
+- Line 1429: `text-[14px] md:text-[13px]` → `text-[15px]` (matches Discord exactly)
+- Line 1346: Official announcements `text-sm` → `text-[15px]`
+- Line 1419: Official body `text-[15px]` — already correct, keep
+- Line 1358: Deleted message `text-[13px]` → `text-[14px]`
 
-3. **`useLiveNow` sets loading on every refresh** — `setLoading(true)` on line 28 causes a flash every time it re-checks. The MobileNav imports this hook, so the bottom nav re-renders on every live session check.
+#### 2. Chat usernames — bump to 14px
+**File: `src/components/academy/RoomChat.tsx`**
+- Line 1308: `text-[13px]` → `text-[14px]` for username display
 
-4. **`useHotTickers` polls every 5 minutes** with a full 200-message scan — expensive and unnecessary for most pages.
+#### 3. Chat timestamps — bump to 12px
+**File: `src/components/academy/RoomChat.tsx`**
+- Line 1331: `text-[11px]` → `text-[12px]` for message timestamps
+- Line 1295: hover timestamp `text-[10px]` → `text-[11px]`
 
-5. **`transition-all` used 605 times** across 64 files — many on large containers where it triggers layout recalculation on every CSS property change. Should be scoped to specific properties.
+#### 4. Chat composer — keep 16px mobile, bump desktop to 15px
+**File: `src/components/academy/RoomChat.tsx`**
+- Line 1811: `md:text-[14px]` → `md:text-[15px]`
 
-6. **`backdrop-blur` on always-visible elements** — The top header uses `backdrop-blur-md` which forces compositing on every frame. The mobile nav uses `backdrop-blur-sm`. These are always on screen.
+#### 5. Quote/reply text — bump to 13px
+**File: `src/components/academy/RoomChat.tsx`**
+- Line 295: reply connector `text-[12px]` → `text-[13px]`
+- Line 305: blockquote `text-[12px]` → `text-[13px]`
 
-7. **`usePresenceHeartbeat` fires a DB write every 60 seconds** — an UPDATE to profiles table, which triggers realtime events on every listener watching that table (including `useUserPresence` for every user card visible).
+#### 6. Community tabs — bump to 13px
+**File: `src/pages/academy/AcademyCommunity.tsx`**
+- Line 72: `text-[11px] md:text-[12px]` → `text-[12px] md:text-[13px]`
 
-8. **No `React.memo` on expensive list items** — Chat messages, lesson sidebar items, and community cards all re-render when parent state changes.
+#### 7. Learn page — bump lesson count and progress text
+**File: `src/pages/academy/AcademyLearn.tsx`**
+- Line 284: lesson count `text-xs` → `text-[13px]`
+- Line 288: progress percent `text-xs` → `text-[13px]`
 
-9. **Google Fonts loaded via CSS `@import`** — Blocks rendering until the font stylesheet is downloaded and parsed.
+#### 8. Global base font size
+**File: `src/index.css`**
+- Add `font-size: 15px` to the `html` selector so `rem`-based components (buttons, form inputs, labels) all scale up slightly. This single change lifts the baseline for every `text-sm` (14px → ~14.6px) and `text-base` (16px → ~16.5px... actually this would break things).
+- **Better approach**: Skip global base change. Instead, target the specific small text classes in the key pages above.
 
-### Plan
+### What this does NOT touch
+- Dashboard cards, admin panels, settings — those are fine at current sizes
+- `text-[10px]` labels used for badges, metadata, and decorative elements — intentionally small
+- Trade OS page — already has its own sizing system
 
-#### 1. Consolidate realtime channels
-Merge the 3 unread channels + inbox channel + notifications channel into a single multiplexed channel. This alone cuts 4 WebSocket connections.
-
-| File | Change |
-|------|--------|
-| `src/hooks/useUnreadCounts.ts` | Merge 3 channels into 1 multi-table channel |
-| `src/contexts/AcademyDataContext.tsx` | Share the same channel for inbox realtime |
-
-#### 2. Fix `useLiveNow` flash
-Remove `setLoading(true)` from refresh — only set loading on initial mount. This stops MobileNav from flickering.
-
-| File | Change |
-|------|--------|
-| `src/hooks/useLiveNow.ts` | Only set loading true on first fetch, use ref to track |
-
-#### 3. Lazy-load `useHotTickers`
-Only run the ticker scan when the Trade Floor tab is actually visible, not globally.
-
-| File | Change |
-|------|--------|
-| `src/hooks/useHotTickers.ts` | Accept an `enabled` parameter, default false |
-| `src/components/academy/community/TradeFloorHeader.tsx` | Pass `enabled={true}` only when rendered |
-
-#### 4. Reduce presence heartbeat frequency
-Change from 60s to 120s. Same UX (3-min online threshold still works), half the DB writes.
-
-| File | Change |
-|------|--------|
-| `src/hooks/usePresenceHeartbeat.ts` | Change interval to 120s |
-
-#### 5. Replace `backdrop-blur` on always-visible chrome
-Use solid semi-transparent backgrounds instead of blur on the top header and mobile nav. Blur is expensive on every scroll frame.
-
-| File | Change |
-|------|--------|
-| `src/components/layout/AcademyLayout.tsx` | Replace `backdrop-blur-md` on header with solid `bg-background/95` |
-| `src/components/layout/MobileNav.tsx` | Remove `backdrop-blur-sm`, use solid background |
-
-#### 6. Batch `transition-all` → scoped transitions on key components
-Replace `transition-all` with `transition-colors` or `transition-opacity` on the most impactful components (sidebar, nav items, cards). Won't touch every instance — just the layout-critical ones.
-
-| File | Change |
-|------|--------|
-| `src/components/layout/AcademySidebar.tsx` | Scope transitions |
-| `src/components/layout/MobileNav.tsx` | Scope transitions |
-| `src/components/layout/AcademyLayout.tsx` | Scope transitions |
-
-#### 7. Move Google Font import to `<link>` with preconnect
-Move the `@import url(...)` from CSS to `index.html` as a `<link rel="preload">` with `<link rel="preconnect">` to unblock rendering.
-
-| File | Change |
-|------|--------|
-| `index.html` | Add preconnect + font link |
-| `src/index.css` | Remove `@import url(...)` line |
-
-#### 8. Add haptic-style feedback to key interactions
-Add subtle micro-interactions: button press scale effect, toast success animations, and nav tap feedback for a premium feel.
-
-| File | Change |
-|------|--------|
-| `src/index.css` | Add `.press-scale` utility class with active:scale-[0.97] transform |
-| `src/components/layout/MobileNav.tsx` | Add press feedback to nav items |
-
-#### 9. Memoize chat message components
-Wrap the most-rendered list items with `React.memo` to prevent unnecessary re-renders during scroll and state updates.
-
-| File | Change |
-|------|--------|
-| `src/components/academy/RoomChat.tsx` | Memo-wrap individual message rows |
-
-### Expected Result
-- Fewer realtime channels (from ~15 to ~11 on community page)
-- No more loading flashes on MobileNav
-- Faster paint on header/nav (no blur compositing)
-- Snappier interactions with scoped transitions
-- Font loads non-blocking
-- Premium tactile feel on taps
+### Expected result
+Chat messages, usernames, timestamps, tab labels, and learn page text all bump up 1–2px to match Discord's comfortable reading size. No layout breakage — these are all inline text changes.
 
