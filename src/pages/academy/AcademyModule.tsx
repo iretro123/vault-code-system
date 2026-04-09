@@ -409,7 +409,11 @@ const AcademyModule = () => {
                       <p className="text-xs font-medium text-muted-foreground mb-2">Study Notes</p>
                       {activeLesson.notes ? (
                         <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
-                          {activeLesson.notes}
+                          {activeLesson.notes.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                            /^https?:\/\//.test(part) ? (
+                              <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80 break-all">{part}</a>
+                            ) : part
+                          )}
                         </p>
                       ) : (
                         <p className="text-sm text-muted-foreground italic">No notes yet. Click Edit above to add study notes.</p>
