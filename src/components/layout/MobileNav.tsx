@@ -101,7 +101,7 @@ export function MobileNav() {
       : "grid-cols-4 max-w-[344px]";
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-white/10 z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-white/10 z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]">
       <div className={cn("grid items-center px-2 py-2 w-full mx-auto", gridClass)}>
         {navItems.map((item) => renderItem({
           icon: item.icon,
