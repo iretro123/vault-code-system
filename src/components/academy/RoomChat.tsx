@@ -1065,7 +1065,22 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   return (
     <>
-    <div className={cn("relative flex flex-col h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}>
+    <div
+      className={cn("relative flex flex-col h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Full-area drop overlay (Discord-style) */}
+      {dragOver && (
+        <div className="absolute inset-0 z-50 bg-primary/10 border-2 border-dashed border-primary rounded-xl flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-2 bg-card/90 backdrop-blur-sm px-8 py-6 rounded-xl shadow-lg">
+            <Upload className="h-8 w-8 text-primary" />
+            <span className="text-[15px] font-semibold text-primary">Drop image to upload</span>
+          </div>
+        </div>
+      )}
       {/* Chat effects overlay */}
       <ChatEffects activeEffect={chatEffect} onComplete={() => setChatEffect(null)} />
       {/* Delete confirmation dialog */}
