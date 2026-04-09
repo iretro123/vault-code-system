@@ -13,7 +13,7 @@ import { ChatAvatar } from "@/lib/chatAvatars";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { UserProfileCard } from "./community/UserProfileCard";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign, FileText } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign, FileText, Upload } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
