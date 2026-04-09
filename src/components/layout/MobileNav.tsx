@@ -39,7 +39,7 @@ export function MobileNav() {
           key={label}
           onClick={() => setOpenMobile(true)}
           className={cn(
-            "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors min-w-[52px] text-muted-foreground hover:text-foreground"
+            "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors duration-100 min-w-[52px] text-muted-foreground hover:text-foreground active:scale-[0.95]"
           )}
         >
           <Icon className="w-[22px] h-[22px]" />
@@ -51,7 +51,7 @@ export function MobileNav() {
     const content = (
       <div
         className={cn(
-          "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors min-w-[52px]",
+          "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors duration-100 min-w-[52px] active:scale-[0.95]",
           isActive
             ? "text-primary"
             : "text-muted-foreground hover:text-foreground"
@@ -101,7 +101,7 @@ export function MobileNav() {
       : "grid-cols-4 max-w-[344px]";
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-white/10 z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-white/10 z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]">
       <div className={cn("grid items-center px-2 py-2 w-full mx-auto", gridClass)}>
         {navItems.map((item) => renderItem({
           icon: item.icon,

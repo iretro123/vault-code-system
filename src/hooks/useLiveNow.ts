@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface LiveNowSession {
@@ -22,9 +22,11 @@ function isStillLive(session: LiveNowSession) {
 export function useLiveNow() {
   const [liveSession, setLiveSession] = useState<LiveNowSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const initialFetchDone = useRef(false);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
+    // Only show loading spinner on very first fetch
+    if (!initialFetchDone.current) setLoading(true);
     const { data } = await supabase
       .from("live_sessions")
       .select("id,title,join_url,session_date,duration_minutes,status,is_manual_live")
@@ -36,8 +38,9 @@ export function useLiveNow() {
     if (session && isStillLive(session)) {
       setLiveSession(session);
     } else {
-      setLiveSession(null);
+    setLiveSession(null);
     }
+    initialFetchDone.current = true;
     setLoading(false);
   }, []);
 

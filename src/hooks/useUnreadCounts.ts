@@ -171,9 +171,9 @@ function _startRealtime(userId: string) {
   _channelActive = true;
   _ensureInteractionTracking();
 
-  // Channel 1: new messages
-  const msgChannel = supabase
-    .channel("unread-msg-global")
+  // Single multiplexed channel for all unread-related tables
+  const channel = supabase
+    .channel("unread-unified")
     .on(
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "academy_messages" },
@@ -183,46 +183,31 @@ function _startRealtime(userId: string) {
         const slug = msg.room_slug as string;
         if (!ROOM_SLUGS.includes(slug as RoomSlug)) return;
 
-        // If user is viewing this room and at the bottom, auto-mark read
         if (_activeSlugRef.current === slug && _isAtBottomRef.current) {
-          // Silently mark read in DB (don't increment count)
           _markReadDB(slug, userId);
           return;
         }
 
-        // Increment count
         _setCounts((prev) => ({
           ...prev,
           [slug]: Math.min((prev[slug] || 0) + 1, 99),
         }));
 
-        // Play sound if room is not active
         if (_activeSlugRef.current !== slug) {
           _playNotifySound();
         }
       }
     )
-    .subscribe();
-
-  // Channel 2: room_reads changes (cross-tab/device sync)
-  const readsChannel = supabase
-    .channel("unread-reads-sync")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "academy_room_reads", filter: `user_id=eq.${userId}` },
       (payload) => {
-        // Another tab/device updated read position — re-fetch that room
         const row = (payload.new || payload.old) as any;
         if (row?.room_slug) {
           _refreshRoom(row.room_slug, userId);
         }
       }
     )
-    .subscribe();
-
-  // Channel 3: preference changes (sounds toggle)
-  const prefsChannel = supabase
-    .channel("unread-prefs-sync")
     .on(
       "postgres_changes",
       { event: "UPDATE", schema: "public", table: "user_preferences", filter: `user_id=eq.${userId}` },
@@ -235,12 +220,8 @@ function _startRealtime(userId: string) {
     )
     .subscribe();
 
-  // No per-hook visibility listeners — useSmartRefresh handles global resume
-
   return () => {
-    supabase.removeChannel(msgChannel);
-    supabase.removeChannel(readsChannel);
-    supabase.removeChannel(prefsChannel);
+    supabase.removeChannel(channel);
     _channelActive = false;
   };
 }
