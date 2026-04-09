@@ -51,7 +51,7 @@ export function MobileNav() {
     const content = (
       <div
         className={cn(
-          "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors min-w-[52px]",
+          "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors duration-100 min-w-[52px] active:scale-[0.95]",
           isActive
             ? "text-primary"
             : "text-muted-foreground hover:text-foreground"
