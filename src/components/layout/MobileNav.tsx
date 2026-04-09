@@ -39,7 +39,7 @@ export function MobileNav() {
           key={label}
           onClick={() => setOpenMobile(true)}
           className={cn(
-            "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors min-w-[52px] text-muted-foreground hover:text-foreground"
+            "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors duration-100 min-w-[52px] text-muted-foreground hover:text-foreground active:scale-[0.95]"
           )}
         >
           <Icon className="w-[22px] h-[22px]" />

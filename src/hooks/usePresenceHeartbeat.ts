@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-const HEARTBEAT_INTERVAL = 60_000; // 60s
+const HEARTBEAT_INTERVAL = 120_000; // 120s
 
 /**
  * Updates profiles.last_seen_at every 60s while the tab is visible.

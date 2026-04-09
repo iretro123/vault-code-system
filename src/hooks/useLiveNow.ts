@@ -38,8 +38,9 @@ export function useLiveNow() {
     if (session && isStillLive(session)) {
       setLiveSession(session);
     } else {
-      setLiveSession(null);
+    setLiveSession(null);
     }
+    initialFetchDone.current = true;
     setLoading(false);
   }, []);
 

@@ -7,7 +7,7 @@
    All colors MUST be HSL for Tailwind compatibility
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Fonts loaded via <link> in index.html for non-blocking render */
 
 /* Aero Blue iOS font stack */
 html, body, #root {
