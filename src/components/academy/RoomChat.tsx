@@ -13,7 +13,7 @@ import { ChatAvatar } from "@/lib/chatAvatars";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { UserProfileCard } from "./community/UserProfileCard";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign, FileText } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign, FileText, Upload } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
@@ -1065,7 +1065,22 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   return (
     <>
-    <div className={cn("relative flex flex-col h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}>
+    <div
+      className={cn("relative flex flex-col h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Full-area drop overlay (Discord-style) */}
+      {dragOver && (
+        <div className="absolute inset-0 z-50 bg-primary/10 border-2 border-dashed border-primary rounded-xl flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-2 bg-card/90 backdrop-blur-sm px-8 py-6 rounded-xl shadow-lg">
+            <Upload className="h-8 w-8 text-primary" />
+            <span className="text-[15px] font-semibold text-primary">Drop image to upload</span>
+          </div>
+        </div>
+      )}
       {/* Chat effects overlay */}
       <ChatEffects activeEffect={chatEffect} onComplete={() => setChatEffect(null)} />
       {/* Delete confirmation dialog */}
@@ -1751,26 +1766,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 </div>
               )}
 
-              {/* Composer bar — with drag-and-drop support */}
+              {/* Composer bar */}
               <div
                 data-chat-composer
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
                  className={cn(
                   "relative rounded-xl bg-card border shadow-[0_1px_4px_rgba(0,0,0,0.15)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.15)] transition-all duration-100 max-w-full overflow-x-hidden",
-                  dragOver
-                    ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.15)]"
-                    : "border-white/[0.08]"
+                  "border-white/[0.08]"
                 )}
               >
-                {/* Drop overlay */}
-                {dragOver && (
-                  <div className="absolute inset-0 rounded-xl bg-primary/[0.06] flex items-center justify-center z-10 pointer-events-none">
-                    <span className="text-[13px] font-semibold text-primary">Drop files to attach</span>
-                  </div>
-                )}
                 <div className="flex items-end gap-2 px-3 py-2 min-w-0">
                   {/* Hidden file input */}
                   <input
