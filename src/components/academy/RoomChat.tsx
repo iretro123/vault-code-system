@@ -292,7 +292,7 @@ function renderPlainBody(body: string) {
         <div className="flex items-center gap-1.5 ml-0 mb-0.5 relative pl-6">
           {/* Connector arm */}
           <div className="absolute left-[7px] top-[3px] w-[14px] h-[12px] border-l-2 border-t-2 border-muted-foreground/30 rounded-tl-md" />
-          <div className="flex items-center gap-1 text-[12px] text-muted-foreground truncate max-w-[85%] cursor-pointer hover:text-foreground/70 transition-colors">
+          <div className="flex items-center gap-1 text-[13px] text-muted-foreground truncate max-w-[85%] cursor-pointer hover:text-foreground/70 transition-colors">
             <div className="w-4 h-4 rounded-full bg-primary/20 shrink-0 flex items-center justify-center">
               <span className="text-[8px] font-bold text-primary">@</span>
             </div>
@@ -302,7 +302,7 @@ function renderPlainBody(body: string) {
         </div>
       )}
       {!isReplyQuote && quoteLines.length > 0 && (
-        <div className="border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[12px] leading-snug border-muted-foreground/30 bg-white/[0.02] text-muted-foreground">
+        <div className="border-l-2 pl-2.5 py-1 mb-1.5 rounded-r-md text-[13px] leading-snug border-muted-foreground/30 bg-white/[0.02] text-muted-foreground">
           {renderInline(quoteText)}
         </div>
       )}
@@ -1292,7 +1292,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="w-9 h-9 rounded-full bg-white/[0.06] animate-pulse" />
                       )
                     ) : (
-                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[10px] text-muted-foreground select-none">
+                      <span className="hidden group-hover:flex items-center justify-center h-5 text-[11px] text-muted-foreground select-none">
                         {formatTime(msg.created_at)}
                       </span>
                     )}
@@ -1305,7 +1305,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <Popover>
                           <PopoverTrigger asChild>
                             <button type="button" className={cn(
-                              "text-[13px] font-semibold tracking-[-0.01em] hover:underline cursor-pointer focus:outline-none",
+                              "text-[14px] font-semibold tracking-[-0.01em] hover:underline cursor-pointer focus:outline-none",
                               isCeoOrAdmin ? "text-amber-400" : "text-foreground"
                             )}>
                               {msg.user_name}
@@ -1328,7 +1328,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                          ) : (
                           <div className="h-4 w-16 rounded bg-white/[0.06] animate-pulse" />
                          )}
-                         <span className="text-[11px] text-muted-foreground">
+                         <span className="text-[12px] text-muted-foreground">
                           {formatDateTime(msg.created_at)}
                         </span>
                       </div>
@@ -1343,7 +1343,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
                               <Megaphone className="h-3 w-3" /> Official Announcement
                             </span>
-                             <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                             <p className="text-[15px] text-foreground/90 leading-relaxed whitespace-pre-line">
                                {renderPlainBody(msg.body.replace(/^📢\s*/, ""))}
                              </p>
                           </div>
@@ -1355,7 +1355,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                      {msg.is_deleted ? (
                       <div className="inline-block max-w-[85%]">
                         <div className="bg-white/[0.04] rounded-xl px-3.5 py-2 border border-white/[0.06]">
-                          <p className="text-[13px] text-muted-foreground italic">This message was deleted.</p>
+                          <p className="text-[14px] text-muted-foreground italic">This message was deleted.</p>
                         </div>
                       </div>
                     ) : isEditing ? (
@@ -1426,7 +1426,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <>
                         {msg.body && msg.body !== "📎 Attachment" && (
                           <div className={startsNewGroup ? "mt-0.5" : "mt-0"}>
-                            <p className="text-[14px] md:text-[13px] leading-[1.55] whitespace-pre-line text-foreground">
+                            <p className="text-[15px] leading-[1.55] whitespace-pre-line text-foreground">
                               {renderPlainBody(msg.body)}
                             </p>
                             {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
@@ -1808,7 +1808,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     maxLength={1000}
                     disabled={sending}
                     rows={1}
-                    className="flex-1 min-w-0 w-full bg-transparent text-[16px] md:text-[14px] text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
+                    className="flex-1 min-w-0 w-full bg-transparent text-[16px] md:text-[15px] text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
                   />
 
                   {/* Send button — premium Vault blue */}

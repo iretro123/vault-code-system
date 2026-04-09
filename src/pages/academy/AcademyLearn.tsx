@@ -281,11 +281,11 @@ const AcademyLearn = () => {
                       {/* Progress */}
                       <div className="mb-4">
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground">
                             {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
                           </span>
                           <span className={cn(
-                            "text-xs font-medium",
+                            "text-[13px] font-medium",
                             isComplete ? "text-emerald-400" : "text-muted-foreground"
                           )}>
                             {progressPct}% complete

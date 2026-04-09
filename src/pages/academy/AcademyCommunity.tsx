@@ -69,7 +69,7 @@ const AcademyCommunity = () => {
                     key={tab.key}
                     onClick={() => handleTabChange(tab.key)}
                     className={cn(
-                      "relative flex-1 md:flex-none whitespace-nowrap px-2 md:px-6 pb-2.5 pt-1.5 text-[11px] md:text-[12px] font-semibold tracking-wide transition-colors duration-150",
+                      "relative flex-1 md:flex-none whitespace-nowrap px-2 md:px-6 pb-2.5 pt-1.5 text-[12px] md:text-[13px] font-semibold tracking-wide transition-colors duration-150",
                       activeTab === tab.key
                         ? "text-foreground after:absolute after:bottom-0 after:inset-x-2 after:h-[2px] after:rounded-full after:bg-primary after:shadow-[0_0_8px_rgba(59,130,246,0.5)]"
                         : "text-muted-foreground hover:text-foreground/80"
