@@ -1766,26 +1766,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 </div>
               )}
 
-              {/* Composer bar — with drag-and-drop support */}
+              {/* Composer bar */}
               <div
                 data-chat-composer
-                onDragEnter={handleDragEnter}
-                onDragLeave={handleDragLeave}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
                  className={cn(
                   "relative rounded-xl bg-card border shadow-[0_1px_4px_rgba(0,0,0,0.15)] focus-within:border-primary focus-within:shadow-[0_0_0_2px_hsl(217_91%_60%/0.15),0_1px_4px_rgba(0,0,0,0.15)] transition-all duration-100 max-w-full overflow-x-hidden",
-                  dragOver
-                    ? "border-primary shadow-[0_0_0_2px_hsl(217_91%_60%/0.2),0_1px_4px_rgba(0,0,0,0.15)]"
-                    : "border-white/[0.08]"
+                  "border-white/[0.08]"
                 )}
               >
-                {/* Drop overlay */}
-                {dragOver && (
-                  <div className="absolute inset-0 rounded-xl bg-primary/[0.06] flex items-center justify-center z-10 pointer-events-none">
-                    <span className="text-[13px] font-semibold text-primary">Drop files to attach</span>
-                  </div>
-                )}
                 <div className="flex items-end gap-2 px-3 py-2 min-w-0">
                   {/* Hidden file input */}
                   <input
