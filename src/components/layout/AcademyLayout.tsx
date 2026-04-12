@@ -23,6 +23,37 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 
+const ambientBgStyle = {
+  background: [
+    'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)',
+    'radial-gradient(ellipse 50% 50% at 15% 10%, rgba(56,189,248,0.10) 0%, transparent 70%)',
+    'radial-gradient(ellipse 45% 55% at 85% 45%, rgba(59,130,246,0.08) 0%, transparent 70%)',
+    'radial-gradient(ellipse 40% 40% at 10% 90%, rgba(56,130,246,0.06) 0%, transparent 70%)',
+    'linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)',
+  ].join(', '),
+};
+
+function LoadingShell() {
+  return (
+    <div className="h-[100dvh] flex w-full bg-background relative overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" style={ambientBgStyle} />
+      <AcademySidebar />
+      <div className="flex-1 flex flex-col min-w-0 relative z-[1]">
+        <div className="h-14 border-b border-white/[0.06] bg-background flex items-center px-4">
+          <Skeleton className="h-5 w-32" />
+          <div className="ml-auto flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-8 w-8 rounded-full" />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Inner layout that lives inside SidebarProvider so useSidebar() works. */
 function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
@@ -81,20 +112,7 @@ function AcademyLayoutInner() {
 
   // 1. Wait for auth to finish loading
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">
-          <Skeleton className="h-5 w-32" />
-          <div className="ml-auto flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
+    return <LoadingShell />;
   }
 
   // 2. No user → redirect immediately (don't wait for profile/hydration)
@@ -104,20 +122,7 @@ function AcademyLayoutInner() {
 
   // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
   if (!profile || (!hydrated && !everHydrated)) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="h-14 border-b border-white/5 bg-background/80 flex items-center px-4">
-          <Skeleton className="h-5 w-32" />
-          <div className="ml-auto flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
+    return <LoadingShell />;
   }
 
   const accessStatus = (profile as any)?.access_status ?? "trial";
@@ -156,18 +161,7 @@ function AcademyLayoutInner() {
 
   return (
     <div className="h-[100dvh] flex w-full bg-background relative overflow-hidden">
-      {/* FluxCharts-inspired ambient background — layered radials, vignette */}
-      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true"
-        style={{
-          background: [
-            'radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)',
-            'radial-gradient(ellipse 50% 50% at 15% 10%, rgba(56,189,248,0.10) 0%, transparent 70%)',
-            'radial-gradient(ellipse 45% 55% at 85% 45%, rgba(59,130,246,0.08) 0%, transparent 70%)',
-            'radial-gradient(ellipse 40% 40% at 10% 90%, rgba(56,130,246,0.06) 0%, transparent 70%)',
-            'linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)',
-          ].join(', '),
-        }}
-      />
+      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" style={ambientBgStyle} />
 
       <AcademySidebar />
 
@@ -198,7 +192,7 @@ function AcademyLayoutInner() {
           </div>
         </header>
 
-        <main className={`flex-1 overflow-y-auto overflow-x-hidden ${isCommunity ? "pb-6" : "pb-24 md:pb-6"}`}>
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden animate-fade-in ${isCommunity ? "pb-6" : "pb-24 md:pb-6"}`}>
           <Outlet />
         </main>
 
