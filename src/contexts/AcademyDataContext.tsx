@@ -113,18 +113,20 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
   const [referralStats, setReferralStats] = useState<ReferralStats>(() => readCache(CACHE_KEY_REFERRAL, defaultReferralStats));
   const [referralLoading, setReferralLoading] = useState(true);
 
+  const userId = user?.id ?? null;
+
   const fetchOnboarding = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("onboarding_state")
       .select("claimed_role, first_lesson_completed, intro_posted")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .limit(1)
       .single();
     const result = data ? (data as OnboardingState) : defaultOnboarding;
     setOnboarding(result);
     writeCache(CACHE_KEY_ONBOARDING, result);
-  }, [user]);
+  }, [userId]);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
