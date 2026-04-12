@@ -310,14 +310,13 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return;
 
-    const currentUid = user?.id ?? null;
-    // If the user changed (login/logout/switch), reset hydrated to force fresh load
+    const currentUid = userId;
     if (prevUserRef.current !== currentUid) {
       setHydrated(false);
       prevUserRef.current = currentUid;
     }
 
-    if (!user) {
+    if (!currentUid) {
       setOnboarding(null);
       setNotificationUnreadCount(0);
       setInboxItems([]);
@@ -338,7 +337,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     });
 
     return () => { cancelled = true; };
-  }, [user, authLoading, fetchOnboarding, fetchNotifications, fetchInbox, fetchReferrals]);
+  }, [userId, authLoading, fetchOnboarding, fetchNotifications, fetchInbox, fetchReferrals]);
 
   // Debounced inbox refetch — collapses rapid-fire DM events into one fetch
   const inboxDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
