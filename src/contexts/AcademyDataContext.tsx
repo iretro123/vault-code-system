@@ -348,18 +348,17 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     }, 400);
   }, [fetchInbox]);
 
-  // Realtime: auto-refresh inbox when new items arrive for this user
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return;
     const channel = supabase
-      .channel(`inbox-rt-${user.id}`)
+      .channel(`inbox-rt-${userId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "inbox_items",
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => { debouncedFetchInbox(); }
       )
@@ -369,10 +368,9 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
           event: "UPDATE",
           schema: "public",
           table: "inbox_items",
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          // Optimistic: update timestamp immediately before full refetch
           const updated = payload.new as any;
           if (updated?.id) {
             setInboxItems((prev) =>
@@ -392,7 +390,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(channel);
       if (inboxDebounceRef.current) clearTimeout(inboxDebounceRef.current);
     };
-  }, [user?.id, debouncedFetchInbox]);
+  }, [userId, debouncedFetchInbox]);
 
   return (
     <AcademyDataContext.Provider
