@@ -129,11 +129,11 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data: notifs } = await supabase
       .from("academy_notifications" as any)
       .select("id")
-      .or(`user_id.eq.${user.id},user_id.is.null`)
+      .or(`user_id.eq.${userId},user_id.is.null`)
       .limit(50);
 
     if (!notifs || notifs.length === 0) {
@@ -144,39 +144,35 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     const { data: reads } = await supabase
       .from("academy_notification_reads" as any)
       .select("notification_id")
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     const readSet = new Set((reads || []).map((r: any) => r.notification_id));
     const unread = (notifs as any[]).filter((n) => !readSet.has(n.id)).length;
     setNotificationUnreadCount(unread);
-  }, [user]);
+  }, [userId]);
 
   const fetchInbox = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     setInboxLoading(true);
 
-    // Fetch inbox items and user's dismissals in parallel
     const [{ data }, { data: dismissals }] = await Promise.all([
       supabase
         .from("inbox_items" as any)
         .select("*")
-        .or(`user_id.eq.${user.id},user_id.is.null`)
+        .or(`user_id.eq.${userId},user_id.is.null`)
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(30),
       supabase
         .from("inbox_dismissals" as any)
         .select("inbox_item_id")
-        .eq("user_id", user.id),
+        .eq("user_id", userId),
     ]);
 
     const dismissedSet = new Set((dismissals as any[] || []).map((d: any) => d.inbox_item_id));
-
     const filtered = (data as any[] || []).filter((d: any) => !dismissedSet.has(d.id));
 
-    // Collect unique sender_ids to batch-fetch profiles + roles
     const senderIds = [...new Set(filtered.map((d: any) => d.sender_id).filter(Boolean))] as string[];
-
     let senderMap: Record<string, { name: string | null; avatar: string | null; role: string | null }> = {};
 
     if (senderIds.length > 0) {
@@ -198,7 +194,6 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       for (const ur of (userRoles as any[] || [])) {
         const roleName = ur.academy_roles?.name;
         if (roleName && senderMap[ur.user_id]) {
-          // Keep highest priority role (CEO > Admin > Coach)
           const current = senderMap[ur.user_id].role;
           if (!current || roleName === "CEO" || (roleName === "Admin" && current !== "CEO") || (roleName === "Coach" && !current)) {
             senderMap[ur.user_id].role = roleName;
@@ -229,7 +224,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     setInboxItems(mapped);
     writeCache(CACHE_KEY_INBOX, mapped);
     setInboxLoading(false);
-  }, [user]);
+  }, [userId]);
 
   const markInboxRead = useCallback(async (itemId: string) => {
     if (!user) return;
