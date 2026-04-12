@@ -227,65 +227,60 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const markInboxRead = useCallback(async (itemId: string) => {
-    if (!user) return;
+    if (!userId) return;
     const item = inboxItems.find((i) => i.id === itemId);
-    if (item && item.user_id === user.id) {
-      // Personal item — update directly (RLS allows)
+    if (item && item.user_id === userId) {
       await supabase
         .from("inbox_items" as any)
         .update({ read_at: new Date().toISOString() } as any)
         .eq("id", itemId);
     }
-    // For broadcast items, we skip the update (RLS blocks it) — read state is visual only
     setInboxItems((prev) =>
       prev.map((i) => (i.id === itemId ? { ...i, read_at: new Date().toISOString() } : i))
     );
-  }, [user, inboxItems]);
+  }, [userId, inboxItems]);
 
   const markAllInboxRead = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const unread = inboxItems.filter((i) => !i.read_at);
     if (unread.length === 0) return;
 
-    const userItems = unread.filter((i) => i.user_id === user.id);
+    const userItems = unread.filter((i) => i.user_id === userId);
     if (userItems.length > 0) {
       await supabase
         .from("inbox_items" as any)
         .update({ read_at: new Date().toISOString() } as any)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .is("read_at", null);
     }
 
     setInboxItems((prev) => prev.map((i) => ({ ...i, read_at: i.read_at || new Date().toISOString() })));
-  }, [user, inboxItems]);
+  }, [userId, inboxItems]);
 
   const dismissInboxItem = useCallback(async (itemId: string) => {
-    if (!user) return;
+    if (!userId) return;
     const item = inboxItems.find((i) => i.id === itemId);
 
     if (item && item.user_id === null) {
-      // Broadcast item — can't delete shared row, insert dismissal record instead
       await supabase
         .from("inbox_dismissals" as any)
-        .upsert({ user_id: user.id, inbox_item_id: itemId, dismissed_at: new Date().toISOString() } as any, { onConflict: "user_id,inbox_item_id" });
+        .upsert({ user_id: userId, inbox_item_id: itemId, dismissed_at: new Date().toISOString() } as any, { onConflict: "user_id,inbox_item_id" });
     } else {
-      // Personal item — hard delete (RLS allows)
       await supabase
         .from("inbox_items" as any)
         .delete()
         .eq("id", itemId);
     }
 
-    // Remove from local state + cache immediately
     setInboxItems((prev) => {
       const next = prev.filter((i) => i.id !== itemId);
       writeCache(CACHE_KEY_INBOX, next);
       return next;
     });
-  }, [user, inboxItems]);
+  }, [userId, inboxItems]);
 
   const fetchReferrals = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setReferralLoading(false);
       return;
     }
@@ -293,7 +288,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from("referral_stats" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (data) {
@@ -307,7 +302,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       writeCache(CACHE_KEY_REFERRAL, stats);
     }
     setReferralLoading(false);
-  }, [user]);
+  }, [userId]);
 
   // Reset hydrated when user changes to prevent stale state across sessions
   const prevUserRef = useRef<string | null>(null);
