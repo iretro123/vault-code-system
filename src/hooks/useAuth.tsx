@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { ensureProfile } from "@/lib/ensureProfile";
@@ -73,6 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Ref to deduplicate fetchUserData between getSession and onAuthStateChange
+  const fetchedForRef = useRef<string | null>(null);
+  // Ref to access profile in the auth callback without stale closure
+  const profileRef = useRef<Profile | null>(profile);
+  profileRef.current = profile;
+
   /** Consolidated sign-out + state clearing */
   async function signOutCleanup() {
     await supabase.auth.signOut();
@@ -80,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setUserRole(null);
+    fetchedForRef.current = null;
     try { CACHE_KEYS.forEach(k => localStorage.removeItem(k)); } catch {}
     setLoading(false);
   }
@@ -93,7 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    setProfile(profileData as Profile);
+    // Shallow-equal check: skip state update if data hasn't changed
+    setProfile(prev => {
+      if (prev && JSON.stringify(prev) === JSON.stringify(profileData)) return prev;
+      return profileData as Profile;
+    });
     try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch {}
 
     // Backfill timezone only if truly empty
@@ -121,19 +132,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
-          const cachedUid = profile?.id || (profile as any)?.user_id;
-          if (cachedUid && cachedUid !== newSession.user.id) {
+          const uid = newSession.user.id;
+
+          // Guard: skip redundant fetches on TOKEN_REFRESHED if profile already loaded for this user
+          const currentProfile = profileRef.current;
+          const alreadyLoaded = currentProfile &&
+            (currentProfile.user_id === uid || (currentProfile as any).id === uid);
+
+          if (event === "TOKEN_REFRESHED" && alreadyLoaded) {
+            // Profile unchanged — just make sure loading is false
+            setLoading(false);
+            return;
+          }
+
+          // Detect user switch — clear stale state
+          const cachedUid = currentProfile?.user_id || (currentProfile as any)?.id;
+          if (cachedUid && cachedUid !== uid) {
             setProfile(null);
             setUserRole(null);
+            fetchedForRef.current = null;
             setLoading(true);
           }
+
+          // Dedup: skip if getSession already triggered fetch for this user
+          if (fetchedForRef.current === uid) return;
+          fetchedForRef.current = uid;
+
           setTimeout(async () => {
-            await ensureProfile(newSession.user.id, newSession.user.email);
-            fetchUserData(newSession.user.id);
+            await ensureProfile(uid, newSession.user.email);
+            fetchUserData(uid);
           }, 0);
         } else {
           setProfile(null);
           setUserRole(null);
+          fetchedForRef.current = null;
           try { localStorage.removeItem(PROFILE_CACHE_KEY); localStorage.removeItem(ROLE_CACHE_KEY); } catch {}
         }
       }
@@ -144,8 +176,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(initialSession?.user ?? null);
 
       if (initialSession?.user) {
-        await ensureProfile(initialSession.user.id, initialSession.user.email);
-        fetchUserData(initialSession.user.id);
+        const uid = initialSession.user.id;
+        // Dedup: skip if onAuthStateChange already triggered fetch
+        if (fetchedForRef.current === uid) return;
+        fetchedForRef.current = uid;
+
+        await ensureProfile(uid, initialSession.user.email);
+        fetchUserData(uid);
       } else {
         setLoading(false);
       }
@@ -162,7 +199,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("user_id", userId)
         .maybeSingle();
 
-      // If profile fetch failed or returned null, try refreshing the session
       if (!profileData) {
         console.warn("[Auth] No profile data — attempting session refresh");
         const { error: refreshError } = await supabase.auth.refreshSession();
@@ -171,7 +207,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await signOutCleanup();
           return;
         }
-        // Retry profile fetch with fresh token
         const { data: retryData } = await supabase
           .from("profiles")
           .select("*")
@@ -197,7 +232,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (roleData) {
-        setUserRole(roleData as UserRole);
+        setUserRole(prev => {
+          if (prev && JSON.stringify(prev) === JSON.stringify(roleData)) return prev;
+          return roleData as UserRole;
+        });
         try { localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(roleData)); } catch {}
       }
     } catch (error) {
@@ -240,6 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function refetchProfile() {
     if (user) {
+      fetchedForRef.current = null; // allow re-fetch
       await fetchUserData(user.id);
     }
   }

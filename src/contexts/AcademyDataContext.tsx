@@ -113,25 +113,27 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
   const [referralStats, setReferralStats] = useState<ReferralStats>(() => readCache(CACHE_KEY_REFERRAL, defaultReferralStats));
   const [referralLoading, setReferralLoading] = useState(true);
 
+  const userId = user?.id ?? null;
+
   const fetchOnboarding = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from("onboarding_state")
       .select("claimed_role, first_lesson_completed, intro_posted")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .limit(1)
       .single();
     const result = data ? (data as OnboardingState) : defaultOnboarding;
     setOnboarding(result);
     writeCache(CACHE_KEY_ONBOARDING, result);
-  }, [user]);
+  }, [userId]);
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data: notifs } = await supabase
       .from("academy_notifications" as any)
       .select("id")
-      .or(`user_id.eq.${user.id},user_id.is.null`)
+      .or(`user_id.eq.${userId},user_id.is.null`)
       .limit(50);
 
     if (!notifs || notifs.length === 0) {
@@ -142,39 +144,35 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     const { data: reads } = await supabase
       .from("academy_notification_reads" as any)
       .select("notification_id")
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     const readSet = new Set((reads || []).map((r: any) => r.notification_id));
     const unread = (notifs as any[]).filter((n) => !readSet.has(n.id)).length;
     setNotificationUnreadCount(unread);
-  }, [user]);
+  }, [userId]);
 
   const fetchInbox = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     setInboxLoading(true);
 
-    // Fetch inbox items and user's dismissals in parallel
     const [{ data }, { data: dismissals }] = await Promise.all([
       supabase
         .from("inbox_items" as any)
         .select("*")
-        .or(`user_id.eq.${user.id},user_id.is.null`)
+        .or(`user_id.eq.${userId},user_id.is.null`)
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(30),
       supabase
         .from("inbox_dismissals" as any)
         .select("inbox_item_id")
-        .eq("user_id", user.id),
+        .eq("user_id", userId),
     ]);
 
     const dismissedSet = new Set((dismissals as any[] || []).map((d: any) => d.inbox_item_id));
-
     const filtered = (data as any[] || []).filter((d: any) => !dismissedSet.has(d.id));
 
-    // Collect unique sender_ids to batch-fetch profiles + roles
     const senderIds = [...new Set(filtered.map((d: any) => d.sender_id).filter(Boolean))] as string[];
-
     let senderMap: Record<string, { name: string | null; avatar: string | null; role: string | null }> = {};
 
     if (senderIds.length > 0) {
@@ -196,7 +194,6 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       for (const ur of (userRoles as any[] || [])) {
         const roleName = ur.academy_roles?.name;
         if (roleName && senderMap[ur.user_id]) {
-          // Keep highest priority role (CEO > Admin > Coach)
           const current = senderMap[ur.user_id].role;
           if (!current || roleName === "CEO" || (roleName === "Admin" && current !== "CEO") || (roleName === "Coach" && !current)) {
             senderMap[ur.user_id].role = roleName;
@@ -227,68 +224,63 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     setInboxItems(mapped);
     writeCache(CACHE_KEY_INBOX, mapped);
     setInboxLoading(false);
-  }, [user]);
+  }, [userId]);
 
   const markInboxRead = useCallback(async (itemId: string) => {
-    if (!user) return;
+    if (!userId) return;
     const item = inboxItems.find((i) => i.id === itemId);
-    if (item && item.user_id === user.id) {
-      // Personal item — update directly (RLS allows)
+    if (item && item.user_id === userId) {
       await supabase
         .from("inbox_items" as any)
         .update({ read_at: new Date().toISOString() } as any)
         .eq("id", itemId);
     }
-    // For broadcast items, we skip the update (RLS blocks it) — read state is visual only
     setInboxItems((prev) =>
       prev.map((i) => (i.id === itemId ? { ...i, read_at: new Date().toISOString() } : i))
     );
-  }, [user, inboxItems]);
+  }, [userId, inboxItems]);
 
   const markAllInboxRead = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const unread = inboxItems.filter((i) => !i.read_at);
     if (unread.length === 0) return;
 
-    const userItems = unread.filter((i) => i.user_id === user.id);
+    const userItems = unread.filter((i) => i.user_id === userId);
     if (userItems.length > 0) {
       await supabase
         .from("inbox_items" as any)
         .update({ read_at: new Date().toISOString() } as any)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .is("read_at", null);
     }
 
     setInboxItems((prev) => prev.map((i) => ({ ...i, read_at: i.read_at || new Date().toISOString() })));
-  }, [user, inboxItems]);
+  }, [userId, inboxItems]);
 
   const dismissInboxItem = useCallback(async (itemId: string) => {
-    if (!user) return;
+    if (!userId) return;
     const item = inboxItems.find((i) => i.id === itemId);
 
     if (item && item.user_id === null) {
-      // Broadcast item — can't delete shared row, insert dismissal record instead
       await supabase
         .from("inbox_dismissals" as any)
-        .upsert({ user_id: user.id, inbox_item_id: itemId, dismissed_at: new Date().toISOString() } as any, { onConflict: "user_id,inbox_item_id" });
+        .upsert({ user_id: userId, inbox_item_id: itemId, dismissed_at: new Date().toISOString() } as any, { onConflict: "user_id,inbox_item_id" });
     } else {
-      // Personal item — hard delete (RLS allows)
       await supabase
         .from("inbox_items" as any)
         .delete()
         .eq("id", itemId);
     }
 
-    // Remove from local state + cache immediately
     setInboxItems((prev) => {
       const next = prev.filter((i) => i.id !== itemId);
       writeCache(CACHE_KEY_INBOX, next);
       return next;
     });
-  }, [user, inboxItems]);
+  }, [userId, inboxItems]);
 
   const fetchReferrals = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setReferralLoading(false);
       return;
     }
@@ -296,7 +288,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from("referral_stats" as any)
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (data) {
@@ -310,7 +302,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       writeCache(CACHE_KEY_REFERRAL, stats);
     }
     setReferralLoading(false);
-  }, [user]);
+  }, [userId]);
 
   // Reset hydrated when user changes to prevent stale state across sessions
   const prevUserRef = useRef<string | null>(null);
@@ -318,14 +310,13 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return;
 
-    const currentUid = user?.id ?? null;
-    // If the user changed (login/logout/switch), reset hydrated to force fresh load
+    const currentUid = userId;
     if (prevUserRef.current !== currentUid) {
       setHydrated(false);
       prevUserRef.current = currentUid;
     }
 
-    if (!user) {
+    if (!currentUid) {
       setOnboarding(null);
       setNotificationUnreadCount(0);
       setInboxItems([]);
@@ -346,7 +337,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     });
 
     return () => { cancelled = true; };
-  }, [user, authLoading, fetchOnboarding, fetchNotifications, fetchInbox, fetchReferrals]);
+  }, [userId, authLoading, fetchOnboarding, fetchNotifications, fetchInbox, fetchReferrals]);
 
   // Debounced inbox refetch — collapses rapid-fire DM events into one fetch
   const inboxDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -357,18 +348,17 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
     }, 400);
   }, [fetchInbox]);
 
-  // Realtime: auto-refresh inbox when new items arrive for this user
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return;
     const channel = supabase
-      .channel(`inbox-rt-${user.id}`)
+      .channel(`inbox-rt-${userId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "inbox_items",
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => { debouncedFetchInbox(); }
       )
@@ -378,10 +368,9 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
           event: "UPDATE",
           schema: "public",
           table: "inbox_items",
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          // Optimistic: update timestamp immediately before full refetch
           const updated = payload.new as any;
           if (updated?.id) {
             setInboxItems((prev) =>
@@ -401,7 +390,7 @@ export function AcademyDataProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(channel);
       if (inboxDebounceRef.current) clearTimeout(inboxDebounceRef.current);
     };
-  }, [user?.id, debouncedFetchInbox]);
+  }, [userId, debouncedFetchInbox]);
 
   return (
     <AcademyDataContext.Provider
