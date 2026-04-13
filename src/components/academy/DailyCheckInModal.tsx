@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2, BookOpen, PenLine, Users, Radio, Flame,
-  ShieldCheck, ArrowRight, ChevronRight,
+  ShieldCheck, ChevronRight, BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +20,7 @@ interface Prompt {
   icon: React.ReactNode;
   message: string;
   cta: string;
-  ctaAction?: string; // route to navigate after close
+  ctaAction?: string;
   accent: "blue" | "amber" | "emerald";
   yesLabel?: string;
   noLabel?: string;
@@ -36,21 +36,18 @@ const accentMap = {
   blue: {
     bg: "rgba(59,130,246,0.12)",
     border: "rgba(59,130,246,0.25)",
-    glow: "rgba(59,130,246,0.15)",
     text: "rgb(96,165,250)",
     solid: "hsl(217,91%,60%)",
   },
   amber: {
     bg: "rgba(245,158,11,0.12)",
     border: "rgba(245,158,11,0.25)",
-    glow: "rgba(245,158,11,0.15)",
     text: "rgb(251,191,36)",
     solid: "hsl(38,92%,50%)",
   },
   emerald: {
     bg: "rgba(16,185,129,0.12)",
     border: "rgba(16,185,129,0.25)",
-    glow: "rgba(16,185,129,0.15)",
     text: "rgb(52,211,153)",
     solid: "hsl(160,84%,39%)",
   },
@@ -67,6 +64,7 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
   const [lessonsThisWeek, setLessonsThisWeek] = useState(0);
   const [journalsThisWeek, setJournalsThisWeek] = useState(0);
   const [tradesToday, setTradesToday] = useState(0);
+  const [totalTradesEver, setTotalTradesEver] = useState(0);
   const [messagesThisWeek, setMessagesThisWeek] = useState(0);
   const [lastSessionDate, setLastSessionDate] = useState<string | null>(null);
   const [nextSession, setNextSession] = useState<{ title: string; date: string } | null>(null);
@@ -91,13 +89,9 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weekStr = weekAgo.toISOString();
 
-    const monthAgo = new Date();
-    monthAgo.setDate(monthAgo.getDate() - 30);
-    const monthStr = monthAgo.toISOString();
-
     const fetchAll = async () => {
       const [
-        lessonsRes, journalRes, tradesRes, msgsRes,
+        lessonsRes, journalRes, tradesTodayRes, totalTradesRes, msgsRes,
         attendanceRes, nextSessionRes, checklistRes,
         profileRes, totalLessonsRes,
       ] = await Promise.all([
@@ -107,6 +101,8 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
           .eq("user_id", user.id).gte("created_at", weekStr),
         supabase.from("approved_plans").select("id", { count: "exact", head: true })
           .eq("user_id", user.id).eq("status", "closed").gte("created_at", todayStr),
+        supabase.from("approved_plans").select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
         supabase.from("academy_messages").select("id", { count: "exact", head: true })
           .eq("user_id", user.id).gte("created_at", weekStr),
         supabase.from("live_session_attendance").select("clicked_at")
@@ -123,7 +119,8 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
 
       setLessonsThisWeek(lessonsRes.count || 0);
       setJournalsThisWeek(journalRes.count || 0);
-      setTradesToday(tradesRes.count || 0);
+      setTradesToday(tradesTodayRes.count || 0);
+      setTotalTradesEver(totalTradesRes.count || 0);
       setMessagesThisWeek(msgsRes.count || 0);
       setTotalLessons(totalLessonsRes.count || 0);
 
@@ -149,7 +146,6 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
           if (checks[i]?.date === expectedStr) {
             streak++;
           } else {
-            // Allow today to be missing (hasn't checked in yet)
             if (i === 0 && checks[0]?.date !== expectedStr) {
               const yesterday = new Date(today);
               yesterday.setDate(yesterday.getDate() - 1);
@@ -162,13 +158,11 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       }
       setCheckinStreak(streak);
 
-      // Last checkin broke rules
       if (checks.length > 0) {
         const lastMental = (checks[0] as any)?.mental_state;
         setLastCheckinBrokeRules(lastMental !== undefined && lastMental <= 3);
       }
 
-      // Account age
       if (profileRes.data?.created_at) {
         const created = new Date(profileRes.data.created_at);
         const diff = Math.floor((Date.now() - created.getTime()) / (1000 * 60 * 60 * 24));
@@ -187,12 +181,12 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
 
     const list: Prompt[] = [];
 
-    // 1. Streak acknowledgment (if 3+)
+    // 1. Streak (3+)
     if (checkinStreak >= 3) {
       list.push({
         key: "streak",
         icon: <Flame className="h-5 w-5" />,
-        message: `Day ${checkinStreak} streak. Keep it going?`,
+        message: `Day ${checkinStreak} streak. Don't break it.`,
         cta: "Lock It In",
         accent: "emerald",
         yesLabel: "Lock It In",
@@ -200,42 +194,56 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       });
     }
 
-    // 2. Lesson nudge
+    // 2. Never logged a trade → Trade OS nudge
+    if (totalTradesEver === 0) {
+      list.push({
+        key: "trade_os_start",
+        icon: <BarChart3 className="h-5 w-5" />,
+        message: "You haven't logged a trade yet. Open Trade OS before your next session.",
+        cta: "Open Trade OS",
+        ctaAction: "/academy/trade",
+        accent: "amber",
+        yesLabel: "Open Trade OS",
+        noLabel: "Not yet",
+      });
+    }
+
+    // 3. Lesson nudge
     if (lessonsThisWeek === 0) {
       list.push({
         key: "lesson_nudge",
         icon: <BookOpen className="h-5 w-5" />,
         message: totalLessons === 0
-          ? "Start your first lesson? Only takes 15 min."
-          : "Watch a lesson this week? Only takes 15 min.",
+          ? "You haven't started a single lesson. Pick one — 15 min."
+          : "You haven't watched a lesson this week. 15 min.",
         cta: "Watch Now",
         ctaAction: "/academy/learn",
         accent: "blue",
-        yesLabel: "Yes",
+        yesLabel: "Watch Now",
         noLabel: "Not yet",
       });
     }
 
-    // 3. Journal nudge (traded but no journal)
+    // 4. Traded today but no journal
     if (tradesToday > 0 && journalsThisWeek === 0) {
       list.push({
         key: "journal_nudge",
         icon: <PenLine className="h-5 w-5" />,
-        message: `You took ${tradesToday} trade${tradesToday > 1 ? "s" : ""} today. Journal it while it's fresh.`,
+        message: `You took ${tradesToday} trade${tradesToday > 1 ? "s" : ""} today but didn't journal. Write it down while it's fresh.`,
         cta: "Journal Now",
         ctaAction: "/academy/journal",
         accent: "amber",
-        yesLabel: "Yes",
+        yesLabel: "Journal Now",
         noLabel: "Later",
       });
     }
 
-    // 4. Community nudge
+    // 5. Community nudge
     if (messagesThisWeek === 0) {
       list.push({
         key: "community_nudge",
         icon: <Users className="h-5 w-5" />,
-        message: "Anything you learned? Share with the group.",
+        message: "Learned something this week? Share it with the group.",
         cta: "Post Now",
         ctaAction: "/academy/community",
         accent: "blue",
@@ -244,7 +252,7 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       });
     }
 
-    // 5. Live session nudge
+    // 6. Live session nudge
     const daysSinceSession = lastSessionDate
       ? Math.floor((Date.now() - new Date(lastSessionDate).getTime()) / (1000 * 60 * 60 * 24))
       : 999;
@@ -254,8 +262,8 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       list.push({
         key: "live_nudge",
         icon: <Radio className="h-5 w-5" />,
-        message: `Attend a call? Next: ${nextSession.title} — ${formatted}`,
-        cta: "View Schedule",
+        message: `Next call: ${nextSession.title} — ${formatted}. Be there.`,
+        cta: "View Calls",
         ctaAction: "/academy/live",
         accent: "blue",
         yesLabel: "I'll Be There",
@@ -263,12 +271,12 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       });
     }
 
-    // 6. Rules check (if last check-in had low mental state / broke rules)
+    // 7. Rules check
     if (lastCheckinBrokeRules) {
       list.push({
         key: "rules_check",
         icon: <ShieldCheck className="h-5 w-5" />,
-        message: "Did you stick to the plan today?",
+        message: "Did you follow the plan today?",
         cta: "Yes",
         accent: "amber",
         yesLabel: "Yes",
@@ -276,15 +284,14 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       });
     }
 
-    // 7. New user — set rules
+    // 8. New user — set rules
     if (accountAgeDays < 7 && totalLessons === 0) {
-      // Remove lesson nudge duplicate for brand new users, replace with onboarding
       const idx = list.findIndex((p) => p.key === "lesson_nudge");
       if (idx !== -1) list.splice(idx, 1);
       list.push({
         key: "setup_rules",
         icon: <ShieldCheck className="h-5 w-5" />,
-        message: "Set up your trading rules yet?",
+        message: "Set your trading rules before you start.",
         cta: "Set Rules",
         ctaAction: "/rules",
         accent: "blue",
@@ -293,9 +300,8 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       });
     }
 
-    // Cap at 5 prompts max
     return list.slice(0, 5);
-  }, [loading, lessonsThisWeek, journalsThisWeek, tradesToday, messagesThisWeek,
+  }, [loading, lessonsThisWeek, journalsThisWeek, tradesToday, totalTradesEver, messagesThisWeek,
     lastSessionDate, nextSession, checkinStreak, lastCheckinBrokeRules, accountAgeDays, totalLessons]);
 
   /* ─── If no personalized prompts, show a default ─── */
@@ -318,13 +324,8 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
   const allAnswered = answeredCount >= totalCount;
 
   /* ─── answer a prompt ─── */
-  const handleAnswer = useCallback((key: string, response: string, ctaAction?: string) => {
+  const handleAnswer = useCallback((key: string, response: string, _ctaAction?: string) => {
     setAnswers((prev) => ({ ...prev, [key]: response }));
-
-    // If they tapped "yes" on something with a route, queue navigation after close
-    if ((response === "yes" || response === "cta") && ctaAction) {
-      // We'll navigate on close
-    }
   }, []);
 
   /* ─── submit all ─── */
@@ -332,36 +333,51 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
     if (!user) return;
     setSubmitting(true);
 
-    // Save to daily_checkin_responses
-    const rows = finalPrompts.map((p) => ({
-      user_id: user.id,
-      date: todayStr,
-      prompt_key: p.key,
-      response: answers[p.key] || "skipped",
-    }));
+    try {
+      // Clear today's responses first to avoid duplicates
+      await supabase
+        .from("daily_checkin_responses")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("date", todayStr);
 
-    await supabase.from("daily_checkin_responses").insert(rows);
+      // Insert fresh responses
+      const rows = finalPrompts.map((p) => ({
+        user_id: user.id,
+        date: todayStr,
+        prompt_key: p.key,
+        response: answers[p.key] || "skipped",
+      }));
 
-    // Also log the vault_daily_checklist for streak continuity
-    await supabase.from("vault_daily_checklist").insert({
-      user_id: user.id,
-      date: todayStr,
-      plan_reviewed: true,
-      risk_confirmed: true,
-      sleep_quality: 5,
-      mental_state: 5,
-      emotional_control: 5,
-      completed: true,
-    });
+      await supabase.from("daily_checkin_responses").insert(rows);
 
-    setSubmitting(false);
-    setDone(true);
-    toast({ title: "Check-in locked in", description: `${answeredCount}/${totalCount} habits tracked today.` });
+      // Upsert vault_daily_checklist to avoid duplicate key errors
+      await supabase.from("vault_daily_checklist").upsert(
+        {
+          user_id: user.id,
+          date: todayStr,
+          plan_reviewed: true,
+          risk_confirmed: true,
+          sleep_quality: 5,
+          mental_state: 5,
+          emotional_control: 5,
+          completed: true,
+        },
+        { onConflict: "user_id,date" }
+      );
+
+      setDone(true);
+      toast({ title: "Check-in locked in", description: `${answeredCount}/${totalCount} habits tracked today.` });
+    } catch (err) {
+      console.error("Check-in submit error:", err);
+      toast({ title: "Something went wrong", description: "Your check-in couldn't be saved. Try again.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* ─── close + navigate if needed ─── */
   const handleClose = () => {
-    // Find if any answered "yes/cta" prompt has a ctaAction
     const navTarget = finalPrompts.find(
       (p) => (answers[p.key] === "yes" || answers[p.key] === "cta") && p.ctaAction
     );
@@ -378,7 +394,6 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
     }, 200);
   };
 
-  /* ─── completion summary ─── */
   const yesCount = finalPrompts.filter((p) => answers[p.key] === "yes" || answers[p.key] === "cta").length;
 
   return (
@@ -390,7 +405,6 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
         }}
       >
         {done ? (
-          /* ─── COMPLETION ─── */
           <div className="py-10 px-6 flex flex-col items-center gap-4 text-center animate-fade-in">
             <div className="h-14 w-14 rounded-2xl flex items-center justify-center"
               style={{ background: accentMap.emerald.bg, border: `1px solid ${accentMap.emerald.border}` }}>
@@ -407,7 +421,6 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
               )}
             </div>
 
-            {/* Show CTA links for "yes" answers */}
             {finalPrompts
               .filter((p) => (answers[p.key] === "yes" || answers[p.key] === "cta") && p.ctaAction)
               .slice(0, 2)
@@ -432,17 +445,14 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
             </Button>
           </div>
         ) : (
-          /* ─── QUESTION ENGINE ─── */
           <div className="animate-fade-in">
-            {/* Header */}
             <div className="px-6 pt-6 pb-4">
               <p className="text-lg font-bold text-[rgba(255,255,255,0.94)]">Daily Check-In</p>
               <p className="text-xs text-[rgba(255,255,255,0.45)] mt-1">
                 {answeredCount}/{totalCount} · Takes 15 seconds
               </p>
-              {/* Progress dots */}
               <div className="flex gap-1.5 mt-3">
-                {finalPrompts.map((p, i) => (
+                {finalPrompts.map((p) => (
                   <div
                     key={p.key}
                     className="h-1 flex-1 rounded-full transition-all duration-300"
@@ -478,7 +488,6 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
                       }}
                     >
                       <div className="flex items-center gap-3 px-4 py-3.5">
-                        {/* Icon */}
                         <div
                           className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200"
                           style={{
@@ -489,32 +498,24 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
                           {answered ? <CheckCircle2 className="h-5 w-5" /> : prompt.icon}
                         </div>
 
-                        {/* Message */}
                         <p className="text-[13px] font-medium flex-1 leading-snug"
                           style={{ color: answered ? colors.text : "rgba(255,255,255,0.75)" }}>
                           {prompt.message}
                         </p>
 
-                        {/* Buttons */}
                         {!answered && (
                           <div className="flex gap-1.5 shrink-0">
                             <button
                               onClick={() => handleAnswer(prompt.key, "yes", prompt.ctaAction)}
                               className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-[0.95]"
-                              style={{
-                                background: colors.solid,
-                                color: "#fff",
-                              }}
+                              style={{ background: colors.solid, color: "#fff" }}
                             >
                               {prompt.yesLabel || "Yes"}
                             </button>
                             <button
                               onClick={() => handleAnswer(prompt.key, "no")}
                               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all active:scale-[0.95]"
-                              style={{
-                                background: "rgba(255,255,255,0.06)",
-                                color: "rgba(255,255,255,0.5)",
-                              }}
+                              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}
                             >
                               {prompt.noLabel || "Skip"}
                             </button>
@@ -525,7 +526,6 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
                   );
                 })}
 
-                {/* Submit */}
                 <div className="pt-3">
                   <Button
                     onClick={handleSubmit}
