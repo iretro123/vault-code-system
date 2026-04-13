@@ -306,10 +306,11 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       icon: <CheckCircle2 className="h-5 w-5" />,
       message: "You're on track. Keep building discipline.",
       cta: "Done",
+      ctaAction: undefined,
       accent: "emerald" as const,
       yesLabel: "Lock It In",
       noLabel: "Skip",
-    }];
+    } satisfies Prompt];
   }, [prompts]);
 
   const answeredCount = Object.keys(answers).length;
