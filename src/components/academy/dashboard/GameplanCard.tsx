@@ -147,53 +147,36 @@ function getInitials(name: string) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function TaskConfettiBurst() {
-  const particles = useMemo(() => {
-    const colors = ["#34D399", "#60A5FA", "#F59E0B", "#F472B6", "#A78BFA"];
-    return Array.from({ length: 18 }, (_, i) => {
-      const angle = -70 + Math.random() * 140;
-      const distance = 120 + Math.random() * 80;
-      return {
-        id: i,
-        color: colors[i % colors.length],
-        left: 20 + Math.random() * 60,
-        delay: Math.random() * 0.15,
-        angle,
-        distance,
-        rotation: Math.random() * 540 - 270,
-        width: 3 + Math.random() * 2,
-        height: 6 + Math.random() * 5,
-        borderRadius: Math.random() > 0.6 ? "999px" : "1px",
-      };
-    });
-  }, []);
+/* Circular progress ring */
+function ProgressRing({ done, total, size = 36 }: { done: number; total: number; size?: number }) {
+  const stroke = 3;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const pct = total > 0 ? done / total : 0;
+  const offset = circumference * (1 - pct);
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {particles.map((p) => (
-        <span
-          key={p.id}
-          className="absolute"
-          style={{
-            left: `${p.left}%`,
-            bottom: "18%",
-            width: p.width,
-            height: p.height,
-            backgroundColor: p.color,
-            borderRadius: p.borderRadius,
-            animationName: "chat-confetti-burst",
-            animationDuration: "1.2s",
-            animationDelay: `${p.delay}s`,
-            animationTimingFunction: "cubic-bezier(0.2, 0.6, 0.4, 1)",
-            animationFillMode: "forwards",
-            opacity: 0,
-            ["--confetti-x" as string]: `${Math.cos((p.angle * Math.PI) / 180) * p.distance}px`,
-            ["--confetti-y" as string]: `${-p.distance}px`,
-            ["--confetti-r" as string]: `${p.rotation}deg`,
-          }}
-        />
-      ))}
-    </div>
+    <svg width={size} height={size} className="shrink-0 -rotate-90">
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        className="stroke-muted/30"
+        strokeWidth={stroke}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        className="stroke-primary transition-all duration-500"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+      />
+    </svg>
   );
 }
 
