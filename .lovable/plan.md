@@ -1,66 +1,42 @@
 
 
-## Transform Daily Check-In Into a Personalized Accountability Ritual
+## Fix Daily Check-In: Better Copy, Trade OS Nudge, Error-Free Submit
 
-### The Problem
-The current check-in is generic — "Followed rules? Trades today?" — same two questions for every user regardless of where they are in their journey. It doesn't drive behavior, doesn't learn them, and doesn't connect them to the platform.
+### Problems to Fix
 
-### The New System: "Daily Vault Check-In"
+1. **Journal nudge is wrong** — currently says "You took N trades today. Journal it." but should nudge them to **log trades via Trade OS** if they haven't, not journal. The journal nudge should only appear if they actually traded.
+2. **Trade OS nudge missing** — no prompt tells users who haven't logged any trades to start using Trade OS.
+3. **Submit can error** — the `vault_daily_checklist` insert can fail with a duplicate key if they already checked in today (from Trade OS or elsewhere). No error handling exists.
+4. **Copy needs upgrade** — messages are still generic. Need to feel direct and real.
 
-A context-aware check-in that asks **different questions based on the user's real data** — what they've done (or haven't done) that day/week. Each question is a soft accountability nudge that routes them deeper into the platform.
+### Changes (single file: `DailyCheckInModal.tsx`)
 
-### How It Works
+**1. Add total trades count (not just today)**
+Fetch `approved_plans` total count to know if they've ever used Trade OS.
 
-On open, the modal fetches:
-- Today's trades (`trade_entries`)
-- This week's journal count (`journal_entries`)
-- Lessons completed (`lesson_progress`)
-- Last live session attended (`live_session_attendance`)
-- Next upcoming live session (`live_sessions`)
-- Messages posted this week (`academy_messages`)
-- Their check-in history (`vault_daily_checklist`)
+**2. Rewrite prompt waterfall with better copy:**
 
-Then it builds a **personalized question list** (3-5 questions max) from a pool of ~10 possible prompts. Each prompt only appears if relevant:
+| # | Condition | Message | CTA |
+|---|-----------|---------|-----|
+| 1 | Streak ≥ 3 | "Day {N} streak. Don't break it." | Lock It In |
+| 2 | Never logged a trade (0 total) | "You haven't logged a trade yet. Open Trade OS before your next session." | Open Trade OS → `/academy/trade` |
+| 3 | No lesson this week | "You haven't watched a lesson this week. 15 min." | Watch Now → `/academy/learn` |
+| 4 | Traded today, no journal | "You took {N} trades today but didn't journal. Write it down while it's fresh." | Journal → `/academy/journal` |
+| 5 | No community post this week | "Learned something this week? Share it with the group." | Post → `/academy/community` |
+| 6 | No live session in 14+ days + next session exists | "Next call: {title} — {date}. Be there." | View Calls → `/academy/live` |
+| 7 | Broke rules last time | "Did you follow the plan today?" | Yes / No |
+| 8 | New user < 7 days, no lessons | "Set your trading rules before you start." | Set Rules → `/rules` |
 
-| Condition | Question | CTA |
-|-----------|----------|-----|
-| No lesson this week | "Watch a lesson this week? Only takes 15 min." | Yes / Not yet → links to Learn |
-| Traded today but no journal | "You traded today. Journal it?" | Yes (opens journal after) |
-| No message in community this week | "Anything you learned? Share with the group." | Post Now → links to Trade Floor |
-| No live session this month | "Attend a call? Next one is {title} on {date}." | View Schedule → links to Live |
-| Has unanswered questions | "Got questions? Ask the chat." | Ask Now → links to Community |
-| Broke rules last check-in | "Did you stick to the plan today?" | Yes / No |
-| On a streak 3+ | "Day {N}. Keep it going?" | Lock It In |
-| New user (< 7 days) | "Set up your trading rules yet?" | Set Rules → links to Rules |
+**3. Fix submit errors:**
+- Use `upsert` instead of `insert` for `vault_daily_checklist` (with `onConflict: 'user_id,date'`)
+- Wrap both inserts in try/catch so failures don't crash the UI
+- Handle `daily_checkin_responses` duplicates by deleting today's rows first, then inserting fresh
 
-Each question is a **tap-to-answer card** (not a form). Tap "Yes" or the CTA, it checks off with a micro-animation. The whole thing takes 15-30 seconds.
+**4. Fetch total trades ever** (add one more query to the parallel batch)
 
-### Persistence & Memory
-
-Add a new table `daily_checkin_responses` to store each question answered:
-- `user_id`, `date`, `prompt_key`, `response` (yes/no/skipped), `created_at`
-
-This builds a behavioral profile over time. Future nudges and coach insights can reference patterns (e.g., "You've skipped journaling 4 weeks in a row").
-
-### Completion Screen
-
-After all questions answered, show a **personalized summary**:
-- "3/4 habits hit today. Keep building."
-- If they said "Not yet" to a lesson → show a direct link: "Watch Lesson {N} →"
-- If on a streak → "Day {N} locked in 🔥"
-
-### Visual Design
-
-- Same dark premium modal shell
-- Each question is a full-width card with the prompt on the left, tap buttons on the right
-- Answered cards collapse with a checkmark and slide up
-- Accent colors: blue for info prompts, amber for accountability, emerald for streaks
-- Progress dots at the top showing how many questions remain
-
-### Files Changed
+### Files
 
 | File | Change |
 |------|--------|
-| `src/components/academy/DailyCheckInModal.tsx` | Full rewrite — context-aware question engine with personalized prompts |
-| Migration | New table `daily_checkin_responses` (user_id, date, prompt_key, response, created_at) with RLS |
+| `src/components/academy/DailyCheckInModal.tsx` | Rewrite prompts, fix submit, add Trade OS nudge |
 
