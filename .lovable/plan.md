@@ -1,48 +1,66 @@
 
 
-## Fix the 999-Day Bug + Make the Nudge Card Fire
+## Transform Daily Check-In Into a Personalized Accountability Ritual
 
-### The Bug
+### The Problem
+The current check-in is generic — "Followed rules? Trades today?" — same two questions for every user regardless of where they are in their journey. It doesn't drive behavior, doesn't learn them, and doesn't connect them to the platform.
 
-Line 186: `daysInactive` defaults to `999` when the user has **zero check-in records**. So brand new users (or anyone who's never checked in) see "You've been away 999 days" — obviously wrong. The fix: distinguish between "never checked in" and "checked in but lapsed."
+### The New System: "Daily Vault Check-In"
 
-### The Fix + Upgrade
+A context-aware check-in that asks **different questions based on the user's real data** — what they've done (or haven't done) that day/week. Each question is a soft accountability nudge that routes them deeper into the platform.
 
-**1. Fix the waterfall priority order**
+### How It Works
 
-The "inactive 3+ days" check fires before "no check-in today" — but for users who've *never* checked in, the right nudge is "Start your first check-in" not "You've been away 999 days." New priority:
+On open, the modal fetches:
+- Today's trades (`trade_entries`)
+- This week's journal count (`journal_entries`)
+- Lessons completed (`lesson_progress`)
+- Last live session attended (`live_session_attendance`)
+- Next upcoming live session (`live_sessions`)
+- Messages posted this week (`academy_messages`)
+- Their check-in history (`vault_daily_checklist`)
 
-1. **Never checked in at all** (0 records) → "You haven't started checking in yet. 30 seconds to build your first streak." → CTA: Start Now
-2. **Inactive 3+ days** (has history but lapsed) → "You've been away {N} days. Your streak reset — start a new one today." → CTA: Check In
-3. **Traded today, no journal** → (same)
-4. **No check-in today** (has history, checked in recently but not today) → (same)
-5. **Never watched a lesson** (0 lessons, member 3+ days) → "You haven't started a lesson yet. The first one is 10 minutes." → CTA: Watch Lesson 1
-6. **No wins posted** (3+ trades) → (same)
-7. **Lessons watched but no trades** (5+ lessons, 0 trades) → (same)
-8. **No live session attended** (member 14+ days) → (same)
-9. **Weekly review due** (Fri–Sun) → (same)
-10. **On a streak 3+** → (same, but upgrade the message with real streak data)
-11. **All caught up** → (same)
+Then it builds a **personalized question list** (3-5 questions max) from a pool of ~10 possible prompts. Each prompt only appears if relevant:
 
-**2. Better copy — make it feel real, not robotic**
+| Condition | Question | CTA |
+|-----------|----------|-----|
+| No lesson this week | "Watch a lesson this week? Only takes 15 min." | Yes / Not yet → links to Learn |
+| Traded today but no journal | "You traded today. Journal it?" | Yes (opens journal after) |
+| No message in community this week | "Anything you learned? Share with the group." | Post Now → links to Trade Floor |
+| No live session this month | "Attend a call? Next one is {title} on {date}." | View Schedule → links to Live |
+| Has unanswered questions | "Got questions? Ask the chat." | Ask Now → links to Community |
+| Broke rules last check-in | "Did you stick to the plan today?" | Yes / No |
+| On a streak 3+ | "Day {N}. Keep it going?" | Lock It In |
+| New user (< 7 days) | "Set up your trading rules yet?" | Set Rules → links to Rules |
 
-Current messages are flat. Upgrade examples:
-- Streak: "🔥 {N}-day streak. You're in the top discipline tier. Don't break it." (with Flame icon, emerald accent)
-- Never checked in: "Your first check-in takes 30 seconds. Every disciplined trader starts here."
-- Inactive: "It's been {N} days. The market doesn't wait — neither should your discipline."
-- Trade no journal: "You took {N} trade{s} today. Journal it while the lessons are fresh."
+Each question is a **tap-to-answer card** (not a form). Tap "Yes" or the CTA, it checks off with a micro-animation. The whole thing takes 15-30 seconds.
 
-**3. Upgrade the visual design**
+### Persistence & Memory
 
-The current card is functional but plain. Make it premium:
-- Add a subtle shimmer/gradient on the left accent bar (not just a flat color)
-- Slightly larger icon with a soft glow ring behind it
-- CTA button gets a solid style (not ghost) with the accent color for urgency nudges
-- Add a subtle animated entrance (slide-in from left, 200ms)
+Add a new table `daily_checkin_responses` to store each question answered:
+- `user_id`, `date`, `prompt_key`, `response` (yes/no/skipped), `created_at`
+
+This builds a behavioral profile over time. Future nudges and coach insights can reference patterns (e.g., "You've skipped journaling 4 weeks in a row").
+
+### Completion Screen
+
+After all questions answered, show a **personalized summary**:
+- "3/4 habits hit today. Keep building."
+- If they said "Not yet" to a lesson → show a direct link: "Watch Lesson {N} →"
+- If on a streak → "Day {N} locked in 🔥"
+
+### Visual Design
+
+- Same dark premium modal shell
+- Each question is a full-width card with the prompt on the left, tap buttons on the right
+- Answered cards collapse with a checkmark and slide up
+- Accent colors: blue for info prompts, amber for accountability, emerald for streaks
+- Progress dots at the top showing how many questions remain
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/academy/dashboard/PersonalNudgeCard.tsx` | Fix 999-day bug, reorder waterfall, add "never checked in" + "never watched lesson" nudges, upgrade copy, improve card design |
+| `src/components/academy/DailyCheckInModal.tsx` | Full rewrite — context-aware question engine with personalized prompts |
+| Migration | New table `daily_checkin_responses` (user_id, date, prompt_key, response, created_at) with RLS |
 
