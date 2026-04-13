@@ -801,6 +801,33 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_checkin_responses: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          prompt_key: string
+          response: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          prompt_key: string
+          response?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          prompt_key?: string
+          response?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_memory: {
         Row: {
           account_balance: number
