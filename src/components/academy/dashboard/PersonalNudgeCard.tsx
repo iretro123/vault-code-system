@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   AlertTriangle, BookOpen, Trophy, Video, PenLine,
-  Flame, CheckCircle2, X, ArrowRight, Zap
+  Flame, CheckCircle2, X, ArrowRight, Zap, Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ interface Nudge {
   route?: string;
   action?: string;
   accent: "amber" | "emerald" | "blue";
+  showDone?: boolean;
 }
 
 const DISMISS_PREFIX = "va_nudge_dismiss_";
@@ -29,27 +30,39 @@ function getDismissKey(nudgeKey: string) {
 export function PersonalNudgeCard() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [nudge, setNudge] = useState<Nudge | null>(null);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const [resolving, setResolving] = useState(false);
 
-  useEffect(() => {
+  const resolve = useCallback(async () => {
     if (!user) return;
-    let cancelled = false;
     const memberSince = user.created_at || new Date().toISOString();
+    const n = await resolveNudge(user.id, memberSince);
+    if (n && localStorage.getItem(getDismissKey(n.key))) {
+      setNudge(null);
+    } else {
+      setNudge(n);
+    }
+    setLoading(false);
+    setResolving(false);
+    setDismissed(false);
+  }, [user]);
 
-    resolveNudge(user.id, memberSince).then((n) => {
-      if (cancelled) return;
-      if (n && localStorage.getItem(getDismissKey(n.key))) {
-        setNudge(null);
-      } else {
-        setNudge(n);
-      }
-      setLoading(false);
-    });
+  // Initial load + re-resolve when route changes back to dashboard
+  useEffect(() => {
+    resolve();
+  }, [resolve, location.pathname]);
 
-    return () => { cancelled = true; };
-  }, [user, profile]);
+  // Auto-refresh when tab becomes visible again
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible") resolve();
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, [resolve]);
 
   const handleCta = () => {
     if (!nudge) return;
@@ -58,6 +71,15 @@ export function PersonalNudgeCard() {
     } else if (nudge.route) {
       navigate(nudge.route);
     }
+  };
+
+  const handleDone = async () => {
+    if (!nudge) return;
+    setResolving(true);
+    // Mark this specific nudge as dismissed for today so it won't reappear
+    localStorage.setItem(getDismissKey(nudge.key), "1");
+    // Re-resolve to show the next nudge in the waterfall
+    await resolve();
   };
 
   const handleDismiss = () => {
@@ -75,18 +97,21 @@ export function PersonalNudgeCard() {
       glow: "bg-amber-500/10 ring-1 ring-amber-500/20",
       icon: "text-amber-400",
       btn: "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 border border-amber-500/20",
+      doneBtn: "text-amber-400/70 hover:text-amber-300 hover:bg-amber-500/10",
     },
     emerald: {
       bar: "from-emerald-400 to-emerald-600",
       glow: "bg-emerald-500/10 ring-1 ring-emerald-500/20",
       icon: "text-emerald-400",
       btn: "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/20",
+      doneBtn: "text-emerald-400/70 hover:text-emerald-300 hover:bg-emerald-500/10",
     },
     blue: {
       bar: "from-primary to-blue-600",
       glow: "bg-primary/10 ring-1 ring-primary/20",
       icon: "text-primary",
       btn: "bg-primary/15 text-blue-300 hover:bg-primary/25 border border-primary/20",
+      doneBtn: "text-blue-400/70 hover:text-blue-300 hover:bg-primary/10",
     },
   };
 
@@ -99,11 +124,9 @@ export function PersonalNudgeCard() {
         "relative"
       )}
     >
-      {/* Gradient accent bar */}
       <div className={cn("w-[3px] shrink-0 bg-gradient-to-b rounded-l-2xl", s.bar)} />
 
       <div className="flex items-center gap-3.5 px-4 py-3.5 flex-1 min-w-0">
-        {/* Icon with glow ring */}
         <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", s.glow)}>
           <Icon className={cn("h-[18px] w-[18px]", s.icon)} />
         </div>
@@ -112,7 +135,7 @@ export function PersonalNudgeCard() {
           {nudge.message}
         </p>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {nudge.cta && (
             <Button
               size="sm"
@@ -122,6 +145,18 @@ export function PersonalNudgeCard() {
             >
               {nudge.cta}
               <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {nudge.showDone !== false && nudge.cta && (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={resolving}
+              className={cn("gap-1 h-8 px-2.5 text-xs font-medium rounded-lg", s.doneBtn)}
+              onClick={handleDone}
+            >
+              <Check className="h-3.5 w-3.5" />
+              Done
             </Button>
           )}
           <button
@@ -185,7 +220,6 @@ async function resolveNudge(userId: string, memberSince: string): Promise<Nudge 
   const checkinDates = (checkinRes.data || []).map((r) => r.date as string);
   const hasEverCheckedIn = checkinDates.length > 0;
 
-  // Compute streak
   let streak = 0;
   if (hasEverCheckedIn) {
     const d = new Date(todayDate);
@@ -200,7 +234,6 @@ async function resolveNudge(userId: string, memberSince: string): Promise<Nudge 
     }
   }
 
-  // Days since last check-in (only meaningful if they have history)
   let daysInactive = 0;
   if (hasEverCheckedIn) {
     daysInactive = Math.floor(
@@ -223,129 +256,89 @@ async function resolveNudge(userId: string, memberSince: string): Promise<Nudge 
 
   // ── PRIORITY WATERFALL ──
 
-  // 1. Never checked in at all
   if (!hasEverCheckedIn) {
     return {
-      key: "never_checkin",
-      icon: Zap,
+      key: "never_checkin", icon: Zap,
       message: "Your first check-in takes 30 seconds. Every disciplined trader starts here.",
-      cta: "Start Now",
-      action: "checkin",
-      accent: "blue",
+      cta: "Start Now", action: "checkin", accent: "blue", showDone: false,
     };
   }
 
-  // 2. Inactive 3+ days (has history but lapsed)
   if (daysInactive >= 3) {
     return {
-      key: "inactive",
-      icon: AlertTriangle,
+      key: "inactive", icon: AlertTriangle,
       message: `It's been ${daysInactive} days. The market doesn't wait — neither should your discipline.`,
-      cta: "Check In",
-      action: "checkin",
-      accent: "amber",
+      cta: "Check In", action: "checkin", accent: "amber", showDone: false,
     };
   }
 
-  // 3. Traded today, no journal this week
   if (tradesToday > 0 && journalsThisWeek === 0) {
     return {
-      key: "trade_no_journal",
-      icon: PenLine,
+      key: "trade_no_journal", icon: PenLine,
       message: `You took ${tradesToday} trade${tradesToday > 1 ? "s" : ""} today. Journal it while the lessons are fresh.`,
-      cta: "Open Journal",
-      route: "/academy/journal",
-      accent: "amber",
+      cta: "Open Journal", route: "/academy/journal", accent: "amber",
     };
   }
 
-  // 4. No check-in today (has history, checked in recently)
   if (!checkedInToday) {
     return {
-      key: "no_checkin",
-      icon: CheckCircle2,
+      key: "no_checkin", icon: CheckCircle2,
       message: "You haven't checked in today. 30 seconds to stay accountable.",
-      cta: "Check In",
-      action: "checkin",
-      accent: "blue",
+      cta: "Check In", action: "checkin", accent: "blue", showDone: false,
     };
   }
 
-  // 5. Never watched a lesson (member 3+ days)
   if (lessonsCompleted === 0 && memberDays >= 3) {
     return {
-      key: "never_lesson",
-      icon: BookOpen,
+      key: "never_lesson", icon: BookOpen,
       message: "You haven't started a lesson yet. The first one is 10 minutes.",
-      cta: "Watch Lesson 1",
-      route: "/academy/learn",
-      accent: "blue",
+      cta: "Watch Lesson 1", route: "/academy/learn", accent: "blue",
     };
   }
 
-  // 6. No wins posted (3+ trades)
   if (totalTrades >= 3 && winsPosted === 0) {
     return {
-      key: "no_wins",
-      icon: Trophy,
+      key: "no_wins", icon: Trophy,
       message: `${totalTrades} trades logged, zero wins shared. Post one — your progress inspires others.`,
-      cta: "Share Win",
-      route: "/academy/community?tab=wins",
-      accent: "blue",
+      cta: "Share Win", route: "/academy/community?tab=wins", accent: "blue",
     };
   }
 
-  // 7. Lessons watched but no trades (5+ lessons, 0 trades)
   if (lessonsCompleted >= 5 && totalTrades === 0) {
     return {
-      key: "lessons_no_trades",
-      icon: BookOpen,
+      key: "lessons_no_trades", icon: BookOpen,
       message: `${lessonsCompleted} lessons done, zero trades logged. Time to apply what you've learned.`,
-      cta: "Log Trade",
-      route: "/academy/trade",
-      accent: "blue",
+      cta: "Log Trade", route: "/academy/trade", accent: "blue",
     };
   }
 
-  // 8. No live session attended (member 14+ days)
   if (memberDays >= 14 && liveAttended === 0) {
     return {
-      key: "no_live",
-      icon: Video,
+      key: "no_live", icon: Video,
       message: `${memberWeeks} week${memberWeeks > 1 ? "s" : ""} in and no live session yet. Show up once — it changes everything.`,
-      cta: "Go to Live",
-      route: "/academy/live",
-      accent: "blue",
+      cta: "Go to Live", route: "/academy/live", accent: "blue",
     };
   }
 
-  // 9. Weekly review due (Fri–Sun, no journal this week)
   if ((dayOfWeek >= 5 || dayOfWeek === 0) && journalsThisWeek === 0) {
     return {
-      key: "weekly_review",
-      icon: PenLine,
+      key: "weekly_review", icon: PenLine,
       message: "End of week. Write 1 journal entry before Monday.",
-      cta: "Start Review",
-      route: "/academy/journal",
-      accent: "amber",
+      cta: "Start Review", route: "/academy/journal", accent: "amber",
     };
   }
 
-  // 10. On a streak (3+ days)
   if (streak >= 3) {
     return {
-      key: "streak",
-      icon: Flame,
+      key: "streak", icon: Flame,
       message: `${streak}-day streak. You're in the top discipline tier. Don't break it.`,
-      accent: "emerald",
+      accent: "emerald", showDone: false,
     };
   }
 
-  // 11. All caught up
   return {
-    key: "caught_up",
-    icon: CheckCircle2,
+    key: "caught_up", icon: CheckCircle2,
     message: "You're on track today. Come back tomorrow to keep building.",
-    accent: "emerald",
+    accent: "emerald", showDone: false,
   };
 }
