@@ -63,6 +63,22 @@ function getDaysUntilReset(): number {
   }
 }
 
+const TASK_ICONS: Record<string, typeof Rocket> = {
+  "foundation-claim-role": Rocket,
+  "foundation-introduce": MessageSquare,
+  "foundation-first-lesson": BookOpen,
+  "foundation-risk-rules": Shield,
+  "foundation-starting-balance": Wallet,
+};
+
+const TASK_DESCRIPTIONS: Record<string, string> = {
+  "foundation-claim-role": "Set your experience level to personalize your path",
+  "foundation-introduce": "Say hello in the Trading Floor community",
+  "foundation-first-lesson": "Your first lesson is only 10 minutes",
+  "foundation-risk-rules": "Define your daily loss and trade limits",
+  "foundation-starting-balance": "Enter your account balance to track progress",
+};
+
 const TASK_ROUTES: Record<string, string> = {
   "foundation-claim-role": "/academy/home",
   "foundation-introduce": "/academy/community",
@@ -81,10 +97,10 @@ const TASK_ROUTES: Record<string, string> = {
 
 const FOUNDATION_TASKS: Omit<TaskItem, "done">[] = [
   { id: "foundation-claim-role", title: "Claim your role" },
-  { id: "foundation-introduce", title: "Introduce yourself in Trading Floor" },
   { id: "foundation-first-lesson", title: "Watch first lesson" },
+  { id: "foundation-introduce", title: "Introduce yourself" },
   { id: "foundation-risk-rules", title: "Set your risk rules" },
-  { id: "foundation-starting-balance", title: "Set your starting balance" },
+  { id: "foundation-starting-balance", title: "Set starting balance" },
 ];
 
 const THIS_WEEK_TASKS: Omit<TaskItem, "done">[] = [
