@@ -1,42 +1,34 @@
 
 
-## Fix Daily Check-In: Better Copy, Trade OS Nudge, Error-Free Submit
+## Make Nudge Card Actionable: "Done" Confirmation + Auto-Resolve
 
-### Problems to Fix
+### The Problem
+Right now the nudge card has only a tiny X to dismiss and a CTA button. If a user watches a lesson, there's no way to confirm "I did this" — the nudge just sits there until they dismiss it or leave and come back. It feels broken.
 
-1. **Journal nudge is wrong** — currently says "You took N trades today. Journal it." but should nudge them to **log trades via Trade OS** if they haven't, not journal. The journal nudge should only appear if they actually traded.
-2. **Trade OS nudge missing** — no prompt tells users who haven't logged any trades to start using Trade OS.
-3. **Submit can error** — the `vault_daily_checklist` insert can fail with a duplicate key if they already checked in today (from Trade OS or elsewhere). No error handling exists.
-4. **Copy needs upgrade** — messages are still generic. Need to feel direct and real.
+### The Fix
 
-### Changes (single file: `DailyCheckInModal.tsx`)
+**1. Add a "Done" / "✓" confirmation button next to the CTA**
+- When tapped: dismisses the current nudge, re-runs the waterfall, and shows the **next relevant nudge** (or nothing if all clear)
+- This makes the card feel alive — complete one task, the next one surfaces
 
-**1. Add total trades count (not just today)**
-Fetch `approved_plans` total count to know if they've ever used Trade OS.
+**2. Auto-refresh on route return**
+- When the user navigates away (e.g., to Learn page) and comes back to Dashboard, the component re-fetches fresh data and resolves the correct nudge automatically
+- Uses a `visibilitychange` listener + route-based re-mount so it always reflects current state
 
-**2. Rewrite prompt waterfall with better copy:**
+**3. Better button layout**
+- CTA button (solid accent): "Watch Lesson 1 →" — routes them to the page
+- Done button (outline/ghost): "✓ Done" — marks complete, surfaces next nudge
+- X dismiss stays but is secondary (just hides for the day without progressing)
 
-| # | Condition | Message | CTA |
-|---|-----------|---------|-----|
-| 1 | Streak ≥ 3 | "Day {N} streak. Don't break it." | Lock It In |
-| 2 | Never logged a trade (0 total) | "You haven't logged a trade yet. Open Trade OS before your next session." | Open Trade OS → `/academy/trade` |
-| 3 | No lesson this week | "You haven't watched a lesson this week. 15 min." | Watch Now → `/academy/learn` |
-| 4 | Traded today, no journal | "You took {N} trades today but didn't journal. Write it down while it's fresh." | Journal → `/academy/journal` |
-| 5 | No community post this week | "Learned something this week? Share it with the group." | Post → `/academy/community` |
-| 6 | No live session in 14+ days + next session exists | "Next call: {title} — {date}. Be there." | View Calls → `/academy/live` |
-| 7 | Broke rules last time | "Did you follow the plan today?" | Yes / No |
-| 8 | New user < 7 days, no lessons | "Set your trading rules before you start." | Set Rules → `/rules` |
+### Flow Example
+1. User sees: "You haven't started a lesson yet. The first one is 10 minutes." → [Watch Lesson 1] [✓ Done] [x]
+2. User clicks "Watch Lesson 1" → goes to Learn page, watches it, comes back → card auto-resolves to next nudge
+3. OR user clicks "✓ Done" → card re-fetches, skips lesson nudge (if lesson now completed), shows next one
+4. If all clear → shows "You're on track today" or hides entirely
 
-**3. Fix submit errors:**
-- Use `upsert` instead of `insert` for `vault_daily_checklist` (with `onConflict: 'user_id,date'`)
-- Wrap both inserts in try/catch so failures don't crash the UI
-- Handle `daily_checkin_responses` duplicates by deleting today's rows first, then inserting fresh
-
-**4. Fetch total trades ever** (add one more query to the parallel batch)
-
-### Files
+### File Changed
 
 | File | Change |
 |------|--------|
-| `src/components/academy/DailyCheckInModal.tsx` | Rewrite prompts, fix submit, add Trade OS nudge |
+| `src/components/academy/dashboard/PersonalNudgeCard.tsx` | Add "Done" button, re-resolve logic on done/return, auto-refresh on visibility change |
 
