@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Check, Plus, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Rocket, BookOpen, MessageSquare, Shield, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useAcademyRole } from "@/hooks/useAcademyRole";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { hapticLight, playCheckSound } from "@/lib/nativeFeedback";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useAuth } from "@/hooks/useAuth";
