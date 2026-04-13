@@ -544,15 +544,41 @@ const AcademyLive = () => {
             </div>
             <button className="live-btn-glass w-full justify-center py-2.5 gap-2" onClick={openSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
             {weekList.length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
-                <div className="space-y-2">
-                  {weekList.map((s) => { const d = new Date(s.session_date); return (
-                    <div key={s.id} className="live-glass-card p-4">
-                      <div className="flex items-baseline justify-between mb-2"><span className="text-sm font-bold text-white/90">{format(d, "EEEE")}<span className="text-white/40 font-normal">. {format(d, "MMM d")}</span></span><span className="text-xs text-white/45">{formatTime(d)} EST</span></div>
-                      <div className="flex items-center gap-2"><div className="h-6 w-6 rounded-md bg-white/[0.06] flex items-center justify-center shrink-0">{s.session_type === "office-hours" ? <Clock className="h-3 w-3 text-white/35" /> : <Radio className="h-3 w-3 text-white/35" />}</div><span className="text-xs text-white/60 truncate flex-1">{s.title}</span><ChevronRight className="h-3.5 w-3.5 text-white/20 shrink-0" /></div>
-                    </div>
-                  ); })}
+              <div
+                className="rounded-2xl p-[1px] overflow-hidden"
+                style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.25), rgba(99,102,241,0.12), rgba(139,92,246,0.08))" }}
+              >
+                <div
+                  className="rounded-2xl p-5 relative overflow-hidden"
+                  style={{ background: "linear-gradient(160deg, rgba(139,92,246,0.08) 0%, rgba(15,15,30,0.95) 50%, rgba(99,102,241,0.04) 100%)" }}
+                >
+                  {/* Top shimmer */}
+                  <div className="absolute top-0 left-4 right-4 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.4), transparent)" }} />
+                  <div className="flex items-center gap-2 mb-4">
+                    <CalendarDays className="h-3.5 w-3.5 text-violet-400/70" />
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-300/60">This Week</p>
+                  </div>
+                  <div className="space-y-2">
+                    {weekList.map((s) => { const d = new Date(s.session_date); return (
+                      <div
+                        key={s.id}
+                        className="rounded-xl px-4 py-3 border border-violet-500/10 hover:border-violet-500/20 transition-colors"
+                        style={{ background: "rgba(139,92,246,0.04)" }}
+                      >
+                        <div className="flex items-baseline justify-between mb-2">
+                          <span className="text-sm font-bold text-white/90">{format(d, "EEEE")}<span className="text-violet-300/40 font-normal">. {format(d, "MMM d")}</span></span>
+                          <span className="text-xs text-violet-300/50">{formatTime(d)} EST</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0">
+                            {s.session_type === "office-hours" ? <Clock className="h-3 w-3 text-violet-400/50" /> : <Radio className="h-3 w-3 text-violet-400/50" />}
+                          </div>
+                          <span className="text-xs text-white/60 truncate flex-1">{s.title}</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-violet-400/25 shrink-0" />
+                        </div>
+                      </div>
+                    ); })}
+                  </div>
                 </div>
               </div>
             )}
@@ -577,19 +603,34 @@ const AcademyLive = () => {
         <div id="live-full-schedule" className="mt-4 max-w-[900px] space-y-8">
           {weekList.length > 0 && (
             <section>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40 mb-3">This Week</p>
-              <div className="live-glass-card divide-y divide-white/[0.05]">
-                {weekList.map((s) => (
-                  <div key={s.id} className={cn("flex items-center gap-3 px-5 py-3.5 group/row hover:bg-white/[0.02] transition-colors", canManage && "cursor-pointer", selectedId === s.id && canManage && "bg-primary/[0.06]")} onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}>
-                    <div className="h-7 w-7 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0"><CalendarDays className="h-3.5 w-3.5 text-white/35" /></div>
-                    <span className="text-xs text-white/40 w-10 shrink-0">{format(new Date(s.session_date), "EEE d")}</span>
-                    <span className="text-sm font-medium text-white/85 flex-1 truncate">{s.title}</span>
-                    <span className="text-xs text-white/30 shrink-0">{s.duration_minutes} min</span>
-                    <span className="text-xs text-white/40 shrink-0">{formatTime(s.session_date)} EST</span>
-                    {canManage && <><button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/row:opacity-100"><Pencil className="h-3 w-3" /></button><button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/row:opacity-100"><Trash2 className="h-3 w-3" /></button></>}
-                    <ChevronRight className="h-3.5 w-3.5 text-white/20 shrink-0" />
+              <div
+                className="rounded-2xl p-[1px] overflow-hidden"
+                style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.2), rgba(99,102,241,0.1), rgba(139,92,246,0.06))" }}
+              >
+                <div
+                  className="rounded-2xl relative overflow-hidden"
+                  style={{ background: "linear-gradient(160deg, rgba(139,92,246,0.06) 0%, rgba(15,15,30,0.95) 50%, rgba(99,102,241,0.03) 100%)" }}
+                >
+                  {/* Top shimmer */}
+                  <div className="absolute top-0 left-6 right-6 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(139,92,246,0.35), transparent)" }} />
+                  <div className="flex items-center gap-2 px-5 pt-5 pb-3">
+                    <CalendarDays className="h-3.5 w-3.5 text-violet-400/70" />
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-300/60">This Week</p>
                   </div>
-                ))}
+                  <div className="divide-y divide-violet-500/[0.08]">
+                    {weekList.map((s) => (
+                      <div key={s.id} className={cn("flex items-center gap-3 px-5 py-3.5 group/row hover:bg-violet-500/[0.04] transition-colors", canManage && "cursor-pointer", selectedId === s.id && canManage && "bg-violet-500/[0.06]")} onClick={canManage ? () => setSelectedId(selectedId === s.id ? null : s.id) : undefined}>
+                        <div className="h-7 w-7 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0"><CalendarDays className="h-3.5 w-3.5 text-violet-400/50" /></div>
+                        <span className="text-xs text-violet-300/45 w-10 shrink-0">{format(new Date(s.session_date), "EEE d")}</span>
+                        <span className="text-sm font-medium text-white/85 flex-1 truncate">{s.title}</span>
+                        <span className="text-xs text-white/30 shrink-0">{s.duration_minutes} min</span>
+                        <span className="text-xs text-violet-300/50 shrink-0">{formatTime(s.session_date)} EST</span>
+                        {canManage && <><button onClick={(e) => { e.stopPropagation(); setEditingId(s.id); }} className="live-icon-btn opacity-0 group-hover/row:opacity-100"><Pencil className="h-3 w-3" /></button><button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="live-icon-btn text-red-400 opacity-0 group-hover/row:opacity-100"><Trash2 className="h-3 w-3" /></button></>}
+                        <ChevronRight className="h-3.5 w-3.5 text-violet-400/25 shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </section>
           )}
