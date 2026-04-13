@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Check, ChevronRight, Rocket, BookOpen, MessageSquare, Shield, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -52,17 +52,6 @@ function loadCompleted(): Record<string, string> {
   }
 }
 
-function getDaysUntilReset(): number {
-  try {
-    const lastReset = localStorage.getItem(LS_RESET_KEY);
-    if (!lastReset) return 7;
-    const daysSince = Math.floor((Date.now() - new Date(lastReset).getTime()) / 86400000);
-    return Math.max(7 - daysSince, 0);
-  } catch {
-    return 7;
-  }
-}
-
 const TASK_ICONS: Record<string, typeof Rocket> = {
   "foundation-claim-role": Rocket,
   "foundation-introduce": MessageSquare,
@@ -77,6 +66,14 @@ const TASK_DESCRIPTIONS: Record<string, string> = {
   "foundation-first-lesson": "Your first lesson is only 10 minutes",
   "foundation-risk-rules": "Define your daily loss and trade limits",
   "foundation-starting-balance": "Enter your account balance to track progress",
+};
+
+const TASK_CTA: Record<string, string> = {
+  "foundation-claim-role": "Claim Role",
+  "foundation-introduce": "Go to Community",
+  "foundation-first-lesson": "Start Lesson",
+  "foundation-risk-rules": "Open Trade OS",
+  "foundation-starting-balance": "Set Balance",
 };
 
 const TASK_ROUTES: Record<string, string> = {
@@ -147,7 +144,7 @@ function getInitials(name: string) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-/* Circular progress ring */
+/* ── Circular Progress Ring ── */
 function ProgressRing({ done, total, size = 36 }: { done: number; total: number; size?: number }) {
   const stroke = 3;
   const radius = (size - stroke) / 2;
@@ -156,27 +153,30 @@ function ProgressRing({ done, total, size = 36 }: { done: number; total: number;
   const offset = circumference * (1 - pct);
 
   return (
-    <svg width={size} height={size} className="shrink-0 -rotate-90">
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        className="stroke-muted/30"
-        strokeWidth={stroke}
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        className="stroke-primary transition-all duration-500"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-      />
-    </svg>
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="shrink-0 -rotate-90 absolute inset-0">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className="stroke-muted/20"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className="stroke-primary transition-all duration-500"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <span className="text-[10px] font-bold text-foreground/70 tabular-nums">{done}/{total}</span>
+    </div>
   );
 }
 
@@ -194,34 +194,10 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       return raw ? new Set(JSON.parse(raw)) : new Set();
     } catch { return new Set(); }
   });
-  const [confettiKey, setConfettiKey] = useState(0);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const confettiTimerRef = useRef<number | null>(null);
-
-  const triggerConfetti = useCallback(() => {
-    setConfettiKey((k) => k + 1);
-    setShowConfetti(true);
-    if (confettiTimerRef.current) {
-      window.clearTimeout(confettiTimerRef.current);
-    }
-    confettiTimerRef.current = window.setTimeout(() => {
-      setShowConfetti(false);
-      confettiTimerRef.current = null;
-    }, 1200);
-  }, []);
 
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(completedMap));
   }, [completedMap]);
-
-  useEffect(() => {
-    return () => {
-      if (confettiTimerRef.current) {
-        window.clearTimeout(confettiTimerRef.current);
-        confettiTimerRef.current = null;
-      }
-    };
-  }, []);
 
   // Auto-detect foundation task completion from real data
   useEffect(() => {
@@ -232,48 +208,31 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       const autoCompleted: Record<string, string> = {};
       const now = new Date().toISOString();
 
-      // 1. Claim role — from onboarding_state
-      if (onboarding?.claimed_role) {
-        autoCompleted["foundation-claim-role"] = now;
-      }
+      if (onboarding?.claimed_role) autoCompleted["foundation-claim-role"] = now;
+      if (onboarding?.intro_posted) autoCompleted["foundation-introduce"] = now;
+      if (onboarding?.first_lesson_completed) autoCompleted["foundation-first-lesson"] = now;
 
-      // 2. Introduce yourself — from onboarding_state
-      if (onboarding?.intro_posted) {
-        autoCompleted["foundation-introduce"] = now;
-      }
-
-      // 3. Watch first lesson — from onboarding_state
-      if (onboarding?.first_lesson_completed) {
-        autoCompleted["foundation-first-lesson"] = now;
-      }
-
-      // 4. Set risk rules — check if trading_rules row exists
       try {
         const { data: rulesData } = await supabase
           .from("trading_rules")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle();
-        if (rulesData) {
-          autoCompleted["foundation-risk-rules"] = now;
-        }
+        if (rulesData) autoCompleted["foundation-risk-rules"] = now;
       } catch {}
 
-      // 5. Set starting balance — check account_balance from profiles table
       try {
         const { data: balanceData } = await supabase
           .from("profiles")
           .select("account_balance")
           .eq("user_id", user.id)
           .maybeSingle();
-        if (balanceData && (balanceData as any).account_balance > 0) {
+        if (balanceData && (balanceData as any).account_balance > 0)
           autoCompleted["foundation-starting-balance"] = now;
-        }
       } catch {}
 
       if (!active) return;
 
-      // Merge auto-detected into completedMap (skip if user manually dismissed)
       setCompletedMap((prev) => {
         let changed = false;
         const next = { ...prev };
@@ -302,38 +261,10 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
     ];
   }, [completedMap]);
 
-  const weeklyTasks = groups.filter((g) => g.title !== "Foundation").flatMap((g) => g.tasks);
-  const doneCount = weeklyTasks.filter((t) => t.done).length;
-  const totalCount = weeklyTasks.length;
-  const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
-
-  const activeGroupIndex = useMemo(() => {
-    const idx = groups.findIndex((group) => group.tasks.some((t) => !t.done));
-    return idx === -1 ? groups.length - 1 : idx;
-  }, [groups]);
-
-  const activeGroup = groups[activeGroupIndex];
-  const activeTaskIds = useMemo(() => new Set(activeGroup?.tasks.map((t) => t.id)), [activeGroup]);
-
-  const allTasksLookup = useMemo(() => {
-    const map: Record<string, string> = {};
-    [...FOUNDATION_TASKS, ...THIS_WEEK_TASKS, ...CONSISTENCY_TASKS].forEach((t) => {
-      map[t.id] = t.title;
-    });
-    return map;
-  }, []);
-
-  const recentItems = useMemo(() => {
-    return Object.entries(completedMap)
-      .filter(([id]) => allTasksLookup[id] && activeTaskIds.has(id))
-      .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime())
-      .slice(0, 5)
-      .map(([id, ts]) => ({
-        id,
-        title: allTasksLookup[id],
-        date: new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      }));
-  }, [completedMap, allTasksLookup, activeTaskIds]);
+  const foundationTasks = groups[0].tasks;
+  const foundationDone = foundationTasks.filter((t) => t.done).length;
+  const foundationTotal = foundationTasks.length;
+  const allFoundationDone = foundationDone === foundationTotal;
 
   const handleToggle = useCallback((taskId: string) => {
     setCompletedMap((prev) => {
@@ -341,7 +272,6 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       const wasDone = !!next[taskId];
       if (wasDone) {
         delete next[taskId];
-        // Track dismissal so auto-detect doesn't re-check it
         if (taskId.startsWith("foundation-")) {
           setDismissed((d) => {
             const updated = new Set(d);
@@ -352,7 +282,6 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
         }
       } else {
         next[taskId] = new Date().toISOString();
-        // Remove from dismissed if user re-checks
         if (taskId.startsWith("foundation-")) {
           setDismissed((d) => {
             const updated = new Set(d);
@@ -365,13 +294,10 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
           void hapticLight();
           void playCheckSound();
         });
-        queueMicrotask(() => {
-          triggerConfetti();
-        });
       }
       return next;
     });
-  }, [triggerConfetti]);
+  }, []);
 
   const handleNavigate = useCallback((taskId: string) => {
     if (taskId === "foundation-claim-role" && onClaimRole) {
@@ -383,13 +309,10 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
   }, [navigate, onClaimRole]);
 
   const nextTask = useMemo(() => {
-    for (const group of groups) {
-      const incomplete = group.tasks.find((t) => !t.done);
-      if (incomplete) return incomplete;
-    }
-    return null;
-  }, [groups]);
+    return foundationTasks.find((t) => !t.done) ?? null;
+  }, [foundationTasks]);
 
+  // Admin cohort stats
   useEffect(() => {
     if (!isAdmin) return;
     let active = true;
@@ -418,9 +341,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
       const userIds = Array.from(progressMap.keys());
       if (userIds.length === 0) {
         const emptyBuckets: CohortBucket[] = COHORT_BUCKETS.map((bucket) => ({
-          ...bucket,
-          count: 0,
-          pct: 0,
+          ...bucket, count: 0, pct: 0,
         }));
         if (!active) return;
         setCohortStats({ totalUsers: 0, buckets: emptyBuckets, behind: [] });
@@ -472,206 +393,173 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
     }
 
     loadCohort();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [isAdmin]);
 
-  return (
-    <div className="vault-luxury-card p-5 md:p-6 space-y-4 relative overflow-hidden">
-      {showConfetti && <TaskConfettiBurst key={confettiKey} />}
-      <div className="w-full flex items-center justify-between">
-        <h2 className="text-lg md:text-xl font-bold text-foreground">Your Onboarding</h2>
-        {isAdmin && (
-          <span className="hidden md:inline-flex">
-            <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
-              <Plus className="h-3.5 w-3.5" /> Add Task
-            </Button>
-          </span>
-        )}
-      </div>
-
-      {/* Next Step */}
-      {nextTask ? (
-        <div
-          className="flex items-center gap-3 rounded-xl px-4 py-3"
-          style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)", borderLeft: "2px solid hsl(217, 91%, 60%)" }}
-        >
-          <span className="text-[10px] uppercase tracking-widest font-semibold text-blue-400/70">Next Step</span>
-          <button
-            onClick={() => handleNavigate(nextTask.id)}
-            className="flex-1 text-sm font-medium text-foreground/90 truncate text-left hover:text-primary transition-colors duration-100"
-          >
-            {nextTask.title}
-          </button>
-          <button
-            onClick={() => handleToggle(nextTask.id)}
-            className="text-xs font-semibold text-blue-400 hover:text-blue-300 shrink-0 transition-colors duration-100"
-          >
-            Complete
-          </button>
-        </div>
-      ) : (
-        <div
-          className="flex items-center gap-2 rounded-xl px-4 py-3"
-          style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.1)" }}
-        >
-          <Check className="h-4 w-4 text-emerald-400" />
-          <span className="text-sm font-medium text-emerald-400/90">You're on track</span>
-        </div>
-      )}
-
-      {/* Progress */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">This week</span>
-          <span className="text-xs font-bold text-foreground">{doneCount}/{totalCount} complete</span>
-        </div>
-        <Progress value={pct} className="h-2.5 bg-white/[0.06]" />
-        <span className="text-[10px] text-muted-foreground/40">
-          Resets in {getDaysUntilReset()} day{getDaysUntilReset() !== 1 ? "s" : ""}
-        </span>
-      </div>
-
-      {/* Task groups */}
-      {activeGroup && (
-        <div className="space-y-3">
-          <TaskGroupSection group={activeGroup} onToggle={handleToggle} onNavigate={handleNavigate} />
-          {activeGroupIndex < groups.length - 1 && (
-            <p className="text-[11px] text-muted-foreground/50">
-              Complete this section to unlock {groups[activeGroupIndex + 1].title}.
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="pt-2 border-t border-white/[0.06] space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-          Recently Completed
-        </p>
-        {recentItems.length > 0 ? recentItems.map((item) => (
-          <div key={item.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Check className="h-3 w-3 text-emerald-400/60" />
-            <span className="flex-1 truncate">{item.title}</span>
-            <span className="text-[10px] tabular-nums">{item.date}</span>
+  /* ─── ALL DONE STATE ─── */
+  if (allFoundationDone) {
+    return (
+      <div className="vault-luxury-card p-6 md:p-8">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+            <Check className="h-6 w-6 text-emerald-400" />
           </div>
-        )) : (
-          <p className="text-xs text-muted-foreground/50">No activity yet — complete your first task to see it here.</p>
-        )}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">You're all set</h2>
+            <p className="text-sm text-muted-foreground">Onboarding complete. Time to trade.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ─── MAIN RENDER ─── */
+  const HeroIcon = nextTask ? (TASK_ICONS[nextTask.id] || Rocket) : Rocket;
+  const heroDescription = nextTask ? (TASK_DESCRIPTIONS[nextTask.id] || "") : "";
+  const heroCta = nextTask ? (TASK_CTA[nextTask.id] || "Continue") : "";
+  const otherTasks = foundationTasks.filter((t) => t.id !== nextTask?.id);
+
+  return (
+    <div className="vault-luxury-card p-6 md:p-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-foreground">Your Onboarding</h2>
+        <ProgressRing done={foundationDone} total={foundationTotal} size={40} />
       </div>
 
+      {/* Hero Next Step */}
+      {nextTask && (
+        <div className="rounded-2xl border border-primary/10 bg-primary/[0.04] p-5 space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <HeroIcon className="h-6 w-6 text-primary" />
+              </div>
+              {/* Soft glow */}
+              <div className="absolute inset-0 rounded-xl bg-primary/5 blur-xl scale-150 pointer-events-none" />
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <p className="text-base font-semibold text-foreground">{nextTask.title}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{heroDescription}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => handleNavigate(nextTask.id)}
+            >
+              {heroCta}
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => handleToggle(nextTask.id)}
+            >
+              <Check className="h-4 w-4 mr-1" />
+              Done
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Other Tasks — minimal list */}
+      {otherTasks.length > 0 && (
+        <div className="space-y-1">
+          {otherTasks.map((task) => (
+            <button
+              key={task.id}
+              onClick={() => task.done ? handleToggle(task.id) : handleNavigate(task.id)}
+              className={cn(
+                "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200",
+                task.done
+                  ? "opacity-60 cursor-default"
+                  : "hover:bg-muted/30 cursor-pointer group"
+              )}
+            >
+              <div
+                className={cn(
+                  "h-5 w-5 rounded-full flex items-center justify-center shrink-0 border transition-colors duration-200",
+                  task.done
+                    ? "bg-emerald-500/20 border-emerald-500/40"
+                    : "border-muted-foreground/20 group-hover:border-primary/40"
+                )}
+              >
+                {task.done && <Check className="h-3 w-3 text-emerald-400" />}
+              </div>
+              <span
+                className={cn(
+                  "text-sm flex-1",
+                  task.done ? "text-muted-foreground" : "text-foreground/90 font-medium"
+                )}
+              >
+                {task.title}
+              </span>
+              {!task.done && (
+                <ChevronRight className="h-4 w-4 text-muted-foreground/20 shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Admin Cohort — collapsible */}
       {isAdmin && (
-        <div className="pt-2 border-t border-white/[0.06] space-y-2 rounded-xl p-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-              Class Overview
-            </p>
-            <span className="text-[10px] text-muted-foreground/50">
+        <details className="pt-2 border-t border-border/10">
+          <summary className="flex items-center justify-between cursor-pointer py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/50 hover:text-muted-foreground/70 transition-colors">
+            <span>Class Overview</span>
+            <span className="text-[10px] font-normal normal-case tracking-normal">
               {cohortLoading ? "Loading..." : `${cohortStats?.totalUsers ?? 0} students`}
             </span>
-          </div>
+          </summary>
 
-          <div className="h-2.5 rounded-full bg-white/[0.06] overflow-hidden flex">
-            {(cohortStats?.buckets || COHORT_BUCKETS.map((b) => ({ ...b, count: 0, pct: 0 }))).map((bucket) => (
-              <div
-                key={bucket.label}
-                className={bucket.barClass}
-                style={{ width: `${bucket.pct}%` }}
-              />
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground/60">
-            {(cohortStats?.buckets || COHORT_BUCKETS.map((b) => ({ ...b, count: 0, pct: 0 }))).map((bucket) => (
-              <span key={bucket.label} className="flex items-center gap-1">
-                <span className={`h-2 w-2 rounded-full ${bucket.dotClass}`} />
-                {bucket.label} {bucket.pct}%
-              </span>
-            ))}
-          </div>
-
-          {cohortStats?.behind && cohortStats.behind.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {cohortStats.behind.map((student) => (
+          <div className="pt-3 space-y-3">
+            <div className="h-2.5 rounded-full bg-muted/10 overflow-hidden flex">
+              {(cohortStats?.buckets || COHORT_BUCKETS.map((b) => ({ ...b, count: 0, pct: 0 }))).map((bucket) => (
                 <div
-                  key={student.user_id}
-                  className="flex items-center gap-1.5 rounded-full border border-white/[0.08] px-2 py-1 bg-white/[0.03]"
-                >
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={student.avatar_url || undefined} alt={student.name} />
-                    <AvatarFallback className="text-[9px]">
-                      {getInitials(student.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-[10px] text-foreground/80">{student.name}</span>
-                  <span className="text-[10px] text-muted-foreground/60">{student.percent}%</span>
-                </div>
+                  key={bucket.label}
+                  className={bucket.barClass}
+                  style={{ width: `${bucket.pct}%` }}
+                />
               ))}
             </div>
-          ) : (
-            <p className="text-[10px] text-muted-foreground/50">Everyone is on pace.</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
-/* ── Task Group Section ── */
-function TaskGroupSection({
-  group,
-  onToggle,
-  onNavigate,
-}: {
-  group: TaskGroup;
-  onToggle: (id: string) => void;
-  onNavigate: (id: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <p className="text-[11px] uppercase tracking-[0.1em] font-semibold text-muted-foreground/60">
-        {group.title}
-      </p>
-      <div className="space-y-1">
-        {group.tasks.map((task) => (
-          <div
-            key={task.id}
-            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 transition-colors duration-100 hover:bg-white/[0.06]"
-            style={{
-              background: task.done ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            {/* Checkbox area — toggles completion */}
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
-              className="h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors duration-100"
-              style={{
-                backgroundColor: task.done ? "rgba(16,185,129,0.2)" : "transparent",
-                borderColor: task.done ? "rgba(16,185,129,0.4)" : "rgba(255,255,255,0.2)",
-              }}
-              aria-label={task.done ? `Uncheck ${task.title}` : `Mark ${task.title} done`}
-            >
-              {task.done && <Check className="h-3 w-3 text-emerald-400" />}
-            </button>
+            <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground/60">
+              {(cohortStats?.buckets || COHORT_BUCKETS.map((b) => ({ ...b, count: 0, pct: 0 }))).map((bucket) => (
+                <span key={bucket.label} className="flex items-center gap-1">
+                  <span className={`h-2 w-2 rounded-full ${bucket.dotClass}`} />
+                  {bucket.label} {bucket.pct}%
+                </span>
+              ))}
+            </div>
 
-            {/* Title area — always navigates */}
-            <button
-              onClick={() => onNavigate(task.id)}
-              className={`flex-1 text-sm font-medium text-left truncate transition-colors duration-100 ${
-                task.done ? "text-muted-foreground line-through hover:text-foreground/70" : "text-foreground/90 hover:text-primary"
-              }`}
-            >
-              {task.title}
-            </button>
-
-            {task.route && (
-              <ChevronRight className={`h-4 w-4 shrink-0 ${task.done ? "text-muted-foreground/20" : "text-muted-foreground/40"}`} />
+            {cohortStats?.behind && cohortStats.behind.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {cohortStats.behind.map((student) => (
+                  <div
+                    key={student.user_id}
+                    className="flex items-center gap-1.5 rounded-full border border-border/10 px-2 py-1 bg-muted/5"
+                  >
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={student.avatar_url || undefined} alt={student.name} />
+                      <AvatarFallback className="text-[9px]">
+                        {getInitials(student.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-[10px] text-foreground/80">{student.name}</span>
+                    <span className="text-[10px] text-muted-foreground/60">{student.percent}%</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[10px] text-muted-foreground/50">Everyone is on pace.</p>
             )}
           </div>
-        ))}
-      </div>
+        </details>
+      )}
     </div>
   );
 }
