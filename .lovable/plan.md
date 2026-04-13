@@ -1,69 +1,48 @@
 
 
-## Personalized Accountability Nudge System
+## Fix the 999-Day Bug + Make the Nudge Card Fire
 
-### The Idea
+### The Bug
 
-Replace the static status line in the HeroHeader and add a new **Accountability Nudge Card** below the HeroHeader that delivers a *different, personal message to every user based on their real data*. Not generic motivational fluff — their actual behavior reflected back at them.
+Line 186: `daysInactive` defaults to `999` when the user has **zero check-in records**. So brand new users (or anyone who's never checked in) see "You've been away 999 days" — obviously wrong. The fix: distinguish between "never checked in" and "checked in but lapsed."
 
-The nudge card cycles through a prioritized list of real behavioral observations. Each user sees something different because each user's data is different. Examples of what different users would see:
+### The Fix + Upgrade
 
-- **User who hasn't posted a win yet**: "You've logged 6 trades but haven't shared a win yet. Post one — your progress inspires others."
-- **User who hasn't attended a live session**: "You've been here 3 weeks and haven't joined a live session. The next one is Thursday."
-- **User who trades but doesn't journal**: "You traded 4 times this week but journaled 0. The journal is where the edge is built."
-- **User who watches lessons but doesn't trade**: "You've completed 8 lessons. Time to apply — log your first trade."
-- **User on a streak**: "11-day check-in streak. Top 5% of the academy. Don't break it."
-- **User who's been inactive 3+ days**: "Last check-in was 4 days ago. Your streak reset. Start a new one today."
-- **User who completed everything today**: "All caught up today. Come back tomorrow to keep building."
+**1. Fix the waterfall priority order**
 
-### How It Works
+The "inactive 3+ days" check fires before "no check-in today" — but for users who've *never* checked in, the right nudge is "Start your first check-in" not "You've been away 999 days." New priority:
 
-A new component `PersonalNudgeCard.tsx` runs one parallel query batch on mount and walks a priority waterfall to pick the single most relevant nudge for that user. Each nudge has:
-- An **icon** (contextual — not generic)
-- A **message** (short, direct, uses real numbers from their data)
-- A **CTA button** that routes them to the right page
-- A **dismiss** option (stores in localStorage so the same nudge doesn't repeat that day)
+1. **Never checked in at all** (0 records) → "You haven't started checking in yet. 30 seconds to build your first streak." → CTA: Start Now
+2. **Inactive 3+ days** (has history but lapsed) → "You've been away {N} days. Your streak reset — start a new one today." → CTA: Check In
+3. **Traded today, no journal** → (same)
+4. **No check-in today** (has history, checked in recently but not today) → (same)
+5. **Never watched a lesson** (0 lessons, member 3+ days) → "You haven't started a lesson yet. The first one is 10 minutes." → CTA: Watch Lesson 1
+6. **No wins posted** (3+ trades) → (same)
+7. **Lessons watched but no trades** (5+ lessons, 0 trades) → (same)
+8. **No live session attended** (member 14+ days) → (same)
+9. **Weekly review due** (Fri–Sun) → (same)
+10. **On a streak 3+** → (same, but upgrade the message with real streak data)
+11. **All caught up** → (same)
 
-**Priority waterfall (first match wins):**
+**2. Better copy — make it feel real, not robotic**
 
-1. **Inactive 3+ days** → "You've been away {N} days. Your streak reset. Let's restart." → CTA: Check In
-2. **Traded today, no journal** → "You traded {N} times today but haven't journaled. Don't lose the insight." → CTA: Open Journal  
-3. **No check-in today** → "You haven't checked in today. 30 seconds to stay accountable." → CTA: Check In
-4. **No wins posted ever** (but has 3+ trades) → "You've logged {N} trades but haven't shared a win yet. Post one." → CTA: Share Win
-5. **Lessons watched but no trades** (5+ lessons, 0 trades) → "You've watched {N} lessons. Time to apply — log your first trade." → CTA: Log Trade
-6. **No live session attended** (member 14+ days) → "You've been here {N} weeks and haven't joined a live session yet." → CTA: Go to Live
-7. **Weekly review due** (Friday-Sunday, no journal this week) → "End of week. Write 1 journal entry before Monday." → CTA: Start Review
-8. **On a streak (3+ days)** → "{N}-day check-in streak. Keep building." → No CTA (positive reinforcement)
-9. **All caught up** → "You're on track today. Come back tomorrow." → No CTA
+Current messages are flat. Upgrade examples:
+- Streak: "🔥 {N}-day streak. You're in the top discipline tier. Don't break it." (with Flame icon, emerald accent)
+- Never checked in: "Your first check-in takes 30 seconds. Every disciplined trader starts here."
+- Inactive: "It's been {N} days. The market doesn't wait — neither should your discipline."
+- Trade no journal: "You took {N} trade{s} today. Journal it while the lessons are fresh."
 
-### Also: Enhance the HeroHeader Status Line
+**3. Upgrade the visual design**
 
-The existing `resolveStatus()` function in HeroHeader already does something similar but is limited. We'll expand it to pull the same data and show a **complementary** one-liner (not duplicate the nudge card). The status line stays contextual ("Live session at 2pm") while the nudge card is behavioral ("You haven't journaled this week").
+The current card is functional but plain. Make it premium:
+- Add a subtle shimmer/gradient on the left accent bar (not just a flat color)
+- Slightly larger icon with a soft glow ring behind it
+- CTA button gets a solid style (not ghost) with the accent color for urgency nudges
+- Add a subtle animated entrance (slide-in from left, 200ms)
 
-### Data Sources (all existing — no new tables)
-
-| Data | Table | What it tells us |
-|------|-------|-----------------|
-| Check-in streak | `vault_daily_checklist` | Days since last check-in, streak length |
-| Trade count | `trade_entries` | How many trades today/this week |
-| Journal count | `journal_entries` | Whether they reflect on trades |
-| Lesson progress | `lesson_progress` | How many lessons completed |
-| Wins posted | `academy_messages` (room: wins-proof) | Whether they've shared wins |
-| Live attendance | `live_session_attendance` or `activity_log` | Whether they've joined lives |
-| Member tenure | `profiles.created_at` | How long they've been a member |
-
-### Design
-
-- Luxury dark card with a colored left accent bar (amber for warnings, emerald for positive, blue for info)
-- Single line of text + CTA button on the right
-- Subtle entrance animation (fade + slide up)
-- Dismissible per-day (X button, localStorage key with today's date)
-- Sits between HeroHeader and ActivityTicker on the dashboard
-
-### Files
+### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/academy/dashboard/PersonalNudgeCard.tsx` | **New** — Behavioral nudge with priority waterfall |
-| `src/pages/academy/AcademyHome.tsx` | Insert `PersonalNudgeCard` between HeroHeader and ActivityTicker |
+| `src/components/academy/dashboard/PersonalNudgeCard.tsx` | Fix 999-day bug, reorder waterfall, add "never checked in" + "never watched lesson" nudges, upgrade copy, improve card design |
 
