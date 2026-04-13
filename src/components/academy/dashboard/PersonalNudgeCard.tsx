@@ -34,10 +34,11 @@ export function PersonalNudgeCard() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    if (!user || !profile) return;
+    if (!user) return;
     let cancelled = false;
+    const memberSince = user.created_at || new Date().toISOString();
 
-    resolveNudge(user.id, profile.created_at).then((n) => {
+    resolveNudge(user.id, memberSince).then((n) => {
       if (cancelled) return;
       if (n && localStorage.getItem(getDismissKey(n.key))) {
         setNudge(null);
