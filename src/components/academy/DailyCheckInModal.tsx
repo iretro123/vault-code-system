@@ -292,10 +292,10 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
         key: "setup_rules",
         icon: <ShieldCheck className="h-5 w-5" />,
         message: "Set your trading rules before you start.",
-        cta: "Set Rules",
-        ctaAction: "/rules",
+        cta: "Open Trade OS",
+        ctaAction: "/academy/trade",
         accent: "blue",
-        yesLabel: "Set Rules",
+        yesLabel: "Open Trade OS",
         noLabel: "Later",
       });
     }
