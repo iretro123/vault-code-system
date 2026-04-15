@@ -126,16 +126,17 @@ export function PersonalNudgeCard() {
     >
       <div className={cn("w-[3px] shrink-0 bg-gradient-to-b rounded-l-2xl", s.bar)} />
 
-      <div className="flex items-center gap-3.5 px-4 py-3.5 flex-1 min-w-0">
-        <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", s.glow)}>
-          <Icon className={cn("h-[18px] w-[18px]", s.icon)} />
+      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3.5 px-4 py-3.5 flex-1 min-w-0">
+        <div className="flex items-start md:items-center gap-3 flex-1 min-w-0">
+          <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", s.glow)}>
+            <Icon className={cn("h-[18px] w-[18px]", s.icon)} />
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed flex-1 min-w-0">
+            {nudge.message}
+          </p>
         </div>
 
-        <p className="text-sm text-muted-foreground leading-snug flex-1 min-w-0">
-          {nudge.message}
-        </p>
-
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 self-end md:self-auto shrink-0">
           {nudge.cta && (
             <Button
               size="sm"
