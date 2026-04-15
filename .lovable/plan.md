@@ -1,41 +1,25 @@
 
 
-## Premium Countdown Timer — Dynamic Color Urgency System
+## Fix PersonalNudgeCard Mobile Layout
 
-### The Redesign
+### The Problem
+On mobile (390px), the card uses a single horizontal row: accent bar → icon → text → CTA button → Done button → X. The buttons take ~200px, leaving only ~120px for the message text, causing it to wrap into a tall, narrow column.
 
-**Visual direction:** Large, cinematic countdown pills with dynamic color shifting based on urgency. Think Apple event countdown meets luxury trading terminal.
+### The Fix
 
-### Color Urgency Tiers
-- **> 1 hour away** → Blue (calm, informational) — `#3B82F6`
-- **15–60 min away** → Amber/Yellow (attention) — `#FBBF24`
-- **< 15 min away** → Red (urgent, pulse effect) — `#EF4444`
-- **LIVE** → Red with animated pulse glow
+**File: `src/components/academy/dashboard/PersonalNudgeCard.tsx`**
 
-### Changes
+Switch to a **stacked layout on mobile**:
+- **Top row:** Icon + message text (full width, no competition from buttons)
+- **Bottom row:** CTA button + Done + X aligned right
 
-**1. Bigger, bolder countdown pills**
-- Increase pill size from `min-w-[48px] text-xl` → `min-w-[56px] text-2xl py-3`
-- Add subtle radial gradient background on each pill that shifts color with urgency tier
-- Bottom glow/shadow that matches the current urgency color
-- Colon separators get the urgency color too
+On desktop (`md:` breakpoint), keep the current single-row layout.
 
-**2. Dynamic color system**
-- Compute urgency tier from `diff` (time remaining in ms)
-- All pill borders, text, glow shadows, and "Starts In" label shift to match the tier
-- When < 15 min: pills get a subtle pulse animation on the seconds digit
-- When < 5 min: entire countdown section gets a faint border glow
+Changes to the JSX (lines 129–170):
+1. Change the inner container from `flex items-center` to `flex flex-col md:flex-row md:items-center`
+2. Top section: icon + text in a `flex items-start gap-3` row (full width)
+3. Bottom section: buttons in a `flex items-center gap-1.5 mt-2 md:mt-0 self-end md:self-auto` row
+4. Increase text line-height slightly on mobile for readability
 
-**3. Larger "Starts In" label**
-- Bump from `text-[10px]` to `text-xs` with the urgency color at reduced opacity
-
-**4. LIVE state enhancement**
-- Bigger pulsing dot, red glow behind the "Live Now" badge
-- "Join Now" button turns red instead of primary blue
-
-### File Changed
-
-| File | Change |
-|------|--------|
-| `src/components/academy/dashboard/NextGroupCallCard.tsx` | Urgency color logic, bigger pills, dynamic glow/shadows, live state polish |
+One file, layout restructure only. No logic changes.
 
