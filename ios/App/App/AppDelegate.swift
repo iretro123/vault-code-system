@@ -7,7 +7,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.configureNativeScrolling()
+        }
         return true
     }
 
@@ -26,7 +28,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        configureNativeScrolling()
+    }
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
@@ -46,6 +56,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Capacitor's ApplicationDelegateProxy continue overload isn't available
         // in all Swift compiler configurations. Avoid calling it to keep builds green.
         return false
+    }
+
+    private func configureNativeScrolling() {
+        guard
+            let bridgeViewController = window?.rootViewController as? CAPBridgeViewController,
+            let scrollView = bridgeViewController.webView?.scrollView
+        else {
+            return
+        }
+
+        scrollView.bounces = false
+        scrollView.isScrollEnabled = false
+        scrollView.alwaysBounceVertical = false
+        scrollView.alwaysBounceHorizontal = false
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.minimumZoomScale = 1.0
+        scrollView.maximumZoomScale = 1.0
+        scrollView.zoomScale = 1.0
+        scrollView.contentInsetAdjustmentBehavior = .never
+        scrollView.isDirectionalLockEnabled = true
+        scrollView.bouncesZoom = false
+        bridgeViewController.webView?.scrollView.pinchGestureRecognizer?.isEnabled = false
+        if #available(iOS 14.0, *) {
+            bridgeViewController.webView?.pageZoom = 1.0
+        }
     }
 
 }

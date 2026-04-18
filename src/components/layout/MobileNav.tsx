@@ -39,7 +39,7 @@ export function MobileNav() {
           key={label}
           onClick={() => setOpenMobile(true)}
           className={cn(
-            "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors duration-100 min-w-[52px] text-muted-foreground hover:text-foreground active:scale-[0.95]"
+            "relative flex w-full min-w-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2 transition-colors duration-100 text-muted-foreground hover:text-foreground active:scale-[0.95]"
           )}
         >
           <Icon className="w-[22px] h-[22px]" />
@@ -51,7 +51,7 @@ export function MobileNav() {
     const content = (
       <div
         className={cn(
-          "relative flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors duration-100 min-w-[52px] active:scale-[0.95]",
+          "relative flex w-full min-w-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2 transition-colors duration-100 active:scale-[0.95]",
           isActive
             ? "text-primary"
             : "text-muted-foreground hover:text-foreground"
@@ -77,7 +77,7 @@ export function MobileNav() {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center"
+          className="flex w-full items-center justify-center"
         >
           {content}
         </a>
@@ -88,7 +88,7 @@ export function MobileNav() {
       <NavLink
         key={path}
         to={path}
-        className="flex items-center justify-center"
+        className="flex w-full items-center justify-center"
       >
         {content}
       </NavLink>
@@ -97,12 +97,12 @@ export function MobileNav() {
 
   const gridClass =
     navItems.length >= 5
-      ? "grid-cols-5 max-w-[380px]"
-      : "grid-cols-4 max-w-[344px]";
+      ? "grid-cols-5"
+      : "grid-cols-4";
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-white/10 z-50 md:hidden pb-[env(safe-area-inset-bottom,0px)]">
-      <div className={cn("grid items-center px-2 py-2 w-full mx-auto", gridClass)}>
+    <nav className="academy-bottom-safe academy-mobile-nav-fixed z-50 border-t border-white/10 bg-background/95 backdrop-blur-md transition-[transform,opacity] duration-200 md:hidden">
+      <div className={cn("mobile-nav-shell grid w-full items-center gap-0.5 px-1.5 py-2", gridClass)}>
         {navItems.map((item) => renderItem({
           icon: item.icon,
           label: item.label,

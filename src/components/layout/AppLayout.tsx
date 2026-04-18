@@ -12,10 +12,10 @@ interface AppLayoutProps {
 export function AppLayout({ children, sessionPaused }: AppLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background flex flex-col w-full">
+      <div className="academy-mobile-fit h-[100dvh] bg-background flex flex-col w-full overflow-hidden">
         <TopBar />
         <VaultCommandBar sessionPaused={sessionPaused} />
-        <main className="flex-1 pb-20 md:pb-6">
+        <main className="academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-4 md:pb-6">
           {children}
         </main>
         <MobileNav />

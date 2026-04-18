@@ -47,8 +47,8 @@ const AcademyCommunity = () => {
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden bg-background">
-        <div className="flex flex-col flex-1 m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
-          <div className="shrink-0 px-4 pt-1">
+        <div className="flex flex-col flex-1 m-2 md:m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
+          <div className="shrink-0 px-3 md:px-4 pt-1">
             <AdminActionBar
               title="Community Admin"
               permission="moderate_chat"
@@ -59,7 +59,7 @@ const AcademyCommunity = () => {
             />
           </div>
 
-          <div className="shrink-0 px-4 pt-1">
+          <div className="shrink-0 px-3 md:px-4 pt-1">
             <div className="flex w-full items-center justify-center gap-0 border-b border-white/[0.06]">
               {TABS.map((tab) => {
                 const count = counts[tab.roomSlug] || 0;
@@ -87,7 +87,7 @@ const AcademyCommunity = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden relative pb-3">
+          <div className="relative flex-1 overflow-hidden">
             <div className={cn("absolute inset-0", activeTab === "trade-floor" ? "block" : "hidden")}>
               <CommunityTradeFloor onSwitchTab={handleTabChange} active={activeTab === "trade-floor"} />
             </div>

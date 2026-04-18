@@ -35,10 +35,10 @@ const ambientBgStyle = {
 
 function LoadingShell() {
   return (
-    <div className="h-[100dvh] flex w-full bg-background relative overflow-hidden">
+    <div className="academy-mobile-fit h-[100dvh] flex w-full bg-background relative overflow-hidden">
       <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" style={ambientBgStyle} />
       <AcademySidebar />
-      <div className="flex-1 flex flex-col min-w-0 relative z-[1]">
+      <div className="flex-1 flex min-h-0 flex-col min-w-0 relative z-[1] overflow-hidden">
         <div className="h-14 border-b border-white/[0.06] bg-background flex items-center px-4">
           <Skeleton className="h-5 w-32" />
           <div className="ml-auto flex items-center gap-2">
@@ -160,12 +160,12 @@ function AcademyLayoutInner() {
   }
 
   return (
-    <div className="h-[100dvh] flex w-full bg-background relative overflow-hidden">
+    <div className="academy-mobile-fit h-[100dvh] flex w-full bg-background relative overflow-hidden">
       <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" style={ambientBgStyle} />
 
       <AcademySidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 relative z-[1] overflow-hidden">
+      <div className="flex-1 flex min-h-0 flex-col min-w-0 relative z-[1] overflow-hidden">
         {!isOnline && (
           <div className="flex items-center justify-center gap-2 bg-amber-500/15 border-b border-amber-500/20 px-4 py-1.5 text-xs font-medium text-amber-400">
             <WifiOff className="h-3.5 w-3.5" />
@@ -192,7 +192,7 @@ function AcademyLayoutInner() {
           </div>
         </header>
 
-        <main className={`flex-1 overflow-y-auto overflow-x-hidden animate-fade-in ${isCommunity ? "pb-6" : "pb-24 md:pb-6"}`}>
+        <main className={`academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in ${isCommunity ? "pb-4" : "pb-4 md:pb-6"}`}>
           <Outlet />
         </main>
 

@@ -87,6 +87,47 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+async function createMentionNotificationFallback(params: {
+  senderName: string;
+  roomSlug: string;
+  preview: string;
+  mentionedUserIds: string[];
+  senderUserId: string;
+  notifyEveryone: boolean;
+}) {
+  const { senderName, roomSlug, preview, mentionedUserIds, senderUserId, notifyEveryone } = params;
+
+  if (notifyEveryone) {
+    const { error } = await supabase.from("academy_notifications").insert({
+      user_id: null,
+      type: "mention",
+      title: `${senderName} mentioned @everyone in #${roomSlug}`,
+      body: preview,
+      link_path: "/academy/community",
+    } as any);
+
+    if (error) {
+      console.warn("Fallback @everyone mention notification failed:", error);
+    }
+  }
+
+  for (const uid of mentionedUserIds) {
+    if (uid === senderUserId) continue;
+
+    const { error } = await supabase.from("academy_notifications").insert({
+      user_id: uid,
+      type: "mention",
+      title: `${senderName} mentioned you in #${roomSlug}`,
+      body: preview,
+      link_path: "/academy/community",
+    } as any);
+
+    if (error) {
+      console.warn(`Fallback mention notification failed for ${uid}:`, error);
+    }
+  }
+}
+
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
   advanced:     { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
   professional: { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
@@ -674,27 +715,29 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         const senderName = displayName;
         const preview = body.length > 80 ? body.slice(0, 80) + "…" : body;
 
-        if (hasEveryone && canPingEveryone) {
-          // Broadcast notification (user_id: null)
-          await supabase.from("academy_notifications").insert({
-            user_id: null,
-            type: "mention",
-            title: `${senderName} mentioned @everyone in #${roomSlug}`,
-            body: preview,
-            link_path: "/academy/community",
-          } as any);
-        }
+        const uniqueMentionedUserIds = [...new Set(mentionedUserIds)].filter((uid) => uid !== user.id);
+        const notifyEveryone = hasEveryone && canPingEveryone;
 
-        // Individual mention notifications
-        for (const uid of mentionedUserIds) {
-          if (uid === user.id) continue; // Don't notify yourself
-          await supabase.from("academy_notifications").insert({
-            user_id: uid,
-            type: "mention",
-            title: `${senderName} mentioned you in #${roomSlug}`,
-            body: preview,
-            link_path: "/academy/community",
-          } as any);
+        if (notifyEveryone || uniqueMentionedUserIds.length > 0) {
+          const { error: rpcError } = await supabase.rpc("create_mention_notifications" as any, {
+            _sender_name: senderName,
+            _room_slug: roomSlug,
+            _body: body,
+            _mentioned_user_ids: uniqueMentionedUserIds,
+            _notify_everyone: notifyEveryone,
+          });
+
+          if (rpcError) {
+            console.warn("create_mention_notifications rpc failed, falling back to direct inserts:", rpcError);
+            await createMentionNotificationFallback({
+              senderName,
+              roomSlug,
+              preview,
+              mentionedUserIds: uniqueMentionedUserIds,
+              senderUserId: user.id,
+              notifyEveryone,
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to create mention notifications:", err);
@@ -1643,7 +1686,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
       {/* Typing indicator */}
       {typingText && (
-        <div className="px-5 py-1 flex items-center gap-1.5">
+        <div className="px-3 md:px-4 py-1 flex items-center gap-1.5">
           <span className="flex gap-0.5">
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:0ms]" />
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:150ms]" />
@@ -1655,7 +1698,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
       {/* Composer */}
       {isMuted ? (
-         <div className="pt-3 border-t border-white/[0.06] mt-2 px-4">
+         <div className="mt-1.5 border-t border-white/[0.06] px-3 md:px-4 pt-2">
           <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
             <Clock className="h-4 w-4 text-amber-500 shrink-0" />
             <p className="text-[13px] text-amber-400">
@@ -1664,22 +1707,22 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </div>
         </div>
       ) : isRoomLocked && !canModerate ? (
-        <div className="pt-3 border-t border-white/[0.06] mt-2">
+        <div className="mt-1.5 border-t border-white/[0.06] pt-2">
           <p className="text-[13px] text-muted-foreground text-center py-2">
             This room is locked by a moderator.
           </p>
         </div>
       ) : canPost ? (
-        <div className="px-5 pt-2 bg-card border-t border-white/[0.06] pb-[calc(3.5rem+env(safe-area-inset-bottom,8px))] md:pb-4">
+        <div className="border-t border-white/[0.06] bg-card px-3 md:px-4 pt-1.5 md:pt-2 pb-1 md:pb-3">
           {roomSlug === "daily-setups" && (
             <SignalPostForm onSubmit={handleSend} sending={sending} roomSlug={roomSlug} />
           )}
           {isTradeRecaps ? (
             <TradeRecapForm onSubmit={handleSend} sending={sending} />
           ) : (
-            <div className="relative space-y-2">
+            <div data-chat-composer-stack className="relative space-y-1.5">
               {/* Template chips */}
-              <div className="flex items-center justify-between gap-1 px-1">
+              <div data-chat-quick-actions className="flex items-center justify-between gap-1 px-0.5">
                 {[
                   { label: "Log Trade", emojiSrc: logTradeEmoji, action: () => navigate("/academy/trade") },
                   { label: "Ask Question", emojiSrc: askQuestionEmoji, action: () => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")) },
@@ -1689,7 +1732,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     key={chip.label}
                     type="button"
                     onClick={chip.action}
-                    className="chat-quick-action inline-flex min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-1.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
+                    className="chat-quick-action inline-flex min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-1 py-0.5 text-[10px] md:text-[11px] font-medium text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
                   >
                     <img src={chip.emojiSrc} alt="" className="h-[14px] w-[14px] shrink-0" />
                     <span>{chip.label}</span>
@@ -1699,7 +1742,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
               {/* Reply preview bar */}
               {replyingTo && (
-                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border-l-2 border-l-primary">
+                 <div className="flex items-center gap-2 rounded-xl border-l-2 border-l-primary bg-white/[0.04] px-3 py-1.5">
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-semibold text-primary">Replying to {replyingTo.user_name}</span>
                     <p className="text-[11px] text-muted-foreground truncate">{replyingTo.body.slice(0, 80)}</p>
@@ -1774,7 +1817,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   "border-white/[0.08]"
                 )}
               >
-                <div className="flex items-end gap-2 px-3 py-2 min-w-0">
+                <div className="flex min-w-0 items-end gap-2 px-3 py-1.5">
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -1790,7 +1833,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+                    className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
                       title="Attach file"
                     >
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
@@ -1811,7 +1854,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     maxLength={1000}
                     disabled={sending}
                     rows={1}
-                    className="flex-1 min-w-0 w-full bg-transparent text-[16px] md:text-[15px] text-foreground placeholder:text-muted-foreground resize-none outline-none min-h-[26px] max-h-[120px] leading-relaxed py-1 caret-primary"
+                    className="min-h-[24px] max-h-[120px] w-full flex-1 min-w-0 resize-none bg-transparent py-0.5 text-[16px] md:text-[15px] leading-relaxed text-foreground caret-primary outline-none placeholder:text-muted-foreground"
                   />
 
                   {/* Send button — premium Vault blue */}
@@ -1820,7 +1863,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     onClick={() => handleSend()}
                     disabled={(!draft.trim() && !uploading) || sending}
                     className={cn(
-                      "shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-100",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-100",
                       draft.trim() && !sending
                         ? "bg-gradient-to-b from-[hsl(217,91%,60%)] to-[hsl(217,91%,50%)] text-white shadow-[0_2px_10px_hsl(217_91%_60%/0.4),inset_0_1px_0_rgba(255,255,255,0.2)] hover:brightness-110 active:scale-95"
                         : "text-muted-foreground/50 cursor-not-allowed"
@@ -1838,7 +1881,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           )}
         </div>
       ) : (
-         <div className="pt-3 border-t border-white/[0.06] mt-2">
+         <div className="mt-1.5 border-t border-white/[0.06] pt-2">
           <p className="text-[13px] text-muted-foreground text-center py-2">
             This room is read-only for students.
           </p>
