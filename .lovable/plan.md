@@ -1,25 +1,10 @@
 
+The user wants me to:
+1. Deploy the existing push-notify edge function
+2. Replace the SQL trigger function `public.push_notify_on_insert()` to call the edge function directly via pg_net (no ALTER DATABASE settings) with hardcoded URL + secret
 
-## Fix PersonalNudgeCard Mobile Layout
+⚠️ Concern: They pasted a secret value in plain text. This will land in a SQL migration file in the codebase, which is not ideal but they explicitly want it inline (since ALTER DATABASE settings are blocked). I'll proceed as instructed but flag it.
 
-### The Problem
-On mobile (390px), the card uses a single horizontal row: accent bar → icon → text → CTA button → Done button → X. The buttons take ~200px, leaving only ~120px for the message text, causing it to wrap into a tall, narrow column.
+Also there are pre-existing build errors unrelated to this task. I should NOT try to fix those — they're separate. Just focus on deploy + SQL.
 
-### The Fix
-
-**File: `src/components/academy/dashboard/PersonalNudgeCard.tsx`**
-
-Switch to a **stacked layout on mobile**:
-- **Top row:** Icon + message text (full width, no competition from buttons)
-- **Bottom row:** CTA button + Done + X aligned right
-
-On desktop (`md:` breakpoint), keep the current single-row layout.
-
-Changes to the JSX (lines 129–170):
-1. Change the inner container from `flex items-center` to `flex flex-col md:flex-row md:items-center`
-2. Top section: icon + text in a `flex items-start gap-3` row (full width)
-3. Bottom section: buttons in a `flex items-center gap-1.5 mt-2 md:mt-0 self-end md:self-auto` row
-4. Increase text line-height slightly on mobile for readability
-
-One file, layout restructure only. No logic changes.
-
+Plan is simple, presenting concisely.
