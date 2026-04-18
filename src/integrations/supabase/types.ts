@@ -2881,6 +2881,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_mention_notifications: {
+        Args: {
+          _body: string
+          _mentioned_user_ids?: string[]
+          _notify_everyone?: boolean
+          _room_slug: string
+          _sender_name: string
+        }
+        Returns: undefined
+      }
       daily_vault_reset: { Args: never; Returns: undefined }
       decrement_risk_budget: {
         Args: { p_amount: number; p_user_id: string }
