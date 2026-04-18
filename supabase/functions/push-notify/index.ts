@@ -8,6 +8,94 @@ const corsHeaders = {
 };
 
 const FCM_URL = "https://fcm.googleapis.com/fcm/send";
+const PUSHABLE_TYPES = new Set(["mention", "rz_message", "live_now", "announcement", "new_module", "motivation"]);
+
+type NotificationRow = {
+  id: string;
+  user_id: string | null;
+  type: string;
+  title: string | null;
+  body: string | null;
+  link_path?: string | null;
+};
+
+function defaultLinkPath(type: string) {
+  switch (type) {
+    case "live_now":
+      return "/academy/live";
+    case "announcement":
+      return "/academy/room/announcements";
+    case "new_module":
+      return "/academy/learn";
+    default:
+      return "/academy/community";
+  }
+}
+
+function defaultBody(type: string) {
+  switch (type) {
+    case "live_now":
+      return "Tap to join the live session now.";
+    case "announcement":
+      return "Open the announcement for details.";
+    case "new_module":
+      return "Open Academy to start the new lesson.";
+    case "motivation":
+      return "Open Academy to view your update.";
+    default:
+      return "";
+  }
+}
+
+function notificationThreadId(type: string) {
+  switch (type) {
+    case "mention":
+      return "community-mentions";
+    case "rz_message":
+      return "ceo-broadcasts";
+    case "live_now":
+      return "live-room";
+    case "announcement":
+      return "announcements";
+    case "new_module":
+      return "learning";
+    case "motivation":
+      return "motivation";
+    default:
+      return "academy";
+  }
+}
+
+function notificationCategory(type: string) {
+  switch (type) {
+    case "mention":
+      return "COMMUNITY_REPLY";
+    case "rz_message":
+      return "CEO_ALERT";
+    case "live_now":
+      return "LIVE_NOW";
+    case "announcement":
+      return "ANNOUNCEMENT";
+    case "new_module":
+      return "LEARNING";
+    case "motivation":
+      return "MOTIVATION";
+    default:
+      return "GENERAL";
+  }
+}
+
+function normalizeNotification(notif: NotificationRow) {
+  return {
+    id: notif.id,
+    type: notif.type,
+    title: (notif.title || "VaultAcademy").trim(),
+    body: (notif.body || defaultBody(notif.type)).trim(),
+    linkPath: notif.link_path || defaultLinkPath(notif.type),
+    threadId: notificationThreadId(notif.type),
+    category: notificationCategory(notif.type),
+  };
+}
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -29,7 +117,7 @@ async function createApnsJwt() {
     .sign(key);
 }
 
-async function sendApns(tokens: string[], notif: { title: string; body: string; link_path?: string | null }) {
+async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
   if (tokens.length === 0) return { sent: 0 };
   const bundleId = Deno.env.get("APNS_BUNDLE_ID");
   if (!bundleId) return { sent: 0, error: "APNS_BUNDLE_ID not set" };
@@ -50,10 +138,14 @@ async function sendApns(tokens: string[], notif: { title: string; body: string; 
       },
       body: JSON.stringify({
         aps: {
-          alert: { title: notif.title, body: notif.body || "" },
+          alert: { title: notif.title, body: notif.body },
           sound: "default",
+          category: notif.category,
+          "thread-id": notif.threadId,
         },
-        link_path: notif.link_path || "/academy/community",
+        notification_id: notif.id,
+        type: notif.type,
+        link_path: notif.linkPath,
       }),
     });
     if (res.ok) sent += 1;
@@ -88,13 +180,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const fcmKey = Deno.env.get("FCM_SERVER_KEY");
 
-    if (!fcmKey) {
-      return new Response(JSON.stringify({ error: "FCM_SERVER_KEY not set" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const admin = createClient(supabaseUrl, serviceKey);
     const { data: notif } = await admin
       .from("academy_notifications")
@@ -102,20 +187,28 @@ Deno.serve(async (req) => {
       .eq("id", notification_id)
       .maybeSingle();
 
-    if (!notif || (notif.type !== "mention" && notif.type !== "rz_message" && notif.type !== "live_now")) {
+    if (!notif || !PUSHABLE_TYPES.has(notif.type)) {
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const notificationPayload = normalizeNotification(notif as NotificationRow);
+
     let tokensQuery = admin.from("device_tokens").select("token, user_id, platform");
     if (notif.user_id) {
       tokensQuery = tokensQuery.eq("user_id", notif.user_id);
     }
     const { data: rows } = await tokensQuery;
-    const androidTokens = (rows || []).filter((r: any) => (r.platform || "").toLowerCase() === "android").map((r: any) => r.token).filter(Boolean);
-    const iosTokens = (rows || []).filter((r: any) => (r.platform || "").toLowerCase() === "ios").map((r: any) => r.token).filter(Boolean);
+    const androidTokens = (rows || [])
+      .filter((r: any) => (r.platform || "").toLowerCase() === "android")
+      .map((r: any) => r.token)
+      .filter(Boolean);
+    const iosTokens = (rows || [])
+      .filter((r: any) => (r.platform || "").toLowerCase() === "ios")
+      .map((r: any) => r.token)
+      .filter(Boolean);
 
     if (androidTokens.length === 0 && iosTokens.length === 0) {
       return new Response(JSON.stringify({ ok: true, sent: 0 }), {
@@ -127,18 +220,26 @@ Deno.serve(async (req) => {
     let sent = 0;
 
     if (androidTokens.length > 0) {
+      if (!fcmKey) {
+        return new Response(JSON.stringify({ error: "FCM_SERVER_KEY not set" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       for (const group of chunk(androidTokens, 900)) {
         const payload = {
           registration_ids: group,
           notification: {
-            title: notif.title,
-            body: notif.body || "",
+            title: notificationPayload.title,
+            body: notificationPayload.body,
             sound: "default",
           },
           data: {
-            notification_id: notif.id,
-            type: notif.type,
-            link_path: notif.link_path || "/academy/community",
+            notification_id: notificationPayload.id,
+            type: notificationPayload.type,
+            category: notificationPayload.category,
+            thread_id: notificationPayload.threadId,
+            link_path: notificationPayload.linkPath,
           },
           android: { priority: "high" },
         };
@@ -171,11 +272,7 @@ Deno.serve(async (req) => {
     }
 
     if (iosTokens.length > 0) {
-      const apnsResult = await sendApns(iosTokens, {
-        title: notif.title,
-        body: notif.body || "",
-        link_path: notif.link_path,
-      });
+      const apnsResult = await sendApns(iosTokens, notificationPayload);
       sent += apnsResult.sent || 0;
     }
 
