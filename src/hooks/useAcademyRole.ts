@@ -9,8 +9,7 @@ export function useAcademyRole() {
   const { isAdmin: rbacAdmin, hasPermission } = useAcademyPermissions();
 
   const academyRole: AcademyRole = rbacAdmin ? "admin" : "student";
-  const experience: AcademyExperience =
-    (profile as any)?.academy_experience ?? "newbie";
+  const experience: AcademyExperience = profile?.academy_experience ?? "newbie";
   const isAdmin = rbacAdmin;
 
   return { academyRole, experience, isAdmin, hasPermission };

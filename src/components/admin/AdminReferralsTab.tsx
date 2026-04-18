@@ -39,7 +39,11 @@ const STATUS_COLORS: Record<string, string> = {
 const copyToClip = async (text: string) => {
   const { copyToClipboard } = await import("@/lib/copyToClipboard");
   const ok = await copyToClipboard(text);
-  ok ? toast.success("Copied") : toast.error("Failed to copy");
+  if (ok) {
+    toast.success("Copied");
+  } else {
+    toast.error("Failed to copy");
+  }
 };
 
 // ─── Main Component ───
@@ -76,8 +80,9 @@ export function AdminReferralsTab() {
       }
 
       // Fetch referrer profiles for display names/emails
-      const referrerIds = [...new Set((referrals || []).map((r: any) => r.referrer_user_id))];
-      let profileMap: Record<string, { email: string | null; display_name: string | null }> = {};
+      const referralRows = (referrals || []) as ReferralRow[];
+      const referrerIds = [...new Set(referralRows.map((r) => r.referrer_user_id))].filter(Boolean) as string[];
+      const profileMap: Record<string, { email: string | null; display_name: string | null }> = {};
 
       if (referrerIds.length > 0) {
         const { data: profiles } = await supabase
@@ -86,13 +91,13 @@ export function AdminReferralsTab() {
           .in("user_id", referrerIds);
 
         if (profiles) {
-          for (const p of profiles as any[]) {
+          for (const p of profiles as { user_id: string; email: string | null; display_name: string | null }[]) {
             profileMap[p.user_id] = { email: p.email, display_name: p.display_name };
           }
         }
       }
 
-      const enriched: ReferralRow[] = (referrals || []).map((r: any) => ({
+      const enriched: ReferralRow[] = referralRows.map((r) => ({
         ...r,
         referrer_email: profileMap[r.referrer_user_id]?.email || null,
         referrer_name: profileMap[r.referrer_user_id]?.display_name || null,

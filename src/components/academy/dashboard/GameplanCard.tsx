@@ -219,7 +219,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
           .eq("user_id", user.id)
           .maybeSingle();
         if (rulesData) autoCompleted["foundation-risk-rules"] = now;
-      } catch {}
+      } catch (err) { void err; }
 
       try {
         const { data: balanceData } = await supabase
@@ -227,9 +227,9 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
           .select("account_balance")
           .eq("user_id", user.id)
           .maybeSingle();
-        if (balanceData && (balanceData as any).account_balance > 0)
+        if (balanceData && balanceData.account_balance > 0)
           autoCompleted["foundation-starting-balance"] = now;
-      } catch {}
+      } catch (err) { void err; }
 
       if (!active) return;
 
@@ -276,7 +276,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
           setDismissed((d) => {
             const updated = new Set(d);
             updated.add(taskId);
-            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch {}
+            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch (err) { void err; }
             return updated;
           });
         }
@@ -286,7 +286,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
           setDismissed((d) => {
             const updated = new Set(d);
             updated.delete(taskId);
-            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch {}
+            try { localStorage.setItem(LS_DISMISSED_KEY, JSON.stringify([...updated])); } catch (err) { void err; }
             return updated;
           });
         }
@@ -319,7 +319,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
     async function loadCohort() {
       setCohortLoading(true);
-      const { data: taskRows, error } = await (supabase as any)
+      const { data: taskRows, error } = await supabase
         .from("user_task")
         .select("user_id, status, type")
         .eq("type", "onboarding");
@@ -331,7 +331,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
 
       const progressMap = new Map<string, { done: number; total: number }>();
 
-      for (const row of taskRows as any[]) {
+      for (const row of taskRows ?? []) {
         const current = progressMap.get(row.user_id) || { done: 0, total: 0 };
         current.total += 1;
         if (row.status === "done") current.done += 1;
@@ -354,7 +354,7 @@ export function GameplanCard({ onCheckIn, onClaimRole }: Props) {
         .in("user_id", userIds);
 
       const profileMap = new Map<string, { name: string; avatar_url: string | null }>();
-      for (const p of (profiles as any[] || [])) {
+      for (const p of profiles || []) {
         profileMap.set(p.user_id, {
           name: p.display_name || "Student",
           avatar_url: p.avatar_url || null,

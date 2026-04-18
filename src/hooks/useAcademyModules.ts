@@ -19,7 +19,9 @@ function readCache(): AcademyModule[] {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export function useAcademyModules() {

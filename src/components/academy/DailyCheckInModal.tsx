@@ -159,7 +159,7 @@ export function DailyCheckInModal({ open, onOpenChange }: Props) {
       setCheckinStreak(streak);
 
       if (checks.length > 0) {
-        const lastMental = (checks[0] as any)?.mental_state;
+        const lastMental = (checks[0] as { mental_state?: number | null })?.mental_state;
         setLastCheckinBrokeRules(lastMental !== undefined && lastMental <= 3);
       }
 

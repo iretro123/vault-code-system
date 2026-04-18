@@ -54,9 +54,13 @@ export function SettingsBilling() {
       }
       if (data?.error) throw new Error(data.error);
       if (data?.url) openUrl(data.url);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[BillingPortal] Error:", err);
-      toast({ title: "Could not open billing portal", description: err?.message || "Try again later.", variant: "destructive" });
+      toast({
+        title: "Could not open billing portal",
+        description: err instanceof Error ? err.message : "Try again later.",
+        variant: "destructive",
+      });
     } finally {
       setBusy(false);
     }
@@ -71,9 +75,13 @@ export function SettingsBilling() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       if (data?.url) openUrl(data.url);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[CheckoutReturn] Error:", err);
-      toast({ title: "Could not start checkout", description: err?.message || "Try again later.", variant: "destructive" });
+      toast({
+        title: "Could not start checkout",
+        description: err instanceof Error ? err.message : "Try again later.",
+        variant: "destructive",
+      });
     } finally {
       setBusy(false);
     }

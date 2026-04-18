@@ -75,10 +75,11 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
   const navigate = useNavigate();
   const { user, profile, refetchProfile } = useAuth();
   const [step, setStep] = useState(0);
+  const profileData = profile as { first_name?: string; last_name?: string } | null | undefined;
 
   // Step 1 — Identity
-  const [firstName, setFirstName] = useState((profile as any)?.first_name || "");
-  const [lastName, setLastName] = useState((profile as any)?.last_name || "");
+  const [firstName, setFirstName] = useState(profileData?.first_name || "");
+  const [lastName, setLastName] = useState(profileData?.last_name || "");
   const detectedTz = (() => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -177,7 +178,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
           profile_completed: true,
           onboarding_completed: true,
           avatar_url: avatarUrl || null,
-        } as any)
+        })
         .eq("user_id", user.id);
 
       if (updateErr) throw updateErr;

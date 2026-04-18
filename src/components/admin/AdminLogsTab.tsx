@@ -7,7 +7,7 @@ import { formatDateTime } from "@/lib/formatTime";
 interface AuditEvent {
   id: string;
   event_type: string;
-  event_context: any;
+  event_context: unknown;
   user_id: string;
   created_at: string;
 }

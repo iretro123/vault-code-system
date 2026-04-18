@@ -12,11 +12,17 @@ function readCache(): string[] {
     // 5-minute TTL for initial render; background refresh always runs
     if (Date.now() - ts > 5 * 60 * 1000) return [];
     return Array.isArray(data) ? data : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function writeCache(data: string[]) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch {}
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+  } catch {
+    void 0;
+  }
 }
 
 export function useHotTickers() {

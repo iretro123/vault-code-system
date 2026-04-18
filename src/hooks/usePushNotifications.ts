@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +20,22 @@ const HAPTIC_NOTIFICATION_TYPES = new Set([
   "new_module",
   "motivation",
 ]);
+
+interface PushRegistrationToken {
+  value: string;
+}
+
+interface PushActionPerformedNotification {
+  notification?: {
+    data?: Record<string, unknown>;
+  };
+}
+
+interface PushReceivedNotification {
+  data?: {
+    type?: string;
+  };
+}
 
 export function usePushNotifications() {
   const { user } = useAuth();
@@ -47,12 +63,12 @@ export function usePushNotifications() {
     }
 
     async function setupPush() {
-      const listeners = await Promise.all([
-        PushNotifications.addListener("registration", async (token: any) => {
+      const listeners = await Promise.all<PluginListenerHandle>([
+        PushNotifications.addListener("registration", async (token: PushRegistrationToken) => {
           try {
             console.info("Push registration token received", String(token?.value || "").slice(0, 18));
             await supabase
-              .from("device_tokens" as any)
+              .from("device_tokens")
               .upsert({
                 user_id: user.id,
                 token: token.value,
@@ -64,26 +80,25 @@ export function usePushNotifications() {
             console.warn("Failed to save push token", err);
           }
         }),
-        PushNotifications.addListener("pushNotificationActionPerformed", (notification: any) => {
-          const data = (notification?.notification as any)?.data || {};
-          const linkPath = data.link_path || "/academy/community";
+        PushNotifications.addListener("pushNotificationActionPerformed", (notification: PushActionPerformedNotification) => {
+          const data = notification.notification?.data || {};
+          const linkPath = typeof data.link_path === "string" ? data.link_path : "/academy/community";
           if (linkPath) {
             window.location.assign(linkPath);
           }
         }),
-        PushNotifications.addListener("pushNotificationReceived", (notification: any) => {
-          const data = (notification as any)?.data || {};
-          if (data?.type && HAPTIC_NOTIFICATION_TYPES.has(data.type)) {
+        PushNotifications.addListener("pushNotificationReceived", (notification: PushReceivedNotification) => {
+          if (notification.data?.type && HAPTIC_NOTIFICATION_TYPES.has(notification.data.type)) {
             void hapticStrong();
           }
         }),
-        PushNotifications.addListener("registrationError", (err: any) => {
+        PushNotifications.addListener("registrationError", (err: unknown) => {
           console.warn("Push registration error", err);
         }),
       ]);
 
       removeListeners = async () => {
-        await Promise.allSettled(listeners.map((listener: any) => listener.remove()));
+        await Promise.allSettled(listeners.map((listener) => listener.remove()));
       };
 
       if (!active) {

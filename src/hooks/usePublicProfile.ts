@@ -66,7 +66,22 @@ export function usePublicProfile(userId: string | null) {
         ]);
 
       if (profileData && profileData.length > 0) {
-        const row = profileData[0] as any;
+        const row = profileData[0] as {
+          user_id: string;
+          avatar_url: string | null;
+          banner_url?: string | null;
+          display_name: string | null;
+          username: string | null;
+          role_level: string;
+          academy_experience: string;
+          bio?: string | null;
+          social_twitter?: string | null;
+          social_instagram?: string | null;
+          social_tiktok?: string | null;
+          social_youtube?: string | null;
+          created_at: string;
+        };
+        const lessonCount = lessonData?.count ?? 0;
         const result: PublicProfile = {
           user_id: row.user_id,
           avatar_url: row.avatar_url,
@@ -81,8 +96,8 @@ export function usePublicProfile(userId: string | null) {
           social_tiktok: row.social_tiktok,
           social_youtube: row.social_youtube,
           created_at: row.created_at,
-          academy_role_name: (roleData as any)?.academy_roles?.name ?? "Member",
-          lessons_completed: lessonData ? (lessonData as any).length ?? 0 : 0,
+          academy_role_name: (roleData as { academy_roles?: { name?: string | null } | null } | null)?.academy_roles?.name ?? "Member",
+          lessons_completed: lessonCount,
         };
         profileCache.set(userId, result);
         setProfile(result);

@@ -44,6 +44,11 @@ interface AcademyRole {
   name: string;
 }
 
+interface UserRoleJoinRow {
+  user_id: string;
+  academy_roles?: { name?: string | null } | null;
+}
+
 type ConfirmAction = {
   type: "kick" | "ban" | "reset";
   userId: string;
@@ -87,7 +92,8 @@ export function AdminMembersTab() {
     const map = new Map<string, string>();
     if (userRolesData) {
       for (const r of userRolesData) {
-        map.set(r.user_id, (r as any).academy_roles?.name ?? "Member");
+        const row = r as UserRoleJoinRow;
+        map.set(row.user_id, row.academy_roles?.name ?? "Member");
       }
     }
     setUserRoles(map);
@@ -123,12 +129,12 @@ export function AdminMembersTab() {
 
   const logAuditAction = async (action: string, targetUserId: string, metadata: Record<string, unknown> = {}) => {
     if (!user?.id) return;
-    await supabase.from("audit_logs" as any).insert({
+    await supabase.from("audit_logs").insert({
       admin_id: user.id,
       action,
       target_user_id: targetUserId,
       metadata,
-    } as any);
+    });
   };
 
   const handleRoleChange = async (userId: string, newRoleName: string) => {
@@ -139,7 +145,7 @@ export function AdminMembersTab() {
 
     const { error } = await supabase
       .from("academy_user_roles")
-      .upsert({ user_id: userId, role_id: role.id } as any, { onConflict: "user_id" });
+      .upsert({ user_id: userId, role_id: role.id }, { onConflict: "user_id" });
 
     if (error) {
       toast.error("Failed to update role: " + error.message);
@@ -180,7 +186,7 @@ export function AdminMembersTab() {
     const { error } = await supabase.from("profiles").update({
       access_status: "revoked",
       is_banned: true,
-    } as any).eq("user_id", userId);
+    }).eq("user_id", userId);
     // Resolve internal student ID then revoke student_access
     const { data: student } = await supabase
       .from("students")
@@ -188,7 +194,7 @@ export function AdminMembersTab() {
       .eq("auth_user_id", userId)
       .maybeSingle();
     if (student) {
-      await supabase.from("student_access").update({ status: "canceled" } as any).eq("user_id", student.id);
+      await supabase.from("student_access").update({ status: "canceled" }).eq("user_id", student.id);
     }
 
     if (error) {
@@ -472,11 +478,11 @@ export function AdminMembersTab() {
               if (!addEmail.trim() || !user?.id) return;
               setAddingUser(true);
               const stripeId = selectedStripeCustomer?.id || addStripeId.trim() || null;
-              const { error } = await supabase.from("allowed_signups" as any).upsert({
+              const { error } = await supabase.from("allowed_signups").upsert({
                 email: addEmail.trim().toLowerCase(),
                 stripe_customer_id: stripeId,
                 added_by: user.id,
-              } as any);
+              });
               if (error) {
                 if (error.code === "23505") {
                   toast.error("This email is already on the whitelist.");

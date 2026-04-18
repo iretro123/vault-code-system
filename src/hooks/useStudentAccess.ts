@@ -33,11 +33,13 @@ function readCache(): AccessState | null {
 function writeCache(state: AccessState) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ ...state, ts: Date.now() }));
-  } catch {}
+  } catch {
+    void 0;
+  }
 }
 
 async function fetchAccessState(userId: string): Promise<AccessState> {
-  const { data, error } = await supabase.rpc("get_my_access_state" as any);
+  const { data, error } = await supabase.rpc("get_my_access_state");
 
   if (error) {
     const fallback = readCache();
@@ -92,7 +94,7 @@ export function useStudentAccess() {
     if (retryAttemptedRef.current) return;
     retryAttemptedRef.current = true;
 
-    const userEmail = (profile as any)?.email || user.email;
+    const userEmail = (profile as { email?: string | null } | null)?.email || user.email;
     if (!userEmail) return;
 
     (async () => {
@@ -116,7 +118,9 @@ export function useStudentAccess() {
         if (result.provisioned === true) {
           queryClient.invalidateQueries({ queryKey: ["student-access", user.id] });
         }
-      } catch {}
+      } catch {
+        void 0;
+      }
     })();
   }, [isLoading, state.status, user?.id, profile]);
 

@@ -55,7 +55,8 @@ export function useApprovedPlans() {
     try {
       const todayStr = getTodayStr();
       // Fetch ALL today's plans (for history) in one query
-      const { data: allToday, error } = await (supabase.from("approved_plans" as any) as any)
+      const { data: allToday, error } = await supabase
+        .from("approved_plans")
         .select("*")
         .eq("user_id", user.id)
         .gte("created_at", todayStr + "T00:00:00Z")
@@ -77,7 +78,7 @@ export function useApprovedPlans() {
 
   useEffect(() => { fetchActivePlan(); }, [fetchActivePlan]);
 
-  const savePlan = useCallback(async (planData: NewPlanData): Promise<{ data: ApprovedPlan | null; error: any; hasExisting: boolean }> => {
+  const savePlan = useCallback(async (planData: NewPlanData): Promise<{ data: ApprovedPlan | null; error: unknown; hasExisting: boolean }> => {
     if (!user) return { data: null, error: new Error("Not authenticated"), hasExisting: false };
 
     // Check for existing active plan
@@ -86,7 +87,8 @@ export function useApprovedPlans() {
     }
 
     try {
-      const { data, error } = await (supabase.from("approved_plans" as any) as any)
+      const { data, error } = await supabase
+        .from("approved_plans")
         .insert({
           user_id: user.id,
           ...planData,
@@ -105,7 +107,8 @@ export function useApprovedPlans() {
 
   const cancelPlan = useCallback(async (planId: string) => {
     try {
-      const { error } = await (supabase.from("approved_plans" as any) as any)
+      const { error } = await supabase
+        .from("approved_plans")
         .update({ status: "cancelled", updated_at: new Date().toISOString() })
         .eq("id", planId)
         .eq("user_id", user?.id);
@@ -120,7 +123,8 @@ export function useApprovedPlans() {
 
   const markLogged = useCallback(async (planId: string) => {
     try {
-      const { error } = await (supabase.from("approved_plans" as any) as any)
+      const { error } = await supabase
+        .from("approved_plans")
         .update({ status: "logged", updated_at: new Date().toISOString() })
         .eq("id", planId)
         .eq("user_id", user?.id);
@@ -133,7 +137,7 @@ export function useApprovedPlans() {
     }
   }, [user]);
 
-  const replaceWithNew = useCallback(async (planData: NewPlanData): Promise<{ data: ApprovedPlan | null; error: any }> => {
+  const replaceWithNew = useCallback(async (planData: NewPlanData): Promise<{ data: ApprovedPlan | null; error: unknown }> => {
     if (!user) return { data: null, error: new Error("Not authenticated") };
 
     // Cancel existing plan first
@@ -142,7 +146,8 @@ export function useApprovedPlans() {
     }
 
     try {
-      const { data, error } = await (supabase.from("approved_plans" as any) as any)
+      const { data, error } = await supabase
+        .from("approved_plans")
         .insert({
           user_id: user.id,
           ...planData,

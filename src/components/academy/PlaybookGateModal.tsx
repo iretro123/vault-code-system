@@ -35,12 +35,12 @@ export function PlaybookGateModal({ open, onOpenChange, type }: Props) {
 
     if (existing) {
       await supabase.from("user_nudges_dismissed")
-        .update({ dismissed_until: until } as any)
+        .update({ dismissed_until: until })
         .eq("user_id", user.id)
         .eq("nudge_key", key);
     } else {
       await supabase.from("user_nudges_dismissed")
-        .insert({ user_id: user.id, nudge_key: key, dismissed_until: until } as any);
+        .insert({ user_id: user.id, nudge_key: key, dismissed_until: until });
     }
     onOpenChange(false);
   };

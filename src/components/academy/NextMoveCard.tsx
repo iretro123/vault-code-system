@@ -19,7 +19,7 @@ export function NextMoveCard() {
   } else if (onboarding && !onboarding.first_lesson_completed) {
     label = "Watch Lesson 1";
     route = "/academy/learn";
-  } else if (!(profile as any)?.profile_completed) {
+  } else if (!profile?.profile_completed) {
     label = "Complete Your Profile";
     route = "/academy/settings";
   }

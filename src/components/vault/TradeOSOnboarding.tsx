@@ -98,7 +98,7 @@ export function TradeOSOnboarding({ onComplete }: TradeOSOnboardingProps) {
       if (limitError) { setError("Failed to set vault limits."); setSubmitting(false); return; }
 
       // Seed trader_dna
-      await (supabase.from("trader_dna" as any) as any).upsert({
+      await supabase.from("trader_dna").upsert({
         user_id: user.id,
         trading_style: style,
         instruments,
@@ -116,7 +116,7 @@ export function TradeOSOnboarding({ onComplete }: TradeOSOnboardingProps) {
         .update({
           academy_experience: experience,
           role_level: experience,
-        } as any)
+        })
         .eq("user_id", user.id);
 
       // Move to activation step

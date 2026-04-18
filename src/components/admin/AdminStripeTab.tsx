@@ -84,8 +84,37 @@ const STATUS_COLORS: Record<string, string> = {
 const copyToClip = async (text: string) => {
   const { copyToClipboard } = await import("@/lib/copyToClipboard");
   const ok = await copyToClipboard(text);
-  ok ? toast.success("Copied") : toast.error("Failed to copy");
+  if (ok) {
+    toast.success("Copied");
+  } else {
+    toast.error("Failed to copy");
+  }
 };
+
+interface CheckoutResult {
+  url?: string;
+  error?: string;
+  sent?: number;
+  failed?: number;
+}
+
+interface WebhookPayloadRow {
+  payload_json?: Record<string, unknown> | null;
+}
+
+interface AccessOverrideResult {
+  success?: boolean;
+  error?: string;
+  before_status?: string;
+  after_status?: string;
+}
+
+interface AdminAuditLogRow {
+  id: string;
+  action: string;
+  metadata?: { reason?: string } | null;
+  created_at: string;
+}
 
 // ─── Main Component ───
 
@@ -110,8 +139,8 @@ export function AdminStripeTab() {
       } else {
         throw new Error(data?.error || "No checkout URL returned");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create checkout session");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to create checkout session");
     } finally {
       setCheckoutLoading(false);
     }
@@ -385,7 +414,7 @@ function WebhookEventDetailModal({ event, onClose }: { event: WebhookEventRow; o
         .select("payload_json")
         .eq("id", event.id)
         .single();
-      setPayload((data as any)?.payload_json || null);
+      setPayload((data as WebhookPayloadRow | null)?.payload_json || null);
       setLoadingPayload(false);
     })();
   }, [event.id, event.payload_json]);
@@ -576,8 +605,8 @@ function ReconcileButton({ studentId, onDone }: { studentId: string; onDone: () 
         toast.info(data.reason || "No changes needed");
       }
       onDone();
-    } catch (err: any) {
-      toast.error(err.message || "Reconcile failed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Reconcile failed");
     } finally {
       setLoading(false);
     }
@@ -614,7 +643,7 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
         reason: reason.trim(),
       });
       if (error) throw error;
-      const result = data as any;
+      const result = data as AccessOverrideResult | null;
       if (result?.success === false) {
         toast.error(result.error || "Override rejected by server");
         return;
@@ -624,8 +653,8 @@ function ManualOverrideSection({ studentId, onDone }: { studentId: string; onDon
       setReason("");
       setConfirmOpen(false);
       onDone();
-    } catch (err: any) {
-      toast.error(err.message || "Override failed");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Override failed");
     } finally {
       setLoading(false);
     }
@@ -701,7 +730,7 @@ function AccessTimeline({
   access: AccessRow[];
   events: WebhookEventRow[];
 }) {
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLogRow[]>([]);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -713,7 +742,7 @@ function AccessTimeline({
         .eq("target_user_id", authUserId)
         .order("created_at", { ascending: false })
         .limit(5);
-      setAuditLogs(data || []);
+      setAuditLogs((data as AdminAuditLogRow[] | null) ?? []);
     })();
   }, [open, authUserId]);
 
@@ -753,7 +782,7 @@ function AccessTimeline({
         {auditLogs.length > 0 && (
           <div className="space-y-1">
             <p className="text-[10px] text-muted-foreground font-medium">Recent Admin Actions</p>
-            {auditLogs.map((log: any) => (
+            {auditLogs.map((log) => (
               <div key={log.id} className="bg-white/[0.02] rounded px-3 py-1.5 text-[10px] flex items-center gap-2 flex-wrap">
                 <span className="font-medium">{log.action}</span>
                 {log.metadata?.reason && <span className="text-muted-foreground">— {log.metadata.reason}</span>}

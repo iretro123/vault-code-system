@@ -17,7 +17,9 @@ export function useMicroFeedback(): string | null {
       const today = new Date().toISOString().slice(0, 10);
       const lastShown = localStorage.getItem(STORAGE_KEY);
       if (lastShown === today) return;
-    } catch {}
+    } catch {
+      void 0;
+    }
 
     fetched.current = true;
 
@@ -30,9 +32,13 @@ export function useMicroFeedback(): string | null {
         setFeedback(data as unknown as string);
         try {
           localStorage.setItem(STORAGE_KEY, new Date().toISOString().slice(0, 10));
-        } catch {}
+        } catch {
+          void 0;
+        }
       }
-    } catch {}
+    } catch {
+      void 0;
+    }
   }, [user]);
 
   useEffect(() => {

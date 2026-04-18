@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Shield, TrendingUp, Flame, AlertTriangle, Loader2 } from "lucide-react";
+import { Shield, TrendingUp, Flame, AlertTriangle, Loader2, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -58,13 +58,13 @@ export function ScoreboardCard() {
         .order("entry_date", { ascending: false }),
     ]).then(([checkinsRes, tradesRes, journalRes]) => {
       const checkins = checkinsRes.data ?? [];
-      const completedCount = checkins.filter((c: any) => c.completed).length;
+      const completedCount = checkins.filter((c) => c.completed).length;
       const compliance = checkins.length > 0 ? Math.round((completedCount / Math.max(checkins.length, 7)) * 100) : 0;
 
       const journals = journalRes.data ?? [];
-      const breaks = journals.filter((j: any) => !j.followed_rules);
+      const breaks = journals.filter((j) => !j.followed_rules);
       const largestBreak = breaks.length > 0
-        ? (breaks[0] as any).biggest_mistake || "Rule break logged"
+        ? breaks[0].biggest_mistake || "Rule break logged"
         : "None this week";
 
       // Build 7-day strip
@@ -73,9 +73,9 @@ export function ScoreboardCard() {
         const d = new Date(now);
         d.setDate(now.getDate() - i);
         const dateStr = d.toISOString().slice(0, 10);
-        const entry = checkins.find((c: any) => c.date === dateStr);
+        const entry = checkins.find((c) => c.date === dateStr);
         if (!entry) statuses.push("none");
-        else if ((entry as any).completed) statuses.push("green");
+        else if (entry.completed) statuses.push("green");
         else statuses.push("yellow");
       }
 
@@ -87,7 +87,7 @@ export function ScoreboardCard() {
         dailyStatuses: statuses,
       };
       setStats(result);
-      try { localStorage.setItem(SCOREBOARD_CACHE, JSON.stringify(result)); } catch {}
+      try { localStorage.setItem(SCOREBOARD_CACHE, JSON.stringify(result)); } catch (err) { void err; }
       setLoading(false);
     });
   }, [user]);
@@ -209,7 +209,7 @@ function MetricTile({
   color,
   small,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string;
   color: string;

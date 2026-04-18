@@ -12,14 +12,18 @@ function readCache(): TradeEntry[] | null {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     return JSON.parse(raw);
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function writeCache(data: TradeEntry[]) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
     localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
-  } catch {}
+  } catch {
+    void 0;
+  }
 }
 
 function isCacheStale(): boolean {
@@ -27,7 +31,9 @@ function isCacheStale(): boolean {
     const ts = localStorage.getItem(CACHE_TS_KEY);
     if (!ts) return true;
     return Date.now() - Number(ts) > STALE_MS;
-  } catch { return true; }
+  } catch {
+    return true;
+  }
 }
 
 export interface TradeEntry {
@@ -121,7 +127,8 @@ export function useTradeLog() {
 
   async function fetchEntries() {
     try {
-      const { data, error } = await (supabase.from("trade_entries" as any) as any)
+      const { data, error } = await supabase
+        .from("trade_entries")
         .select("*")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
@@ -131,7 +138,7 @@ export function useTradeLog() {
       const result = data || [];
       writeCache(result);
       setEntries(result);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching trade entries:", error);
     } finally {
       setLoading(false);
@@ -258,7 +265,8 @@ export function useTradeLog() {
     if (!user) return { error: new Error("Not authenticated") };
 
     try {
-      const { data, error } = await (supabase.from("trade_entries" as any) as any)
+      const { data, error } = await supabase
+        .from("trade_entries")
         .insert({
           user_id: user.id,
           ...entry,
@@ -282,9 +290,10 @@ export function useTradeLog() {
         supabase.functions.invoke("update-trader-dna").catch(() => {});
       }
       return { error: null, data };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding trade entry:", error);
-      const msg = error?.message || error?.details || "Please try again.";
+      const err = error as { message?: string; details?: string };
+      const msg = err?.message || err?.details || "Please try again.";
       toast({
         title: "Error logging trade",
         description: msg,
@@ -327,7 +336,8 @@ export function useTradeLog() {
     if (!user) return { error: new Error("Not authenticated") };
 
     try {
-      const { error } = await (supabase.from("trade_entries" as any) as any)
+      const { error } = await supabase
+        .from("trade_entries")
         .delete()
         .eq("id", id)
         .eq("user_id", user.id);
@@ -344,11 +354,11 @@ export function useTradeLog() {
       // Refetch to ensure fresh data after trigger-side effects
       await fetchEntries();
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting trade entry:", error);
       toast({
         title: "Error deleting trade",
-        description: error?.message || "Please try again.",
+        description: (error as { message?: string } | null)?.message || "Please try again.",
         variant: "destructive",
       });
       return { error };

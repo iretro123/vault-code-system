@@ -286,7 +286,7 @@ function ThreadConversation({
                   <div className="max-w-[75%]">
                     <div className={`${bubbleColor} ${rounding} px-3.5 py-2 text-sm leading-relaxed shadow-[0_1px_3px_rgba(0,0,0,0.2)]`}>
                       <p className="whitespace-pre-wrap break-words text-foreground">{m.body}</p>
-                      <DmAttachmentRenderer attachments={(m as any).attachments || []} />
+                      <DmAttachmentRenderer attachments={(m as { attachments?: DmAttachmentData[] }).attachments || []} />
                       {isLastInGroup && (
                         <p className="text-[10px] text-muted-foreground/50 mt-1">
                           {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}

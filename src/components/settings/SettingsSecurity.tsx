@@ -44,11 +44,11 @@ export function SettingsSecurity() {
       // Reset onboarding flag
       await supabase
         .from("profiles")
-        .update({ onboarding_completed: false } as any)
+        .update({ onboarding_completed: false })
         .eq("user_id", user.id);
 
       // Delete trader_dna
-      await (supabase.from("trader_dna" as any) as any)
+      await supabase.from("trader_dna")
         .delete()
         .eq("user_id", user.id);
 

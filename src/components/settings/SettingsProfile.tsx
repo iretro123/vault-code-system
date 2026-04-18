@@ -80,12 +80,18 @@ export function SettingsProfile() {
   const { user, profile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const initialAv = parseAvatarUrl((profile as any)?.avatar_url);
+  const profileData = profile as {
+    avatar_url?: string | null;
+    username?: string | null;
+    timezone?: string | null;
+    phone_number?: string | null;
+  } | null;
+  const initialAv = parseAvatarUrl(profileData?.avatar_url);
 
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
-  const [username, setUsername] = useState((profile as any)?.username || "");
-  const [timezone, setTimezone] = useState((profile as any)?.timezone || "America/New_York");
-  const [phoneNumber, setPhoneNumber] = useState((profile as any)?.phone_number || "");
+  const [username, setUsername] = useState(profileData?.username || "");
+  const [timezone, setTimezone] = useState(profileData?.timezone || "America/New_York");
+  const [phoneNumber, setPhoneNumber] = useState(profileData?.phone_number || "");
   const [avatarMode, setAvatarMode] = useState<AvatarMode>(initialAv.mode);
   const [avatarColor, setAvatarColor] = useState(initialAv.color);
   const [avatarIcon, setAvatarIcon] = useState(initialAv.icon);
@@ -108,15 +114,15 @@ export function SettingsProfile() {
     if (!profile || hydrated) return;
     setHydrated(true);
     setDisplayName(profile.display_name || "");
-    setTimezone((profile as any).timezone || "America/New_York");
-    setPhoneNumber((profile as any).phone_number || "");
-    setUsername((profile as any).username || "");
-    const parsed = parseAvatarUrl((profile as any).avatar_url);
+    setTimezone(profileData?.timezone || "America/New_York");
+    setPhoneNumber(profileData?.phone_number || "");
+    setUsername(profileData?.username || "");
+    const parsed = parseAvatarUrl(profileData?.avatar_url);
     setAvatarMode(parsed.mode);
     setAvatarColor(parsed.color);
     setAvatarIcon(parsed.icon);
     setImageUrl(parsed.imageUrl);
-  }, [profile, hydrated]);
+  }, [profile, hydrated, profileData]);
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/);
@@ -214,9 +220,9 @@ export function SettingsProfile() {
       setAiStorageUrl(url);
       setImageUrl(url);
       setAvatarMode("ai");
-    } catch (e: any) {
+    } catch (error: unknown) {
       if (controller.signal.aborted) return;
-      toast.error(e?.message || "Generation failed. Try again.");
+      toast.error(error instanceof Error ? error.message : "Generation failed. Try again.");
     } finally {
       if (!controller.signal.aborted) {
         setGenerating(false);

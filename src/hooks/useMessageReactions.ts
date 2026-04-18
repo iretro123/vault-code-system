@@ -133,7 +133,7 @@ export function useMessageReactions(roomSlug: string, userId?: string) {
           message_id: messageId,
           user_id: userId,
           emoji,
-        } as any);
+        });
       }
     },
     [userId, reactionsMap]

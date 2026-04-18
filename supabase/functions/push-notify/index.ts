@@ -19,6 +19,16 @@ type NotificationRow = {
   link_path?: string | null;
 };
 
+type DeviceTokenRow = {
+  token: string;
+  user_id: string | null;
+  platform: string | null;
+};
+
+type FcmResult = {
+  error?: string;
+};
+
 function defaultLinkPath(type: string) {
   switch (type) {
     case "live_now":
@@ -200,14 +210,15 @@ Deno.serve(async (req) => {
     if (notif.user_id) {
       tokensQuery = tokensQuery.eq("user_id", notif.user_id);
     }
-    const { data: rows } = await tokensQuery;
-    const androidTokens = (rows || [])
-      .filter((r: any) => (r.platform || "").toLowerCase() === "android")
-      .map((r: any) => r.token)
+    const { data: rows = [] } = await tokensQuery;
+    const typedRows = rows as DeviceTokenRow[];
+    const androidTokens = typedRows
+      .filter((r) => (r.platform || "").toLowerCase() === "android")
+      .map((r) => r.token)
       .filter(Boolean);
-    const iosTokens = (rows || [])
-      .filter((r: any) => (r.platform || "").toLowerCase() === "ios")
-      .map((r: any) => r.token)
+    const iosTokens = typedRows
+      .filter((r) => (r.platform || "").toLowerCase() === "ios")
+      .map((r) => r.token)
       .filter(Boolean);
 
     if (androidTokens.length === 0 && iosTokens.length === 0) {
@@ -259,7 +270,7 @@ Deno.serve(async (req) => {
         // Cleanup invalid tokens
         if (result?.results && Array.isArray(result.results)) {
           const badTokens: string[] = [];
-          result.results.forEach((r: any, idx: number) => {
+          (result.results as FcmResult[]).forEach((r, idx: number) => {
             if (r?.error === "NotRegistered" || r?.error === "InvalidRegistration") {
               badTokens.push(group[idx]);
             }

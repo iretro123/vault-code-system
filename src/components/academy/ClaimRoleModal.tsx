@@ -64,9 +64,9 @@ export function ClaimRoleModal({ open, onOpenChange }: Props) {
     setSaving(true);
 
     const [profileRes, onboardRes] = await Promise.all([
-      supabase.from("profiles").update({ role_level: selected, academy_experience: selected } as any).eq("user_id", user.id),
+      supabase.from("profiles").update({ role_level: selected, academy_experience: selected }).eq("user_id", user.id),
       supabase.from("onboarding_state").upsert(
-        { user_id: user.id, claimed_role: true, role_level: selected } as any,
+        { user_id: user.id, claimed_role: true, role_level: selected },
         { onConflict: "user_id" }
       ),
     ]);

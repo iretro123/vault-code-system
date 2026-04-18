@@ -6,7 +6,7 @@ type RoomSlug = (typeof ROOM_SLUGS)[number];
 
 // ── Shared global store (singleton across all hook instances) ──
 let _counts: Record<string, number> = {};
-let _listeners = new Set<() => void>();
+const _listeners = new Set<() => void>();
 let _initUserId: string | null = null;
 let _channelActive = false;
 let _soundsEnabled = true;
@@ -30,8 +30,8 @@ function _subscribe(cb: () => void) {
 }
 
 // ── Shared active room ref ──
-let _activeSlugRef = { current: null as string | null };
-let _isAtBottomRef = { current: true };
+const _activeSlugRef = { current: null as string | null };
+const _isAtBottomRef = { current: true };
 
 // ── Notification sound (generated programmatically — no external file needed) ──
 let _audioCtx: AudioContext | null = null;
@@ -69,7 +69,9 @@ function _playNotifySound() {
       osc.start(now + i * 0.08);
       osc.stop(now + i * 0.08 + 0.3);
     });
-  } catch {}
+  } catch {
+    void 0;
+  }
 }
 
 // ── DB queries ──
@@ -85,7 +87,7 @@ async function _fetchAllCounts(userId: string) {
     .eq("user_id", userId);
 
   const readMap: Record<string, number> = {};
-  (reads || []).forEach((r: any) => { readMap[r.room_slug] = r.last_read_seq; });
+  (reads || []).forEach((r) => { readMap[r.room_slug] = r.last_read_seq; });
 
   await Promise.all(
     ROOM_SLUGS.map(async (slug) => {
@@ -114,7 +116,7 @@ async function _refreshRoom(slug: string, userId: string) {
     .eq("room_slug", slug)
     .maybeSingle();
 
-  const lastSeq = (reads as any)?.last_read_seq || 0;
+  const lastSeq = (reads as { last_read_seq?: number } | null)?.last_read_seq || 0;
   const { count } = await supabase
     .from("academy_messages")
     .select("*", { count: "exact", head: true })
@@ -138,7 +140,7 @@ async function _markReadDB(slug: string, userId: string) {
     .limit(1)
     .maybeSingle();
 
-  const latestSeq = (latest as any)?.seq || 0;
+  const latestSeq = (latest as { seq?: number } | null)?.seq || 0;
   if (latestSeq === 0) return;
 
   // Upsert the read position
@@ -161,7 +163,7 @@ async function _loadSoundsPreference(userId: string) {
     .select("sounds_enabled")
     .eq("user_id", userId)
     .maybeSingle();
-  _soundsEnabled = (data as any)?.sounds_enabled ?? true;
+  _soundsEnabled = (data as { sounds_enabled?: boolean } | null)?.sounds_enabled ?? true;
 }
 
 // ── Realtime subscriptions ──
@@ -178,7 +180,7 @@ function _startRealtime(userId: string) {
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "academy_messages" },
       (payload) => {
-        const msg = payload.new as any;
+        const msg = payload.new as { user_id?: string; is_deleted?: boolean; room_slug?: string };
         if (!msg || msg.user_id === userId || msg.is_deleted) return;
         const slug = msg.room_slug as string;
         if (!ROOM_SLUGS.includes(slug as RoomSlug)) return;
@@ -202,7 +204,7 @@ function _startRealtime(userId: string) {
       "postgres_changes",
       { event: "*", schema: "public", table: "academy_room_reads", filter: `user_id=eq.${userId}` },
       (payload) => {
-        const row = (payload.new || payload.old) as any;
+        const row = (payload.new || payload.old) as { room_slug?: string | null } | null;
         if (row?.room_slug) {
           _refreshRoom(row.room_slug, userId);
         }
@@ -212,7 +214,7 @@ function _startRealtime(userId: string) {
       "postgres_changes",
       { event: "UPDATE", schema: "public", table: "user_preferences", filter: `user_id=eq.${userId}` },
       (payload) => {
-        const row = payload.new as any;
+        const row = payload.new as { sounds_enabled?: boolean };
         if (row && typeof row.sounds_enabled === "boolean") {
           _soundsEnabled = row.sounds_enabled;
         }

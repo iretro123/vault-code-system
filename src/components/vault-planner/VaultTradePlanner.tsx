@@ -12,6 +12,7 @@ import { RiskRewardVisualizer } from "./RiskRewardVisualizer";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useApprovedPlans } from "@/hooks/useApprovedPlans";
+import type { ApprovedPlan, NewPlanData } from "@/hooks/useApprovedPlans";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { useTradeLog } from "@/hooks/useTradeLog";
 import { useVaultState } from "@/contexts/VaultStateContext";
@@ -77,9 +78,9 @@ const CARD_SUBLABELS: Record<number, string> = {
 
 interface VaultTradePlannerProps {
   balanceOverride?: number | null;
-  activePlanOverride?: any;
-  savePlanOverride?: any;
-  replaceWithNewOverride?: any;
+  activePlanOverride?: ApprovedPlan | null;
+  savePlanOverride?: (planData: NewPlanData) => Promise<{ data: ApprovedPlan | null; error: unknown; hasExisting: boolean }>;
+  replaceWithNewOverride?: (planData: NewPlanData) => Promise<{ data: ApprovedPlan | null; error: unknown }>;
   onPlanSaved?: () => void;
   /** When true, strips card wrappers and compresses for embedding inside OS */
   embedded?: boolean;
@@ -124,7 +125,7 @@ export function VaultTradePlanner({ balanceOverride, activePlanOverride, savePla
       try {
         const { data } = await supabase.from("profiles").select("account_balance").eq("user_id", user.id).maybeSingle();
         if (data && data.account_balance > 0) setStartingBalance(data.account_balance);
-      } catch {}
+      } catch (error) { void error; }
       finally { setBalanceLoaded(true); }
     })();
   }, [user, balanceOverride]);

@@ -16,7 +16,7 @@ interface WinMessage {
   user_name: string;
   user_role: string;
   body: string;
-  attachments: any[];
+  attachments: Array<{ type?: string; url?: string }>;
   created_at: string;
 }
 
@@ -51,7 +51,7 @@ export function CommunityWins() {
     setWins(msgs);
     setLoading(false);
 
-    try { localStorage.setItem(WINS_CACHE_KEY, JSON.stringify(msgs)); } catch {}
+    try { localStorage.setItem(WINS_CACHE_KEY, JSON.stringify(msgs)); } catch (err) { void err; }
 
     if (msgs.length > 0) {
       trackMessages(msgs.map((m) => m.id));
@@ -90,8 +90,8 @@ export function CommunityWins() {
             const profile = getProfile(win.user_id);
             const reactions = getReactions(win.id);
             const fireReaction = reactions.find((r) => r.emoji === "🔥");
-            const attachments = (win.attachments as any[]) ?? [];
-            const imageAtt = attachments.find((a: any) => a.type === "image");
+            const attachments = win.attachments ?? [];
+            const imageAtt = attachments.find((a) => a.type === "image");
 
             const fields = parseWinFields(win.body);
 
@@ -104,7 +104,7 @@ export function CommunityWins() {
                 {imageAtt && (
                   <div className="p-4 pb-0">
                     <img
-                      src={(imageAtt as any).url}
+                      src={imageAtt?.url}
                       alt="Trade screenshot"
                       className="rounded-xl max-w-full sm:max-w-[300px] max-h-[240px] object-cover border border-white/[0.08]"
                       loading="lazy"
@@ -181,7 +181,7 @@ export function CommunityWins() {
           userName: shareWin.user_name,
           roleName: getProfile(shareWin.user_id)?.academy_role_name || undefined,
           body: shareWin.body,
-          imageUrl: ((shareWin.attachments as any[]) ?? []).find((a: any) => a.type === "image")?.url,
+          imageUrl: (shareWin.attachments ?? []).find((a) => a.type === "image")?.url,
           createdAt: shareWin.created_at,
         }}
       />

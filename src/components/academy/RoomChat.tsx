@@ -63,13 +63,38 @@ interface RoomChatProps {
   roomSlug: string;
   canPost: boolean;
   isAnnouncements?: boolean;
-  onThreadOpen?: (msg: any) => void;
+  onThreadOpen?: (msg: RoomChatMessage) => void;
   onSwitchTab?: (tab: string) => void;
   /** When false, defers data fetch and realtime subscriptions until first activated. Default true. */
   active?: boolean;
   /** When true, constrains uploaded image height for full-width layouts (non-Chat tabs). */
   compact?: boolean;
 }
+
+type RoomChatMessage = {
+  id: string;
+  room_slug: string;
+  user_id: string;
+  user_name: string;
+  user_role: string;
+  body: string;
+  attachments: Attachment[];
+  created_at: string;
+  edited_at: string | null;
+  edit_count: number;
+  is_deleted: boolean;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  original_content: string | null;
+  parent_message_id?: string | null;
+  reply_count?: number;
+};
+
+type MentionUserRow = {
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+};
 
 /* ── helpers ── */
 
@@ -104,7 +129,7 @@ async function createMentionNotificationFallback(params: {
       title: `${senderName} mentioned @everyone in #${roomSlug}`,
       body: preview,
       link_path: "/academy/community",
-    } as any);
+    });
 
     if (error) {
       console.warn("Fallback @everyone mention notification failed:", error);
@@ -120,7 +145,7 @@ async function createMentionNotificationFallback(params: {
       title: `${senderName} mentioned you in #${roomSlug}`,
       body: preview,
       link_path: "/academy/community",
-    } as any);
+    });
 
     if (error) {
       console.warn(`Fallback mention notification failed for ${uid}:`, error);
@@ -177,7 +202,7 @@ function isTradeFormatPost(body: string) {
   );
 }
 
-function renderTradeCard(body: string, attachments?: any[]) {
+function renderTradeCard(body: string, attachments?: Attachment[]) {
   const lines = body.split("\n").filter(Boolean);
   const fields: { label: string; value: string }[] = [];
   for (const line of lines) {
@@ -185,7 +210,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
     if (match) fields.push({ label: match[1].replace(/\*/g, "").trim(), value: match[2].trim() });
   }
 
-  const imageAtt = attachments?.find((a: any) => a.type === "image");
+  const imageAtt = attachments?.find((a) => a.type === "image");
 
   return (
     <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] mt-2 overflow-hidden max-w-full sm:max-w-[560px] hover:border-white/[0.12] transition-colors">
@@ -209,7 +234,7 @@ function renderTradeCard(body: string, attachments?: any[]) {
         {imageAtt && (
           <div className="shrink-0 bg-white/[0.03] border-t sm:border-t-0 sm:border-l border-white/[0.06] w-full sm:max-w-[280px]">
             <img
-              src={(imageAtt as any).url}
+              src={imageAtt.url}
               alt="Chart"
               className="w-full h-auto object-contain"
               loading="lazy"
@@ -421,15 +446,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   } = useMentionAutocomplete({ enabled: canMention, canPingEveryone });
 
   const displayName =
-    (profile as any)?.display_name ||
-    (profile as any)?.username ||
+    profile?.display_name ||
+    profile?.username ||
     user?.email?.split("@")[0] ||
     "Anonymous";
 
   const mentionTargets = useMemo(() => {
     const targets: string[] = [];
-    const username = (profile as any)?.username;
-    const display = (profile as any)?.display_name;
+    const username = profile?.username;
+    const display = profile?.display_name;
     if (username) targets.push(username);
     if (display) targets.push(display.replace(/\s+/g, ""));
     if (user?.email) targets.push(user.email.split("@")[0]);
@@ -701,11 +726,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     // Create mention notifications for all users who can mention
     if (result?.ok && canMention && user) {
       try {
-        const allUsers = (await import("@/hooks/useMentionAutocomplete")).parseMentions
-          ? undefined : undefined;
         // Fetch users via secure RPC for parsing
         const { data: profilesData } = await supabase.rpc("get_mention_users");
-        const userList: MentionUser[] = (profilesData ?? []).map((r: any) => ({
+        const userList: MentionUser[] = (profilesData ?? []).map((r: MentionUserRow) => ({
           user_id: r.user_id,
           display_name: r.display_name,
           username: r.username,
@@ -719,7 +742,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         const notifyEveryone = hasEveryone && canPingEveryone;
 
         if (notifyEveryone || uniqueMentionedUserIds.length > 0) {
-          const { error: rpcError } = await supabase.rpc("create_mention_notifications" as any, {
+          const { error: rpcError } = await supabase.rpc("create_mention_notifications", {
             _sender_name: senderName,
             _room_slug: roomSlug,
             _body: body,
@@ -1082,7 +1105,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const filteredMessages = useMemo(() => messages.filter((msg) => {
     if (msg.is_deleted) return false;
-    if ((msg as any).parent_message_id) return false;
+    if (msg.parent_message_id) return false;
     return true;
   }), [messages]);
 
@@ -1250,7 +1273,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           const copyMessage = async () => {
             const { copyToClipboard } = await import("@/lib/copyToClipboard");
             const ok = await copyToClipboard(msg.body);
-            ok ? toast.success("Copied to clipboard") : toast.error("Failed to copy");
+            if (ok) {
+              toast.success("Copied to clipboard");
+            } else {
+              toast.error("Failed to copy");
+            }
           };
 
           const isPinned = pinnedMessageId === msg.id;
@@ -1311,7 +1338,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           const isCeoOrAdmin = msgAcademyRole === "CEO" || msgAcademyRole === "Admin" || msgAcademyRole === "Coach";
           const isOfficialAnnouncement = !msg.is_deleted && msg.body.startsWith("📢 ");
 
-          const replyCount = (msg as any).reply_count || 0;
+          const replyCount = msg.reply_count || 0;
 
           return (
             <div key={msg.id}>
@@ -1378,7 +1405,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                              <AcademyRoleBadge roleName={msgAcademyRole} />
                              {!isCeoOrAdmin && (
                                <ExperienceBadge role={getRoleBadgeKey(
-                                 (msg as any).user_role,
+                                 msg.user_role,
                                  msgProfile?.role_level
                                )} />
                              )}
@@ -1447,9 +1474,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         </div>
                       </div>
                     ) : (() => {
-                      const signalAtt = msg.attachments?.find((a: any) => a.type === "signal-watchlist" || a.type === "signal-live") as unknown as SignalAttachment | undefined;
+                      const signalAtt = msg.attachments?.find((a) => a.type === "signal-watchlist" || a.type === "signal-live") as unknown as SignalAttachment | undefined;
                       if (signalAtt) {
-                        const chartAtt = msg.attachments?.find((a: any) => a.type === "image");
+                        const chartAtt = msg.attachments?.find((a) => a.type === "image");
                         return (
                           <SignalCard
                             signal={signalAtt}
@@ -1502,9 +1529,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
 
                     {!msg.is_deleted && msg.attachments && msg.attachments.length > 0 && (() => {
-                      const hasSignal = msg.attachments.some((a: any) => a.type === "signal-watchlist" || a.type === "signal-live");
+                      const hasSignal = msg.attachments.some((a) => a.type === "signal-watchlist" || a.type === "signal-live");
                       const displayAtts = hasSignal
-                        ? msg.attachments.filter((a: any) => a.type !== "signal-watchlist" && a.type !== "signal-live" && a.type !== "image")
+                        ? msg.attachments.filter((a) => a.type !== "signal-watchlist" && a.type !== "signal-live" && a.type !== "image")
                         : msg.attachments;
                       if (displayAtts.length === 0) return null;
                       return (

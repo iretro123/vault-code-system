@@ -12,7 +12,7 @@ interface SetupMessage {
   user_name: string;
   user_role: string;
   body: string;
-  attachments: any[];
+  attachments: Array<{ type?: string; url?: string }>;
   created_at: string;
 }
 
@@ -44,7 +44,7 @@ export function CommunityDailySetups() {
     setSetups(msgs);
     setLoading(false);
 
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(msgs)); } catch {}
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(msgs)); } catch (err) { void err; }
 
     if (msgs.length > 0) {
       ensureProfiles([...new Set(msgs.map((m) => m.user_id))]);
@@ -91,8 +91,8 @@ export function CommunityDailySetups() {
       <div className="max-w-[800px] mx-auto px-4 py-8 space-y-5">
         {setups.map((setup) => {
           const profile = getProfile(setup.user_id);
-          const attachments = (setup.attachments as any[]) ?? [];
-          const imageAtts = attachments.filter((a: any) => a.type === "image");
+          const attachments = setup.attachments ?? [];
+          const imageAtts = attachments.filter((a) => a.type === "image");
           const fields = parseSetupFields(setup.body);
 
           return (
@@ -133,7 +133,7 @@ export function CommunityDailySetups() {
               {/* Chart images */}
               {imageAtts.length > 0 && (
                 <div className="space-y-3">
-                  {imageAtts.map((img: any, i: number) => (
+                  {imageAtts.map((img, i: number) => (
                     <img
                       key={i}
                       src={img.url}

@@ -30,7 +30,7 @@ export function useLoginReminder() {
       const userId = user!.id;
 
       // Check if we already sent a notification today (any type except meltdown-triggered)
-      const { data: existing } = await (supabase as any)
+      const { data: existing } = await supabase
         .from("notification_log")
         .select("id")
         .eq("user_id", userId)
@@ -41,7 +41,7 @@ export function useLoginReminder() {
       if (existing && existing.length > 0) return; // already notified today
 
       // Weekly review: every 7 days, check last "support" notification
-      const { data: lastWeekly } = await (supabase as any)
+      const { data: lastWeekly } = await supabase
         .from("notification_log")
         .select("created_at")
         .eq("user_id", userId)
@@ -55,7 +55,7 @@ export function useLoginReminder() {
         : 999;
 
       if (daysSinceLast >= 7) {
-        await (supabase as any).from("notification_log").insert({
+        await supabase.from("notification_log").insert({
           user_id: userId,
           type: "support",
           title: "Weekly review ready",
@@ -65,7 +65,7 @@ export function useLoginReminder() {
       }
 
       // Fetch today's pending tasks (daily + onboarding)
-      const { data: pendingTasks } = await (supabase as any)
+      const { data: pendingTasks } = await supabase
         .from("user_task")
         .select("title")
         .eq("user_id", userId)
@@ -74,7 +74,7 @@ export function useLoginReminder() {
         .limit(1);
 
       if (pendingTasks && pendingTasks.length > 0) {
-        await (supabase as any).from("notification_log").insert({
+        await supabase.from("notification_log").insert({
           user_id: userId,
           type: "reminder",
           title: "Quick reminder",
@@ -85,7 +85,7 @@ export function useLoginReminder() {
 
       // No pending tasks — check if yesterday's daily tasks were all completed
       const yesterday = yesterdayDateString();
-      const { data: yesterdayTasks } = await (supabase as any)
+      const { data: yesterdayTasks } = await supabase
         .from("user_task")
         .select("status")
         .eq("user_id", userId)
@@ -93,9 +93,9 @@ export function useLoginReminder() {
         .eq("due_date", yesterday);
 
       if (yesterdayTasks && yesterdayTasks.length > 0) {
-        const allDone = yesterdayTasks.every((t: any) => t.status === "done");
+        const allDone = yesterdayTasks.every((t) => t.status === "done");
         if (allDone) {
-          await (supabase as any).from("notification_log").insert({
+          await supabase.from("notification_log").insert({
             user_id: userId,
             type: "streak",
             title: "Streak kept",

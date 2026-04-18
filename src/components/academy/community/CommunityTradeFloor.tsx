@@ -11,9 +11,19 @@ interface CommunityTradeFloorProps {
   active?: boolean;
 }
 
+interface ThreadMessage {
+  id: string;
+  room_slug: string;
+  user_id: string;
+  user_name: string;
+  body: string;
+  created_at: string;
+  reply_count: number;
+}
+
 export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTradeFloorProps) {
   const isMobile = useIsMobile();
-  const [threadMessage, setThreadMessage] = useState<any>(null);
+  const [threadMessage, setThreadMessage] = useState<ThreadMessage | null>(null);
 
   return (
     <div className="flex h-full overflow-hidden bg-background">

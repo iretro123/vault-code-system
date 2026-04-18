@@ -67,7 +67,7 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
     (async () => {
       try {
         const todayDate = new Date().toISOString().slice(0, 10);
-        const { data } = await (supabase.from("trading_sessions" as any) as any)
+        const { data } = await supabase.from("trading_sessions")
           .select("start_time, cutoff_time, hard_close_time")
           .eq("user_id", user.id)
           .eq("session_date", todayDate)
@@ -93,7 +93,7 @@ export function SessionSetupCard({ onSessionStarted, onPhaseChange }: SessionSet
     if (!user) return;
     try {
       const todayDate = new Date().toISOString().slice(0, 10);
-      await (supabase.from("trading_sessions" as any) as any)
+      await supabase.from("trading_sessions")
         .upsert({
           user_id: user.id,
           session_date: todayDate,
@@ -253,14 +253,14 @@ export function SessionCountdownLine({ className }: { className?: string }) {
 
 /** Clear today's session from localStorage */
 export function clearSession() {
-  try { localStorage.removeItem(getStorageKey()); } catch {}
+  try { localStorage.removeItem(getStorageKey()); } catch (error) { void error; }
 }
 
 /** Clear today's session from DB — call alongside clearSession() */
 export async function clearSessionFromDB(userId: string) {
   try {
     const todayDate = new Date().toISOString().slice(0, 10);
-    await (supabase.from("trading_sessions" as any) as any)
+    await supabase.from("trading_sessions")
       .delete()
       .eq("user_id", userId)
       .eq("session_date", todayDate);

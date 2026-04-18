@@ -27,7 +27,9 @@ function readCache(): Record<string, boolean> | null {
 function writeCache(data: Record<string, boolean>) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-  } catch {}
+  } catch {
+    void 0;
+  }
 }
 
 export function useLessonProgress() {
@@ -64,7 +66,7 @@ export function useLessonProgress() {
         lesson_id: lessonId,
         completed: true,
         completed_at: new Date().toISOString(),
-      } as any,
+      },
       { onConflict: "user_id,lesson_id" }
     );
     const updated = { ...progress, [lessonId]: true };
@@ -74,7 +76,7 @@ export function useLessonProgress() {
     // Also mark first_lesson_started on profile
     supabase
       .from("profiles")
-      .update({ first_lesson_started: true } as any)
+      .update({ first_lesson_started: true })
       .eq("user_id", user.id)
       .then(() => {});
 

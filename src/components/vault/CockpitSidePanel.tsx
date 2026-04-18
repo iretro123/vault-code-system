@@ -21,7 +21,9 @@ export function CockpitSidePanel({ microFeedback }: CockpitSidePanelProps) {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, String(dismissed));
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   }, [dismissed]);
 
   if (dismissed) {

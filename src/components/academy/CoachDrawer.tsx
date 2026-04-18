@@ -286,7 +286,7 @@ export function CoachDrawer() {
   const [hasTrades, setHasTrades] = useState(false);
   useEffect(() => {
     if (!user) return;
-    supabase.from("trade_entries" as any).select("id", { count: "exact", head: true }).eq("user_id", user.id).limit(1)
+    supabase.from("trade_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id).limit(1)
       .then(({ count }) => setHasTrades((count || 0) > 0));
   }, [user]);
 
@@ -487,7 +487,7 @@ export function CoachDrawer() {
           user_id: user.id,
           question: text,
           answer: assistantSoFar,
-        } as any);
+        });
       }
 
       // Auto-insert static chart examples if AI mentions the trigger phrase
@@ -514,8 +514,8 @@ export function CoachDrawer() {
           }, 400);
         }
       }
-    } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to get response", variant: "destructive" });
+    } catch (e: unknown) {
+      toast({ title: "Error", description: e instanceof Error ? e.message : "Failed to get response", variant: "destructive" });
       setChatMessages((prev) => prev.slice(0, -1));
     }
 
@@ -558,7 +558,7 @@ export function CoachDrawer() {
     }
     const { error } = await supabase.from("coach_tickets").insert({
       user_id: user.id, category, urgency, question: question.trim(), screenshot_url: screenshotUrl,
-    } as any);
+    });
     setSending(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -576,7 +576,7 @@ export function CoachDrawer() {
     const userName = profile?.display_name || user.email?.split("@")[0] || "User";
     await supabase.from("coach_ticket_replies").insert({
       ticket_id: activeTicket.id, user_id: user.id, user_name: userName, body: replyText.trim(), is_admin: false,
-    } as any);
+    });
     setReplyText(""); setReplySending(false); fetchReplies(activeTicket.id);
   };
 

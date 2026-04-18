@@ -89,8 +89,8 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || "");
-      setRoleLevel((profile as any).role_level || "beginner");
-      const av = (profile as any).avatar_url || "";
+      setRoleLevel(profile.role_level || "beginner");
+      const av = profile.avatar_url || "";
       if (av.startsWith("icon:")) {
         const parts = av.replace("icon:", "").split("|");
         setAvatarMode("icon");
@@ -103,14 +103,14 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
         setAvatarMode("image");
         setImageUrl(av);
       }
-      setTimezone((profile as any).timezone || "America/New_York");
-      setPhoneNumber((profile as any).phone_number || "");
-      setBio((profile as any).bio || "");
-      setSocialTwitter((profile as any).social_twitter || "");
-      setSocialInstagram((profile as any).social_instagram || "");
-      setSocialTiktok((profile as any).social_tiktok || "");
-      setSocialYoutube((profile as any).social_youtube || "");
-      setBannerUrl((profile as any).banner_url || null);
+      setTimezone(profile.timezone || "America/New_York");
+      setPhoneNumber(profile.phone_number || "");
+      setBio(profile.bio || "");
+      setSocialTwitter(profile.social_twitter || "");
+      setSocialInstagram(profile.social_instagram || "");
+      setSocialTiktok(profile.social_tiktok || "");
+      setSocialYoutube(profile.social_youtube || "");
+      setBannerUrl(profile.banner_url || null);
     }
   }, [profile]);
 
@@ -266,7 +266,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    const updateData: any = {
+    const updateData: Record<string, string | boolean | null> = {
       display_name: displayName.trim() || null,
       role_level: roleLevel,
       timezone,

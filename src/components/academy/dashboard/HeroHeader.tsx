@@ -256,7 +256,7 @@ export function HeroHeader({ firstName, onCheckIn, timezone }: Props) {
       const url = data?.url;
       if (!url) throw new Error("No checkout URL returned");
       window.location.href = url;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AccessGate] Checkout error:", err);
       toast.error("Unable to start checkout. Please try again.");
       setCheckoutLoading(false);

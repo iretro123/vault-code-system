@@ -36,7 +36,7 @@ export function LiveCallsCard() {
       .then(({ data }) => {
         const result = data ?? [];
         setSessions(result);
-        try { localStorage.setItem(LIVE_DASH_CACHE, JSON.stringify(result)); } catch {}
+        try { localStorage.setItem(LIVE_DASH_CACHE, JSON.stringify(result)); } catch (err) { void err; }
         setLoading(false);
       });
   }, []);

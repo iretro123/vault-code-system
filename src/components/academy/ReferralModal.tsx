@@ -92,7 +92,8 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
   const handleCopy = async () => {
     const { copyToClipboard } = await import("@/lib/copyToClipboard");
     const ok = await copyToClipboard(refLink);
-    ok ? toast.success("Referral link copied!") : toast.error("Failed to copy");
+    if (ok) toast.success("Referral link copied!");
+    else toast.error("Failed to copy");
   };
 
   return (

@@ -54,7 +54,21 @@ function adjustmentOnDate(adjustments: Adjustment[], dateStr: string): number {
   return total;
 }
 
-function CustomTooltip({ active, payload }: any) {
+interface CustomTooltipEntry {
+  payload: {
+    date: string;
+    balance: number;
+    tradePnlChange: number | null;
+    adjustmentAmount: number | null;
+  };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: CustomTooltipEntry[];
+}
+
+function CustomTooltip({ active, payload }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   const { date, balance, tradePnlChange, adjustmentAmount } = payload[0].payload;
 

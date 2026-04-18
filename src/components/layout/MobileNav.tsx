@@ -9,7 +9,15 @@ export function MobileNav() {
   const { setOpenMobile } = useSidebar();
   const { liveSession } = useLiveNow();
   const joinLiveUrl = liveSession?.join_url || "";
-  const navItems = [
+  type MobileNavItem = {
+    icon: typeof Menu;
+    label: string;
+    path?: string;
+    href?: string;
+    liveDot?: boolean;
+  };
+
+  const navItems: MobileNavItem[] = [
     { icon: Menu, label: "Menu", path: "__menu__" },
     { icon: Home, label: "Home", path: "/academy/home" },
     { icon: MessageSquare, label: "Chat", path: "/academy/community" },
@@ -107,8 +115,8 @@ export function MobileNav() {
           icon: item.icon,
           label: item.label,
           path: item.path || item.href || "__link__",
-          href: (item as any).href,
-          liveDot: (item as any).liveDot,
+          href: item.href,
+          liveDot: item.liveDot,
         }))}
       </div>
     </nav>

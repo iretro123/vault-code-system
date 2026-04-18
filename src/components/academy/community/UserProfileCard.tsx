@@ -122,7 +122,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
         newBannerUrl = urlData.publicUrl;
       }
 
-      const updates: Record<string, any> = {
+      const updates: Record<string, string | null> = {
         bio: bio.trim(),
         social_twitter: socials.social_twitter.trim() || null,
         social_instagram: socials.social_instagram.trim() || null,
@@ -140,8 +140,8 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
       refetch();
       toast.success("Profile updated");
       setEditMode(false);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save");
     } finally {
       setSaving(false);
     }

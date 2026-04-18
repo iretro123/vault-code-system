@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ComponentType, type SVGProps } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,11 +75,11 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
           const dbCached = data.ai_focus_cache as unknown as AIFocusResult;
           if (dbCached.primaryLeak && dbCached.riskGrade) {
             // Write to localStorage as well so subsequent reads are fast
-            try { localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(dbCached)); } catch {}
+            try { localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(dbCached)); } catch (error) { void error; }
             if (!result) setResult(dbCached);
           }
         }
-      } catch {}
+      } catch (error) { void error; }
     };
     // Only load from DB if localStorage has no valid cache
     const localCached = localStorage.getItem(AI_FOCUS_CACHE);
@@ -97,7 +97,7 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
             return;
           }
         }
-      } catch {}
+      } catch (error) { void error; }
     }
     setLoading(true); setError(null);
     if (force) setRefreshing(true);
@@ -123,15 +123,17 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
       try {
         localStorage.setItem(AI_FOCUS_CACHE, JSON.stringify(cached));
         localStorage.setItem(AI_FOCUS_CACHE_TS, String(Date.now()));
-      } catch {}
+      } catch (error) { void error; }
       // Persist to DB for cross-device reliability
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          await supabase.from("profiles").update({ ai_focus_cache: cached as any }).eq("user_id", session.user.id);
+          await supabase.from("profiles").update({ ai_focus_cache: cached }).eq("user_id", session.user.id);
         }
-      } catch {}
-    } catch (e: any) { setError(e.message || "Something went wrong"); }
+      } catch (error) { void error; }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    }
     finally { setLoading(false); setRefreshing(false); }
   }, [todayStr, tradeCount, accessToken]);
 
@@ -150,7 +152,7 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
       if (cachedDate.toDateString() === now.toDateString() && cachedDate.getHours() < 18) {
         fetchAnalysis(true);
       }
-    } catch {}
+    } catch (error) { void error; }
   }, [isLocked, result, fetchAnalysis]);
 
   /* ── Locked State ── */
@@ -414,7 +416,7 @@ function SlideText({ text }: { text: string }) {
 /* ── Carousel sub-component ── */
 function AIFocusCardCarousel({ result, slides, gradeStyle, refreshing }: {
   result: AIFocusResult;
-  slides: { label: string; icon: any; value: string; subLabel?: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string; confidenceColor?: string }[];
+  slides: { label: string; icon: ComponentType<SVGProps<SVGSVGElement>>; value: string; subLabel?: string; accent: string; iconColor: string; labelColor: string; glowColor: string; dotColor: string; confidenceColor?: string }[];
   gradeStyle: { color: string; bg: string; border: string; glow: string };
   refreshing: boolean;
 }) {

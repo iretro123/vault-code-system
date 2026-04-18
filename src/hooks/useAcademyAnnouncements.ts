@@ -23,7 +23,7 @@ export function useAcademyAnnouncements() {
   const [loading, setLoading] = useState(true);
 
   const userSegment = (() => {
-    const exp = (profile as any)?.academy_experience ?? "newbie";
+    const exp = profile?.academy_experience ?? "newbie";
     if (exp === "veteran" || exp === "advanced" || exp === "professional") return "advanced";
     if (exp === "active" || exp === "intermediate") return "intermediate";
     return "beginner";
@@ -32,26 +32,13 @@ export function useAcademyAnnouncements() {
   const fetchAnnouncements = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
-      .from("academy_announcements" as any)
+      .from("academy_announcements")
       .select("*")
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(100);
 
-    const all = (data as any[] || []).map((d: any) => ({
-      id: d.id,
-      author_id: d.author_id,
-      title: d.title,
-      body: d.body,
-      link: d.link,
-      image_url: d.image_url,
-      delivery_mode: d.delivery_mode,
-      segment: d.segment,
-      is_pinned: d.is_pinned,
-      replies_locked: d.replies_locked,
-      created_at: d.created_at,
-      updated_at: d.updated_at,
-    })) as Announcement[];
+    const all = (data ?? []) as Announcement[];
 
     // Client-side segment filtering for members
     const filtered = all.filter((a) => {

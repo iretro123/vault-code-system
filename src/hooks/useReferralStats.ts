@@ -26,17 +26,23 @@ export function useReferralStats() {
     }
 
     const { data } = await supabase
-      .from("referral_stats" as any)
+      .from("referral_stats")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (data) {
+      const row = data as {
+        total_signed_up?: number;
+        total_paid?: number;
+        current_streak_weeks?: number;
+        last_referral_at?: string | null;
+      };
       setStats({
-        total_signed_up: (data as any).total_signed_up ?? 0,
-        total_paid: (data as any).total_paid ?? 0,
-        current_streak_weeks: (data as any).current_streak_weeks ?? 0,
-        last_referral_at: (data as any).last_referral_at ?? null,
+        total_signed_up: row.total_signed_up ?? 0,
+        total_paid: row.total_paid ?? 0,
+        current_streak_weeks: row.current_streak_weeks ?? 0,
+        last_referral_at: row.last_referral_at ?? null,
       });
     }
     setLoading(false);

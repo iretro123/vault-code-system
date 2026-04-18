@@ -56,6 +56,11 @@ const coreNav = [
   { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];
 
+interface SidebarProfileShape {
+  avatar_url?: string | null;
+  profile_completed?: boolean | null;
+}
+
 export function AcademySidebar() {
   const [inboxOpen, setInboxOpen] = useState(() => {
     try { return localStorage.getItem("va_inbox_open") === "true"; } catch { return false; }
@@ -65,7 +70,7 @@ export function AcademySidebar() {
 
   const handleInboxChange = (open: boolean) => {
     setInboxOpen(open);
-    try { localStorage.setItem("va_inbox_open", String(open)); } catch {}
+    try { localStorage.setItem("va_inbox_open", String(open)); } catch { void 0; }
   };
   const { state, toggleSidebar, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
@@ -81,8 +86,9 @@ export function AcademySidebar() {
   const communityBadge = formatBadge(totalUnread);
 
   const displayName = profile?.display_name || "Trader";
-  const avatarUrl = (profile as any)?.avatar_url || null;
-  const profileCompleted = profile && (profile as any).profile_completed;
+  const profileData = profile as SidebarProfileShape | null;
+  const avatarUrl = profileData?.avatar_url || null;
+  const profileCompleted = profileData?.profile_completed;
   const onboardingComplete = profileCompleted && onboarding?.claimed_role;
 
   const isActive = (path: string) => location.pathname === path;

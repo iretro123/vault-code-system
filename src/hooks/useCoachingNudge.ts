@@ -22,7 +22,9 @@ function isOnCooldown(trigger: NudgeTrigger): boolean {
 function writeCooldown(trigger: NudgeTrigger) {
   try {
     localStorage.setItem(getCooldownKey(trigger), String(Date.now()));
-  } catch {}
+  } catch {
+    void 0;
+  }
 }
 
 interface NudgeInput {

@@ -1,6 +1,10 @@
 // Polyfill URL.parse for older browsers (Safari <17, older iOS/Android)
-if (typeof URL.parse !== "function") {
-  (URL as any).parse = (url: string, base?: string) => {
+const urlWithParse = URL as typeof URL & {
+  parse?: (url: string, base?: string) => URL | null;
+};
+
+if (typeof urlWithParse.parse !== "function") {
+  urlWithParse.parse = (url: string, base?: string) => {
     try { return new URL(url, base); }
     catch { return null; }
   };

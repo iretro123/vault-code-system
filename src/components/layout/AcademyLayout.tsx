@@ -33,6 +33,12 @@ const ambientBgStyle = {
   ].join(', '),
 };
 
+interface AcademyProfileShape {
+  access_status?: string | null;
+  profile_completed?: boolean | null;
+  onboarding_completed?: boolean | null;
+}
+
 function LoadingShell() {
   return (
     <div className="academy-mobile-fit h-[100dvh] flex w-full bg-background relative overflow-hidden">
@@ -65,7 +71,7 @@ function AcademyLayoutInner() {
   useEffect(() => {
     if (hydrated && !everHydrated) {
       setEverHydrated(true);
-      try { sessionStorage.setItem("va_ever_hydrated", "1"); } catch {}
+      try { sessionStorage.setItem("va_ever_hydrated", "1"); } catch { void 0; }
     }
   }, [hydrated, everHydrated]);
   const isMobile = useIsMobile();
@@ -125,7 +131,8 @@ function AcademyLayoutInner() {
     return <LoadingShell />;
   }
 
-  const accessStatus = (profile as any)?.access_status ?? "trial";
+  const profileData = profile as AcademyProfileShape | null;
+  const accessStatus = profileData?.access_status ?? "trial";
 
   if (accessStatus === "revoked") {
     return (
@@ -152,8 +159,8 @@ function AcademyLayoutInner() {
   // First-login onboarding gate
   const searchParams = new URLSearchParams(window.location.search);
   const isPreview = searchParams.has("preview-onboarding");
-  const profileCompleted = (profile as any)?.profile_completed;
-  const onboardingCompleted = (profile as any)?.onboarding_completed;
+  const profileCompleted = profileData?.profile_completed;
+  const onboardingCompleted = profileData?.onboarding_completed;
   // Show onboarding only for genuinely new users — skip if they've already been active
   if (isPreview || (!profileCompleted && !onboardingCompleted)) {
     return <AppOnboarding isPreview={isPreview} />;

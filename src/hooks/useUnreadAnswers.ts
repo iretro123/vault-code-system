@@ -45,12 +45,12 @@ export function useUnreadAnswers() {
 
     // Get which ones the user has read
     const { data: reads } = await supabase
-      .from("coach_answer_reads" as any)
+      .from("coach_answer_reads")
       .select("reply_id")
       .eq("user_id", user.id)
       .in("reply_id", replyIds);
 
-    const readSet = new Set((reads || []).map((r: any) => r.reply_id));
+    const readSet = new Set((reads || []).map((r) => r.reply_id));
     const unread = replyIds.filter((id) => !readSet.has(id)).length;
     setUnreadCount(unread);
     setLoading(false);

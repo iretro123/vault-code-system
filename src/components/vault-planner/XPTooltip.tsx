@@ -19,7 +19,7 @@ function usePosition(triggerRef: React.RefObject<HTMLElement | null>, open: bool
     const spaceAbove = rect.top;
     const spaceBelow = window.innerHeight - rect.bottom;
     const placement = spaceAbove > 200 ? "above" : "below";
-    let top = placement === "above" ? rect.top - pad : rect.bottom + pad;
+    const top = placement === "above" ? rect.top - pad : rect.bottom + pad;
     let left = rect.left + rect.width / 2 - width / 2;
     // clamp horizontal
     left = Math.max(pad, Math.min(left, window.innerWidth - width - pad));

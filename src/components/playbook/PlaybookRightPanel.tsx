@@ -47,13 +47,13 @@ function NotesPanel({ chapterId, disabled }: { chapterId: string; disabled?: boo
         if (existing) {
           await supabase
             .from("playbook_notes")
-            .update({ note_text: text, updated_at: new Date().toISOString() } as any)
+            .update({ note_text: text, updated_at: new Date().toISOString() })
             .eq("user_id", user.id)
             .eq("chapter_id", chapterId);
         } else {
           await supabase
             .from("playbook_notes")
-            .insert({ user_id: user.id, chapter_id: chapterId, note_text: text } as any);
+            .insert({ user_id: user.id, chapter_id: chapterId, note_text: text });
         }
       }, 1500);
     },
@@ -84,6 +84,13 @@ function NotesPanel({ chapterId, disabled }: { chapterId: string; disabled?: boo
 }
 
 /* ── Checkpoint Quiz ── */
+type CheckpointQuestion = {
+  question: string;
+  answer: string;
+  options?: string[];
+  explanation?: string;
+};
+
 function CheckpointPanel({
   chapter,
   progress: chProgress,
@@ -97,7 +104,7 @@ function CheckpointPanel({
   disabled?: boolean;
   reachedEnd: boolean;
 }) {
-  const questions = chapter.checkpoint_json || [];
+  const questions = (chapter.checkpoint_json || []) as CheckpointQuestion[];
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(chProgress?.checkpoint_passed || false);
   const [score, setScore] = useState(chProgress?.checkpoint_score || 0);
@@ -151,7 +158,7 @@ function CheckpointPanel({
 
   const handleSubmit = () => {
     let correct = 0;
-    questions.forEach((q: any, i: number) => {
+    questions.forEach((q, i: number) => {
       if (answers[i] === q.answer) correct++;
     });
     const finalScore = Math.round((correct / questions.length) * 100);
@@ -172,7 +179,7 @@ function CheckpointPanel({
         <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.15em]">Checkpoint</p>
       </div>
 
-      {questions.map((q: any, i: number) => (
+      {questions.map((q, i: number) => (
         <div key={i} className="space-y-2">
           <p className="text-sm text-foreground/80 font-medium">{q.question}</p>
           <RadioGroup

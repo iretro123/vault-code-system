@@ -40,11 +40,17 @@ export function PlayerIdentity() {
 
   const displayName = profile?.display_name || "Trader";
   const email = user.email || "";
-  const username = (profile as any)?.username || email.split("@")[0];
-  const avatarUrl = (profile as any)?.avatar_url || null;
+  const profileData = profile as {
+    username?: string | null;
+    avatar_url?: string | null;
+    role_level?: string | null;
+    academy_experience?: string | null;
+  } | null;
+  const username = profileData?.username || email.split("@")[0];
+  const avatarUrl = profileData?.avatar_url || null;
   const canOpenAdminPanel = roleName === "CEO" || isOperator;
   const isLeadership = ["CEO", "Admin", "Coach", "Operator"].includes(roleName);
-  const experienceLevel = (profile as any)?.role_level || (profile as any)?.academy_experience;
+  const experienceLevel = profileData?.role_level || profileData?.academy_experience;
 
   const handleSignOut = async () => {
     await signOut();

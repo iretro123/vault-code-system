@@ -40,7 +40,9 @@ function readTasksCache(): UserTask[] {
   try {
     const raw = localStorage.getItem(TASKS_CACHE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export function useUserTasks() {
@@ -57,7 +59,7 @@ export function useUserTasks() {
       setLoading(true);
 
       // Fetch existing tasks
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("user_task")
         .select("*")
         .eq("user_id", user!.id)
@@ -70,7 +72,7 @@ export function useUserTasks() {
       // Seed onboarding tasks if no tasks at all exist
       if (rows.length === 0 && !seeded) {
         const seeds = ONBOARDING_SEEDS.map((s) => {
-          const done = profile ? !!(profile as any)[s.profileFlag] : false;
+          const done = profile ? !!(profile as Record<string, unknown>)[s.profileFlag] : false;
           return {
             user_id: user!.id,
             title: s.title,
@@ -81,7 +83,7 @@ export function useUserTasks() {
           };
         });
 
-        const { data: inserted, error: insertErr } = await (supabase as any)
+        const { data: inserted, error: insertErr } = await supabase
           .from("user_task")
           .insert(seeds)
           .select("*");
@@ -107,7 +109,7 @@ export function useUserTasks() {
           due_date: today,
         }));
 
-        const { data: inserted, error: insertErr } = await (supabase as any)
+        const { data: inserted, error: insertErr } = await supabase
           .from("user_task")
           .insert(dailySeeds)
           .select("*");
@@ -118,7 +120,11 @@ export function useUserTasks() {
       }
 
       setTasks(rows);
-      try { localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(rows)); } catch {}
+      try {
+        localStorage.setItem(TASKS_CACHE_KEY, JSON.stringify(rows));
+      } catch {
+        void 0;
+      }
       setLoading(false);
     }
 

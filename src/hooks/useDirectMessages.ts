@@ -55,18 +55,18 @@ export function useDirectMessages() {
 
       // Enrich with profile data
       if (data && data.length > 0) {
-        const userIds = [...new Set(data.map((t: any) => t.user_id))];
+        const userIds = [...new Set(data.map((t) => t.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, display_name, email, avatar_url")
           .in("user_id", userIds);
 
         const profileMap = new Map(
-          (profiles || []).map((p: any) => [p.user_id, p])
+          (profiles || []).map((p) => [p.user_id, p])
         );
 
         setThreads(
-          data.map((t: any) => {
+          data.map((t) => {
             const p = profileMap.get(t.user_id);
             return {
               ...t,

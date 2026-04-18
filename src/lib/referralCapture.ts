@@ -9,6 +9,11 @@ interface StoredReferral {
   capturedAt: number;
 }
 
+interface ReferralInsertPayload {
+  referrer_user_id: string;
+  status: "clicked";
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isValidRefCode(code: string): boolean {
@@ -49,14 +54,14 @@ export function captureReferral(refCode: string): void {
 
   // Fire-and-forget click insert
   supabase
-    .from("referrals" as any)
-    .insert({ referrer_user_id: refCode, status: "clicked" } as any)
+    .from("referrals" as never)
+    .insert({ referrer_user_id: refCode, status: "clicked" } as ReferralInsertPayload as never)
     .then(({ error }) => {
       if (error) {
         console.warn("[Referral] click tracking error:", error.message);
       } else {
         console.log("[Referral] click tracked for:", refCode);
-        try { sessionStorage.setItem(SESSION_DEDUPE_KEY, refCode); } catch {}
+        try { sessionStorage.setItem(SESSION_DEDUPE_KEY, refCode); } catch { return; }
       }
     });
 }
@@ -96,5 +101,7 @@ export function clearStoredReferral(): void {
     localStorage.removeItem(STORAGE_KEY);
     sessionStorage.removeItem(SESSION_DEDUPE_KEY);
     console.log("[Referral] cleared stored referral");
-  } catch {}
+  } catch {
+    return;
+  }
 }

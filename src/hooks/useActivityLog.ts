@@ -20,7 +20,7 @@ export function useActivityLog() {
       const uid = userIdRef.current;
       if (!uid) return;
       try {
-        await (supabase.from("user_activity_logs" as any) as any).insert({
+        await supabase.from("user_activity_logs").insert({
           user_id: uid,
           event_name,
           page_key: page_key ?? null,

@@ -52,6 +52,25 @@ interface BroadcastRecord {
   sent_at: string | null;
 }
 
+interface WelcomeDmSettings {
+  enabled?: boolean;
+  title?: string;
+  body?: string;
+  link?: string;
+}
+
+interface SendSummary {
+  sent: number;
+  failed: number;
+}
+
+interface BroadcastEventLog {
+  id: string;
+  action: string;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export function AdminBroadcastTab() {
   const { user } = useAuth();
 
@@ -96,11 +115,11 @@ export function AdminBroadcastTab() {
 
   const fetchHistory = useCallback(async () => {
     const { data } = await supabase
-      .from("broadcast_messages" as any)
+      .from("broadcast_messages")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
-    setHistory((data as any[] || []) as BroadcastRecord[]);
+    setHistory((data as BroadcastRecord[] | null) ?? []);
     setLoadingHistory(false);
   }, []);
 
@@ -111,7 +130,7 @@ export function AdminBroadcastTab() {
       .eq("key", "welcome_dm")
       .maybeSingle();
     if (data?.value) {
-      const v = data.value as any;
+      const v = data.value as WelcomeDmSettings;
       setDmEnabled(v.enabled ?? true);
       setDmTitle(v.title ?? "Welcome to Vault OS");
       setDmBody(v.body ?? "");
@@ -184,7 +203,7 @@ export function AdminBroadcastTab() {
         template_key: templateKey,
         status: data.failed === 0 ? "sent" : "partial",
         sent_at: new Date().toISOString(),
-        metadata: { sent: data.sent, failed: data.failed } as any,
+        metadata: { sent: data.sent, failed: data.failed } satisfies SendSummary,
       });
     } else if (channel === "email") {
       // Send via email edge function
@@ -219,7 +238,7 @@ export function AdminBroadcastTab() {
         template_key: templateKey,
         status: "sent",
         sent_at: new Date().toISOString(),
-        metadata: { sent: sentCount, failed: failedCount } as any,
+        metadata: { sent: sentCount, failed: failedCount } satisfies SendSummary,
       });
     } else {
       // In-app delivery (existing logic)
@@ -248,7 +267,7 @@ export function AdminBroadcastTab() {
           title: title.trim(),
           body: body.trim(),
           link_path: linkVal,
-        } as any);
+        });
       }
 
       // Log to history
@@ -275,14 +294,14 @@ export function AdminBroadcastTab() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    await supabase.from("broadcast_messages" as any).delete().eq("id", deleteId);
+    await supabase.from("broadcast_messages").delete().eq("id", deleteId);
     toast.success("Record deleted");
     setDeleteId(null);
     fetchHistory();
   };
 
   const handleResend = (r: BroadcastRecord) => {
-    setRecipientType(r.recipient_type as any);
+    setRecipientType(r.recipient_type === "all" ? "all" : "single");
     setUserId(r.recipient_user_id || "");
     setTitle(r.title);
     setBody(r.body);
@@ -301,7 +320,7 @@ export function AdminBroadcastTab() {
     setDmSaving(true);
     await supabase.from("system_settings").upsert({
       key: "welcome_dm",
-      value: { enabled: dmEnabled, title: dmTitle, body: dmBody, link: dmLink } as any,
+      value: { enabled: dmEnabled, title: dmTitle, body: dmBody, link: dmLink },
       updated_at: new Date().toISOString(),
       updated_by: user.id,
     });

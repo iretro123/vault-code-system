@@ -87,7 +87,7 @@ function YourWeekCard() {
   sunday.setHours(23, 59, 59, 999);
 
   const tradesThisWeek = entries?.filter(
-    (e: any) => new Date(e.trade_date) >= monday
+    (e) => new Date(e.trade_date) >= monday
   ).length ?? 0;
 
   useEffect(() => {

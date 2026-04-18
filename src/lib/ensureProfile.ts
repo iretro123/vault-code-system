@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 const ICON_IDS = ["diamond","circles","hexagon","triangle","bars","cross","shield","sword","crown","lightning","controller","candle","target","rocket","bull","star","wave","grid","ring","eye","flame"];
 const AVATAR_COLORS = ["hsl(220, 70%, 55%)","hsl(260, 65%, 55%)","hsl(340, 65%, 55%)","hsl(160, 60%, 45%)","hsl(30, 80%, 55%)","hsl(190, 70%, 50%)","hsl(0, 70%, 55%)","hsl(280, 60%, 60%)"];
 
+interface ProfileUpdatePayload {
+  display_name?: string;
+  username?: string;
+  phone_number?: string;
+}
+
 function randomAvatarUrl(): string {
   const icon = ICON_IDS[Math.floor(Math.random() * ICON_IDS.length)];
   const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
@@ -51,7 +57,7 @@ export async function ensureProfile(
 
     if (existing) {
       if (opts?.display_name || opts?.username || opts?.phone_number) {
-        const updates: Record<string, any> = {};
+        const updates: ProfileUpdatePayload = {};
         if (opts.display_name) updates.display_name = opts.display_name;
         if (opts.username) updates.username = opts.username;
         if (opts.phone_number) updates.phone_number = opts.phone_number;

@@ -93,7 +93,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
   // Pre-fill last ticker on every open (not just mount)
   useEffect(() => {
     if (open && !prefill?.symbol && !symbol) {
-      try { const last = localStorage.getItem("va_last_ticker"); if (last) setSymbol(last); } catch {}
+      try { const last = localStorage.getItem("va_last_ticker"); if (last) setSymbol(last); } catch (err) { void err; }
     }
   }, [open]);
   const [date, setDate] = useState<Date>(new Date());
@@ -243,7 +243,7 @@ export function LogTradeSheet({ open, onOpenChange, onSubmit, planId, prefill, o
         screenshotFile: screenshotFile || undefined,
       });
       // Remember last ticker
-      try { localStorage.setItem("va_last_ticker", savedSymbol); } catch {}
+      try { localStorage.setItem("va_last_ticker", savedSymbol); } catch (err) { void err; }
       // Keep symbol + direction for "Log Another"
       resetForm(true);
       setSymbol(savedSymbol);

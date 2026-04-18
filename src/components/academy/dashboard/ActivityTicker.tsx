@@ -28,7 +28,7 @@ function readCache(): TickerItem[] | null {
 function writeCache(data: TickerItem[]) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
-  } catch {}
+    } catch (err) { void err; }
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -116,7 +116,7 @@ export function ActivityTicker() {
 
       const allUserIds = new Set<string>();
       for (const a of activities) {
-        if ((a as any).user_id) allUserIds.add((a as any).user_id);
+        if (a.user_id) allUserIds.add(a.user_id);
       }
       if (allUserIds.size === 0) return;
 
@@ -127,8 +127,8 @@ export function ActivityTicker() {
       const nameMap = new Map<string, string>();
       if (profiles) {
         for (const p of profiles) {
-          const first = ((p as any).display_name || "A student").split(" ")[0];
-          nameMap.set((p as any).user_id, first);
+          const first = (p.display_name || "A student").split(" ")[0];
+          nameMap.set(p.user_id, first);
         }
       }
 
@@ -136,20 +136,19 @@ export function ActivityTicker() {
 
       const allItems: TickerItem[] = [];
       for (const a of activities) {
-        const r = a as any;
-        const name = getName(r.user_id);
-        switch (r.activity_type) {
+        const name = getName(a.user_id);
+        switch (a.activity_type) {
           case "call":
-            allItems.push({ id: r.activity_id, text: `${name} joined a live call`, type: "call", userId: r.user_id });
+            allItems.push({ id: a.activity_id, text: `${name} joined a live call`, type: "call", userId: a.user_id });
             break;
           case "journal":
-            allItems.push({ id: r.activity_id, text: `${name} journaled a trade`, type: "journal", userId: r.user_id });
+            allItems.push({ id: a.activity_id, text: `${name} journaled a trade`, type: "journal", userId: a.user_id });
             break;
           case "lesson":
-            allItems.push({ id: r.activity_id, text: `${name} watched a lesson`, type: "lesson", userId: r.user_id });
+            allItems.push({ id: a.activity_id, text: `${name} watched a lesson`, type: "lesson", userId: a.user_id });
             break;
           case "win":
-            allItems.push({ id: r.activity_id, text: `${name} posted a win`, type: "win", userId: r.user_id });
+            allItems.push({ id: a.activity_id, text: `${name} posted a win`, type: "win", userId: a.user_id });
             break;
         }
       }

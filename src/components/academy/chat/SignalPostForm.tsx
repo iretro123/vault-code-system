@@ -133,9 +133,9 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
     const trimmedTv = opts.tvLink?.trim() || undefined;
 
     if (m === "watchlist") {
-      attachments.push({ type: "signal-watchlist" as any, ticker: t, bias: b, levels: opts.levels?.trim() || undefined, notes: opts.notes?.trim() || undefined, tvLink: trimmedTv } as any);
+      attachments.push({ type: "signal-watchlist", ticker: t, bias: b, levels: opts.levels?.trim() || undefined, notes: opts.notes?.trim() || undefined, tvLink: trimmedTv } as Attachment);
     } else {
-      attachments.push({ type: "signal-live" as any, direction: opts.direction, ticker: t, strike: opts.strike?.trim(), exp: opts.exp?.trim() || undefined, fill: opts.fill?.trim() || undefined, notes: opts.notes?.trim() || undefined, tvLink: trimmedTv } as any);
+      attachments.push({ type: "signal-live", direction: opts.direction, ticker: t, strike: opts.strike?.trim(), exp: opts.exp?.trim() || undefined, fill: opts.fill?.trim() || undefined, notes: opts.notes?.trim() || undefined, tvLink: trimmedTv } as Attachment);
     }
 
     const bodyLines: string[] = [];

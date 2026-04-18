@@ -28,7 +28,7 @@ type TradeEntry = {
 interface RecentTradesSectionProps {
   entries: TradeEntry[];
   onExportCSV: () => void;
-  onDelete: (id: string) => Promise<{ error: any }>;
+  onDelete: (id: string) => Promise<{ error: unknown }>;
   compact?: boolean;
 }
 

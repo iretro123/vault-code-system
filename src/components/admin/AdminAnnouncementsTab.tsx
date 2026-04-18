@@ -31,6 +31,19 @@ interface Announcement {
   created_at: string;
 }
 
+interface AnnouncementPayload {
+  title: string;
+  body: string;
+  link: string | null;
+  image_url: string | null;
+  delivery_mode: string;
+  segment: string;
+  is_pinned: boolean;
+  replies_locked: boolean;
+  author_id?: string;
+  updated_at?: string;
+}
+
 const DELIVERY_OPTIONS = [
   { value: "in_app", label: "In-app only", icon: Megaphone, desc: "Shows in announcements room" },
   { value: "in_app_notify", label: "In-app + Notify", icon: Bell, desc: "Also adds unread badge to bell + inbox" },
@@ -64,12 +77,12 @@ export function AdminAnnouncementsTab() {
 
   const fetchList = useCallback(async () => {
     const { data } = await supabase
-      .from("academy_announcements" as any)
+      .from("academy_announcements")
       .select("*")
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(50);
-    setAnnouncements((data as any[] || []) as Announcement[]);
+    setAnnouncements((data as Announcement[] | null) ?? []);
     setLoadingList(false);
   }, []);
 
@@ -85,7 +98,7 @@ export function AdminAnnouncementsTab() {
     if (!title.trim() || !user) { toast.error("Title is required"); return; }
     setSending(true);
 
-    const payload: any = {
+    const payload: AnnouncementPayload = {
       title: title.trim(),
       body: body.trim(),
       link: link.trim() || null,
@@ -99,7 +112,7 @@ export function AdminAnnouncementsTab() {
     if (editingId) {
       payload.updated_at = new Date().toISOString();
       const { error } = await supabase
-        .from("academy_announcements" as any)
+        .from("academy_announcements")
         .update(payload)
         .eq("id", editingId);
       if (error) toast.error(error.message);
@@ -107,7 +120,7 @@ export function AdminAnnouncementsTab() {
     } else {
       payload.author_id = user.id;
       const { data, error } = await supabase
-        .from("academy_announcements" as any)
+        .from("academy_announcements")
         .insert(payload)
         .select()
         .single();
@@ -117,7 +130,7 @@ export function AdminAnnouncementsTab() {
       } else {
         // If delivery includes notify, also create inbox + notification entries
         if (deliveryMode === "in_app_notify" || deliveryMode === "in_app_notify_ping") {
-          await supabase.from("inbox_items" as any).insert({
+          await supabase.from("inbox_items").insert({
             user_id: null,
             type: "announcement",
             title: title.trim(),
@@ -125,17 +138,17 @@ export function AdminAnnouncementsTab() {
             link: "/academy/room/announcements",
             pinned,
             sender_id: user!.id,
-          } as any);
+          });
         }
 
         if (deliveryMode === "in_app_notify_ping") {
-          await supabase.from("academy_notifications" as any).insert({
+          await supabase.from("academy_notifications").insert({
             user_id: null,
             type: "announcement",
             title: title.trim(),
             body: body.trim(),
             link_path: "/academy/room/announcements",
-          } as any);
+          });
         }
 
         toast.success("Announcement published");
@@ -162,7 +175,7 @@ export function AdminAnnouncementsTab() {
   const handleDelete = async () => {
     if (!deleteId) return;
     const { error } = await supabase
-      .from("academy_announcements" as any)
+      .from("academy_announcements")
       .delete()
       .eq("id", deleteId);
     if (error) toast.error(error.message);
@@ -172,16 +185,16 @@ export function AdminAnnouncementsTab() {
 
   const handleTogglePin = async (id: string, currentPinned: boolean) => {
     await supabase
-      .from("academy_announcements" as any)
-      .update({ is_pinned: !currentPinned } as any)
+      .from("academy_announcements")
+      .update({ is_pinned: !currentPinned })
       .eq("id", id);
     fetchList();
   };
 
   const handleToggleLock = async (id: string, currentLocked: boolean) => {
     await supabase
-      .from("academy_announcements" as any)
-      .update({ replies_locked: !currentLocked } as any)
+      .from("academy_announcements")
+      .update({ replies_locked: !currentLocked })
       .eq("id", id);
     fetchList();
   };

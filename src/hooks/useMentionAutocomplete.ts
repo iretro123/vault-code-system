@@ -19,12 +19,7 @@ async function fetchAllUsers(): Promise<MentionUser[]> {
   fetchPromise = (async () => {
     const { data } = await supabase.rpc("get_mention_users");
 
-    cachedUsers = (data ?? []).map((r: any) => ({
-      user_id: r.user_id,
-      display_name: r.display_name,
-      username: r.username,
-      avatar_url: r.avatar_url,
-    }));
+    cachedUsers = (data ?? []) as MentionUser[];
     return cachedUsers;
   })();
 

@@ -53,7 +53,9 @@ function readCache<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
-  } catch { return fallback; }
+  } catch {
+    return fallback;
+  }
 }
 
 const CACHE_KEYS = [
@@ -87,12 +89,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setUserRole(null);
     fetchedForRef.current = null;
-    try { CACHE_KEYS.forEach(k => localStorage.removeItem(k)); } catch {}
+    try {
+      CACHE_KEYS.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      void 0;
+    }
     setLoading(false);
   }
 
   /** Handle a valid profile row — ban check, state update, timezone backfill */
-  async function handleProfile(profileData: any, userId: string) {
+  async function handleProfile(profileData: (Profile & { is_banned?: boolean }) | null, userId: string) {
+    if (!profileData) return false;
     // Block revoked/banned users immediately
     if (profileData.access_status === "revoked" || profileData.is_banned) {
       console.warn("[Auth] User is revoked/banned — signing out");
@@ -105,7 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (prev && JSON.stringify(prev) === JSON.stringify(profileData)) return prev;
       return profileData as Profile;
     });
-    try { localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData)); } catch {}
+    try {
+      localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profileData));
+    } catch {
+      void 0;
+    }
 
     // Backfill timezone only if truly empty
     const tz = profileData.timezone;
@@ -115,7 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (detected) {
           await supabase.from("profiles").update({ timezone: detected }).eq("user_id", userId);
         }
-      } catch {}
+      } catch {
+        void 0;
+      }
     }
     return true;
   }
@@ -137,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Guard: skip redundant fetches on TOKEN_REFRESHED if profile already loaded for this user
           const currentProfile = profileRef.current;
           const alreadyLoaded = currentProfile &&
-            (currentProfile.user_id === uid || (currentProfile as any).id === uid);
+            (currentProfile.user_id === uid || currentProfile.id === uid);
 
           if (event === "TOKEN_REFRESHED" && alreadyLoaded) {
             // Profile unchanged — just make sure loading is false
@@ -146,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           // Detect user switch — clear stale state
-          const cachedUid = currentProfile?.user_id || (currentProfile as any)?.id;
+          const cachedUid = currentProfile?.user_id || currentProfile?.id;
           if (cachedUid && cachedUid !== uid) {
             setProfile(null);
             setUserRole(null);
@@ -166,7 +179,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           setUserRole(null);
           fetchedForRef.current = null;
-          try { localStorage.removeItem(PROFILE_CACHE_KEY); localStorage.removeItem(ROLE_CACHE_KEY); } catch {}
+          try {
+            localStorage.removeItem(PROFILE_CACHE_KEY);
+            localStorage.removeItem(ROLE_CACHE_KEY);
+          } catch {
+            void 0;
+          }
         }
       }
     );
@@ -236,7 +254,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (prev && JSON.stringify(prev) === JSON.stringify(roleData)) return prev;
           return roleData as UserRole;
         });
-        try { localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(roleData)); } catch {}
+        try {
+          localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(roleData));
+        } catch {
+          void 0;
+        }
       }
     } catch (error) {
       console.error("Error fetching user data:", error);

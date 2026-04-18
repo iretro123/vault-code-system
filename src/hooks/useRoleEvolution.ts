@@ -39,11 +39,15 @@ export function useRoleEvolution() {
     // Upgrade silently
     supabase
       .from("profiles")
-      .update({ role_level: computed } as any)
+      .update({ role_level: computed })
       .eq("user_id", user.id)
       .then(({ error }) => {
         if (!error) {
-          try { localStorage.removeItem("va_cache_profile"); } catch {}
+          try {
+            localStorage.removeItem("va_cache_profile");
+          } catch {
+            void 0;
+          }
           toast.success(`You've leveled up to ${LEVEL_LABELS[computed]}!`, { duration: 4000 });
         }
       });

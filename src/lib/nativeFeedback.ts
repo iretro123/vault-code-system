@@ -1,5 +1,9 @@
 import { Capacitor } from "@capacitor/core";
 
+type WindowWithWebkitAudioContext = Window & {
+  webkitAudioContext?: typeof AudioContext;
+};
+
 function isNativePlatform() {
   if (typeof window === "undefined") return false;
   if (Capacitor.isNativePlatform()) return true;
@@ -11,7 +15,7 @@ let audioCtx: AudioContext | null = null;
 
 async function playTone(freq: number, durationMs: number, gainValue: number) {
   try {
-    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    const Ctx = window.AudioContext || (window as WindowWithWebkitAudioContext).webkitAudioContext;
     if (!Ctx) return;
     if (!audioCtx) audioCtx = new Ctx();
     if (audioCtx.state === "suspended") await audioCtx.resume();

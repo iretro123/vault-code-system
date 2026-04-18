@@ -11,6 +11,13 @@ interface PermissionsData {
   appRoles: Set<string>;
 }
 
+interface AcademyUserRoleRow {
+  role_id: string | null;
+  academy_roles: {
+    name: AcademyRoleName | null;
+  } | null;
+}
+
 async function fetchPermissions(userId: string): Promise<PermissionsData> {
   const [userRoleRes, appRolesRes] = await Promise.all([
     supabase
@@ -23,7 +30,7 @@ async function fetchPermissions(userId: string): Promise<PermissionsData> {
     supabase.from("user_roles").select("role").eq("user_id", userId),
   ]);
 
-  const userRoleData = userRoleRes.data as any;
+  const userRoleData = userRoleRes.data as AcademyUserRoleRow | null;
   const roleName = (userRoleData?.academy_roles?.name ?? "Member") as AcademyRoleName;
   const roleId = userRoleData?.role_id;
 
@@ -33,10 +40,10 @@ async function fetchPermissions(userId: string): Promise<PermissionsData> {
       .from("academy_role_permissions")
       .select("permission_key")
       .eq("role_id", roleId);
-    permissions = (permsData ?? []).map((p: any) => p.permission_key);
+    permissions = (permsData ?? []).map((p) => p.permission_key);
   }
 
-  const appRoles = new Set((appRolesRes.data ?? []).map((r: any) => String(r.role)));
+  const appRoles = new Set((appRolesRes.data ?? []).map((r) => String(r.role)));
 
   return { roleName, permissions: new Set(permissions), appRoles };
 }

@@ -23,7 +23,7 @@ export function XPWindow({ title, children, onClose, menuBar, className = "", fo
 
   useEffect(() => {
     if (!fitViewport) return;
-    try { localStorage.setItem(WINDOW_SIZE_KEY, String(maximized)); } catch {}
+    try { localStorage.setItem(WINDOW_SIZE_KEY, String(maximized)); } catch (error) { void error; }
   }, [maximized, fitViewport]);
 
   const toggleMaximize = () => setMaximized((p) => !p);

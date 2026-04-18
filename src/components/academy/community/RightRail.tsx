@@ -46,7 +46,8 @@ export function RightRail({ slug, pinnedMessages = [], onClose }: RightRailProps
   const copyTemplate = async (t: string) => {
     const { copyToClipboard } = await import("@/lib/copyToClipboard");
     const ok = await copyToClipboard(t);
-    ok ? toast.success("Template copied — paste into the composer") : toast.error("Failed to copy");
+    if (ok) toast.success("Template copied — paste into the composer");
+    else toast.error("Failed to copy");
   };
 
   return (

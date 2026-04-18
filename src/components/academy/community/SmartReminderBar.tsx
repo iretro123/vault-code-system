@@ -14,7 +14,7 @@ export function SmartReminderBar() {
   startOfWeek.setHours(0, 0, 0, 0);
   
   const tradesThisWeek = entries?.filter(
-    (e: any) => new Date(e.trade_date) >= startOfWeek
+    (e) => new Date(e.trade_date) >= startOfWeek
   ).length ?? 0;
 
   if (!user || tradesThisWeek > 0) return null;

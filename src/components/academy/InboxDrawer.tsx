@@ -184,7 +184,7 @@ function InlineThreadView({
   const senderInitials = senderName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   // User info
-  const userName = (profile as any)?.display_name || user?.email?.split("@")[0] || "You";
+    const userName = profile?.display_name || user?.email?.split("@")[0] || "You";
   const userInitials = userName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   // Render only actual dm_messages — no ghost/fake prepend from inbox item
@@ -235,7 +235,7 @@ function InlineThreadView({
                   <div className="w-7 shrink-0 flex justify-center">
                     {showAvatar ? (
                       isMe ? (
-                        <ChatAvatar avatarUrl={(profile as any)?.avatar_url} userName={userName} size="h-7 w-7" />
+                        <ChatAvatar avatarUrl={profile?.avatar_url} userName={userName} size="h-7 w-7" />
                       ) : (
                         <ChatAvatar avatarUrl={item.sender_avatar} userName={senderName} size="h-7 w-7" />
                       )
@@ -253,7 +253,7 @@ function InlineThreadView({
                     >
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
                       {/* Render attachments */}
-                      <DmAttachmentRenderer attachments={(m as any).attachments || []} />
+                      <DmAttachmentRenderer attachments={m.attachments || []} />
                       <p className={`text-[10px] mt-1 ${isMe ? "text-white/30 text-right" : "text-white/30"}`}>
                         {formatRelative(m.created_at)}
                       </p>
@@ -263,8 +263,8 @@ function InlineThreadView({
                       const nextMsg = allMessages[idx + 1];
                       const isLastOutgoing = !nextMsg || nextMsg.sender_id !== user?.id;
                       if (!isLastOutgoing) return null;
-                      if ((m as any).read_at) {
-                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read · {formatRelative((m as any).read_at)}</p>;
+                      if (m.read_at) {
+                        return <p className="text-[10px] text-primary/60 mt-0.5 text-right mr-1">Read · {formatRelative(m.read_at)}</p>;
                       }
                       return <p className="text-[10px] text-muted-foreground/40 mt-0.5 text-right mr-1">Delivered</p>;
                     })()}

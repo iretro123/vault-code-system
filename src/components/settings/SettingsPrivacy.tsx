@@ -75,11 +75,11 @@ export function SettingsPrivacy() {
       await Promise.all([
         supabase.from("vault_state").delete().eq("user_id", user.id),
         supabase.from("vault_events").delete().eq("user_id", user.id),
-        (supabase.from("trader_dna" as any) as any).delete().eq("user_id", user.id),
+        supabase.from("trader_dna").delete().eq("user_id", user.id),
       ]);
 
       // Clear local cache
-      try { localStorage.removeItem("va_cache_trade_entries"); } catch {}
+      try { localStorage.removeItem("va_cache_trade_entries"); } catch { void 0; }
 
       // Refresh in-memory profile so onboarding gate sees onboarding_completed=false
       await refetchProfile();
@@ -88,8 +88,8 @@ export function SettingsPrivacy() {
       setDeleteInput("");
       toast.success("All data deleted. Redirecting to onboarding…");
       navigate("/academy/trade");
-    } catch (e) {
-      console.error("Error deleting journal/progress:", e);
+    } catch (error: unknown) {
+      console.error("Error deleting journal/progress:", error);
       toast.error("Failed to delete data. Try again.");
     } finally {
       setDeleting(false);

@@ -55,7 +55,7 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
 
     if (data) {
       setReplies(data as ThreadMessage[]);
-      const userIds = [...new Set(data.map((m: any) => m.user_id))];
+      const userIds = [...new Set(data.map((m) => m.user_id))];
       ensureProfiles(userIds);
     }
     setLoading(false);
@@ -105,8 +105,8 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
     setSending(true);
 
     const userName =
-      (profile as any)?.display_name ||
-      (profile as any)?.username ||
+      profile?.display_name ||
+      profile?.username ||
       user.email?.split("@")[0] ||
       "Anonymous";
 
@@ -119,7 +119,7 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
       body: draft.trim(),
       user_role: roleStr,
       parent_message_id: parentMessage.id,
-    } as any);
+    });
 
     if (error) {
       toast.error("Failed to send reply");

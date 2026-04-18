@@ -38,14 +38,14 @@ export function SendNotificationModal({
     if (!title.trim()) { toast.error("Title is required"); return; }
     setSending(true);
     const { error } = await supabase
-      .from("academy_notifications" as any)
+      .from("academy_notifications")
       .insert({
         user_id: null, // broadcast
         type,
         title: title.trim(),
         body: body.trim(),
         link_path: linkPath.trim() || null,
-      } as any);
+      });
     setSending(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Notification sent to all students");

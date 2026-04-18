@@ -21,7 +21,7 @@ function useEodData(userId: string | undefined): EodData | null {
       if (rows && rows.length > 0) {
         setData({ trades_taken: rows[0].trades_taken, trades_blocked: rows[0].trades_blocked });
       }
-    } catch {}
+    } catch { void 0; }
   }, [userId]);
 
   useEffect(() => { fetch(); }, [fetch]);

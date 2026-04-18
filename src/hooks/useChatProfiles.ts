@@ -59,7 +59,7 @@ export function useChatProfiles() {
     const roleMap = new Map<string, string>();
     if (roleData) {
       for (const r of roleData) {
-        roleMap.set(r.user_id, (r as any).academy_roles?.name ?? "Member");
+        roleMap.set(r.user_id, r.academy_roles?.name ?? "Member");
       }
     }
 

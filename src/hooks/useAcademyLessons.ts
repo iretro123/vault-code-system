@@ -19,7 +19,9 @@ function readCache(moduleSlug?: string): AcademyLesson[] {
   try {
     const raw = localStorage.getItem(moduleSlug ? `${CACHE_KEY}_${moduleSlug}` : CACHE_KEY);
     return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export function useAcademyLessons(moduleSlug?: string) {
@@ -42,7 +44,11 @@ export function useAcademyLessons(moduleSlug?: string) {
     const result = (data as AcademyLesson[]) || [];
     setLessons(result);
     const cacheKey = moduleSlug ? `${CACHE_KEY}_${moduleSlug}` : CACHE_KEY;
-    try { localStorage.setItem(cacheKey, JSON.stringify(result)); } catch {}
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+    } catch {
+      return;
+    }
     setLoading(false);
   }, [moduleSlug]);
 

@@ -23,7 +23,7 @@ export function useUserPresence(userId: string | null | undefined) {
       .select("last_seen_at")
       .eq("user_id", userId)
       .maybeSingle();
-    const ls = (data as any)?.last_seen_at || null;
+    const ls = (data as { last_seen_at?: string | null } | null)?.last_seen_at || null;
     setLastSeenAt(ls);
     setOnline(isOnline(ls));
   }, [userId]);
@@ -46,7 +46,7 @@ export function useUserPresence(userId: string | null | undefined) {
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          const ls = (payload.new as any)?.last_seen_at || null;
+          const ls = (payload.new as { last_seen_at?: string | null })?.last_seen_at || null;
           setLastSeenAt(ls);
           setOnline(isOnline(ls));
         }

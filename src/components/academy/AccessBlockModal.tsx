@@ -40,7 +40,8 @@ export function AccessBlockModal({ status, refetch }: Props) {
       const { data, error } = await supabase.functions.invoke("create-billing-portal");
 
       if (!error && data?.url) {
-        window.open(data.url, "_blank") || (window.location.href = data.url);
+        const opened = window.open(data.url, "_blank");
+        if (!opened) window.location.href = data.url;
         setLoading(false);
         return;
       }
@@ -55,7 +56,7 @@ export function AccessBlockModal({ status, refetch }: Props) {
       }
 
       throw new Error(data?.error || "Unknown error");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[AccessBlock] Error:", err);
       toast.error("Unable to open billing. Please try again.");
       setLoading(false);
