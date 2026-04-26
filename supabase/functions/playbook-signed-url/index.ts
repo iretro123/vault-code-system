@@ -45,14 +45,36 @@ Deno.serve(async (req) => {
   );
 
   // Verify user has active access before issuing signed URL
-  const { data: access } = await serviceClient
-    .from("student_access")
-    .select("status")
-    .eq("user_id", userId)
-    .eq("product_key", "vault_academy")
-    .maybeSingle();
+  const [accessRes, rolesRes] = await Promise.all([
+    serviceClient
+      .from("student_access")
+      .select("status")
+      .eq("user_id", userId)
+      .eq("product_key", "vault_academy")
+      .maybeSingle(),
+    serviceClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId),
+  ]);
 
-  if (!access || !["active", "trialing"].includes(access.status)) {
+  const hasActiveAccess =
+    accessRes.data && ["active", "trialing"].includes(accessRes.data.status);
+  const privilegedRoles = new Set([
+    "operator",
+    "vault_os_owner",
+    "vault_access",
+    "vault_intelligence",
+  ]);
+  const hasPrivilegedRole = (rolesRes.data ?? []).some((r: any) =>
+    privilegedRoles.has(r.role)
+  );
+
+  if (!hasActiveAccess && !hasPrivilegedRole) {
+    console.log("Access denied for user", userId, {
+      access: accessRes.data,
+      roles: rolesRes.data,
+    });
     return new Response(JSON.stringify({ error: "Access required" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
