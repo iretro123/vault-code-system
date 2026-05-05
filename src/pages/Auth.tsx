@@ -201,7 +201,7 @@ const Auth = () => {
               </p>
               <p className="text-center text-sm text-muted-foreground mt-2">
                 Need an account?{" "}
-                <a href="https://vaulttradingacademy.com/free-challenge-1993" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Sign Up</a>
+                <a href="https://whop.com/checkout/plan_sZv21FRX30aUy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Sign Up</a>
               </p>
             </div>
           </>
