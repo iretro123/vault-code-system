@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Smile, Clock, Search } from "lucide-react";
+import { getAppleEmojiAsset } from "@/lib/appleEmoji";
 
 /* ── Categorised emoji sets ── */
 
@@ -107,6 +108,14 @@ export function EmojiPicker({ onSelect }: EmojiPickerProps) {
   const displayEmojis = filteredEmojis
     ?? (activeTab === "recents" ? recents : CATEGORIES[activeTab as number]?.emojis ?? []);
 
+  const renderEmoji = (emoji: string, sizeClass = "h-5 w-5") => {
+    const asset = getAppleEmojiAsset(emoji);
+    if (asset) {
+      return <img src={asset} alt={emoji} className={sizeClass} />;
+    }
+    return <span className="chat-emoji">{emoji}</span>;
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -164,7 +173,7 @@ export function EmojiPicker({ onSelect }: EmojiPickerProps) {
                 }`}
                 title={cat.label}
               >
-                {cat.icon}
+                {renderEmoji(cat.icon, "h-4 w-4")}
               </button>
             ))}
           </div>
@@ -183,9 +192,9 @@ export function EmojiPicker({ onSelect }: EmojiPickerProps) {
                   key={`${emoji}-${i}`}
                   type="button"
                   onClick={() => handleSelect(emoji)}
-                  className="p-1.5 text-base rounded hover:bg-white/10 transition-colors text-center leading-none"
+                  className="flex items-center justify-center p-1.5 text-base rounded hover:bg-white/10 transition-colors text-center leading-none"
                 >
-                  {emoji}
+                  {renderEmoji(emoji, "h-6 w-6")}
                 </button>
               ))}
             </div>

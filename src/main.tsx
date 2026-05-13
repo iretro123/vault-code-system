@@ -25,6 +25,10 @@ if (isNativeCapacitor) {
   document.documentElement.classList.add("native-capacitor");
   document.body.classList.add("native-capacitor");
 
+  document
+    .querySelectorAll<HTMLLinkElement>('link[href*="fonts.googleapis.com"], link[href*="fonts.gstatic.com"]')
+    .forEach((link) => link.remove());
+
   let touchStartX = 0;
   let touchStartY = 0;
 

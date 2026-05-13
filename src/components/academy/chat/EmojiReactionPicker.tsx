@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SmilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAppleEmojiAsset } from "@/lib/appleEmoji";
 
 const EMOJI_CATEGORIES = [
   {
@@ -29,6 +30,14 @@ interface EmojiReactionPickerProps {
 
 export function EmojiReactionPicker({ onSelect, triggerClassName }: EmojiReactionPickerProps) {
   const [open, setOpen] = useState(false);
+
+  const renderEmoji = (emoji: string) => {
+    const asset = getAppleEmojiAsset(emoji);
+    if (asset) {
+      return <img src={asset} alt={emoji} className="h-5 w-5" />;
+    }
+    return <span className="chat-emoji">{emoji}</span>;
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -67,7 +76,7 @@ export function EmojiReactionPicker({ onSelect, triggerClassName }: EmojiReactio
                     }}
                     className="flex items-center justify-center h-8 w-8 rounded-lg text-lg hover:bg-white/[0.1] active:scale-90 transition-all duration-100"
                   >
-                    {emoji}
+                    {renderEmoji(emoji)}
                   </button>
                 ))}
               </div>

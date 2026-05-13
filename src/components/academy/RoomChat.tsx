@@ -48,6 +48,7 @@ import reactionFireEmoji from "@/assets/emoji/reaction-fire.svg";
 import reactionSkullEmoji from "@/assets/emoji/reaction-skull.svg";
 import { hapticNotification, playMessageSound } from "@/lib/nativeFeedback";
 import { toast } from "sonner";
+import { getAppleEmojiAsset } from "@/lib/appleEmoji";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -184,7 +185,11 @@ const REACTION_EMOJI_ICON: Record<ReactionEmoji, string> = {
 
 function renderReactionEmoji(emoji: string, className = "h-3.5 w-3.5") {
   const src = REACTION_EMOJI_ICON[emoji as ReactionEmoji];
-  if (!src) return <span className="leading-none">{emoji}</span>;
+  if (!src) {
+    const appleEmojiAsset = getAppleEmojiAsset(emoji);
+    if (appleEmojiAsset) return <img src={appleEmojiAsset} alt={emoji} className={cn("shrink-0", className)} />;
+    return <span className={cn("chat-emoji leading-none", className)}>{emoji}</span>;
+  }
   return <img src={src} alt="" className={cn("shrink-0", className)} />;
 }
 
