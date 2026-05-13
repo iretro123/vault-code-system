@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     "vault_access",
     "vault_intelligence",
   ]);
-  const hasPrivilegedRole = (rolesRes.data ?? []).some((r: any) =>
+  const hasPrivilegedRole = (rolesRes.data ?? []).some((r: { role: string | null }) =>
     privilegedRoles.has(r.role)
   );
 
