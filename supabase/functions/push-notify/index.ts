@@ -134,30 +134,46 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
   const jwt = await createApnsJwt();
   if (!jwt) return { sent: 0, error: "APNS credentials missing" };
   const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") || "").toLowerCase() === "true";
-  const host = useSandbox ? "https://api.sandbox.push.apple.com" : "https://api.push.apple.com";
+  const primaryHost = useSandbox ? "https://api.sandbox.push.apple.com" : "https://api.push.apple.com";
+  const alternateHost = useSandbox ? "https://api.push.apple.com" : "https://api.sandbox.push.apple.com";
+
+  const body = JSON.stringify({
+    aps: {
+      alert: { title: notif.title, body: notif.body },
+      sound: "default",
+      category: notif.category,
+      "thread-id": notif.threadId,
+    },
+    notification_id: notif.id,
+    type: notif.type,
+    link_path: notif.linkPath,
+  });
+
+  const headers = {
+    "apns-topic": bundleId,
+    "apns-push-type": "alert",
+    "apns-priority": "10",
+    authorization: `bearer ${jwt}`,
+  };
+
+  const postTo = (host: string, token: string) =>
+    fetch(`${host}/3/device/${token}`, { method: "POST", headers, body });
 
   let sent = 0;
   for (const token of tokens) {
-    const res = await fetch(`${host}/3/device/${token}`, {
-      method: "POST",
-      headers: {
-        "apns-topic": bundleId,
-        "apns-push-type": "alert",
-        "apns-priority": "10",
-        authorization: `bearer ${jwt}`,
-      },
-      body: JSON.stringify({
-        aps: {
-          alert: { title: notif.title, body: notif.body },
-          sound: "default",
-          category: notif.category,
-          "thread-id": notif.threadId,
-        },
-        notification_id: notif.id,
-        type: notif.type,
-        link_path: notif.linkPath,
-      }),
-    });
+    let res = await postTo(primaryHost, token);
+    if (!res.ok) {
+      let reason = "";
+      try {
+        const txt = await res.clone().text();
+        reason = txt ? (JSON.parse(txt)?.reason || "") : "";
+      } catch {
+        reason = "";
+      }
+      if (reason === "BadDeviceToken") {
+        res = await postTo(alternateHost, token);
+      }
+    }
     if (res.ok) sent += 1;
   }
   return { sent };
