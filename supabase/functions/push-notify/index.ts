@@ -23,7 +23,33 @@ type DeviceTokenRow = {
   token: string;
   user_id: string | null;
   platform: string | null;
+  last_seen_at?: string | null;
 };
+
+function normalizePlatform(rawPlatform: string | null | undefined): { basePlatform: string; deviceKey: string } {
+  const raw = (rawPlatform || "").toLowerCase();
+  const [basePlatform, ...rest] = raw.split(":");
+  const deviceKey = rest.join(":");
+  return { basePlatform, deviceKey };
+}
+
+function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
+  const sorted = [...rows].sort((a, b) => {
+    const at = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
+    const bt = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
+    return bt - at;
+  });
+  const seen = new Set<string>();
+  const out: DeviceTokenRow[] = [];
+  for (const r of sorted) {
+    const { basePlatform, deviceKey } = normalizePlatform(r.platform);
+    const key = `${r.user_id || ""}|${basePlatform}|${deviceKey}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+  }
+  return out;
+}
 
 type FcmResult = {
   error?: string;
@@ -222,18 +248,18 @@ Deno.serve(async (req) => {
 
     const notificationPayload = normalizeNotification(notif as NotificationRow);
 
-    let tokensQuery = admin.from("device_tokens").select("token, user_id, platform");
+    let tokensQuery = admin.from("device_tokens").select("token, user_id, platform, last_seen_at");
     if (notif.user_id) {
       tokensQuery = tokensQuery.eq("user_id", notif.user_id);
     }
     const { data: rows = [] } = await tokensQuery;
-    const typedRows = rows as DeviceTokenRow[];
+    const typedRows = dedupeDeviceTokens(rows as DeviceTokenRow[]);
     const androidTokens = typedRows
-      .filter((r) => (r.platform || "").toLowerCase() === "android")
+      .filter((r) => normalizePlatform(r.platform).basePlatform === "android")
       .map((r) => r.token)
       .filter(Boolean);
     const iosTokens = typedRows
-      .filter((r) => (r.platform || "").toLowerCase() === "ios")
+      .filter((r) => normalizePlatform(r.platform).basePlatform === "ios")
       .map((r) => r.token)
       .filter(Boolean);
 
