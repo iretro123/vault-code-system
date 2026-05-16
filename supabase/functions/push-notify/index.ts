@@ -262,6 +262,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!notif || !PUSHABLE_TYPES.has(notif.type)) {
+      await releaseDispatch();
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
