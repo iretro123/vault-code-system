@@ -353,6 +353,15 @@ Deno.serve(async (req) => {
       sent += apnsResult.sent || 0;
     }
 
+    if (sent > 0) {
+      await admin
+        .from("notification_push_dispatches")
+        .update({ delivered_at: new Date().toISOString(), sent_count: sent })
+        .eq("notification_id", notification_id);
+    } else {
+      await releaseDispatch();
+    }
+
     return new Response(JSON.stringify({ ok: true, sent }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
