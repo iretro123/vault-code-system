@@ -1,4 +1,4 @@
-package com.iretro.vaultcodesystem;
+package com.vaulttradingacademy.vaultos;
 
 import com.getcapacitor.BridgeActivity;
 

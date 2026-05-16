@@ -18,7 +18,7 @@ This app has native iOS push delivery wired through Capacitor and Supabase.
 - When the app is closed or in the background, iOS shows a native push banner on the lock screen and in Notification Center.
 - When the app is open, Capacitor is configured to present the notification with alert, sound, and badge behavior instead of silently swallowing it.
 - Tapping a push opens the app and routes the user to the matching screen using the notification `link_path`.
-- `live_now` and `announcement` also trigger a stronger haptic when received while the app is open.
+- When the app is open, all primary push types (`mention`, `rz_message`, `live_now`, `announcement`, `new_module`, `motivation`) trigger the stronger in-app haptic path.
 
 ## Release Checklist
 
@@ -32,4 +32,5 @@ Code is ready for iOS push, but release still depends on Apple and Supabase conf
    - `APNS_TEAM_ID`
    - `APNS_PRIVATE_KEY`
    - `APNS_BUNDLE_ID`
-4. Test on a physical iPhone before App Store submission.
+4. For debug-installed iPhone builds, use APNs sandbox delivery during testing. Production/TestFlight/App Store builds should deliver via production APNs.
+5. Test on a physical iPhone before App Store submission.

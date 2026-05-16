@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
+import { Device } from "@capacitor/device";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,6 +48,18 @@ export function usePushNotifications() {
     let active = true;
     let removeListeners = async () => {};
 
+    async function getPlatformKey() {
+      const basePlatform = Capacitor.getPlatform();
+      try {
+        const { identifier } = await Device.getId();
+        const stableId = String(identifier || "").trim();
+        if (stableId) return `${basePlatform}:${stableId}`;
+      } catch (err) {
+        console.warn("Failed to resolve device id for push token registration", err);
+      }
+      return basePlatform;
+    }
+
     async function registerPush() {
       try {
         const perm = await PushNotifications.checkPermissions();
@@ -67,14 +80,34 @@ export function usePushNotifications() {
         PushNotifications.addListener("registration", async (token: PushRegistrationToken) => {
           try {
             console.info("Push registration token received", String(token?.value || "").slice(0, 18));
+            const platformKey = await getPlatformKey();
+            const basePlatform = Capacitor.getPlatform();
             await supabase
               .from("device_tokens")
               .upsert({
                 user_id: user.id,
                 token: token.value,
-                platform: Capacitor.getPlatform(),
+                platform: platformKey,
                 last_seen_at: new Date().toISOString(),
               }, { onConflict: "token" });
+
+            // Replace legacy plain-platform rows and stale rows for this exact device
+            // so one physical device does not keep generating duplicate pushes.
+            await supabase
+              .from("device_tokens")
+              .delete()
+              .eq("user_id", user.id)
+              .eq("platform", platformKey)
+              .neq("token", token.value);
+
+            if (platformKey !== basePlatform) {
+              await supabase
+                .from("device_tokens")
+                .delete()
+                .eq("user_id", user.id)
+                .eq("platform", basePlatform)
+                .neq("token", token.value);
+            }
             console.info("Push token saved for user", user.id);
           } catch (err) {
             console.warn("Failed to save push token", err);

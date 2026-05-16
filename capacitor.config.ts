@@ -3,8 +3,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.iretro.vaultcodesystem',
-  appName: 'Vault Code System',
+  appId: 'com.vaulttradingacademy.vaultos',
+  appName: 'Vault OS',
   webDir: 'dist',
   plugins: {
     PushNotifications: {

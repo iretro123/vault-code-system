@@ -89,7 +89,12 @@ export function useAcademyNotifications() {
             is_read: false,
           };
 
-          setNotifications((prev) => [newNotif, ...prev]);
+          setNotifications((prev) => {
+            if (prev.some((item) => item.id === newNotif.id)) {
+              return prev;
+            }
+            return [newNotif, ...prev];
+          });
           setNewArrival(true);
           refetchNotifications();
 
