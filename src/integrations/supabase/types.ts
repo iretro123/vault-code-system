@@ -1488,6 +1488,35 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_push_dispatches: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          notification_id: string
+          sent_count: number
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          notification_id: string
+          sent_count?: number
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          notification_id?: string
+          sent_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_push_dispatches_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: true
+            referencedRelation: "academy_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_state: {
         Row: {
           claimed_role: boolean

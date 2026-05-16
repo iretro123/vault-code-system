@@ -233,6 +233,28 @@ Deno.serve(async (req) => {
     const fcmKey = Deno.env.get("FCM_SERVER_KEY");
 
     const admin = createClient(supabaseUrl, serviceKey);
+
+    // Idempotency: claim this notification_id before doing anything
+    const { error: dispatchInsertError } = await admin
+      .from("notification_push_dispatches")
+      .insert({ notification_id });
+    if (dispatchInsertError) {
+      if ((dispatchInsertError as { code?: string }).code === "23505") {
+        return new Response(
+          JSON.stringify({ ok: true, skipped: true, reason: "duplicate_dispatch" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      return new Response(JSON.stringify({ error: String(dispatchInsertError.message || dispatchInsertError) }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const releaseDispatch = async () => {
+      await admin.from("notification_push_dispatches").delete().eq("notification_id", notification_id);
+    };
+
     const { data: notif } = await admin
       .from("academy_notifications")
       .select("id, user_id, type, title, body, link_path")
@@ -240,6 +262,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!notif || !PUSHABLE_TYPES.has(notif.type)) {
+      await releaseDispatch();
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -264,6 +287,7 @@ Deno.serve(async (req) => {
       .filter(Boolean);
 
     if (androidTokens.length === 0 && iosTokens.length === 0) {
+      await releaseDispatch();
       return new Response(JSON.stringify({ ok: true, sent: 0 }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -327,6 +351,15 @@ Deno.serve(async (req) => {
     if (iosTokens.length > 0) {
       const apnsResult = await sendApns(iosTokens, notificationPayload);
       sent += apnsResult.sent || 0;
+    }
+
+    if (sent > 0) {
+      await admin
+        .from("notification_push_dispatches")
+        .update({ delivered_at: new Date().toISOString(), sent_count: sent })
+        .eq("notification_id", notification_id);
+    } else {
+      await releaseDispatch();
     }
 
     return new Response(JSON.stringify({ ok: true, sent }), {
