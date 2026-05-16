@@ -23,7 +23,33 @@ type DeviceTokenRow = {
   token: string;
   user_id: string | null;
   platform: string | null;
+  last_seen_at?: string | null;
 };
+
+function normalizePlatform(rawPlatform: string | null | undefined): { basePlatform: string; deviceKey: string } {
+  const raw = (rawPlatform || "").toLowerCase();
+  const [basePlatform, ...rest] = raw.split(":");
+  const deviceKey = rest.join(":");
+  return { basePlatform, deviceKey };
+}
+
+function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
+  const sorted = [...rows].sort((a, b) => {
+    const at = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
+    const bt = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
+    return bt - at;
+  });
+  const seen = new Set<string>();
+  const out: DeviceTokenRow[] = [];
+  for (const r of sorted) {
+    const { basePlatform, deviceKey } = normalizePlatform(r.platform);
+    const key = `${r.user_id || ""}|${basePlatform}|${deviceKey}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r);
+  }
+  return out;
+}
 
 type FcmResult = {
   error?: string;
