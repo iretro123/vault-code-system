@@ -25,11 +25,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Vault Code System uses your camera so you can capture and upload charts, trades, and profile images.</string>
+	<string>Vault OS uses your camera so you can capture and upload charts, trades, and profile images.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Vault Code System uses your microphone when you record video attachments to upload in the app.</string>
+	<string>Vault OS uses your microphone when you record video attachments to upload in the app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Vault Code System uses your photo library so you can upload charts, trade screenshots, and profile images.</string>
+	<string>Vault OS uses your photo library so you can upload charts, trade screenshots, and profile images.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
