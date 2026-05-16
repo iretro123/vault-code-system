@@ -287,6 +287,7 @@ Deno.serve(async (req) => {
       .filter(Boolean);
 
     if (androidTokens.length === 0 && iosTokens.length === 0) {
+      await releaseDispatch();
       return new Response(JSON.stringify({ ok: true, sent: 0 }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
