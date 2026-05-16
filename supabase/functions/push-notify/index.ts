@@ -248,18 +248,18 @@ Deno.serve(async (req) => {
 
     const notificationPayload = normalizeNotification(notif as NotificationRow);
 
-    let tokensQuery = admin.from("device_tokens").select("token, user_id, platform");
+    let tokensQuery = admin.from("device_tokens").select("token, user_id, platform, last_seen_at");
     if (notif.user_id) {
       tokensQuery = tokensQuery.eq("user_id", notif.user_id);
     }
     const { data: rows = [] } = await tokensQuery;
-    const typedRows = rows as DeviceTokenRow[];
+    const typedRows = dedupeDeviceTokens(rows as DeviceTokenRow[]);
     const androidTokens = typedRows
-      .filter((r) => (r.platform || "").toLowerCase() === "android")
+      .filter((r) => normalizePlatform(r.platform).basePlatform === "android")
       .map((r) => r.token)
       .filter(Boolean);
     const iosTokens = typedRows
-      .filter((r) => (r.platform || "").toLowerCase() === "ios")
+      .filter((r) => normalizePlatform(r.platform).basePlatform === "ios")
       .map((r) => r.token)
       .filter(Boolean);
 
