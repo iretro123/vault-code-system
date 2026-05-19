@@ -3,6 +3,7 @@
  import { Card } from "@/components/ui/card";
  import { Button } from "@/components/ui/button";
  import { Check, Shield, Zap, Brain } from "lucide-react";
+ import { isNativeIOSApp } from "@/lib/platform";
  
  const plans = [
    {
@@ -56,6 +57,8 @@
  ];
  
  const Upgrade = () => {
+   const isIOSNative = isNativeIOSApp();
+
    return (
      <AppLayout>
        <PageHeader 
@@ -72,48 +75,59 @@
            </p>
          </div>
          
-         {/* Plans */}
-         <div className="space-y-4">
-           {plans.map((plan) => (
-             <Card 
-               key={plan.id}
-               className={`p-5 ${plan.highlight ? "border-primary bg-primary/5" : ""}`}
-             >
-               <div className="flex items-start gap-4 mb-4">
-                 <div className={`p-2.5 rounded-lg ${plan.highlight ? "bg-primary/20" : "bg-muted"}`}>
-                   <plan.icon className={`w-5 h-5 ${plan.highlight ? "text-primary" : "text-muted-foreground"}`} />
-                 </div>
-                 <div className="flex-1">
-                   <div className="flex items-baseline justify-between">
-                     <h3 className="font-semibold">{plan.name}</h3>
-                     <span className="text-xs text-muted-foreground">{plan.type}</span>
-                   </div>
-                   <p className="text-2xl font-bold mt-1">{plan.price}</p>
-                 </div>
-               </div>
-               
-               <p className="text-sm text-muted-foreground mb-4">
-                 {plan.description}
-               </p>
-               
-               <ul className="space-y-2 mb-5">
-                 {plan.features.map((feature, i) => (
-                   <li key={i} className="flex items-center gap-2 text-sm">
-                     <Check className={`w-4 h-4 flex-shrink-0 ${plan.highlight ? "text-primary" : "text-muted-foreground"}`} />
-                     <span>{feature}</span>
-                   </li>
-                 ))}
-               </ul>
-               
-               <Button 
-                 className="w-full h-12"
-                 variant={plan.highlight ? "default" : "secondary"}
-               >
-                 Get {plan.name}
-               </Button>
-             </Card>
-           ))}
-         </div>
+        {/* Plans */}
+        {isIOSNative ? (
+          <Card className="p-6 border-primary/20 bg-primary/5">
+            <div className="space-y-3 text-center">
+              <h3 className="text-lg font-semibold">Membership changes are not available in the iOS app</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                This iPhone app is for active Vault members. Sign in with your existing account to access your content and community.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {plans.map((plan) => (
+              <Card 
+                key={plan.id}
+                className={`p-5 ${plan.highlight ? "border-primary bg-primary/5" : ""}`}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <div className={`p-2.5 rounded-lg ${plan.highlight ? "bg-primary/20" : "bg-muted"}`}>
+                    <plan.icon className={`w-5 h-5 ${plan.highlight ? "text-primary" : "text-muted-foreground"}`} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="font-semibold">{plan.name}</h3>
+                      <span className="text-xs text-muted-foreground">{plan.type}</span>
+                    </div>
+                    <p className="text-2xl font-bold mt-1">{plan.price}</p>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-muted-foreground mb-4">
+                  {plan.description}
+                </p>
+                
+                <ul className="space-y-2 mb-5">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2 text-sm">
+                      <Check className={`w-4 h-4 flex-shrink-0 ${plan.highlight ? "text-primary" : "text-muted-foreground"}`} />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                
+                <Button 
+                  className="w-full h-12"
+                  variant={plan.highlight ? "default" : "secondary"}
+                >
+                  Get {plan.name}
+                </Button>
+              </Card>
+            ))}
+          </div>
+        )}
          
          {/* Guarantee */}
          <div className="text-center py-4">

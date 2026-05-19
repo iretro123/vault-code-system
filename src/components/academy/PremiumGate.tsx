@@ -5,6 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AccessStatus } from "@/hooks/useStudentAccess";
+import { isNativeIOSApp } from "@/lib/platform";
 
 interface Props {
   status: AccessStatus;
@@ -13,6 +14,7 @@ interface Props {
 
 export function PremiumGate({ status, pageName }: Props) {
   const [loading, setLoading] = useState(false);
+  const isIOSNative = isNativeIOSApp();
 
   const isPastDue = status === "past_due";
   const isCanceled = status === "canceled";
@@ -60,10 +62,16 @@ export function PremiumGate({ status, pageName }: Props) {
           </p>
         </div>
 
-        <Button onClick={handleUpgrade} disabled={loading} className="w-full gap-2">
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          {isPastDue ? "Update Billing" : isCanceled ? "Rejoin Vault Academy" : "Join Vault Academy"}
-        </Button>
+        {isIOSNative ? (
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Membership purchases and billing changes aren&apos;t available in the iOS app.
+          </p>
+        ) : (
+          <Button onClick={handleUpgrade} disabled={loading} className="w-full gap-2">
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isPastDue ? "Update Billing" : isCanceled ? "Rejoin Vault Academy" : "Join Vault Academy"}
+          </Button>
+        )}
       </Card>
     </div>
   );

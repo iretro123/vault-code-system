@@ -12,6 +12,7 @@ import { CreditCard, AlertTriangle, Loader2, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AccessStatus } from "@/hooks/useStudentAccess";
+import { isNativeIOSApp } from "@/lib/platform";
 
 interface Props {
   status: AccessStatus;
@@ -21,6 +22,7 @@ interface Props {
 export function AccessBlockModal({ status, refetch }: Props) {
   const [loading, setLoading] = useState(false);
   const isPastDue = status === "past_due";
+  const isIOSNative = isNativeIOSApp();
 
   // Auto-refresh when user returns from Stripe portal/checkout
   useEffect(() => {
@@ -34,6 +36,11 @@ export function AccessBlockModal({ status, refetch }: Props) {
   }, [refetch]);
 
   const handleReactivate = async () => {
+    if (isIOSNative) {
+      toast.info("Billing changes are not available in the iOS app. If your access was updated elsewhere, tap Refresh Access.");
+      return;
+    }
+
     setLoading(true);
     try {
       // Try billing portal first (works for existing Stripe customers)
@@ -67,6 +74,15 @@ export function AccessBlockModal({ status, refetch }: Props) {
     await supabase.auth.signOut();
   };
 
+  const handleRefreshAccess = async () => {
+    setLoading(true);
+    try {
+      await refetch();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AlertDialog open>
       <AlertDialogContent className="max-w-md border-border/50 bg-card">
@@ -82,22 +98,36 @@ export function AccessBlockModal({ status, refetch }: Props) {
             {isPastDue ? "Payment Failed" : "Subscription Canceled"}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm leading-relaxed">
-            {isPastDue
+            {isIOSNative
+              ? "Billing changes are not available in the iOS app. If your membership was updated elsewhere, refresh your access below."
+              : isPastDue
               ? "Your most recent payment didn't go through. Update your billing information to restore full access to Vault Academy."
               : "Your Vault Academy subscription has been canceled. Reactivate your account to regain access to all premium content and features."}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-          <Button
-            onClick={handleReactivate}
-            disabled={loading}
-            className="w-full gap-2"
-            size="lg"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isPastDue ? "Update Billing" : "Reactivate Account"}
-          </Button>
+          {isIOSNative ? (
+            <Button
+              onClick={handleRefreshAccess}
+              disabled={loading}
+              className="w-full gap-2"
+              size="lg"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Refresh Access
+            </Button>
+          ) : (
+            <Button
+              onClick={handleReactivate}
+              disabled={loading}
+              className="w-full gap-2"
+              size="lg"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPastDue ? "Update Billing" : "Reactivate Account"}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { isNativeIOSApp } from "@/lib/platform";
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: { label: "Active", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" },
@@ -28,6 +29,7 @@ function openUrl(url: string) {
 
 export function SettingsBilling() {
   const { status, tier, hasAccess, loading, isAdminBypass } = useStudentAccess();
+  const isIOSNative = isNativeIOSApp();
   const [busy, setBusy] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { logActivity } = useActivityLog();
@@ -126,30 +128,38 @@ export function SettingsBilling() {
 
           {/* Action buttons */}
           <div className="pt-2">
-            {status !== "none" ? (
-              <Button
-                onClick={handleManageBilling}
-                disabled={busy || loading}
-                variant="outline"
-                className="w-full gap-2"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                Manage Billing
-              </Button>
+            {isIOSNative ? (
+              <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                Billing changes and membership purchases are not available in the iOS app.
+              </div>
             ) : (
-              <Button
-                onClick={handleJoin}
-                disabled={busy || loading}
-                className="w-full"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Join Vault Academy
-              </Button>
+              <>
+                {status !== "none" ? (
+                  <Button
+                    onClick={handleManageBilling}
+                    disabled={busy || loading}
+                    variant="outline"
+                    className="w-full gap-2"
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                    Manage Billing
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleJoin}
+                    disabled={busy || loading}
+                    className="w-full"
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Join Vault Academy
+                  </Button>
+                )}
+              </>
             )}
           </div>
 
           <p className="text-xs text-muted-foreground/60 text-center pt-1">
-            Billing changes are managed securely via Stripe.
+            {isIOSNative ? "Your access status will still update automatically after account changes." : "Billing changes are managed securely via Stripe."}
           </p>
         </CardContent>
       </Card>

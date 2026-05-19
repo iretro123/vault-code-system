@@ -14,6 +14,7 @@ import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { isNativeIOSApp } from "@/lib/platform";
 
 interface Props {
   firstName: string;
@@ -240,11 +241,12 @@ export function HeroHeader({ firstName, onCheckIn, timezone }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const isIOSNative = isNativeIOSApp();
   const { hasAccess, status, isAdminBypass } = useStudentAccess();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const statusLine = useStatusLine(user?.id, timezone);
 
-  const showUpgrade = !hasAccess && !isAdminBypass;
+  const showUpgrade = !isIOSNative && !hasAccess && !isAdminBypass;
   const isPastDue = status === "past_due";
   const isCanceled = status === "canceled";
 
