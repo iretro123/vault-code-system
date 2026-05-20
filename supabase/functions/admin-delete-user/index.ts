@@ -38,30 +38,34 @@ Deno.serve(async (req) => {
     }
     const callerId = claims.claims.sub as string;
 
-    // Use service role for all operations
-    const sb = createClient(supabaseUrl, serviceKey);
-
-    // Check caller is operator
-    const { data: callerRole } = await sb
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", callerId)
-      .in("role", ["operator", "vault_os_owner"])
-      .maybeSingle();
-
-    if (!callerRole) {
-      return new Response(JSON.stringify({ error: "Forbidden: operator role required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const { target_user_id } = await req.json();
     if (!target_user_id) {
       return new Response(JSON.stringify({ error: "target_user_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Use service role for all operations
+    const sb = createClient(supabaseUrl, serviceKey);
+
+    const isSelfDelete = target_user_id === callerId;
+
+    if (!isSelfDelete) {
+      // Admin deletion remains restricted to operators/owners.
+      const { data: callerRole } = await sb
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerId)
+        .in("role", ["operator", "vault_os_owner"])
+        .maybeSingle();
+
+      if (!callerRole) {
+        return new Response(JSON.stringify({ error: "Forbidden: operator role required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     console.log("[admin-delete-user] Deleting user:", target_user_id, "by:", callerId);
@@ -130,9 +134,17 @@ Deno.serve(async (req) => {
     // 12. user_preferences
     await sb.from("user_preferences").delete().eq("user_id", target_user_id);
 
-    // 13. profiles (last — other tables may reference user_id)
+    // 13. device tokens and notification preferences
+    await sb.from("device_tokens").delete().eq("user_id", target_user_id);
+
+    // 14. profiles (last — other tables may reference user_id)
     await sb.from("profiles").delete().eq("user_id", target_user_id);
     console.log("[admin-delete-user] Deleted profile");
+
+    // 15. auth user
+    const { error: deleteAuthError } = await sb.auth.admin.deleteUser(target_user_id);
+    if (deleteAuthError) throw deleteAuthError;
+    console.log("[admin-delete-user] Deleted auth user");
 
     return new Response(JSON.stringify({ deleted: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
