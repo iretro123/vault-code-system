@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
+import { isAppReviewAccount } from "@/lib/appReview";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -85,6 +86,7 @@ export function useStudentAccess() {
   });
 
   const state = data ?? { status: "none" as AccessStatus, tier: null, productKey: null, hasAccess: false, lastUpdated: null };
+  const appReviewBypass = isAppReviewAccount(user, profile as { email?: string | null; username?: string | null; display_name?: string | null } | null);
 
   // Auto-retry provisioning once per session
   useEffect(() => {
@@ -125,20 +127,21 @@ export function useStudentAccess() {
   }, [isLoading, state.status, user?.id, profile]);
 
   const adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator);
+  const hasBypassAccess = adminBypass || appReviewBypass;
 
   const refetch = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["student-access", user?.id] });
   }, [queryClient, user?.id]);
 
   return {
-    status: state.status,
-    tier: state.tier,
-    productKey: state.productKey,
-    hasAccess: adminBypass ? true : state.hasAccess,
+    status: appReviewBypass ? "active" : state.status,
+    tier: appReviewBypass ? "app_review" : state.tier,
+    productKey: appReviewBypass ? "vault_academy" : state.productKey,
+    hasAccess: hasBypassAccess ? true : state.hasAccess,
     loading: isLoading || !permResolved,
     error: error?.message ?? null,
     refetch,
     lastUpdated: state.lastUpdated,
-    isAdminBypass: adminBypass,
+    isAdminBypass: hasBypassAccess,
   };
 }
