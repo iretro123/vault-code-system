@@ -188,7 +188,7 @@ function InlineThreadView({
   const userInitials = userName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   // Render only actual dm_messages — no ghost/fake prepend from inbox item
-  type ChatMsg = { id: string; body: string; sender_id: string; created_at: string };
+  type ChatMsg = { id: string; body: string; sender_id: string; created_at: string; attachments?: any; read_at?: string | null };
   const allMessages: ChatMsg[] = [...messages];
 
   return (
