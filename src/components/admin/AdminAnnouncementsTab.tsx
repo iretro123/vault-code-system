@@ -121,7 +121,7 @@ export function AdminAnnouncementsTab() {
       payload.author_id = user.id;
       const { data, error } = await supabase
         .from("academy_announcements")
-        .insert(payload)
+        .insert(payload as any)
         .select()
         .single();
 
