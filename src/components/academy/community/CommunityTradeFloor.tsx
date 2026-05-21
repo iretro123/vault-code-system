@@ -59,7 +59,7 @@ export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTra
             : "w-80"
         )}>
           <ThreadDrawer
-            parentMessage={threadMessage}
+            parentMessage={threadMessage as any}
             onClose={() => setThreadMessage(null)}
           />
         </div>
