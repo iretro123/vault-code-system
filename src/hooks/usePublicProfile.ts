@@ -81,7 +81,7 @@ export function usePublicProfile(userId: string | null) {
           social_youtube?: string | null;
           created_at: string;
         };
-        const lessonCount = lessonData?.count ?? 0;
+        const lessonCount = (lessonData as any)?.count ?? (Array.isArray(lessonData) ? lessonData.length : 0);
         const result: PublicProfile = {
           user_id: row.user_id,
           avatar_url: row.avatar_url,
