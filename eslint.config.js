@@ -33,7 +33,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["src/pages/**/*.{ts,tsx}", "src/contexts/**/*.{ts,tsx}", "src/hooks/**/*.{ts,tsx}"],
+    files: ["src/components/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}", "src/contexts/**/*.{ts,tsx}", "src/hooks/**/*.{ts,tsx}"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "no-empty": "off",
