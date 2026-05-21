@@ -129,12 +129,6 @@
           </div>
         )}
          
-         {/* Guarantee */}
-         <div className="text-center py-4">
-           <p className="text-sm text-muted-foreground">
-             30-day money-back guarantee. No questions asked.
-           </p>
-         </div>
        </div>
      </AppLayout>
    );

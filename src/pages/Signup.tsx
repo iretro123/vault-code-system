@@ -2,10 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, CheckCircle2, AlertCircle, ShieldCheck, FileText } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,10 +30,7 @@ const Signup = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
-  const [agreementChecked, setAgreementChecked] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [agreementModalOpen, setAgreementModalOpen] = useState(false);
-  const [agreementDraftChecked, setAgreementDraftChecked] = useState(false);
   const ipRef = useRef<string | null>(null);
 
   // Best-effort IP fetch
@@ -207,7 +202,6 @@ const Signup = () => {
     stripeStatus === "found" &&
     password.length >= 8 &&
     password === confirmPassword &&
-    agreementChecked &&
     termsAccepted;
 
   const inputClass = "h-12 bg-muted/50 border-border/40 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40 transition-colors";
@@ -363,205 +357,6 @@ const Signup = () => {
             {confirmPassword && password !== confirmPassword && (
               <p className="text-[11px] text-destructive -mt-2">Passwords do not match.</p>
             )}
-
-            {/* Agreement Launcher */}
-            <div
-              className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 shadow-[0_4px_24px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer group hover:border-primary/20 hover:shadow-[0_4px_24px_rgba(0,0,0,0.3),0_0_20px_rgba(59,130,246,0.06),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200"
-              onClick={() => { if (!agreementChecked) { setAgreementDraftChecked(false); setAgreementModalOpen(true); } }}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  {agreementChecked ? (
-                    <div className="h-10 w-10 rounded-xl bg-emerald-500/15 shadow-[0_0_12px_rgba(16,185,129,0.15)] flex items-center justify-center shrink-0">
-                      <ShieldCheck className="h-5 w-5 text-emerald-400" />
-                    </div>
-                  ) : (
-                    <div className="h-10 w-10 rounded-xl bg-white/[0.05] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:shadow-[0_0_12px_rgba(59,130,246,0.12)] transition-all duration-200">
-                      <FileText className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-foreground">Performance Guarantee</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {agreementChecked ? (
-                        <span className="text-emerald-400/90 font-medium">✓ Agreement accepted</span>
-                      ) : (
-                        "Required before creating your account"
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant={agreementChecked ? "ghost" : "outline"}
-                  size="sm"
-                  className={`shrink-0 text-xs rounded-lg h-9 px-4 font-semibold ${agreementChecked ? "text-emerald-400 hover:text-emerald-300" : "border-white/[0.12] bg-white/[0.04] hover:border-primary/30 hover:bg-primary/10 hover:text-primary"}`}
-                  onClick={(e) => { e.stopPropagation(); setAgreementDraftChecked(agreementChecked); setAgreementModalOpen(true); }}
-                >
-                  {agreementChecked ? "View Again" : "Review & Accept"}
-                </Button>
-              </div>
-            </div>
-
-            {/* Agreement Modal */}
-            <Dialog open={agreementModalOpen} onOpenChange={setAgreementModalOpen}>
-              <DialogContent className="max-w-[92vw] sm:max-w-lg w-full !max-h-[85dvh] p-0 gap-0 border-white/[0.08] bg-[hsl(220,20%,8%)] shadow-[0_24px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(59,130,246,0.08),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-2xl overflow-hidden backdrop-blur-xl !flex !flex-col">
-                <DialogTitle className="sr-only">VAULT OS Conditional Performance Guarantee</DialogTitle>
-                {/* Modal Header */}
-                <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent shrink-0">
-                  <div className="flex items-center gap-3.5">
-                    <div className="h-11 w-11 rounded-xl bg-primary/15 shadow-[0_0_20px_rgba(59,130,246,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] flex items-center justify-center">
-                      <ShieldCheck className="h-5.5 w-5.5 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-[15px] font-bold text-foreground tracking-tight">VAULT OS Conditional Performance Guarantee</h2>
-                      <p className="text-[11px] text-muted-foreground/80 mt-0.5">Please read all terms carefully before proceeding</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Scrollable Legal Text — native scroll for mobile touch reliability */}
-                <div
-                  className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
-                  style={{ touchAction: "pan-y" }}
-                >
-                  <div className="px-4 sm:px-6 py-4 bg-black/20">
-                    <div className="text-[11.5px] leading-[1.75] text-muted-foreground/90 space-y-4">
-                      <p className="text-[13px] font-bold text-foreground tracking-tight uppercase">VAULT OS CONDITIONAL PERFORMANCE GUARANTEE</p>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">1. Overview</p>
-                        <p>Vault Trading Academy LLC ("Company") offers a conditional performance-based guarantee (the "Guarantee") to eligible users of VAULT OS.</p>
-                        <p>This Guarantee is not unconditional and applies only under strict compliance with all VAULT OS rules and requirements.</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">2. Guarantee Statement</p>
-                        <p>If a user fully complies with all VAULT OS risk management rules and system requirements, and still experiences a complete loss of their trading account ("Account Loss"), the Company may issue a refund of the Program fees paid, subject to verification and approval.</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">3. Definition of Account Loss</p>
-                        <p>"Account Loss" means a substantial depletion of the trading account balance as determined by the Company based on submitted records and system data.</p>
-                        <p>The Company retains sole discretion in determining whether an Account Loss qualifies under this definition.</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">4. Eligibility Requirements (All Must Be Met)</p>
-                        <p>To qualify for the Guarantee, the user must:</p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>Use VAULT OS as their primary and exclusive trading structure</li>
-                          <li>Follow all VAULT OS risk rules, including but not limited to:
-                            <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                              <li>position sizing limits</li>
-                              <li>daily loss limits</li>
-                              <li>trade frequency limits</li>
-                            </ul>
-                          </li>
-                          <li>Immediately stop trading when system limits are reached</li>
-                          <li>Accurately log all trades within VAULT OS</li>
-                          <li>Maintain a minimum compliance level as determined by the Company</li>
-                          <li>Provide complete and verifiable records upon request, including broker statements</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">5. Disqualification (Guarantee Void)</p>
-                        <p>The Guarantee is automatically void if any of the following occur:</p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>Failure to follow VAULT OS rules at any time</li>
-                          <li>Trading outside the VAULT OS system or executing unlogged trades</li>
-                          <li>Ignoring or overriding risk limits or stop conditions</li>
-                          <li>Incomplete, inaccurate, or falsified data</li>
-                          <li>Use of multiple or undisclosed accounts</li>
-                          <li>Any attempt to manipulate, exploit, or abuse the Guarantee</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">6. Scope of Refund</p>
-                        <p>Applies only to fees paid directly to Vault Trading Academy LLC</p>
-                        <p className="mt-1">Does not include:</p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>trading losses</li>
-                          <li>brokerage or platform losses</li>
-                          <li>third-party fees or expenses</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">7. Verification & Review</p>
-                        <p>All claims are subject to:</p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>Full review and verification by the Company</li>
-                          <li>Evaluation of system data, trade logs, and supporting documentation</li>
-                        </ul>
-                        <p className="mt-1">The Company reserves sole and final discretion in determining eligibility and approval of any refund request.</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">8. Time Limit for Claims</p>
-                        <p>All claims must be submitted within [X days] of the alleged Account Loss, along with all required documentation.</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">9. No Guarantee of Results</p>
-                        <p>The Company does not guarantee trading profits, success, or financial outcomes.</p>
-                        <p>This Guarantee exists solely to reinforce proper use of the VAULT OS system.</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">10. Anti-Fraud Policy</p>
-                        <p>Any suspected fraud, misrepresentation, or abuse will result in:</p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>Immediate disqualification</li>
-                          <li>Termination of access</li>
-                          <li>Denial of current and future claims</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">11. Limitation of Liability</p>
-                        <p>To the maximum extent permitted by law:</p>
-                        <ul className="list-disc pl-5 mt-1 space-y-1">
-                          <li>The Company's liability is limited strictly to the amount paid for the Program</li>
-                          <li>The Company is not liable for any trading or financial losses</li>
-                        </ul>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-foreground mb-1">12. Acceptance of Terms</p>
-                        <p>By purchasing or using VAULT OS, the user acknowledges and agrees to these terms in full.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer with Checkbox + Confirm */}
-                <div className="px-4 sm:px-6 py-4 sm:py-5 border-t border-white/[0.06] bg-white/[0.02] backdrop-blur-sm space-y-3 sm:space-y-4 shrink-0">
-                  <div className="flex items-start gap-3 rounded-xl bg-white/[0.04] border border-white/[0.08] p-3">
-                    <Checkbox
-                      id="agreement-modal"
-                      checked={agreementDraftChecked}
-                      onCheckedChange={(v) => setAgreementDraftChecked(v === true)}
-                      className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-white/30 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:shadow-[0_0_10px_rgba(59,130,246,0.4)] transition-all duration-150"
-                    />
-                    <label htmlFor="agreement-modal" className="text-[11.5px] leading-[1.55] text-foreground/70 cursor-pointer select-none">
-                      I have read and agree to the VAULT OS Conditional Performance Guarantee, including all eligibility requirements, disqualification conditions, and limitations of liability. I understand this is not a guarantee of trading profits or success.
-                    </label>
-                  </div>
-                  <Button
-                    type="button"
-                    className={`w-full h-11 text-sm font-semibold rounded-xl transition-all duration-200 ${agreementDraftChecked ? "shadow-[0_0_20px_rgba(59,130,246,0.2)]" : ""}`}
-                    disabled={!agreementDraftChecked}
-                    onClick={() => { setAgreementChecked(true); setAgreementModalOpen(false); }}
-                  >
-                    <ShieldCheck className="h-4 w-4 mr-2" />
-                    Accept & Continue
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
 
             <CommunityTermsDialog checked={termsAccepted} onCheckedChange={setTermsAccepted} compact />
 
