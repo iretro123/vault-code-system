@@ -134,7 +134,7 @@ export function AdminMembersTab() {
       action,
       target_user_id: targetUserId,
       metadata,
-    });
+    } as any);
   };
 
   const handleRoleChange = async (userId: string, newRoleName: string) => {
