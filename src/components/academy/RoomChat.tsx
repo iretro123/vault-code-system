@@ -1177,7 +1177,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       room_slug: roomSlug,
       reason,
       message_snapshot: msg.body,
-      status: "open",
+      status: "open" as const,
     };
 
     const { error } = await dynamicSupabase.from("content_reports").insert(reportPayload);
