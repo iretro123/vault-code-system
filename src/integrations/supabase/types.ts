@@ -801,6 +801,56 @@ export type Database = {
         }
         Relationships: []
       }
+      content_reports: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string | null
+          message_snapshot: string | null
+          reason: string
+          reported_user_id: string | null
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          room_slug: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          message_snapshot?: string | null
+          reason?: string
+          reported_user_id?: string | null
+          reporter_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          room_slug?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          message_snapshot?: string | null
+          reason?: string
+          reported_user_id?: string | null
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          room_slug?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "academy_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_checkin_responses: {
         Row: {
           created_at: string
@@ -2388,6 +2438,30 @@ export type Database = {
           metadata_json?: Json | null
           page_key?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_user_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_user_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_user_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
         }
         Relationships: []
       }
