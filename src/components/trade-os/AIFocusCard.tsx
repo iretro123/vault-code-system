@@ -128,7 +128,7 @@ export function AIFocusCard({ entries, accessToken }: { entries: { id: string }[
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          await supabase.from("profiles").update({ ai_focus_cache: cached }).eq("user_id", session.user.id);
+          await supabase.from("profiles").update({ ai_focus_cache: cached as any }).eq("user_id", session.user.id);
         }
       } catch (error) { void error; }
     } catch (e: unknown) {
