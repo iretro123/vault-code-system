@@ -4,11 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 export interface Attachment {
-  type: "image" | "file";
-  url: string;
-  filename: string;
-  size: number;
-  mime: string;
+  type: "image" | "file" | "signal-watchlist" | "signal-live";
+  url?: string;
+  filename?: string;
+  size?: number;
+  mime?: string;
+  [key: string]: any;
 }
 
 interface Message {
@@ -26,6 +27,8 @@ interface Message {
   deleted_at: string | null;
   deleted_by: string | null;
   original_content: string | null;
+  parent_message_id?: string | null;
+  reply_count?: number;
 }
 
 const PAGE_SIZE = 40;
