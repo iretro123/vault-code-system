@@ -10,17 +10,18 @@ interface Profile {
   user_id: string;
   email: string | null;
   display_name: string | null;
-  discipline_status: "active" | "inactive";
+  discipline_status: string;
   discipline_score: number;
   onboarding_completed: boolean;
   default_trading_style: string;
   initialized_at: string | null;
-  access_status: "trial" | "active" | "revoked";
+  access_status: string;
   academy_experience: string;
   role_level: string;
   intro_posted: boolean;
   first_lesson_started: boolean;
   timezone: string | null;
+  [key: string]: any;
 }
 
 interface UserRole {
