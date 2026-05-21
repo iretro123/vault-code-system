@@ -13,7 +13,7 @@ import { ChatAvatar } from "@/lib/chatAvatars";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { UserProfileCard } from "./community/UserProfileCard";
 import { Button } from "@/components/ui/button";
-import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign, FileText, Upload } from "lucide-react";
+import { Loader2, SendHorizontal, Send, ChevronUp, ChevronDown as ChevronDownIcon, Paperclip, Megaphone, Pencil, Trash2, X, Check, MoreHorizontal, Copy, Pin, PinOff, Lock, Unlock, Clock, ShieldAlert, MessageSquare, ArrowDown, AtSign, FileText, Upload, Flag, UserX } from "lucide-react";
 import { AcademyRoleBadge } from "./AcademyRoleBadge";
 import {
   DropdownMenu,
@@ -49,6 +49,7 @@ import reactionSkullEmoji from "@/assets/emoji/reaction-skull.svg";
 import { hapticNotification, playMessageSound } from "@/lib/nativeFeedback";
 import { toast } from "sonner";
 import { getAppleEmojiAsset } from "@/lib/appleEmoji";
+import { containsObjectionableContent } from "@/lib/communitySafety";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,6 +97,40 @@ type MentionUserRow = {
   display_name: string | null;
   username: string | null;
 };
+
+type UserBlockRow = {
+  blocked_user_id: string;
+};
+
+type ContentReportInsert = {
+  reporter_id: string;
+  reported_user_id: string;
+  message_id: string;
+  room_slug: string;
+  reason: string;
+  message_snapshot: string;
+  status: "open";
+};
+
+type UserBlockInsert = {
+  blocker_id: string;
+  blocked_user_id: string;
+  reason: string;
+};
+
+type DynamicTableClient = {
+  select: (columns: string) => {
+    eq: (column: string, value: string) => Promise<{ data: UserBlockRow[] | null; error: unknown | null }>;
+  };
+  insert: (values: ContentReportInsert) => Promise<{ error: unknown | null }>;
+  upsert: (values: UserBlockInsert, options?: { onConflict?: string }) => Promise<{ error: unknown | null }>;
+};
+
+type DynamicSupabaseClient = {
+  from: (table: string) => DynamicTableClient;
+};
+
+const dynamicSupabase = supabase as unknown as DynamicSupabaseClient;
 
 /* ── helpers ── */
 
@@ -531,6 +566,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: string; user_name: string; body: string } | null>(null);
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
 
   const isTradeRecaps = roomSlug === "trade-recaps";
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
@@ -584,6 +620,25 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       requestAnimationFrame(() => editInputRef.current?.focus());
     }
   }, [editingId]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setBlockedUserIds(new Set());
+      return;
+    }
+
+    let cancelled = false;
+    dynamicSupabase
+      .from("user_blocks")
+      .select("blocked_user_id")
+      .eq("blocker_id", user.id)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setBlockedUserIds(new Set((data ?? []).map((row) => row.blocked_user_id)));
+      });
+
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // ── Save scroll position when tab/page hides ──
   useEffect(() => {
@@ -711,6 +766,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     let body = text ?? draft;
     if (!body.trim() && (!attachments || attachments.length === 0)) return;
     if (sending) return;
+    if (containsObjectionableContent(body)) {
+      toast.error("This message appears to violate the community safety rules and was not posted.");
+      return;
+    }
 
     // Prepend quote block if replying
     if (replyingTo && !text) {
@@ -1108,11 +1167,67 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     setDeleteConfirmId(null);
   };
 
+  const reportMessage = async (msg: RoomChatMessage, reason = "Objectionable content") => {
+    if (!user?.id || msg.user_id === user.id) return;
+
+    const reportPayload = {
+      reporter_id: user.id,
+      reported_user_id: msg.user_id,
+      message_id: msg.id,
+      room_slug: roomSlug,
+      reason,
+      message_snapshot: msg.body,
+      status: "open",
+    };
+
+    const { error } = await dynamicSupabase.from("content_reports").insert(reportPayload);
+    if (error) {
+      toast.error("Report failed. Please try again.");
+      return;
+    }
+
+    await supabase.from("academy_notifications").insert({
+      user_id: null,
+      type: "moderation_report",
+      title: `Content report in #${roomSlug}`,
+      body: `${displayName} reported ${msg.user_name}: ${msg.body.slice(0, 120)}`,
+      link_path: "/academy/admin/panel",
+    });
+
+    toast.success("Reported to moderators. We'll review it within 24 hours.");
+  };
+
+  const blockUser = async (msg: RoomChatMessage) => {
+    if (!user?.id || msg.user_id === user.id) return;
+
+    setBlockedUserIds((prev) => new Set(prev).add(msg.user_id));
+
+    const { error } = await dynamicSupabase.from("user_blocks").upsert({
+      blocker_id: user.id,
+      blocked_user_id: msg.user_id,
+      reason: "Blocked from chat message",
+    }, { onConflict: "blocker_id,blocked_user_id" });
+
+    if (error) {
+      setBlockedUserIds((prev) => {
+        const next = new Set(prev);
+        next.delete(msg.user_id);
+        return next;
+      });
+      toast.error("Block failed. Please try again.");
+      return;
+    }
+
+    await reportMessage(msg, "Blocked abusive user");
+    toast.success(`${msg.user_name} blocked. Their messages were removed from your feed.`);
+  };
+
   const filteredMessages = useMemo(() => messages.filter((msg) => {
     if (msg.is_deleted) return false;
     if (msg.parent_message_id) return false;
+    if (blockedUserIds.has(msg.user_id)) return false;
     return true;
-  }), [messages]);
+  }), [messages, blockedUserIds]);
 
 
   if (loading) {
@@ -1314,6 +1429,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                 <ItemComponent onClick={() => setDeleteConfirmId(msg.id)} className="gap-2 text-xs text-destructive focus:text-destructive">
                   <Trash2 className="h-3 w-3" /> Delete
                 </ItemComponent>
+              )}
+              {!isOwn && !msg.is_deleted && (
+                <>
+                  <ItemComponent onClick={() => reportMessage(msg)} className="gap-2 text-xs text-amber-400 focus:text-amber-400">
+                    <Flag className="h-3 w-3" /> Report message
+                  </ItemComponent>
+                  <ItemComponent onClick={() => blockUser(msg)} className="gap-2 text-xs text-destructive focus:text-destructive">
+                    <UserX className="h-3 w-3" /> Block user
+                  </ItemComponent>
+                </>
               )}
               {/* Moderator-only actions */}
               {canModerate && !msg.is_deleted && (

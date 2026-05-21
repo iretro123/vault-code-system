@@ -12,6 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureProfile } from "@/lib/ensureProfile";
 import { getStoredReferral, clearStoredReferral } from "@/lib/referralCapture";
+import { CommunityTermsDialog } from "@/components/legal/CommunityTermsDialog";
+import { COMMUNITY_TERMS_VERSION } from "@/lib/communitySafety";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
@@ -31,6 +33,7 @@ const Signup = () => {
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
   const [agreementChecked, setAgreementChecked] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [agreementModalOpen, setAgreementModalOpen] = useState(false);
   const [agreementDraftChecked, setAgreementDraftChecked] = useState(false);
   const ipRef = useRef<string | null>(null);
@@ -95,8 +98,8 @@ const Signup = () => {
       toast({ title: "Username taken", description: "Please choose a different username.", variant: "destructive" });
       return;
     }
-    if (!phoneNumber.trim()) {
-      toast({ title: "Phone required", description: "Please enter your phone number.", variant: "destructive" });
+    if (!termsAccepted) {
+      toast({ title: "Terms required", description: "Please review and accept the Terms of Use & Community Safety rules.", variant: "destructive" });
       return;
     }
     if (password !== confirmPassword) {
@@ -123,7 +126,7 @@ const Signup = () => {
       toast({ title: "Account created", description: "Welcome to Vault Academy." });
 
       await ensureProfile(newUserId, email, {
-        phone_number: phoneNumber.trim(),
+        phone_number: phoneNumber.trim() || null,
         username: username.trim().toLowerCase(),
         display_name: `${firstName.trim()} ${lastName.trim()}`,
       });
@@ -132,7 +135,7 @@ const Signup = () => {
       try {
         await supabase.from("agreement_acceptances" as any).insert({
           user_id: newUserId,
-          agreement_version: "1.0",
+          agreement_version: `community-${COMMUNITY_TERMS_VERSION}`,
           ip_address: ipRef.current,
         } as any);
       } catch (e) {
@@ -201,11 +204,11 @@ const Signup = () => {
     lastName.trim() !== "" &&
     username.trim().length >= 3 &&
     usernameStatus !== "taken" &&
-    phoneNumber.trim().length > 0 &&
     stripeStatus === "found" &&
     password.length >= 8 &&
     password === confirmPassword &&
-    agreementChecked;
+    agreementChecked &&
+    termsAccepted;
 
   const inputClass = "h-12 bg-muted/50 border-border/40 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/50 focus-visible:ring-primary/40 transition-colors";
   const labelClass = "text-xs font-medium text-white/70 block mb-1";
@@ -313,7 +316,7 @@ const Signup = () => {
             {/* Phone Number */}
             <div>
               <label className={labelClass}>
-                Phone Number <span className="text-destructive">*</span>
+                Phone Number <span className="text-muted-foreground/50">(optional)</span>
               </label>
               <Input
                 type="tel"
@@ -321,9 +324,9 @@ const Signup = () => {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 className={inputClass}
-                required
                 maxLength={20}
               />
+              <p className="text-[11px] text-muted-foreground/60 mt-0.5">Optional. Used only if you want SMS support/account alerts.</p>
             </div>
 
             {/* Password row — side by side */}
@@ -559,6 +562,8 @@ const Signup = () => {
                 </div>
               </DialogContent>
             </Dialog>
+
+            <CommunityTermsDialog checked={termsAccepted} onCheckedChange={setTermsAccepted} compact />
 
             {/* Divider */}
             <div className="border-t border-border/10 pt-3.5">

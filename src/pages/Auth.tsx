@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeIOSApp } from "@/lib/platform";
+import { CommunityTermsDialog } from "@/components/legal/CommunityTermsDialog";
 
 const Auth = () => {
   const { toast } = useToast();
@@ -28,9 +29,14 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!termsAccepted) {
+      toast({ title: "Terms required", description: "Please review and accept the Terms of Use & Community Safety rules.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
     const result = await signIn(email, password);
@@ -187,8 +193,10 @@ const Auth = () => {
                   </button>
                 </div>
 
+                <CommunityTermsDialog checked={termsAccepted} onCheckedChange={setTermsAccepted} compact />
+
                 {/* Submit */}
-                <Button type="submit" className="w-full h-12 text-base font-semibold rounded-xl gap-2" disabled={loading}>
+                <Button type="submit" className="w-full h-12 text-base font-semibold rounded-xl gap-2" disabled={loading || !termsAccepted}>
                   {loading ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Signing in…</>
                   ) : (

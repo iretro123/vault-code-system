@@ -54,7 +54,9 @@ export function PremiumGate({ status, pageName }: Props) {
               : `Unlock ${pageName || "Premium Content"}`}
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {isPastDue
+            {isIOSNative
+              ? "This section is available to active Vault OS members. Purchases and billing changes are not available in the iOS app."
+              : isPastDue
               ? "Your payment is past due. Please update your billing to continue accessing premium content."
               : isCanceled
               ? "Your subscription has been canceled. Rejoin to regain access."

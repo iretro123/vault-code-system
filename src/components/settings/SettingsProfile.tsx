@@ -413,9 +413,9 @@ export function SettingsProfile() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Phone Number <span className="text-muted-foreground/50">(Required)</span></Label>
+          <Label className="text-xs text-muted-foreground">Phone Number <span className="text-muted-foreground/50">(optional)</span></Label>
           <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+1 555 000 0000" maxLength={20} className="vault-input" />
-          <p className="text-[10px] text-muted-foreground/60">For important alerts only.</p>
+          <p className="text-[10px] text-muted-foreground/60">Optional. Used only if you want SMS support/account alerts.</p>
         </div>
 
         <div className="flex items-center gap-3">

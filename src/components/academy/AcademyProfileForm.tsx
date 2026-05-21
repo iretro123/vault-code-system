@@ -444,9 +444,9 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label className="text-xs">Phone Number</Label>
+          <Label className="text-xs">Phone Number <span className="text-muted-foreground/60">(optional)</span></Label>
           <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+1 555 000 0000" maxLength={20} />
-          <p className="text-[10px] text-muted-foreground/60">For important account/support alerts only</p>
+          <p className="text-[10px] text-muted-foreground/60">Optional. Used only if you want SMS support/account alerts.</p>
         </div>
       </Card>
 
