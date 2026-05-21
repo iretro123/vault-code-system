@@ -18,7 +18,7 @@ interface ThreadMessage {
   user_name: string;
   body: string;
   created_at: string;
-  reply_count: number;
+  reply_count?: number;
 }
 
 export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTradeFloorProps) {
