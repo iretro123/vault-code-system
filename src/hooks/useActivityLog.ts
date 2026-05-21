@@ -25,7 +25,7 @@ export function useActivityLog() {
           event_name,
           page_key: page_key ?? null,
           metadata_json: metadata ?? null,
-        });
+        } as any);
       } catch {
         // best-effort — never throw
       }
