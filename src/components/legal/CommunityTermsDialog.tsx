@@ -34,7 +34,7 @@ export function CommunityTermsDialog({ checked, onCheckedChange, compact = false
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-foreground">Terms of Use & Community Safety</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {checked ? <span className="text-emerald-400/90 font-medium">Accepted</span> : "Required before signing in or creating an account"}
+                {checked ? <span className="text-emerald-400/90 font-medium">Accepted</span> : "Required before creating your account"}
               </p>
             </div>
           </div>

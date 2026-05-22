@@ -985,6 +985,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           mime: file.type,
         };
 
+        if (containsObjectionableContent(draft)) {
+          toast.error("This message appears to violate the community safety rules and was not posted.");
+          return;
+        }
+
         shouldAutoScroll.current = true;
         const messageResult = await sendMessage(draft, [attachment]);
         console.debug(`[ChatUpload][${source}] message insert response`, messageResult);
@@ -1128,6 +1133,10 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const confirmEdit = async () => {
     if (!editingId || !editDraft.trim() || saving) return;
+    if (containsObjectionableContent(editDraft)) {
+      toast.error("This edit appears to violate the community safety rules and was not saved.");
+      return;
+    }
     setSaving(true);
     const result = await editMessage(editingId, editDraft);
     if (result.error) {
