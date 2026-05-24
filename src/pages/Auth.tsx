@@ -7,13 +7,11 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { isNativeIOSApp } from "@/lib/platform";
 
 const Auth = () => {
   const { toast } = useToast();
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const isIOSNative = isNativeIOSApp();
 
   useEffect(() => {
     if (window.location.hash.includes("type=recovery")) {
@@ -201,12 +199,10 @@ const Auth = () => {
                 First time here?{" "}
                 <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
               </p>
-              {!isIOSNative && (
-                <p className="text-center text-sm text-muted-foreground mt-2">
-                  Need an account?{" "}
-                  <a href="https://whop.com/checkout/plan_sZv21FRX30aUy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Sign Up</a>
-                </p>
-              )}
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                Need an account?{" "}
+                <a href="https://whop.com/checkout/plan_sZv21FRX30aUy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Sign Up</a>
+              </p>
             </div>
           </>
         )}
