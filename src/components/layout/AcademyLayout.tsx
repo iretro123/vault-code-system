@@ -122,9 +122,9 @@ function AcademyLayoutInner() {
     return <LoadingShell />;
   }
 
-  // 2. No user → redirect immediately (don't wait for profile/hydration)
+  // 2. No user → send to Welcome landing (first impression on app download)
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/welcome" replace />;
   }
 
   // 3. User exists but profile/hydration still loading — skip if we've been hydrated before

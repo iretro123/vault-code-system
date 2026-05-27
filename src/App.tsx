@@ -46,6 +46,8 @@ const Settings = lazy(() => import("./pages/Settings"));
 const VaultLog = lazy(() => import("./pages/VaultLog"));
 const Reports = lazy(() => import("./pages/Reports"));
 const GuestPreview = lazy(() => import("./pages/GuestPreview"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const IntroCarousel = lazy(() => import("./pages/IntroCarousel"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -100,6 +102,8 @@ const App = () => (
             <Route path="/vault-log" element={<VaultOSGate><VaultLog /></VaultOSGate>} />
             <Route path="/reports" element={<VaultOSGate><Reports /></VaultOSGate>} />
             <Route path="/settings" element={<VaultOSGate><Settings /></VaultOSGate>} />
+            <Route path="/welcome" element={<Suspense fallback={<RouteFallback />}><Welcome /></Suspense>} />
+            <Route path="/intro" element={<Suspense fallback={<RouteFallback />}><IntroCarousel /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
