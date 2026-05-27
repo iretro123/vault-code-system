@@ -41,6 +41,7 @@ const IntroCarousel = () => {
   const [params] = useSearchParams();
   const next = params.get("next") === "guest" ? "guest" : "signup";
   const [index, setIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
 
   const isLast = index === SLIDES.length - 1;
   const slide = SLIDES[index];
@@ -60,9 +61,24 @@ const IntroCarousel = () => {
     else setIndex(index + 1);
   };
 
+  const goBack = () => {
+    if (index > 0) setIndex(index - 1);
+  };
+
   const skip = () => {
     if (next === "guest") finish();
     else navigate("/signup");
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (dx < -40) advance();
+    else if (dx > 40) goBack();
+    touchStartX.current = null;
   };
 
   return (
