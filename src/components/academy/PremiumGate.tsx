@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AccessStatus } from "@/hooks/useStudentAccess";
 import { isNativeIOSApp } from "@/lib/platform";
+import { isBillingVisible } from "@/lib/featureFlags";
 
 interface Props {
   status: AccessStatus;
@@ -15,6 +16,7 @@ interface Props {
 export function PremiumGate({ status, pageName }: Props) {
   const [loading, setLoading] = useState(false);
   const isIOSNative = isNativeIOSApp();
+  const billingVisible = isBillingVisible();
 
   const isPastDue = status === "past_due";
   const isCanceled = status === "canceled";

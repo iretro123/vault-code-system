@@ -8,6 +8,7 @@ import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
+import { isBillingVisible } from "@/lib/featureFlags";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
@@ -96,7 +97,7 @@ function AcademyLayoutInner() {
   }, []);
 
   const isCommunity = location.pathname.startsWith("/academy/community");
-  const showBlockModal = !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
+  const showBlockModal = isBillingVisible() && !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
 
   // Session-loss detection
   useEffect(() => {
