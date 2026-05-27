@@ -15,6 +15,7 @@ interface PublicLiveSession {
   session_date: string;
   session_type: string;
   duration_minutes: number;
+  join_url: string | null;
 }
 
 /**
@@ -36,7 +37,7 @@ export default function GuestPreview() {
       try {
         const { data } = await supabase
           .from("live_sessions_public" as any)
-          .select("id,title,description,session_date,session_type,duration_minutes")
+          .select("id,title,description,session_date,session_type,duration_minutes,join_url")
           .order("session_date", { ascending: true })
           .limit(8);
         setSessions(((data as unknown) as PublicLiveSession[]) || []);
@@ -115,6 +116,12 @@ export default function GuestPreview() {
             <div className="space-y-2">
               {sessions.map((s) => {
                 const d = new Date(s.session_date);
+                const startMs = d.getTime();
+                const nowMs = Date.now();
+                const endMs = startMs + (s.duration_minutes || 60) * 60_000;
+                // Enable join 10 min before start, through end of session
+                const joinable = !!s.join_url && nowMs >= startMs - 10 * 60_000 && nowMs <= endMs;
+                const isLive = !!s.join_url && nowMs >= startMs && nowMs <= endMs;
                 return (
                   <Card key={s.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
@@ -136,11 +143,37 @@ export default function GuestPreview() {
                           {s.duration_minutes ? <span>{s.duration_minutes} min</span> : null}
                         </div>
                       </div>
-                      <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider px-2 py-1">
-                        <Bell className="h-3 w-3" />
-                        Notify
-                      </span>
+                      {isLive ? (
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-red-500/15 text-red-400 text-[10px] font-semibold uppercase tracking-wider px-2 py-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                          Live
+                        </span>
+                      ) : (
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider px-2 py-1">
+                          <Bell className="h-3 w-3" />
+                          Upcoming
+                        </span>
+                      )}
                     </div>
+                    {s.join_url && (
+                      <div className="mt-3">
+                        <Button
+                          asChild={joinable}
+                          disabled={!joinable}
+                          className="w-full h-10"
+                          variant={isLive ? "default" : "secondary"}
+                        >
+                          {joinable ? (
+                            <a href={s.join_url} target="_blank" rel="noopener noreferrer">
+                              <Radio className="h-4 w-4 mr-2" />
+                              {isLive ? "Join live now" : "Join (opens 10 min before)"}
+                            </a>
+                          ) : (
+                            <span>Join link opens 10 min before start</span>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </Card>
                 );
               })}

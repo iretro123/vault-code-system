@@ -2877,6 +2877,7 @@ export type Database = {
           duration_minutes: number | null
           id: string | null
           is_replay: boolean | null
+          join_url: string | null
           session_date: string | null
           session_type: string | null
           status: string | null
@@ -2887,6 +2888,7 @@ export type Database = {
           duration_minutes?: number | null
           id?: string | null
           is_replay?: boolean | null
+          join_url?: string | null
           session_date?: string | null
           session_type?: string | null
           status?: string | null
@@ -2897,6 +2899,7 @@ export type Database = {
           duration_minutes?: number | null
           id?: string | null
           is_replay?: boolean | null
+          join_url?: string | null
           session_date?: string | null
           session_type?: string | null
           status?: string | null
