@@ -109,15 +109,16 @@ const IntroCarousel = () => {
         key={index}
         className="flex-1 w-full max-w-md flex flex-col animate-fade-in"
       >
-        {/* Image */}
-        <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden border border-white/[0.06] bg-black/40 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]">
+        {/* Phone frame */}
+        <div className="relative mx-auto w-full max-w-[280px] aspect-[9/19] rounded-[2.25rem] overflow-hidden border border-white/[0.08] bg-black shadow-[0_40px_100px_-20px_rgba(59,130,246,0.35),0_20px_60px_-10px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.04]">
           <img
             src={slide.image}
             alt={slide.eyebrow}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
             loading={index === 0 ? "eager" : "lazy"}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+          {/* Soft top glow */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/[0.06] to-transparent" />
         </div>
 
         {/* Copy */}
