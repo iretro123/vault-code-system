@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { enableGuestMode } from "@/lib/guestMode";
 import introWins from "@/assets/intro/intro-wins.jpg";
