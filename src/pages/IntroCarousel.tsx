@@ -83,7 +83,9 @@ const IntroCarousel = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center px-6 py-8 relative"
+      className="min-h-screen flex flex-col items-center px-6 py-8 relative select-none"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       style={{
         background: `
           radial-gradient(ellipse 80% 60% at 50% 0%, rgba(59,130,246,0.18) 0%, transparent 55%),
@@ -96,8 +98,11 @@ const IntroCarousel = () => {
       <div className="w-full max-w-md flex items-center justify-between mb-6">
         <div className="flex items-center gap-1.5">
           {SLIDES.map((_, i) => (
-            <div
+            <button
               key={i}
+              type="button"
+              onClick={() => setIndex(i)}
+              aria-label={`Go to slide ${i + 1}`}
               className={cn(
                 "h-1.5 rounded-full transition-all duration-300",
                 i === index
@@ -125,16 +130,29 @@ const IntroCarousel = () => {
         key={index}
         className="flex-1 w-full max-w-md flex flex-col animate-fade-in"
       >
-        {/* Phone frame */}
-        <div className="relative mx-auto w-full max-w-[280px] aspect-[9/19] rounded-[2.25rem] overflow-hidden border border-white/[0.08] bg-black shadow-[0_40px_100px_-20px_rgba(59,130,246,0.35),0_20px_60px_-10px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.04]">
-          <img
-            src={slide.image}
-            alt={slide.eyebrow}
-            className="w-full h-full object-cover object-top"
-            loading={index === 0 ? "eager" : "lazy"}
-          />
-          {/* Soft top glow */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/[0.06] to-transparent" />
+        {/* Phone frame with swipe hint */}
+        <div className="relative mx-auto w-full max-w-[280px]">
+          <div className="relative aspect-[9/19] rounded-[2.25rem] overflow-hidden border border-white/[0.08] bg-black shadow-[0_40px_100px_-20px_rgba(59,130,246,0.35),0_20px_60px_-10px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.04]">
+            <img
+              src={slide.image}
+              alt={slide.eyebrow}
+              className="w-full h-full object-cover object-top"
+              loading={index === 0 ? "eager" : "lazy"}
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/[0.06] to-transparent" />
+          </div>
+
+          {/* Swipe-right hint chevron */}
+          {!isLast && (
+            <button
+              type="button"
+              onClick={advance}
+              aria-label="Next slide"
+              className="absolute top-1/2 -right-2 -translate-y-1/2 h-11 w-11 rounded-full bg-primary/15 backdrop-blur-md border border-primary/30 flex items-center justify-center text-primary shadow-[0_8px_24px_-6px_rgba(59,130,246,0.5)] animate-pulse hover:bg-primary/25 active:scale-95 transition"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          )}
         </div>
 
         {/* Copy */}
@@ -145,9 +163,6 @@ const IntroCarousel = () => {
           <h2 className="mt-3 text-3xl font-bold tracking-tight text-foreground leading-tight">
             {slide.title}
           </h2>
-          <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-            {slide.body}
-          </p>
         </div>
       </div>
 
@@ -157,7 +172,7 @@ const IntroCarousel = () => {
           onClick={advance}
           className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
         >
-          {isLast ? (next === "guest" ? "Enter Live" : "Get Started") : "Next"}
+          {isLast ? (next === "guest" ? "Enter Live" : "Get Started") : "Swipe or tap to continue"}
           <ArrowRight className="h-4 w-4" />
         </Button>
         <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60 pt-6">
