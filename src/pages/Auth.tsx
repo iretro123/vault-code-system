@@ -230,6 +230,10 @@ const Auth = () => {
             </div>
           </>
         )}
+
+        <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60 pt-8">
+          Powered by Vault Trading Academy
+        </p>
       </div>
     </div>
   );
