@@ -256,13 +256,13 @@ const IntroCarousel = () => {
         )}
       </div>
 
-      {/* Slide — centered, gets remaining space */}
+      {/* Slide — phone + copy + CTA stack together, hugging the phone */}
       <div
         key={index}
-        className="flex-1 min-h-0 w-full max-w-md flex flex-col items-center justify-center gap-6 py-4 animate-fade-in"
+        className="flex-1 min-h-0 w-full max-w-md flex flex-col items-center justify-center gap-5 py-4 animate-fade-in"
       >
         {/* Phone frame flanked by nav arrows */}
-        <div className="relative w-full flex-1 min-h-0 flex items-center justify-center gap-2">
+        <div className="relative w-full flex items-center justify-center gap-2 min-h-0">
           {/* Left arrow */}
           <button
             type="button"
@@ -275,7 +275,7 @@ const IntroCarousel = () => {
           </button>
 
           {/* Phone */}
-          <div className="relative h-full max-h-[58vh] aspect-[9/19] rounded-[2rem] overflow-hidden border border-white/[0.08] bg-black shadow-[0_40px_100px_-20px_rgba(59,130,246,0.35),0_20px_60px_-10px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.04]">
+          <div className="relative h-[52vh] max-h-[480px] aspect-[9/19] rounded-[2rem] overflow-hidden border border-white/[0.08] bg-black shadow-[0_40px_100px_-20px_rgba(59,130,246,0.35),0_20px_60px_-10px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.04]">
             {slide.image ? (
               <img
                 src={slide.image}
@@ -288,7 +288,6 @@ const IntroCarousel = () => {
             )}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/[0.06] to-transparent" />
           </div>
-
 
           {/* Right arrow */}
           <button
@@ -306,7 +305,6 @@ const IntroCarousel = () => {
           </button>
         </div>
 
-
         {/* Copy */}
         <div className="text-center px-2 shrink-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-primary">
@@ -316,21 +314,22 @@ const IntroCarousel = () => {
             {slide.title}
           </h2>
         </div>
-      </div>
 
-      {/* CTA */}
-      <div className="w-full max-w-md shrink-0 space-y-4">
+        {/* CTA — sits right under the title */}
         <Button
           onClick={advance}
-          className="w-full h-13 py-3 text-base font-semibold rounded-2xl gap-2"
+          className="w-full h-13 py-3 text-base font-semibold rounded-2xl gap-2 shrink-0"
         >
           {isLast ? (next === "guest" ? "Enter Live" : "Get Started") : "Swipe or tap to continue"}
           <ArrowRight className="h-4 w-4" />
         </Button>
-        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-          Powered by Vault Trading Academy
-        </p>
       </div>
+
+      {/* Footer — pinned at the bottom */}
+      <p className="w-full max-w-md text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 shrink-0">
+        Powered by Vault Trading Academy
+      </p>
+
     </div>
   );
 };
