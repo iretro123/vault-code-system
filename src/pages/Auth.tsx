@@ -197,31 +197,6 @@ const Auth = () => {
                 </Button>
               </form>
 
-              {isGuestModeEnabled() && (
-                <>
-                  <div className="flex items-center gap-3 my-5">
-                    <div className="flex-1 h-px bg-border/40" />
-                    <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">or</span>
-                    <div className="flex-1 h-px bg-border/40" />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 text-base font-semibold rounded-xl gap-2"
-                    onClick={() => {
-                      enableGuestMode();
-                      window.dispatchEvent(new Event("guest-mode-changed"));
-                      navigate("/guest");
-                    }}
-                  >
-                    <UserRound className="h-4 w-4" />
-                    Continue as Guest
-                  </Button>
-                  <p className="text-center text-[11px] text-muted-foreground/70 mt-2">
-                    View-only preview. Sign in for full access.
-                  </p>
-                </>
-              )}
 
               <p className="text-center text-sm text-muted-foreground mt-5">
                 First time here?{" "}
