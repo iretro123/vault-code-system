@@ -2871,6 +2871,39 @@ export type Database = {
       }
     }
     Views: {
+      live_sessions_public: {
+        Row: {
+          description: string | null
+          duration_minutes: number | null
+          id: string | null
+          is_replay: boolean | null
+          session_date: string | null
+          session_type: string | null
+          status: string | null
+          title: string | null
+        }
+        Insert: {
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string | null
+          is_replay?: boolean | null
+          session_date?: string | null
+          session_type?: string | null
+          status?: string | null
+          title?: string | null
+        }
+        Update: {
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string | null
+          is_replay?: boolean | null
+          session_date?: string | null
+          session_type?: string | null
+          status?: string | null
+          title?: string | null
+        }
+        Relationships: []
+      }
       referral_stats: {
         Row: {
           current_streak_weeks: number | null

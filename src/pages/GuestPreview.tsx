@@ -35,13 +35,11 @@ export default function GuestPreview() {
     (async () => {
       try {
         const { data } = await supabase
-          .from("live_sessions")
+          .from("live_sessions_public" as any)
           .select("id,title,description,session_date,session_type,duration_minutes")
-          .eq("is_replay", false)
-          .gte("session_date", new Date().toISOString())
           .order("session_date", { ascending: true })
           .limit(8);
-        setSessions((data as PublicLiveSession[]) || []);
+        setSessions(((data as unknown) as PublicLiveSession[]) || []);
       } catch {
         void 0;
       } finally {
