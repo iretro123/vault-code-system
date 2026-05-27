@@ -1,38 +1,167 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Radio,
+  Calendar,
+  MessageCircle,
+  TrendingUp,
+  Sparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { enableGuestMode } from "@/lib/guestMode";
 import introWins from "@/assets/intro/intro-wins.jpg";
 import introCommunity from "@/assets/intro/intro-community.jpg";
-import introLive from "@/assets/intro/intro-live.jpg";
-import introMentoring from "@/assets/intro/intro-mentoring.jpg";
 
-const SLIDES = [
+/* ------------------------------ Premium mocks ------------------------------ */
+
+const LiveMock = () => (
+  <div className="w-full h-full bg-gradient-to-b from-[#0a0f1a] via-[#0a0f1a] to-black p-3 flex flex-col gap-2.5 text-[10px] text-foreground">
+    {/* Status bar */}
+    <div className="flex items-center justify-between text-[8px] text-white/40 px-1 pt-0.5">
+      <span>9:41</span>
+      <span>VaultOS</span>
+    </div>
+
+    {/* Live header */}
+    <div className="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br from-rose-500/20 via-fuchsia-500/10 to-blue-500/20 p-2.5">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75 animate-ping" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500" />
+        </span>
+        <span className="text-[8px] uppercase tracking-widest font-bold text-rose-300">Live now</span>
+        <span className="ml-auto text-[8px] text-white/50">42 watching</span>
+      </div>
+      <p className="text-[11px] font-semibold leading-tight">Morning Open · SPY / QQQ</p>
+      <p className="text-[8px] text-white/50 mt-0.5">Coach Marcus · started 4m ago</p>
+
+      {/* faux video preview */}
+      <div className="mt-2 rounded-md bg-black/60 aspect-video border border-white/5 flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full bg-white/95 flex items-center justify-center">
+          <div className="w-0 h-0 border-y-[4px] border-y-transparent border-l-[6px] border-l-black ml-0.5" />
+        </div>
+      </div>
+    </div>
+
+    {/* Upcoming */}
+    <p className="text-[8px] uppercase tracking-widest text-white/40 px-1 mt-1">Up next</p>
+
+    {[
+      { day: "Today", time: "1:30 PM", title: "Power Hour Recap", host: "Coach Lex" },
+      { day: "Tue", time: "9:15 AM", title: "Setup Review", host: "Coach Ana" },
+      { day: "Wed", time: "4:00 PM", title: "Weekly Game Plan", host: "Coach Marcus" },
+    ].map((s) => (
+      <div
+        key={s.title}
+        className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1.5 flex items-center gap-2"
+      >
+        <div className="h-7 w-7 rounded-md bg-primary/15 border border-primary/20 flex flex-col items-center justify-center leading-none">
+          <span className="text-[7px] uppercase text-primary/80">{s.day}</span>
+          <span className="text-[8px] font-bold text-foreground">{s.time.split(" ")[0]}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-semibold truncate">{s.title}</p>
+          <p className="text-[8px] text-white/40 truncate">{s.host} · {s.time}</p>
+        </div>
+        <Radio className="h-3 w-3 text-white/30" />
+      </div>
+    ))}
+  </div>
+);
+
+const MentoringMock = () => (
+  <div className="w-full h-full bg-gradient-to-b from-[#0a0f1a] via-[#0a0f1a] to-black p-3 flex flex-col gap-2.5 text-[10px] text-foreground">
+    {/* Status bar */}
+    <div className="flex items-center justify-between text-[8px] text-white/40 px-1 pt-0.5">
+      <span>9:41</span>
+      <span>VaultOS</span>
+    </div>
+
+    {/* Mentor hero card */}
+    <div className="relative rounded-xl overflow-hidden border border-white/10 bg-gradient-to-br from-primary/20 via-indigo-500/10 to-violet-500/20 p-3">
+      <div className="flex items-center gap-2">
+        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-indigo-500 flex items-center justify-center text-sm font-bold ring-2 ring-white/10">
+          M
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-semibold leading-tight">Coach Marcus</p>
+          <p className="text-[8px] text-white/50">Your dedicated mentor</p>
+        </div>
+        <Sparkles className="h-3.5 w-3.5 text-primary" />
+      </div>
+
+      <div className="mt-2.5 flex items-center gap-2">
+        <div className="flex-1 rounded-md bg-black/30 border border-white/5 px-2 py-1.5">
+          <p className="text-[7px] uppercase tracking-widest text-white/40">Next call</p>
+          <p className="text-[9px] font-semibold mt-0.5">Thu · 2:00 PM</p>
+        </div>
+        <div className="flex-1 rounded-md bg-black/30 border border-white/5 px-2 py-1.5">
+          <p className="text-[7px] uppercase tracking-widest text-white/40">Sessions</p>
+          <p className="text-[9px] font-semibold mt-0.5">12 / 24</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Focus list */}
+    <p className="text-[8px] uppercase tracking-widest text-white/40 px-1 mt-1">This week's focus</p>
+
+    {[
+      { icon: TrendingUp, label: "Tighten stop-loss discipline", chip: "Risk" },
+      { icon: Calendar, label: "Review Tuesday's losing trade", chip: "Journal" },
+      { icon: MessageCircle, label: "Submit playbook v2 for review", chip: "Plan" },
+    ].map(({ icon: Icon, label, chip }) => (
+      <div
+        key={label}
+        className="rounded-lg border border-white/[0.06] bg-white/[0.025] px-2 py-1.5 flex items-center gap-2"
+      >
+        <div className="h-6 w-6 rounded-md bg-primary/15 border border-primary/20 flex items-center justify-center">
+          <Icon className="h-3 w-3 text-primary" />
+        </div>
+        <p className="text-[10px] font-medium flex-1 truncate">{label}</p>
+        <span className="text-[7px] uppercase tracking-wider text-white/50 border border-white/10 rounded-full px-1.5 py-0.5">
+          {chip}
+        </span>
+      </div>
+    ))}
+
+    {/* CTA pill */}
+    <div className="mt-auto rounded-lg bg-primary/90 text-primary-foreground text-center text-[10px] font-semibold py-2">
+      Book your next 1:1 →
+    </div>
+  </div>
+);
+
+type Slide = {
+  eyebrow: string;
+  title: string;
+  image?: string;
+  render?: () => ReactNode;
+};
+
+const SLIDES: Slide[] = [
   {
     image: introWins,
     eyebrow: "Wins",
     title: "Real trader wins, every week.",
-    body: "See verified results from a serious community — proof, not hype.",
   },
   {
     image: introCommunity,
     eyebrow: "Community",
     title: "Trade alongside a serious team.",
-    body: "Setups, feedback, and live discussion from traders who show up.",
   },
   {
-    image: introLive,
+    render: () => <LiveMock />,
     eyebrow: "Live Sessions",
     title: "Daily live coaching, on the open.",
-    body: "Join live calls with real traders — every session, every market.",
   },
   {
-    image: introMentoring,
+    render: () => <MentoringMock />,
     eyebrow: "1:1 Mentoring",
     title: "Personal Vault OS mentoring.",
-    body: "One-on-one coaching tuned to your trading, your goals, your rules.",
   },
 ];
 
