@@ -276,14 +276,19 @@ const IntroCarousel = () => {
 
           {/* Phone */}
           <div className="relative h-full max-h-[58vh] aspect-[9/19] rounded-[2rem] overflow-hidden border border-white/[0.08] bg-black shadow-[0_40px_100px_-20px_rgba(59,130,246,0.35),0_20px_60px_-10px_rgba(0,0,0,0.9)] ring-1 ring-white/[0.04]">
-            <img
-              src={slide.image}
-              alt={slide.eyebrow}
-              className="w-full h-full object-cover object-top"
-              loading={index === 0 ? "eager" : "lazy"}
-            />
+            {slide.image ? (
+              <img
+                src={slide.image}
+                alt={slide.eyebrow}
+                className="w-full h-full object-cover object-top"
+                loading={index === 0 ? "eager" : "lazy"}
+              />
+            ) : (
+              slide.render?.()
+            )}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-white/[0.06] to-transparent" />
           </div>
+
 
           {/* Right arrow */}
           <button
