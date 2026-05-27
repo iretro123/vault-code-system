@@ -39,7 +39,7 @@ export default function GuestPreview() {
           .select("id,title,description,session_date,session_type,duration_minutes")
           .order("session_date", { ascending: true })
           .limit(8);
-        setSessions((data as PublicLiveSession[]) || []);
+        setSessions(((data as unknown) as PublicLiveSession[]) || []);
       } catch {
         void 0;
       } finally {
