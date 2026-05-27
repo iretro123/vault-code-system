@@ -38,8 +38,9 @@ type SectionId = (typeof ALL_NAV_ITEMS)[number]["id"];
 
 const AcademySettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const billingReturn = searchParams.get("billing") === "returned";
-  const [section, setSection] = useState<SectionId>(billingReturn ? "billing" : "profile");
+  const billingReturn = isBillingVisible() && searchParams.get("billing") === "returned";
+  const initial: SectionId = billingReturn ? "billing" : "profile";
+  const [section, setSection] = useState<SectionId>(initial);
   const [mobileOpen, setMobileOpen] = useState<SectionId | null>(billingReturn ? "billing" : null);
 
   useEffect(() => {
