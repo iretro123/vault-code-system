@@ -45,6 +45,7 @@ const TraderCockpit = lazy(() => import("./pages/TraderCockpit"));
 const Settings = lazy(() => import("./pages/Settings"));
 const VaultLog = lazy(() => import("./pages/VaultLog"));
 const Reports = lazy(() => import("./pages/Reports"));
+const GuestPreview = lazy(() => import("./pages/GuestPreview"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -102,6 +103,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/guest" element={<Suspense fallback={<RouteFallback />}><GuestPreview /></Suspense>} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />
             <Route path="/academy" element={<AcademyLayout />}>
               <Route index element={<Navigate to="home" replace />} />
