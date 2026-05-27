@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { isBillingVisible, isGuestModeEnabled } from "@/lib/featureFlags";
+import { isGuestModeEnabled } from "@/lib/featureFlags";
 import { enableGuestMode } from "@/lib/guestMode";
 
 const Auth = () => {
