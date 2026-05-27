@@ -20,8 +20,9 @@ import { SettingsPrivacy } from "@/components/settings/SettingsPrivacy";
 import { SettingsSecurity } from "@/components/settings/SettingsSecurity";
 import { SettingsHelp } from "@/components/settings/SettingsHelp";
 import { SettingsBilling } from "@/components/settings/SettingsBilling";
+import { isBillingVisible } from "@/lib/featureFlags";
 
-const NAV_ITEMS = [
+const ALL_NAV_ITEMS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "trading", label: "Trading Preferences", icon: BarChart3 },
   { id: "billing", label: "Billing", icon: CreditCard },
@@ -31,7 +32,9 @@ const NAV_ITEMS = [
   { id: "help", label: "Help", icon: HelpCircle },
 ] as const;
 
-type SectionId = (typeof NAV_ITEMS)[number]["id"];
+const NAV_ITEMS = ALL_NAV_ITEMS.filter((item) => isBillingVisible() || item.id !== "billing");
+
+type SectionId = (typeof ALL_NAV_ITEMS)[number]["id"];
 
 const AcademySettings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
