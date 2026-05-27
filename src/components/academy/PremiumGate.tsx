@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AccessStatus } from "@/hooks/useStudentAccess";
 import { isNativeIOSApp } from "@/lib/platform";
+import { isBillingVisible } from "@/lib/featureFlags";
 
 interface Props {
   status: AccessStatus;
@@ -15,6 +16,7 @@ interface Props {
 export function PremiumGate({ status, pageName }: Props) {
   const [loading, setLoading] = useState(false);
   const isIOSNative = isNativeIOSApp();
+  const billingVisible = isBillingVisible();
 
   const isPastDue = status === "past_due";
   const isCanceled = status === "canceled";
@@ -47,14 +49,18 @@ export function PremiumGate({ status, pageName }: Props) {
 
         <div className="space-y-2">
           <h2 className="text-lg font-bold text-foreground">
-            {isPastDue
+            {!billingVisible
+              ? `${pageName || "This section"} is members-only`
+              : isPastDue
               ? "Payment Issue"
               : isCanceled
               ? "Subscription Canceled"
               : `Unlock ${pageName || "Premium Content"}`}
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {isIOSNative
+            {!billingVisible
+              ? "This section is available to active members. Please contact your coach or support if you believe you should have access."
+              : isIOSNative
               ? "This section is available to active Vault OS members. Purchases and billing changes are not available in the iOS app."
               : isPastDue
               ? "Your payment is past due. Please update your billing to continue accessing premium content."
@@ -64,7 +70,7 @@ export function PremiumGate({ status, pageName }: Props) {
           </p>
         </div>
 
-        {isIOSNative ? (
+        {!billingVisible ? null : isIOSNative ? (
           <p className="text-xs text-muted-foreground leading-relaxed">
             Membership purchases and billing changes aren&apos;t available in the iOS app.
           </p>

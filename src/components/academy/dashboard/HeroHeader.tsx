@@ -246,7 +246,7 @@ export function HeroHeader({ firstName, onCheckIn, timezone }: Props) {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const statusLine = useStatusLine(user?.id, timezone);
 
-  const showUpgrade = !isIOSNative && !hasAccess && !isAdminBypass;
+  const showUpgrade = false; // Billing UI hidden — see src/lib/featureFlags.ts
   const isPastDue = status === "past_due";
   const isCanceled = status === "canceled";
 
