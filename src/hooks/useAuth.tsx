@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { ensureProfile } from "@/lib/ensureProfile";
 
-type AppRole = "free" | "vault_os_owner" | "vault_access" | "vault_intelligence" | "operator";
+type AppRole = "free" | "vault_os_owner" | "vault_access" | "vault_intelligence" | "operator" | "basic_tier";
 
 interface Profile {
   id: string;
