@@ -48,6 +48,9 @@ const Reports = lazy(() => import("./pages/Reports"));
 const GuestPreview = lazy(() => import("./pages/GuestPreview"));
 const Welcome = lazy(() => import("./pages/Welcome"));
 const IntroCarousel = lazy(() => import("./pages/IntroCarousel"));
+const CreateAccount = lazy(() => import("./pages/CreateAccount"));
+const BasicHome = lazy(() => import("./pages/basic/BasicHome"));
+const BasicModule = lazy(() => import("./pages/basic/BasicModule"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
