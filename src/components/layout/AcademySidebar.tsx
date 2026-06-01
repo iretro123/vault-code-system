@@ -77,7 +77,7 @@ export function AcademySidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const { inboxUnreadCount, onboarding } = useAcademyData();
   const { isPageEnabled } = useFeatureFlags();
   const { roleName, isOperator } = useAcademyPermissions();
