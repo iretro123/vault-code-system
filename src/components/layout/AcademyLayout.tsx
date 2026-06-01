@@ -65,6 +65,7 @@ function LoadingShell() {
 /** Inner layout that lives inside SidebarProvider so useSidebar() works. */
 function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
+  const { isBasicTier, loading: basicLoading } = useIsBasicTier();
   const { hydrated } = useAcademyData();
   // Persist hydration flag to sessionStorage so tab discards don't reset it
   const [everHydrated, setEverHydrated] = useState(() => {
