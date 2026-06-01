@@ -95,7 +95,7 @@ function ReloadGuardReset() {
 function BasicTierRedirect({ children }: { children: ReactNode }) {
   const { userRole, loading } = useAuth();
   if (!loading && userRole?.role === "basic_tier") {
-    return <Navigate to="/basic" replace />;
+    return <Navigate to="/academy/learn" replace />;
   }
   return <>{children}</>;
 }

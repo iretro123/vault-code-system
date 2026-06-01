@@ -24,6 +24,7 @@ import {
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { ChatAvatar } from "@/lib/chatAvatars";
@@ -76,14 +77,16 @@ export function AcademySidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const { inboxUnreadCount, onboarding } = useAcademyData();
   const { isPageEnabled } = useFeatureFlags();
   const { roleName, isOperator } = useAcademyPermissions();
+  const { isBasicTier } = useIsBasicTier();
   const isAdmin = roleName === "CEO" || isOperator;
   const userId = profile?.user_id || null;
   const { totalUnread } = useUnreadCounts(null, userId);
   const communityBadge = formatBadge(totalUnread);
+  const navItems = isBasicTier ? coreNav.filter((n) => n.pageKey === "learn") : coreNav;
 
   const displayName = profile?.display_name || "Trader";
   const profileData = profile as SidebarProfileShape | null;
@@ -144,6 +147,7 @@ export function AcademySidebar() {
 
         {/* Search */}
 
+        {!isBasicTier && (
         <SidebarGroup className="hidden md:block">
           <SidebarGroupContent>
             <SidebarMenu>
@@ -164,6 +168,7 @@ export function AcademySidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        )}
 
         {/* Main nav */}
         <SidebarGroup>
@@ -171,7 +176,7 @@ export function AcademySidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
 
-              {coreNav.map(({ icon: Icon, label, path, isLive, isCoach, pageKey }) => {
+              {navItems.map(({ icon: Icon, label, path, isLive, isCoach, pageKey }) => {
                 // Hide disabled pages from non-admin users
                 if (pageKey && !isPageEnabled(pageKey) && (!isAdmin || pageKey === "vault-os")) return null;
                 const hiddenForMembers = pageKey && !isPageEnabled(pageKey) && isAdmin;
@@ -261,7 +266,7 @@ export function AcademySidebar() {
       {/* Bottom Dock */}
       <SidebarFooter className="mt-auto px-2.5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: '#0B0F14' }}>
         {/* Share Vault Card */}
-        {!collapsed && (
+        {!isBasicTier && !collapsed && (
           <button
             onClick={() => { if (isMobile) setOpenMobile(false); window.dispatchEvent(new CustomEvent("open-referral-modal")); }}
             className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow overflow-hidden"
@@ -285,8 +290,16 @@ export function AcademySidebar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => { if (isMobile) setOpenMobile(false); navigate("/academy/settings"); }}
-                aria-label="Profile"
+                onClick={async () => {
+                  if (isMobile) setOpenMobile(false);
+                  if (isBasicTier) {
+                    await signOut();
+                    navigate("/create-account", { replace: true });
+                  } else {
+                    navigate("/academy/settings");
+                  }
+                }}
+                aria-label={isBasicTier ? "Sign out" : "Profile"}
                 className="sidebar-dock-btn relative shrink-0 h-9 w-9 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <div className="h-9 w-9 rounded-full overflow-hidden bg-white/[0.04] border border-white/[0.06]">
@@ -295,11 +308,11 @@ export function AcademySidebar() {
                 <span className="absolute -bottom-px -right-px h-[10px] w-[10px] rounded-full bg-emerald-500 ring-[2px] ring-[#0B0F14]" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">Profile</TooltipContent>
+            <TooltipContent side="top" className="text-xs">{isBasicTier ? "Sign out" : "Profile"}</TooltipContent>
           </Tooltip>
 
           {/* Inbox — hidden when collapsed */}
-          {!collapsed && (
+          {!isBasicTier && !collapsed && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button

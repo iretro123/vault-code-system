@@ -1,47 +1,35 @@
-## What's actually happening
-
-After this user signs in, two problems pile on top of each other:
-
-1. **The Academy still loads briefly, then errors out.** The basic_tier check (`useIsBasicTier`) runs its own Supabase query *inside* `AcademyLayout`. While that single query is in flight, `isBasicTier` is `false`, so the layout proceeds to mount and kicks off ~30 Academy queries. The redirect to `/basic` then races against everything, and the page flashes "all areas" before it eventually fires.
-
-2. **"Something went wrong" + reload loop.** A lazy route chunk fails to import (`TypeError: Importing a module script failed`) — visible in the console. The `ErrorBoundary` catches it and just renders a static "Reload page" button with no auto-recovery, so it sticks. While the boundary keeps re-mounting, in-flight Supabase fetches get aborted, which is why the network panel shows every request as `Load failed` at the exact same timestamp.
-
-So the fix is two surgical changes, not a redesign.
-
 ## Plan
 
-### 1. Route basic_tier users *before* Academy mounts (no extra query)
+Fix the `basic_tier` experience so this review account cannot see the full Academy sidebar, tabs, or other screens.
 
-`AuthContext` already loads `userRole.role` for the signed-in user. Use that synchronously instead of a second round-trip.
+### What I’ll change
 
-- `src/hooks/useIsBasicTier.ts` — read `userRole` from `useAuth()` directly. Return `{ isBasicTier: userRole?.role === 'basic_tier', loading: authLoading }`. Drop the separate `user_roles` query entirely. One fewer race condition, one fewer failing request.
-- `src/App.tsx` — add a tiny `<BasicTierRedirect>` wrapper around the Academy/Vault OS routes. As soon as `userRole.role === 'basic_tier'` is known, `<Navigate to="/basic" replace />` *before* `AcademyLayout` ever mounts. That kills the "all areas flash" and the cascade of failing Academy queries.
-- `src/components/BasicTierGate.tsx` — same source-of-truth swap (read from `useAuth().userRole`), so the `/basic` side stays consistent.
-- Keep the existing redirect inside `AcademyLayout` as a defensive fallback. No data model changes, no RLS changes.
+1. **Stop sending basic users to `/basic`**
+   - Update the role redirect so `basic_tier` users land on `/academy/learn`, not the separate `/basic` page.
+   - Keep `/basic` available only if still needed, but it will no longer be the primary destination for this account.
 
-### 2. Auto-recover from stale lazy-chunk imports
+2. **Hide all non-Learn navigation for `basic_tier`**
+   - Update the Academy sidebar/mobile nav logic so basic users only see Learn-related navigation.
+   - Remove Dashboard, Trade, Community, Live, Settings, admin links, Coach access, and other tabs from the visible UI for this role.
 
-After a redeploy, an old tab can request a JS chunk hash that no longer exists → `Importing a module script failed`. Today the ErrorBoundary just shows a button. Fix it once, properly:
+3. **Hard-block direct URLs**
+   - Add a route guard around Academy child routes so if a `basic_tier` user manually visits `/academy/home`, `/academy/community`, `/academy/trade`, `/academy/live`, `/academy/settings`, admin pages, etc., they are immediately redirected back to `/academy/learn`.
+   - Allow only:
+     - `/academy/learn`
+     - `/academy/learn/:moduleSlug`
 
-- Add `src/lib/lazyWithRetry.ts` — wraps `React.lazy` so that on a chunk import error it does **one** `window.location.reload()` (guarded with a sessionStorage flag so we never reload-loop).
-- `src/App.tsx` — swap every `lazy(() => import(...))` for `lazyWithRetry(() => import(...))`. No behavior change on the happy path.
-- `src/components/ErrorBoundary.tsx` — if the error message includes `Importing a module script` / `ChunkLoadError` / `Failed to fetch dynamically imported module`, trigger the same one-time reload automatically instead of showing the error card. Card stays as the fallback for genuine app errors.
+4. **Prevent Academy layout from flashing restricted areas**
+   - Ensure the layout waits until auth/role is known before rendering navigation.
+   - This should remove the visible flash/glitch where all screens/tabs appear before the redirect.
 
-### 3. After the change
+### Files to inspect/edit in build mode
 
-- Re-test by signing in as `appreview+1778972025@vault.dev`. Expected: lands on `/create-account` → sign-in → goes straight to `/basic` with zero Academy chrome visible, no "Something went wrong".
-- Existing non-basic users (operator / vault_access / etc.) are unaffected — the wrapper is a no-op for them.
+- `src/App.tsx`
+- `src/components/layout/AcademyLayout.tsx`
+- `src/components/layout/AcademySidebar.tsx`
+- `src/components/layout/MobileNav.tsx`
+- Any shared nav config used by sidebar/mobile navigation
 
-## Files touched
+### Expected result
 
-- `src/hooks/useIsBasicTier.ts` — read role from AuthContext, remove standalone query
-- `src/App.tsx` — add `BasicTierRedirect` wrapper around protected routes; switch to `lazyWithRetry`
-- `src/components/BasicTierGate.tsx` — read role from AuthContext
-- `src/components/ErrorBoundary.tsx` — auto-reload once on chunk import errors
-- `src/lib/lazyWithRetry.ts` — new helper (small)
-
-## Out of scope
-
-- No database migrations, no RLS changes, no UI redesign.
-- `AcademyLayout`'s own basic_tier redirect stays as a safety net.
-- No changes to the `/basic` pages themselves.
+When signing in as `appreview+1778972025@vault.dev`, the browser and app should show only the Learn experience. No full Academy tabs, no Trade/Community/Live/Dashboard/Settings access, and direct restricted URLs should bounce back to `/academy/learn`.

@@ -129,10 +129,15 @@ function AcademyLayoutInner() {
     return <Navigate to="/welcome" replace />;
   }
 
-  // 2b. Basic-tier members never see the full app — redirect to the video-only home.
+  // 2b. Basic-tier members are locked to the Learn experience inside Academy.
   if (!basicLoading && isBasicTier) {
-    return <Navigate to="/basic" replace />;
+    const path = location.pathname;
+    const allowed = path === "/academy/learn" || path.startsWith("/academy/learn/");
+    if (!allowed) {
+      return <Navigate to="/academy/learn" replace />;
+    }
   }
+
 
   // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
   if (!profile || (!hydrated && !everHydrated)) {

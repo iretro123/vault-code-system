@@ -3,11 +3,13 @@ import { BookOpen, Menu, Home, MessageSquare, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useLiveNow } from "@/hooks/useLiveNow";
+import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 
 export function MobileNav() {
   const location = useLocation();
   const { setOpenMobile } = useSidebar();
   const { liveSession } = useLiveNow();
+  const { isBasicTier } = useIsBasicTier();
   const joinLiveUrl = liveSession?.join_url || "";
   type MobileNavItem = {
     icon: typeof Menu;
@@ -17,13 +19,15 @@ export function MobileNav() {
     liveDot?: boolean;
   };
 
-  const navItems: MobileNavItem[] = [
-    { icon: Menu, label: "Menu", path: "__menu__" },
-    { icon: Home, label: "Home", path: "/academy/home" },
-    { icon: MessageSquare, label: "Chat", path: "/academy/community" },
-    ...(joinLiveUrl ? [{ icon: Radio, label: "Join Live", href: joinLiveUrl, liveDot: true }] : []),
-    { icon: BookOpen, label: "Learn", path: "/academy/learn" },
-  ];
+  const navItems: MobileNavItem[] = isBasicTier
+    ? [{ icon: BookOpen, label: "Learn", path: "/academy/learn" }]
+    : [
+        { icon: Menu, label: "Menu", path: "__menu__" },
+        { icon: Home, label: "Home", path: "/academy/home" },
+        { icon: MessageSquare, label: "Chat", path: "/academy/community" },
+        ...(joinLiveUrl ? [{ icon: Radio, label: "Join Live", href: joinLiveUrl, liveDot: true }] : []),
+        { icon: BookOpen, label: "Learn", path: "/academy/learn" },
+      ];
 
   const renderItem = ({
     icon: Icon,
