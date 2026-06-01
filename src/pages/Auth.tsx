@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { isGuestModeEnabled } from "@/lib/featureFlags";
 import { enableGuestMode } from "@/lib/guestMode";
+import { isNativeCapacitorApp } from "@/lib/platform";
 
 const Auth = () => {
   const { toast } = useToast();
@@ -198,10 +199,12 @@ const Auth = () => {
               </form>
 
 
-              <p className="text-center text-sm text-muted-foreground mt-5">
-                First time here?{" "}
-                <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
-              </p>
+              {!isNativeCapacitorApp() && (
+                <p className="text-center text-sm text-muted-foreground mt-5">
+                  First time here?{" "}
+                  <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
+                </p>
+              )}
             </div>
           </>
         )}
