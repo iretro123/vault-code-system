@@ -112,6 +112,9 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/guest" element={<Suspense fallback={<RouteFallback />}><GuestPreview /></Suspense>} />
+            <Route path="/create-account" element={<Suspense fallback={<RouteFallback />}><CreateAccount /></Suspense>} />
+            <Route path="/basic" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicHome /></Suspense></BasicTierGate>} />
+            <Route path="/basic/learn/:slug" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicModule /></Suspense></BasicTierGate>} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />
             <Route path="/academy" element={<AcademyLayout />}>
               <Route index element={<Navigate to="home" replace />} />
