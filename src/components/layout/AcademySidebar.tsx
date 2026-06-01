@@ -147,6 +147,7 @@ export function AcademySidebar() {
 
         {/* Search */}
 
+        {!isBasicTier && (
         <SidebarGroup className="hidden md:block">
           <SidebarGroupContent>
             <SidebarMenu>
@@ -167,6 +168,7 @@ export function AcademySidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        )}
 
         {/* Main nav */}
         <SidebarGroup>
