@@ -81,10 +81,12 @@ export function AcademySidebar() {
   const { inboxUnreadCount, onboarding } = useAcademyData();
   const { isPageEnabled } = useFeatureFlags();
   const { roleName, isOperator } = useAcademyPermissions();
+  const { isBasicTier } = useIsBasicTier();
   const isAdmin = roleName === "CEO" || isOperator;
   const userId = profile?.user_id || null;
   const { totalUnread } = useUnreadCounts(null, userId);
   const communityBadge = formatBadge(totalUnread);
+  const navItems = isBasicTier ? coreNav.filter((n) => n.pageKey === "learn") : coreNav;
 
   const displayName = profile?.display_name || "Trader";
   const profileData = profile as SidebarProfileShape | null;
