@@ -129,6 +129,11 @@ function AcademyLayoutInner() {
     return <Navigate to="/welcome" replace />;
   }
 
+  // 2b. Basic-tier members never see the full app — redirect to the video-only home.
+  if (!basicLoading && isBasicTier) {
+    return <Navigate to="/basic" replace />;
+  }
+
   // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
   if (!profile || (!hydrated && !everHydrated)) {
     return <LoadingShell />;
