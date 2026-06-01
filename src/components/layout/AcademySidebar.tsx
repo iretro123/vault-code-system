@@ -290,8 +290,16 @@ export function AcademySidebar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                onClick={() => { if (isMobile) setOpenMobile(false); navigate("/academy/settings"); }}
-                aria-label="Profile"
+                onClick={async () => {
+                  if (isMobile) setOpenMobile(false);
+                  if (isBasicTier) {
+                    await signOut();
+                    navigate("/create-account", { replace: true });
+                  } else {
+                    navigate("/academy/settings");
+                  }
+                }}
+                aria-label={isBasicTier ? "Sign out" : "Profile"}
                 className="sidebar-dock-btn relative shrink-0 h-9 w-9 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <div className="h-9 w-9 rounded-full overflow-hidden bg-white/[0.04] border border-white/[0.06]">
@@ -300,7 +308,7 @@ export function AcademySidebar() {
                 <span className="absolute -bottom-px -right-px h-[10px] w-[10px] rounded-full bg-emerald-500 ring-[2px] ring-[#0B0F14]" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">Profile</TooltipContent>
+            <TooltipContent side="top" className="text-xs">{isBasicTier ? "Sign out" : "Profile"}</TooltipContent>
           </Tooltip>
 
           {/* Inbox — hidden when collapsed */}
