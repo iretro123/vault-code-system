@@ -95,7 +95,8 @@ function ReloadGuardReset() {
 function BasicTierRedirect({ children }: { children: ReactNode }) {
   const { userRole, loading } = useAuth();
   const location = useLocation();
-  if (loading || userRole?.role !== "basic_tier") return <>{children}</>;
+  if (loading) return <RouteFallback />;
+  if (userRole?.role !== "basic_tier") return <>{children}</>;
   const path = location.pathname;
   const onLearn = path === "/academy/learn" || path.startsWith("/academy/learn/");
   if (onLearn) return <>{children}</>;
