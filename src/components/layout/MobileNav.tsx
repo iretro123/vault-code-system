@@ -20,7 +20,11 @@ export function MobileNav() {
   };
 
   const navItems: MobileNavItem[] = isBasicTier
-    ? [{ icon: BookOpen, label: "Learn", path: "/academy/learn" }]
+    ? [
+        { icon: Menu, label: "Menu", path: "__menu__" },
+        { icon: BookOpen, label: "Learn", path: "/academy/learn" },
+        { icon: MessageSquare, label: "Chat", path: "/academy/community" },
+      ]
     : [
         { icon: Menu, label: "Menu", path: "__menu__" },
         { icon: Home, label: "Home", path: "/academy/home" },
