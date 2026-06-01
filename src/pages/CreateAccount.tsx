@@ -1,16 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { isNativeCapacitorApp } from "@/lib/platform";
 
 const CreateAccount = () => {
-  if (isNativeCapacitorApp()) {
-    return <Navigate to="/welcome" replace />;
-  }
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
