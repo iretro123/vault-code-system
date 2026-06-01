@@ -98,8 +98,10 @@ function BasicTierRedirect({ children }: { children: ReactNode }) {
   if (loading) return <RouteFallback />;
   if (userRole?.role !== "basic_tier") return <>{children}</>;
   const path = location.pathname;
-  const onLearn = path === "/academy/learn" || path.startsWith("/academy/learn/");
-  if (onLearn) return <>{children}</>;
+  const allowed =
+    path === "/academy/learn" || path.startsWith("/academy/learn/") ||
+    path === "/academy/community" || path.startsWith("/academy/community");
+  if (allowed) return <>{children}</>;
   return <Navigate to="/academy/learn" replace />;
 }
 

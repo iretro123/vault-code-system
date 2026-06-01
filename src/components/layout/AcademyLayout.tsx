@@ -130,7 +130,9 @@ function AcademyLayoutInner() {
   //     that don't apply to a video-only membership.
   if (isBasicTier) {
     const path = location.pathname;
-    const allowed = path === "/academy/learn" || path.startsWith("/academy/learn/");
+    const allowed =
+      path === "/academy/learn" || path.startsWith("/academy/learn/") ||
+      path === "/academy/community" || path.startsWith("/academy/community");
     if (!allowed) {
       return <Navigate to="/academy/learn" replace />;
     }
@@ -149,6 +151,7 @@ function AcademyLayoutInner() {
           <main className="academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in pb-4 md:pb-6">
             <Outlet />
           </main>
+          <CoachDrawer />
           <MobileNav />
         </div>
       </div>
