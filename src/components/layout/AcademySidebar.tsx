@@ -304,7 +304,7 @@ export function AcademySidebar() {
           </Tooltip>
 
           {/* Inbox — hidden when collapsed */}
-          {!collapsed && (
+          {!isBasicTier && !collapsed && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
