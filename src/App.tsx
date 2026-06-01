@@ -114,6 +114,7 @@ const App = () => (
       <ReferralCapture />
       <AuthProvider>
         <PushBootstrap />
+        <ReloadGuardReset />
         <VaultStateProvider>
         <AcademyDataProvider>
         <AdminModeProvider>
@@ -124,11 +125,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/academy" replace />} />
             <Route path="/hub" element={<Navigate to="/academy" replace />} />
-            <Route path="/cockpit" element={<VaultOSGate><TraderCockpit /></VaultOSGate>} />
-            <Route path="/log" element={<VaultOSGate><TradeLog /></VaultOSGate>} />
-            <Route path="/vault-log" element={<VaultOSGate><VaultLog /></VaultOSGate>} />
-            <Route path="/reports" element={<VaultOSGate><Reports /></VaultOSGate>} />
-            <Route path="/settings" element={<VaultOSGate><Settings /></VaultOSGate>} />
+            <Route path="/cockpit" element={<BasicTierRedirect><VaultOSGate><TraderCockpit /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/log" element={<BasicTierRedirect><VaultOSGate><TradeLog /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/vault-log" element={<BasicTierRedirect><VaultOSGate><VaultLog /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/reports" element={<BasicTierRedirect><VaultOSGate><Reports /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/settings" element={<BasicTierRedirect><VaultOSGate><Settings /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/welcome" element={<Suspense fallback={<RouteFallback />}><Welcome /></Suspense>} />
             <Route path="/intro" element={<Suspense fallback={<RouteFallback />}><IntroCarousel /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
@@ -139,7 +140,8 @@ const App = () => (
             <Route path="/basic" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicHome /></Suspense></BasicTierGate>} />
             <Route path="/basic/learn/:slug" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicModule /></Suspense></BasicTierGate>} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />
-            <Route path="/academy" element={<AcademyLayout />}>
+            <Route path="/academy" element={<BasicTierRedirect><AcademyLayout /></BasicTierRedirect>}>
+
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<Suspense fallback={<RouteFallback />}><AcademyHome /></Suspense>} />
               <Route path="start" element={<Navigate to="/academy/home" replace />} />
