@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -17,9 +17,6 @@ import { isNativeCapacitorApp } from "@/lib/platform";
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
 const Signup = () => {
-  if (isNativeCapacitorApp()) {
-    return <Navigate to="/welcome" replace />;
-  }
   const { toast } = useToast();
   const { signUp } = useAuth();
   const navigate = useNavigate();
