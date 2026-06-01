@@ -1,52 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Radio, Calendar, Bell, ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-import { formatTimeInTZ, getUserTimezone } from "@/lib/userTime";
 import { disableGuestMode, isGuestMode } from "@/lib/guestMode";
 
-interface PublicLiveSession {
-  id: string;
-  title: string;
-  description: string;
-  session_date: string;
-  session_type: string;
-  duration_minutes: number;
-  join_url: string | null;
-}
-
 /**
- * View-only guest preview. Renders public live-session info only — no chat,
- * no billing, no posting. Everything else is gated behind sign-in.
+ * View-only guest preview. No live sessions, no trade, no chat — just a
+ * sign-in/sign-up CTA. Everything is gated behind authentication.
  */
 export default function GuestPreview() {
   const navigate = useNavigate();
-  const [sessions, setSessions] = useState<PublicLiveSession[]>([]);
-  const [loading, setLoading] = useState(true);
-  const tz = getUserTimezone();
 
   useEffect(() => {
     if (!isGuestMode()) {
       navigate("/auth", { replace: true });
-      return;
     }
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from("live_sessions_public" as any)
-          .select("id,title,description,session_date,session_type,duration_minutes,join_url")
-          .order("session_date", { ascending: true })
-          .limit(8);
-        setSessions(((data as unknown) as PublicLiveSession[]) || []);
-      } catch {
-        void 0;
-      } finally {
-        setLoading(false);
-      }
-    })();
   }, [navigate]);
 
   const handleExit = () => {
