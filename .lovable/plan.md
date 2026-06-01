@@ -1,35 +1,25 @@
-## Plan
+The issue is not the sidebar filter itself. The account currently has two role rows in the database: `free` and `basic_tier`. The app uses `.maybeSingle()` to load one role, so it can read `free` and treat the user as a full Academy member. That is why Dashboard, Trade OS, Community, Live, Schedule, Settings, Ask Coach, Share Vault, and Inbox are still visible.
 
-Fix the `basic_tier` experience so this review account cannot see the full Academy sidebar, tabs, or other screens.
+Plan:
 
-### What I’ll change
+1. Fix the account data
+- Remove the duplicate lower-priority `free` role row for `appreview+1778972025@vault.dev`.
+- Leave the user as `basic_tier` only.
 
-1. **Stop sending basic users to `/basic`**
-   - Update the role redirect so `basic_tier` users land on `/academy/learn`, not the separate `/basic` page.
-   - Keep `/basic` available only if still needed, but it will no longer be the primary destination for this account.
+2. Make role loading deterministic
+- Update auth role loading so if a user ever has multiple role rows, the app chooses the most restrictive/basic-only role correctly instead of relying on `.maybeSingle()`.
+- Prevent this exact failure from happening again if duplicate roles exist later.
 
-2. **Hide all non-Learn navigation for `basic_tier`**
-   - Update the Academy sidebar/mobile nav logic so basic users only see Learn-related navigation.
-   - Remove Dashboard, Trade, Community, Live, Settings, admin links, Coach access, and other tabs from the visible UI for this role.
+3. Stop rendering the full Academy shell while role is unresolved
+- Update the loading gate so Academy navigation does not render until both auth and role resolution are complete.
+- Avoid showing the full sidebar during loading for basic-tier users.
 
-3. **Hard-block direct URLs**
-   - Add a route guard around Academy child routes so if a `basic_tier` user manually visits `/academy/home`, `/academy/community`, `/academy/trade`, `/academy/live`, `/academy/settings`, admin pages, etc., they are immediately redirected back to `/academy/learn`.
-   - Allow only:
-     - `/academy/learn`
-     - `/academy/learn/:moduleSlug`
+4. Preserve the Learn-only experience
+- Keep only `/academy/learn` and `/academy/learn/:moduleSlug` allowed for `basic_tier`.
+- Keep all other Academy URLs redirecting to `/academy/learn`.
+- Keep the basic-tier sidebar/mobile nav limited to Learn only, with non-Learn actions hidden.
 
-4. **Prevent Academy layout from flashing restricted areas**
-   - Ensure the layout waits until auth/role is known before rendering navigation.
-   - This should remove the visible flash/glitch where all screens/tabs appear before the redirect.
-
-### Files to inspect/edit in build mode
-
-- `src/App.tsx`
-- `src/components/layout/AcademyLayout.tsx`
-- `src/components/layout/AcademySidebar.tsx`
-- `src/components/layout/MobileNav.tsx`
-- Any shared nav config used by sidebar/mobile navigation
-
-### Expected result
-
-When signing in as `appreview+1778972025@vault.dev`, the browser and app should show only the Learn experience. No full Academy tabs, no Trade/Community/Live/Dashboard/Settings access, and direct restricted URLs should bounce back to `/academy/learn`.
+Validation:
+- Confirm the database shows only `basic_tier` for the review account.
+- Confirm the code no longer uses single-row role assumptions that break on duplicate roles.
+- Confirm the screenshot state can no longer happen: only Learn remains visible for this account.

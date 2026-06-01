@@ -119,8 +119,8 @@ function AcademyLayoutInner() {
     logActivity("page_view", segment);
   }, [location.pathname]);
 
-  // 1. Wait for auth to finish loading
-  if (loading) {
+  // 1. Wait for auth (and basic-tier role resolution) to finish before rendering nav.
+  if (loading || basicLoading) {
     return <LoadingShell />;
   }
 
@@ -130,14 +130,13 @@ function AcademyLayoutInner() {
   }
 
   // 2b. Basic-tier members are locked to the Learn experience inside Academy.
-  if (!basicLoading && isBasicTier) {
+  if (isBasicTier) {
     const path = location.pathname;
     const allowed = path === "/academy/learn" || path.startsWith("/academy/learn/");
     if (!allowed) {
       return <Navigate to="/academy/learn" replace />;
     }
   }
-
 
   // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
   if (!profile || (!hydrated && !everHydrated)) {
