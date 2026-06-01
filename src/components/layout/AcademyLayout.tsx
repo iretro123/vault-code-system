@@ -45,14 +45,11 @@ function LoadingShell() {
   return (
     <div className="academy-mobile-fit h-[100dvh] flex w-full bg-background relative overflow-hidden">
       <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" style={ambientBgStyle} />
-      <AcademySidebar />
       <div className="flex-1 flex min-h-0 flex-col min-w-0 relative z-[1] overflow-hidden">
         <div className="h-14 border-b border-white/[0.06] bg-background flex items-center px-4">
-          <Skeleton className="h-5 w-32" />
-          <div className="ml-auto flex items-center gap-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-            <Skeleton className="h-8 w-8 rounded-full" />
-          </div>
+          <span className="text-lg font-bold tracking-tight text-foreground">
+            Vault<span className="text-primary">Academy</span>
+          </span>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
