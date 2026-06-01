@@ -1,15 +1,16 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, Suspense, ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { VaultStateProvider } from "@/contexts/VaultStateContext";
 import { AcademyDataProvider } from "@/contexts/AcademyDataContext";
 import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import { captureReferral } from "@/lib/referralCapture";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { lazyWithRetry, clearLazyReloadGuard } from "@/lib/lazyWithRetry";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { VaultOSGate } from "./components/VaultOSGate";
@@ -17,41 +18,43 @@ import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import { Loader2 } from "lucide-react";
 
-// Lazy-loaded routes — split from main bundle
-const AcademyHome = lazy(() => import("./pages/academy/AcademyHome"));
-const AcademyLearn = lazy(() => import("./pages/academy/AcademyLearn"));
-const AcademyModule = lazy(() => import("./pages/academy/AcademyModule"));
-const AcademyCommunity = lazy(() => import("./pages/academy/AcademyCommunity"));
-const AcademyTrade = lazy(() => import("./pages/academy/AcademyTrade"));
-const AcademyRoom = lazy(() => import("./pages/academy/AcademyRoom"));
-const AcademyLive = lazy(() => import("./pages/academy/AcademyLive"));
-const AcademyResources = lazy(() => import("./pages/academy/AcademyResources"));
-const AcademyProfile = lazy(() => import("./pages/academy/AcademyProfile"));
-const AcademySettings = lazy(() => import("./pages/academy/AcademySettings"));
-const AcademyAdmin = lazy(() => import("./pages/academy/AcademyAdmin"));
-const AcademyAdminUsers = lazy(() => import("./pages/academy/AcademyAdminUsers"));
-const AdminPanel = lazy(() => import("./pages/academy/AdminPanel"));
-const AcademyJournal = lazy(() => import("./pages/academy/AcademyJournal"));
-const AcademyProgress = lazy(() => import("./pages/academy/AcademyProgress"));
-const AcademyMyQuestions = lazy(() => import("./pages/academy/AcademyMyQuestions"));
-const AcademyPlaybook = lazy(() => import("./pages/academy/AcademyPlaybook"));
-const AcademyQA = lazy(() => import("./pages/academy/AcademyQA"));
-const AcademySupport = lazy(() => import("./pages/academy/AcademySupport"));
-const AcademyVaultApproval = lazy(() => import("./pages/academy/AcademyVaultApproval"));
-const ReferralRedirect = lazy(() => import("./pages/ReferralRedirect"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Signup = lazy(() => import("./pages/Signup"));
-const TradeLog = lazy(() => import("./pages/TradeLog"));
-const TraderCockpit = lazy(() => import("./pages/TraderCockpit"));
-const Settings = lazy(() => import("./pages/Settings"));
-const VaultLog = lazy(() => import("./pages/VaultLog"));
-const Reports = lazy(() => import("./pages/Reports"));
-const GuestPreview = lazy(() => import("./pages/GuestPreview"));
-const Welcome = lazy(() => import("./pages/Welcome"));
-const IntroCarousel = lazy(() => import("./pages/IntroCarousel"));
-const CreateAccount = lazy(() => import("./pages/CreateAccount"));
-const BasicHome = lazy(() => import("./pages/basic/BasicHome"));
-const BasicModule = lazy(() => import("./pages/basic/BasicModule"));
+// Lazy-loaded routes — split from main bundle.
+// Wrapped with lazyWithRetry so stale-deploy chunk-hash mismatches
+// trigger a single auto-reload instead of a permanent error.
+const AcademyHome = lazyWithRetry(() => import("./pages/academy/AcademyHome"));
+const AcademyLearn = lazyWithRetry(() => import("./pages/academy/AcademyLearn"));
+const AcademyModule = lazyWithRetry(() => import("./pages/academy/AcademyModule"));
+const AcademyCommunity = lazyWithRetry(() => import("./pages/academy/AcademyCommunity"));
+const AcademyTrade = lazyWithRetry(() => import("./pages/academy/AcademyTrade"));
+const AcademyRoom = lazyWithRetry(() => import("./pages/academy/AcademyRoom"));
+const AcademyLive = lazyWithRetry(() => import("./pages/academy/AcademyLive"));
+const AcademyResources = lazyWithRetry(() => import("./pages/academy/AcademyResources"));
+const AcademyProfile = lazyWithRetry(() => import("./pages/academy/AcademyProfile"));
+const AcademySettings = lazyWithRetry(() => import("./pages/academy/AcademySettings"));
+const AcademyAdmin = lazyWithRetry(() => import("./pages/academy/AcademyAdmin"));
+const AcademyAdminUsers = lazyWithRetry(() => import("./pages/academy/AcademyAdminUsers"));
+const AdminPanel = lazyWithRetry(() => import("./pages/academy/AdminPanel"));
+const AcademyJournal = lazyWithRetry(() => import("./pages/academy/AcademyJournal"));
+const AcademyProgress = lazyWithRetry(() => import("./pages/academy/AcademyProgress"));
+const AcademyMyQuestions = lazyWithRetry(() => import("./pages/academy/AcademyMyQuestions"));
+const AcademyPlaybook = lazyWithRetry(() => import("./pages/academy/AcademyPlaybook"));
+const AcademyQA = lazyWithRetry(() => import("./pages/academy/AcademyQA"));
+const AcademySupport = lazyWithRetry(() => import("./pages/academy/AcademySupport"));
+const AcademyVaultApproval = lazyWithRetry(() => import("./pages/academy/AcademyVaultApproval"));
+const ReferralRedirect = lazyWithRetry(() => import("./pages/ReferralRedirect"));
+const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"));
+const Signup = lazyWithRetry(() => import("./pages/Signup"));
+const TradeLog = lazyWithRetry(() => import("./pages/TradeLog"));
+const TraderCockpit = lazyWithRetry(() => import("./pages/TraderCockpit"));
+const Settings = lazyWithRetry(() => import("./pages/Settings"));
+const VaultLog = lazyWithRetry(() => import("./pages/VaultLog"));
+const Reports = lazyWithRetry(() => import("./pages/Reports"));
+const GuestPreview = lazyWithRetry(() => import("./pages/GuestPreview"));
+const Welcome = lazyWithRetry(() => import("./pages/Welcome"));
+const IntroCarousel = lazyWithRetry(() => import("./pages/IntroCarousel"));
+const CreateAccount = lazyWithRetry(() => import("./pages/CreateAccount"));
+const BasicHome = lazyWithRetry(() => import("./pages/basic/BasicHome"));
+const BasicModule = lazyWithRetry(() => import("./pages/basic/BasicModule"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +80,26 @@ function PushBootstrap() {
   return null;
 }
 
+function ReloadGuardReset() {
+  useEffect(() => {
+    clearLazyReloadGuard();
+  }, []);
+  return null;
+}
+
+/**
+ * Redirect basic_tier members away from full-app routes before
+ * any heavy layout/data fetching mounts. Uses AuthContext's
+ * already-loaded role to stay synchronous.
+ */
+function BasicTierRedirect({ children }: { children: ReactNode }) {
+  const { userRole, loading } = useAuth();
+  if (!loading && userRole?.role === "basic_tier") {
+    return <Navigate to="/basic" replace />;
+  }
+  return <>{children}</>;
+}
+
 function RouteFallback() {
   return (
     <div className="flex-1 flex items-center justify-center min-h-[200px]">
@@ -91,6 +114,7 @@ const App = () => (
       <ReferralCapture />
       <AuthProvider>
         <PushBootstrap />
+        <ReloadGuardReset />
         <VaultStateProvider>
         <AcademyDataProvider>
         <AdminModeProvider>
@@ -101,11 +125,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/academy" replace />} />
             <Route path="/hub" element={<Navigate to="/academy" replace />} />
-            <Route path="/cockpit" element={<VaultOSGate><TraderCockpit /></VaultOSGate>} />
-            <Route path="/log" element={<VaultOSGate><TradeLog /></VaultOSGate>} />
-            <Route path="/vault-log" element={<VaultOSGate><VaultLog /></VaultOSGate>} />
-            <Route path="/reports" element={<VaultOSGate><Reports /></VaultOSGate>} />
-            <Route path="/settings" element={<VaultOSGate><Settings /></VaultOSGate>} />
+            <Route path="/cockpit" element={<BasicTierRedirect><VaultOSGate><TraderCockpit /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/log" element={<BasicTierRedirect><VaultOSGate><TradeLog /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/vault-log" element={<BasicTierRedirect><VaultOSGate><VaultLog /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/reports" element={<BasicTierRedirect><VaultOSGate><Reports /></VaultOSGate></BasicTierRedirect>} />
+            <Route path="/settings" element={<BasicTierRedirect><VaultOSGate><Settings /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/welcome" element={<Suspense fallback={<RouteFallback />}><Welcome /></Suspense>} />
             <Route path="/intro" element={<Suspense fallback={<RouteFallback />}><IntroCarousel /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
@@ -116,7 +140,8 @@ const App = () => (
             <Route path="/basic" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicHome /></Suspense></BasicTierGate>} />
             <Route path="/basic/learn/:slug" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicModule /></Suspense></BasicTierGate>} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />
-            <Route path="/academy" element={<AcademyLayout />}>
+            <Route path="/academy" element={<BasicTierRedirect><AcademyLayout /></BasicTierRedirect>}>
+
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<Suspense fallback={<RouteFallback />}><AcademyHome /></Suspense>} />
               <Route path="start" element={<Navigate to="/academy/home" replace />} />

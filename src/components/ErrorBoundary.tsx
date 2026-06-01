@@ -21,6 +21,28 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+
+    // Stale-deploy chunk-hash mismatch: auto-reload once instead of
+    // showing the user a dead-end error card.
+    const msg = error?.message ?? "";
+    const isChunkError =
+      /Importing a module script failed/i.test(msg) ||
+      /Failed to fetch dynamically imported module/i.test(msg) ||
+      /Loading chunk [\d]+ failed/i.test(msg) ||
+      /ChunkLoadError/i.test(msg) ||
+      error?.name === "ChunkLoadError";
+
+    if (isChunkError) {
+      try {
+        const RELOAD_KEY = "__lazy_chunk_reloaded__";
+        if (sessionStorage.getItem(RELOAD_KEY) !== "1") {
+          sessionStorage.setItem(RELOAD_KEY, "1");
+          window.location.reload();
+        }
+      } catch {
+        window.location.reload();
+      }
+    }
   }
 
   render() {
@@ -38,7 +60,10 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.message || "An unexpected error occurred."}
             </p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                try { sessionStorage.removeItem("__lazy_chunk_reloaded__"); } catch { /* ignore */ }
+                window.location.reload();
+              }}
               className="inline-block text-sm text-primary hover:underline mt-2"
             >
               Reload page
