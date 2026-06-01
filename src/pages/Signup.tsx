@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -12,10 +12,14 @@ import { ensureProfile } from "@/lib/ensureProfile";
 import { getStoredReferral, clearStoredReferral } from "@/lib/referralCapture";
 import { CommunityTermsDialog } from "@/components/legal/CommunityTermsDialog";
 import { COMMUNITY_TERMS_VERSION } from "@/lib/communitySafety";
+import { isNativeCapacitorApp } from "@/lib/platform";
 
 const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
 const Signup = () => {
+  if (isNativeCapacitorApp()) {
+    return <Navigate to="/welcome" replace />;
+  }
   const { toast } = useToast();
   const { signUp } = useAuth();
   const navigate = useNavigate();
