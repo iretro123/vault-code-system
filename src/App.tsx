@@ -1,15 +1,16 @@
-import { useEffect, lazy, Suspense } from "react";
+import { useEffect, Suspense, ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { VaultStateProvider } from "@/contexts/VaultStateContext";
 import { AcademyDataProvider } from "@/contexts/AcademyDataContext";
 import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import { captureReferral } from "@/lib/referralCapture";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { lazyWithRetry, clearLazyReloadGuard } from "@/lib/lazyWithRetry";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { VaultOSGate } from "./components/VaultOSGate";
@@ -17,41 +18,43 @@ import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import { Loader2 } from "lucide-react";
 
-// Lazy-loaded routes — split from main bundle
-const AcademyHome = lazy(() => import("./pages/academy/AcademyHome"));
-const AcademyLearn = lazy(() => import("./pages/academy/AcademyLearn"));
-const AcademyModule = lazy(() => import("./pages/academy/AcademyModule"));
-const AcademyCommunity = lazy(() => import("./pages/academy/AcademyCommunity"));
-const AcademyTrade = lazy(() => import("./pages/academy/AcademyTrade"));
-const AcademyRoom = lazy(() => import("./pages/academy/AcademyRoom"));
-const AcademyLive = lazy(() => import("./pages/academy/AcademyLive"));
-const AcademyResources = lazy(() => import("./pages/academy/AcademyResources"));
-const AcademyProfile = lazy(() => import("./pages/academy/AcademyProfile"));
-const AcademySettings = lazy(() => import("./pages/academy/AcademySettings"));
-const AcademyAdmin = lazy(() => import("./pages/academy/AcademyAdmin"));
-const AcademyAdminUsers = lazy(() => import("./pages/academy/AcademyAdminUsers"));
-const AdminPanel = lazy(() => import("./pages/academy/AdminPanel"));
-const AcademyJournal = lazy(() => import("./pages/academy/AcademyJournal"));
-const AcademyProgress = lazy(() => import("./pages/academy/AcademyProgress"));
-const AcademyMyQuestions = lazy(() => import("./pages/academy/AcademyMyQuestions"));
-const AcademyPlaybook = lazy(() => import("./pages/academy/AcademyPlaybook"));
-const AcademyQA = lazy(() => import("./pages/academy/AcademyQA"));
-const AcademySupport = lazy(() => import("./pages/academy/AcademySupport"));
-const AcademyVaultApproval = lazy(() => import("./pages/academy/AcademyVaultApproval"));
-const ReferralRedirect = lazy(() => import("./pages/ReferralRedirect"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Signup = lazy(() => import("./pages/Signup"));
-const TradeLog = lazy(() => import("./pages/TradeLog"));
-const TraderCockpit = lazy(() => import("./pages/TraderCockpit"));
-const Settings = lazy(() => import("./pages/Settings"));
-const VaultLog = lazy(() => import("./pages/VaultLog"));
-const Reports = lazy(() => import("./pages/Reports"));
-const GuestPreview = lazy(() => import("./pages/GuestPreview"));
-const Welcome = lazy(() => import("./pages/Welcome"));
-const IntroCarousel = lazy(() => import("./pages/IntroCarousel"));
-const CreateAccount = lazy(() => import("./pages/CreateAccount"));
-const BasicHome = lazy(() => import("./pages/basic/BasicHome"));
-const BasicModule = lazy(() => import("./pages/basic/BasicModule"));
+// Lazy-loaded routes — split from main bundle.
+// Wrapped with lazyWithRetry so stale-deploy chunk-hash mismatches
+// trigger a single auto-reload instead of a permanent error.
+const AcademyHome = lazyWithRetry(() => import("./pages/academy/AcademyHome"));
+const AcademyLearn = lazyWithRetry(() => import("./pages/academy/AcademyLearn"));
+const AcademyModule = lazyWithRetry(() => import("./pages/academy/AcademyModule"));
+const AcademyCommunity = lazyWithRetry(() => import("./pages/academy/AcademyCommunity"));
+const AcademyTrade = lazyWithRetry(() => import("./pages/academy/AcademyTrade"));
+const AcademyRoom = lazyWithRetry(() => import("./pages/academy/AcademyRoom"));
+const AcademyLive = lazyWithRetry(() => import("./pages/academy/AcademyLive"));
+const AcademyResources = lazyWithRetry(() => import("./pages/academy/AcademyResources"));
+const AcademyProfile = lazyWithRetry(() => import("./pages/academy/AcademyProfile"));
+const AcademySettings = lazyWithRetry(() => import("./pages/academy/AcademySettings"));
+const AcademyAdmin = lazyWithRetry(() => import("./pages/academy/AcademyAdmin"));
+const AcademyAdminUsers = lazyWithRetry(() => import("./pages/academy/AcademyAdminUsers"));
+const AdminPanel = lazyWithRetry(() => import("./pages/academy/AdminPanel"));
+const AcademyJournal = lazyWithRetry(() => import("./pages/academy/AcademyJournal"));
+const AcademyProgress = lazyWithRetry(() => import("./pages/academy/AcademyProgress"));
+const AcademyMyQuestions = lazyWithRetry(() => import("./pages/academy/AcademyMyQuestions"));
+const AcademyPlaybook = lazyWithRetry(() => import("./pages/academy/AcademyPlaybook"));
+const AcademyQA = lazyWithRetry(() => import("./pages/academy/AcademyQA"));
+const AcademySupport = lazyWithRetry(() => import("./pages/academy/AcademySupport"));
+const AcademyVaultApproval = lazyWithRetry(() => import("./pages/academy/AcademyVaultApproval"));
+const ReferralRedirect = lazyWithRetry(() => import("./pages/ReferralRedirect"));
+const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"));
+const Signup = lazyWithRetry(() => import("./pages/Signup"));
+const TradeLog = lazyWithRetry(() => import("./pages/TradeLog"));
+const TraderCockpit = lazyWithRetry(() => import("./pages/TraderCockpit"));
+const Settings = lazyWithRetry(() => import("./pages/Settings"));
+const VaultLog = lazyWithRetry(() => import("./pages/VaultLog"));
+const Reports = lazyWithRetry(() => import("./pages/Reports"));
+const GuestPreview = lazyWithRetry(() => import("./pages/GuestPreview"));
+const Welcome = lazyWithRetry(() => import("./pages/Welcome"));
+const IntroCarousel = lazyWithRetry(() => import("./pages/IntroCarousel"));
+const CreateAccount = lazyWithRetry(() => import("./pages/CreateAccount"));
+const BasicHome = lazyWithRetry(() => import("./pages/basic/BasicHome"));
+const BasicModule = lazyWithRetry(() => import("./pages/basic/BasicModule"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
