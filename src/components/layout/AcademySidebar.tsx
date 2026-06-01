@@ -266,7 +266,7 @@ export function AcademySidebar() {
       {/* Bottom Dock */}
       <SidebarFooter className="mt-auto px-2.5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: '#0B0F14' }}>
         {/* Share Vault Card */}
-        {!collapsed && (
+        {!isBasicTier && !collapsed && (
           <button
             onClick={() => { if (isMobile) setOpenMobile(false); window.dispatchEvent(new CustomEvent("open-referral-modal")); }}
             className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow overflow-hidden"
