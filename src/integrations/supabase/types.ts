@@ -3405,6 +3405,7 @@ export type Database = {
         | "vault_access"
         | "vault_intelligence"
         | "operator"
+        | "basic_tier"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3538,6 +3539,7 @@ export const Constants = {
         "vault_access",
         "vault_intelligence",
         "operator",
+        "basic_tier",
       ],
     },
   },

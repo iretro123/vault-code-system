@@ -13,6 +13,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { VaultOSGate } from "./components/VaultOSGate";
+import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import { Loader2 } from "lucide-react";
 
@@ -48,6 +49,9 @@ const Reports = lazy(() => import("./pages/Reports"));
 const GuestPreview = lazy(() => import("./pages/GuestPreview"));
 const Welcome = lazy(() => import("./pages/Welcome"));
 const IntroCarousel = lazy(() => import("./pages/IntroCarousel"));
+const CreateAccount = lazy(() => import("./pages/CreateAccount"));
+const BasicHome = lazy(() => import("./pages/basic/BasicHome"));
+const BasicModule = lazy(() => import("./pages/basic/BasicModule"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -108,6 +112,9 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/guest" element={<Suspense fallback={<RouteFallback />}><GuestPreview /></Suspense>} />
+            <Route path="/create-account" element={<Suspense fallback={<RouteFallback />}><CreateAccount /></Suspense>} />
+            <Route path="/basic" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicHome /></Suspense></BasicTierGate>} />
+            <Route path="/basic/learn/:slug" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicModule /></Suspense></BasicTierGate>} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />
             <Route path="/academy" element={<AcademyLayout />}>
               <Route index element={<Navigate to="home" replace />} />

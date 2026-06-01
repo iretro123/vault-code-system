@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
+import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 
 const ambientBgStyle = {
   background: [
@@ -64,6 +65,7 @@ function LoadingShell() {
 /** Inner layout that lives inside SidebarProvider so useSidebar() works. */
 function AcademyLayoutInner() {
   const { user, profile, loading } = useAuth();
+  const { isBasicTier, loading: basicLoading } = useIsBasicTier();
   const { hydrated } = useAcademyData();
   // Persist hydration flag to sessionStorage so tab discards don't reset it
   const [everHydrated, setEverHydrated] = useState(() => {
@@ -125,6 +127,11 @@ function AcademyLayoutInner() {
   // 2. No user → send to Welcome landing (first impression on app download)
   if (!user) {
     return <Navigate to="/welcome" replace />;
+  }
+
+  // 2b. Basic-tier members never see the full app — redirect to the video-only home.
+  if (!basicLoading && isBasicTier) {
+    return <Navigate to="/basic" replace />;
   }
 
   // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
