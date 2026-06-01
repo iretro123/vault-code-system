@@ -13,6 +13,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { VaultOSGate } from "./components/VaultOSGate";
+import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import { Loader2 } from "lucide-react";
 
