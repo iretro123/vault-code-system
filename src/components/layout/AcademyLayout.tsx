@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
+import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 
 const ambientBgStyle = {
   background: [
