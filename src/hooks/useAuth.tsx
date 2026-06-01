@@ -243,12 +243,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!ok) return;
       }
 
-      // Fetch user role
-      const { data: roleData } = await supabase
+      // Fetch user role(s) — a user may have multiple rows; pick the most restrictive.
+      const { data: roleRows } = await supabase
         .from("user_roles")
         .select("role, subscription_status")
-        .eq("user_id", userId)
-        .maybeSingle();
+        .eq("user_id", userId);
+
+      let roleData: UserRole | null = null;
+      if (roleRows && roleRows.length > 0) {
+        // basic_tier always wins (locked-down membership), then operator, then hierarchy order.
+        const priority: AppRole[] = ["basic_tier", "operator", "vault_intelligence", "vault_access", "vault_os_owner", "free"];
+        const sorted = [...roleRows].sort(
+          (a, b) => priority.indexOf(a.role as AppRole) - priority.indexOf(b.role as AppRole)
+        );
+        roleData = sorted[0] as UserRole;
+      }
 
       if (roleData) {
         setUserRole(prev => {
