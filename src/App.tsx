@@ -80,6 +80,26 @@ function PushBootstrap() {
   return null;
 }
 
+function ReloadGuardReset() {
+  useEffect(() => {
+    clearLazyReloadGuard();
+  }, []);
+  return null;
+}
+
+/**
+ * Redirect basic_tier members away from full-app routes before
+ * any heavy layout/data fetching mounts. Uses AuthContext's
+ * already-loaded role to stay synchronous.
+ */
+function BasicTierRedirect({ children }: { children: ReactNode }) {
+  const { userRole, loading } = useAuth();
+  if (!loading && userRole?.role === "basic_tier") {
+    return <Navigate to="/basic" replace />;
+  }
+  return <>{children}</>;
+}
+
 function RouteFallback() {
   return (
     <div className="flex-1 flex items-center justify-center min-h-[200px]">
