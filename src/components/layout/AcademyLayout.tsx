@@ -19,7 +19,6 @@ import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, ShieldAlert, WifiOff } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
