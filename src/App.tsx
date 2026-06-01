@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { VaultStateProvider } from "@/contexts/VaultStateContext";
 import { AcademyDataProvider } from "@/contexts/AcademyDataContext";
@@ -94,10 +94,12 @@ function ReloadGuardReset() {
  */
 function BasicTierRedirect({ children }: { children: ReactNode }) {
   const { userRole, loading } = useAuth();
-  if (!loading && userRole?.role === "basic_tier") {
-    return <Navigate to="/academy/learn" replace />;
-  }
-  return <>{children}</>;
+  const location = useLocation();
+  if (loading || userRole?.role !== "basic_tier") return <>{children}</>;
+  const path = location.pathname;
+  const onLearn = path === "/academy/learn" || path.startsWith("/academy/learn/");
+  if (onLearn) return <>{children}</>;
+  return <Navigate to="/academy/learn" replace />;
 }
 
 function RouteFallback() {
