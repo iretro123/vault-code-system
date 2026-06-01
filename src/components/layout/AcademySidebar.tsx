@@ -87,7 +87,7 @@ export function AcademySidebar() {
   const { totalUnread } = useUnreadCounts(null, userId);
   const communityBadge = formatBadge(totalUnread);
   const navItems = isBasicTier
-    ? coreNav.filter((n) => n.pageKey === "learn" || n.pageKey === "community" || n.isCoach)
+    ? coreNav.filter((n) => n.pageKey === "learn" || n.pageKey === "community")
     : coreNav;
 
   const displayName = profile?.display_name || "Trader";
