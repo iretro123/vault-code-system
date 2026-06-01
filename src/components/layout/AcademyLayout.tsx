@@ -130,12 +130,33 @@ function AcademyLayoutInner() {
   }
 
   // 2b. Basic-tier members are locked to the Learn experience inside Academy.
+  //     Render Learn directly — skip profile/hydration/onboarding/access gates
+  //     that don't apply to a video-only membership.
   if (isBasicTier) {
     const path = location.pathname;
     const allowed = path === "/academy/learn" || path.startsWith("/academy/learn/");
     if (!allowed) {
       return <Navigate to="/academy/learn" replace />;
     }
+    return (
+      <div className="academy-mobile-fit h-[100dvh] flex w-full bg-background relative overflow-hidden">
+        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" style={ambientBgStyle} />
+        <AcademySidebar />
+        <div className="flex-1 flex min-h-0 flex-col min-w-0 relative z-[1] overflow-hidden">
+          <header className="academy-top-safe sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background">
+            <div className="flex h-14 items-center justify-between px-4">
+              <span className="text-lg font-bold tracking-tight text-foreground">
+                Vault<span className="text-primary">Academy</span>
+              </span>
+            </div>
+          </header>
+          <main className="academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in pb-4 md:pb-6">
+            <Outlet />
+          </main>
+          <MobileNav />
+        </div>
+      </div>
+    );
   }
 
   // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
