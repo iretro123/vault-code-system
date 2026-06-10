@@ -36,14 +36,15 @@ Deno.serve(async (req) => {
     );
 
     const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    const callerId = claimsData?.claims?.sub as string | undefined;
+    const claims = claimsData?.claims as Record<string, unknown> | undefined;
+    const callerId = claims?.sub as string | undefined;
     if (claimsError || !callerId) throw new Error("Unauthorized");
+    const callerEmail = typeof claims?.email === "string" ? claims.email.toLowerCase() : "";
+    const callerMetadata = claims?.user_metadata && typeof claims.user_metadata === "object"
+      ? claims.user_metadata as Record<string, unknown>
+      : {};
 
-    const { data: userData, error: userError } = await admin.auth.admin.getUserById(callerId);
-    const user = userData?.user;
-    if (userError || !user) throw new Error("Unauthorized");
-
-    if (user.user_metadata?.is_shared_guest === true || user.email?.toLowerCase() === SHARED_GUEST_EMAIL) {
+    if (callerMetadata.is_shared_guest === true || callerEmail === SHARED_GUEST_EMAIL) {
       throw new Error("Guest preview accounts must create a personal account before upgrading");
     }
 
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
       throw new Error("Missing required membership transaction fields");
     }
 
-    if (appAccountToken && appAccountToken !== user.id) {
+    if (appAccountToken && appAccountToken !== callerId) {
       throw new Error("Purchase token does not match the signed-in account");
     }
 
@@ -76,7 +77,7 @@ Deno.serve(async (req) => {
       .from("ios_membership_activations")
       .upsert(
         {
-          user_id: user.id,
+          user_id: callerId,
           product_id: productId,
           transaction_id: transactionId,
           original_transaction_id: originalTransactionId,
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
     const { error: deleteBasicError } = await admin
       .from("user_roles")
       .delete()
-      .eq("user_id", user.id)
+      .eq("user_id", callerId)
       .eq("role", "basic_tier");
     if (deleteBasicError) throw deleteBasicError;
 
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
       .from("user_roles")
       .upsert(
         {
-          user_id: user.id,
+          user_id: callerId,
           role: FULL_ACCESS_ROLE,
           subscription_status: "active",
           subscription_started_at: purchaseDate,
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
     await admin
       .from("profiles")
       .update({ access_status: "active" })
-      .eq("user_id", user.id);
+      .eq("user_id", callerId);
 
     return new Response(
       JSON.stringify({
