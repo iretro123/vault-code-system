@@ -17,6 +17,8 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) throw new Error("Missing authorization header");
+    if (!authHeader.startsWith("Bearer ")) throw new Error("Unauthorized");
+    const token = authHeader.replace("Bearer ", "");
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -33,7 +35,12 @@ Deno.serve(async (req) => {
       },
     );
 
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    const callerId = claimsData?.claims?.sub as string | undefined;
+    if (claimsError || !callerId) throw new Error("Unauthorized");
+
+    const { data: userData, error: userError } = await admin.auth.admin.getUserById(callerId);
+    const user = userData?.user;
     if (userError || !user) throw new Error("Unauthorized");
 
     if (user.user_metadata?.is_shared_guest === true || user.email?.toLowerCase() === SHARED_GUEST_EMAIL) {
