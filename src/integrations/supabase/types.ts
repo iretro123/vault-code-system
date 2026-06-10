@@ -1147,6 +1147,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ios_membership_activations: {
+        Row: {
+          app_account_token: string | null
+          created_at: string
+          environment: string | null
+          expires_date: string | null
+          id: string
+          metadata: Json
+          original_transaction_id: string
+          ownership_type: string | null
+          product_id: string
+          purchase_date: string | null
+          transaction_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_account_token?: string | null
+          created_at?: string
+          environment?: string | null
+          expires_date?: string | null
+          id?: string
+          metadata?: Json
+          original_transaction_id: string
+          ownership_type?: string | null
+          product_id: string
+          purchase_date?: string | null
+          transaction_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_account_token?: string | null
+          created_at?: string
+          environment?: string | null
+          expires_date?: string | null
+          id?: string
+          metadata?: Json
+          original_transaction_id?: string
+          ownership_type?: string | null
+          product_id?: string
+          purchase_date?: string | null
+          transaction_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           biggest_mistake: string

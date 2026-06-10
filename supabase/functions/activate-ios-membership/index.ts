@@ -1,5 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 const FULL_ACCESS_ROLE = "vault_os_owner";
 const SHARED_GUEST_EMAIL = "guest@vaulttradingacademy.com";
