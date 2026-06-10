@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, UserRound } from "lucide-react";
+import { ArrowRight, Sparkles, UserRound } from "lucide-react";
 import { isGuestModeEnabled } from "@/lib/featureFlags";
 import { isNativeCapacitorApp } from "@/lib/platform";
 
@@ -37,6 +37,14 @@ const Welcome = () => {
 
         {/* CTAs */}
         <div className="w-full mt-12 space-y-3">
+          <Button
+            onClick={() => navigate("/create-account/full")}
+            className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+          >
+            Full Access {`$99/month`}
+            <Sparkles className="h-4 w-4" />
+          </Button>
+
           {!isNative && (
             <Button
               onClick={() => navigate("/intro?next=signup")}
@@ -62,6 +70,11 @@ const Welcome = () => {
           )}
 
           <p className="text-center text-sm text-muted-foreground pt-2">
+            Need full access?{" "}
+            <Link to="/create-account/full" className="text-primary hover:underline font-medium">
+              Create an account
+            </Link>
+            <span className="mx-2 text-muted-foreground/50">•</span>
             Already have an account?{" "}
             <Link to="/auth" className="text-primary hover:underline font-medium">
               Sign in

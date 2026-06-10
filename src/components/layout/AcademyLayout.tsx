@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
+import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 
 const ambientBgStyle = {
   background: [
@@ -84,6 +85,7 @@ function AcademyLayoutInner() {
   const lastPageRef = useRef("");
   const hadUserRef = useRef(false);
   const [referralOpen, setReferralOpen] = useState(false);
+  const sharedGuest = isSharedGuestAccount(user, profile);
   useSmartNotifications();
   useSmartRefresh();
   usePresenceHeartbeat();
@@ -148,6 +150,34 @@ function AcademyLayoutInner() {
               </span>
             </div>
           </header>
+          <div className="border-b border-primary/10 bg-primary/10 px-4 py-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {sharedGuest ? "Create your own account for full access" : `Upgrade to full access for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {sharedGuest
+                    ? "Guest preview stays in the shared basic tier until you create your own account."
+                    : "Unlock the complete Vault OS app with Apple in-app purchase."}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="rounded-xl"
+                onClick={async () => {
+                  if (sharedGuest) {
+                    await signOut();
+                    navigate("/create-account/full?source=guest", { replace: true });
+                    return;
+                  }
+                  navigate("/membership");
+                }}
+              >
+                {sharedGuest ? "Create account" : `Upgrade ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
+              </Button>
+            </div>
+          </div>
           <main className="academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in pb-4 md:pb-6">
             <Outlet />
           </main>

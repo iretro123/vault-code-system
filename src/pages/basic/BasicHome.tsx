@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons } from "@/hooks/useAcademyLessons";
 import { supabase } from "@/integrations/supabase/client";
+import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 
 const BasicHome = () => {
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ const BasicHome = () => {
 
   const firstName =
     profile?.display_name?.split(" ")[0] || profile?.email?.split("@")[0] || "Trader";
+  const sharedGuest = isSharedGuestAccount(user, profile);
 
   async function handleSignOut() {
     await signOut();
@@ -111,6 +113,38 @@ const BasicHome = () => {
               Pick a module below to begin.
             </div>
           )}
+        </section>
+
+        <section className="mb-10">
+          <div className="rounded-2xl border border-primary/20 bg-primary/10 p-6 md:p-7">
+            <p className="text-xs uppercase tracking-[0.18em] text-primary/80">Full Access</p>
+            <h3 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight">
+              Upgrade for {VAULT_OS_MONTHLY_FALLBACK_PRICE}
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm md:text-base text-muted-foreground">
+              Move this account into the full Vault OS app and unlock the complete member experience.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <Button
+                className="h-12 rounded-2xl px-6"
+                onClick={async () => {
+                  if (sharedGuest) {
+                    await signOut();
+                    navigate("/create-account/full?source=guest", { replace: true });
+                    return;
+                  }
+                  navigate("/membership");
+                }}
+              >
+                {sharedGuest ? "Create your own full account" : `Upgrade for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
+              </Button>
+              {sharedGuest ? (
+                <p className="text-xs text-muted-foreground self-center">
+                  Guest preview uses a shared account, so upgrades need your own account first.
+                </p>
+              ) : null}
+            </div>
+          </div>
         </section>
 
         {/* Library grid */}

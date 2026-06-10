@@ -199,12 +199,15 @@ const Auth = () => {
               </form>
 
 
-              {!isNativeCapacitorApp() && (
-                <p className="text-center text-sm text-muted-foreground mt-5">
-                  First time here?{" "}
-                  <Link to="/signup" className="text-primary hover:underline font-medium">Create an account</Link>
-                </p>
-              )}
+              <p className="text-center text-sm text-muted-foreground mt-5">
+                First time here?{" "}
+                <Link
+                  to={isNativeCapacitorApp() ? "/create-account/full" : "/signup"}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Create an account
+                </Link>
+              </p>
             </div>
           </>
         )}

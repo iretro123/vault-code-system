@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -8,12 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 const CreateAccount = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const isFullAccessFlow = location.pathname.endsWith("/full");
+  const destinationPath = isFullAccessFlow ? "/membership" : "/basic";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +34,7 @@ const CreateAccount = () => {
         email: email.trim().toLowerCase(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/basic`,
+          emailRedirectTo: `${window.location.origin}${destinationPath}`,
           data: { display_name: displayName.trim() || null },
         },
       });
@@ -43,11 +46,13 @@ const CreateAccount = () => {
       }
       // If session exists (auto-confirm), go straight in; otherwise prompt verify.
       if (data.session) {
-        navigate("/basic", { replace: true });
+        navigate(destinationPath, { replace: true });
       } else {
         toast({
           title: "Check your email",
-          description: "Confirm your email to finish creating your account.",
+          description: isFullAccessFlow
+            ? "Confirm your email to finish creating your account and start your membership."
+            : "Confirm your email to finish creating your account.",
         });
       }
     } catch (err: any) {
@@ -79,7 +84,9 @@ const CreateAccount = () => {
           <span className="text-primary">OS</span>
         </h1>
         <p className="mt-4 text-center text-base text-muted-foreground">
-          Create your video library account.
+          {isFullAccessFlow
+            ? "Create your full access account and continue to the $99/month iPhone membership."
+            : "Create your video library account."}
         </p>
 
         <form onSubmit={handleSubmit} className="w-full mt-8 space-y-3">
@@ -120,7 +127,9 @@ const CreateAccount = () => {
             />
             <span>
               I agree to the Community Terms &amp; Safety guidelines and understand that this
-              membership provides access to on-demand video content only.
+              {isFullAccessFlow
+                ? " account can start a $99/month Apple subscription for full Vault OS access."
+                : " membership provides access to on-demand video content only."}
             </span>
           </label>
 
@@ -129,7 +138,7 @@ const CreateAccount = () => {
             disabled={loading}
             className="w-full h-14 text-base font-semibold rounded-2xl gap-2 mt-2"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isFullAccessFlow ? "Create full access account" : "Create account"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground pt-2">
