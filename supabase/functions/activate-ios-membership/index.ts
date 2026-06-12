@@ -19,9 +19,9 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
-    if (!authHeader.startsWith("Bearer ")) throw new Error("Unauthorized");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
+    if (!authHeader) throw new Error("AUTH_MISSING_HEADER");
+    if (!authHeader.startsWith("Bearer ")) throw new Error("AUTH_INVALID_SCHEME");
     const token = authHeader.replace("Bearer ", "");
 
     const admin = createClient(supabaseUrl, serviceKey, {
@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
     const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
     const claims = claimsData?.claims as Record<string, unknown> | undefined;
     const callerId = claims?.sub as string | undefined;
-    if (claimsError || !callerId) throw new Error("Unauthorized");
+    if (claimsError) throw new Error(`AUTH_CLAIMS_ERROR:${claimsError.message}`);
+    if (!callerId) throw new Error("AUTH_NO_SUB");
     const callerEmail = typeof claims?.email === "string" ? claims.email.toLowerCase() : "";
     const callerMetadata = claims?.user_metadata && typeof claims.user_metadata === "object"
       ? claims.user_metadata as Record<string, unknown>
