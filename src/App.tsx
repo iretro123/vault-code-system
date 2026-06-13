@@ -129,7 +129,7 @@ const App = () => (
           <Sonner />
           <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/academy" replace />} />
+            <Route path="/" element={<Navigate to="/welcome" replace />} />
             <Route path="/hub" element={<Navigate to="/academy" replace />} />
             <Route path="/cockpit" element={<BasicTierRedirect><VaultOSGate><TraderCockpit /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/log" element={<BasicTierRedirect><VaultOSGate><TradeLog /></VaultOSGate></BasicTierRedirect>} />

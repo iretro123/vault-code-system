@@ -39,7 +39,15 @@ const MembershipUpgrade = () => {
     StoreKitMembership.getProducts({ productIds: [VAULT_OS_MONTHLY_PRODUCT_ID] })
       .then(({ products }) => {
         if (cancelled) return;
+        console.info("[MembershipUpgrade] Loaded StoreKit products", products);
         setProduct(products[0] ?? null);
+        if (!products[0]) {
+          toast({
+            title: "Membership unavailable right now",
+            description: "The App Store product is not ready on this device yet.",
+            variant: "destructive",
+          });
+        }
       })
       .catch((error) => {
         if (cancelled) return;
@@ -60,6 +68,7 @@ const MembershipUpgrade = () => {
   }, [user?.id, isIOS, sharedGuest, hasFullAccess]);
 
   async function activateMembership(transaction: MembershipTransaction) {
+    console.info("[MembershipUpgrade] Activating membership with transaction", transaction);
     const { error } = await supabase.functions.invoke("activate-ios-membership", {
       body: {
         productId: transaction.productId,
@@ -101,6 +110,7 @@ const MembershipUpgrade = () => {
         productId: VAULT_OS_MONTHLY_PRODUCT_ID,
         appAccountToken: user.id,
       });
+      console.info("[MembershipUpgrade] StoreKit purchase result", transaction);
 
       await activateMembership(transaction);
 
@@ -141,6 +151,7 @@ const MembershipUpgrade = () => {
       const { transactions } = await StoreKitMembership.restorePurchases({
         productIds: [VAULT_OS_MONTHLY_PRODUCT_ID],
       });
+      console.info("[MembershipUpgrade] Restore transactions", transactions);
 
       if (!transactions.length) {
         toast({
@@ -176,7 +187,7 @@ const MembershipUpgrade = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-6 text-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );

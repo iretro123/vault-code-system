@@ -19,9 +19,12 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
+        CAPLog.print("Vault OS StoreKit getProducts requested for: \(productIds.joined(separator: ", "))")
+
         Task {
             do {
                 let products = try await Product.products(for: productIds)
+                CAPLog.print("Vault OS StoreKit getProducts resolved \(products.count) product(s)")
                 var payload = [[String: Any]]()
                 for product in products {
                     payload.append(await productPayload(for: product))
@@ -30,6 +33,7 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
                     "products": payload
                 ])
             } catch {
+                CAPLog.print("Vault OS StoreKit getProducts failed: \(error.localizedDescription)")
                 call.reject(error.localizedDescription)
             }
         }
@@ -42,6 +46,7 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         let appAccountToken = call.getString("appAccountToken")
+        CAPLog.print("Vault OS StoreKit purchase requested for: \(productId)")
 
         Task {
             do {
@@ -60,21 +65,27 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
                 switch result {
                 case .success(let verification):
                     guard case .verified(let transaction) = verification else {
+                        CAPLog.print("Vault OS StoreKit purchase verification failed for: \(productId)")
                         call.reject("The purchase could not be verified")
                         return
                     }
+                    CAPLog.print("Vault OS StoreKit purchase verified for: \(transaction.productID), transaction: \(transaction.id)")
                     await transaction.finish()
                     call.resolve([
                         "transaction": transactionPayload(for: transaction)
                     ])
                 case .userCancelled:
+                    CAPLog.print("Vault OS StoreKit purchase cancelled for: \(productId)")
                     call.reject("USER_CANCELLED")
                 case .pending:
+                    CAPLog.print("Vault OS StoreKit purchase pending for: \(productId)")
                     call.reject("PURCHASE_PENDING")
                 @unknown default:
+                    CAPLog.print("Vault OS StoreKit purchase returned unknown result for: \(productId)")
                     call.reject("Unknown purchase result")
                 }
             } catch {
+                CAPLog.print("Vault OS StoreKit purchase failed for: \(productId) error: \(error.localizedDescription)")
                 call.reject(error.localizedDescription)
             }
         }
@@ -86,6 +97,8 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("At least one product id is required")
             return
         }
+
+        CAPLog.print("Vault OS StoreKit restore requested for: \(productIds.joined(separator: ", "))")
 
         Task {
             do {
@@ -106,6 +119,7 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
                     "transactions": transactions
                 ])
             } catch {
+                CAPLog.print("Vault OS StoreKit restore failed: \(error.localizedDescription)")
                 call.reject(error.localizedDescription)
             }
         }

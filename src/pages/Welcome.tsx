@@ -2,11 +2,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, UserRound } from "lucide-react";
 import { isGuestModeEnabled } from "@/lib/featureFlags";
-import { isNativeCapacitorApp } from "@/lib/platform";
 
 const Welcome = () => {
   const navigate = useNavigate();
-  const isNative = isNativeCapacitorApp();
 
   return (
     <div
@@ -45,23 +43,19 @@ const Welcome = () => {
             <Sparkles className="h-4 w-4" />
           </Button>
 
-          {!isNative && (
-            <Button
-              onClick={() => navigate("/intro?next=signup")}
-              className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
-            >
-              Get Started
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            onClick={() => navigate("/intro?next=signup")}
+            className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
+          >
+            Get Started
+            <ArrowRight className="h-4 w-4" />
+          </Button>
 
           {isGuestModeEnabled() && (
             <Button
               type="button"
-              variant={isNative ? "default" : "outline"}
-              className={isNative
-                ? "w-full h-14 text-base font-semibold rounded-2xl gap-2"
-                : "w-full h-12 text-sm font-medium rounded-2xl gap-2"}
+              variant="outline"
+              className="w-full h-12 text-sm font-medium rounded-2xl gap-2"
               onClick={() => navigate("/intro?next=guest")}
             >
               <UserRound className="h-4 w-4" />
