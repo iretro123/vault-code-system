@@ -5,9 +5,9 @@ Vault OS now shows the required subscription information inside the app purchase
 Use these production links:
 
 - Privacy Policy field:
-  `https://member.vaulttradingacademy.com/privacy-policy`
+  `https://raw.githubusercontent.com/iretro123/vault-code-system/main/public-legal/privacy-policy.md`
 - Terms of Use / EULA:
-  `https://member.vaulttradingacademy.com/terms-of-use`
+  `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`
 
 Required Apple-side checks:
 
@@ -21,6 +21,4 @@ Required Apple-side checks:
 5. App Review Notes mention that account deletion is available at:
    - `Settings -> Account -> Delete Account`
 
-If Apple asks for Apple standard EULA instead of the custom terms page, use:
-
-`https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`
+These links were chosen specifically to avoid the broken `member.vaulttradingacademy.com` legal routes until that member-domain deploy issue is fully resolved.
