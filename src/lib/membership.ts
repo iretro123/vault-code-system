@@ -4,14 +4,12 @@ export const VAULT_OS_MONTHLY_PRODUCT_ID = "com.vaulttradingacademy.vaultos.full
 export const VAULT_OS_MONTHLY_FALLBACK_PRICE = "$99/month";
 export const SHARED_GUEST_EMAIL = "guest@vaulttradingacademy.com";
 export const FULL_ACCESS_ROLE = "vault_os_owner";
+export const VAULT_OS_PUBLIC_SITE_ORIGIN = "https://member.vaulttradingacademy.com";
 export const VAULT_OS_PRIVACY_POLICY_PATH = "/privacy-policy";
 export const VAULT_OS_TERMS_PATH = "/terms-of-use";
 
 function buildLegalUrl(path: string) {
-  if (typeof window !== "undefined") {
-    return new URL(path, window.location.origin).toString();
-  }
-  return `https://member.vaulttradingacademy.com${path}`;
+  return new URL(path, VAULT_OS_PUBLIC_SITE_ORIGIN).toString();
 }
 
 export function getVaultOsPrivacyPolicyUrl() {
