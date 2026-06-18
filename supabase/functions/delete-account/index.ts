@@ -13,11 +13,39 @@ async function deleteRows(
   table: string,
   column: string,
   value: string | string[],
+  warnings: string[],
 ) {
   const query = sb.from(table).delete();
   const result = Array.isArray(value) ? query.in(column, value) : query.eq(column, value);
   const { error } = await result;
-  if (error) throw error;
+  if (error) {
+    const warning = `${table}.${column}: ${error.message}`;
+    warnings.push(warning);
+    console.warn("[delete-account] cleanup warning:", warning);
+  }
+}
+
+async function updateDeletedMessages(sb: ServiceClient, callerId: string, warnings: string[]) {
+  const { error } = await sb
+    .from("academy_messages")
+    .update({
+      body: "[deleted]",
+      attachments: null,
+      original_content: null,
+      user_name: "Deleted User",
+      user_role: "deleted_user",
+      is_deleted: true,
+      deleted_at: new Date().toISOString(),
+      deleted_by: callerId,
+      edited_at: new Date().toISOString(),
+    })
+    .eq("user_id", callerId);
+
+  if (error) {
+    const warning = `academy_messages.update: ${error.message}`;
+    warnings.push(warning);
+    console.warn("[delete-account] cleanup warning:", warning);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -53,6 +81,7 @@ Deno.serve(async (req) => {
     }
 
     const sb = createClient(supabaseUrl, serviceKey);
+    const warnings: string[] = [];
 
     console.log("[delete-account] deleting self account:", callerId);
 
@@ -100,7 +129,7 @@ Deno.serve(async (req) => {
     const notificationIds = (notificationRows ?? []).map((row) => row.id);
 
     if (replyIds.length) {
-      await deleteRows(sb, "coach_answer_reads", "reply_id", replyIds);
+      await deleteRows(sb, "coach_answer_reads", "reply_id", replyIds, warnings);
     }
 
     if (ticketIds.length) {
@@ -110,94 +139,80 @@ Deno.serve(async (req) => {
         .in("ticket_id", ticketIds);
       const ticketReplyIds = (ticketReplyRows ?? []).map((row) => row.id);
       if (ticketReplyIds.length) {
-        await deleteRows(sb, "coach_answer_reads", "reply_id", ticketReplyIds);
+        await deleteRows(sb, "coach_answer_reads", "reply_id", ticketReplyIds, warnings);
       }
-      await deleteRows(sb, "coach_ticket_replies", "ticket_id", ticketIds);
+      await deleteRows(sb, "coach_ticket_replies", "ticket_id", ticketIds, warnings);
     }
 
     if (notificationIds.length) {
-      await deleteRows(sb, "notification_push_dispatches", "notification_id", notificationIds);
+      await deleteRows(sb, "notification_push_dispatches", "notification_id", notificationIds, warnings);
     }
 
     if (messageIds.length) {
-      await deleteRows(sb, "pinned_messages", "message_id", messageIds);
-      const { error: updateMessagesError } = await sb
-        .from("academy_messages")
-        .update({
-          body: "[deleted]",
-          attachments: null,
-          original_content: null,
-          user_name: "Deleted User",
-          user_role: "deleted_user",
-          is_deleted: true,
-          deleted_at: new Date().toISOString(),
-          deleted_by: callerId,
-          edited_at: new Date().toISOString(),
-        })
-        .eq("user_id", callerId);
-      if (updateMessagesError) throw updateMessagesError;
+      await deleteRows(sb, "pinned_messages", "message_id", messageIds, warnings);
+      await updateDeletedMessages(sb, callerId, warnings);
     }
 
     if (threadIds.length) {
-      await deleteRows(sb, "dm_messages", "thread_id", threadIds);
-      await deleteRows(sb, "inbox_items", "dm_thread_id", threadIds);
-      await deleteRows(sb, "dm_threads", "id", threadIds);
+      await deleteRows(sb, "dm_messages", "thread_id", threadIds, warnings);
+      await deleteRows(sb, "inbox_items", "dm_thread_id", threadIds, warnings);
+      await deleteRows(sb, "dm_threads", "id", threadIds, warnings);
     }
 
     if (student?.id) {
-      await deleteRows(sb, "student_access", "user_id", student.id);
+      await deleteRows(sb, "student_access", "user_id", student.id, warnings);
     }
 
-    await deleteRows(sb, "trade_entries", "user_id", callerId);
-    await deleteRows(sb, "approved_plans", "user_id", callerId);
-    await deleteRows(sb, "trade_intents", "user_id", callerId);
-    await deleteRows(sb, "journal_entries", "user_id", callerId);
-    await deleteRows(sb, "lesson_progress", "user_id", callerId);
-    await deleteRows(sb, "playbook_progress", "user_id", callerId);
-    await deleteRows(sb, "playbook_notes", "user_id", callerId);
-    await deleteRows(sb, "user_playbook_state", "user_id", callerId);
-    await deleteRows(sb, "onboarding_state", "user_id", callerId);
-    await deleteRows(sb, "coach_requests", "user_id", callerId);
-    await deleteRows(sb, "coach_answer_reads", "user_id", callerId);
-    await deleteRows(sb, "coach_ticket_replies", "user_id", callerId);
-    await deleteRows(sb, "coach_tickets", "user_id", callerId);
-    await deleteRows(sb, "daily_checkin_responses", "user_id", callerId);
-    await deleteRows(sb, "daily_memory", "user_id", callerId);
-    await deleteRows(sb, "live_session_attendance", "user_id", callerId);
-    await deleteRows(sb, "notification_log", "user_id", callerId);
-    await deleteRows(sb, "academy_notification_reads", "user_id", callerId);
-    await deleteRows(sb, "academy_notifications", "user_id", callerId);
-    await deleteRows(sb, "device_tokens", "user_id", callerId);
-    await deleteRows(sb, "user_preferences", "user_id", callerId);
-    await deleteRows(sb, "vault_daily_checklist", "user_id", callerId);
-    await deleteRows(sb, "vault_focus_sessions", "user_id", callerId);
-    await deleteRows(sb, "vault_events", "user_id", callerId);
-    await deleteRows(sb, "vault_state", "user_id", callerId);
-    await deleteRows(sb, "trader_dna", "user_id", callerId);
-    await deleteRows(sb, "user_task", "user_id", callerId);
-    await deleteRows(sb, "academy_user_roles", "user_id", callerId);
-    await deleteRows(sb, "user_roles", "user_id", callerId);
-    await deleteRows(sb, "content_reports", "reporter_id", callerId);
-    await deleteRows(sb, "content_reports", "reported_user_id", callerId);
-    await deleteRows(sb, "inbox_dismissals", "user_id", callerId);
-    await deleteRows(sb, "inbox_items", "user_id", callerId);
-    await deleteRows(sb, "inbox_items", "sender_id", callerId);
-    await deleteRows(sb, "dm_messages", "sender_id", callerId);
-    await deleteRows(sb, "ios_membership_activations", "user_id", callerId);
-    await deleteRows(sb, "referrals", "referrer_user_id", callerId);
-    await deleteRows(sb, "referrals", "referred_user_id", callerId);
-    await deleteRows(sb, "students", "auth_user_id", callerId);
+    await deleteRows(sb, "trade_entries", "user_id", callerId, warnings);
+    await deleteRows(sb, "approved_plans", "user_id", callerId, warnings);
+    await deleteRows(sb, "trade_intents", "user_id", callerId, warnings);
+    await deleteRows(sb, "journal_entries", "user_id", callerId, warnings);
+    await deleteRows(sb, "lesson_progress", "user_id", callerId, warnings);
+    await deleteRows(sb, "playbook_progress", "user_id", callerId, warnings);
+    await deleteRows(sb, "playbook_notes", "user_id", callerId, warnings);
+    await deleteRows(sb, "user_playbook_state", "user_id", callerId, warnings);
+    await deleteRows(sb, "onboarding_state", "user_id", callerId, warnings);
+    await deleteRows(sb, "coach_requests", "user_id", callerId, warnings);
+    await deleteRows(sb, "coach_answer_reads", "user_id", callerId, warnings);
+    await deleteRows(sb, "coach_ticket_replies", "user_id", callerId, warnings);
+    await deleteRows(sb, "coach_tickets", "user_id", callerId, warnings);
+    await deleteRows(sb, "daily_checkin_responses", "user_id", callerId, warnings);
+    await deleteRows(sb, "daily_memory", "user_id", callerId, warnings);
+    await deleteRows(sb, "live_session_attendance", "user_id", callerId, warnings);
+    await deleteRows(sb, "notification_log", "user_id", callerId, warnings);
+    await deleteRows(sb, "academy_notification_reads", "user_id", callerId, warnings);
+    await deleteRows(sb, "academy_notifications", "user_id", callerId, warnings);
+    await deleteRows(sb, "device_tokens", "user_id", callerId, warnings);
+    await deleteRows(sb, "user_preferences", "user_id", callerId, warnings);
+    await deleteRows(sb, "vault_daily_checklist", "user_id", callerId, warnings);
+    await deleteRows(sb, "vault_focus_sessions", "user_id", callerId, warnings);
+    await deleteRows(sb, "vault_events", "user_id", callerId, warnings);
+    await deleteRows(sb, "vault_state", "user_id", callerId, warnings);
+    await deleteRows(sb, "trader_dna", "user_id", callerId, warnings);
+    await deleteRows(sb, "user_task", "user_id", callerId, warnings);
+    await deleteRows(sb, "academy_user_roles", "user_id", callerId, warnings);
+    await deleteRows(sb, "user_roles", "user_id", callerId, warnings);
+    await deleteRows(sb, "content_reports", "reporter_id", callerId, warnings);
+    await deleteRows(sb, "content_reports", "reported_user_id", callerId, warnings);
+    await deleteRows(sb, "inbox_dismissals", "user_id", callerId, warnings);
+    await deleteRows(sb, "inbox_items", "user_id", callerId, warnings);
+    await deleteRows(sb, "inbox_items", "sender_id", callerId, warnings);
+    await deleteRows(sb, "dm_messages", "sender_id", callerId, warnings);
+    await deleteRows(sb, "ios_membership_activations", "user_id", callerId, warnings);
+    await deleteRows(sb, "referrals", "referrer_user_id", callerId, warnings);
+    await deleteRows(sb, "referrals", "referred_user_id", callerId, warnings);
+    await deleteRows(sb, "students", "auth_user_id", callerId, warnings);
 
     if (email) {
-      await deleteRows(sb, "allowed_signups", "email", email);
+      await deleteRows(sb, "allowed_signups", "email", email, warnings);
     }
 
-    await deleteRows(sb, "profiles", "user_id", callerId);
+    await deleteRows(sb, "profiles", "user_id", callerId, warnings);
 
     const { error: deleteAuthError } = await sb.auth.admin.deleteUser(callerId);
     if (deleteAuthError) throw deleteAuthError;
 
-    return new Response(JSON.stringify({ deleted: true }), {
+    return new Response(JSON.stringify({ deleted: true, warnings }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
