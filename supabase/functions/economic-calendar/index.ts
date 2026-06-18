@@ -18,6 +18,14 @@ Deno.serve(async (req) => {
 
     // ── REFRESH MODE: called by pg_cron ──
     if (mode === "refresh") {
+      const refreshSecret = Deno.env.get("ECON_CALENDAR_REFRESH_SECRET");
+      const provided = req.headers.get("x-refresh-secret") || "";
+      if (!refreshSecret || refreshSecret.length === 0 || provided !== refreshSecret) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const finnhubKey = Deno.env.get("FINNHUB_API_KEY");
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

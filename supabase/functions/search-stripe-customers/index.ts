@@ -40,14 +40,22 @@ serve(async (req) => {
       });
     }
 
+    // Strict allowlist: alphanumerics, spaces, and @._- only. Reject anything else
+    // (no quotes, colons, brackets, or Stripe search operators).
+    const trimmed = query.trim().slice(0, 100);
+    if (!/^[A-Za-z0-9 @._-]+$/.test(trimmed)) {
+      return new Response(JSON.stringify({ customers: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    const q = query.trim().replace(/'/g, "\\'");
     const result = await stripe.customers.search({
-      query: `name~'${q}' OR email~'${q}'`,
+      query: `name~'${trimmed}' OR email~'${trimmed}'`,
       limit: 10,
     });
 
