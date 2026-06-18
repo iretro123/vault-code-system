@@ -210,7 +210,22 @@ Deno.serve(async (req) => {
     await deleteRows(sb, "profiles", "user_id", callerId, warnings);
 
     const { error: deleteAuthError } = await sb.auth.admin.deleteUser(callerId);
-    if (deleteAuthError) throw deleteAuthError;
+    if (deleteAuthError) {
+      const code = (deleteAuthError as { code?: string; status?: number }).code;
+      const status = (deleteAuthError as { code?: string; status?: number }).status;
+      // If the auth user is already gone, treat as success (idempotent delete).
+      if (code === "user_not_found" || status === 404) {
+        console.warn("[delete-account] auth user already deleted:", callerId);
+      } else {
+        const warning = `auth.admin.deleteUser: ${deleteAuthError.message}`;
+        warnings.push(warning);
+        console.error("[delete-account] auth deletion failed:", deleteAuthError);
+        return new Response(
+          JSON.stringify({ error: "We couldn't delete your account. Please try again.", warnings }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     return new Response(JSON.stringify({ deleted: true, warnings }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
