@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
   try {
     const secret = Deno.env.get("PUSH_WEBHOOK_SECRET");
     const provided = req.headers.get("x-push-secret") || "";
-    if (secret && secret.length > 0 && provided !== secret) {
+    if (!secret || secret.length === 0 || provided !== secret) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
