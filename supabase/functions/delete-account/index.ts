@@ -53,8 +53,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const isTestRequest = req.headers.get("x-test-source") === "codex-delete-account-verification";
-
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -234,15 +232,7 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("[delete-account] error:", error);
-    const payload: Record<string, unknown> = {
-      error: "We couldn't delete your account. Please try again.",
-    };
-    if (isTestRequest) {
-      payload.debug = {
-        message: error instanceof Error ? error.message : String(error),
-      };
-    }
-    return new Response(JSON.stringify(payload), {
+    return new Response(JSON.stringify({ error: "We couldn't delete your account. Please try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
