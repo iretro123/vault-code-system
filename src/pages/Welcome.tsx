@@ -34,10 +34,10 @@ const Welcome = () => {
           <span className="text-primary">OS</span>
         </h1>
 
-        <p className="mt-5 text-center text-base text-muted-foreground max-w-xs leading-relaxed">
+        <p className="mt-5 text-center text-base text-muted-foreground max-w-xs mx-auto leading-relaxed">
           Welcome to Vault OS.
         </p>
-        <p className="mt-2 text-center text-lg font-medium text-foreground/90 max-w-xs leading-snug">
+        <p className="mt-2 text-center text-lg font-medium text-foreground/90 max-w-xs mx-auto leading-snug">
           Join a team of serious traders.
         </p>
 
