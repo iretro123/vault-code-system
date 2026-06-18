@@ -11,8 +11,8 @@ import {
   FULL_ACCESS_ROLE,
   VAULT_OS_MONTHLY_FALLBACK_PRICE,
   VAULT_OS_MONTHLY_PRODUCT_ID,
-  VAULT_OS_PRIVACY_POLICY_URL,
-  VAULT_OS_TERMS_URL,
+  getVaultOsPrivacyPolicyUrl,
+  getVaultOsTermsUrl,
   isSharedGuestAccount,
 } from "@/lib/membership";
 import { StoreKitMembership, type MembershipProduct, type MembershipTransaction } from "@/lib/nativeMembership";
@@ -132,7 +132,7 @@ const MembershipUpgrade = () => {
     if (!isIOS) {
       toast({
         title: "Purchase unavailable here",
-        description: "Vault OS purchases are available in the iPhone app.",
+        description: "Vault OS purchases are available in the iOS app.",
         variant: "destructive",
       });
       return;
@@ -298,7 +298,7 @@ const MembershipUpgrade = () => {
             Unlock Vault OS
           </h1>
           <p className="mt-3 text-base text-muted-foreground">
-            Upgrade to full access for {displayPrice} and unlock the complete Vault OS member experience in the iPhone app.
+            Upgrade to full access for {displayPrice} and unlock the complete Vault OS member experience in the Vault OS app.
           </p>
 
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/10 p-5">
@@ -323,7 +323,7 @@ const MembershipUpgrade = () => {
                 type="button"
                 variant="outline"
                 className="h-auto min-h-12 justify-between rounded-xl px-4 py-3 text-left"
-                onClick={() => openExternalUrl(VAULT_OS_TERMS_URL)}
+                onClick={() => openExternalUrl(getVaultOsTermsUrl())}
               >
                 <span className="flex flex-col items-start">
                   <span className="text-sm font-medium text-foreground">Terms of Use (EULA)</span>
@@ -335,7 +335,7 @@ const MembershipUpgrade = () => {
                 type="button"
                 variant="outline"
                 className="h-auto min-h-12 justify-between rounded-xl px-4 py-3 text-left"
-                onClick={() => openExternalUrl(VAULT_OS_PRIVACY_POLICY_URL)}
+                onClick={() => openExternalUrl(getVaultOsPrivacyPolicyUrl())}
               >
                 <span className="flex flex-col items-start">
                   <span className="text-sm font-medium text-foreground">Privacy Policy</span>
@@ -350,7 +350,7 @@ const MembershipUpgrade = () => {
             {[
               "Full Vault OS app access on your account",
               "Video lessons, tools, live areas, and member-only sections",
-              "No web checkout needed inside the iPhone app",
+              "No web checkout needed inside the Vault OS app",
             ].map((item) => (
               <div key={item} className="flex items-start gap-3 rounded-2xl border border-border/30 bg-background/40 p-4">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
@@ -435,7 +435,7 @@ const MembershipUpgrade = () => {
                 </p>
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <a
-                    href={VAULT_OS_TERMS_URL}
+                    href={getVaultOsTermsUrl()}
                     target="_self"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-primary hover:underline"
@@ -444,7 +444,7 @@ const MembershipUpgrade = () => {
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                   <a
-                    href={VAULT_OS_PRIVACY_POLICY_URL}
+                    href={getVaultOsPrivacyPolicyUrl()}
                     target="_self"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-primary hover:underline"

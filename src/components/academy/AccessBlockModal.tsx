@@ -95,11 +95,11 @@ export function AccessBlockModal({ status, refetch }: Props) {
             )}
           </div>
           <AlertDialogTitle className="text-xl">
-            {isPastDue ? "Payment Failed" : "Subscription Canceled"}
+            {isIOSNative ? "Access Needs Refresh" : isPastDue ? "Payment Failed" : "Subscription Canceled"}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm leading-relaxed">
             {isIOSNative
-              ? "Billing changes are not available in the iOS app. If your membership was updated elsewhere, refresh your access below."
+              ? "Billing changes are not available in the iOS app. If your account access changed elsewhere, refresh your access below."
               : isPastDue
               ? "Your most recent payment didn't go through. Update your billing information to restore full access to Vault Academy."
               : "Your Vault Academy subscription has been canceled. Reactivate your account to regain access to all premium content and features."}

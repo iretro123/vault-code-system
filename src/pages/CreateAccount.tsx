@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { openExternalUrl } from "@/lib/externalLinks";
-import { VAULT_OS_MONTHLY_FALLBACK_PRICE, VAULT_OS_PRIVACY_POLICY_URL, VAULT_OS_TERMS_URL } from "@/lib/membership";
+import { VAULT_OS_MONTHLY_FALLBACK_PRICE, getVaultOsPrivacyPolicyUrl, getVaultOsTermsUrl } from "@/lib/membership";
 import { ExternalLink } from "lucide-react";
 
 const CreateAccount = () => {
@@ -95,7 +95,7 @@ const CreateAccount = () => {
         </h1>
         <p className="mt-4 text-center text-base text-muted-foreground">
           {isFullAccessFlow
-            ? `Create your full access account and continue to the ${VAULT_OS_MONTHLY_FALLBACK_PRICE} iPhone membership.`
+            ? `Create your full access account and continue to the ${VAULT_OS_MONTHLY_FALLBACK_PRICE} Vault OS membership.`
             : "Create your video library account."}
         </p>
 
@@ -147,11 +147,11 @@ const CreateAccount = () => {
             <div className="rounded-xl border border-border/40 bg-card/40 p-3">
               <p className="text-xs font-semibold text-foreground">Before you subscribe</p>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                <Button type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl" onClick={() => openExternalUrl(VAULT_OS_TERMS_URL)}>
+                <Button type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl" onClick={() => openExternalUrl(getVaultOsTermsUrl())}>
                   Terms of Use
                   <ExternalLink className="h-4 w-4" />
                 </Button>
-                <Button type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl" onClick={() => openExternalUrl(VAULT_OS_PRIVACY_POLICY_URL)}>
+                <Button type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl" onClick={() => openExternalUrl(getVaultOsPrivacyPolicyUrl())}>
                   Privacy Policy
                   <ExternalLink className="h-4 w-4" />
                 </Button>

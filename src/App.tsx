@@ -56,6 +56,8 @@ const CreateAccount = lazyWithRetry(() => import("./pages/CreateAccount"));
 const BasicHome = lazyWithRetry(() => import("./pages/basic/BasicHome"));
 const BasicModule = lazyWithRetry(() => import("./pages/basic/BasicModule"));
 const MembershipUpgrade = lazyWithRetry(() => import("./pages/MembershipUpgrade"));
+const PrivacyPolicy = lazyWithRetry(() => import("./pages/PrivacyPolicy"));
+const TermsOfUse = lazyWithRetry(() => import("./pages/TermsOfUse"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -147,6 +149,8 @@ const App = () => (
             <Route path="/create-account" element={<Suspense fallback={<RouteFallback />}><CreateAccount /></Suspense>} />
             <Route path="/create-account/full" element={<Suspense fallback={<RouteFallback />}><CreateAccount /></Suspense>} />
             <Route path="/membership" element={<Suspense fallback={<RouteFallback />}><MembershipUpgrade /></Suspense>} />
+            <Route path="/privacy-policy" element={<Suspense fallback={<RouteFallback />}><PrivacyPolicy /></Suspense>} />
+            <Route path="/terms-of-use" element={<Suspense fallback={<RouteFallback />}><TermsOfUse /></Suspense>} />
             <Route path="/basic" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicHome /></Suspense></BasicTierGate>} />
             <Route path="/basic/learn/:slug" element={<BasicTierGate><Suspense fallback={<RouteFallback />}><BasicModule /></Suspense></BasicTierGate>} />
             <Route path="/ref/:userId" element={<ReferralRedirect />} />

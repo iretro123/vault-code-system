@@ -50,7 +50,7 @@ export function PremiumGate({ status, pageName }: Props) {
         <div className="space-y-2">
           <h2 className="text-lg font-bold text-foreground">
             {!billingVisible
-              ? `${pageName || "This section"} is members-only`
+              ? `${pageName || "This section"} is locked on this account`
               : isPastDue
               ? "Payment Issue"
               : isCanceled
@@ -59,9 +59,9 @@ export function PremiumGate({ status, pageName }: Props) {
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {!billingVisible
-              ? "This section is available to active members. Please contact your coach or support if you believe you should have access."
+              ? "This section is not available on the current account right now. If you believe this access should be available, contact support."
               : isIOSNative
-              ? "This section is available to active Vault OS members. Purchases and billing changes are not available in the iOS app."
+              ? "This section is not available on the current account right now. Purchases and billing changes are not available in the iOS app."
               : isPastDue
               ? "Your payment is past due. Please update your billing to continue accessing premium content."
               : isCanceled
