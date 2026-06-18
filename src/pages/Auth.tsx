@@ -77,7 +77,7 @@ const Auth = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4"
+      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-10"
       style={{
         background: `
           radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
@@ -86,10 +86,17 @@ const Auth = () => {
           radial-gradient(ellipse 50% 40% at 80% 70%, rgba(99,102,241,0.08) 0%, transparent 50%),
           radial-gradient(ellipse 40% 30% at 50% 50%, rgba(59,130,246,0.06) 0%, transparent 60%),
           linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
-        `
+        `,
+        WebkitOverflowScrolling: "touch",
+        touchAction: "pan-y",
+        overscrollBehaviorY: "contain",
+        paddingTop: "max(env(safe-area-inset-top, 0px), 2rem)",
+        paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 1.5rem)",
+        minHeight: "100dvh",
+        boxSizing: "border-box",
       }}
     >
-      <div className="w-full max-w-md">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
         {/* Logo */}
         <div className="text-center mb-10">
           <h1 className="text-5xl font-black tracking-tight">

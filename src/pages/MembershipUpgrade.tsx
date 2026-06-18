@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, ExternalLink, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeIOSApp } from "@/lib/platform";
+import { openExternalUrl } from "@/lib/externalLinks";
 import {
   FULL_ACCESS_ROLE,
   VAULT_OS_MONTHLY_FALLBACK_PRICE,
   VAULT_OS_MONTHLY_PRODUCT_ID,
+  VAULT_OS_PRIVACY_POLICY_URL,
+  VAULT_OS_TERMS_URL,
   isSharedGuestAccount,
 } from "@/lib/membership";
 import { StoreKitMembership, type MembershipProduct, type MembershipTransaction } from "@/lib/nativeMembership";
@@ -25,42 +28,78 @@ const MembershipUpgrade = () => {
   const isIOS = isNativeIOSApp();
   const sharedGuest = isSharedGuestAccount(user, profile);
   const hasFullAccess = !!userRole && userRole.role !== "basic_tier";
+  const productUnavailable = isIOS && !sharedGuest && !hasFullAccess && !loadingProduct && !product;
 
   const displayPrice = useMemo(() => {
     return product?.displayPrice || VAULT_OS_MONTHLY_FALLBACK_PRICE;
   }, [product]);
 
+  async function loadProducts(showToastOnFailure = true) {
+    if (!user || !isIOS || sharedGuest || hasFullAccess) return;
+
+    setLoadingProduct(true);
+    try {
+      const { products } = await StoreKitMembership.getProducts({
+        productIds: [VAULT_OS_MONTHLY_PRODUCT_ID],
+      });
+      console.info("[MembershipUpgrade] Loaded StoreKit products", products);
+      setProduct(products[0] ?? null);
+      if (!products[0] && showToastOnFailure) {
+        toast({
+          title: "Membership unavailable right now",
+          description: "The App Store subscription details could not be loaded right now. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("[MembershipUpgrade] Failed to load products", error);
+      if (showToastOnFailure) {
+        toast({
+          title: "Could not load membership details",
+          description: "The App Store subscription details could not be loaded right now. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setLoadingProduct(false);
+    }
+  }
+
   useEffect(() => {
     if (!user || !isIOS || sharedGuest || hasFullAccess) return;
 
     let cancelled = false;
-    setLoadingProduct(true);
 
-    StoreKitMembership.getProducts({ productIds: [VAULT_OS_MONTHLY_PRODUCT_ID] })
-      .then(({ products }) => {
+    const run = async () => {
+      setLoadingProduct(true);
+      try {
+        const { products } = await StoreKitMembership.getProducts({
+          productIds: [VAULT_OS_MONTHLY_PRODUCT_ID],
+        });
         if (cancelled) return;
         console.info("[MembershipUpgrade] Loaded StoreKit products", products);
         setProduct(products[0] ?? null);
         if (!products[0]) {
           toast({
             title: "Membership unavailable right now",
-            description: "The App Store product is not ready on this device yet.",
+            description: "The App Store subscription details could not be loaded right now. Please try again.",
             variant: "destructive",
           });
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         if (cancelled) return;
         console.error("[MembershipUpgrade] Failed to load products", error);
         toast({
           title: "Could not load membership details",
-          description: "The App Store product is not ready on this device yet.",
+          description: "The App Store subscription details could not be loaded right now. Please try again.",
           variant: "destructive",
         });
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoadingProduct(false);
-      });
+      }
+    };
+
+    void run();
 
     return () => {
       cancelled = true;
@@ -233,15 +272,22 @@ const MembershipUpgrade = () => {
 
   return (
     <div
-      className="min-h-screen px-4 py-8 text-foreground"
+      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-8 text-foreground"
       style={{
         background: `
           radial-gradient(ellipse 80% 55% at 50% 10%, rgba(59,130,246,0.16) 0%, transparent 55%),
           linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
         `,
+        WebkitOverflowScrolling: "touch",
+        touchAction: "pan-y",
+        overscrollBehaviorY: "contain",
+        paddingTop: "max(env(safe-area-inset-top, 0px), 2rem)",
+        paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 1.5rem)",
+        minHeight: "100dvh",
+        boxSizing: "border-box",
       }}
     >
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-lg flex-col justify-center">
+      <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center">
         <div className="rounded-[28px] border border-border/40 bg-card/85 p-7 shadow-[0_14px_50px_rgba(0,0,0,0.45)] backdrop-blur">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-primary">
             <Sparkles className="h-3.5 w-3.5" />
@@ -260,6 +306,44 @@ const MembershipUpgrade = () => {
             <p className="mt-1 text-sm text-muted-foreground">
               Auto-renewing monthly subscription billed by Apple.
             </p>
+            <div className="mt-4 space-y-1 text-left text-xs text-muted-foreground">
+              <p>Subscription: Vault OS Full Access Monthly Clean</p>
+              <p>Length: 1 month</p>
+              <p>Price: {displayPrice} per month</p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-border/30 bg-background/40 p-4">
+            <p className="text-sm font-semibold text-foreground">Subscription Terms</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Review the required legal information before starting your monthly subscription.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto min-h-12 justify-between rounded-xl px-4 py-3 text-left"
+                onClick={() => openExternalUrl(VAULT_OS_TERMS_URL)}
+              >
+                <span className="flex flex-col items-start">
+                  <span className="text-sm font-medium text-foreground">Terms of Use (EULA)</span>
+                  <span className="text-[11px] text-muted-foreground">Open required subscription terms</span>
+                </span>
+                <ExternalLink className="h-4 w-4 shrink-0" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto min-h-12 justify-between rounded-xl px-4 py-3 text-left"
+                onClick={() => openExternalUrl(VAULT_OS_PRIVACY_POLICY_URL)}
+              >
+                <span className="flex flex-col items-start">
+                  <span className="text-sm font-medium text-foreground">Privacy Policy</span>
+                  <span className="text-[11px] text-muted-foreground">Open data and privacy policy</span>
+                </span>
+                <ExternalLink className="h-4 w-4 shrink-0" />
+              </Button>
+            </div>
           </div>
 
           <div className="mt-6 space-y-3">
@@ -300,24 +384,75 @@ const MembershipUpgrade = () => {
                 </div>
               </div>
 
+              {productUnavailable ? (
+                <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-foreground">
+                  The App Store subscription details could not be loaded right now. Use Try again to refresh them.
+                </div>
+              ) : null}
+
               <div className="mt-6 space-y-3">
                 <Button
                   className="w-full h-14 rounded-2xl text-base font-semibold gap-2"
                   onClick={handlePurchase}
-                  disabled={purchasing || restoring || loadingProduct}
+                  disabled={purchasing || restoring || loadingProduct || productUnavailable}
                 >
                   {purchasing || loadingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Start full access for {displayPrice}
+                  {productUnavailable ? "Membership unavailable right now" : `Start full access for ${displayPrice}`}
                 </Button>
                 <Button
                   variant="outline"
                   className="w-full h-12 rounded-2xl"
                   onClick={handleRestore}
-                  disabled={purchasing || restoring}
+                  disabled={purchasing || restoring || productUnavailable}
                 >
                   {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Restore purchase
                 </Button>
+                {productUnavailable ? (
+                  <Button
+                    variant="ghost"
+                    className="w-full h-11 rounded-2xl"
+                    onClick={() => void loadProducts()}
+                    disabled={loadingProduct}
+                  >
+                    Try again
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full h-11 rounded-2xl"
+                  onClick={() => navigate("/academy/settings?section=account&focus=delete-account")}
+                >
+                  Open Account
+                </Button>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-border/30 bg-background/40 p-4 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground">Required Subscription Information</p>
+                <p className="mt-1 leading-relaxed">
+                  Subscription: Vault OS Full Access Monthly Clean. Duration: 1 month. Price: {displayPrice} per month. By subscribing, you agree to the Vault OS Terms of Use and acknowledge the Privacy Policy.
+                </p>
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                  <a
+                    href={VAULT_OS_TERMS_URL}
+                    target="_self"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                  >
+                    Terms of Use
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                  <a
+                    href={VAULT_OS_PRIVACY_POLICY_URL}
+                    target="_self"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                  >
+                    Privacy Policy
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
               </div>
             </>
           )}

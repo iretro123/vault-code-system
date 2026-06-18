@@ -134,7 +134,9 @@ function AcademyLayoutInner() {
     const path = location.pathname;
     const allowed =
       path === "/academy/learn" || path.startsWith("/academy/learn/") ||
-      path === "/academy/community" || path.startsWith("/academy/community");
+      path === "/academy/community" || path.startsWith("/academy/community") ||
+      path === "/academy/settings" || path.startsWith("/academy/settings") ||
+      path === "/academy/profile";
     if (!allowed) {
       return <Navigate to="/academy/learn" replace />;
     }

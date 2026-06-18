@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Play, LogOut, PlayCircle } from "lucide-react";
+import { Play, LogOut, PlayCircle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
@@ -143,6 +143,28 @@ const BasicHome = () => {
                   Guest preview uses a shared account, so upgrades need your own account first.
                 </p>
               ) : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-10">
+          <div className="rounded-2xl border border-border/40 bg-card/40 p-6 md:p-7">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Account</p>
+            <h3 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight">
+              Privacy & account deletion
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm md:text-base text-muted-foreground">
+              Manage your data, download your information, or permanently delete your Vault OS account inside the app.
+            </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <Button
+                variant="outline"
+                className="h-12 rounded-2xl px-6 gap-2"
+                onClick={() => navigate("/academy/settings?section=account&focus=delete-account")}
+              >
+                <Shield className="h-4 w-4" />
+                Open Account
+              </Button>
             </div>
           </div>
         </section>

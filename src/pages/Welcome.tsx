@@ -2,13 +2,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, UserRound } from "lucide-react";
 import { isGuestModeEnabled } from "@/lib/featureFlags";
+import { VAULT_OS_MONTHLY_FALLBACK_PRICE } from "@/lib/membership";
 
 const Welcome = () => {
   const navigate = useNavigate();
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-between px-6 py-10"
+      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-6 py-10"
       style={{
         background: `
           radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
@@ -17,9 +18,16 @@ const Welcome = () => {
           radial-gradient(ellipse 50% 40% at 80% 70%, rgba(99,102,241,0.08) 0%, transparent 50%),
           linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
         `,
+        WebkitOverflowScrolling: "touch",
+        touchAction: "pan-y",
+        overscrollBehaviorY: "contain",
+        paddingTop: "max(env(safe-area-inset-top, 0px), 2rem)",
+        paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 1.5rem)",
+        minHeight: "100dvh",
+        boxSizing: "border-box",
       }}
     >
-      <div className="flex-1 w-full flex flex-col items-center justify-center max-w-md">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
         {/* Logo */}
         <h1 className="text-6xl font-black tracking-tight text-center animate-fade-in">
           <span className="text-foreground">VAULT</span>
@@ -39,7 +47,7 @@ const Welcome = () => {
             onClick={() => navigate("/create-account/full")}
             className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
           >
-            Full Access {`$99/month`}
+            Full Access {VAULT_OS_MONTHLY_FALLBACK_PRICE}
             <Sparkles className="h-4 w-4" />
           </Button>
 

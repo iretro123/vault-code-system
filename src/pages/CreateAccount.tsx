@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { openExternalUrl } from "@/lib/externalLinks";
+import { VAULT_OS_MONTHLY_FALLBACK_PRICE, VAULT_OS_PRIVACY_POLICY_URL, VAULT_OS_TERMS_URL } from "@/lib/membership";
+import { ExternalLink } from "lucide-react";
 
 const CreateAccount = () => {
   const navigate = useNavigate();
@@ -68,7 +71,7 @@ const CreateAccount = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-between px-6 py-10"
+      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-6 py-10"
       style={{
         background: `
           radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
@@ -76,16 +79,23 @@ const CreateAccount = () => {
           radial-gradient(ellipse 60% 50% at 20% 80%, rgba(59,130,246,0.10) 0%, transparent 50%),
           linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
         `,
+        WebkitOverflowScrolling: "touch",
+        touchAction: "pan-y",
+        overscrollBehaviorY: "contain",
+        paddingTop: "max(env(safe-area-inset-top, 0px), 2rem)",
+        paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 1.5rem)",
+        minHeight: "100dvh",
+        boxSizing: "border-box",
       }}
     >
-      <div className="flex-1 w-full flex flex-col items-center justify-center max-w-md">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
         <h1 className="text-5xl font-black tracking-tight text-center animate-fade-in">
           <span className="text-foreground">VAULT</span>
           <span className="text-primary">OS</span>
         </h1>
         <p className="mt-4 text-center text-base text-muted-foreground">
           {isFullAccessFlow
-            ? "Create your full access account and continue to the $99/month iPhone membership."
+            ? `Create your full access account and continue to the ${VAULT_OS_MONTHLY_FALLBACK_PRICE} iPhone membership.`
             : "Create your video library account."}
         </p>
 
@@ -128,10 +138,26 @@ const CreateAccount = () => {
             <span>
               I agree to the Community Terms &amp; Safety guidelines and understand that this
               {isFullAccessFlow
-                ? " account can start a $99/month Apple subscription for full Vault OS access."
+                ? ` account can start a ${VAULT_OS_MONTHLY_FALLBACK_PRICE} Apple subscription for full Vault OS access.`
                 : " membership provides access to on-demand video content only."}
             </span>
           </label>
+
+          {isFullAccessFlow ? (
+            <div className="rounded-xl border border-border/40 bg-card/40 p-3">
+              <p className="text-xs font-semibold text-foreground">Before you subscribe</p>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <Button type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl" onClick={() => openExternalUrl(VAULT_OS_TERMS_URL)}>
+                  Terms of Use
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl" onClick={() => openExternalUrl(VAULT_OS_PRIVACY_POLICY_URL)}>
+                  Privacy Policy
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : null}
 
           <Button
             type="submit"
