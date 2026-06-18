@@ -25,11 +25,11 @@ export function SettingsSecurity() {
 
   const handleResetPassword = async () => {
     if (!user?.email) return;
-    const { error } = await supabase.functions.invoke("ghl-password-reset", {
-      body: { email: user.email, origin: window.location.origin },
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) { toast.error("Failed to send reset link."); return; }
-    toast.success("Password reset link sent via email and text.");
+    toast.success("Password reset link sent via email.");
   };
 
   const handleSignOut = async () => {

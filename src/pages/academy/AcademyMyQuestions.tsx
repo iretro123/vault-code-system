@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDateTimeFull, formatDateTime, formatDateWithYear, formatDateShort } from "@/lib/formatTime";
 import { useUnreadAnswers } from "@/hooks/useUnreadAnswers";
+import { resolvePrivateStorageUrl } from "@/lib/privateStorage";
 
 interface Ticket {
   id: string;
@@ -35,6 +36,7 @@ const AcademyMyQuestions = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Ticket | null>(null);
+  const [selectedScreenshotUrl, setSelectedScreenshotUrl] = useState<string | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [repliesLoading, setRepliesLoading] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
@@ -87,6 +89,7 @@ const AcademyMyQuestions = () => {
 
   const openTicket = async (ticket: Ticket) => {
     setSelected(ticket);
+    setSelectedScreenshotUrl(null);
     setRepliesLoading(true);
     const { data } = await supabase
       .from("coach_ticket_replies")
@@ -96,6 +99,13 @@ const AcademyMyQuestions = () => {
     const replyData = data ?? [];
     setReplies(replyData);
     setRepliesLoading(false);
+    if (ticket.screenshot_url) {
+      try {
+        setSelectedScreenshotUrl(await resolvePrivateStorageUrl("ticket-screenshots", ticket.screenshot_url));
+      } catch (error) {
+        console.error("Failed to load ticket screenshot", error);
+      }
+    }
 
     // Mark all admin replies in this thread as read
     if (user) {
@@ -165,9 +175,9 @@ const AcademyMyQuestions = () => {
               <p className="text-xs text-muted-foreground mt-1">
                 {formatDateTimeFull(selected.created_at)}
               </p>
-              {selected.screenshot_url && (
+              {selectedScreenshotUrl && (
                 <img
-                  src={selected.screenshot_url}
+                  src={selectedScreenshotUrl}
                   alt="Attachment"
                   className="mt-3 rounded-lg border max-h-48 object-contain"
                 />

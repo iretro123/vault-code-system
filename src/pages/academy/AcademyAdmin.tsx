@@ -16,6 +16,7 @@ import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { resolvePrivateStorageUrl } from "@/lib/privateStorage";
 
 interface UserProfile {
   id: string;
@@ -64,6 +65,7 @@ const AcademyAdmin = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
+  const [ticketScreenshotUrls, setTicketScreenshotUrls] = useState<Record<string, string>>({});
   const [ticketReplies, setTicketReplies] = useState<Record<string, Reply[]>>({});
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
   const [replySending, setReplySending] = useState<string | null>(null);
@@ -181,11 +183,22 @@ const AcademyAdmin = () => {
     }
   }, [isAdmin, fetchTickets, fetchUsers]);
 
-  const toggleExpand = (ticketId: string) => {
+  const toggleExpand = async (ticketId: string) => {
     if (expandedTicket === ticketId) {
       setExpandedTicket(null);
     } else {
       setExpandedTicket(ticketId);
+      const ticket = tickets.find((item) => item.id === ticketId);
+      if (ticket?.screenshot_url && !ticketScreenshotUrls[ticketId]) {
+        try {
+          const signedUrl = await resolvePrivateStorageUrl("ticket-screenshots", ticket.screenshot_url);
+          if (signedUrl) {
+            setTicketScreenshotUrls((prev) => ({ ...prev, [ticketId]: signedUrl }));
+          }
+        } catch (error) {
+          console.error("Failed to load admin ticket screenshot", error);
+        }
+      }
       if (!ticketReplies[ticketId]) fetchReplies(ticketId);
     }
   };
@@ -399,9 +412,9 @@ const AcademyAdmin = () => {
                       <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
                         {/* Full question */}
                         <p className="text-sm text-foreground">{t.question}</p>
-                        {t.screenshot_url && (
-                          <a href={t.screenshot_url} target="_blank" rel="noopener noreferrer">
-                            <img src={t.screenshot_url} alt="Screenshot" className="rounded-lg border border-border max-h-40 object-cover" />
+                        {ticketScreenshotUrls[t.id] && (
+                          <a href={ticketScreenshotUrls[t.id]} target="_blank" rel="noopener noreferrer">
+                            <img src={ticketScreenshotUrls[t.id]} alt="Screenshot" className="rounded-lg border border-border max-h-40 object-cover" />
                           </a>
                         )}
 

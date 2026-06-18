@@ -6,6 +6,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function isForbiddenHostname(hostname: string) {
+  const lower = hostname.toLowerCase();
+  if (lower === "localhost" || lower.endsWith(".local")) return true;
+  if (lower === "metadata.google.internal" || lower === "169.254.169.254") return true;
+
+  const ipv4Match = lower.match(/^(\d{1,3}\.){3}\d{1,3}$/);
+  if (ipv4Match) {
+    const [a, b] = lower.split(".").map(Number);
+    if (a === 10 || a === 127 || a === 0) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a >= 224) return true;
+  }
+
+  if (lower === "::1" || lower === "[::1]") return true;
+  if (lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("fe80")) return true;
+
+  return false;
+}
+
 function extractMeta(html: string) {
   const get = (property: string): string | null => {
     // Try og: first, then twitter:, then generic meta name
@@ -43,6 +64,32 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const authClient = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+    const { data: authData, error: authError } = await authClient.auth.getUser();
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { url } = await req.json();
 
     if (!url || typeof url !== "string") {
@@ -57,6 +104,7 @@ Deno.serve(async (req) => {
     try {
       parsed = new URL(url);
       if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
+      if (isForbiddenHostname(parsed.hostname)) throw new Error();
     } catch {
       return new Response(JSON.stringify({ error: "Invalid URL" }), {
         status: 400,
@@ -65,7 +113,7 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
+      supabaseUrl,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 

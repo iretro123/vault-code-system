@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
 import { ImageLightbox } from "@/components/academy/community/ImageLightbox";
 import { useNavigate } from "react-router-dom";
+import { resolvePrivateStorageUrl } from "@/lib/privateStorage";
 import supplyZoneImg from "@/assets/supply-zone-example.png";
 import demandZoneImg from "@/assets/demand-zone-example.png";
 import supplyDemandImg from "@/assets/supply-demand-zones.png";
@@ -265,6 +266,7 @@ export function CoachDrawer() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
+  const [activeTicketScreenshotUrl, setActiveTicketScreenshotUrl] = useState<string | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [repliesLoading, setRepliesLoading] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -361,6 +363,35 @@ export function CoachDrawer() {
   useEffect(() => {
     if (activeTicket) fetchReplies(activeTicket.id);
   }, [activeTicket, fetchReplies]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadActiveTicketScreenshot = async () => {
+      if (!activeTicket?.screenshot_url) {
+        setActiveTicketScreenshotUrl(null);
+        return;
+      }
+
+      try {
+        const signedUrl = await resolvePrivateStorageUrl("ticket-screenshots", activeTicket.screenshot_url);
+        if (!cancelled) {
+          setActiveTicketScreenshotUrl(signedUrl);
+        }
+      } catch (error) {
+        console.error("Failed to resolve coach ticket screenshot", error);
+        if (!cancelled) {
+          setActiveTicketScreenshotUrl(null);
+        }
+      }
+    };
+
+    void loadActiveTicketScreenshot();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTicket]);
 
   useEffect(() => {
     if (showHistory) fetchPastAnswers();
@@ -552,8 +583,7 @@ export function CoachDrawer() {
       const path = `${user.id}/${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage.from("ticket-screenshots").upload(path, screenshotFile);
       if (!uploadErr) {
-        const { data: urlData } = supabase.storage.from("ticket-screenshots").getPublicUrl(path);
-        screenshotUrl = urlData.publicUrl;
+        screenshotUrl = path;
       }
     }
     const { error } = await supabase.from("coach_tickets").insert({
@@ -1033,9 +1063,9 @@ export function CoachDrawer() {
                   <span className="text-xs text-muted-foreground/50">{formatDateTime(activeTicket.created_at)}</span>
                 </div>
                 <p className="text-sm text-foreground leading-relaxed">{activeTicket.question}</p>
-                {activeTicket.screenshot_url && (
-                  <a href={activeTicket.screenshot_url} target="_blank" rel="noopener noreferrer">
-                    <img src={activeTicket.screenshot_url} alt="Screenshot" className="rounded-lg border border-white/[0.08] max-h-40 object-cover" />
+                {activeTicketScreenshotUrl && (
+                  <a href={activeTicketScreenshotUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={activeTicketScreenshotUrl} alt="Screenshot" className="rounded-lg border border-white/[0.08] max-h-40 object-cover" />
                   </a>
                 )}
               </div>

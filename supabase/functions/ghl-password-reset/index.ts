@@ -59,8 +59,51 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceKey);
+    const authHeader = req.headers.get("Authorization");
+
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const authClient = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    const { data: authData, error: authError } = await authClient.auth.getUser();
+    const authUser = authData.user;
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    const { data: authProfile } = await sb
+      .from("profiles")
+      .select("access_status")
+      .eq("user_id", authUser.id)
+      .maybeSingle();
+
+    const canManageOtherUsers =
+      authProfile?.access_status === "admin" || authProfile?.access_status === "operator";
+
+    if (authUser.email?.trim().toLowerCase() !== normalizedEmail && !canManageOtherUsers) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // SECURITY: Verify this email belongs to an existing user before proceeding
     const { data: existingProfile } = await sb

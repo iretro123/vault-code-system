@@ -22,7 +22,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.check-stripe-customer]
-verify_jwt = false
+verify_jwt = true
 
 [functions.list-whop-members]
 verify_jwt = false
@@ -54,7 +54,11 @@ verify_jwt = false
 [functions.ghl-broadcast-sms]
 verify_jwt = false
 
+[functions.ghl-password-reset]
+verify_jwt = true
+
 [functions.unfurl-link]
+verify_jwt = true
 
 [functions.economic-calendar]
 verify_jwt = false

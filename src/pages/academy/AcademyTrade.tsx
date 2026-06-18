@@ -403,8 +403,7 @@ const AcademyTrade = () => {
       if (uploadErr) {
         toast({ title: "Screenshot upload failed", description: uploadErr.message, variant: "destructive" });
       } else {
-        const { data: urlData } = supabase.storage.from("trade-screenshots").getPublicUrl(path);
-        screenshotUrl = urlData.publicUrl;
+        screenshotUrl = path;
       }
     }
 

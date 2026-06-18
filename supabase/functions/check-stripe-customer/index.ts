@@ -23,6 +23,52 @@ Deno.serve(async (req) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const authHeader = req.headers.get("Authorization");
+
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authClient = createClient(
+      supabaseUrl,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: authData, error: authError } = await authClient.auth.getUser();
+    const authUser = authData.user;
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: authProfile } = await adminClient
+      .from("profiles")
+      .select("access_status")
+      .eq("user_id", authUser.id)
+      .maybeSingle();
+
+    const canManageOtherUsers =
+      authProfile?.access_status === "admin" || authProfile?.access_status === "operator";
+
+    if (authUser.email?.trim().toLowerCase() !== normalizedEmail && !canManageOtherUsers) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // --- 1. Check Stripe customers ---
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -100,9 +146,7 @@ Deno.serve(async (req) => {
 
     // --- 3. Check allowed_signups whitelist ---
     try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const sb = createClient(supabaseUrl, supabaseServiceKey);
+      const sb = adminClient;
 
       const { data: allowedRow } = await sb
         .from("allowed_signups")

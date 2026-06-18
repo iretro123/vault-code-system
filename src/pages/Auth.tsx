@@ -56,8 +56,8 @@ const Auth = () => {
     setResetSent(false);
 
     try {
-      const { data, error } = await supabase.functions.invoke("ghl-password-reset", {
-        body: { email: email.trim(), origin: window.location.origin },
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) {

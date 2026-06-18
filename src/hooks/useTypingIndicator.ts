@@ -13,7 +13,7 @@ export function useTypingIndicator(roomSlug: string, userId?: string, userName?:
 
   useEffect(() => {
     const channel = supabase.channel(`typing-${roomSlug}`, {
-      config: { broadcast: { self: false } },
+      config: { private: true, broadcast: { self: false } },
     });
 
     channel.on("broadcast", { event: "typing" }, ({ payload }) => {
