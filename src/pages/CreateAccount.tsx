@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { openExternalUrl } from "@/lib/externalLinks";
-import { VAULT_OS_MONTHLY_FALLBACK_PRICE, getVaultOsPrivacyPolicyUrl, getVaultOsTermsUrl } from "@/lib/membership";
+import { VAULT_OS_MONTHLY_FALLBACK_PRICE, VAULT_OS_PRIVACY_POLICY_PATH, VAULT_OS_TERMS_PATH } from "@/lib/membership";
 import { ExternalLink } from "lucide-react";
 
 const CreateAccount = () => {
