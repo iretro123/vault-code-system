@@ -18,9 +18,9 @@ Current app status:
 - Implemented in `/Users/user/Documents/New project/vault-code-system/src/pages/MembershipUpgrade.tsx`
 - Also surfaced before paid continuation in `/Users/user/Documents/New project/vault-code-system/src/pages/CreateAccount.tsx`
 - Link handling uses `/Users/user/Documents/New project/vault-code-system/src/lib/externalLinks.ts`
-- Link source constants use:
-  - Terms: `https://www.apple.com/legal/internet-services/itunes/dev/stdeula/`
-  - Privacy: `https://raw.githubusercontent.com/iretro123/vault-code-system/main/public-legal/privacy-policy.md`
+  - Link source constants use:
+    - Terms: `https://member.vaulttradingacademy.com/terms-of-use`
+    - Privacy: `https://member.vaulttradingacademy.com/privacy-policy`
 
 ## 2. In-app account deletion compliance
 
