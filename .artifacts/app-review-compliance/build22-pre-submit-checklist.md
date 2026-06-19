@@ -1,8 +1,8 @@
 # Vault OS Build 22 Pre-Submit Checklist
 
-Status date: June 18, 2026
+Status date: June 19, 2026
 
-This checklist is for the latest local Vault OS build prepared after switching legal links to stable public URLs that do not depend on the broken member-domain deployment.
+This checklist is for the latest local Vault OS build prepared after switching legal links to the live member-domain public legal pages.
 
 ## 1. Subscription purchase-flow compliance
 
@@ -95,5 +95,4 @@ Reference:
 ## 7. User recording target
 
 Use the separate recording guide:
-- `/Users/user/Documents/New project/vault-code-system/.artifacts/app-review-compliance/physical-device-recording-script-build21.md`
- - `/Users/user/Documents/New project/vault-code-system/.artifacts/app-review-compliance/physical-device-recording-script-build22.md`
+- `/Users/user/Documents/New project/vault-code-system/.artifacts/app-review-compliance/physical-device-recording-script-build22.md`

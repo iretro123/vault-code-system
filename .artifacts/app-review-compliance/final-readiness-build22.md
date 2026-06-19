@@ -1,6 +1,6 @@
 # Vault OS Final Readiness Status (Build 22)
 
-Date: June 18, 2026
+Date: June 19, 2026
 
 ## Apple blocker status
 
@@ -32,7 +32,7 @@ Verified flow:
 - Deleted account cannot sign in again
 
 Live backend verification artifact:
-- /Users/user/Documents/New project/vault-code-system/.artifacts/review-verify/delete-account-build21.json
+- /Users/user/Documents/New project/vault-code-system/.artifacts/review-verify/delete-account-build22.json
 
 Results in that artifact:
 - basic/free account delete: 200 success
