@@ -14,7 +14,7 @@ export function LegalDocumentLayout({ title, updatedOn, children }: LegalDocumen
 
   return (
     <div
-      className="academy-main-safe min-h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-8 text-foreground"
+      className="h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-8 text-foreground"
       style={{
         background: `
           radial-gradient(ellipse 80% 55% at 50% 10%, rgba(59,130,246,0.16) 0%, transparent 55%),
