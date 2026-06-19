@@ -1,4 +1,4 @@
-# Vault OS Build 21 Pre-Submit Checklist
+# Vault OS Build 22 Pre-Submit Checklist
 
 Status date: June 18, 2026
 
@@ -72,14 +72,14 @@ Chosen URLs:
 ## 5. Local build verification
 
 Target version:
-- `1.0 (21)`
+- `1.0 (22)`
 
 Verify before Apple upload:
 - Web production build succeeds.
 - `cap sync ios` succeeds.
 - iPhone simulator build succeeds.
 - iPad Air 11-inch (M3) simulator build succeeds.
-- Release archive succeeds for build `21`.
+- Release archive succeeds for build `22`.
 
 ## 6. App Store Connect metadata reminder
 
@@ -96,3 +96,4 @@ Reference:
 
 Use the separate recording guide:
 - `/Users/user/Documents/New project/vault-code-system/.artifacts/app-review-compliance/physical-device-recording-script-build21.md`
+ - `/Users/user/Documents/New project/vault-code-system/.artifacts/app-review-compliance/physical-device-recording-script-build22.md`

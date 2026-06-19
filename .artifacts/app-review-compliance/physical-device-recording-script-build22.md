@@ -3,7 +3,7 @@
 Use a real iPhone or iPad. Record in one continuous take if possible.
 
 Build target:
-- `1.0 (21)`
+- `1.0 (22)`
 
 ## Account to use
 
