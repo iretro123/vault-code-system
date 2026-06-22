@@ -59,12 +59,8 @@ const ResetPassword = () => {
     e.preventDefault();
     setError("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (!isPasswordStrong(password, confirmPassword)) {
+      setError("Please meet all password requirements below before continuing.");
       return;
     }
 
@@ -73,7 +69,15 @@ const ResetPassword = () => {
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message);
+      // Translate Supabase's HIBP / weak-password error into clearer guidance
+      const msg = updateError.message || "";
+      if (/weak|known|leaked|pwned|easy to guess/i.test(msg)) {
+        setError(
+          "This password has shown up in known data breaches. Pick something more unique — try a short phrase with numbers and a symbol (e.g. 'Coffee@Sunrise47')."
+        );
+      } else {
+        setError(msg);
+      }
       return;
     }
 
