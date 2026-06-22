@@ -61,9 +61,9 @@ export function AccountSecurityForm() {
       setPwMsg("New passwords do not match.");
       return;
     }
-    if (newPassword.length < 8) {
+    if (!isPasswordStrong(newPassword, confirmPassword)) {
       setPwStatus("error");
-      setPwMsg("Password must be at least 8 characters.");
+      setPwMsg("Please meet all password requirements below before continuing.");
       return;
     }
     setPwStatus("loading");
