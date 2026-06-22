@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Mail, Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { PasswordStrengthChecklist, isPasswordStrong } from "@/components/PasswordStrengthChecklist";
 
 type Status = "idle" | "loading" | "success" | "error";
 
