@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Shield, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { PasswordStrengthChecklist, isPasswordStrong } from "@/components/PasswordStrengthChecklist";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -58,12 +59,8 @@ const ResetPassword = () => {
     e.preventDefault();
     setError("");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    if (!isPasswordStrong(password, confirmPassword)) {
+      setError("Please meet all password requirements below before continuing.");
       return;
     }
 
@@ -72,7 +69,15 @@ const ResetPassword = () => {
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message);
+      // Translate Supabase's HIBP / weak-password error into clearer guidance
+      const msg = updateError.message || "";
+      if (/weak|known|leaked|pwned|easy to guess/i.test(msg)) {
+        setError(
+          "This password has shown up in known data breaches. Pick something more unique — try a short phrase with numbers and a symbol (e.g. 'Coffee@Sunrise47')."
+        );
+      } else {
+        setError(msg);
+      }
       return;
     }
 
@@ -108,21 +113,28 @@ const ResetPassword = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="new-password" className="text-sm text-muted-foreground">New Password</Label>
-                <Input id="new-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 h-12" required minLength={8} />
+                <Input id="new-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 h-12" required minLength={10} autoFocus />
               </div>
               <div>
                 <Label htmlFor="confirm-password" className="text-sm text-muted-foreground">Confirm Password</Label>
-                <Input id="confirm-password" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mt-1.5 h-12" required minLength={8} />
+                <Input id="confirm-password" type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mt-1.5 h-12" required minLength={10} />
               </div>
+
+              <PasswordStrengthChecklist password={password} confirmPassword={confirmPassword} />
+
               {error && (
                 <div className="flex items-start gap-1.5 text-xs text-destructive">
                   <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
-              <Button type="submit" className="w-full h-12 text-base font-medium gap-2" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-medium gap-2"
+                disabled={loading || !isPasswordStrong(password, confirmPassword)}
+              >
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                Update Password
+                {isPasswordStrong(password, confirmPassword) ? "Update Password" : "Meet all requirements to continue"}
               </Button>
             </form>
           </Card>

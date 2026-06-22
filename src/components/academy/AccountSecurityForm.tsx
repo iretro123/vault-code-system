@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Mail, Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { PasswordStrengthChecklist, isPasswordStrong } from "@/components/PasswordStrengthChecklist";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -60,9 +61,9 @@ export function AccountSecurityForm() {
       setPwMsg("New passwords do not match.");
       return;
     }
-    if (newPassword.length < 8) {
+    if (!isPasswordStrong(newPassword, confirmPassword)) {
       setPwStatus("error");
-      setPwMsg("Password must be at least 8 characters.");
+      setPwMsg("Please meet all password requirements below before continuing.");
       return;
     }
     setPwStatus("loading");
@@ -82,7 +83,12 @@ export function AccountSecurityForm() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
       setPwStatus("error");
-      setPwMsg(error.message);
+      const msg = error.message || "";
+      if (/weak|known|leaked|pwned|easy to guess/i.test(msg)) {
+        setPwMsg("This password has shown up in known data breaches. Pick something more unique — try a short phrase with numbers and a symbol (e.g. 'Coffee@Sunrise47').");
+      } else {
+        setPwMsg(msg);
+      }
     } else {
       setPwStatus("success");
       setPwMsg("Password updated successfully.");
@@ -176,6 +182,11 @@ export function AccountSecurityForm() {
               minLength={8}
             />
           </div>
+
+          {newPassword.length > 0 && (
+            <PasswordStrengthChecklist password={newPassword} confirmPassword={confirmPassword} />
+          )}
+
           {pwMsg && (
             <div className={`flex items-start gap-1.5 text-xs ${pwStatus === "success" ? "text-emerald-500" : "text-destructive"}`}>
               {pwStatus === "success" ? <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" /> : <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />}
@@ -185,12 +196,19 @@ export function AccountSecurityForm() {
           <Button
             size="sm"
             onClick={handleChangePassword}
-            disabled={pwStatus === "loading" || !currentPassword || !newPassword || !confirmPassword}
+            disabled={
+              pwStatus === "loading" ||
+              !currentPassword ||
+              !isPasswordStrong(newPassword, confirmPassword)
+            }
             className="gap-1.5"
           >
             {pwStatus === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Update Password
+            {isPasswordStrong(newPassword, confirmPassword) || !newPassword
+              ? "Update Password"
+              : "Meet all requirements to continue"}
           </Button>
+
         </div>
       </Card>
     </div>
