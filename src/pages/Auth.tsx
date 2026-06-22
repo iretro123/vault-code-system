@@ -19,6 +19,21 @@ const Auth = () => {
   useEffect(() => {
     if (window.location.hash.includes("type=recovery")) {
       window.location.href = "/reset-password" + window.location.hash;
+      return;
+    }
+    // Detect expired/invalid recovery link bounced back by Supabase
+    // (e.g. ?error=access_denied&error_code=otp_expired or in hash)
+    const search = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const errCode = search.get("error_code") || hashParams.get("error_code");
+    const errDesc = search.get("error_description") || hashParams.get("error_description");
+    if (errCode === "otp_expired" || (errDesc && /expired|invalid/i.test(errDesc))) {
+      setMode("forgot");
+      setResetError(
+        "Your password reset link expired or was already used (this often happens when your email app pre-scans links). Enter your email below and we'll send you a fresh one."
+      );
+      // Clean the URL so the error doesn't persist on refresh
+      window.history.replaceState({}, "", "/auth");
     }
   }, []);
 
@@ -29,6 +44,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
