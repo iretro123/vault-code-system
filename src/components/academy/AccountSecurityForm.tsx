@@ -182,6 +182,11 @@ export function AccountSecurityForm() {
               minLength={8}
             />
           </div>
+
+          {newPassword.length > 0 && (
+            <PasswordStrengthChecklist password={newPassword} confirmPassword={confirmPassword} />
+          )}
+
           {pwMsg && (
             <div className={`flex items-start gap-1.5 text-xs ${pwStatus === "success" ? "text-emerald-500" : "text-destructive"}`}>
               {pwStatus === "success" ? <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" /> : <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />}
@@ -191,12 +196,19 @@ export function AccountSecurityForm() {
           <Button
             size="sm"
             onClick={handleChangePassword}
-            disabled={pwStatus === "loading" || !currentPassword || !newPassword || !confirmPassword}
+            disabled={
+              pwStatus === "loading" ||
+              !currentPassword ||
+              !isPasswordStrong(newPassword, confirmPassword)
+            }
             className="gap-1.5"
           >
             {pwStatus === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Update Password
+            {isPasswordStrong(newPassword, confirmPassword) || !newPassword
+              ? "Update Password"
+              : "Meet all requirements to continue"}
           </Button>
+
         </div>
       </Card>
     </div>
