@@ -83,7 +83,12 @@ export function AccountSecurityForm() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) {
       setPwStatus("error");
-      setPwMsg(error.message);
+      const msg = error.message || "";
+      if (/weak|known|leaked|pwned|easy to guess/i.test(msg)) {
+        setPwMsg("This password has shown up in known data breaches. Pick something more unique — try a short phrase with numbers and a symbol (e.g. 'Coffee@Sunrise47').");
+      } else {
+        setPwMsg(msg);
+      }
     } else {
       setPwStatus("success");
       setPwMsg("Password updated successfully.");
