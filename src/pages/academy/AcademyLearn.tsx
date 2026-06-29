@@ -46,13 +46,13 @@ const AcademyLearn = () => {
   const modules = useMemo(() => {
     let list = canManageContent ? allModules : allModules.filter(m => m.visible !== false);
     if (canManageContent) return list;
-    if (isBasicTier) {
+    if (isGuestOrBasic) {
       list = list.filter(m => (m as any).basic_only === true || m.slug === BASIC_ONLY_SLUG);
     } else {
       list = list.filter(m => !((m as any).basic_only === true) && m.slug !== BASIC_ONLY_SLUG);
     }
     return list;
-  }, [allModules, canManageContent, isBasicTier]);
+  }, [allModules, canManageContent, isGuestOrBasic]);
 
   const allowedSlugs = useMemo(() => new Set(modules.map(m => m.slug)), [modules]);
   const lessons = useMemo(() => {
