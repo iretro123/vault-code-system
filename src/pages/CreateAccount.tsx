@@ -6,7 +6,10 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, VAULT_OS_PRIVACY_POLICY_URL, VAULT_OS_TERMS_URL } from "@/lib/membership";
+import { isNativeAndroidApp } from "@/lib/platform";
 import { ExternalLink } from "lucide-react";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
+import { disableGuestMode } from "@/lib/guestMode";
 
 const CreateAccount = () => {
   const navigate = useNavigate();
@@ -18,7 +21,8 @@ const CreateAccount = () => {
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const isFullAccessFlow = location.pathname.endsWith("/full");
-  const destinationPath = isFullAccessFlow ? "/membership" : "/basic";
+  const subscriptionStore = isNativeAndroidApp() ? "Google Play" : "Apple";
+  const destinationPath = isFullAccessFlow ? "/membership" : "/academy/community?tab=trade-floor";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,6 +50,8 @@ const CreateAccount = () => {
         // Self-assign basic_tier role (allowed by RLS)
         await supabase.from("user_roles").insert({ user_id: userId, role: "basic_tier" });
       }
+      disableGuestMode();
+      window.dispatchEvent(new Event("guest-mode-changed"));
       // If session exists (auto-confirm), go straight in; otherwise prompt verify.
       if (data.session) {
         navigate(destinationPath, { replace: true });
@@ -88,6 +94,10 @@ const CreateAccount = () => {
       }}
     >
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
+        <div className="relative mb-8 min-h-11">
+          <AuthBackButton />
+        </div>
+
         <h1 className="text-5xl font-black tracking-tight text-center animate-fade-in">
           <span className="text-foreground">VAULT</span>
           <span className="text-primary">OS</span>
@@ -137,7 +147,7 @@ const CreateAccount = () => {
             <span>
               I agree to the Community Terms &amp; Safety guidelines and understand that this
               {isFullAccessFlow
-                ? ` account can start a ${VAULT_OS_MONTHLY_FALLBACK_PRICE} Apple subscription for full Vault OS access.`
+                ? ` account can start a ${VAULT_OS_MONTHLY_FALLBACK_PRICE} ${subscriptionStore} subscription for full Vault OS access.`
                 : " membership provides access to on-demand video content only."}
             </span>
           </label>

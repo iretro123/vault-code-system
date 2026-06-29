@@ -17,6 +17,7 @@ import { VaultOSGate } from "./components/VaultOSGate";
 import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import { Loader2 } from "lucide-react";
+import { isSharedGuestAccount } from "@/lib/membership";
 
 // Lazy-loaded routes — split from main bundle.
 // Wrapped with lazyWithRetry so stale-deploy chunk-hash mismatches
@@ -118,6 +119,25 @@ function RouteFallback() {
   );
 }
 
+function LaunchRedirect() {
+  const { user, profile, userRole, loading } = useAuth();
+
+  if (loading) return <RouteFallback />;
+  if (!user) return <Navigate to="/welcome" replace />;
+  if (userRole?.role === "basic_tier") {
+    return <Navigate to="/academy/community?tab=trade-floor" replace />;
+  }
+  return <Navigate to="/academy/home" replace />;
+}
+
+function WelcomeRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <RouteFallback />;
+  if (user) return <Navigate to="/" replace />;
+  return <Welcome />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
@@ -133,14 +153,14 @@ const App = () => (
           <Sonner />
           <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/welcome" replace />} />
+            <Route path="/" element={<LaunchRedirect />} />
             <Route path="/hub" element={<Navigate to="/academy" replace />} />
             <Route path="/cockpit" element={<BasicTierRedirect><VaultOSGate><TraderCockpit /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/log" element={<BasicTierRedirect><VaultOSGate><TradeLog /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/vault-log" element={<BasicTierRedirect><VaultOSGate><VaultLog /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/reports" element={<BasicTierRedirect><VaultOSGate><Reports /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/settings" element={<BasicTierRedirect><VaultOSGate><Settings /></VaultOSGate></BasicTierRedirect>} />
-            <Route path="/welcome" element={<Suspense fallback={<RouteFallback />}><Welcome /></Suspense>} />
+            <Route path="/welcome" element={<Suspense fallback={<RouteFallback />}><WelcomeRoute /></Suspense>} />
             <Route path="/intro" element={<Suspense fallback={<RouteFallback />}><IntroCarousel /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />

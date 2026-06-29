@@ -18,7 +18,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, ShieldAlert, WifiOff } from "lucide-react";
+import { ArrowLeft, Loader2, ShieldAlert, WifiOff, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
@@ -34,6 +34,8 @@ const ambientBgStyle = {
     'linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)',
   ].join(', '),
 };
+
+const GUEST_UPGRADE_BANNER_DISMISSED_KEY = "va_guest_upgrade_banner_dismissed";
 
 interface AcademyProfileShape {
   access_status?: string | null;
@@ -86,6 +88,9 @@ function AcademyLayoutInner() {
   const hadUserRef = useRef(false);
   const [referralOpen, setReferralOpen] = useState(false);
   const sharedGuest = isSharedGuestAccount(user, profile);
+  const [guestBannerDismissed, setGuestBannerDismissed] = useState(() => {
+    try { return localStorage.getItem(GUEST_UPGRADE_BANNER_DISMISSED_KEY) === "1"; } catch { return false; }
+  });
   useSmartNotifications();
   useSmartRefresh();
   usePresenceHeartbeat();
@@ -138,7 +143,7 @@ function AcademyLayoutInner() {
       path === "/academy/settings" || path.startsWith("/academy/settings") ||
       path === "/academy/profile";
     if (!allowed) {
-      return <Navigate to="/academy/learn" replace />;
+      return <Navigate to="/academy/community?tab=trade-floor" replace />;
     }
     return (
       <div className="academy-mobile-fit h-[100dvh] flex w-full bg-background relative overflow-hidden">
@@ -152,11 +157,24 @@ function AcademyLayoutInner() {
               </span>
             </div>
           </header>
-          <div className="border-b border-primary/10 bg-primary/10 px-4 py-3">
+          {(!sharedGuest || !guestBannerDismissed) && <div className="relative border-b border-primary/10 bg-primary/10 px-4 py-3">
+            {sharedGuest && (
+              <button
+                type="button"
+                aria-label="Dismiss create account banner"
+                className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+                onClick={() => {
+                  setGuestBannerDismissed(true);
+                  try { localStorage.setItem(GUEST_UPGRADE_BANNER_DISMISSED_KEY, "1"); } catch { void 0; }
+                }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
+              <div className={sharedGuest ? "pr-8" : undefined}>
                 <p className="text-sm font-semibold text-foreground">
-                  {sharedGuest ? "Create your own account for full access" : `Upgrade to full access for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
+                  {sharedGuest ? "Create your own full access account" : `Upgrade to full access for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {sharedGuest
@@ -179,7 +197,7 @@ function AcademyLayoutInner() {
                 {sharedGuest ? "Create account" : `Upgrade ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
               </Button>
             </div>
-          </div>
+          </div>}
           <main className="academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in pb-4 md:pb-6">
             <Outlet />
           </main>
