@@ -23,6 +23,8 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
+import { isSharedGuestAccount } from "@/lib/membership";
+import { useAuth } from "@/hooks/useAuth";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
@@ -35,6 +37,8 @@ const AcademyLearn = () => {
   const canManageContent = isAdminActive && hasPermission("manage_content");
   const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
   const { isBasicTier } = useIsBasicTier();
+  const { user, profile } = useAuth();
+  const isGuestOrBasic = isBasicTier || isSharedGuestAccount(user, profile);
 
   const BASIC_ONLY_SLUG = "chapter-1-basic-bridge";
 
@@ -42,13 +46,13 @@ const AcademyLearn = () => {
   const modules = useMemo(() => {
     let list = canManageContent ? allModules : allModules.filter(m => m.visible !== false);
     if (canManageContent) return list;
-    if (isBasicTier) {
+    if (isGuestOrBasic) {
       list = list.filter(m => (m as any).basic_only === true || m.slug === BASIC_ONLY_SLUG);
     } else {
       list = list.filter(m => !((m as any).basic_only === true) && m.slug !== BASIC_ONLY_SLUG);
     }
     return list;
-  }, [allModules, canManageContent, isBasicTier]);
+  }, [allModules, canManageContent, isGuestOrBasic]);
 
   const allowedSlugs = useMemo(() => new Set(modules.map(m => m.slug)), [modules]);
   const lessons = useMemo(() => {
@@ -121,7 +125,7 @@ const AcademyLearn = () => {
     return acc;
   }, {});
 
-  if (!hasAccess && !accessLoading) {
+  if (!hasAccess && !accessLoading && !isGuestOrBasic) {
     return <PremiumGate status={status} pageName="Courses" />;
   }
 
