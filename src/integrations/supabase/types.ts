@@ -168,6 +168,7 @@ export type Database = {
       }
       academy_modules: {
         Row: {
+          basic_only: boolean
           cover_image_url: string | null
           created_at: string
           id: string
@@ -179,6 +180,7 @@ export type Database = {
           visible: boolean
         }
         Insert: {
+          basic_only?: boolean
           cover_image_url?: string | null
           created_at?: string
           id?: string
@@ -190,6 +192,7 @@ export type Database = {
           visible?: boolean
         }
         Update: {
+          basic_only?: boolean
           cover_image_url?: string | null
           created_at?: string
           id?: string

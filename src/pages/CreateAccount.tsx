@@ -6,9 +6,10 @@ import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, VAULT_OS_PRIVACY_POLICY_URL, VAULT_OS_TERMS_URL } from "@/lib/membership";
-import { isNativeAndroidApp } from "@/lib/platform";
+import { Capacitor } from "@capacitor/core";
 import { ExternalLink } from "lucide-react";
-import { AuthBackButton } from "@/components/auth/AuthBackButton";
+
+const isNativeAndroidApp = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 import { disableGuestMode } from "@/lib/guestMode";
 
 const CreateAccount = () => {
@@ -94,9 +95,9 @@ const CreateAccount = () => {
       }}
     >
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
-        <div className="relative mb-8 min-h-11">
-          <AuthBackButton />
-        </div>
+        <div className="relative mb-8 min-h-11" />
+
+
 
         <h1 className="text-5xl font-black tracking-tight text-center animate-fade-in">
           <span className="text-foreground">VAULT</span>
