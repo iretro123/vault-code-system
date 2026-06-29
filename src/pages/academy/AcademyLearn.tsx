@@ -23,6 +23,8 @@ import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
+import { isSharedGuestAccount } from "@/lib/membership";
+import { useAuth } from "@/hooks/useAuth";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
