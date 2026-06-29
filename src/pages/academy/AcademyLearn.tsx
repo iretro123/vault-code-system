@@ -34,16 +34,28 @@ const AcademyLearn = () => {
   const { hasPermission } = useAcademyPermissions();
   const canManageContent = isAdminActive && hasPermission("manage_content");
   const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
+  const { isBasicTier } = useIsBasicTier();
 
-  // Filter hidden modules for non-admins
-  const modules = useMemo(() =>
-    canManageContent ? allModules : allModules.filter(m => m.visible !== false),
-    [allModules, canManageContent]
-  );
-  const lessons = useMemo(() =>
-    canManageContent ? allLessons : allLessons.filter(l => l.visible !== false),
-    [allLessons, canManageContent]
-  );
+  const BASIC_ONLY_SLUG = "chapter-1-basic-bridge";
+
+  // Filter hidden modules for non-admins, and gate the basic-tier duplicate.
+  const modules = useMemo(() => {
+    let list = canManageContent ? allModules : allModules.filter(m => m.visible !== false);
+    if (canManageContent) return list;
+    if (isBasicTier) {
+      list = list.filter(m => (m as any).basic_only === true || m.slug === BASIC_ONLY_SLUG);
+    } else {
+      list = list.filter(m => !((m as any).basic_only === true) && m.slug !== BASIC_ONLY_SLUG);
+    }
+    return list;
+  }, [allModules, canManageContent, isBasicTier]);
+
+  const allowedSlugs = useMemo(() => new Set(modules.map(m => m.slug)), [modules]);
+  const lessons = useMemo(() => {
+    const base = canManageContent ? allLessons : allLessons.filter(l => l.visible !== false);
+    if (canManageContent) return base;
+    return base.filter(l => allowedSlugs.has(l.module_slug));
+  }, [allLessons, canManageContent, allowedSlugs]);
 
   // Admin state
   const [showAdd, setShowAdd] = useState(false);
