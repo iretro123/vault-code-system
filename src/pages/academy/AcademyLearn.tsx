@@ -37,6 +37,8 @@ const AcademyLearn = () => {
   const canManageContent = isAdminActive && hasPermission("manage_content");
   const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
   const { isBasicTier } = useIsBasicTier();
+  const { user, profile } = useAuth();
+  const isGuestOrBasic = isBasicTier || isSharedGuestAccount(user, profile);
 
   const BASIC_ONLY_SLUG = "chapter-1-basic-bridge";
 
