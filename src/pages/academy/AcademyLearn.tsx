@@ -22,6 +22,7 @@ import courseCoverDefault from "@/assets/course-cover-default.jpg";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
+import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
