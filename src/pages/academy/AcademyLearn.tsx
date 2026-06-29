@@ -160,10 +160,10 @@ const AcademyLearn = () => {
           ]}
         />
 
-        <ClaimRoleBanner />
+        {!isGuestOrBasic && <ClaimRoleBanner />}
 
-        {/* Playbook Hero Strip */}
-        {pbTotal > 0 && pbDone < pbTotal && (
+        {/* Playbook Hero Strip — hidden for basic/guest users */}
+        {!isGuestOrBasic && pbTotal > 0 && pbDone < pbTotal && (
           <div
             className="vault-glass-card p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 cursor-pointer hover:border-primary/20 transition-colors"
             onClick={() => navigate(`/academy/playbook${pbNext ? `?chapter=${pbNext.id}` : ""}`)}
