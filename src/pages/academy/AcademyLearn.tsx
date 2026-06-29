@@ -125,7 +125,7 @@ const AcademyLearn = () => {
     return acc;
   }, {});
 
-  if (!hasAccess && !accessLoading && !isBasicTier) {
+  if (!hasAccess && !accessLoading && !isGuestOrBasic) {
     return <PremiumGate status={status} pageName="Courses" />;
   }
 
