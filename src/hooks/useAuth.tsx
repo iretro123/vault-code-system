@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(() => readCache(PROFILE_CACHE_KEY, null));
-  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(() => readCache(ROLE_CACHE_KEY, null));
   const [loading, setLoading] = useState(true);
 
   // Ref to deduplicate fetchUserData between getSession and onAuthStateChange
@@ -212,28 +212,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function fetchUserData(userId: string) {
     try {
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", userId)
         .maybeSingle();
 
+      if (profileError) throw profileError;
+
       if (!profileData) {
-        console.warn("[Auth] No profile data — attempting session refresh");
-        const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) {
-          console.warn("[Auth] Session refresh failed — signing out", refreshError.message);
-          await signOutCleanup();
-          return;
-        }
+        console.warn("[Auth] No profile data yet — retaining the saved session and retrying on refresh");
         const { data: retryData } = await supabase
           .from("profiles")
           .select("*")
           .eq("user_id", userId)
           .maybeSingle();
         if (!retryData) {
-          console.warn("[Auth] Profile still null after refresh — signing out");
-          await signOutCleanup();
+          // New accounts can briefly exist before their profile trigger completes.
+          // Keep the valid Supabase session instead of logging the user out.
           return;
         }
         const ok = await handleProfile(retryData, userId);
@@ -244,10 +240,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch user role(s) — a user may have multiple rows; pick the most restrictive.
-      const { data: roleRows } = await supabase
+      const { data: roleRows, error: roleError } = await supabase
         .from("user_roles")
         .select("role, subscription_status")
         .eq("user_id", userId);
+
+      if (roleError) throw roleError;
 
       let roleData: UserRole | null = null;
       if (roleRows && roleRows.length > 0) {
@@ -271,8 +269,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
-      await signOutCleanup();
+      // Network and startup failures must not destroy a valid persisted login.
+      // Supabase will emit SIGNED_OUT itself if the refresh token is truly invalid.
+      console.error("[Auth] Could not refresh profile data; keeping saved session and cache:", error);
     } finally {
       setLoading(false);
     }

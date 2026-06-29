@@ -1,8 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, UserRound } from "lucide-react";
-import { isGuestModeEnabled } from "@/lib/featureFlags";
-import { VAULT_OS_MONTHLY_FALLBACK_PRICE } from "@/lib/membership";
+import { Gem, UserRound } from "lucide-react";
+import {
+  VAULT_OS_MONTHLY_FALLBACK_PRICE,
+  VAULT_OS_PRIVACY_POLICY_URL,
+  VAULT_OS_TERMS_URL,
+} from "@/lib/membership";
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -42,45 +45,71 @@ const Welcome = () => {
         </p>
 
         {/* CTAs */}
-        <div className="w-full mt-12 space-y-3">
-          <Button
-            onClick={() => navigate("/create-account/full")}
-            className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
-          >
-            Full Access {VAULT_OS_MONTHLY_FALLBACK_PRICE}
-            <Sparkles className="h-4 w-4" />
-          </Button>
+        <div className="mt-14 w-full max-w-[23rem] mx-auto space-y-8">
+          <div className="space-y-2">
+            <Button
+              onClick={() => navigate("/create-account/full")}
+              className="w-full h-16 text-base font-semibold rounded-2xl gap-3"
+            >
+              <Gem className="h-5 w-5 shrink-0" />
+              View Full Access - {VAULT_OS_MONTHLY_FALLBACK_PRICE.replace("/month", "/mo")}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Live calls, training, tools, and community.
+            </p>
+          </div>
 
-          <Button
-            onClick={() => navigate("/intro?next=signup")}
-            className="w-full h-14 text-base font-semibold rounded-2xl gap-2"
-          >
-            Get Started
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-
-          {isGuestModeEnabled() && (
+          <div className="space-y-2">
             <Button
               type="button"
               variant="outline"
-              className="w-full h-12 text-sm font-medium rounded-2xl gap-2"
-              onClick={() => navigate("/intro?next=guest")}
+              className="w-full h-16 text-base font-semibold rounded-2xl gap-3"
+              onClick={() => navigate("/create-account")}
             >
-              <UserRound className="h-4 w-4" />
-              Continue as Guest
+              <UserRound className="h-5 w-5 shrink-0" />
+              Create Free Account
             </Button>
-          )}
+            <p className="text-center text-sm text-muted-foreground">
+              Join the free community.
+            </p>
+          </div>
 
-          <p className="text-center text-sm text-muted-foreground pt-2">
-            Need full access?{" "}
-            <Link to="/create-account/full" className="text-primary hover:underline font-medium">
-              Create an account
-            </Link>
-            <span className="mx-2 text-muted-foreground/50">•</span>
+          <p className="text-center text-base font-semibold text-foreground pt-1">
             Already have an account?{" "}
-            <Link to="/auth" className="text-primary hover:underline font-medium">
-              Sign in
+            <Link
+              to="/auth"
+              className="font-bold text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.45)] hover:text-[#6ea8ff] hover:drop-shadow-[0_0_14px_rgba(59,130,246,0.7)] transition-all"
+            >
+              Log in
             </Link>
+          </p>
+
+          <p className="text-center text-xs text-muted-foreground/90">
+            <button
+              type="button"
+              onClick={() => navigate("/membership")}
+              className="hover:text-foreground transition-colors"
+            >
+              Restore Apple Purchase
+            </button>
+            {" · "}
+            <a
+              href={VAULT_OS_TERMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              Terms
+            </a>
+            {" · "}
+            <a
+              href={VAULT_OS_PRIVACY_POLICY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              Privacy
+            </a>
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { RoomChat } from "@/components/academy/RoomChat";
@@ -17,10 +18,19 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
+function isTabKey(value: string | null): value is TabKey {
+  return !!value && TABS.some((tab) => tab.key === value);
+}
+
 const AcademyCommunity = () => {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    if (typeof window !== "undefined") {
+      const queryTab = new URLSearchParams(window.location.search).get("tab");
+      if (isTabKey(queryTab)) return queryTab;
+    }
     const saved = localStorage.getItem("vault_community_tab");
-    return (saved as TabKey) || "trade-floor";
+    return isTabKey(saved) ? saved : "trade-floor";
   });
   const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
   const canPostRestricted = isCEO || isAdmin || isOperator;
@@ -43,6 +53,15 @@ const AcademyCommunity = () => {
     if (slug && userId) markRead(slug);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  useEffect(() => {
+    const queryTab = searchParams.get("tab");
+    if (!isTabKey(queryTab) || queryTab === activeTab) return;
+    setActiveTab(queryTab);
+    localStorage.setItem("vault_community_tab", queryTab);
+    const slug = TABS.find((t) => t.key === queryTab)?.roomSlug;
+    if (slug && userId) markRead(slug);
+  }, [searchParams, activeTab, userId, markRead]);
 
   return (
     <>

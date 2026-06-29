@@ -782,6 +782,57 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     clearSuggestions();
     shouldAutoScroll.current = true;
     const result = await sendMessage(body, attachments);
+    const safeAttachments = attachments ?? [];
+    const hasSignalAttachment = safeAttachments.some(
+      (attachment) => attachment.type === "signal-watchlist" || attachment.type === "signal-live"
+    );
+    const hasEveryoneMention = /@everyone\b/i.test(body);
+    const signalPreview = body.length > 120 ? `${body.slice(0, 120)}…` : body;
+
+    // Client-side fallback so live app builds can still broadcast guest-visible
+    // signal pushes before the matching backend trigger migration is deployed.
+    // We only use the app-role operator path here because the insert policy for
+    // academy_notifications is operator-only.
+    if (
+      result?.ok &&
+      user &&
+      roomSlug === "daily-setups" &&
+      hasSignalAttachment &&
+      isOperator &&
+      !hasEveryoneMention
+    ) {
+      try {
+        const title = `${displayName} posted a new signal in #${roomSlug}`;
+        const sinceIso = new Date(Date.now() - 15_000).toISOString();
+        const { data: existingBroadcast } = await supabase
+          .from("academy_notifications")
+          .select("id")
+          .is("user_id", null)
+          .eq("type", "announcement")
+          .eq("title", title)
+          .eq("body", signalPreview)
+          .eq("link_path", "/academy/community?tab=daily-setups")
+          .gte("created_at", sinceIso)
+          .limit(1)
+          .maybeSingle();
+
+        if (!existingBroadcast) {
+          const { error: signalPushError } = await supabase.from("academy_notifications").insert({
+            user_id: null,
+            type: "announcement",
+            title,
+            body: signalPreview,
+            link_path: "/academy/community?tab=daily-setups",
+          });
+
+          if (signalPushError) {
+            console.warn("Failed to create signal broadcast notification fallback:", signalPushError);
+          }
+        }
+      } catch (err) {
+        console.warn("Signal broadcast notification fallback failed:", err);
+      }
+    }
 
     // Trigger local chat effect Easter egg
     const effect = detectChatEffect(body);

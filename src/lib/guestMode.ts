@@ -1,14 +1,13 @@
 /**
  * Lightweight guest-mode helpers. Guest mode is a client-only flag stored in
- * sessionStorage — guests are not authenticated, hold no Supabase session, and
- * cannot write to the backend. Anything they "try" to do (chat, post, react)
- * must be blocked at the UI layer.
+ * localStorage so entering guest mode survives an app restart while the shared
+ * guest session is being established.
  */
 const KEY = "va_guest_mode";
 
 export function enableGuestMode() {
   try {
-    sessionStorage.setItem(KEY, "1");
+    localStorage.setItem(KEY, "1");
   } catch {
     void 0;
   }
@@ -16,7 +15,7 @@ export function enableGuestMode() {
 
 export function disableGuestMode() {
   try {
-    sessionStorage.removeItem(KEY);
+    localStorage.removeItem(KEY);
   } catch {
     void 0;
   }
@@ -24,7 +23,7 @@ export function disableGuestMode() {
 
 export function isGuestMode(): boolean {
   try {
-    return sessionStorage.getItem(KEY) === "1";
+    return localStorage.getItem(KEY) === "1";
   } catch {
     return false;
   }

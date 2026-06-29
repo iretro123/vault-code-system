@@ -19,6 +19,7 @@ import {
   PanelLeft,
   EyeOff,
   CalendarCheck,
+  LogOut,
 } from "lucide-react";
 
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
@@ -32,6 +33,8 @@ import { InboxDrawer } from "@/components/academy/InboxDrawer";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
+import { isSharedGuestAccount } from "@/lib/membership";
+import { disableGuestMode, isGuestMode } from "@/lib/guestMode";
 import {
   Sidebar,
   SidebarContent,
@@ -77,7 +80,7 @@ export function AcademySidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { inboxUnreadCount, onboarding } = useAcademyData();
   const { isPageEnabled } = useFeatureFlags();
   const { roleName, isOperator } = useAcademyPermissions();
@@ -86,6 +89,7 @@ export function AcademySidebar() {
   const userId = profile?.user_id || null;
   const { totalUnread } = useUnreadCounts(null, userId);
   const communityBadge = formatBadge(totalUnread);
+  const isGuestUser = isSharedGuestAccount(user, profile) || isGuestMode();
   const navItems = isBasicTier
     ? coreNav.filter((n) => n.pageKey === "learn" || n.pageKey === "community" || n.path === "/academy/settings")
     : coreNav;
@@ -97,6 +101,13 @@ export function AcademySidebar() {
   const onboardingComplete = profileCompleted && onboarding?.claimed_role;
 
   const isActive = (path: string) => location.pathname === path;
+  const handleGuestLogout = async () => {
+    if (isMobile) setOpenMobile(false);
+    disableGuestMode();
+    window.dispatchEvent(new Event("guest-mode-changed"));
+    await signOut();
+    navigate("/welcome", { replace: true });
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-white/[0.04]" style={{ background: '#0B0F14' }}>
@@ -260,6 +271,23 @@ export function AcademySidebar() {
                   </SidebarMenuItem>
                 );
               })}
+
+              {isGuestUser && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <button
+                      type="button"
+                      onClick={handleGuestLogout}
+                      className="group/nav relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[#8B949E] transition-colors duration-150 hover:bg-[#131922] hover:text-[#E6EDF3]"
+                    >
+                      <span className="relative flex items-center gap-2.5">
+                        <LogOut className="h-4 w-4 shrink-0" style={{ strokeWidth: 1.8 }} />
+                        {!collapsed && <span className="text-sm">Log out</span>}
+                      </span>
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
