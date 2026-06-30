@@ -279,7 +279,7 @@ const AcademyModule = () => {
                     <div className="flex justify-center">
                       <Button
                         size="sm"
-                        className="gap-1.5"
+                        className="gap-1.5 w-fit shrink-0"
                         asChild
                       >
                         <a
@@ -287,7 +287,9 @@ const AcademyModule = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Book 1-on-1 Session <ArrowRight className="h-3.5 w-3.5" />
+                          <span className="sm:hidden">Book Session</span>
+                          <span className="hidden sm:inline">Book 1-on-1 Session</span>
+                          <ArrowRight className="h-3.5 w-3.5 shrink-0" />
                         </a>
                       </Button>
                     </div>
