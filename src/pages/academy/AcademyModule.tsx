@@ -268,8 +268,8 @@ const AcademyModule = () => {
 
               {/* CTA for basic bridge */}
               {moduleSlug === "chapter-1-basic-bridge" && (
-                <div className="px-4 py-4 border-t border-border">
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+                <div className="px-3 py-4 sm:px-4 border-t border-border">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 text-center overflow-hidden">
                     <p className="text-xs text-muted-foreground mb-1">
                       Finished the Beginner Bridge?
                     </p>
