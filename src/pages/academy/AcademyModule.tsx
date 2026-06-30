@@ -280,7 +280,7 @@ const AcademyModule = () => {
                       href="https://calendly.com/rz_/1-1-trading-strategy-session/2026-06-30T15:15:00-04:00"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] text-primary-foreground h-9 px-3 text-sm font-medium whitespace-nowrap transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97]"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] text-primary-foreground h-9 px-3 text-sm font-medium whitespace-nowrap transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97] w-fit"
                     >
                       <span className="sm:hidden">Book Session</span>
                       <span className="hidden sm:inline">Book 1-on-1 Session</span>
