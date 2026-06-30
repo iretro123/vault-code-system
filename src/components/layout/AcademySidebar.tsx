@@ -77,7 +77,7 @@ export function AcademySidebar() {
     try { localStorage.setItem("va_inbox_open", String(open)); } catch { void 0; }
   };
   const { state, toggleSidebar, setOpenMobile, isMobile } = useSidebar();
-  const collapsed = state === "collapsed";
+  const collapsed = !isMobile && state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
@@ -90,6 +90,7 @@ export function AcademySidebar() {
   const { totalUnread } = useUnreadCounts(null, userId);
   const communityBadge = formatBadge(totalUnread);
   const isGuestUser = isSharedGuestAccount(user, profile) || isGuestMode();
+  const showBasicLogout = isGuestUser || isBasicTier;
   const navItems = isBasicTier
     ? coreNav.filter((n) => n.pageKey === "learn" || n.pageKey === "community" || n.path === "/academy/settings")
     : coreNav;
@@ -272,7 +273,7 @@ export function AcademySidebar() {
                 );
               })}
 
-              {isGuestUser && (
+              {showBasicLogout && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <button
@@ -295,6 +296,17 @@ export function AcademySidebar() {
 
       {/* Bottom Dock */}
       <SidebarFooter className="mt-auto px-2.5 py-2" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: '#0B0F14' }}>
+        {showBasicLogout && !collapsed && (
+          <button
+            type="button"
+            onClick={handleGuestLogout}
+            className="mb-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm font-medium text-[#E6EDF3] transition-colors duration-150 hover:bg-[#131922]"
+          >
+            <LogOut className="h-4 w-4 shrink-0" style={{ strokeWidth: 1.9 }} />
+            Log out
+          </button>
+        )}
+
         {/* Share Vault Card */}
         {!isBasicTier && !collapsed && (
           <button
