@@ -269,30 +269,23 @@ const AcademyModule = () => {
               {/* CTA for basic bridge */}
               {moduleSlug === "chapter-1-basic-bridge" && (
                 <div className="px-3 py-4 sm:px-4 border-t border-border">
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 text-center overflow-hidden">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 text-center">
                     <p className="text-xs text-muted-foreground mb-1">
                       Finished the Beginner Bridge?
                     </p>
                     <p className="text-sm font-semibold text-foreground mb-3">
                       Book a private strategy session
                     </p>
-                    <div className="flex justify-center">
-                      <Button
-                        size="sm"
-                        className="gap-1.5 w-fit shrink-0"
-                        asChild
-                      >
-                        <a
-                          href="https://calendly.com/rz_/1-1-trading-strategy-session/2026-06-30T15:15:00-04:00"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <span className="sm:hidden">Book Session</span>
-                          <span className="hidden sm:inline">Book 1-on-1 Session</span>
-                          <ArrowRight className="h-3.5 w-3.5 shrink-0" />
-                        </a>
-                      </Button>
-                    </div>
+                    <a
+                      href="https://calendly.com/rz_/1-1-trading-strategy-session/2026-06-30T15:15:00-04:00"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] text-primary-foreground h-9 px-3 text-sm font-medium whitespace-nowrap transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97]"
+                    >
+                      <span className="sm:hidden">Book Session</span>
+                      <span className="hidden sm:inline">Book 1-on-1 Session</span>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0" />
+                    </a>
                   </div>
                 </div>
               )}
