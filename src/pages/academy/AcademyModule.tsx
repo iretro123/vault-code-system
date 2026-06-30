@@ -14,7 +14,7 @@ import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ArrowLeft, Loader2, Check, CheckCircle2, Plus, Pencil, Trash2,
+  ArrowLeft, ArrowRight, Loader2, Check, CheckCircle2, Plus, Pencil, Trash2,
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Play, EyeOff,
 } from "lucide-react";
 import { useState, useMemo } from "react";
