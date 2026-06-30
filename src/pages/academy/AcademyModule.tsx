@@ -14,7 +14,7 @@ import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  ArrowLeft, Loader2, Check, CheckCircle2, Plus, Pencil, Trash2,
+  ArrowLeft, ArrowRight, Loader2, Check, CheckCircle2, Plus, Pencil, Trash2,
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Play, EyeOff,
 } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -265,6 +265,33 @@ const AcademyModule = () => {
                   );
                 })}
               </div>
+
+              {/* CTA for basic bridge */}
+              {moduleSlug === "chapter-1-basic-bridge" && (
+                <div className="px-4 py-4 border-t border-border">
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Finished the Beginner Bridge?
+                    </p>
+                    <p className="text-sm font-semibold text-foreground mb-3">
+                      Book a private strategy session
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full gap-1.5"
+                      asChild
+                    >
+                      <a
+                        href="https://calendly.com/rz_/1-1-trading-strategy-session/2026-06-30T15:15:00-04:00"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Book 1-on-1 Session <ArrowRight className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Admin: add lesson */}
               {canManageContent && (
