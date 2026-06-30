@@ -23,6 +23,9 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import LessonQuiz from "@/components/academy/LessonQuiz";
+import { useAuth } from "@/hooks/useAuth";
+import { useIsBasicTier } from "@/hooks/useIsBasicTier";
+import { isSharedGuestAccount, VAULT_OS_MONTHLY_FALLBACK_PRICE } from "@/lib/membership";
 
 function getEmbedUrl(url: string): string | null {
   try {
@@ -47,6 +50,11 @@ const AcademyModule = () => {
   const { hasPermission } = useAcademyPermissions();
   const canManageContent = isAdminActive && hasPermission("manage_content");
   const isMobile = useIsMobile();
+  const { user, profile, signOut } = useAuth();
+  const { isBasicTier } = useIsBasicTier();
+  const sharedGuest = isSharedGuestAccount(user, profile);
+  const isGuestOrBasic = isBasicTier || sharedGuest;
+  const isBasicMiniCourse = moduleSlug === "chapter-1-basic-bridge";
 
   // Filter hidden lessons for non-admins
   const lessons = useMemo(() =>
@@ -266,26 +274,32 @@ const AcademyModule = () => {
                 })}
               </div>
 
-              {/* CTA for basic bridge */}
-              {moduleSlug === "chapter-1-basic-bridge" && (
+              {/* CTA for the basic mini-course */}
+              {isBasicMiniCourse && isGuestOrBasic && (
                 <div className="px-3 py-4 sm:px-4 border-t border-border">
                   <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 text-center">
                     <p className="text-xs text-muted-foreground mb-1">
-                      Finished the Beginner Bridge?
+                      Ready for the full Vault OS?
                     </p>
                     <p className="text-sm font-semibold text-foreground mb-3">
-                      Book a private strategy session
+                      Unlock every lesson, tool, live area, and member section.
                     </p>
-                    <a
-                      href="https://calendly.com/rz_/1-1-trading-strategy-session/2026-06-30T15:15:00-04:00"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        if (sharedGuest) {
+                          await signOut();
+                          navigate("/create-account/full?source=guest", { replace: true });
+                          return;
+                        }
+                        navigate("/membership");
+                      }}
                       className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] text-primary-foreground h-9 px-3 text-sm font-medium whitespace-nowrap transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97] w-fit"
                     >
-                      <span className="sm:hidden">Book Session</span>
-                      <span className="hidden sm:inline">Book 1-on-1 Session</span>
+                      <span className="sm:hidden">Upgrade {VAULT_OS_MONTHLY_FALLBACK_PRICE}</span>
+                      <span className="hidden sm:inline">View Full Access - {VAULT_OS_MONTHLY_FALLBACK_PRICE}/mo</span>
                       <ArrowRight className="h-3.5 w-3.5 shrink-0" />
-                    </a>
+                    </Button>
                   </div>
                 </div>
               )}

@@ -49,8 +49,6 @@ const AcademyLearn = () => {
     if (canManageContent) return list;
     if (isGuestOrBasic) {
       list = list.filter(m => (m as any).basic_only === true || m.slug === BASIC_ONLY_SLUG);
-    } else {
-      list = list.filter(m => !((m as any).basic_only === true) && m.slug !== BASIC_ONLY_SLUG);
     }
     return list;
   }, [allModules, canManageContent, isGuestOrBasic]);
