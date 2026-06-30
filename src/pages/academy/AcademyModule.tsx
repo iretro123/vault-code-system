@@ -276,19 +276,21 @@ const AcademyModule = () => {
                     <p className="text-sm font-semibold text-foreground mb-3">
                       Book a private strategy session
                     </p>
-                    <Button
-                      size="sm"
-                      className="w-full gap-1.5"
-                      asChild
-                    >
-                      <a
-                        href="https://calendly.com/rz_/1-1-trading-strategy-session/2026-06-30T15:15:00-04:00"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <div className="flex justify-center">
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        asChild
                       >
-                        Book 1-on-1 Session <ArrowRight className="h-3.5 w-3.5" />
-                      </a>
-                    </Button>
+                        <a
+                          href="https://calendly.com/rz_/1-1-trading-strategy-session/2026-06-30T15:15:00-04:00"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Book 1-on-1 Session <ArrowRight className="h-3.5 w-`3.5" />
+                        </a>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
