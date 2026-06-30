@@ -287,7 +287,7 @@ const AcademyModule = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          Book 1-on-1 Session <ArrowRight className="h-3.5 w-`3.5" />
+                          Book 1-on-1 Session <ArrowRight className="h-3.5 w-3.5" />
                         </a>
                       </Button>
                     </div>
