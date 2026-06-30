@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, X, GraduationCap } from "lucide-react";
 import { QUIZ_MAP } from "@/components/academy/LessonQuiz";
+import { getVideoEmbedUrl, getYouTubeThumbnail } from "@/lib/videoEmbeds";
 
 interface LatestLesson {
   id: string;
@@ -10,19 +11,6 @@ interface LatestLesson {
   module_slug: string;
   module_title: string;
   video_url: string;
-}
-
-function getYouTubeId(url: string): string | null {
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
-
-function getEmbedUrl(url: string): string | null {
-  const ytId = getYouTubeId(url);
-  if (ytId) return `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`;
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
-  return null;
 }
 
 export function StartLearningCard() {
@@ -70,9 +58,8 @@ export function StartLearningCard() {
     );
   }
 
-  const ytId = getYouTubeId(lesson.video_url);
-  const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
-  const embedUrl = getEmbedUrl(lesson.video_url);
+  const thumbnail = getYouTubeThumbnail(lesson.video_url);
+  const embedUrl = getVideoEmbedUrl(lesson.video_url);
 
   return (
     <div className="vault-luxury-card p-6 h-full flex flex-col">
@@ -98,8 +85,9 @@ export function StartLearningCard() {
           <iframe
             src={embedUrl}
             className="absolute inset-0 w-full h-full"
-            allow="autoplay; fullscreen; picture-in-picture"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share"
             allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
             frameBorder="0"
           />
           <button

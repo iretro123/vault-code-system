@@ -19,13 +19,13 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import courseCoverDefault from "@/assets/course-cover-default.jpg";
-import basicCourseCover from "@/assets/day-trading-course.png.asset.json";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { isSharedGuestAccount } from "@/lib/membership";
 import { useAuth } from "@/hooks/useAuth";
+import { getYouTubeThumbnail } from "@/lib/videoEmbeds";
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
@@ -217,6 +217,8 @@ const AcademyLearn = () => {
                 const isEditing = editingId === mod.id;
                 const isLocked = false;
                 const isHidden = mod.visible === false;
+                const firstLessonThumb = getYouTubeThumbnail(modLessons[0]?.video_url);
+                const coverImage = mod.cover_image_url || firstLessonThumb || courseCoverDefault;
 
                 if (isEditing && canManageContent) {
                   return (
@@ -251,9 +253,13 @@ const AcademyLearn = () => {
                     {/* Cover image */}
                     <div className="relative aspect-[16/9] overflow-hidden bg-muted">
                       <img
-                        src={mod.slug === BASIC_ONLY_SLUG ? basicCourseCover.url : (mod.cover_image_url || courseCoverDefault)}
+                        src={coverImage}
                         alt={mod.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={(event) => {
+                          const img = event.currentTarget;
+                          if (!img.src.endsWith(courseCoverDefault)) img.src = courseCoverDefault;
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 

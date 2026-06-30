@@ -26,19 +26,7 @@ import LessonQuiz from "@/components/academy/LessonQuiz";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { isSharedGuestAccount, VAULT_OS_MONTHLY_FALLBACK_PRICE } from "@/lib/membership";
-
-function getEmbedUrl(url: string): string | null {
-  try {
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-    const loomMatch = url.match(/loom\.com\/share\/([a-zA-Z0-9]+)/);
-    if (loomMatch) return `https://www.loom.com/embed/${loomMatch[1]}`;
-    if (url.includes("/embed")) return url;
-  } catch {}
-  return null;
-}
+import { getVideoEmbedUrl } from "@/lib/videoEmbeds";
 
 const AcademyModule = () => {
   const { moduleSlug } = useParams();
@@ -373,18 +361,31 @@ const AcademyModule = () => {
               {/* Video */}
               <div className="w-full bg-black">
                 {activeLesson.video_url ? (() => {
-                  const embedUrl = getEmbedUrl(activeLesson.video_url);
+                  const embedUrl = getVideoEmbedUrl(activeLesson.video_url);
                   if (embedUrl) {
                     return (
-                      <AspectRatio ratio={16 / 9} className="max-h-[70vh]">
-                        <iframe
-                          src={embedUrl}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          title={activeLesson.lesson_title}
-                        />
-                      </AspectRatio>
+                      <div>
+                        <AspectRatio ratio={16 / 9} className="max-h-[70vh]">
+                          <iframe
+                            src={embedUrl}
+                            className="w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            title={activeLesson.lesson_title}
+                          />
+                        </AspectRatio>
+                        <div className="flex justify-center border-t border-white/10 bg-black px-4 py-2">
+                          <a
+                            href={activeLesson.video_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-medium text-primary underline underline-offset-4"
+                          >
+                            Video not loading? Open on YouTube
+                          </a>
+                        </div>
+                      </div>
                     );
                   }
                   return (
