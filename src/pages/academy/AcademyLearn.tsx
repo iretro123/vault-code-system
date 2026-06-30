@@ -19,6 +19,7 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import courseCoverDefault from "@/assets/course-cover-default.jpg";
+import basicCourseCover from "@/assets/day-trading-course.png.asset.json";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -252,7 +253,7 @@ const AcademyLearn = () => {
                     {/* Cover image */}
                     <div className="relative aspect-[16/9] overflow-hidden bg-muted">
                       <img
-                        src={mod.cover_image_url || courseCoverDefault}
+                        src={mod.slug === BASIC_ONLY_SLUG ? basicCourseCover.url : (mod.cover_image_url || courseCoverDefault)}
                         alt={mod.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
