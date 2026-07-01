@@ -114,11 +114,13 @@ export function MobileNav() {
   const gridClass =
     navItems.length >= 5
       ? "grid-cols-5"
-      : "grid-cols-4";
+      : navItems.length === 4
+        ? "grid-cols-4"
+        : "grid-cols-3";
 
   return (
     <nav className="academy-bottom-safe academy-mobile-nav-fixed z-50 border-t border-white/10 bg-background/95 backdrop-blur-md transition-[transform,opacity] duration-200 md:hidden">
-      <div className={cn("mobile-nav-shell grid w-full items-center gap-0.5 px-1.5 py-2", gridClass)}>
+      <div className={cn("mobile-nav-shell mx-auto grid w-full max-w-[24rem] items-center justify-center gap-0.5 px-4 py-2", gridClass)}>
         {navItems.map((item) => renderItem({
           icon: item.icon,
           label: item.label,
