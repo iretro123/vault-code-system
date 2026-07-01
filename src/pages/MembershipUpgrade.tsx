@@ -281,7 +281,7 @@ const MembershipUpgrade = () => {
 
   return (
     <div
-      className="academy-main-safe relative h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-8 text-foreground"
+      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-8 text-foreground"
       style={{
         background: `
           radial-gradient(ellipse 80% 55% at 50% 10%, rgba(59,130,246,0.16) 0%, transparent 55%),
@@ -296,16 +296,17 @@ const MembershipUpgrade = () => {
         boxSizing: "border-box",
       }}
     >
-      <button
-        type="button"
-        aria-label="Go back"
-        onClick={handleBack}
-        className="fixed left-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-background/80 text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur transition-colors hover:bg-background active:scale-95"
-        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </button>
       <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center">
+        <div className="mb-4 flex justify-start">
+          <button
+            type="button"
+            aria-label="Go back"
+            onClick={handleBack}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-background/80 text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur transition-colors hover:bg-background active:scale-95"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        </div>
         <div className="rounded-[28px] border border-border/40 bg-card/85 p-7 shadow-[0_14px_50px_rgba(0,0,0,0.45)] backdrop-blur">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-primary">
             <Sparkles className="h-3.5 w-3.5" />
