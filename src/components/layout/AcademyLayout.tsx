@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
+import { cn } from "@/lib/utils";
 
 const ambientBgStyle = {
   background: [
@@ -157,7 +158,7 @@ function AcademyLayoutInner() {
               </span>
             </div>
           </header>
-          {(!sharedGuest || !guestBannerDismissed) && <div className="relative border-b border-primary/10 bg-primary/10 px-4 py-3">
+          {(!sharedGuest || !guestBannerDismissed) && <div className="relative max-w-full overflow-hidden border-b border-primary/10 bg-primary/10 px-4 py-3">
             {sharedGuest && (
               <button
                 type="button"
@@ -171,12 +172,12 @@ function AcademyLayoutInner() {
                 <X className="h-4 w-4" />
               </button>
             )}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className={sharedGuest ? "pr-8" : undefined}>
-                <p className="text-sm font-semibold text-foreground">
+            <div className="mx-auto flex w-full max-w-[25rem] min-w-0 flex-col gap-3 md:max-w-none md:flex-row md:items-center md:justify-between">
+              <div className={cn("min-w-0 max-w-full", sharedGuest ? "pr-8" : undefined)}>
+                <p className="break-words text-sm font-semibold leading-snug text-foreground">
                   {sharedGuest ? "Create your own full access account" : `Upgrade to full access for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="break-words text-xs leading-snug text-muted-foreground">
                   {sharedGuest
                     ? "Guest preview stays in the shared basic tier until you create your own account."
                     : "Unlock the complete Vault OS app with Apple in-app purchase."}
@@ -184,7 +185,7 @@ function AcademyLayoutInner() {
               </div>
               <Button
                 size="sm"
-                className="rounded-xl"
+                className="w-full max-w-full rounded-xl md:w-auto"
                 onClick={async () => {
                   if (sharedGuest) {
                     await signOut();

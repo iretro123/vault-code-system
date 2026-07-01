@@ -147,7 +147,7 @@ const AcademyModule = () => {
   }
 
   return (
-    <div className="flex min-w-0 flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex min-w-0 max-w-full flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
         <button
@@ -180,22 +180,22 @@ const AcademyModule = () => {
         </Button>
       </div>
 
-      <div className="flex min-w-0 flex-1 overflow-hidden">
+      <div className="flex min-w-0 max-w-full flex-1 overflow-hidden">
         {/* Sidebar - lesson list */}
         <div className={cn(
           "border-r border-border bg-card/30 shrink-0 flex flex-col min-w-0 max-w-full overflow-hidden transition-all duration-200",
-          sidebarOpen ? "w-full md:w-72 lg:w-80" : "w-0 md:w-72 lg:w-80",
+          sidebarOpen ? "w-full max-w-[100vw] md:w-72 md:max-w-72 lg:w-80 lg:max-w-80" : "w-0 md:w-72 lg:w-80",
           !sidebarOpen && "md:flex hidden overflow-hidden"
         )}>
-          <div className={cn("flex flex-col flex-1 overflow-hidden", !sidebarOpen && "hidden md:flex")}>
+          <div className={cn("flex min-w-0 max-w-full flex-col flex-1 overflow-hidden", !sidebarOpen && "hidden md:flex")}>
             <div className="px-4 py-3 border-b border-border">
               <p className="text-xs text-muted-foreground font-medium">
                 {completedCount}/{lessons.length} lessons complete
               </p>
             </div>
 
-            <ScrollArea className="flex-1">
-              <div className="py-1">
+            <ScrollArea className="min-w-0 max-w-full flex-1 overflow-x-hidden">
+              <div className="min-w-0 max-w-full overflow-x-hidden py-1">
                 {lessons.map((lesson, i) => {
                   const isCompleted = progress[lesson.id];
                   const isActive = activeLesson?.id === lesson.id;
@@ -206,7 +206,7 @@ const AcademyModule = () => {
                       key={lesson.id}
                       onClick={() => { setActiveLessonId(lesson.id); setSidebarOpen(false); }}
                       className={cn(
-                        "w-full max-w-full min-w-0 flex items-center gap-3 px-4 py-3 text-left transition-colors group overflow-hidden",
+                        "w-full max-w-full min-w-0 flex items-center gap-3 overflow-hidden px-4 py-3 text-left transition-colors group",
                         isActive
                           ? "bg-primary/10 border-l-2 border-primary"
                           : "hover:bg-muted/40 border-l-2 border-transparent",
@@ -223,9 +223,9 @@ const AcademyModule = () => {
                       )}>
                         {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : <span>{i + 1}</span>}
                       </div>
-                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                      <div className="flex min-w-0 max-w-full flex-1 items-center gap-1.5 overflow-hidden">
                         <span className={cn(
-                          "text-sm leading-snug truncate",
+                          "block min-w-0 max-w-full whitespace-normal break-words text-sm leading-snug line-clamp-2",
                           isActive ? "font-medium text-foreground" : "text-muted-foreground"
                         )}>
                           {lesson.lesson_title}
@@ -264,12 +264,12 @@ const AcademyModule = () => {
 
               {/* CTA for the basic mini-course */}
               {isBasicMiniCourse && isGuestOrBasic && (
-                <div className="w-full max-w-full overflow-hidden border-t border-border px-3 py-4 sm:px-4">
-                  <div className="mx-auto w-full max-w-full overflow-hidden rounded-xl border border-primary/20 bg-primary/5 p-3 text-center sm:p-4">
+                <div className="w-full max-w-full overflow-hidden border-t border-border px-4 py-4">
+                  <div className="mx-auto w-full max-w-[21rem] overflow-hidden rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
                     <p className="text-xs text-muted-foreground mb-1">
                       Ready for the full Vault OS?
                     </p>
-                    <p className="mx-auto mb-3 max-w-[19rem] text-wrap text-sm font-semibold leading-snug text-foreground">
+                    <p className="mx-auto mb-3 max-w-[17rem] break-words text-sm font-semibold leading-snug text-foreground">
                       Unlock every lesson, tool, live area, and member section.
                     </p>
                     <Button
@@ -282,7 +282,7 @@ const AcademyModule = () => {
                         }
                         navigate("/membership");
                       }}
-                      className="inline-flex h-9 max-w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] px-4 text-sm font-medium text-primary-foreground transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97]"
+                      className="mx-auto inline-flex h-9 w-full max-w-[15rem] items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] px-4 text-sm font-medium text-primary-foreground transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97]"
                     >
                       <span className="min-w-0 truncate sm:hidden">Upgrade {VAULT_OS_MONTHLY_FALLBACK_PRICE}</span>
                       <span className="hidden sm:inline">View Full Access - {VAULT_OS_MONTHLY_FALLBACK_PRICE}/mo</span>
