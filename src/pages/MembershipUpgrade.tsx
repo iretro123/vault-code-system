@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowRight, CheckCircle2, ExternalLink, Loader2, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,15 @@ const MembershipUpgrade = () => {
   const displayPrice = useMemo(() => {
     return product?.displayPrice || VAULT_OS_MONTHLY_FALLBACK_PRICE;
   }, [product]);
+
+  function handleBack() {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/academy/learn", { replace: true });
+  }
 
   async function loadProducts(showToastOnFailure = true) {
     if (!user || !isIOS || sharedGuest || hasFullAccess) return;
@@ -272,7 +281,7 @@ const MembershipUpgrade = () => {
 
   return (
     <div
-      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-8 text-foreground"
+      className="academy-main-safe relative h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-8 text-foreground"
       style={{
         background: `
           radial-gradient(ellipse 80% 55% at 50% 10%, rgba(59,130,246,0.16) 0%, transparent 55%),
@@ -287,6 +296,15 @@ const MembershipUpgrade = () => {
         boxSizing: "border-box",
       }}
     >
+      <button
+        type="button"
+        aria-label="Go back"
+        onClick={handleBack}
+        className="fixed left-4 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-background/80 text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur transition-colors hover:bg-background active:scale-95"
+        style={{ top: "calc(env(safe-area-inset-top, 0px) + 0.75rem)" }}
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
       <div className="mx-auto flex min-h-full max-w-lg flex-col justify-center">
         <div className="rounded-[28px] border border-border/40 bg-card/85 p-7 shadow-[0_14px_50px_rgba(0,0,0,0.45)] backdrop-blur">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-primary">
