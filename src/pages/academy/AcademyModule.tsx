@@ -147,7 +147,7 @@ const AcademyModule = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex min-w-0 flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
         <button
@@ -180,10 +180,10 @@ const AcademyModule = () => {
         </Button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-w-0 flex-1 overflow-hidden">
         {/* Sidebar - lesson list */}
         <div className={cn(
-          "border-r border-border bg-card/30 shrink-0 flex flex-col transition-all duration-200",
+          "border-r border-border bg-card/30 shrink-0 flex flex-col min-w-0 max-w-full overflow-hidden transition-all duration-200",
           sidebarOpen ? "w-full md:w-72 lg:w-80" : "w-0 md:w-72 lg:w-80",
           !sidebarOpen && "md:flex hidden overflow-hidden"
         )}>
@@ -206,7 +206,7 @@ const AcademyModule = () => {
                       key={lesson.id}
                       onClick={() => { setActiveLessonId(lesson.id); setSidebarOpen(false); }}
                       className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors group",
+                        "w-full max-w-full min-w-0 flex items-center gap-3 px-4 py-3 text-left transition-colors group overflow-hidden",
                         isActive
                           ? "bg-primary/10 border-l-2 border-primary"
                           : "hover:bg-muted/40 border-l-2 border-transparent",
@@ -264,12 +264,12 @@ const AcademyModule = () => {
 
               {/* CTA for the basic mini-course */}
               {isBasicMiniCourse && isGuestOrBasic && (
-                <div className="px-3 py-4 sm:px-4 border-t border-border">
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 text-center">
+                <div className="w-full max-w-full overflow-hidden border-t border-border px-3 py-4 sm:px-4">
+                  <div className="mx-auto w-full max-w-full overflow-hidden rounded-xl border border-primary/20 bg-primary/5 p-3 text-center sm:p-4">
                     <p className="text-xs text-muted-foreground mb-1">
                       Ready for the full Vault OS?
                     </p>
-                    <p className="text-sm font-semibold text-foreground mb-3">
+                    <p className="mx-auto mb-3 max-w-[19rem] text-wrap text-sm font-semibold leading-snug text-foreground">
                       Unlock every lesson, tool, live area, and member section.
                     </p>
                     <Button
@@ -282,9 +282,9 @@ const AcademyModule = () => {
                         }
                         navigate("/membership");
                       }}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] text-primary-foreground h-9 px-3 text-sm font-medium whitespace-nowrap transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97] w-fit"
+                      className="inline-flex h-9 max-w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] px-4 text-sm font-medium text-primary-foreground transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97]"
                     >
-                      <span className="sm:hidden">Upgrade {VAULT_OS_MONTHLY_FALLBACK_PRICE}</span>
+                      <span className="min-w-0 truncate sm:hidden">Upgrade {VAULT_OS_MONTHLY_FALLBACK_PRICE}</span>
                       <span className="hidden sm:inline">View Full Access - {VAULT_OS_MONTHLY_FALLBACK_PRICE}/mo</span>
                       <ArrowRight className="h-3.5 w-3.5 shrink-0" />
                     </Button>
@@ -319,7 +319,10 @@ const AcademyModule = () => {
         </div>
 
         {/* Main content area */}
-        <div className="flex-1 flex flex-col overflow-y-auto">
+        <div className={cn(
+          "flex-1 min-w-0 flex flex-col overflow-y-auto overflow-x-hidden",
+          isMobile && sidebarOpen && "hidden"
+        )}>
           {/* Edit panel */}
           {editingId && canManageContent && (() => {
             const lesson = lessons.find((l) => l.id === editingId);
