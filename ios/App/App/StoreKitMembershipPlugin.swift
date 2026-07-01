@@ -70,9 +70,10 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
                         return
                     }
                     CAPLog.print("Vault OS StoreKit purchase verified for: \(transaction.productID), transaction: \(transaction.id)")
+                    let signedTransactionInfo = verification.jwsRepresentation
                     await transaction.finish()
                     call.resolve([
-                        "transaction": transactionPayload(for: transaction)
+                        "transaction": transactionPayload(for: transaction, signedTransactionInfo: signedTransactionInfo)
                     ])
                 case .userCancelled:
                     CAPLog.print("Vault OS StoreKit purchase cancelled for: \(productId)")
@@ -106,13 +107,14 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
 
                 var transactions = [[String: Any]]()
                 for await result in Transaction.currentEntitlements {
+                    let signedTransactionInfo = result.jwsRepresentation
                     guard case .verified(let transaction) = result else { continue }
                     guard productIds.contains(transaction.productID) else { continue }
                     guard transaction.revocationDate == nil else { continue }
                     if let expirationDate = transaction.expirationDate, expirationDate < Date() {
                         continue
                     }
-                    transactions.append(transactionPayload(for: transaction))
+                    transactions.append(transactionPayload(for: transaction, signedTransactionInfo: signedTransactionInfo))
                 }
 
                 call.resolve([
@@ -163,7 +165,7 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    private func transactionPayload(for transaction: Transaction) -> [String: Any] {
+    private func transactionPayload(for transaction: Transaction, signedTransactionInfo: String) -> [String: Any] {
         return [
             "productId": transaction.productID,
             "transactionId": String(transaction.id),
@@ -172,7 +174,8 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
             "expirationDate": transaction.expirationDate != nil ? ISO8601DateFormatter().string(from: transaction.expirationDate!) : NSNull(),
             "environment": transactionEnvironment(for: transaction) ?? NSNull(),
             "ownershipType": String(describing: transaction.ownershipType),
-            "appAccountToken": transaction.appAccountToken?.uuidString ?? NSNull()
+            "appAccountToken": transaction.appAccountToken?.uuidString ?? NSNull(),
+            "signedTransactionInfo": signedTransactionInfo
         ]
     }
 

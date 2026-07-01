@@ -42,6 +42,9 @@ verify_jwt = false
 [functions.delete-account]
 verify_jwt = false
 
+[functions.activate-ios-membership]
+verify_jwt = true
+
 [functions.generate-avatar]
 verify_jwt = false
 

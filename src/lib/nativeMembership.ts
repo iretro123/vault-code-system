@@ -18,6 +18,7 @@ export interface MembershipTransaction {
   environment?: string | null;
   ownershipType?: string | null;
   appAccountToken?: string | null;
+  signedTransactionInfo?: string | null;
 }
 
 interface StoreKitMembershipPlugin {

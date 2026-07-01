@@ -127,6 +127,7 @@ const MembershipUpgrade = () => {
         environment: transaction.environment ?? null,
         ownershipType: transaction.ownershipType ?? null,
         appAccountToken: transaction.appAccountToken ?? null,
+        signedTransactionInfo: transaction.signedTransactionInfo ?? null,
       },
     });
 
