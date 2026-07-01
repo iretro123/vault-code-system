@@ -19,6 +19,7 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import courseCoverDefault from "@/assets/course-cover-default.jpg";
+import dayTradingVocabularyCover from "@/assets/day-trading-vocabulary.png";
 import { usePlaybookProgress } from "@/hooks/usePlaybookProgress";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
@@ -218,7 +219,9 @@ const AcademyLearn = () => {
                 const isLocked = false;
                 const isHidden = mod.visible === false;
                 const firstLessonThumb = getYouTubeThumbnail(modLessons[0]?.video_url);
-                const coverImage = mod.cover_image_url || firstLessonThumb || courseCoverDefault;
+                const coverImage = mod.slug === BASIC_ONLY_SLUG
+                  ? dayTradingVocabularyCover
+                  : mod.cover_image_url || firstLessonThumb || courseCoverDefault;
 
                 if (isEditing && canManageContent) {
                   return (
