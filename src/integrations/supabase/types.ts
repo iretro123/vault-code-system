@@ -644,6 +644,33 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_posts: {
+        Row: {
+          caption: string | null
+          created_at: string
+          created_by: string
+          id: string
+          image_path: string | null
+          image_url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          image_path?: string | null
+          image_url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          image_path?: string | null
+          image_url?: string
+        }
+        Relationships: []
+      }
       chat_mutes: {
         Row: {
           created_at: string
@@ -3022,6 +3049,10 @@ export type Database = {
           trend: string
           violation_component: number
         }[]
+      }
+      can_manage_calendar_posts: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
       check_trade_permission: {
         Args: { _user_id: string }
