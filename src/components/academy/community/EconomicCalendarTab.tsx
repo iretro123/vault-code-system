@@ -68,37 +68,71 @@ export function EconomicCalendarTab({ active }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [active, fetchPosts]);
 
-  const uploadFiles = async (files: FileList | File[]) => {
-    if (!user || !canManage) return;
+  const addFiles = (files: FileList | File[]) => {
     const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (list.length === 0) {
       toast.error("Only image files are supported");
       return;
     }
+    setPendingFiles((prev) => [...prev, ...list]);
+    setPreviews((prev) => [...prev, ...list.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removePending = (idx: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== idx));
+    setPreviews((prev) => {
+      const url = prev[idx];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const submitPost = async () => {
+    if (!user || !canManage) return;
+    const trimmed = caption.trim();
+    if (pendingFiles.length === 0 && !trimmed) {
+      toast.error("Add an image or a caption");
+      return;
+    }
     setUploading(true);
     try {
-      for (const file of list) {
-        const safeName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_+/g, "_");
-        const path = `calendar/${user.id}/${Date.now()}_${safeName}`;
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
-          contentType: file.type || "image/png",
-          upsert: false,
-        });
-        if (upErr) {
-          toast.error(`Upload failed: ${file.name}`);
-          continue;
-        }
-        const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      if (pendingFiles.length === 0) {
+        // Text-only post
         const { error: insErr } = await supabase.from("calendar_posts").insert({
-          image_url: urlData.publicUrl,
-          image_path: path,
+          image_url: "",
+          image_path: null,
+          caption: trimmed,
           created_by: user.id,
         });
-        if (insErr) {
-          toast.error(`Save failed: ${file.name}`);
+        if (insErr) toast.error("Post failed");
+      } else {
+        for (let i = 0; i < pendingFiles.length; i++) {
+          const file = pendingFiles[i];
+          const safeName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_+/g, "_");
+          const path = `calendar/${user.id}/${Date.now()}_${i}_${safeName}`;
+          const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
+            contentType: file.type || "image/png",
+            upsert: false,
+          });
+          if (upErr) {
+            toast.error(`Upload failed: ${file.name}`);
+            continue;
+          }
+          const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+          const { error: insErr } = await supabase.from("calendar_posts").insert({
+            image_url: urlData.publicUrl,
+            image_path: path,
+            caption: i === 0 ? trimmed || null : null,
+            created_by: user.id,
+          });
+          if (insErr) toast.error(`Save failed: ${file.name}`);
         }
       }
       toast.success("Posted to calendar");
+      previews.forEach((u) => URL.revokeObjectURL(u));
+      setPendingFiles([]);
+      setPreviews([]);
+      setCaption("");
       fetchPosts();
     } finally {
       setUploading(false);
@@ -109,8 +143,9 @@ export function EconomicCalendarTab({ active }: Props) {
     e.preventDefault();
     setDragOver(false);
     if (!canManage) return;
-    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
+    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
   };
+
 
   const handleDelete = async (post: CalendarPost) => {
     if (!canManage) return;
