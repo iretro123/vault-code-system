@@ -182,48 +182,81 @@ export function EconomicCalendarTab({ active }: Props) {
             </div>
           </div>
           {canManage && (
-            <>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                hidden
-                onChange={(e) => e.target.files && uploadFiles(e.target.files)}
-              />
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                disabled={uploading}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors shrink-0",
-                  "bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50"
-                )}
-              >
-                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
-                {uploading ? "Uploading…" : "Upload"}
-              </button>
-            </>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
           )}
         </div>
 
         {canManage && (
-          <div
-            className={cn(
-              "mb-5 rounded-2xl border-2 border-dashed p-6 text-center transition-colors cursor-pointer",
-              dragOver
-                ? "border-primary/60 bg-primary/[0.06]"
-                : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15]"
+          <div className="mb-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3 space-y-3">
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {previews.map((src, idx) => (
+                  <div key={idx} className="relative rounded-lg overflow-hidden border border-white/[0.06] aspect-square bg-black/20">
+                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePending(idx)}
+                      className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-white hover:bg-black/80"
+                      aria-label="Remove"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
-            onClick={() => inputRef.current?.click()}
-          >
-            <Upload className="w-5 h-5 text-muted-foreground/60 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">
-              Drag & drop images here, or <span className="text-primary font-semibold">browse</span>
-            </p>
-            <p className="text-[10px] text-muted-foreground/50 mt-1">PNG, JPG, WEBP • Multiple allowed</p>
+
+            <div
+              className={cn(
+                "rounded-xl border-2 border-dashed transition-colors",
+                dragOver ? "border-primary/60 bg-primary/[0.06]" : "border-white/[0.08]"
+              )}
+            >
+              <textarea
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder={previews.length > 0 ? "Add a caption…" : "Write a message or drop images here…"}
+                rows={2}
+                className="w-full bg-transparent resize-none px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+              />
+              <div className="flex items-center justify-between px-2 pb-2">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                >
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  Add image
+                </button>
+                <button
+                  type="button"
+                  onClick={submitPost}
+                  disabled={uploading || (pendingFiles.length === 0 && !caption.trim())}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                    "bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                  )}
+                >
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  {uploading ? "Posting…" : "Post"}
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 px-1">PNG, JPG, WEBP • Drag & drop or click Add image</p>
           </div>
         )}
+
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
