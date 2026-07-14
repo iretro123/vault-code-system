@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, ImagePlus, Trash2, Upload, Loader2 } from "lucide-react";
+import { Calendar, ImagePlus, Trash2, Loader2, X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -33,7 +33,11 @@ export function EconomicCalendarTab({ active }: Props) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [caption, setCaption] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
 
   const fetchPosts = useCallback(async () => {
     const { data, error } = await supabase
@@ -64,37 +68,71 @@ export function EconomicCalendarTab({ active }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [active, fetchPosts]);
 
-  const uploadFiles = async (files: FileList | File[]) => {
-    if (!user || !canManage) return;
+  const addFiles = (files: FileList | File[]) => {
     const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (list.length === 0) {
       toast.error("Only image files are supported");
       return;
     }
+    setPendingFiles((prev) => [...prev, ...list]);
+    setPreviews((prev) => [...prev, ...list.map((f) => URL.createObjectURL(f))]);
+  };
+
+  const removePending = (idx: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== idx));
+    setPreviews((prev) => {
+      const url = prev[idx];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const submitPost = async () => {
+    if (!user || !canManage) return;
+    const trimmed = caption.trim();
+    if (pendingFiles.length === 0 && !trimmed) {
+      toast.error("Add an image or a caption");
+      return;
+    }
     setUploading(true);
     try {
-      for (const file of list) {
-        const safeName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_+/g, "_");
-        const path = `calendar/${user.id}/${Date.now()}_${safeName}`;
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
-          contentType: file.type || "image/png",
-          upsert: false,
-        });
-        if (upErr) {
-          toast.error(`Upload failed: ${file.name}`);
-          continue;
-        }
-        const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+      if (pendingFiles.length === 0) {
+        // Text-only post
         const { error: insErr } = await supabase.from("calendar_posts").insert({
-          image_url: urlData.publicUrl,
-          image_path: path,
+          image_url: "",
+          image_path: null,
+          caption: trimmed,
           created_by: user.id,
         });
-        if (insErr) {
-          toast.error(`Save failed: ${file.name}`);
+        if (insErr) toast.error("Post failed");
+      } else {
+        for (let i = 0; i < pendingFiles.length; i++) {
+          const file = pendingFiles[i];
+          const safeName = file.name.normalize("NFKD").replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_+/g, "_");
+          const path = `calendar/${user.id}/${Date.now()}_${i}_${safeName}`;
+          const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
+            contentType: file.type || "image/png",
+            upsert: false,
+          });
+          if (upErr) {
+            toast.error(`Upload failed: ${file.name}`);
+            continue;
+          }
+          const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(path);
+          const { error: insErr } = await supabase.from("calendar_posts").insert({
+            image_url: urlData.publicUrl,
+            image_path: path,
+            caption: i === 0 ? trimmed || null : null,
+            created_by: user.id,
+          });
+          if (insErr) toast.error(`Save failed: ${file.name}`);
         }
       }
       toast.success("Posted to calendar");
+      previews.forEach((u) => URL.revokeObjectURL(u));
+      setPendingFiles([]);
+      setPreviews([]);
+      setCaption("");
       fetchPosts();
     } finally {
       setUploading(false);
@@ -105,8 +143,9 @@ export function EconomicCalendarTab({ active }: Props) {
     e.preventDefault();
     setDragOver(false);
     if (!canManage) return;
-    if (e.dataTransfer.files?.length) uploadFiles(e.dataTransfer.files);
+    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
   };
+
 
   const handleDelete = async (post: CalendarPost) => {
     if (!canManage) return;
@@ -143,48 +182,81 @@ export function EconomicCalendarTab({ active }: Props) {
             </div>
           </div>
           {canManage && (
-            <>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                hidden
-                onChange={(e) => e.target.files && uploadFiles(e.target.files)}
-              />
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                disabled={uploading}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors shrink-0",
-                  "bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-50"
-                )}
-              >
-                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImagePlus className="w-3.5 h-3.5" />}
-                {uploading ? "Uploading…" : "Upload"}
-              </button>
-            </>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                if (e.target.files) addFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
           )}
         </div>
 
         {canManage && (
-          <div
-            className={cn(
-              "mb-5 rounded-2xl border-2 border-dashed p-6 text-center transition-colors cursor-pointer",
-              dragOver
-                ? "border-primary/60 bg-primary/[0.06]"
-                : "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.15]"
+          <div className="mb-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3 space-y-3">
+            {previews.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {previews.map((src, idx) => (
+                  <div key={idx} className="relative rounded-lg overflow-hidden border border-white/[0.06] aspect-square bg-black/20">
+                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePending(idx)}
+                      className="absolute top-1 right-1 p-1 rounded-md bg-black/60 text-white hover:bg-black/80"
+                      aria-label="Remove"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
-            onClick={() => inputRef.current?.click()}
-          >
-            <Upload className="w-5 h-5 text-muted-foreground/60 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">
-              Drag & drop images here, or <span className="text-primary font-semibold">browse</span>
-            </p>
-            <p className="text-[10px] text-muted-foreground/50 mt-1">PNG, JPG, WEBP • Multiple allowed</p>
+
+            <div
+              className={cn(
+                "rounded-xl border-2 border-dashed transition-colors",
+                dragOver ? "border-primary/60 bg-primary/[0.06]" : "border-white/[0.08]"
+              )}
+            >
+              <textarea
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder={previews.length > 0 ? "Add a caption…" : "Write a message or drop images here…"}
+                rows={2}
+                className="w-full bg-transparent resize-none px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+              />
+              <div className="flex items-center justify-between px-2 pb-2">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
+                >
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  Add image
+                </button>
+                <button
+                  type="button"
+                  onClick={submitPost}
+                  disabled={uploading || (pendingFiles.length === 0 && !caption.trim())}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+                    "bg-primary text-primary-foreground hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                  )}
+                >
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  {uploading ? "Posting…" : "Post"}
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 px-1">PNG, JPG, WEBP • Drag & drop or click Add image</p>
           </div>
         )}
+
 
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -205,26 +277,37 @@ export function EconomicCalendarTab({ active }: Props) {
                 key={post.id}
                 className="group relative rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]"
               >
-                <button
-                  type="button"
-                  onClick={() => setLightbox(post.image_url)}
-                  className="block w-full"
-                >
-                  <img
-                    src={post.image_url}
-                    alt={post.caption ?? "Calendar post"}
-                    loading="lazy"
-                    className="w-full h-auto object-cover max-h-[520px]"
-                  />
-                </button>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 flex items-center justify-between">
-                  <span className="text-[10px] font-medium text-white/80">
+                {post.image_url ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox(post.image_url)}
+                    className="block w-full"
+                  >
+                    <img
+                      src={post.image_url}
+                      alt={post.caption ?? "Calendar post"}
+                      loading="lazy"
+                      className="w-full h-auto object-cover max-h-[520px]"
+                    />
+                  </button>
+                ) : null}
+
+                {post.caption && (
+                  <div className="px-3 py-2.5">
+                    <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                      {post.caption}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/[0.04]">
+                  <span className="text-[10px] font-medium text-muted-foreground/70">
                     {(() => { try { return format(parseISO(post.created_at), "MMM d, h:mma"); } catch { return ""; } })()}
                   </span>
                   {canManage && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(post); }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                      className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-red-400 hover:bg-red-500/10"
                       aria-label="Delete post"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -233,6 +316,7 @@ export function EconomicCalendarTab({ active }: Props) {
                 </div>
               </div>
             ))}
+
           </div>
         )}
       </div>
