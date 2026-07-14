@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, ImagePlus, Trash2, Upload, Loader2, X, Send } from "lucide-react";
+import { Calendar, ImagePlus, Trash2, Loader2, X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
