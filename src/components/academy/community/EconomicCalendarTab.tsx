@@ -33,7 +33,11 @@ export function EconomicCalendarTab({ active }: Props) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [caption, setCaption] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
 
   const fetchPosts = useCallback(async () => {
     const { data, error } = await supabase
