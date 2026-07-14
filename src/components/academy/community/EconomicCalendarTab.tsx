@@ -277,26 +277,37 @@ export function EconomicCalendarTab({ active }: Props) {
                 key={post.id}
                 className="group relative rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]"
               >
-                <button
-                  type="button"
-                  onClick={() => setLightbox(post.image_url)}
-                  className="block w-full"
-                >
-                  <img
-                    src={post.image_url}
-                    alt={post.caption ?? "Calendar post"}
-                    loading="lazy"
-                    className="w-full h-auto object-cover max-h-[520px]"
-                  />
-                </button>
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-2 flex items-center justify-between">
-                  <span className="text-[10px] font-medium text-white/80">
+                {post.image_url ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox(post.image_url)}
+                    className="block w-full"
+                  >
+                    <img
+                      src={post.image_url}
+                      alt={post.caption ?? "Calendar post"}
+                      loading="lazy"
+                      className="w-full h-auto object-cover max-h-[520px]"
+                    />
+                  </button>
+                ) : null}
+
+                {post.caption && (
+                  <div className="px-3 py-2.5">
+                    <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                      {post.caption}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/[0.04]">
+                  <span className="text-[10px] font-medium text-muted-foreground/70">
                     {(() => { try { return format(parseISO(post.created_at), "MMM d, h:mma"); } catch { return ""; } })()}
                   </span>
                   {canManage && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(post); }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                      className="opacity-60 group-hover:opacity-100 transition-opacity p-1.5 rounded-md text-red-400 hover:bg-red-500/10"
                       aria-label="Delete post"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -305,6 +316,7 @@ export function EconomicCalendarTab({ active }: Props) {
                 </div>
               </div>
             ))}
+
           </div>
         )}
       </div>
