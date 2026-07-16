@@ -111,8 +111,17 @@ if (isNativeCapacitor) {
     .catch(() => {});
 }
 
-createRoot(document.getElementById("root")!).render(
-  <ErrorBoundary>
-    <App />
-  </ErrorBoundary>
-);
+async function bootstrap() {
+  // Hydrate native (Capacitor) auth storage from Preferences BEFORE the
+  // Supabase client is created via the App import chain. On web this is a no-op.
+  await hydrateNativeAuthPersistence();
+  const { default: App } = await import("./App.tsx");
+  createRoot(document.getElementById("root")!).render(
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+bootstrap();
+
