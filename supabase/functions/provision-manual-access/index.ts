@@ -65,26 +65,8 @@ Deno.serve(async (req) => {
     // --- Original provisioning logic ---
     const normalizedEmail = email.trim().toLowerCase();
 
-    // PATH A: Whitelist
-    const { data: whitelist } = await sb
-      .from("allowed_signups")
-      .select("id, stripe_customer_id")
-      .eq("email", normalizedEmail)
-      .eq("claimed", false)
-      .maybeSingle();
-
-    if (whitelist) {
-      return await provisionUser(sb, {
-        normalizedEmail,
-        auth_user_id,
-        stripeCustomerId: whitelist.stripe_customer_id || null,
-        source: "whitelist",
-        whitelistId: whitelist.id,
-      });
-    }
-
-    // PATH B: Whop
-    console.log("[provision] No whitelist entry for:", normalizedEmail, "→ checking Whop");
+    // PATH A: Whop active membership
+    console.log("[provision] Checking active Whop membership for:", normalizedEmail);
     const whopKey = Deno.env.get("WHOP_API_KEY");
     if (whopKey) {
       const whopActive = await checkWhopMembership(normalizedEmail, whopKey);
@@ -95,7 +77,6 @@ Deno.serve(async (req) => {
           auth_user_id,
           stripeCustomerId: null,
           source: "whop",
-          whitelistId: null,
         });
       }
       console.log("[provision] No active Whop membership for:", normalizedEmail);
@@ -103,59 +84,25 @@ Deno.serve(async (req) => {
       console.warn("[provision] WHOP_API_KEY not set, skipping Whop check");
     }
 
-    // PATH C: Stripe
+    // PATH B: Stripe active/trialing subscription
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (stripeKey) {
       const stripeCustomerId = await checkStripeMembership(normalizedEmail, stripeKey);
       if (stripeCustomerId) {
-        console.log("[provision] Stripe customer found for:", normalizedEmail);
+        console.log("[provision] Active Stripe subscription found for:", normalizedEmail);
         return await provisionUser(sb, {
           normalizedEmail,
           auth_user_id,
           stripeCustomerId,
           source: "stripe",
-          whitelistId: null,
         });
       }
 
-      // PATH C.5: Stripe charges by receipt_email (catches GHL payments)
-      const chargeFound = await checkStripeCharges(normalizedEmail, stripeKey);
-      if (chargeFound) {
-        console.log("[provision] Stripe charge (receipt_email) found for:", normalizedEmail);
-        return await provisionUser(sb, {
-          normalizedEmail,
-          auth_user_id,
-          stripeCustomerId: null,
-          source: "stripe",
-          whitelistId: null,
-        });
-      }
-
-      console.log("[provision] No Stripe customer or charge for:", normalizedEmail);
-    }
-
-    // PATH D: GHL Contacts API
-    const ghlKey = Deno.env.get("GHL_API_KEY");
-    const ghlLocationId = Deno.env.get("GHL_LOCATION_ID");
-    if (ghlKey && ghlLocationId) {
-      const ghlFound = await checkGHLContact(normalizedEmail, ghlKey, ghlLocationId);
-      if (ghlFound) {
-        console.log("[provision] GHL contact found for:", normalizedEmail);
-        return await provisionUser(sb, {
-          normalizedEmail,
-          auth_user_id,
-          stripeCustomerId: null,
-          source: "ghl",
-          whitelistId: null,
-        });
-      }
-      console.log("[provision] No GHL contact for:", normalizedEmail);
-    } else {
-      console.warn("[provision] GHL_API_KEY or GHL_LOCATION_ID not set, skipping GHL check");
+      console.log("[provision] No active Stripe subscription for:", normalizedEmail);
     }
 
     // --- Not found anywhere ---
-    console.log("[provision] No unclaimed whitelist or active membership for:", normalizedEmail);
+    console.log("[provision] No active Whop or Stripe subscription for:", normalizedEmail);
     return new Response(JSON.stringify({ provisioned: false, reason: "not_whitelisted" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -176,7 +123,7 @@ async function checkWhopMembership(email: string, whopKey: string): Promise<bool
     let totalScanned = 0;
 
     while (page <= totalPages) {
-      const url = `https://api.whop.com/api/v2/members?per=50&page=${page}`;
+      const url = `https://api.whop.com/api/v2/memberships?per=50&page=${page}&valid=true`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${whopKey}` },
       });
@@ -198,8 +145,9 @@ async function checkWhopMembership(email: string, whopKey: string): Promise<bool
       totalScanned += members.length;
 
       for (const m of members) {
-        const mEmail = (m.email ?? "").trim().toLowerCase();
-        if (mEmail === email) {
+        const mEmail = (m.email ?? m.user?.email ?? "").trim().toLowerCase();
+        const isActive = m.valid === true || m.status === "active";
+        if (mEmail === email && isActive) {
           console.log(`[provision] Whop MATCH page ${page}/${totalPages} (scanned ${totalScanned}):`, email);
           return true;
         }
@@ -214,7 +162,7 @@ async function checkWhopMembership(email: string, whopKey: string): Promise<bool
   return false;
 }
 
-// ── Stripe customer check ──
+// ── Stripe active/trialing subscription check ──
 async function checkStripeMembership(email: string, stripeKey: string): Promise<string | null> {
   try {
     const url = `https://api.stripe.com/v1/customers?email=${encodeURIComponent(email)}&limit=1`;
@@ -224,63 +172,24 @@ async function checkStripeMembership(email: string, stripeKey: string): Promise<
     if (res.ok) {
       const data = await res.json();
       if (data.data && data.data.length > 0) {
-        return data.data[0].id;
+        const customerId = data.data[0].id;
+        const subsUrl = `https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(customerId)}&limit=10`;
+        const subsRes = await fetch(subsUrl, {
+          headers: { Authorization: `Bearer ${stripeKey}` },
+        });
+        if (subsRes.ok) {
+          const subsData = await subsRes.json();
+          const activeSub = (subsData.data ?? []).find(
+            (s: any) => s.status === "active" || s.status === "trialing"
+          );
+          if (activeSub) return customerId;
+        }
       }
     }
   } catch (err) {
     console.error("[provision] Stripe check error:", err);
   }
   return null;
-}
-
-// ── Stripe charges check (catches GHL payments by receipt_email) ──
-async function checkStripeCharges(email: string, stripeKey: string): Promise<boolean> {
-  try {
-    const url = `https://api.stripe.com/v1/charges?receipt_email=${encodeURIComponent(email)}&limit=5`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${stripeKey}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.data && data.data.length > 0) {
-        const paidCharge = data.data.find((c: any) => c.paid === true);
-        if (paidCharge) {
-          console.log("[provision] Found paid Stripe charge by receipt_email:", email, paidCharge.id);
-          return true;
-        }
-      }
-    }
-  } catch (err) {
-    console.error("[provision] Stripe charges check error:", err);
-  }
-  return false;
-}
-
-// ── GHL Contact check ──
-async function checkGHLContact(email: string, ghlKey: string, locationId: string): Promise<boolean> {
-  try {
-    const url = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${encodeURIComponent(locationId)}&email=${encodeURIComponent(email)}`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${ghlKey}`,
-        Version: "2021-07-28",
-        Accept: "application/json",
-      },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data.contact && data.contact.id) {
-        console.log("[provision] GHL contact found:", email, "id:", data.contact.id);
-        return true;
-      }
-    } else {
-      console.error("[provision] GHL API error:", res.status);
-    }
-  } catch (err) {
-    console.error("[provision] GHL fetch error:", err);
-  }
-  return false;
 }
 
 // ── Shared provisioning logic ──
@@ -290,16 +199,10 @@ async function provisionUser(
     normalizedEmail: string;
     auth_user_id: string;
     stripeCustomerId: string | null;
-    source: "whitelist" | "whop" | "stripe" | "ghl";
-    whitelistId: string | null;
+    source: "whop" | "stripe";
   }
 ) {
-  const { normalizedEmail, auth_user_id, stripeCustomerId, source, whitelistId } = opts;
-
-  if (whitelistId) {
-    await sb.from("allowed_signups").update({ claimed: true }).eq("id", whitelistId);
-    console.log("[provision] Marked whitelist entry as claimed:", whitelistId);
-  }
+  const { normalizedEmail, auth_user_id, stripeCustomerId, source } = opts;
 
   const { data: existingStudent } = await sb
     .from("students")
