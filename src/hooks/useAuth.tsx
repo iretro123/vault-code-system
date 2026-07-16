@@ -101,12 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** Handle a valid profile row — ban check, state update, timezone backfill */
   async function handleProfile(profileData: (Profile & { is_banned?: boolean }) | null, userId: string) {
     if (!profileData) return false;
-    // Block revoked/banned users immediately
-    if (profileData.access_status === "revoked" || profileData.is_banned) {
-      console.warn("[Auth] User is revoked/banned — signing out");
-      await signOutCleanup();
-      return false;
-    }
+    // Note: revoked/banned users are NOT auto-signed-out here. The session is kept
+    // so users retain their saved login; access is gated by route-level screens
+    // (AcademyLayout shows a "revoked" screen, AccessBlockModal handles past_due, etc).
+    // Only an explicit user Sign Out (or clearing browser storage) should end the session.
 
     // Shallow-equal check: skip state update if data hasn't changed
     setProfile(prev => {
