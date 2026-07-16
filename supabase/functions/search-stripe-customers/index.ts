@@ -54,10 +54,36 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    const result = await stripe.customers.search({
-      query: `name~'${trimmed}' OR email~'${trimmed}'`,
-      limit: 10,
-    });
+    // If input looks like an email, try exact email match first (Stripe's `~` substring
+    // search can miss full email strings). Fall back to substring search on name+email.
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    const lower = trimmed.toLowerCase();
+
+    let data: Stripe.Customer[] = [];
+
+    if (isEmail) {
+      const exact = await stripe.customers.search({
+        query: `email:"${lower}"`,
+        limit: 10,
+      });
+      data = exact.data;
+    }
+
+    if (data.length === 0) {
+      const fuzzy = await stripe.customers.search({
+        query: `name~"${trimmed}" OR email~"${trimmed}"`,
+        limit: 10,
+      });
+      data = fuzzy.data;
+    }
+
+    // Final fallback: list by email (works for exact matches even if search index lags)
+    if (data.length === 0 && isEmail) {
+      const listed = await stripe.customers.list({ email: lower, limit: 10 });
+      data = listed.data;
+    }
+
+    const result = { data };
 
     const customers = result.data.map((c) => ({
       id: c.id,
