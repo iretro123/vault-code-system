@@ -12,9 +12,10 @@ if (typeof urlWithParse.parse !== "function") {
 
 import { createRoot } from "react-dom/client";
 import { Capacitor } from "@capacitor/core";
-import App from "./App.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
+import { hydrateNativeAuthPersistence } from "./lib/nativeAuthPersistence";
 import "./index.css";
+
 
 const isNativeCapacitor =
   Capacitor.isNativePlatform() ||
