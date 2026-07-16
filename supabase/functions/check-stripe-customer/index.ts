@@ -25,49 +25,44 @@ Deno.serve(async (req) => {
     const normalizedEmail = email.trim().toLowerCase();
     const authHeader = req.headers.get("Authorization");
 
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const authClient = createClient(
-      supabaseUrl,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { data: authData, error: authError } = await authClient.auth.getUser();
-    const authUser = authData.user;
-    if (authError || !authUser) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: authProfile } = await adminClient
-      .from("profiles")
-      .select("access_status")
-      .eq("user_id", authUser.id)
-      .maybeSingle();
-
-    const canManageOtherUsers =
-      authProfile?.access_status === "admin" || authProfile?.access_status === "operator";
-
-    if (authUser.email?.trim().toLowerCase() !== normalizedEmail && !canManageOtherUsers) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Auth is optional — this endpoint is called from the public signup screen
+    // before the user has a session. When an auth header IS present (admin lookup
+    // from the operator dashboard), enforce that non-admins can only look up their
+    // own email. Unauthenticated callers get the same generic {found} response.
+    if (authHeader) {
+      try {
+        const authClient = createClient(
+          supabaseUrl,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: authData } = await authClient.auth.getUser();
+        const authUser = authData.user;
+        if (authUser) {
+          const { data: authProfile } = await adminClient
+            .from("profiles")
+            .select("access_status")
+            .eq("user_id", authUser.id)
+            .maybeSingle();
+          const canManageOtherUsers =
+            authProfile?.access_status === "admin" || authProfile?.access_status === "operator";
+          if (
+            authUser.email?.trim().toLowerCase() !== normalizedEmail &&
+            !canManageOtherUsers
+          ) {
+            return new Response(JSON.stringify({ error: "Forbidden" }), {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("[check-membership] auth header present but validation failed, continuing as public:", e);
+      }
     }
 
     // --- 1. Check Stripe customers ---
