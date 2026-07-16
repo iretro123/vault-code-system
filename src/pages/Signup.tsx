@@ -50,11 +50,13 @@ const Signup = () => {
     setStripeStatus("checking");
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/check-stripe-customer`,
-          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: trimmed }) }
-        );
-        const data = await res.json();
+        const { data, error } = await supabase.functions.invoke("check-stripe-customer", {
+          body: { email: trimmed },
+        });
+        if (error) {
+          setStripeStatus("idle");
+          return;
+        }
         setStripeStatus(data.found ? "found" : "not_found");
       } catch {
         setStripeStatus("idle");

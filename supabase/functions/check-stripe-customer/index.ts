@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // --- 1. Check Stripe customers ---
+    // --- 1. Check Stripe customers: only active/trialing subscriptions qualify ---
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (stripeKey) {
       const stripeUrl = `https://api.stripe.com/v1/customers?email=${encodeURIComponent(normalizedEmail)}&limit=1`;
@@ -79,7 +79,6 @@ Deno.serve(async (req) => {
           const customerId = stripeData.data[0].id;
           console.log("[check-membership] Found Stripe customer:", normalizedEmail, customerId);
 
-          // Check for active subscription or trial
           const subsUrl = `https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(customerId)}&limit=10`;
           const subsRes = await fetch(subsUrl, {
             headers: { Authorization: `Bearer ${stripeKey}` },
@@ -98,12 +97,7 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Customer exists but no active sub — still allow (could be one-time purchase)
-          console.log("[check-membership] Stripe customer exists, no active sub — allowing:", normalizedEmail);
-          return new Response(
-            JSON.stringify({ found: true, status: "active" }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          console.log("[check-membership] Stripe customer exists but no active/trialing subscription:", normalizedEmail);
         }
       } else {
         console.error("[check-membership] Stripe customers API error:", stripeRes.status);
@@ -112,91 +106,7 @@ Deno.serve(async (req) => {
       console.warn("[check-membership] STRIPE_SECRET_KEY not set, skipping Stripe check");
     }
 
-    // --- 2. Check Stripe charges by receipt_email (catches GHL payments) ---
-    if (stripeKey) {
-      try {
-        const chargesUrl = `https://api.stripe.com/v1/charges?limit=5`;
-        const chargesRes = await fetch(
-          `${chargesUrl}&receipt_email=${encodeURIComponent(normalizedEmail)}`,
-          { headers: { Authorization: `Bearer ${stripeKey}` } }
-        );
-        if (chargesRes.ok) {
-          const chargesData = await chargesRes.json();
-          if (chargesData.data && chargesData.data.length > 0) {
-            const paidCharge = chargesData.data.find((c: any) => c.paid === true);
-            if (paidCharge) {
-              console.log("[check-membership] Found paid Stripe charge by receipt_email:", normalizedEmail, paidCharge.id);
-              return new Response(
-                JSON.stringify({ found: true, status: "active" }),
-                { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-              );
-            }
-          }
-        }
-        console.log("[check-membership] No Stripe charges found for receipt_email:", normalizedEmail);
-      } catch (chargeErr) {
-        console.error("[check-membership] Stripe charges check error:", chargeErr);
-      }
-    }
-
-    // --- 3. Check allowed_signups whitelist ---
-    try {
-      const sb = adminClient;
-
-      const { data: allowedRow } = await sb
-        .from("allowed_signups")
-        .select("id, claimed, stripe_customer_id")
-        .eq("email", normalizedEmail)
-        .eq("claimed", false)
-        .maybeSingle();
-
-      if (allowedRow) {
-        console.log("[check-membership] Found in allowed_signups whitelist:", normalizedEmail);
-        return new Response(
-          JSON.stringify({ found: true, status: "active" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    } catch (e) {
-      console.error("[check-membership] allowed_signups check error:", e);
-    }
-
-    // --- 4. Check GHL Contacts API ---
-    const ghlKey = Deno.env.get("GHL_API_KEY");
-    const ghlLocationId = Deno.env.get("GHL_LOCATION_ID");
-    if (ghlKey && ghlLocationId) {
-      try {
-        const ghlUrl = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${encodeURIComponent(ghlLocationId)}&email=${encodeURIComponent(normalizedEmail)}`;
-        const ghlRes = await fetch(ghlUrl, {
-          headers: {
-            Authorization: `Bearer ${ghlKey}`,
-            Version: "2021-07-28",
-            Accept: "application/json",
-          },
-        });
-
-        if (ghlRes.ok) {
-          const ghlData = await ghlRes.json();
-          const contact = ghlData.contact;
-          if (contact && contact.id) {
-            console.log("[check-membership] GHL contact found:", normalizedEmail, "id:", contact.id);
-            return new Response(
-              JSON.stringify({ found: true, status: "active" }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-          console.log("[check-membership] No GHL contact for:", normalizedEmail);
-        } else {
-          console.error("[check-membership] GHL API error:", ghlRes.status, await ghlRes.text());
-        }
-      } catch (ghlErr) {
-        console.error("[check-membership] GHL fetch error:", ghlErr);
-      }
-    } else {
-      console.warn("[check-membership] GHL_API_KEY or GHL_LOCATION_ID not set, skipping GHL check");
-    }
-
-    // --- 5. Fallback: Check Whop (paginate ALL active members) ---
+    // --- 2. Check Whop active memberships ---
     const whopKey = Deno.env.get("WHOP_API_KEY");
     if (whopKey) {
       try {
@@ -205,7 +115,7 @@ Deno.serve(async (req) => {
         let totalScanned = 0;
 
         while (page <= totalPages) {
-          const whopUrl = `https://api.whop.com/api/v2/members?per=50&page=${page}`;
+          const whopUrl = `https://api.whop.com/api/v2/memberships?per=50&page=${page}&valid=true`;
           const whopRes = await fetch(whopUrl, {
             headers: { Authorization: `Bearer ${whopKey}` },
           });
@@ -227,8 +137,9 @@ Deno.serve(async (req) => {
           totalScanned += members.length;
 
           for (const m of members) {
-            const mEmail = (m.email ?? "").trim().toLowerCase();
-            if (mEmail === normalizedEmail) {
+            const mEmail = (m.email ?? m.user?.email ?? "").trim().toLowerCase();
+            const isActive = m.valid === true || m.status === "active";
+            if (mEmail === normalizedEmail && isActive) {
               console.log(`[check-membership] Whop MATCH page ${page}/${totalPages} (scanned ${totalScanned}):`, normalizedEmail);
               return new Response(
                 JSON.stringify({ found: true, status: "active" }),
@@ -247,7 +158,7 @@ Deno.serve(async (req) => {
       console.warn("[check-membership] WHOP_API_KEY not set, skipping Whop check");
     }
 
-    // --- 6. Not found anywhere — return generic response to prevent email enumeration ---
+    // --- 3. Not found in active Stripe subscriptions or active Whop memberships ---
     console.log("[check-membership] Not found:", normalizedEmail);
     return new Response(
       JSON.stringify({ found: false }),
