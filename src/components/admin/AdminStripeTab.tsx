@@ -261,6 +261,7 @@ export function AdminStripeTab() {
         <Button onClick={fetchData} variant="outline" size="sm" className="gap-1.5">
           <RefreshCw className="h-3.5 w-3.5" /> Refresh
         </Button>
+        <SweepStripeButton onDone={fetchData} />
         <span className="text-xs text-muted-foreground">{filteredStudents.length} students</span>
       </div>
 
@@ -617,6 +618,49 @@ function ReconcileButton({ studentId, onDone }: { studentId: string; onDone: () 
       {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
       Reconcile from Stripe
     </Button>
+  );
+}
+
+// ─── Sweep All From Stripe Button ───
+function SweepStripeButton({ onDone }: { onDone: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  const run = async (dryRun: boolean) => {
+    const confirmMsg = dryRun
+      ? "Preview: check every active/trialing member against Stripe (no changes)?"
+      : "Sweep: lock any member whose Stripe subscription is no longer active. Lifetime members are skipped. Continue?";
+    if (!confirm(confirmMsg)) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sweep-stripe-access", {
+        body: { dry_run: dryRun, limit: 1000 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const label = dryRun ? "Preview" : "Sweep";
+      toast.success(
+        `${label} complete — scanned ${data.scanned}, ${dryRun ? "would update" : "updated"} ${dryRun ? data.changes.filter((c: { result?: string }) => !c.result).length : data.updated}, unlinked ${data.no_stripe}`,
+      );
+      console.log("[sweep-stripe-access] result", data);
+      onDone();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Sweep failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Button onClick={() => run(true)} disabled={loading} variant="outline" size="sm" className="gap-1.5 text-xs">
+        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
+        Preview Sweep
+      </Button>
+      <Button onClick={() => run(false)} disabled={loading} variant="destructive" size="sm" className="gap-1.5 text-xs">
+        <Shield className="h-3.5 w-3.5" />
+        Sweep &amp; Lock
+      </Button>
+    </div>
   );
 }
 
