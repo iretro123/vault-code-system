@@ -51,7 +51,7 @@ serve(async (req) => {
 
     // Two entry paths: automated cron (x-cron-secret) OR authenticated operator/owner/admin.
     const cronSecretHeader = req.headers.get("x-cron-secret");
-    const cronSecret = Deno.env.get("CRON_SECRET");
+    const cronSecret = Deno.env.get("SWEEP_CRON_TOKEN") || Deno.env.get("CRON_SECRET");
     const isCron = !!cronSecret && cronSecretHeader === cronSecret;
 
     let actorId: string | null = null;
