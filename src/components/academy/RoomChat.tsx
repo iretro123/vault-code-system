@@ -1917,10 +1917,43 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               </ContextMenuTrigger>
 
               {/* Right-click context menu */}
-              <ContextMenuContent className="min-w-[120px]">
+              <ContextMenuContent className="min-w-[200px] p-1.5">
+                {!msg.is_deleted && (
+                  <div className="flex items-center gap-1 px-1 pb-1.5 mb-1 border-b border-white/[0.06]">
+                    {QUICK_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => toggleReaction(msg.id, emoji)}
+                        className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-white/[0.08] active:scale-90 transition"
+                      >
+                        {renderReactionEmoji(emoji, "h-5 w-5")}
+                      </button>
+                    ))}
+                    <div className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-white/[0.08] overflow-hidden">
+                      <EmojiReactionPicker
+                        onSelect={(e) => toggleReaction(msg.id, e)}
+                        triggerClassName="!h-8 !w-8 !p-0 flex items-center justify-center hover:!bg-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
                 {menuActions(ContextMenuItem)}
               </ContextMenuContent>
             </ContextMenu>
+
+            {/* Mobile long-press action sheet */}
+            {isMobile && (
+              <MessageActionSheet
+                open={sheetMsgId === msg.id}
+                onClose={() => setSheetMsgId(null)}
+                onReact={!msg.is_deleted ? (e) => toggleReaction(msg.id, e) : undefined}
+                showReactions={!msg.is_deleted}
+                renderEmoji={renderReactionEmoji}
+              >
+                {menuActions(SheetActionItem)}
+              </MessageActionSheet>
+            )}
             </div>
           );
         })}
