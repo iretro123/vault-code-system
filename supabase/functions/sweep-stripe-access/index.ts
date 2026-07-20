@@ -43,47 +43,61 @@ serve(async (req) => {
     console.log(`[sweep-stripe-access][${traceId}] ${s}`, d ? JSON.stringify(d) : "");
 
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) throw new Error("Missing authorization header");
-
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { persistSession: false } },
     );
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false }, global: { headers: { authorization: authHeader } } },
-    );
 
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) throw new Error("Unauthorized");
+    // Two entry paths: automated cron (x-cron-secret) OR authenticated operator/owner/admin.
+    const cronSecretHeader = req.headers.get("x-cron-secret");
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const isCron = !!cronSecret && cronSecretHeader === cronSecret;
 
-    const { data: isOp } = await admin.rpc("has_role", { _user_id: user.id, _role: "operator" });
-    const { data: isOwner } = await admin.rpc("has_role", { _user_id: user.id, _role: "vault_os_owner" });
-    if (!isOp && !isOwner) throw new Error("Unauthorized: operator role required");
+    let actorId: string | null = null;
+    if (!isCron) {
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) throw new Error("Missing authorization header");
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        { auth: { persistSession: false }, global: { headers: { authorization: authHeader } } },
+      );
+      const { data: { user }, error: authErr } = await userClient.auth.getUser();
+      if (authErr || !user) throw new Error("Unauthorized");
+      const [{ data: isOp }, { data: isOwner }, { data: isAdmin }] = await Promise.all([
+        admin.rpc("has_role", { _user_id: user.id, _role: "operator" }),
+        admin.rpc("has_role", { _user_id: user.id, _role: "vault_os_owner" }),
+        admin.rpc("has_role", { _user_id: user.id, _role: "admin" }),
+      ]);
+      if (!isOp && !isOwner && !isAdmin) throw new Error("Unauthorized: operator role required");
+      actorId = user.id;
+    }
 
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
     const limit = Math.min(Math.max(Number(body?.limit) || 500, 1), 2000);
+    // How many days a member can stay in past_due before being auto-locked.
+    const graceDays = Math.min(Math.max(Number(body?.grace_days) || 3, 1), 30);
+    const graceCutoff = new Date(Date.now() - graceDays * 24 * 60 * 60 * 1000).toISOString();
 
-    // Sweep active/trialing rows only, skip lifetime.
+    // Sweep active/trialing/past_due, skip lifetime.
     const { data: rows, error: fetchErr } = await admin
       .from("student_access")
-      .select("user_id, status, is_lifetime, stripe_customer_id, stripe_subscription_id, product_key, tier")
+      .select("user_id, status, is_lifetime, stripe_customer_id, stripe_subscription_id, product_key, tier, updated_at")
       .eq("product_key", "vault_academy")
-      .in("status", ["active", "trialing"])
+      .in("status", ["active", "trialing", "past_due"])
       .eq("is_lifetime", false)
       .limit(limit);
     if (fetchErr) throw fetchErr;
-    const access = (rows || []) as AccessRow[];
+    const access = (rows || []) as (AccessRow & { updated_at: string })[];
 
     if (access.length === 0) {
       return new Response(JSON.stringify({ scanned: 0, updated: 0, dry_run: dryRun, changes: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     const studentIds = access.map((r) => r.user_id);
     const { data: students } = await admin
