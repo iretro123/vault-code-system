@@ -1503,7 +1503,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
           /* Shared menu items for both dropdown and context menu */
           const menuActions = (
-            ItemComponent: typeof DropdownMenuItem | typeof ContextMenuItem
+            ItemComponent: React.ElementType
           ) => (
             <>
               {!msg.is_deleted && (
