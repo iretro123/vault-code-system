@@ -261,6 +261,7 @@ export function AdminStripeTab() {
         <Button onClick={fetchData} variant="outline" size="sm" className="gap-1.5">
           <RefreshCw className="h-3.5 w-3.5" /> Refresh
         </Button>
+        <SweepStripeButton onDone={fetchData} />
         <span className="text-xs text-muted-foreground">{filteredStudents.length} students</span>
       </div>
 
