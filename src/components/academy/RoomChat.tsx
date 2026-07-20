@@ -230,6 +230,41 @@ function renderReactionEmoji(emoji: string, className = "h-3.5 w-3.5") {
   return <img src={src} alt="" className={cn("shrink-0", className)} />;
 }
 
+/** Long-press handlers factory (touch only). Fires after ~420ms hold with no drag. */
+function longPressHandlers(onLongPress: () => void, ms = 420) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let moved = false;
+  let start: { x: number; y: number } | null = null;
+  const cancel = () => {
+    if (timer) { clearTimeout(timer); timer = undefined; }
+  };
+  return {
+    onTouchStart: (e: React.TouchEvent) => {
+      moved = false;
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY };
+      timer = setTimeout(() => {
+        if (!moved) {
+          try { (navigator as unknown as { vibrate?: (n: number) => void }).vibrate?.(25); } catch { /* noop */ }
+          onLongPress();
+        }
+      }, ms);
+    },
+    onTouchMove: (e: React.TouchEvent) => {
+      if (!start) return;
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) {
+        moved = true;
+        cancel();
+      }
+    },
+    onTouchEnd: cancel,
+    onTouchCancel: cancel,
+  };
+}
+
+
+
 /* ── message body renderers ── */
 
 function isRecapPost(body: string) {
