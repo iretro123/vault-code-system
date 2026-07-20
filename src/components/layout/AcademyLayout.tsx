@@ -8,6 +8,7 @@ import { CoachDrawer } from "@/components/academy/CoachDrawer";
 import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
+import { PastDueBanner } from "@/components/academy/PastDueBanner";
 import { isBillingVisible } from "@/lib/featureFlags";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
