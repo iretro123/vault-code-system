@@ -2109,6 +2109,7 @@ export type Database = {
           access_ended_at: string | null
           access_granted_at: string
           id: string
+          is_lifetime: boolean
           last_synced_at: string
           product_key: string
           status: string
@@ -2124,6 +2125,7 @@ export type Database = {
           access_ended_at?: string | null
           access_granted_at?: string
           id?: string
+          is_lifetime?: boolean
           last_synced_at?: string
           product_key?: string
           status?: string
@@ -2139,6 +2141,7 @@ export type Database = {
           access_ended_at?: string | null
           access_granted_at?: string
           id?: string
+          is_lifetime?: boolean
           last_synced_at?: string
           product_key?: string
           status?: string
