@@ -112,45 +112,89 @@ serve(async (req) => {
     let updated = 0;
     let noStripe = 0;
 
+    // Extra safety net: emails that must NEVER be flipped by the sweep, even if Stripe
+    // has no record. Comma-separated env var.
+    const protectedEmails = new Set(
+      (Deno.env.get("SWEEP_PROTECTED_EMAILS") || "")
+        .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
+    );
+
+    let skippedProtected = 0;
+    let skippedLookupFailed = 0;
+
     for (const row of access) {
       const student = studentMap.get(row.user_id);
       if (!student) continue;
       const email = student.email?.trim().toLowerCase() || null;
 
-      // Resolve Stripe customer
+      if (email && protectedEmails.has(email)) {
+        skippedProtected++;
+        changes.push({ user_id: row.user_id, email, result: "skipped_protected", from: row.status, to: row.status });
+        continue;
+      }
+
+      // Resolve Stripe customer (exact email match, then fuzzy search fallback)
       let customerId = row.stripe_customer_id || student.stripe_customer_id || null;
+      let customerLookupErrored = false;
       if (!customerId && email) {
         try {
           const list = await stripe.customers.list({ email, limit: 3 });
           customerId = list.data[0]?.id || null;
+          if (!customerId) {
+            // Fuzzy fallback via Search API (handles casing/aliases and index delays differently)
+            try {
+              const search = await stripe.customers.search({ query: `email:'${email.replace(/'/g, "\\'")}'`, limit: 3 });
+              customerId = search.data[0]?.id || null;
+            } catch (_e) { /* search not critical */ }
+          }
           if (customerId && !student.stripe_customer_id) {
             await admin.from("students").update({ stripe_customer_id: customerId }).eq("id", student.id);
           }
         } catch (e) {
+          customerLookupErrored = true;
           log("customer_lookup_failed", { email, error: (e as Error).message });
         }
       }
 
       if (!customerId) {
+        // SAFETY: no Stripe customer found. Do NOT change status — user may pay via
+        // Whop/GHL/manual grant, or Stripe indexing may be delayed.
         noStripe++;
-        changes.push({ user_id: row.user_id, email, result: "no_stripe_customer", from: row.status, to: row.status });
+        changes.push({
+          user_id: row.user_id, email,
+          result: customerLookupErrored ? "stripe_lookup_error" : "no_stripe_customer",
+          from: row.status, to: row.status,
+        });
         continue;
       }
 
-      // Fetch latest subscription
+      // Fetch latest subscription. Track whether Stripe actually answered.
       let sub: Stripe.Subscription | null = null;
+      let subQueryOk = false;
       try {
         if (row.stripe_subscription_id) {
           sub = await stripe.subscriptions.retrieve(row.stripe_subscription_id);
+          subQueryOk = true;
         }
       } catch (_e) { /* fall through to list */ }
       if (!sub) {
         try {
           const subs = await stripe.subscriptions.list({ customer: customerId, status: "all", limit: 1 });
           sub = subs.data[0] || null;
+          subQueryOk = true;
         } catch (e) {
           log("sub_list_failed", { customerId, error: (e as Error).message });
         }
+      }
+
+      if (!subQueryOk) {
+        // SAFETY: Stripe API errored. Never downgrade access on a failed query.
+        skippedLookupFailed++;
+        changes.push({
+          user_id: row.user_id, email, stripe_customer_id: customerId,
+          result: "stripe_query_failed", from: row.status, to: row.status,
+        });
+        continue;
       }
 
       const stripeStatus = sub?.status || "canceled";
@@ -212,12 +256,18 @@ serve(async (req) => {
     }
 
 
-    log("DONE", { scanned: access.length, updated, noStripe, dryRun });
+
+    log("DONE", { scanned: access.length, updated, noStripe, skippedProtected, skippedLookupFailed, dryRun });
 
     return new Response(
-      JSON.stringify({ scanned: access.length, updated, no_stripe: noStripe, dry_run: dryRun, changes }),
+      JSON.stringify({
+        scanned: access.length, updated, no_stripe: noStripe,
+        skipped_protected: skippedProtected, skipped_lookup_failed: skippedLookupFailed,
+        dry_run: dryRun, changes,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (err) {
     console.error("[sweep-stripe-access] ERROR", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
