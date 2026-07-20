@@ -257,12 +257,17 @@ serve(async (req) => {
 
 
 
-    log("DONE", { scanned: access.length, updated, noStripe, dryRun });
+    log("DONE", { scanned: access.length, updated, noStripe, skippedProtected, skippedLookupFailed, dryRun });
 
     return new Response(
-      JSON.stringify({ scanned: access.length, updated, no_stripe: noStripe, dry_run: dryRun, changes }),
+      JSON.stringify({
+        scanned: access.length, updated, no_stripe: noStripe,
+        skipped_protected: skippedProtected, skipped_lookup_failed: skippedLookupFailed,
+        dry_run: dryRun, changes,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (err) {
     console.error("[sweep-stripe-access] ERROR", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
