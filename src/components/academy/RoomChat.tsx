@@ -1575,8 +1575,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             <ContextMenu>
               <ContextMenuTrigger asChild>
                  <div
+                  {...(isMobile ? longPressHandlers(() => setSheetMsgId(msg.id)) : {})}
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75",
+                    "group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75 select-none sm:select-auto",
                     startsNewGroup ? "pt-3 pb-1" : (isGroupedWithNext ? "py-0.5" : "pt-0.5 pb-1"),
                     startsNewGroup && "mt-1",
                     isEditing && "bg-white/[0.04]",
