@@ -1,27 +1,10 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SmilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAppleEmojiAsset } from "@/lib/appleEmoji";
+import data from "@emoji-mart/data";
 
-const EMOJI_CATEGORIES = [
-  {
-    label: "Smileys",
-    emojis: ["😂", "🤣", "😭", "😤", "🤔", "😎", "🥶", "😈"],
-  },
-  {
-    label: "Hands & People",
-    emojis: ["👍", "👎", "👏", "💪", "🙏", "🤝", "🫡", "👀"],
-  },
-  {
-    label: "Symbols",
-    emojis: ["❤️", "🔥", "💀", "💯", "🎯", "💎", "✅", "❌"],
-  },
-  {
-    label: "Objects",
-    emojis: ["💰", "📈", "📉", "🚀", "⚡", "🧠", "🎉", "🏆"],
-  },
-];
+const Picker = lazy(() => import("@emoji-mart/react"));
 
 interface EmojiReactionPickerProps {
   onSelect: (emoji: string) => void;
@@ -30,14 +13,6 @@ interface EmojiReactionPickerProps {
 
 export function EmojiReactionPicker({ onSelect, triggerClassName }: EmojiReactionPickerProps) {
   const [open, setOpen] = useState(false);
-
-  const renderEmoji = (emoji: string) => {
-    const asset = getAppleEmojiAsset(emoji);
-    if (asset) {
-      return <img src={asset} alt={emoji} className="h-5 w-5" />;
-    }
-    return <span className="chat-emoji">{emoji}</span>;
-  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -57,32 +32,27 @@ export function EmojiReactionPicker({ onSelect, triggerClassName }: EmojiReactio
         side="top"
         align="end"
         sideOffset={6}
-        className="w-[280px] p-0 bg-card border-white/[0.1] shadow-xl rounded-xl overflow-hidden"
+        className="p-0 border-0 bg-transparent shadow-none w-auto"
       >
-        <div className="p-2 space-y-2">
-          {EMOJI_CATEGORIES.map((cat) => (
-            <div key={cat.label}>
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-1">
-                {cat.label}
-              </p>
-              <div className="grid grid-cols-8 gap-0.5">
-                {cat.emojis.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => {
-                      onSelect(emoji);
-                      setOpen(false);
-                    }}
-                    className="flex items-center justify-center h-8 w-8 rounded-lg text-lg hover:bg-white/[0.1] active:scale-90 transition-all duration-100"
-                  >
-                    {renderEmoji(emoji)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <Suspense fallback={<div className="w-[352px] h-[435px] rounded-lg bg-[hsl(215,25%,10%)] animate-pulse" />}>
+          <Picker
+            data={data}
+            theme="dark"
+            set="native"
+            navPosition="top"
+            previewPosition="none"
+            skinTonePosition="search"
+            maxFrequentRows={2}
+            perLine={9}
+            emojiSize={22}
+            emojiButtonSize={32}
+            autoFocus
+            onEmojiSelect={(e: { native: string }) => {
+              if (e?.native) onSelect(e.native);
+              setOpen(false);
+            }}
+          />
+        </Suspense>
       </PopoverContent>
     </Popover>
   );
