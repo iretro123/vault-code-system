@@ -195,7 +195,7 @@ serve(async (req) => {
         updated++;
 
         await admin.from("audit_logs").insert({
-          admin_id: actorId,
+          admin_id: actorId ?? "00000000-0000-0000-0000-000000000000",
           target_user_id: row.user_id,
           action: isCron ? "sweep_stripe_access_cron" : "sweep_stripe_access",
           metadata: {
