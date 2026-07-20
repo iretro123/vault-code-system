@@ -603,6 +603,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: string; user_name: string; body: string } | null>(null);
+  const [sheetMsgId, setSheetMsgId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
 
   const isTradeRecaps = roomSlug === "trade-recaps";
