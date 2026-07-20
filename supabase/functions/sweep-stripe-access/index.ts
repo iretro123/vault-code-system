@@ -154,7 +154,16 @@ serve(async (req) => {
       }
 
       const stripeStatus = sub?.status || "canceled";
-      const newStatus = sub ? (STATUS_MAP[stripeStatus] || "canceled") : "canceled";
+      let newStatus = sub ? (STATUS_MAP[stripeStatus] || "canceled") : "canceled";
+
+      // 3-day grace: if row has been past_due for longer than graceDays and Stripe is still
+      // not active, escalate to canceled (auto-boot).
+      const pastDueTooLong =
+        row.status === "past_due" &&
+        row.updated_at < graceCutoff &&
+        newStatus !== "active" &&
+        newStatus !== "trialing";
+      if (pastDueTooLong) newStatus = "canceled";
 
       if (newStatus === row.status) continue;
 
@@ -165,6 +174,7 @@ serve(async (req) => {
         stripe_status: stripeStatus,
         from: row.status,
         to: newStatus,
+        grace_expired: pastDueTooLong || undefined,
       });
 
       if (!dryRun) {
@@ -185,9 +195,9 @@ serve(async (req) => {
         updated++;
 
         await admin.from("audit_logs").insert({
-          admin_id: user.id,
+          admin_id: actorId,
           target_user_id: row.user_id,
-          action: "sweep_stripe_access",
+          action: isCron ? "sweep_stripe_access_cron" : "sweep_stripe_access",
           metadata: {
             previous_status: row.status,
             new_status: newStatus,
@@ -195,10 +205,12 @@ serve(async (req) => {
             stripe_customer_id: customerId,
             stripe_subscription_id: sub?.id || null,
             target_email: email,
+            grace_expired: pastDueTooLong,
           },
         });
       }
     }
+
 
     log("DONE", { scanned: access.length, updated, noStripe, dryRun });
 
