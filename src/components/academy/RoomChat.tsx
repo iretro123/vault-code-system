@@ -35,6 +35,8 @@ import { SignalPostForm } from "./chat/SignalPostForm";
 import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
 import { EmojiPicker } from "./chat/EmojiPicker";
 import { EmojiReactionPicker } from "./chat/EmojiReactionPicker";
+import { MessageActionSheet, SheetActionItem } from "./chat/MessageActionSheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
 import { LinkPreviewCard } from "./chat/LinkPreviewCard";
@@ -227,6 +229,41 @@ function renderReactionEmoji(emoji: string, className = "h-3.5 w-3.5") {
   }
   return <img src={src} alt="" className={cn("shrink-0", className)} />;
 }
+
+/** Long-press handlers factory (touch only). Fires after ~420ms hold with no drag. */
+function longPressHandlers(onLongPress: () => void, ms = 420) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let moved = false;
+  let start: { x: number; y: number } | null = null;
+  const cancel = () => {
+    if (timer) { clearTimeout(timer); timer = undefined; }
+  };
+  return {
+    onTouchStart: (e: React.TouchEvent) => {
+      moved = false;
+      const t = e.touches[0];
+      start = { x: t.clientX, y: t.clientY };
+      timer = setTimeout(() => {
+        if (!moved) {
+          try { (navigator as unknown as { vibrate?: (n: number) => void }).vibrate?.(25); } catch { /* noop */ }
+          onLongPress();
+        }
+      }, ms);
+    },
+    onTouchMove: (e: React.TouchEvent) => {
+      if (!start) return;
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) {
+        moved = true;
+        cancel();
+      }
+    },
+    onTouchEnd: cancel,
+    onTouchCancel: cancel,
+  };
+}
+
+
 
 /* ── message body renderers ── */
 
@@ -566,6 +603,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   // Delete confirmation state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: string; user_name: string; body: string } | null>(null);
+  const [sheetMsgId, setSheetMsgId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
 
   const isTradeRecaps = roomSlug === "trade-recaps";
@@ -1464,7 +1503,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
           /* Shared menu items for both dropdown and context menu */
           const menuActions = (
-            ItemComponent: typeof DropdownMenuItem | typeof ContextMenuItem
+            ItemComponent: React.ElementType
           ) => (
             <>
               {!msg.is_deleted && (
@@ -1536,8 +1575,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             <ContextMenu>
               <ContextMenuTrigger asChild>
                  <div
+                  {...(isMobile ? longPressHandlers(() => setSheetMsgId(msg.id)) : {})}
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75",
+                    "group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75 select-none sm:select-auto",
                     startsNewGroup ? "pt-3 pb-1" : (isGroupedWithNext ? "py-0.5" : "pt-0.5 pb-1"),
                     startsNewGroup && "mt-1",
                     isEditing && "bg-white/[0.04]",
@@ -1877,10 +1917,43 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
               </ContextMenuTrigger>
 
               {/* Right-click context menu */}
-              <ContextMenuContent className="min-w-[120px]">
+              <ContextMenuContent className="min-w-[200px] p-1.5">
+                {!msg.is_deleted && (
+                  <div className="flex items-center gap-1 px-1 pb-1.5 mb-1 border-b border-white/[0.06]">
+                    {QUICK_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => toggleReaction(msg.id, emoji)}
+                        className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-white/[0.08] active:scale-90 transition"
+                      >
+                        {renderReactionEmoji(emoji, "h-5 w-5")}
+                      </button>
+                    ))}
+                    <div className="h-8 w-8 rounded-md flex items-center justify-center hover:bg-white/[0.08] overflow-hidden">
+                      <EmojiReactionPicker
+                        onSelect={(e) => toggleReaction(msg.id, e)}
+                        triggerClassName="!h-8 !w-8 !p-0 flex items-center justify-center hover:!bg-transparent"
+                      />
+                    </div>
+                  </div>
+                )}
                 {menuActions(ContextMenuItem)}
               </ContextMenuContent>
             </ContextMenu>
+
+            {/* Mobile long-press action sheet */}
+            {isMobile && (
+              <MessageActionSheet
+                open={sheetMsgId === msg.id}
+                onClose={() => setSheetMsgId(null)}
+                onReact={!msg.is_deleted ? (e) => toggleReaction(msg.id, e) : undefined}
+                showReactions={!msg.is_deleted}
+                renderEmoji={renderReactionEmoji}
+              >
+                {menuActions(SheetActionItem)}
+              </MessageActionSheet>
+            )}
             </div>
           );
         })}
