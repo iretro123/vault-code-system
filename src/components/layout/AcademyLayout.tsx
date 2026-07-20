@@ -284,6 +284,7 @@ function AcademyLayoutInner() {
         </header>
 
         <main className={`academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in ${isCommunity ? "pb-4" : "pb-4 md:pb-6"}`}>
+          {showPastDueBanner && <PastDueBanner />}
           <Outlet />
         </main>
 
