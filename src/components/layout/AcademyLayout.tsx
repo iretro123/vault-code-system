@@ -103,7 +103,8 @@ function AcademyLayoutInner() {
   }, []);
 
   const isCommunity = location.pathname.startsWith("/academy/community");
-  const showBlockModal = isBillingVisible() && !accessLoading && !isAdminBypass && (accessStatus2 === "past_due" || accessStatus2 === "canceled" || accessStatus2 === "none");
+  const showBlockModal = isBillingVisible() && !accessLoading && !isAdminBypass && (accessStatus2 === "canceled" || accessStatus2 === "none");
+  const showPastDueBanner = isBillingVisible() && !accessLoading && !isAdminBypass && accessStatus2 === "past_due";
 
   // Session-loss detection
   useEffect(() => {
