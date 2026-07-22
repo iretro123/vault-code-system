@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, createContext, useContext, ReactNode } fro
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { ensureProfile } from "@/lib/ensureProfile";
+import { reconcileMembershipNow } from "@/lib/membershipReconciler";
 
 type AppRole = "free" | "vault_os_owner" | "vault_access" | "vault_intelligence" | "operator" | "basic_tier";
 
@@ -173,6 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(async () => {
             await ensureProfile(uid, newSession.user.email);
             fetchUserData(uid);
+            // Silently reconcile any Apple StoreKit entitlement the user is
+            // paying for but hasn't been credited yet. Never blocks UI.
+            void reconcileMembershipNow(uid);
           }, 0);
         } else {
           setProfile(null);
@@ -200,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         await ensureProfile(uid, initialSession.user.email);
         fetchUserData(uid);
+        void reconcileMembershipNow(uid);
       } else {
         setLoading(false);
       }

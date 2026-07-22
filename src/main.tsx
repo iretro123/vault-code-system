@@ -14,6 +14,7 @@ import { createRoot } from "react-dom/client";
 import { Capacitor } from "@capacitor/core";
 import { ErrorBoundary } from "./components/ErrorBoundary.tsx";
 import { hydrateNativeAuthPersistence } from "./lib/nativeAuthPersistence";
+import { installMembershipReconciler } from "./lib/membershipReconciler";
 import "./index.css";
 
 
@@ -115,6 +116,11 @@ async function bootstrap() {
   // Hydrate native (Capacitor) auth storage from Preferences BEFORE the
   // Supabase client is created via the App import chain. On web this is a no-op.
   await hydrateNativeAuthPersistence();
+  // Attach the StoreKit → Supabase entitlement reconciler as early as
+  // possible so any Transaction.updates event emitted at launch (e.g. an
+  // interrupted purchase, an Ask-to-Buy approval, a cross-device
+  // subscription) is captured before the UI renders the paywall.
+  installMembershipReconciler();
   const { default: App } = await import("./App.tsx");
   createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>

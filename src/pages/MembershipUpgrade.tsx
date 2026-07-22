@@ -133,6 +133,16 @@ const MembershipUpgrade = () => {
 
     if (error) throw error;
 
+    // Only finish the StoreKit transaction AFTER the backend has recorded
+    // the entitlement. If activation fails, the transaction stays
+    // unfinished and StoreKit replays it via Transaction.updates on next
+    // launch — the reconciler picks it up automatically.
+    try {
+      await StoreKitMembership.finishTransaction({ transactionId: transaction.transactionId });
+    } catch (finishError) {
+      console.warn("[MembershipUpgrade] finishTransaction failed (will retry on next launch)", finishError);
+    }
+
     await refetchProfile();
   }
 
