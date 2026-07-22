@@ -9,8 +9,53 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "getProducts", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "restorePurchases", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "restorePurchases", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "finishTransaction", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "syncPendingTransactions", returnType: CAPPluginReturnPromise)
     ]
+
+    private var updatesTask: Task<Void, Never>?
+
+    override public func load() {
+        super.load()
+        CAPLog.print("Vault OS StoreKit plugin loaded — starting Transaction.updates listener")
+        // Listen for App Store-driven transactions (Ask to Buy approvals,
+        // renewals, cross-device restores, purchases that were interrupted
+        // before the purchase() promise resolved).
+        updatesTask = Task.detached { [weak self] in
+            for await result in Transaction.updates {
+                guard let self = self else { return }
+                await self.handleVerificationResult(result, source: "updates")
+            }
+        }
+        // On boot, drain any unfinished transactions from previous sessions
+        // (e.g. app was killed mid-purchase, network dropped before activation).
+        Task.detached { [weak self] in
+            guard let self = self else { return }
+            for await result in Transaction.unfinished {
+                await self.handleVerificationResult(result, source: "unfinished")
+            }
+        }
+    }
+
+    deinit {
+        updatesTask?.cancel()
+    }
+
+    private func handleVerificationResult(_ result: VerificationResult<Transaction>, source: String) async {
+        guard case .verified(let transaction) = result else {
+            CAPLog.print("Vault OS StoreKit \(source) transaction failed verification")
+            return
+        }
+        CAPLog.print("Vault OS StoreKit \(source) transaction observed: \(transaction.productID) id=\(transaction.id)")
+        let payload = transactionPayload(for: transaction, signedTransactionInfo: result.jwsRepresentation)
+        // Do NOT finish here. JS layer must activate on the backend first,
+        // then call finishTransaction. This prevents dropped entitlements.
+        self.notifyListeners("membershipTransactionUpdate", data: [
+            "source": source,
+            "transaction": payload
+        ])
+    }
 
     @objc func getProducts(_ call: CAPPluginCall) {
         let productIds = call.getArray("productIds", String.self) ?? []
@@ -69,9 +114,13 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
                         call.reject("The purchase could not be verified")
                         return
                     }
-                    CAPLog.print("Vault OS StoreKit purchase verified for: \(transaction.productID), transaction: \(transaction.id)")
+                    CAPLog.print("Vault OS StoreKit purchase verified for: \(transaction.productID), transaction: \(transaction.id) — awaiting backend activation before finish")
                     let signedTransactionInfo = verification.jwsRepresentation
-                    await transaction.finish()
+                    // IMPORTANT: do NOT call transaction.finish() here.
+                    // JS activates on the backend then calls finishTransaction.
+                    // If the app is killed between now and activation,
+                    // Transaction.unfinished / Transaction.updates will
+                    // replay the transaction next launch.
                     call.resolve([
                         "transaction": transactionPayload(for: transaction, signedTransactionInfo: signedTransactionInfo)
                     ])
@@ -124,6 +173,49 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
                 CAPLog.print("Vault OS StoreKit restore failed: \(error.localizedDescription)")
                 call.reject(error.localizedDescription)
             }
+        }
+    }
+
+    /// Finalizes a StoreKit transaction after the backend has recorded the
+    /// entitlement. Must be called by JS on activation success (purchase or
+    /// restore or observed update). If never called, Apple will keep
+    /// redelivering the transaction via Transaction.updates / .unfinished
+    /// on next launch — which is the correct self-healing behavior.
+    @objc func finishTransaction(_ call: CAPPluginCall) {
+        let transactionIdString = call.getString("transactionId") ?? ""
+        guard let transactionIdValue = UInt64(transactionIdString) else {
+            call.reject("transactionId is required")
+            return
+        }
+
+        CAPLog.print("Vault OS StoreKit finishTransaction requested for: \(transactionIdString)")
+
+        Task {
+            for await result in Transaction.all {
+                guard case .verified(let transaction) = result else { continue }
+                if transaction.id == transactionIdValue {
+                    await transaction.finish()
+                    CAPLog.print("Vault OS StoreKit finished transaction: \(transactionIdString)")
+                    call.resolve(["finished": true])
+                    return
+                }
+            }
+            CAPLog.print("Vault OS StoreKit finishTransaction — no matching transaction for id \(transactionIdString)")
+            call.resolve(["finished": false])
+        }
+    }
+
+    /// Manually re-emits all unfinished transactions. JS can call this after
+    /// sign-in to guarantee entitlement reconciliation even if the
+    /// Transaction.updates task missed the event (e.g. app just launched).
+    @objc func syncPendingTransactions(_ call: CAPPluginCall) {
+        Task {
+            var count = 0
+            for await result in Transaction.unfinished {
+                await self.handleVerificationResult(result, source: "sync")
+                count += 1
+            }
+            call.resolve(["pending": count])
         }
     }
 
