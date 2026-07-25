@@ -25,8 +25,10 @@ import { cn } from "@/lib/utils";
 import LessonQuiz from "@/components/academy/LessonQuiz";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
-import { isSharedGuestAccount, VAULT_OS_MONTHLY_FALLBACK_PRICE } from "@/lib/membership";
+import { isSharedGuestAccount } from "@/lib/membership";
 import { getVideoEmbedUrl } from "@/lib/videoEmbeds";
+import { openExternalUrl } from "@/lib/externalLinks";
+import { VAULT_BOOTCAMP_URL } from "./AcademyBootcamp";
 
 const AcademyModule = () => {
   const { moduleSlug } = useParams();
@@ -38,7 +40,7 @@ const AcademyModule = () => {
   const { hasPermission } = useAcademyPermissions();
   const canManageContent = isAdminActive && hasPermission("manage_content");
   const isMobile = useIsMobile();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const { isBasicTier } = useIsBasicTier();
   const sharedGuest = isSharedGuestAccount(user, profile);
   const isGuestOrBasic = isBasicTier || sharedGuest;
@@ -79,6 +81,8 @@ const AcademyModule = () => {
   const activeIndex = activeLesson ? lessons.findIndex((l) => l.id === activeLesson.id) : -1;
   const completedCount = lessons.filter((l) => progress[l.id]).length;
   const progressPct = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
+  const isMiniCourseComplete = isBasicMiniCourse && lessons.length > 0 && completedCount === lessons.length;
+  const openBootcampLanding = () => openExternalUrl(VAULT_BOOTCAMP_URL);
 
   if (!loading && !mod) {
     return <Navigate to="/academy/learn" replace />;
@@ -267,25 +271,18 @@ const AcademyModule = () => {
                 <div className="w-full max-w-full overflow-hidden border-t border-border px-4 py-4">
                   <div className="mx-auto w-full max-w-[21rem] overflow-hidden rounded-xl border border-primary/20 bg-primary/5 p-4 text-center">
                     <p className="text-xs text-muted-foreground mb-1">
-                      Ready for the full Vault OS?
+                      Ready for live bootcamp help?
                     </p>
                     <p className="mx-auto mb-3 max-w-[17rem] break-words text-sm font-semibold leading-snug text-foreground">
-                      Unlock every lesson, tool, live area, and member section.
+                      Join the 21-day Vault Trading Bootcamp after this mini course.
                     </p>
                     <Button
                       type="button"
-                      onClick={async () => {
-                        if (sharedGuest) {
-                          await signOut();
-                          navigate("/create-account/full?source=guest", { replace: true });
-                          return;
-                        }
-                        navigate("/membership");
-                      }}
+                      onClick={openBootcampLanding}
                       className="mx-auto inline-flex h-9 w-full max-w-[15rem] items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] px-4 text-sm font-medium text-primary-foreground transition-all duration-150 hover:shadow-[0_0_12px_2px_hsl(217_91%_60%/0.10)] hover:brightness-110 active:scale-[0.97]"
                     >
-                      <span className="min-w-0 truncate sm:hidden">Upgrade {VAULT_OS_MONTHLY_FALLBACK_PRICE}</span>
-                      <span className="hidden sm:inline">View Full Access - {VAULT_OS_MONTHLY_FALLBACK_PRICE}/mo</span>
+                      <span className="min-w-0 truncate sm:hidden">View Bootcamp</span>
+                      <span className="hidden sm:inline">View Bootcamp Details</span>
                       <ArrowRight className="h-3.5 w-3.5 shrink-0" />
                     </Button>
                   </div>
@@ -465,6 +462,35 @@ const AcademyModule = () => {
 
                   {/* Quiz */}
                   <LessonQuiz moduleSlug={moduleSlug} lessonId={activeLesson.id} />
+
+                  {isBasicMiniCourse && isGuestOrBasic && (
+                    <div className={cn(
+                      "mt-6 overflow-hidden rounded-2xl border p-5",
+                      isMiniCourseComplete
+                        ? "border-primary/30 bg-primary/10"
+                        : "border-white/10 bg-card/70"
+                    )}>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">
+                        {isMiniCourseComplete ? "Mini course complete" : "Next step after the mini course"}
+                      </p>
+                      <h3 className="mt-2 text-lg font-bold text-foreground">
+                        {isMiniCourseComplete
+                          ? "You finished the bridge. Now see the full Bootcamp."
+                          : "When you finish, continue into the Vault Trading Bootcamp."}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        The bootcamp page shows the 21-day live training path, onboarding details, private group structure, and how to reserve your seat.
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={openBootcampLanding}
+                        className="mt-4 h-11 rounded-xl bg-gradient-to-b from-primary to-[hsl(217,91%,50%)] px-5 font-bold text-white"
+                      >
+                        View Bootcamp Landing Page
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -512,7 +538,11 @@ const AcademyModule = () => {
                         className="gap-1.5"
                         onClick={() => {
                           if (!progress[activeLesson.id]) markComplete(activeLesson.id);
-                          navigate("/academy/learn");
+                          if (isBasicMiniCourse && isGuestOrBasic) {
+                            openBootcampLanding();
+                          } else {
+                            navigate("/academy/learn");
+                          }
                         }}
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />

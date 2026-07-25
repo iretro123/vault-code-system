@@ -13,9 +13,31 @@ import {
   VAULT_OS_MONTHLY_PRODUCT_ID,
   getVaultOsPrivacyPolicyUrl,
   getVaultOsTermsUrl,
+  clearMembershipUiState,
   isSharedGuestAccount,
 } from "@/lib/membership";
 import { StoreKitMembership, type MembershipProduct, type MembershipTransaction } from "@/lib/nativeMembership";
+
+async function getFunctionErrorMessage(error: unknown) {
+  const fallback = error instanceof Error ? error.message : "Membership activation failed. Please try again.";
+  const context = (error as { context?: unknown })?.context;
+
+  if (context && typeof context === "object" && "text" in context) {
+    const response = context as Response;
+    try {
+      const raw = await response.clone().text();
+      const payload = raw ? JSON.parse(raw) : null;
+      if (payload && typeof payload.error === "string") return payload.error;
+      if (payload && typeof payload.message === "string") return payload.message;
+      if (raw) return raw;
+    } catch (decodeError) {
+      console.warn("[MembershipUpgrade] Could not decode function error body", decodeError);
+      // Supabase already gave us a generic error; keep the fallback below.
+    }
+  }
+
+  return fallback;
+}
 
 const MembershipUpgrade = () => {
   const navigate = useNavigate();
@@ -131,7 +153,14 @@ const MembershipUpgrade = () => {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      const message = await getFunctionErrorMessage(error);
+      console.error("[MembershipUpgrade] activate-ios-membership failed", {
+        message,
+        error,
+      });
+      throw new Error(message);
+    }
 
     // Only finish the StoreKit transaction AFTER the backend has recorded
     // the entitlement. If activation fails, the transaction stays
@@ -143,6 +172,7 @@ const MembershipUpgrade = () => {
       console.warn("[MembershipUpgrade] finishTransaction failed (will retry on next launch)", finishError);
     }
 
+    clearMembershipUiState();
     await refetchProfile();
   }
 

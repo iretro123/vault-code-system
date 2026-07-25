@@ -139,6 +139,65 @@ body.native-capacitor.native-keyboard-open [data-chat-composer-stack] {
   font-variant-emoji: emoji;
 }
 
+.chat-native-emoji-picker,
+.chat-native-emoji-picker input,
+.chat-native-emoji-picker button {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.chat-native-emoji-picker .chat-emoji,
+.chat-native-emoji-button {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif !important;
+  font-weight: 400 !important;
+  font-style: normal;
+  font-variant-emoji: emoji;
+  text-rendering: optimizeLegibility;
+}
+
+.chat-native-emoji-tab {
+  height: 2rem;
+  min-width: 2rem;
+  border-radius: 0.625rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.chat-native-emoji-tab:hover,
+.chat-native-emoji-tab.is-active {
+  background: rgba(59, 130, 246, 0.18);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.chat-native-emoji-button {
+  height: 2rem;
+  width: 2rem;
+  border-radius: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.375rem;
+  line-height: 1;
+  transition: background-color 100ms ease, transform 100ms ease;
+}
+
+.chat-native-emoji-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chat-native-emoji-button:active {
+  transform: scale(0.92);
+}
+
+.chat-emoji-sprite {
+  display: inline-block;
+  background-repeat: no-repeat;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+
 html {
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", sans-serif;
   -webkit-text-size-adjust: 100%;

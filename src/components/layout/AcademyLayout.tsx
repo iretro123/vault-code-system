@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
-import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
+import { GUEST_UPGRADE_BANNER_DISMISSED_KEY, VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 import { cn } from "@/lib/utils";
 
 const ambientBgStyle = {
@@ -36,8 +36,6 @@ const ambientBgStyle = {
     'linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)',
   ].join(', '),
 };
-
-const GUEST_UPGRADE_BANNER_DISMISSED_KEY = "va_guest_upgrade_banner_dismissed";
 
 interface AcademyProfileShape {
   access_status?: string | null;
@@ -140,8 +138,13 @@ function AcademyLayoutInner() {
   //     that don't apply to a video-only membership.
   if (isBasicTier) {
     const path = location.pathname;
+    const isBootcampPage = path === "/academy/bootcamp" || path.startsWith("/academy/bootcamp");
+    const communityTab = new URLSearchParams(location.search).get("tab");
+    const isSignalsGatePage = path.startsWith("/academy/community") && communityTab === "daily-setups";
+    const showAccessBanner = !isBootcampPage && !isSignalsGatePage && (!sharedGuest || !guestBannerDismissed);
     const allowed =
       path === "/academy/learn" || path.startsWith("/academy/learn/") ||
+      path === "/academy/bootcamp" || path.startsWith("/academy/bootcamp") ||
       path === "/academy/community" || path.startsWith("/academy/community") ||
       path === "/academy/settings" || path.startsWith("/academy/settings") ||
       path === "/academy/profile";
@@ -160,7 +163,7 @@ function AcademyLayoutInner() {
               </span>
             </div>
           </header>
-          {(!sharedGuest || !guestBannerDismissed) && <div className="relative max-w-full overflow-hidden border-b border-primary/10 bg-primary/10 px-4 py-3">
+          {showAccessBanner && <div className="relative max-w-full overflow-hidden border-b border-primary/10 bg-primary/10 px-4 py-3">
             {sharedGuest && (
               <button
                 type="button"

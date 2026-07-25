@@ -32,17 +32,19 @@ interface Message {
 }
 
 const PAGE_SIZE = 40;
+const DEFERRED_ROOM_SLUG = "__deferred__";
 
 // ── Global message cache per room (survives remounts) ──
 const roomMessageCache = new Map<string, Message[]>();
 
 export function useRoomMessages(roomSlug: string, _activationKey?: number) {
+  const canUseRoom = Boolean(roomSlug) && roomSlug !== DEFERRED_ROOM_SLUG;
   const { user, profile, userRole } = useAuth();
-  const cachedRef = useRef(roomMessageCache.get(roomSlug));
+  const cachedRef = useRef(canUseRoom ? roomMessageCache.get(roomSlug) : undefined);
   const cached = cachedRef.current;
   const [messages, setMessages] = useState<Message[]>(cached ?? []);
   // If we have cached messages, skip loading state entirely
-  const [loading, setLoading] = useState(!cached);
+  const [loading, setLoading] = useState(canUseRoom && !cached);
   const [hasMore, setHasMore] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,13 +67,21 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
   const updateMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
     setMessages((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      roomMessageCache.set(roomSlug, next);
+      if (canUseRoom) roomMessageCache.set(roomSlug, next);
       return next;
     });
-  }, [roomSlug]);
+  }, [canUseRoom, roomSlug]);
 
   // Initial fetch (background refresh if cached)
   const fetchMessages = useCallback(async () => {
+    if (!canUseRoom) {
+      setMessages([]);
+      setLoading(false);
+      setHasMore(false);
+      setError(null);
+      return;
+    }
+
     if (!cachedRef.current) setLoading(true);
 
     const { data, error: err } = await supabase
@@ -102,11 +112,11 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     setHasMore((data?.length ?? 0) >= PAGE_SIZE);
     oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
     setLoading(false);
-  }, [roomSlug, updateMessages]);
+  }, [canUseRoom, roomSlug, updateMessages]);
 
   // Load older messages
   const loadMore = useCallback(async () => {
-    if (!oldestRef.current) return;
+    if (!canUseRoom || !oldestRef.current) return;
     const { data } = await supabase
       .from("academy_messages")
       .select("*")
@@ -125,7 +135,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     } else {
       setHasMore(false);
     }
-  }, [roomSlug, updateMessages]);
+  }, [canUseRoom, roomSlug, updateMessages]);
 
   // Compute role string for current user
   const computeRole = useCallback(() => {
@@ -140,6 +150,9 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
   // Send message (with optimistic insert)
   const sendMessage = useCallback(
     async (body: string, attachments?: Attachment[]) => {
+      if (!canUseRoom) {
+        return { ok: false, status: 409, error: "room not ready" };
+      }
       if (!user || (!body.trim() && (!attachments || attachments.length === 0))) {
         return { ok: false, status: 400, error: "invalid payload" };
       }
@@ -228,7 +241,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
         body: insertedMessage,
       };
     },
-    [user, profile, roomSlug, computeRole, updateMessages]
+    [canUseRoom, user, profile, roomSlug, computeRole, updateMessages]
   );
 
   // Edit message
@@ -305,25 +318,36 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
   // Initial load — run once per roomSlug
   useEffect(() => {
     hasFetchedRef.current = false;
+    cachedRef.current = canUseRoom ? roomMessageCache.get(roomSlug) : undefined;
+    oldestRef.current = cachedRef.current?.length ? cachedRef.current[0].created_at : null;
   }, [roomSlug]);
 
   useEffect(() => {
+    if (!canUseRoom) {
+      setMessages([]);
+      setLoading(false);
+      setHasMore(false);
+      setError(null);
+      return;
+    }
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
     fetchMessages();
-  }, [fetchMessages]);
+  }, [canUseRoom, fetchMessages]);
 
   // No per-hook visibility listener — useSmartRefresh handles global resume
 
   // Re-fetch when activation key changes (tab re-activated)
   useEffect(() => {
-    if (_activationKey && _activationKey > 0 && hasFetchedRef.current) {
+    if (canUseRoom && _activationKey && _activationKey > 0 && hasFetchedRef.current) {
       fetchMessages();
     }
-  }, [_activationKey, fetchMessages]);
+  }, [canUseRoom, _activationKey, fetchMessages]);
 
   // Realtime subscription
   useEffect(() => {
+    if (!canUseRoom) return;
+
     const channel = supabase
       .channel(`room-${roomSlug}`)
       .on(
@@ -379,7 +403,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomSlug, updateMessages]);
+  }, [canUseRoom, roomSlug, updateMessages]);
 
   return { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage };
 }

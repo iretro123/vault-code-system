@@ -25,6 +25,7 @@ import { isSharedGuestAccount } from "@/lib/membership";
 const AcademyHome = lazyWithRetry(() => import("./pages/academy/AcademyHome"));
 const AcademyLearn = lazyWithRetry(() => import("./pages/academy/AcademyLearn"));
 const AcademyModule = lazyWithRetry(() => import("./pages/academy/AcademyModule"));
+const AcademyBootcamp = lazyWithRetry(() => import("./pages/academy/AcademyBootcamp"));
 const AcademyCommunity = lazyWithRetry(() => import("./pages/academy/AcademyCommunity"));
 const AcademyTrade = lazyWithRetry(() => import("./pages/academy/AcademyTrade"));
 const AcademyRoom = lazyWithRetry(() => import("./pages/academy/AcademyRoom"));
@@ -105,6 +106,7 @@ function BasicTierRedirect({ children }: { children: ReactNode }) {
   const path = location.pathname;
   const allowed =
     path === "/academy/learn" || path.startsWith("/academy/learn/") ||
+    path === "/academy/bootcamp" || path.startsWith("/academy/bootcamp") ||
     path === "/academy/community" || path.startsWith("/academy/community") ||
     path === "/academy/settings" || path.startsWith("/academy/settings") ||
     path === "/academy/profile";
@@ -183,6 +185,7 @@ const App = () => (
               <Route path="start" element={<Navigate to="/academy/home" replace />} />
               <Route path="learn" element={<Suspense fallback={<RouteFallback />}><AcademyLearn /></Suspense>} />
               <Route path="learn/:moduleSlug" element={<Suspense fallback={<RouteFallback />}><AcademyModule /></Suspense>} />
+              <Route path="bootcamp" element={<Suspense fallback={<RouteFallback />}><AcademyBootcamp /></Suspense>} />
               <Route path="community" element={<Suspense fallback={<RouteFallback />}><AcademyCommunity /></Suspense>} />
               <Route path="trade" element={<Suspense fallback={<RouteFallback />}><AcademyTrade /></Suspense>} />
               <Route path="rooms" element={<Navigate to="/academy/community" replace />} />

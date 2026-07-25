@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { RoomChat } from "@/components/academy/RoomChat";
@@ -8,6 +8,10 @@ import { EconomicCalendarTab } from "@/components/academy/community/EconomicCale
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsBasicTier } from "@/hooks/useIsBasicTier";
+import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, BellRing, LockKeyhole, Radio, ShieldCheck } from "lucide-react";
 
 const TABS = [
   { key: "trade-floor", label: "Chat", roomSlug: "trade-floor" },
@@ -22,8 +26,64 @@ function isTabKey(value: string | null): value is TabKey {
   return !!value && TABS.some((tab) => tab.key === value);
 }
 
+function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
+  return (
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-28 pt-7">
+      <div className="relative mx-auto w-full max-w-[29rem] overflow-hidden rounded-[1.55rem] border border-primary/25 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.22),transparent_34%),linear-gradient(145deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] px-5 pb-5 pt-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/25 blur-[60px]" />
+        <div className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-blue-500/10 blur-[70px]" />
+        <div className="relative z-10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-primary/30 bg-primary/15 text-primary shadow-[0_0_34px_rgba(59,130,246,0.26)]">
+            <LockKeyhole className="h-8 w-8" />
+          </div>
+          <p className="mt-5 text-[12px] font-black uppercase tracking-[0.24em] text-primary">
+            Full Access Signals
+          </p>
+          <h2 className="mt-3 text-3xl font-black leading-[1.02] tracking-[-0.055em] text-white">
+            Unlock live trade signals inside Vault OS.
+          </h2>
+          <p className="mx-auto mt-3 max-w-sm text-sm font-medium leading-6 text-slate-300">
+            Signals are part of the full member experience. Upgrade to unlock the live setups room, alerts, lessons, tools, and member-only areas.
+          </p>
+
+          <div className="mt-5 grid gap-2 text-left">
+            {[
+              { icon: Radio, title: "Live setups room", copy: "See the Signals tab when full access is active." },
+              { icon: BellRing, title: "Member alerts", copy: "Get notified when important updates are posted." },
+              { icon: ShieldCheck, title: "Full Vault OS access", copy: "Unlock the paid lessons, tools, live areas, and member sections." },
+            ].map(({ icon: Icon, title, copy }) => (
+              <div key={title} className="flex gap-3 rounded-2xl border border-white/10 bg-black/18 p-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block text-sm font-black text-white">{title}</span>
+                  <span className="mt-0.5 block text-xs leading-5 text-slate-400">{copy}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <Button
+            type="button"
+            onClick={onUpgrade}
+            className="mt-5 h-14 w-full rounded-2xl bg-gradient-to-r from-primary to-blue-600 text-[0.95rem] font-black text-white shadow-[0_16px_34px_rgba(37,99,235,0.34)] hover:from-blue-500 hover:to-primary"
+          >
+            View Full Access - {VAULT_OS_MONTHLY_FALLBACK_PRICE.replace("/month", "/mo")}
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+          <p className="mt-3 text-[11px] font-medium leading-5 text-slate-500">
+            Secure Apple in-app purchase. No web checkout required inside the app.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const AcademyCommunity = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     if (typeof window !== "undefined") {
       const queryTab = new URLSearchParams(window.location.search).get("tab");
@@ -34,14 +94,18 @@ const AcademyCommunity = () => {
   });
   const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
   const canPostRestricted = isCEO || isAdmin || isOperator;
-  const { session } = useAuth();
+  const { session, user, profile, signOut } = useAuth();
+  const { isBasicTier } = useIsBasicTier();
   const userId = session?.user?.id || null;
+  const sharedGuest = isSharedGuestAccount(user, profile);
+  const shouldGateSignals = (isBasicTier || sharedGuest) && !canPostRestricted;
 
   const activeRoomSlug = TABS.find((t) => t.key === activeTab)?.roomSlug || "trade-floor";
   const { counts, markRead } = useUnreadCounts(activeRoomSlug || "trade-floor", userId);
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
     localStorage.setItem("vault_community_tab", tab);
     const slug = TABS.find((t) => t.key === tab)?.roomSlug;
     if (slug) markRead(slug);
@@ -62,6 +126,15 @@ const AcademyCommunity = () => {
     const slug = TABS.find((t) => t.key === queryTab)?.roomSlug;
     if (slug && userId) markRead(slug);
   }, [searchParams, activeTab, userId, markRead]);
+
+  const handleSignalsUpgrade = async () => {
+    if (sharedGuest) {
+      await signOut();
+      navigate("/create-account/full?source=signals", { replace: true });
+      return;
+    }
+    navigate("/membership");
+  };
 
   return (
     <>
@@ -111,7 +184,11 @@ const AcademyCommunity = () => {
               <CommunityTradeFloor onSwitchTab={handleTabChange} active={activeTab === "trade-floor"} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
-              <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} compact />
+              {shouldGateSignals ? (
+                <SignalsUpgradeGate onUpgrade={handleSignalsUpgrade} />
+              ) : (
+                <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} compact />
+              )}
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />

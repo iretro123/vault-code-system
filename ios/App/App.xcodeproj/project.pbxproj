@@ -17,7 +17,19 @@
 		5055B8602E486E6E00C26F2A /* AppViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5055B85F2E486E6E00C26F2A /* AppViewController.swift */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		8A75B6552E3D6E940028A917 /* StoreKitMembershipPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A75B6542E3D6E940028A917 /* StoreKitMembershipPlugin.swift */; };
+		A5EB57BA5239BA54A663E3B3 /* VaultOSPurchaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25FEA8C200F0B4C60304B5B /* VaultOSPurchaseUITests.swift */; };
+		D776F9ECC951B621730E9060 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 580E487D40E7218079BDF80B /* Foundation.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		249514A8886CCE4665C2819D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 504EC3031FED79650016851F;
+			remoteInfo = App;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -30,11 +42,23 @@
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5055B85F2E486E6E00C26F2A /* AppViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppViewController.swift; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		580E487D40E7218079BDF80B /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		8A75B6542E3D6E940028A917 /* StoreKitMembershipPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitMembershipPlugin.swift; sourceTree = "<group>"; };
+		8A75B6562E4B9C310028A917 /* VaultOS.storekit */ = {isa = PBXFileReference; lastKnownFileType = text.storekit; path = VaultOS.storekit; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		C25FEA8C200F0B4C60304B5B /* VaultOSPurchaseUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VaultOSPurchaseUITests.swift; sourceTree = "<group>"; };
+		DE17D82CD8D50D2E9CADFBFF /* VaultOSPurchaseUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = VaultOSPurchaseUITests.xctest; path = VaultOSPurchaseUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		103D9853DEEDFD19AFFE6BDD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D776F9ECC951B621730E9060 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3011FED79650016851F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,12 +70,30 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		057E4FA5560648CEDF433CB7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3EDB3209C31607AD1CB43ECB /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		3EDB3209C31607AD1CB43ECB /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				580E487D40E7218079BDF80B /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
+				057E4FA5560648CEDF433CB7 /* Frameworks */,
+				DBAD257AD22C35E352C46E63 /* VaultOSPurchaseUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -59,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				DE17D82CD8D50D2E9CADFBFF /* VaultOSPurchaseUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +113,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				5055B85F2E486E6E00C26F2A /* AppViewController.swift */,
 				8A75B6542E3D6E940028A917 /* StoreKitMembershipPlugin.swift */,
+				8A75B6562E4B9C310028A917 /* VaultOS.storekit */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -80,9 +124,36 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		DBAD257AD22C35E352C46E63 /* VaultOSPurchaseUITests */ = {
+			isa = PBXGroup;
+			children = (
+				C25FEA8C200F0B4C60304B5B /* VaultOSPurchaseUITests.swift */,
+			);
+			name = VaultOSPurchaseUITests;
+			path = VaultOSPurchaseUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0AB838EC53088274D26AFBEE /* VaultOSPurchaseUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E4547C324561DD4E9E857CD1 /* Build configuration list for PBXNativeTarget "VaultOSPurchaseUITests" */;
+			buildPhases = (
+				C7A990907DCB437C482E7F06 /* Sources */,
+				103D9853DEEDFD19AFFE6BDD /* Frameworks */,
+				39874923B30B097838869068 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B6A15C822C3AD3C9675EAE0D /* PBXTargetDependency */,
+			);
+			name = VaultOSPurchaseUITests;
+			productName = VaultOSPurchaseUITests;
+			productReference = DE17D82CD8D50D2E9CADFBFF /* VaultOSPurchaseUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		504EC3031FED79650016851F /* App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 504EC3161FED79650016851F /* Build configuration list for PBXNativeTarget "App" */;
@@ -116,11 +187,14 @@
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
-						SystemCapabilities = {
-							com.apple.Push = {
-								enabled = 1;
+							SystemCapabilities = {
+								com.apple.InAppPurchase = {
+									enabled = 1;
+								};
+								com.apple.Push = {
+									enabled = 1;
+								};
 							};
-						};
 					};
 				};
 			};
@@ -141,11 +215,19 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				0AB838EC53088274D26AFBEE /* VaultOSPurchaseUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		39874923B30B097838869068 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		504EC3021FED79650016851F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -172,7 +254,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C7A990907DCB437C482E7F06 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5EB57BA5239BA54A663E3B3 /* VaultOSPurchaseUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B6A15C822C3AD3C9675EAE0D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = App;
+			target = 504EC3031FED79650016851F /* App */;
+			targetProxy = 249514A8886CCE4665C2819D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -194,6 +293,24 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		4515400E899679703829E14D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = VaultOSPurchaseUITests;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vaulttradingacademy.vaultos.VaultOSPurchaseUITests;
+				PRODUCT_MODULE_NAME = VaultOSPurchaseUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = App;
+			};
+			name = Debug;
+		};
 		504EC3141FED79650016851F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
@@ -311,7 +428,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 45;
+				CURRENT_PROJECT_VERSION = 48;
 				DEVELOPMENT_TEAM = 42RHPM3U82;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -319,7 +436,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.vaulttradingacademy.vaultos;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -336,7 +453,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 45;
+				CURRENT_PROJECT_VERSION = 48;
 				DEVELOPMENT_TEAM = 42RHPM3U82;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -344,12 +461,31 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.vaulttradingacademy.vaultos;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B9902255AAEE4C9609D2AB39 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = VaultOSPurchaseUITests;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vaulttradingacademy.vaultos.VaultOSPurchaseUITests;
+				PRODUCT_MODULE_NAME = VaultOSPurchaseUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = App;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -370,6 +506,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E4547C324561DD4E9E857CD1 /* Build configuration list for PBXNativeTarget "VaultOSPurchaseUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B9902255AAEE4C9609D2AB39 /* Release */,
+				4515400E899679703829E14D /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

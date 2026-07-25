@@ -1,0 +1,57 @@
+{
+  "identifier" : "E4C2952B-52AE-4D68-8C32-5EF10C4F50D6",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_developerTeamID" : "42RHPM3U82"
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "E3CB6906-0F02-4C71-A7C6-FE57A5468C1E",
+      "localizations" : [
+        {
+          "description" : "Vault OS full access membership",
+          "displayName" : "Vault OS Membership",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Vault OS Membership",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "99.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "3685059092",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access to Vault OS member lessons, tools, live areas, and member-only sections.",
+              "displayName" : "Vault OS Full Access Monthly Clean",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.vaulttradingacademy.vaultos.fullaccess.monthly99v2",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Vault OS Full Access Monthly Clean",
+          "subscriptionGroupID" : "E3CB6906-0F02-4C71-A7C6-FE57A5468C1E",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

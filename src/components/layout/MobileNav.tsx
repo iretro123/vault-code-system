@@ -1,15 +1,21 @@
-import { NavLink, useLocation } from "react-router-dom";
-import { BookOpen, Menu, Home, MessageSquare, Radio } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { BookOpen, Menu, Home, MessageSquare, Radio, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useLiveNow } from "@/hooks/useLiveNow";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
+import { useAuth } from "@/hooks/useAuth";
+import { isSharedGuestAccount } from "@/lib/membership";
+import { isGuestMode } from "@/lib/guestMode";
 
 export function MobileNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { setOpenMobile } = useSidebar();
   const { liveSession } = useLiveNow();
   const { isBasicTier } = useIsBasicTier();
+  const { user, profile } = useAuth();
+  const isLimitedAccessUser = isBasicTier || isSharedGuestAccount(user, profile) || isGuestMode();
   const joinLiveUrl = liveSession?.join_url || "";
   type MobileNavItem = {
     icon: typeof Menu;
@@ -19,10 +25,11 @@ export function MobileNav() {
     liveDot?: boolean;
   };
 
-  const navItems: MobileNavItem[] = isBasicTier
+  const navItems: MobileNavItem[] = isLimitedAccessUser
     ? [
         { icon: Menu, label: "Menu", path: "__menu__" },
         { icon: BookOpen, label: "Learn", path: "/academy/learn" },
+        { icon: GraduationCap, label: "Bootcamp", path: "/academy/bootcamp" },
         { icon: MessageSquare, label: "Chat", path: "/academy/community" },
       ]
     : [
@@ -101,13 +108,14 @@ export function MobileNav() {
     }
 
     return (
-      <NavLink
+      <button
         key={path}
-        to={path}
+        type="button"
+        onClick={() => navigate(path)}
         className="flex w-full items-center justify-center"
       >
         {content}
-      </NavLink>
+      </button>
     );
   };
 

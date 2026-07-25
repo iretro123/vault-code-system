@@ -20,6 +20,7 @@ import {
   EyeOff,
   CalendarCheck,
   LogOut,
+  GraduationCap,
 } from "lucide-react";
 
 import { VaultSearchModal } from "@/components/academy/VaultSearchModal";
@@ -60,6 +61,8 @@ const coreNav = [
   { icon: Sparkles, label: "Ask Coach", path: "__coach__", isCoach: true },
 ];
 
+const bootcampNav = { icon: GraduationCap, label: "Bootcamp", path: "/academy/bootcamp", pageKey: "bootcamp" };
+
 interface SidebarProfileShape {
   avatar_url?: string | null;
   profile_completed?: boolean | null;
@@ -90,9 +93,14 @@ export function AcademySidebar() {
   const { totalUnread } = useUnreadCounts(null, userId);
   const communityBadge = formatBadge(totalUnread);
   const isGuestUser = isSharedGuestAccount(user, profile) || isGuestMode();
+  const isLimitedAccessUser = isBasicTier || isGuestUser;
   const showBasicLogout = isGuestUser || isBasicTier;
-  const navItems = isBasicTier
-    ? coreNav.filter((n) => n.pageKey === "learn" || n.pageKey === "community" || n.path === "/academy/settings")
+  const navItems = isLimitedAccessUser
+    ? [
+        ...coreNav.filter((n) => n.pageKey === "learn"),
+        bootcampNav,
+        ...coreNav.filter((n) => n.pageKey === "community" || n.path === "/academy/settings"),
+      ]
     : coreNav;
 
   const displayName = profile?.display_name || "Trader";
@@ -161,7 +169,7 @@ export function AcademySidebar() {
 
         {/* Search */}
 
-        {!isBasicTier && (
+        {!isLimitedAccessUser && (
         <SidebarGroup className="hidden md:block">
           <SidebarGroupContent>
             <SidebarMenu>

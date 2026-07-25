@@ -35,6 +35,8 @@ import { SignalPostForm } from "./chat/SignalPostForm";
 import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
 import { EmojiPicker } from "./chat/EmojiPicker";
 import { EmojiReactionPicker } from "./chat/EmojiReactionPicker";
+import { EmojiGlyph } from "./chat/EmojiGlyph";
+import { hasAppleEmojiSprite } from "@/lib/appleEmojiSprite";
 import { MessageActionSheet, SheetActionItem } from "./chat/MessageActionSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { GifPicker } from "./chat/GifPicker";
@@ -225,7 +227,7 @@ function renderReactionEmoji(emoji: string, className = "h-3.5 w-3.5") {
   if (!src) {
     const appleEmojiAsset = getAppleEmojiAsset(emoji);
     if (appleEmojiAsset) return <img src={appleEmojiAsset} alt={emoji} className={cn("shrink-0", className)} />;
-    return <span className={cn("chat-emoji leading-none", className)}>{emoji}</span>;
+    return <EmojiGlyph emoji={emoji} className={className} />;
   }
   return <img src={src} alt="" className={cn("shrink-0", className)} />;
 }
@@ -359,10 +361,45 @@ function renderRecapCard(body: string) {
   );
 }
 
+const graphemeSegmenter =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
+
+function splitGraphemes(text: string) {
+  if (graphemeSegmenter) {
+    return Array.from(graphemeSegmenter.segment(text), (segment) => segment.segment);
+  }
+  return Array.from(text);
+}
+
+function renderEmojiText(text: string, keyPrefix: string): React.ReactNode {
+  const nodes: React.ReactNode[] = [];
+  let buffer = "";
+
+  const flush = () => {
+    if (!buffer) return;
+    nodes.push(buffer);
+    buffer = "";
+  };
+
+  splitGraphemes(text).forEach((segment, index) => {
+    if (hasAppleEmojiSprite(segment)) {
+      flush();
+      nodes.push(<EmojiGlyph key={`${keyPrefix}-emoji-${index}`} emoji={segment} className="inline-block h-[1.1em] w-[1.1em]" />);
+    } else {
+      buffer += segment;
+    }
+  });
+
+  flush();
+  return nodes.length === 1 ? nodes[0] : nodes;
+}
+
 function renderMentions(text: string): React.ReactNode {
   // Split on @word patterns and highlight them
   const parts = text.split(/(@\w+)/g);
-  if (parts.length === 1) return text;
+  if (parts.length === 1) return renderEmojiText(text, "plain");
   return parts.map((part, i) => {
     if (/^@\w+/.test(part)) {
       return (
@@ -371,7 +408,7 @@ function renderMentions(text: string): React.ReactNode {
         </span>
       );
     }
-    return part;
+    return renderEmojiText(part, `mention-${i}`);
   });
 }
 

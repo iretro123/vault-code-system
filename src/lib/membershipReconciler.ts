@@ -24,6 +24,27 @@ let listenerInstalled = false;
 let inFlight = new Set<string>();
 let lastReconcileUserId: string | null = null;
 
+async function getFunctionErrorMessage(error: unknown) {
+  const fallback = error instanceof Error ? error.message : "Membership activation failed.";
+  const context = (error as { context?: unknown })?.context;
+
+  if (context && typeof context === "object" && "text" in context) {
+    const response = context as Response;
+    try {
+      const raw = await response.clone().text();
+      const payload = raw ? JSON.parse(raw) : null;
+      if (payload && typeof payload.error === "string") return payload.error;
+      if (payload && typeof payload.message === "string") return payload.message;
+      if (raw) return raw;
+    } catch (decodeError) {
+      console.warn("[membershipReconciler] Could not decode function error body", decodeError);
+      // Keep the SDK fallback if the error body cannot be decoded.
+    }
+  }
+
+  return fallback;
+}
+
 async function activateAndFinish(transaction: MembershipTransaction) {
   const key = transaction.transactionId;
   if (!key || inFlight.has(key)) return;
@@ -56,7 +77,11 @@ async function activateAndFinish(transaction: MembershipTransaction) {
     });
 
     if (error) {
-      console.warn("[membershipReconciler] Activation failed; leaving transaction unfinished", error);
+      const message = await getFunctionErrorMessage(error);
+      console.warn("[membershipReconciler] Activation failed; leaving transaction unfinished", {
+        message,
+        error,
+      });
       return;
     }
 
@@ -108,6 +133,7 @@ export async function reconcileMembershipNow(userId?: string) {
     //    Ask-to-Buy approval that came in while the app was closed.
     const { transactions } = await StoreKitMembership.restorePurchases({
       productIds: [VAULT_OS_MONTHLY_PRODUCT_ID],
+      sync: false,
     });
     for (const tx of transactions) {
       await activateAndFinish(tx);

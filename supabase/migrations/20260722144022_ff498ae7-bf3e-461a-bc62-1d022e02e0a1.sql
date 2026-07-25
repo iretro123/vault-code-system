@@ -10,7 +10,7 @@ DELETE FROM public.user_roles
 INSERT INTO public.user_roles (user_id, role, subscription_status, subscription_started_at, subscription_expires_at)
 VALUES (
   '07616a1a-6f98-418a-b82f-4cda736af9c7',
-  'vault_os_owner',
+  'vault_access',
   'active',
   now(),
   now() + interval '35 days'

@@ -1,10 +1,8 @@
-import { useState, lazy, Suspense } from "react";
+import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SmilePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import data from "@emoji-mart/data";
-
-const Picker = lazy(() => import("@emoji-mart/react"));
+import { NativeEmojiPicker } from "./NativeEmojiPicker";
 
 interface EmojiReactionPickerProps {
   onSelect: (emoji: string) => void;
@@ -24,6 +22,7 @@ export function EmojiReactionPicker({ onSelect, triggerClassName }: EmojiReactio
             triggerClassName
           )}
           title="Add reaction"
+          aria-label="Add reaction"
         >
           <SmilePlus className="h-3.5 w-3.5" />
         </button>
@@ -34,25 +33,12 @@ export function EmojiReactionPicker({ onSelect, triggerClassName }: EmojiReactio
         sideOffset={6}
         className="p-0 border-0 bg-transparent shadow-none w-auto"
       >
-        <Suspense fallback={<div className="w-[352px] h-[435px] rounded-lg bg-[hsl(215,25%,10%)] animate-pulse" />}>
-          <Picker
-            data={data}
-            theme="dark"
-            set="native"
-            navPosition="top"
-            previewPosition="none"
-            skinTonePosition="search"
-            maxFrequentRows={2}
-            perLine={9}
-            emojiSize={22}
-            emojiButtonSize={32}
-            autoFocus
-            onEmojiSelect={(e: { native: string }) => {
-              if (e?.native) onSelect(e.native);
-              setOpen(false);
-            }}
-          />
-        </Suspense>
+        <NativeEmojiPicker
+          onSelect={(emoji) => {
+            onSelect(emoji);
+            setOpen(false);
+          }}
+        />
       </PopoverContent>
     </Popover>
   );

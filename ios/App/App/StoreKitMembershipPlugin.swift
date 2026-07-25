@@ -148,11 +148,14 @@ public class StoreKitMembershipPlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
 
-        CAPLog.print("Vault OS StoreKit restore requested for: \(productIds.joined(separator: ", "))")
+        let shouldSync = call.getBool("sync") ?? true
+        CAPLog.print("Vault OS StoreKit restore requested for: \(productIds.joined(separator: ", ")) sync=\(shouldSync)")
 
         Task {
             do {
-                try await AppStore.sync()
+                if shouldSync {
+                    try await AppStore.sync()
+                }
 
                 var transactions = [[String: Any]]()
                 for await result in Transaction.currentEntitlements {

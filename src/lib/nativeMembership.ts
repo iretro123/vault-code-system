@@ -29,7 +29,7 @@ export interface MembershipTransactionUpdateEvent {
 interface StoreKitMembershipPlugin {
   getProducts(options: { productIds: string[] }): Promise<{ products: MembershipProduct[] }>;
   purchase(options: { productId: string; appAccountToken?: string }): Promise<{ transaction: MembershipTransaction }>;
-  restorePurchases(options: { productIds: string[] }): Promise<{ transactions: MembershipTransaction[] }>;
+  restorePurchases(options: { productIds: string[]; sync?: boolean }): Promise<{ transactions: MembershipTransaction[] }>;
   /** Finalize a StoreKit transaction after the backend confirmed activation. */
   finishTransaction(options: { transactionId: string }): Promise<{ finished: boolean }>;
   /** Re-emit any Transaction.unfinished entries via membershipTransactionUpdate events. */
