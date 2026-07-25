@@ -12,7 +12,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const FULL_ACCESS_ROLE = "vault_os_owner";
+const FULL_ACCESS_ROLE = "vault_access";
 const SHARED_GUEST_EMAIL = "guest@vaulttradingacademy.com";
 const DEFAULT_BUNDLE_ID = "com.vaulttradingacademy.vaultos";
 const DEFAULT_PRODUCT_ID = "com.vaulttradingacademy.vaultos.fullaccess.monthly99v2";
