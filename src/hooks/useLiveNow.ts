@@ -12,6 +12,7 @@ export interface LiveNowSession {
 }
 
 const MAX_LIVE_MINUTES = 120;
+const LIVE_NOW_REFRESH_MS = 30_000;
 
 function isStillLive(session: LiveNowSession) {
   const start = new Date(session.session_date).getTime();
@@ -23,13 +24,6 @@ export function useLiveNow() {
   const [liveSession, setLiveSession] = useState<LiveNowSession | null>(null);
   const [loading, setLoading] = useState(true);
   const initialFetchDone = useRef(false);
-  const channelId = useRef(
-    `live-now-realtime-${
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    }`
-  );
 
   const refresh = useCallback(async () => {
     // Only show loading spinner on very first fetch
@@ -52,30 +46,24 @@ export function useLiveNow() {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    void refresh();
 
-  useEffect(() => {
-    supabase.getChannels().forEach((existingChannel) => {
-      const topic = (existingChannel as { topic?: string }).topic ?? "";
-      if (topic.includes("live-now-realtime")) {
-        void supabase.removeChannel(existingChannel);
+    const intervalId = window.setInterval(() => {
+      void refresh();
+    }, LIVE_NOW_REFRESH_MS);
+
+    const refreshWhenActive = () => {
+      if (document.visibilityState === "visible") {
+        void refresh();
       }
-    });
-
-    const channel = supabase
-      .channel(channelId.current)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "live_sessions" },
-        () => {
-          void refresh();
-        }
-      )
-      .subscribe();
+    };
+    document.addEventListener("visibilitychange", refreshWhenActive);
+    window.addEventListener("focus", refreshWhenActive);
 
     return () => {
-      supabase.removeChannel(channel);
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshWhenActive);
+      window.removeEventListener("focus", refreshWhenActive);
     };
   }, [refresh]);
 
