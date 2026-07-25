@@ -23,6 +23,7 @@ export function useLiveNow() {
   const [liveSession, setLiveSession] = useState<LiveNowSession | null>(null);
   const [loading, setLoading] = useState(true);
   const initialFetchDone = useRef(false);
+  const channelId = useRef(`live-now-realtime-${crypto.randomUUID()}`);
 
   const refresh = useCallback(async () => {
     // Only show loading spinner on very first fetch
@@ -38,7 +39,7 @@ export function useLiveNow() {
     if (session && isStillLive(session)) {
       setLiveSession(session);
     } else {
-    setLiveSession(null);
+      setLiveSession(null);
     }
     initialFetchDone.current = true;
     setLoading(false);
@@ -50,7 +51,7 @@ export function useLiveNow() {
 
   useEffect(() => {
     const channel = supabase
-      .channel("live-now-realtime")
+      .channel(channelId.current)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "live_sessions" },
