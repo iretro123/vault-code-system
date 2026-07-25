@@ -68,7 +68,7 @@ async function fetchAccessState(userId: string): Promise<AccessState> {
 }
 
 export function useStudentAccess() {
-  const { user, profile } = useAuth();
+  const { user, profile, userRole } = useAuth();
   const { isCEO, isAdmin, isCoach, isOperator, resolved: permResolved } = useAcademyPermissions();
   const queryClient = useQueryClient();
   const retryAttemptedRef = useRef(false);
@@ -128,16 +128,17 @@ export function useStudentAccess() {
 
   const adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator);
   const hasBypassAccess = adminBypass || appReviewBypass;
+  const customerRoleAccess = userRole?.role === "vault_access" || userRole?.role === "vault_os_owner";
 
   const refetch = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["student-access", user?.id] });
   }, [queryClient, user?.id]);
 
   return {
-    status: appReviewBypass ? "active" : state.status,
-    tier: appReviewBypass ? "app_review" : state.tier,
-    productKey: appReviewBypass ? "vault_academy" : state.productKey,
-    hasAccess: hasBypassAccess ? true : state.hasAccess,
+    status: appReviewBypass || customerRoleAccess ? "active" : state.status,
+    tier: appReviewBypass ? "app_review" : customerRoleAccess ? userRole.role : state.tier,
+    productKey: appReviewBypass ? "vault_academy" : customerRoleAccess ? "vault_os" : state.productKey,
+    hasAccess: hasBypassAccess || customerRoleAccess ? true : state.hasAccess,
     loading: isLoading || !permResolved,
     error: error?.message ?? null,
     refetch,
