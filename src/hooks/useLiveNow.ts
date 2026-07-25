@@ -23,7 +23,13 @@ export function useLiveNow() {
   const [liveSession, setLiveSession] = useState<LiveNowSession | null>(null);
   const [loading, setLoading] = useState(true);
   const initialFetchDone = useRef(false);
-  const channelId = useRef(`live-now-realtime-${crypto.randomUUID()}`);
+  const channelId = useRef(
+    `live-now-realtime-${
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    }`
+  );
 
   const refresh = useCallback(async () => {
     // Only show loading spinner on very first fetch
@@ -50,6 +56,13 @@ export function useLiveNow() {
   }, [refresh]);
 
   useEffect(() => {
+    supabase.getChannels().forEach((existingChannel) => {
+      const topic = (existingChannel as { topic?: string }).topic ?? "";
+      if (topic.includes("live-now-realtime")) {
+        void supabase.removeChannel(existingChannel);
+      }
+    });
+
     const channel = supabase
       .channel(channelId.current)
       .on(
