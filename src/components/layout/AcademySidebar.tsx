@@ -198,7 +198,8 @@ export function AcademySidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
 
-              {navItems.map(({ icon: Icon, label, path, isLive, isCoach, pageKey }) => {
+              {navItems.map((item: any) => {
+                const { icon: Icon, label, path, isLive, isCoach, pageKey } = item;
                 // Hide disabled pages from non-admin users
                 if (pageKey && !isPageEnabled(pageKey) && (!isAdmin || pageKey === "vault-os")) return null;
                 const hiddenForMembers = pageKey && !isPageEnabled(pageKey) && isAdmin;

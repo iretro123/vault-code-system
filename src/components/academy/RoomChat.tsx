@@ -363,12 +363,12 @@ function renderRecapCard(body: string) {
 
 const graphemeSegmenter =
   typeof Intl !== "undefined" && "Segmenter" in Intl
-    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    ? new (Intl as any).Segmenter(undefined, { granularity: "grapheme" })
     : null;
 
 function splitGraphemes(text: string) {
   if (graphemeSegmenter) {
-    return Array.from(graphemeSegmenter.segment(text), (segment) => segment.segment);
+    return Array.from(graphemeSegmenter.segment(text), (segment: any) => segment.segment as string);
   }
   return Array.from(text);
 }
