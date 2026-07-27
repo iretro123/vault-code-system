@@ -38,7 +38,13 @@ const Auth = () => {
   }, []);
 
   const [mode, setMode] = useState<"login" | "forgot">("login");
-  const [email, setEmail] = useState("");
+  const REMEMBER_KEY = "vaultos:remembered_email";
+  const [email, setEmail] = useState(() => {
+    try { return localStorage.getItem(REMEMBER_KEY) || ""; } catch { return ""; }
+  });
+  const [rememberMe, setRememberMe] = useState(() => {
+    try { return !!localStorage.getItem(REMEMBER_KEY); } catch { return false; }
+  });
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
