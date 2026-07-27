@@ -192,6 +192,10 @@ const Auth = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-12 pl-10 bg-muted/50 border-border/40 rounded-xl text-sm"
                     required
+                    autoComplete="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
                   />
                 </div>
 
@@ -206,6 +210,7 @@ const Auth = () => {
                     className="h-12 pl-10 pr-11 bg-muted/50 border-border/40 rounded-xl text-sm"
                     required
                     minLength={8}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
@@ -217,8 +222,27 @@ const Auth = () => {
                   </button>
                 </div>
 
-                {/* Forgot password */}
-                <div className="text-right">
+                {/* Remember me + Forgot password */}
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setRememberMe(next);
+                        try {
+                          if (!next) localStorage.removeItem(REMEMBER_KEY);
+                          else if (email.trim()) localStorage.setItem(REMEMBER_KEY, email.trim().toLowerCase());
+                        } catch { /* ignore */ }
+                      }}
+                      className="h-4 w-4 rounded border-border/60 bg-muted/50 text-primary focus:ring-1 focus:ring-primary/50 cursor-pointer"
+                      aria-label="Remember me on this device"
+                    />
+                    <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                      Remember me
+                    </span>
+                  </label>
                   <button type="button" onClick={() => setMode("forgot")} className="text-xs text-muted-foreground hover:text-primary transition-colors">
                     Forgot password?
                   </button>
