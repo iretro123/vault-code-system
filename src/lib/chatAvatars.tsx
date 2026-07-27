@@ -11,17 +11,25 @@ function withAlpha(hsl: string, alpha: number): string {
 const loadedImages = new Set<string>();
 
 export interface ParsedAvatar {
-  mode: "initials" | "icon" | "image";
+  mode: "initials" | "icon" | "image" | "vault";
   color: string;
   iconId?: string;
   imageUrl?: string;
 }
 
+const VAULT_BRAND_COLOR = "hsl(217, 91%, 60%)";
+
 export function parseAvatarUrl(avatarUrl: string | null | undefined): ParsedAvatar {
-  if (!avatarUrl) return { mode: "initials", color: DEFAULT_COLOR };
+  // Branded Vault default when no avatar is set
+  if (!avatarUrl) return { mode: "vault", color: VAULT_BRAND_COLOR };
 
   if (avatarUrl.startsWith("http")) {
     return { mode: "image", imageUrl: avatarUrl, color: DEFAULT_COLOR };
+  }
+
+  if (avatarUrl === "vault" || avatarUrl.startsWith("vault:")) {
+    const color = avatarUrl.includes(":") ? avatarUrl.split(":")[1] || VAULT_BRAND_COLOR : VAULT_BRAND_COLOR;
+    return { mode: "vault", color };
   }
 
   if (avatarUrl.startsWith("icon:")) {
