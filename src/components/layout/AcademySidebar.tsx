@@ -282,22 +282,6 @@ export function AcademySidebar() {
                 );
               })}
 
-              {showBasicLogout && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <button
-                      type="button"
-                      onClick={handleGuestLogout}
-                      className="group/nav relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[#8B949E] transition-colors duration-150 hover:bg-[#131922] hover:text-[#E6EDF3]"
-                    >
-                      <span className="relative flex items-center gap-2.5">
-                        <LogOut className="h-4 w-4 shrink-0" style={{ strokeWidth: 1.8 }} />
-                        {!collapsed && <span className="text-sm">Log out</span>}
-                      </span>
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
