@@ -3395,6 +3395,10 @@ export type Database = {
       nightly_memory_aggregation: { Args: never; Returns: undefined }
       notify_live_now: { Args: never; Returns: undefined }
       promote_to_ceo: { Args: { target_user_id: string }; Returns: undefined }
+      register_device_token: {
+        Args: { _platform?: string; _token: string }
+        Returns: undefined
+      }
       set_account_balance: {
         Args: { _balance: number; _user_id: string }
         Returns: {
