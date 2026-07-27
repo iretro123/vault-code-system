@@ -56,13 +56,20 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await signIn(email, password);
+    const normalizedEmail = email.trim().toLowerCase();
+    const result = await signIn(normalizedEmail, password);
 
     if (result.error) {
       toast({ title: "Error", description: result.error.message, variant: "destructive" });
       setLoading(false);
       return;
     }
+
+    // Persist only the normalized email locally (never the password).
+    try {
+      if (rememberMe) localStorage.setItem(REMEMBER_KEY, normalizedEmail);
+      else localStorage.removeItem(REMEMBER_KEY);
+    } catch { /* ignore storage errors */ }
 
     // useAuth's onAuthStateChange handles profile fetch + ban enforcement
     toast({ title: "Welcome back", description: "You have been signed in." });
