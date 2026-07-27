@@ -76,7 +76,7 @@ export async function ensureProfile(
       discipline_score: 0,
       timezone: detectedTz,
       phone_number: opts?.phone_number || null,
-      avatar_url: randomAvatarUrl(),
+      avatar_url: defaultVaultAvatar(),
     });
 
     if (insertError) {
@@ -91,7 +91,7 @@ export async function ensureProfile(
           discipline_score: 0,
           timezone: detectedTz,
           phone_number: opts?.phone_number || null,
-          avatar_url: randomAvatarUrl(),
+          avatar_url: defaultVaultAvatar(),
         });
       } else {
         console.error("Error creating profile:", insertError);
