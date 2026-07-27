@@ -104,6 +104,24 @@ style={{ backgroundColor: withAlpha(parsed.color, 0.2), color: parsed.color }}
     );
   }
 
+  if (parsed.mode === "vault") {
+    return (
+      <div
+        className={`${size} rounded-full flex items-center justify-center shrink-0 font-black tracking-tight`}
+        style={{
+          background: `linear-gradient(135deg, ${withAlpha(parsed.color, 0.28)}, ${withAlpha(parsed.color, 0.12)})`,
+          color: parsed.color,
+          border: `1px solid ${withAlpha(parsed.color, 0.35)}`,
+        }}
+        aria-label="Vault member"
+      >
+        <svg viewBox="0 0 24 24" className="h-1/2 w-1/2" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 5 L12 20 L20 5" />
+        </svg>
+      </div>
+    );
+  }
+
   // Initials mode
   return (
     <div
