@@ -11,17 +11,25 @@ function withAlpha(hsl: string, alpha: number): string {
 const loadedImages = new Set<string>();
 
 export interface ParsedAvatar {
-  mode: "initials" | "icon" | "image";
+  mode: "initials" | "icon" | "image" | "vault";
   color: string;
   iconId?: string;
   imageUrl?: string;
 }
 
+const VAULT_BRAND_COLOR = "hsl(217, 91%, 60%)";
+
 export function parseAvatarUrl(avatarUrl: string | null | undefined): ParsedAvatar {
-  if (!avatarUrl) return { mode: "initials", color: DEFAULT_COLOR };
+  // Branded Vault default when no avatar is set
+  if (!avatarUrl) return { mode: "vault", color: VAULT_BRAND_COLOR };
 
   if (avatarUrl.startsWith("http")) {
     return { mode: "image", imageUrl: avatarUrl, color: DEFAULT_COLOR };
+  }
+
+  if (avatarUrl === "vault" || avatarUrl.startsWith("vault:")) {
+    const color = avatarUrl.includes(":") ? avatarUrl.split(":")[1] || VAULT_BRAND_COLOR : VAULT_BRAND_COLOR;
+    return { mode: "vault", color };
   }
 
   if (avatarUrl.startsWith("icon:")) {
@@ -92,6 +100,24 @@ export function ChatAvatar({
 style={{ backgroundColor: withAlpha(parsed.color, 0.2), color: parsed.color }}
       >
         {AVATAR_ICONS_MAP[parsed.iconId]}
+      </div>
+    );
+  }
+
+  if (parsed.mode === "vault") {
+    return (
+      <div
+        className={`${size} rounded-full flex items-center justify-center shrink-0 font-black tracking-tight`}
+        style={{
+          background: `linear-gradient(135deg, ${withAlpha(parsed.color, 0.28)}, ${withAlpha(parsed.color, 0.12)})`,
+          color: parsed.color,
+          border: `1px solid ${withAlpha(parsed.color, 0.35)}`,
+        }}
+        aria-label="Vault member"
+      >
+        <svg viewBox="0 0 24 24" className="h-1/2 w-1/2" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 5 L12 20 L20 5" />
+        </svg>
       </div>
     );
   }

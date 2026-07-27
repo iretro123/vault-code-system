@@ -1,18 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const ICON_IDS = ["diamond","circles","hexagon","triangle","bars","cross","shield","sword","crown","lightning","controller","candle","target","rocket","bull","star","wave","grid","ring","eye","flame"];
-const AVATAR_COLORS = ["hsl(220, 70%, 55%)","hsl(260, 65%, 55%)","hsl(340, 65%, 55%)","hsl(160, 60%, 45%)","hsl(30, 80%, 55%)","hsl(190, 70%, 50%)","hsl(0, 70%, 55%)","hsl(280, 60%, 60%)"];
-
 interface ProfileUpdatePayload {
   display_name?: string;
   username?: string;
   phone_number?: string;
 }
 
-function randomAvatarUrl(): string {
-  const icon = ICON_IDS[Math.floor(Math.random() * ICON_IDS.length)];
-  const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
-  return `icon:${icon}|${color}`;
+/** Branded Vault default avatar for new profiles — clean identity, not random. */
+function defaultVaultAvatar(): string {
+  return "vault:hsl(217, 91%, 60%)";
 }
 
 /**
@@ -80,7 +76,7 @@ export async function ensureProfile(
       discipline_score: 0,
       timezone: detectedTz,
       phone_number: opts?.phone_number || null,
-      avatar_url: randomAvatarUrl(),
+      avatar_url: defaultVaultAvatar(),
     });
 
     if (insertError) {
@@ -95,7 +91,7 @@ export async function ensureProfile(
           discipline_score: 0,
           timezone: detectedTz,
           phone_number: opts?.phone_number || null,
-          avatar_url: randomAvatarUrl(),
+          avatar_url: defaultVaultAvatar(),
         });
       } else {
         console.error("Error creating profile:", insertError);
