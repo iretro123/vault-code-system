@@ -34,22 +34,34 @@ function normalizePlatform(rawPlatform: string | null | undefined): { basePlatfo
 }
 
 function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
+  // Sort newest first so we always keep the most recently seen row
   const sorted = [...rows].sort((a, b) => {
     const at = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
     const bt = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
     return bt - at;
   });
-  const seen = new Set<string>();
+  const seenTokens = new Set<string>();
+  const seenDevices = new Set<string>();
   const out: DeviceTokenRow[] = [];
   for (const r of sorted) {
+    const token = (r.token || "").trim();
+    if (!token) continue; // skip empty tokens
+    if (seenTokens.has(token)) continue; // skip exact duplicate token values
     const { basePlatform, deviceKey } = normalizePlatform(r.platform);
-    const key = `${r.user_id || ""}|${basePlatform}|${deviceKey}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    // When we have a physical device id (ios:<id> / android:<id>), dedupe across
+    // user_ids so one phone gets a single push even if stale rows exist from
+    // guest/free/admin account switches.
+    if (deviceKey) {
+      const devKey = `${basePlatform}|${deviceKey}`;
+      if (seenDevices.has(devKey)) continue;
+      seenDevices.add(devKey);
+    }
+    seenTokens.add(token);
     out.push(r);
   }
   return out;
 }
+
 
 type FcmResult = {
   error?: string;
