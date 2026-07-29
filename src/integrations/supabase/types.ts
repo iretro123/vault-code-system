@@ -3453,6 +3453,10 @@ export type Database = {
           success: boolean
         }[]
       }
+      unregister_device_token: {
+        Args: { _platform?: string }
+        Returns: undefined
+      }
       update_vault_risk_mode: {
         Args: { _risk_mode: string; _user_id: string }
         Returns: {
