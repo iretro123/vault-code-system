@@ -65,6 +65,26 @@ Deno.serve(async (req) => {
       }
     }
 
+    // --- 0. Check admin whitelist (allowed_signups) — pre-authorized emails ---
+    try {
+      const { data: whitelisted, error: whitelistErr } = await adminClient
+        .from("allowed_signups")
+        .select("email")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+      if (whitelistErr) {
+        console.warn("[check-membership] allowed_signups lookup error:", whitelistErr.message);
+      } else if (whitelisted) {
+        console.log("[check-membership] Whitelist MATCH (allowed_signups):", normalizedEmail);
+        return new Response(
+          JSON.stringify({ found: true, status: "whitelisted" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } catch (wlErr) {
+      console.warn("[check-membership] allowed_signups check threw:", wlErr);
+    }
+
     // --- 1. Check Stripe customers: only active/trialing subscriptions qualify ---
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (stripeKey) {
