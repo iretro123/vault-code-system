@@ -363,6 +363,7 @@ serve(async (req) => {
       JSON.stringify({
         scanned: access.length, updated, no_stripe: noStripe,
         skipped_protected: skippedProtected, skipped_lookup_failed: skippedLookupFailed,
+        orphans_scanned: orphansScanned, orphans_revoked: orphansRevoked, orphans_skipped: orphansSkipped,
         dry_run: dryRun, changes,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
