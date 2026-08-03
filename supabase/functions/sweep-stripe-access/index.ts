@@ -92,11 +92,9 @@ serve(async (req) => {
     if (fetchErr) throw fetchErr;
     const access = (rows || []) as (AccessRow & { updated_at: string })[];
 
-    if (access.length === 0) {
-      return new Response(JSON.stringify({ scanned: 0, updated: 0, dry_run: dryRun, changes: [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // NOTE: no early return here — the orphan pass below must still run even when
+    // there are no student_access rows to sweep.
+
 
 
     const studentIds = access.map((r) => r.user_id);
