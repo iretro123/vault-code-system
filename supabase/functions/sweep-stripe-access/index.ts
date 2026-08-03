@@ -92,11 +92,9 @@ serve(async (req) => {
     if (fetchErr) throw fetchErr;
     const access = (rows || []) as (AccessRow & { updated_at: string })[];
 
-    if (access.length === 0) {
-      return new Response(JSON.stringify({ scanned: 0, updated: 0, dry_run: dryRun, changes: [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // NOTE: no early return here — the orphan pass below must still run even when
+    // there are no student_access rows to sweep.
+
 
 
     const studentIds = access.map((r) => r.user_id);
@@ -255,14 +253,117 @@ serve(async (req) => {
       }
     }
 
+    // ---------------------------------------------------------------------
+    // PASS 2 — ORPHAN ACCOUNTS
+    // Profiles still marked access_status='active' that have NO vault_academy
+    // student_access row at all. These were invisible to pass 1, so a churned
+    // member could keep member-level visibility forever. We only revoke when we
+    // are certain: no membership row, no active Stripe sub, not whitelisted,
+    // not staff, not protected.
+    // ---------------------------------------------------------------------
+    let orphansScanned = 0;
+    let orphansRevoked = 0;
+    let orphansSkipped = 0;
 
+    const { data: activeProfiles } = await admin
+      .from("profiles")
+      .select("user_id, email")
+      .eq("access_status", "active")
+      .limit(limit);
 
-    log("DONE", { scanned: access.length, updated, noStripe, skippedProtected, skippedLookupFailed, dryRun });
+    const candidates = (activeProfiles || []).filter((p) => !!p.user_id);
+
+    if (candidates.length > 0) {
+      const ids = candidates.map((p) => p.user_id as string);
+
+      const [{ data: accessAll }, { data: whitelist }, { data: staffRoles }] = await Promise.all([
+        admin.from("student_access").select("user_id, status, is_lifetime").in("user_id", ids),
+        admin.from("allowed_signups").select("email"),
+        admin.from("user_roles").select("user_id, role").in("user_id", ids),
+      ]);
+
+      const hasAccessRow = new Set((accessAll || []).map((r) => r.user_id));
+      const whitelisted = new Set(
+        (whitelist || []).map((w) => (w.email || "").trim().toLowerCase()).filter(Boolean),
+      );
+      const staff = new Set(
+        (staffRoles || [])
+          .filter((r) => ["operator", "vault_os_owner", "admin"].includes(String(r.role)))
+          .map((r) => r.user_id),
+      );
+
+      for (const p of candidates) {
+        const uid = p.user_id as string;
+        const email = (p.email || "").trim().toLowerCase() || null;
+
+        if (hasAccessRow.has(uid)) continue; // handled by pass 1
+        orphansScanned++;
+
+        if (staff.has(uid) || (email && (protectedEmails.has(email) || whitelisted.has(email)))) {
+          orphansSkipped++;
+          changes.push({ user_id: uid, email, result: "orphan_skipped_protected" });
+          continue;
+        }
+
+        if (!email) {
+          orphansSkipped++;
+          changes.push({ user_id: uid, email, result: "orphan_skipped_no_email" });
+          continue;
+        }
+
+        // Does Stripe know them with a live subscription?
+        let stripeOk = false;
+        let lookupFailed = false;
+        try {
+          const list = await stripe.customers.list({ email, limit: 3 });
+          for (const c of list.data) {
+            const subs = await stripe.subscriptions.list({ customer: c.id, status: "all", limit: 5 });
+            if (subs.data.some((s) => ["active", "trialing", "past_due", "unpaid", "incomplete"].includes(s.status))) {
+              stripeOk = true;
+              break;
+            }
+          }
+        } catch (e) {
+          lookupFailed = true;
+          log("orphan_stripe_lookup_failed", { email, error: (e as Error).message });
+        }
+
+        if (lookupFailed || stripeOk) {
+          // SAFETY: never revoke on an API error or when a live sub exists.
+          orphansSkipped++;
+          changes.push({
+            user_id: uid, email,
+            result: lookupFailed ? "orphan_stripe_lookup_error" : "orphan_has_stripe_sub",
+          });
+          continue;
+        }
+
+        changes.push({ user_id: uid, email, from: "active", to: "revoked", result: "orphan_revoked" });
+
+        if (!dryRun) {
+          await admin.from("profiles").update({ access_status: "revoked", updated_at: new Date().toISOString() }).eq("user_id", uid);
+          await admin.from("audit_logs").insert({
+            admin_id: actorId ?? "00000000-0000-0000-0000-000000000000",
+            target_user_id: uid,
+            action: isCron ? "sweep_orphan_access_cron" : "sweep_orphan_access",
+            metadata: { previous_status: "active", new_status: "revoked", target_email: email, reason: "no_membership_row_and_no_stripe_subscription" },
+          });
+          orphansRevoked++;
+        }
+      }
+    }
+
+    log("DONE", {
+      scanned: access.length, updated, noStripe, skippedProtected, skippedLookupFailed,
+      orphansScanned, orphansRevoked, orphansSkipped, dryRun,
+    });
+
 
     return new Response(
       JSON.stringify({
         scanned: access.length, updated, no_stripe: noStripe,
         skipped_protected: skippedProtected, skipped_lookup_failed: skippedLookupFailed,
+        orphans_scanned: orphansScanned, orphans_revoked: orphansRevoked, orphans_skipped: orphansSkipped,
         dry_run: dryRun, changes,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
