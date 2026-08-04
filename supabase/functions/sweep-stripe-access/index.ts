@@ -276,13 +276,28 @@ serve(async (req) => {
     if (candidates.length > 0) {
       const ids = candidates.map((p) => p.user_id as string);
 
+      // CRITICAL: student_access.user_id references students.id, NOT the auth user id.
+      // Map auth uid -> students.id first, otherwise every paying member looks like an orphan.
+      const { data: studentRows } = await admin
+        .from("students")
+        .select("id, auth_user_id")
+        .in("auth_user_id", ids);
+      const authToStudent = new Map<string, string>(
+        (studentRows || [])
+          .filter((s) => !!s.auth_user_id)
+          .map((s) => [s.auth_user_id as string, s.id as string]),
+      );
+      const studentRowIds = Array.from(authToStudent.values());
+
       const [{ data: accessAll }, { data: whitelist }, { data: staffRoles }] = await Promise.all([
-        admin.from("student_access").select("user_id, status, is_lifetime").in("user_id", ids),
+        studentRowIds.length
+          ? admin.from("student_access").select("user_id, status, is_lifetime").in("user_id", studentRowIds)
+          : Promise.resolve({ data: [] as { user_id: string }[] }),
         admin.from("allowed_signups").select("email"),
         admin.from("user_roles").select("user_id, role").in("user_id", ids),
       ]);
 
-      const hasAccessRow = new Set((accessAll || []).map((r) => r.user_id));
+      const accessStudentIds = new Set((accessAll || []).map((r) => r.user_id));
       const whitelisted = new Set(
         (whitelist || []).map((w) => (w.email || "").trim().toLowerCase()).filter(Boolean),
       );
@@ -296,7 +311,9 @@ serve(async (req) => {
         const uid = p.user_id as string;
         const email = (p.email || "").trim().toLowerCase() || null;
 
-        if (hasAccessRow.has(uid)) continue; // handled by pass 1
+        const studentId = authToStudent.get(uid);
+        if (studentId && accessStudentIds.has(studentId)) continue; // handled by pass 1
+
         orphansScanned++;
 
         if (staff.has(uid) || (email && (protectedEmails.has(email) || whitelisted.has(email)))) {
