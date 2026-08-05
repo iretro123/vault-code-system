@@ -179,6 +179,7 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     aps: {
       alert: { title: notif.title, body: notif.body },
       sound: "default",
+      badge: 1,
       category: notif.category,
       "thread-id": notif.threadId,
     },
