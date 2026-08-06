@@ -40,22 +40,22 @@ function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
     const bt = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
     return bt - at;
   });
+  const seenLogicalDevices = new Set<string>();
   const seenTokens = new Set<string>();
-  const seenDevices = new Set<string>();
   const out: DeviceTokenRow[] = [];
   for (const r of sorted) {
-    const token = (r.token || "").trim();
-    if (!token) continue; // skip empty tokens
-    if (seenTokens.has(token)) continue; // skip exact duplicate token values
+    const token = String(r.token || "").trim();
+    if (!token) continue;
+    if (seenTokens.has(token)) continue;
+
     const { basePlatform, deviceKey } = normalizePlatform(r.platform);
-    // When we have a physical device id (ios:<id> / android:<id>), dedupe across
-    // user_ids so one phone gets a single push even if stale rows exist from
-    // guest/free/admin account switches.
-    if (deviceKey) {
-      const devKey = `${basePlatform}|${deviceKey}`;
-      if (seenDevices.has(devKey)) continue;
-      seenDevices.add(devKey);
-    }
+    // A single iPhone can move from guest -> free -> paid/admin. Broadcast pushes
+    // must still hit that physical install once, not once per stale account row.
+    const logicalKey = deviceKey
+      ? `${basePlatform}|${deviceKey}`
+      : `${r.user_id || ""}|${basePlatform}|${token}`;
+    if (seenLogicalDevices.has(logicalKey)) continue;
+    seenLogicalDevices.add(logicalKey);
     seenTokens.add(token);
     out.push(r);
   }

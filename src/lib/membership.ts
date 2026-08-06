@@ -10,6 +10,7 @@ export const VAULT_OS_TERMS_PATH = "/terms-of-use";
 export const VAULT_OS_PRIVACY_POLICY_URL = `${VAULT_OS_SITE_URL}${VAULT_OS_PRIVACY_POLICY_PATH}`;
 export const VAULT_OS_TERMS_URL = `${VAULT_OS_SITE_URL}${VAULT_OS_TERMS_PATH}`;
 export const GUEST_UPGRADE_BANNER_DISMISSED_KEY = "va_guest_upgrade_banner_dismissed";
+export const BASIC_UPGRADE_BANNER_DISMISSED_KEY = "va_basic_upgrade_banner_dismissed_session";
 
 function resolveAppUrl(path: string) {
   return `${VAULT_OS_SITE_URL}${path}`;
@@ -35,6 +36,9 @@ export function isSharedGuestAccount(user: User | null | undefined, profile?: Pr
 export function clearMembershipUiState() {
   try {
     localStorage.removeItem(GUEST_UPGRADE_BANNER_DISMISSED_KEY);
+    sessionStorage.removeItem(GUEST_UPGRADE_BANNER_DISMISSED_KEY);
+    sessionStorage.removeItem(BASIC_UPGRADE_BANNER_DISMISSED_KEY);
+    sessionStorage.removeItem(`${BASIC_UPGRADE_BANNER_DISMISSED_KEY}:home`);
     sessionStorage.removeItem("va_guest_mode");
   } catch {
     void 0;

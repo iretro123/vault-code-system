@@ -8,13 +8,21 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import vaultVLogo from "@/assets/vault-v-logo.png";
 
 export const VAULT_BOOTCAMP_URL = "https://vaulttradingacademy.com/optin-6";
 
 export default function AcademyBootcamp() {
+  const navigate = useNavigate();
   const openBootcamp = () => openExternalUrl(VAULT_BOOTCAMP_URL);
-  const goBack = () => window.history.back();
+  const goBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate("/academy/community?tab=trade-floor", { replace: true });
+  };
 
   return (
     <div className="min-h-full overflow-x-hidden bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.18),transparent_34%),linear-gradient(180deg,#03070d_0%,#050911_52%,#030508_100%)] px-4 pb-28 pt-4 text-white md:px-8 md:pb-12">

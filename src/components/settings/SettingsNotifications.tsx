@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useUserPreferences, type AlertChannel } from "@/hooks/useUserPreferences";
 import { cn } from "@/lib/utils";
-import { Bell, Mail, Smartphone } from "lucide-react";
+import { Bell, CheckCircle2, Mail, Smartphone, TriangleAlert } from "lucide-react";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 const TOGGLES = [
@@ -27,6 +30,7 @@ const CHANNEL_OPTIONS: { value: AlertChannel; label: string; icon: typeof Bell; 
 export function SettingsNotifications() {
   const { prefs, loading, updatePrefs } = useUserPreferences();
   const { requestIfNeeded: requestOSPermission } = useOSNotifications();
+  const [nativePermission, setNativePermission] = useState<string | null>(null);
   const [values, setValues] = useState<Record<ToggleKey, boolean>>({
     notifications_enabled: true,
     sounds_enabled: true,
@@ -51,11 +55,42 @@ export function SettingsNotifications() {
     }
   }, [prefs]);
 
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let cancelled = false;
+    PushNotifications.checkPermissions()
+      .then((status) => {
+        if (!cancelled) setNativePermission(status.receive);
+      })
+      .catch(() => {
+        if (!cancelled) setNativePermission("unknown");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const requestNativePush = async () => {
+    if (!Capacitor.isNativePlatform()) {
+      await requestOSPermission();
+      return;
+    }
+    const request = await PushNotifications.requestPermissions();
+    setNativePermission(request.receive);
+    if (request.receive === "granted") {
+      await PushNotifications.register();
+    }
+  };
+
   const handleToggle = async (key: ToggleKey, checked: boolean) => {
     setValues((v) => ({ ...v, [key]: checked }));
     await updatePrefs({ [key]: checked });
     if (key === "notifications_enabled" && checked) {
-      await requestOSPermission();
+      if (Capacitor.isNativePlatform()) {
+        await requestNativePush();
+      } else {
+        await requestOSPermission();
+      }
     }
   };
 
@@ -72,6 +107,42 @@ export function SettingsNotifications() {
 
   return (
     <div className="space-y-4">
+      {Capacitor.isNativePlatform() && (
+        <Card className="vault-card p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className={cn(
+              "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+              nativePermission === "granted" ? "bg-emerald-500/10 text-emerald-300" : "bg-primary/10 text-primary"
+            )}>
+              {nativePermission === "granted" ? <CheckCircle2 className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-foreground">iPhone Push Alerts</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {nativePermission === "granted"
+                  ? "This device is allowed to receive Vault OS alerts."
+                  : nativePermission === "denied"
+                    ? "Notifications are blocked in iPhone Settings. Turn them on for Vault OS to receive alerts."
+                    : "Allow iPhone notifications so mentions, signals, and important updates can reach you outside the app."}
+              </p>
+            </div>
+          </div>
+
+          {nativePermission !== "granted" && (
+            <Button onClick={requestNativePush} className="w-full">
+              Enable iPhone Alerts
+            </Button>
+          )}
+
+          {nativePermission === "denied" && (
+            <div className="flex gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100">
+              <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>Open iPhone Settings → Vault OS → Notifications, then enable Allow Notifications.</span>
+            </div>
+          )}
+        </Card>
+      )}
+
       <Card className="vault-card p-5 space-y-5">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Notifications</h3>

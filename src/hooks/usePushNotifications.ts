@@ -38,11 +38,57 @@ interface PushReceivedNotification {
   };
 }
 
+async function registerTokenForCurrentUser(params: {
+  token: string;
+  userId: string;
+  platformKey: string;
+  basePlatform: string;
+}) {
+  const { token, userId, platformKey, basePlatform } = params;
+
+  const { error: rpcError } = await supabase.rpc("register_device_token", {
+    _token: token,
+    _platform: platformKey,
+  });
+
+  if (!rpcError) return;
+
+  console.warn("register_device_token RPC failed, falling back to direct token upsert", rpcError);
+
+  await supabase
+    .from("device_tokens")
+    .upsert({
+      user_id: userId,
+      token,
+      platform: platformKey,
+      last_seen_at: new Date().toISOString(),
+    }, { onConflict: "token" });
+
+  // Replace legacy plain-platform rows and stale rows for this exact device
+  // so one physical device does not keep generating duplicate pushes.
+  await supabase
+    .from("device_tokens")
+    .delete()
+    .eq("user_id", userId)
+    .eq("platform", platformKey)
+    .neq("token", token);
+
+  if (platformKey !== basePlatform) {
+    await supabase
+      .from("device_tokens")
+      .delete()
+      .eq("user_id", userId)
+      .eq("platform", basePlatform)
+      .neq("token", token);
+  }
+}
+
 export function usePushNotifications() {
   const { user } = useAuth();
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     if (!isNativePlatform()) return;
 
     let active = true;
@@ -82,33 +128,13 @@ export function usePushNotifications() {
             console.info("Push registration token received", String(token?.value || "").slice(0, 18));
             const platformKey = await getPlatformKey();
             const basePlatform = Capacitor.getPlatform();
-            await supabase
-              .from("device_tokens")
-              .upsert({
-                user_id: user.id,
-                token: token.value,
-                platform: platformKey,
-                last_seen_at: new Date().toISOString(),
-              }, { onConflict: "token" });
-
-            // Replace legacy plain-platform rows and stale rows for this exact device
-            // so one physical device does not keep generating duplicate pushes.
-            await supabase
-              .from("device_tokens")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("platform", platformKey)
-              .neq("token", token.value);
-
-            if (platformKey !== basePlatform) {
-              await supabase
-                .from("device_tokens")
-                .delete()
-                .eq("user_id", user.id)
-                .eq("platform", basePlatform)
-                .neq("token", token.value);
-            }
-            console.info("Push token saved for user", user.id);
+            await registerTokenForCurrentUser({
+              token: token.value,
+              userId,
+              platformKey,
+              basePlatform,
+            });
+            console.info("Push token saved for user", userId);
           } catch (err) {
             console.warn("Failed to save push token", err);
           }
@@ -146,5 +172,5 @@ export function usePushNotifications() {
       active = false;
       void removeListeners();
     };
-  }, [user?.id]);
+  }, [userId]);
 }

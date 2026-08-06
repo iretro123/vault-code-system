@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/hooks/useAuth";
 
 /**
@@ -13,8 +14,18 @@ import { useAuth } from "@/hooks/useAuth";
 // Dedupe: track notification IDs already shown this session
 const shownIds = new Set<string>();
 
+function isNativePlatform(): boolean {
+  if (typeof window === "undefined") return false;
+  if (Capacitor.isNativePlatform()) return true;
+  if (window.location?.protocol === "capacitor:") return true;
+  return /Capacitor/i.test(navigator.userAgent);
+}
+
 /** Feature-detect browser Notification API */
 function isSupported(): boolean {
+  // Native iOS/Android already receive APNs/FCM through Capacitor. Allowing the
+  // browser Notification API inside WKWebView can create duplicate foreground alerts.
+  if (isNativePlatform()) return false;
   return typeof window !== "undefined" && "Notification" in window;
 }
 

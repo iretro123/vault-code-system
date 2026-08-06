@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { ensureProfile } from "@/lib/ensureProfile";
 import { reconcileMembershipNow } from "@/lib/membershipReconciler";
+import { Capacitor } from "@capacitor/core";
+import { Device } from "@capacitor/device";
 
 type AppRole = "free" | "vault_os_owner" | "vault_access" | "vault_intelligence" | "operator" | "basic_tier";
 
@@ -70,6 +72,42 @@ const CACHE_KEYS = [
   "va_cache_ai_focus", "va_cache_lesson_progress", "va_cache_hot_tickers",
 ];
 
+function isNativePlatform() {
+  if (typeof window === "undefined") return false;
+  if (Capacitor.isNativePlatform()) return true;
+  if (window.location?.protocol === "capacitor:") return true;
+  return /Capacitor/i.test(navigator.userAgent);
+}
+
+async function getPushPlatformKey() {
+  const basePlatform = Capacitor.getPlatform();
+  try {
+    const { identifier } = await Device.getId();
+    const stableId = String(identifier || "").trim();
+    if (stableId) return `${basePlatform}:${stableId}`;
+  } catch (err) {
+    console.warn("Failed to resolve device id before sign out", err);
+  }
+  return basePlatform;
+}
+
+async function unregisterPushForCurrentDevice() {
+  if (!isNativePlatform()) return;
+
+  try {
+    const platformKey = await getPushPlatformKey();
+    const { error } = await (supabase as any).rpc("unregister_device_token", {
+      _platform: platformKey,
+    });
+
+    if (error) {
+      console.warn("unregister_device_token RPC failed before sign out", error);
+    }
+  } catch (err) {
+    console.warn("Push token cleanup failed before sign out", err);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -85,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Consolidated sign-out + state clearing */
   async function signOutCleanup() {
+    await unregisterPushForCurrentDevice();
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);

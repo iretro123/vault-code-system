@@ -24,8 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
-import { GUEST_UPGRADE_BANNER_DISMISSED_KEY, VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
-import { cn } from "@/lib/utils";
+import { BASIC_UPGRADE_BANNER_DISMISSED_KEY, VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 
 const ambientBgStyle = {
   background: [
@@ -88,8 +87,8 @@ function AcademyLayoutInner() {
   const hadUserRef = useRef(false);
   const [referralOpen, setReferralOpen] = useState(false);
   const sharedGuest = isSharedGuestAccount(user, profile);
-  const [guestBannerDismissed, setGuestBannerDismissed] = useState(() => {
-    try { return localStorage.getItem(GUEST_UPGRADE_BANNER_DISMISSED_KEY) === "1"; } catch { return false; }
+  const [basicUpgradeBannerDismissed, setBasicUpgradeBannerDismissed] = useState(() => {
+    try { return sessionStorage.getItem(BASIC_UPGRADE_BANNER_DISMISSED_KEY) === "1"; } catch { return false; }
   });
   useSmartNotifications();
   useSmartRefresh();
@@ -112,7 +111,7 @@ function AcademyLayoutInner() {
       navigate("/auth", { replace: true });
     }
     if (user) hadUserRef.current = true;
-  }, [user, loading]);
+  }, [user, loading, navigate, toast]);
 
   // Page view logging
   useEffect(() => {
@@ -121,7 +120,7 @@ function AcademyLayoutInner() {
     lastPageRef.current = path;
     const segment = path.split("/").filter(Boolean)[1] || "home";
     logActivity("page_view", segment);
-  }, [location.pathname]);
+  }, [location.pathname, logActivity]);
 
   // 1. Wait for auth (and basic-tier role resolution) to finish before rendering nav.
   if (loading || basicLoading) {
@@ -141,7 +140,7 @@ function AcademyLayoutInner() {
     const isBootcampPage = path === "/academy/bootcamp" || path.startsWith("/academy/bootcamp");
     const communityTab = new URLSearchParams(location.search).get("tab");
     const isSignalsGatePage = path.startsWith("/academy/community") && communityTab === "daily-setups";
-    const showAccessBanner = !isBootcampPage && !isSignalsGatePage && (!sharedGuest || !guestBannerDismissed);
+    const showAccessBanner = !isBootcampPage && !isSignalsGatePage && !basicUpgradeBannerDismissed;
     const allowed =
       path === "/academy/learn" || path.startsWith("/academy/learn/") ||
       path === "/academy/bootcamp" || path.startsWith("/academy/bootcamp") ||
@@ -164,28 +163,26 @@ function AcademyLayoutInner() {
             </div>
           </header>
           {showAccessBanner && <div className="relative max-w-full overflow-hidden border-b border-primary/10 bg-primary/10 px-4 py-3">
-            {sharedGuest && (
-              <button
-                type="button"
-                aria-label="Dismiss create account banner"
-                className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
-                onClick={() => {
-                  setGuestBannerDismissed(true);
-                  try { localStorage.setItem(GUEST_UPGRADE_BANNER_DISMISSED_KEY, "1"); } catch { void 0; }
-                }}
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+            <button
+              type="button"
+              aria-label="Hide full access reminder"
+              className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-background/40 text-muted-foreground shadow-sm transition-colors hover:bg-white/10 hover:text-foreground"
+              onClick={() => {
+                setBasicUpgradeBannerDismissed(true);
+                try { sessionStorage.setItem(BASIC_UPGRADE_BANNER_DISMISSED_KEY, "1"); } catch { void 0; }
+              }}
+            >
+              <X className="h-4 w-4" />
+            </button>
             <div className="mx-auto flex w-full max-w-[25rem] min-w-0 flex-col gap-3 md:max-w-none md:flex-row md:items-center md:justify-between">
-              <div className={cn("min-w-0 max-w-full", sharedGuest ? "pr-8" : undefined)}>
+              <div className="min-w-0 max-w-full pr-8">
                 <p className="break-words text-sm font-semibold leading-snug text-foreground">
-                  {sharedGuest ? "Create your own full access account" : `Upgrade to full access for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
+                  {sharedGuest ? "Create your own full access account" : "Full Vault OS access is available when you're ready"}
                 </p>
                 <p className="break-words text-xs leading-snug text-muted-foreground">
                   {sharedGuest
                     ? "Guest preview stays in the shared basic tier until you create your own account."
-                    : "Unlock the complete Vault OS app with Apple in-app purchase."}
+                    : `Unlock lessons, tools, live areas, and member sections for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}.`}
                 </p>
               </div>
               <Button
@@ -200,7 +197,7 @@ function AcademyLayoutInner() {
                   navigate("/membership");
                 }}
               >
-                {sharedGuest ? "Create account" : `Upgrade ${VAULT_OS_MONTHLY_FALLBACK_PRICE}`}
+                {sharedGuest ? "Create account" : "View Full Access"}
               </Button>
             </div>
           </div>}

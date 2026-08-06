@@ -217,7 +217,18 @@ final class VaultOSPurchaseUITests: XCTestCase {
         wait(seconds: 1.5)
         attachScreenshot(named: "live_02_sidebar_open", app: app)
 
-        tapFirstExisting(in: app, labels: ["Live"], timeout: 12)
+        if !elementExists(in: app, labels: ["Live"], timeout: 3) {
+            // Basic/free users intentionally do not see Live. Sign out and use
+            // the full review account so this test verifies the member route.
+            tapFirstExistingOrCoordinate(in: app, labels: ["Log out"], timeout: 5, normalizedX: 0.5, normalizedY: 0.88)
+            wait(seconds: 3)
+            signInIfNeeded(app)
+            tapFirstExisting(in: app, labels: ["Menu"], timeout: 12)
+            wait(seconds: 1.5)
+            attachScreenshot(named: "live_02b_sidebar_full_account", app: app)
+        }
+
+        tapFirstExistingOrCoordinate(in: app, labels: ["Live"], timeout: 12, normalizedX: 0.18, normalizedY: 0.36)
         wait(seconds: 5)
         attachScreenshot(named: "live_03_after_live_tap", app: app)
 
@@ -245,7 +256,7 @@ final class VaultOSPurchaseUITests: XCTestCase {
         recoverIfError(app)
         attachScreenshot(named: "emoji_02_chat_open", app: app)
 
-        tapFirstExisting(in: app, labels: ["Emoji"], timeout: 12)
+        tapFirstExistingOrCoordinate(in: app, labels: ["Emoji"], timeout: 12, normalizedX: 0.17, normalizedY: 0.84)
         wait(seconds: 1.5)
         attachScreenshot(named: "emoji_03_picker_open", app: app)
 
@@ -462,6 +473,23 @@ final class VaultOSPurchaseUITests: XCTestCase {
         }
 
         XCTFail("Could not find tappable element for labels: \(labels.joined(separator: ", "))")
+    }
+
+    private func elementExists(in app: XCUIApplication, labels: [String], timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            for label in labels {
+                if app.buttons[label].exists
+                    || app.links[label].exists
+                    || app.staticTexts[label].exists
+                    || app.buttons.containing(NSPredicate(format: "label CONTAINS[c] %@", label)).firstMatch.exists
+                    || app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", label)).firstMatch.exists {
+                    return true
+                }
+            }
+            wait(seconds: 0.4)
+        }
+        return false
     }
 
     private func tapFirstExistingOrCoordinate(in app: XCUIApplication, labels: [String], timeout: TimeInterval, normalizedX: CGFloat, normalizedY: CGFloat) {

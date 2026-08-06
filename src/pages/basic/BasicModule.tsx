@@ -6,17 +6,7 @@ import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-
-function extractEmbedUrl(url: string): string {
-  if (!url) return "";
-  // Vimeo
-  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  // YouTube
-  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w-]{11})/);
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  return url;
-}
+import { getVideoEmbedUrl } from "@/lib/videoEmbeds";
 
 const BasicModule = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -108,15 +98,29 @@ const BasicModule = () => {
             {active ? (
               <div className="space-y-4">
                 <div className="aspect-video rounded-2xl overflow-hidden border border-border/40 bg-black">
-                  <iframe
-                    key={active.id}
-                    src={extractEmbedUrl(active.video_url)}
-                    title={active.lesson_title}
-                    className="w-full h-full"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
-                    onLoad={() => markComplete(active.id)}
-                  />
+                  {getVideoEmbedUrl(active.video_url) ? (
+                    <iframe
+                      key={active.id}
+                      src={getVideoEmbedUrl(active.video_url)!}
+                      title={active.lesson_title}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      onLoad={() => markComplete(active.id)}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center p-6 text-center">
+                      <a
+                        href={active.video_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-primary underline underline-offset-4"
+                      >
+                        Open lesson video
+                      </a>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-xl md:text-2xl font-semibold">{active.lesson_title}</h3>

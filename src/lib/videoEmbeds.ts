@@ -44,6 +44,8 @@ export function getVideoEmbedUrl(url: string): string | null {
     if (loomMatch) return `https://www.loom.com/embed/${loomMatch[1]}`;
 
     if (url.includes("/embed")) return url;
-  } catch {}
+  } catch {
+    return null;
+  }
   return null;
 }

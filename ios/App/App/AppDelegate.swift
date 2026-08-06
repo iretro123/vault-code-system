@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -10,6 +11,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.configureNativeScrolling()
         }
+        clearApplicationBadge()
         return true
     }
 
@@ -29,6 +31,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         configureNativeScrolling()
+        clearApplicationBadge()
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -81,6 +84,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         bridgeViewController.webView?.scrollView.pinchGestureRecognizer?.isEnabled = false
         if #available(iOS 14.0, *) {
             bridgeViewController.webView?.pageZoom = 1.0
+        }
+    }
+
+    private func clearApplicationBadge() {
+        DispatchQueue.main.async {
+            if #available(iOS 16.0, *) {
+                UNUserNotificationCenter.current().setBadgeCount(0)
+            } else {
+                UIApplication.shared.applicationIconBadgeNumber = 0
+            }
         }
     }
 

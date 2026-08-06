@@ -66,7 +66,7 @@ const MembershipUpgrade = () => {
   }
 
   async function loadProducts(showToastOnFailure = true) {
-    if (!user || !isIOS || sharedGuest || hasFullAccess) return;
+    if (!user?.id || !isIOS || sharedGuest || hasFullAccess) return;
 
     setLoadingProduct(true);
     try {
@@ -135,7 +135,7 @@ const MembershipUpgrade = () => {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, isIOS, sharedGuest, hasFullAccess]);
+  }, [user, isIOS, sharedGuest, hasFullAccess, toast]);
 
   async function activateMembership(transaction: MembershipTransaction) {
     console.info("[MembershipUpgrade] Activating membership with transaction", transaction);

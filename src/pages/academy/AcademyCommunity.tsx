@@ -28,8 +28,8 @@ function isTabKey(value: string | null): value is TabKey {
 
 function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
   return (
-    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-28 pt-7">
-      <div className="relative mx-auto w-full max-w-[29rem] overflow-hidden rounded-[1.55rem] border border-primary/25 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.22),transparent_34%),linear-gradient(145deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] px-5 pb-5 pt-10 text-center shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-28 pt-10">
+      <div className="relative mx-auto w-full max-w-[29rem] overflow-hidden rounded-[1.55rem] border border-primary/25 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.22),transparent_34%),linear-gradient(145deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] px-5 pb-5 pt-12 text-center shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
         <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/25 blur-[60px]" />
         <div className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-blue-500/10 blur-[70px]" />
         <div className="relative z-10">
