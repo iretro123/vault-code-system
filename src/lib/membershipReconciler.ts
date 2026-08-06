@@ -1,5 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
-import { isNativeIOSApp } from "@/lib/platform";
+import { isNativeAndroidApp, isNativeIOSApp } from "@/lib/platform";
+import {
+  GooglePlayMembership,
+  type GooglePlayMembershipTransaction,
+  type GooglePlayMembershipTransactionUpdateEvent,
+} from "@/lib/googlePlayMembership";
 import {
   StoreKitMembership,
   type MembershipTransaction,
@@ -21,6 +26,8 @@ import { VAULT_OS_MONTHLY_PRODUCT_ID } from "@/lib/membership";
  */
 
 let listenerInstalled = false;
+let androidListenerInstalled = false;
+let visibilityListenerInstalled = false;
 let inFlight = new Set<string>();
 let lastReconcileUserId: string | null = null;
 
@@ -94,19 +101,84 @@ async function activateAndFinish(transaction: MembershipTransaction) {
   }
 }
 
+async function activateAndroidAndAcknowledge(transaction: GooglePlayMembershipTransaction) {
+  const key = transaction.purchaseToken || transaction.transactionId;
+  if (!key || inFlight.has(key)) return;
+  inFlight.add(key);
+  try {
+    if (transaction.productId !== VAULT_OS_MONTHLY_PRODUCT_ID) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      console.info("[membershipReconciler] Skipping Google Play activation: no active session");
+      return;
+    }
+
+    console.info("[membershipReconciler] Activating pending Google Play purchase", {
+      productId: transaction.productId,
+      orderId: transaction.orderId,
+    });
+    const { error } = await supabase.functions.invoke("activate-android-membership", {
+      body: {
+        productId: transaction.productId,
+        purchaseToken: transaction.purchaseToken,
+        orderId: transaction.orderId ?? null,
+        packageName: transaction.packageName,
+        purchaseDate: transaction.purchaseDate,
+        isAcknowledged: transaction.isAcknowledged,
+      },
+    });
+
+    if (error) {
+      const message = await getFunctionErrorMessage(error);
+      console.warn("[membershipReconciler] Google Play activation failed; leaving purchase unacknowledged", {
+        message,
+        error,
+      });
+      return;
+    }
+
+    if (!transaction.isAcknowledged) {
+      await GooglePlayMembership.acknowledgePurchase({ purchaseToken: transaction.purchaseToken });
+    }
+    console.info("[membershipReconciler] Activated + acknowledged Google Play purchase", key);
+  } catch (err) {
+    console.warn("[membershipReconciler] Android reconciler error", err);
+  } finally {
+    inFlight.delete(key);
+  }
+}
+
 /** Register the persistent StoreKit listener. Safe to call multiple times. */
 export function installMembershipReconciler() {
-  if (!isNativeIOSApp() || listenerInstalled) return;
-  listenerInstalled = true;
+  if (isNativeIOSApp() && !listenerInstalled) {
+    listenerInstalled = true;
 
-  StoreKitMembership.addListener(
-    "membershipTransactionUpdate",
-    (event: MembershipTransactionUpdateEvent) => {
-      void activateAndFinish(event.transaction);
-    },
-  ).catch((err) => {
-    console.warn("[membershipReconciler] Failed to attach listener", err);
-  });
+    StoreKitMembership.addListener(
+      "membershipTransactionUpdate",
+      (event: MembershipTransactionUpdateEvent) => {
+        void activateAndFinish(event.transaction);
+      },
+    ).catch((err) => {
+      console.warn("[membershipReconciler] Failed to attach StoreKit listener", err);
+    });
+  }
+
+  if (isNativeAndroidApp() && !androidListenerInstalled) {
+    androidListenerInstalled = true;
+
+    GooglePlayMembership.addListener(
+      "membershipTransactionUpdate",
+      (event: GooglePlayMembershipTransactionUpdateEvent) => {
+        void activateAndroidAndAcknowledge(event.transaction);
+      },
+    ).catch((err) => {
+      console.warn("[membershipReconciler] Failed to attach Google Play listener", err);
+    });
+  }
+
+  if (visibilityListenerInstalled) return;
+  visibilityListenerInstalled = true;
 
   // On resume, replay any pending transactions and re-check restore.
   document.addEventListener("visibilitychange", () => {
@@ -121,10 +193,19 @@ export function installMembershipReconciler() {
  * Silent — no toasts, no navigation.
  */
 export async function reconcileMembershipNow(userId?: string) {
-  if (!isNativeIOSApp()) return;
+  if (!isNativeIOSApp() && !isNativeAndroidApp()) return;
   if (userId) lastReconcileUserId = userId;
 
   try {
+    if (isNativeAndroidApp()) {
+      await GooglePlayMembership.syncPendingPurchases().catch(() => ({ pending: 0 }));
+      const { transactions } = await GooglePlayMembership.restorePurchases();
+      for (const tx of transactions) {
+        await activateAndroidAndAcknowledge(tx);
+      }
+      return;
+    }
+
     // 1. Ask StoreKit to re-emit anything that's still unfinished.
     await StoreKitMembership.syncPendingTransactions().catch(() => ({ pending: 0 }));
 

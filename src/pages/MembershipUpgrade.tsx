@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { isNativeIOSApp } from "@/lib/platform";
+import { isNativeAndroidApp, isNativeIOSApp } from "@/lib/platform";
 import { openExternalUrl } from "@/lib/externalLinks";
 import {
   FULL_ACCESS_ROLE,
@@ -17,6 +17,7 @@ import {
   isSharedGuestAccount,
 } from "@/lib/membership";
 import { StoreKitMembership, type MembershipProduct, type MembershipTransaction } from "@/lib/nativeMembership";
+import { GooglePlayMembership, type GooglePlayMembershipTransaction } from "@/lib/googlePlayMembership";
 
 async function getFunctionErrorMessage(error: unknown) {
   const fallback = error instanceof Error ? error.message : "Membership activation failed. Please try again.";
@@ -48,13 +49,18 @@ const MembershipUpgrade = () => {
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const isIOS = isNativeIOSApp();
+  const isAndroid = isNativeAndroidApp();
+  const purchaseUnavailableOnThisPlatform = !isIOS && !isAndroid;
   const sharedGuest = isSharedGuestAccount(user, profile);
   const hasFullAccess = !!userRole && userRole.role !== "basic_tier";
-  const productUnavailable = isIOS && !sharedGuest && !hasFullAccess && !loadingProduct && !product;
+  const productUnavailable = (isIOS || isAndroid) && !sharedGuest && !hasFullAccess && !loadingProduct && !product;
 
   const displayPrice = useMemo(() => {
     return product?.displayPrice || VAULT_OS_MONTHLY_FALLBACK_PRICE;
   }, [product]);
+  const monthlyPriceText = displayPrice.toLowerCase().includes("month")
+    ? displayPrice
+    : `${displayPrice} per month`;
 
   function handleBack() {
     if (window.history.length > 1) {
@@ -66,19 +72,19 @@ const MembershipUpgrade = () => {
   }
 
   async function loadProducts(showToastOnFailure = true) {
-    if (!user?.id || !isIOS || sharedGuest || hasFullAccess) return;
+    if (!user?.id || (!isIOS && !isAndroid) || sharedGuest || hasFullAccess) return;
 
     setLoadingProduct(true);
     try {
-      const { products } = await StoreKitMembership.getProducts({
-        productIds: [VAULT_OS_MONTHLY_PRODUCT_ID],
-      });
-      console.info("[MembershipUpgrade] Loaded StoreKit products", products);
+      const { products } = isAndroid
+        ? await GooglePlayMembership.getProducts({ productIds: [VAULT_OS_MONTHLY_PRODUCT_ID] })
+        : await StoreKitMembership.getProducts({ productIds: [VAULT_OS_MONTHLY_PRODUCT_ID] });
+      console.info("[MembershipUpgrade] Loaded native membership products", products);
       setProduct(products[0] ?? null);
       if (!products[0] && showToastOnFailure) {
         toast({
           title: "Membership unavailable right now",
-          description: "The App Store subscription details could not be loaded right now. Please try again.",
+          description: `${isAndroid ? "The Google Play" : "The App Store"} subscription details could not be loaded right now. Please try again.`,
           variant: "destructive",
         });
       }
@@ -87,7 +93,7 @@ const MembershipUpgrade = () => {
       if (showToastOnFailure) {
         toast({
           title: "Could not load membership details",
-          description: "The App Store subscription details could not be loaded right now. Please try again.",
+          description: `${isAndroid ? "The Google Play" : "The App Store"} subscription details could not be loaded right now. Please try again.`,
           variant: "destructive",
         });
       }
@@ -97,23 +103,23 @@ const MembershipUpgrade = () => {
   }
 
   useEffect(() => {
-    if (!user || !isIOS || sharedGuest || hasFullAccess) return;
+    if (!user || (!isIOS && !isAndroid) || sharedGuest || hasFullAccess) return;
 
     let cancelled = false;
 
     const run = async () => {
       setLoadingProduct(true);
       try {
-        const { products } = await StoreKitMembership.getProducts({
-          productIds: [VAULT_OS_MONTHLY_PRODUCT_ID],
-        });
+        const { products } = isAndroid
+          ? await GooglePlayMembership.getProducts({ productIds: [VAULT_OS_MONTHLY_PRODUCT_ID] })
+          : await StoreKitMembership.getProducts({ productIds: [VAULT_OS_MONTHLY_PRODUCT_ID] });
         if (cancelled) return;
-        console.info("[MembershipUpgrade] Loaded StoreKit products", products);
+        console.info("[MembershipUpgrade] Loaded native membership products", products);
         setProduct(products[0] ?? null);
         if (!products[0]) {
           toast({
             title: "Membership unavailable right now",
-            description: "The App Store subscription details could not be loaded right now. Please try again.",
+            description: `${isAndroid ? "The Google Play" : "The App Store"} subscription details could not be loaded right now. Please try again.`,
             variant: "destructive",
           });
         }
@@ -122,7 +128,7 @@ const MembershipUpgrade = () => {
         console.error("[MembershipUpgrade] Failed to load products", error);
         toast({
           title: "Could not load membership details",
-          description: "The App Store subscription details could not be loaded right now. Please try again.",
+          description: `${isAndroid ? "The Google Play" : "The App Store"} subscription details could not be loaded right now. Please try again.`,
           variant: "destructive",
         });
       } finally {
@@ -135,7 +141,7 @@ const MembershipUpgrade = () => {
     return () => {
       cancelled = true;
     };
-  }, [user, isIOS, sharedGuest, hasFullAccess, toast]);
+  }, [user, isIOS, isAndroid, sharedGuest, hasFullAccess, toast]);
 
   async function activateMembership(transaction: MembershipTransaction) {
     console.info("[MembershipUpgrade] Activating membership with transaction", transaction);
@@ -176,13 +182,52 @@ const MembershipUpgrade = () => {
     await refetchProfile();
   }
 
+  async function activateAndroidMembership(transaction: GooglePlayMembershipTransaction) {
+    console.info("[MembershipUpgrade] Activating Android membership with transaction", {
+      productId: transaction.productId,
+      orderId: transaction.orderId,
+      packageName: transaction.packageName,
+      purchaseDate: transaction.purchaseDate,
+    });
+    const { error } = await supabase.functions.invoke("activate-android-membership", {
+      body: {
+        productId: transaction.productId,
+        purchaseToken: transaction.purchaseToken,
+        orderId: transaction.orderId ?? null,
+        packageName: transaction.packageName,
+        purchaseDate: transaction.purchaseDate,
+        isAcknowledged: transaction.isAcknowledged,
+      },
+    });
+
+    if (error) {
+      const message = await getFunctionErrorMessage(error);
+      console.error("[MembershipUpgrade] activate-android-membership failed", {
+        message,
+        error,
+      });
+      throw new Error(message);
+    }
+
+    if (!transaction.isAcknowledged) {
+      try {
+        await GooglePlayMembership.acknowledgePurchase({ purchaseToken: transaction.purchaseToken });
+      } catch (acknowledgeError) {
+        console.warn("[MembershipUpgrade] acknowledgePurchase failed (will retry on next launch)", acknowledgeError);
+      }
+    }
+
+    clearMembershipUiState();
+    await refetchProfile();
+  }
+
   async function handlePurchase() {
     if (!user) return;
 
-    if (!isIOS) {
+    if (purchaseUnavailableOnThisPlatform) {
       toast({
         title: "Purchase unavailable here",
-        description: "Vault OS purchases are available in the iOS app.",
+        description: "Vault OS purchases are available inside the iOS and Android apps.",
         variant: "destructive",
       });
       return;
@@ -195,13 +240,22 @@ const MembershipUpgrade = () => {
 
     setPurchasing(true);
     try {
-      const { transaction } = await StoreKitMembership.purchase({
-        productId: VAULT_OS_MONTHLY_PRODUCT_ID,
-        appAccountToken: user.id,
-      });
-      console.info("[MembershipUpgrade] StoreKit purchase result", transaction);
+      if (isAndroid) {
+        const { transaction } = await GooglePlayMembership.purchase({
+          productId: VAULT_OS_MONTHLY_PRODUCT_ID,
+        });
+        console.info("[MembershipUpgrade] Google Play purchase result", transaction);
 
-      await activateMembership(transaction);
+        await activateAndroidMembership(transaction);
+      } else {
+        const { transaction } = await StoreKitMembership.purchase({
+          productId: VAULT_OS_MONTHLY_PRODUCT_ID,
+          appAccountToken: user.id,
+        });
+        console.info("[MembershipUpgrade] StoreKit purchase result", transaction);
+
+        await activateMembership(transaction);
+      }
 
       toast({
         title: "Full access unlocked",
@@ -219,7 +273,7 @@ const MembershipUpgrade = () => {
       } else if (message === "PURCHASE_PENDING") {
         toast({
           title: "Purchase pending",
-          description: "Apple is still confirming this subscription.",
+          description: `${isAndroid ? "Google Play is" : "Apple is"} still confirming this subscription.`,
         });
       } else {
         toast({
@@ -234,23 +288,27 @@ const MembershipUpgrade = () => {
   }
 
   async function handleRestore() {
-    if (!user || !isIOS) return;
+    if (!user || (!isIOS && !isAndroid)) return;
     setRestoring(true);
     try {
-      const { transactions } = await StoreKitMembership.restorePurchases({
-        productIds: [VAULT_OS_MONTHLY_PRODUCT_ID],
-      });
+      const { transactions } = isAndroid
+        ? await GooglePlayMembership.restorePurchases()
+        : await StoreKitMembership.restorePurchases({ productIds: [VAULT_OS_MONTHLY_PRODUCT_ID] });
       console.info("[MembershipUpgrade] Restore transactions", transactions);
 
       if (!transactions.length) {
         toast({
           title: "No active purchase found",
-          description: "There is no active Vault OS subscription to restore on this Apple ID.",
+          description: `There is no active Vault OS subscription to restore on this ${isAndroid ? "Google Play account" : "Apple ID"}.`,
         });
         return;
       }
 
-      await activateMembership(transactions[0]);
+      if (isAndroid) {
+        await activateAndroidMembership(transactions[0] as GooglePlayMembershipTransaction);
+      } else {
+        await activateMembership(transactions[0] as MembershipTransaction);
+      }
       toast({
         title: "Purchase restored",
         description: "Your full Vault OS access is active again.",
@@ -358,18 +416,18 @@ const MembershipUpgrade = () => {
             Unlock Vault OS
           </h1>
           <p className="mt-3 text-base text-muted-foreground">
-            Upgrade to full access for {displayPrice} and unlock the complete Vault OS member experience in the Vault OS app.
+            {`Upgrade to full access for ${displayPrice} and unlock the complete Vault OS member experience in the Vault OS app.`}
           </p>
 
           <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/10 p-5">
             <p className="text-4xl font-black tracking-tight">{displayPrice}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Auto-renewing monthly subscription billed by Apple.
+              Auto-renewing monthly subscription billed by {isAndroid ? "Google Play" : "Apple"}.
             </p>
             <div className="mt-4 space-y-1 text-left text-xs text-muted-foreground">
               <p>Subscription: Vault OS Full Access Monthly Clean</p>
               <p>Length: 1 month</p>
-              <p>Price: {displayPrice} per month</p>
+              <p>Price: {monthlyPriceText}</p>
             </div>
           </div>
 
@@ -439,14 +497,20 @@ const MembershipUpgrade = () => {
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                   <p>
-                    Full access attaches to this account after a successful Apple subscription so your app immediately leaves the basic tier.
+                    Full access attaches to this account after a successful {isAndroid ? "Google Play" : "Apple"} subscription so your app immediately leaves the basic tier.
                   </p>
                 </div>
               </div>
 
+              {purchaseUnavailableOnThisPlatform ? (
+                <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-foreground">
+                  Full access purchases are only available inside the iOS and Android apps.
+                </div>
+              ) : null}
+
               {productUnavailable ? (
                 <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-foreground">
-                  The App Store subscription details could not be loaded right now. Use Try again to refresh them.
+                  The {isAndroid ? "Google Play" : "App Store"} subscription details could not be loaded right now. Use Try again to refresh them.
                 </div>
               ) : null}
 
@@ -454,20 +518,26 @@ const MembershipUpgrade = () => {
                 <Button
                   className="w-full h-14 rounded-2xl text-base font-semibold gap-2"
                   onClick={handlePurchase}
-                  disabled={purchasing || restoring || loadingProduct || productUnavailable}
+                  disabled={purchasing || restoring || loadingProduct || productUnavailable || purchaseUnavailableOnThisPlatform}
                 >
                   {purchasing || loadingProduct ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {productUnavailable ? "Membership unavailable right now" : `Start full access for ${displayPrice}`}
+                  {purchaseUnavailableOnThisPlatform
+                    ? "Full access unavailable here"
+                    : productUnavailable
+                      ? "Membership unavailable right now"
+                      : `Start full access for ${displayPrice}`}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-12 rounded-2xl"
-                  onClick={handleRestore}
-                  disabled={purchasing || restoring || productUnavailable}
-                >
-                  {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Restore purchase
-                </Button>
+                {!purchaseUnavailableOnThisPlatform ? (
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 rounded-2xl"
+                    onClick={handleRestore}
+                    disabled={purchasing || restoring || productUnavailable}
+                  >
+                    {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Restore purchase
+                  </Button>
+                ) : null}
                 {productUnavailable ? (
                   <Button
                     variant="ghost"
@@ -491,7 +561,7 @@ const MembershipUpgrade = () => {
               <div className="mt-5 rounded-2xl border border-border/30 bg-background/40 p-4 text-xs text-muted-foreground">
                 <p className="font-medium text-foreground">Required Subscription Information</p>
                 <p className="mt-1 leading-relaxed">
-                  Subscription: Vault OS Full Access Monthly Clean. Duration: 1 month. Price: {displayPrice} per month. By subscribing, you agree to the Vault OS Terms of Use and acknowledge the Privacy Policy.
+                  Subscription: Vault OS Full Access Monthly Clean. Duration: 1 month. Price: {monthlyPriceText}. By subscribing, you agree to the Vault OS Terms of Use and acknowledge the Privacy Policy.
                 </p>
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <a
@@ -518,7 +588,7 @@ const MembershipUpgrade = () => {
           )}
 
           <p className="mt-5 text-center text-xs text-muted-foreground">
-            Already subscribed? Use Restore purchase. Need a different account?{" "}
+            {purchaseUnavailableOnThisPlatform ? "Need a different account? " : "Already subscribed? Use Restore purchase. Need a different account? "}
             <Link to="/auth" className="text-primary hover:underline">
               Sign in
             </Link>

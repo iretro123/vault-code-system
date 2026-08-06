@@ -11,3 +11,7 @@ export function isNativeCapacitorApp() {
 export function isNativeIOSApp() {
   return isNativeCapacitorApp() && Capacitor.getPlatform() === "ios";
 }
+
+export function isNativeAndroidApp() {
+  return isNativeCapacitorApp() && Capacitor.getPlatform() === "android";
+}

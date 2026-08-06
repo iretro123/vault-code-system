@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { BASIC_UPGRADE_BANNER_DISMISSED_KEY, VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
+import { isNativeAndroidApp } from "@/lib/platform";
 
 const ambientBgStyle = {
   background: [
@@ -141,6 +142,7 @@ function AcademyLayoutInner() {
     const communityTab = new URLSearchParams(location.search).get("tab");
     const isSignalsGatePage = path.startsWith("/academy/community") && communityTab === "daily-setups";
     const showAccessBanner = !isBootcampPage && !isSignalsGatePage && !basicUpgradeBannerDismissed;
+    const isAndroid = isNativeAndroidApp();
     const allowed =
       path === "/academy/learn" || path.startsWith("/academy/learn/") ||
       path === "/academy/bootcamp" || path.startsWith("/academy/bootcamp") ||
@@ -177,12 +179,18 @@ function AcademyLayoutInner() {
             <div className="mx-auto flex w-full max-w-[25rem] min-w-0 flex-col gap-3 md:max-w-none md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 max-w-full pr-8">
                 <p className="break-words text-sm font-semibold leading-snug text-foreground">
-                  {sharedGuest ? "Create your own full access account" : "Full Vault OS access is available when you're ready"}
+                  {sharedGuest
+                    ? "Create your own full access account"
+                    : isAndroid
+                      ? "Full Vault OS access is available on Android"
+                      : "Full Vault OS access is available when you're ready"}
                 </p>
                 <p className="break-words text-xs leading-snug text-muted-foreground">
                   {sharedGuest
                     ? "Guest preview stays in the shared basic tier until you create your own account."
-                    : `Unlock lessons, tools, live areas, and member sections for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}.`}
+                    : isAndroid
+                      ? "Upgrade with Google Play to unlock lessons, tools, live areas, and member sections."
+                      : `Unlock lessons, tools, live areas, and member sections for ${VAULT_OS_MONTHLY_FALLBACK_PRICE}.`}
                 </p>
               </div>
               <Button
