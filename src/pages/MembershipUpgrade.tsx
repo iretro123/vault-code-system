@@ -52,7 +52,7 @@ const MembershipUpgrade = () => {
   const isAndroid = isNativeAndroidApp();
   const purchaseUnavailableOnThisPlatform = !isIOS && !isAndroid;
   const sharedGuest = isSharedGuestAccount(user, profile);
-  const hasFullAccess = !!userRole && userRole.role !== "basic_tier";
+  const hasFullAccess = hasFullAccessRole(userRole?.role);
   const productUnavailable = (isIOS || isAndroid) && !sharedGuest && !hasFullAccess && !loadingProduct && !product;
 
   const displayPrice = useMemo(() => {
