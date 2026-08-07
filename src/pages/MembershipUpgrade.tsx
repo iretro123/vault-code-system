@@ -16,6 +16,8 @@ import {
   clearMembershipUiState,
   isSharedGuestAccount,
 } from "@/lib/membership";
+import { hasFullAccess as hasFullAccessRole } from "@/lib/entitlements";
+
 import { StoreKitMembership, type MembershipProduct, type MembershipTransaction } from "@/lib/nativeMembership";
 import { GooglePlayMembership, type GooglePlayMembershipTransaction } from "@/lib/googlePlayMembership";
 
@@ -52,7 +54,7 @@ const MembershipUpgrade = () => {
   const isAndroid = isNativeAndroidApp();
   const purchaseUnavailableOnThisPlatform = !isIOS && !isAndroid;
   const sharedGuest = isSharedGuestAccount(user, profile);
-  const hasFullAccess = !!userRole && userRole.role !== "basic_tier";
+  const hasFullAccess = hasFullAccessRole(userRole?.role);
   const productUnavailable = (isIOS || isAndroid) && !sharedGuest && !hasFullAccess && !loadingProduct && !product;
 
   const displayPrice = useMemo(() => {

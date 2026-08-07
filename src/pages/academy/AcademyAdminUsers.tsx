@@ -43,15 +43,15 @@ interface UserRow {
 
 const PAID_ROLES = new Set(["vault_access", "vault_intelligence"]);
 const INTERNAL_ROLES = new Set(["vault_os_owner", "operator"]);
-const FREE_ROLES = new Set(["basic_tier", "free"]);
 
 function classify(email: string | null, role: string | null): Audience {
   if ((email ?? "").trim().toLowerCase() === SHARED_GUEST_EMAIL) return "Shared Guest";
   if (role && INTERNAL_ROLES.has(role)) return "Internal";
   if (role && PAID_ROLES.has(role)) return "Paid";
-  if (role && FREE_ROLES.has(role)) return "Free/Basic";
-  return "Unknown";
+  // Deny-by-default: everything else (basic_tier, legacy free, missing row) is Free Basic.
+  return "Free/Basic";
 }
+
 
 const AUDIENCE_STYLES: Record<Audience, string> = {
   Paid: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
@@ -96,7 +96,8 @@ const AcademyAdminUsers = () => {
       // prefer highest priority role
       const prev = roleMap.get(r.user_id);
       const priority = (role: string) =>
-        INTERNAL_ROLES.has(role) ? 4 : PAID_ROLES.has(role) ? 3 : FREE_ROLES.has(role) ? 2 : 1;
+        INTERNAL_ROLES.has(role) ? 4 : PAID_ROLES.has(role) ? 3 : 2;
+
       if (!prev || priority(r.role) > priority(prev.role)) {
         roleMap.set(r.user_id, {
           role: r.role,

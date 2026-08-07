@@ -65,13 +65,23 @@ async function grantPaidAccess(admin: Admin, authUserId: string, subscriptionSta
   if (existing?.id) {
     await admin
       .from("user_roles")
-      .update({ subscription_status: subscriptionStatus, updated_at: new Date().toISOString() })
+      .update({
+        subscription_status: subscriptionStatus,
+        access_source: "stripe",
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", existing.id);
   } else {
     await admin
       .from("user_roles")
-      .insert({ user_id: authUserId, role: PAID_ROLE, subscription_status: subscriptionStatus });
+      .insert({
+        user_id: authUserId,
+        role: PAID_ROLE,
+        subscription_status: subscriptionStatus,
+        access_source: "stripe",
+      });
   }
+
 
   await admin
     .from("profiles")
