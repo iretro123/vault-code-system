@@ -316,7 +316,7 @@ serve(async (req) => {
     // not staff, not protected.
     // ---------------------------------------------------------------------
     let orphansScanned = 0;
-    let orphansRevoked = 0;
+    let orphansDowngraded = 0;
     let orphansSkipped = 0;
 
     const { data: activeProfiles } = await admin
@@ -420,14 +420,14 @@ serve(async (req) => {
             action: isCron ? "sweep_orphan_access_cron" : "sweep_orphan_access",
             metadata: { previous_status: "active", new_status: "basic_tier", target_email: email, reason: "no_membership_row_and_no_stripe_subscription" },
           });
-          orphansRevoked++;
+          orphansDowngraded++;
         }
       }
     }
 
     log("DONE", {
       scanned: access.length, updated, noStripe, skippedProtected, skippedLookupFailed,
-      orphansScanned, orphansRevoked, orphansSkipped, dryRun,
+      orphansScanned, orphansDowngraded, orphansSkipped, dryRun,
     });
 
 
@@ -435,7 +435,7 @@ serve(async (req) => {
       JSON.stringify({
         scanned: access.length, updated, no_stripe: noStripe,
         skipped_protected: skippedProtected, skipped_lookup_failed: skippedLookupFailed,
-        orphans_scanned: orphansScanned, orphans_revoked: orphansRevoked, orphans_skipped: orphansSkipped,
+        orphans_scanned: orphansScanned, orphans_downgraded: orphansDowngraded, orphans_skipped: orphansSkipped,
         dry_run: dryRun, changes,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
