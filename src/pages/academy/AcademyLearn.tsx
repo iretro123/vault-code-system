@@ -52,12 +52,17 @@ const AcademyLearn = () => {
       list = list.filter(m => (m as any).basic_only === true || m.slug === BASIC_ONLY_SLUG);
       return list;
     }
-    // Paid members: same Beginner Bridge videos, blended in as the foundations
-    // module so it doesn't collide with the paid "Chapter 1" naming.
+    // Paid members: same Beginner Bridge videos, shown first as the foundations
+    // module (labelled separately so it doesn't collide with paid "Chapter 1").
     const bridge = list.filter(m => m.slug === BASIC_ONLY_SLUG);
     const rest = list.filter(m => m.slug !== BASIC_ONLY_SLUG);
-    return [...rest, ...bridge];
+    return [...bridge, ...rest];
+
   }, [allModules, canManageContent, isGuestOrBasic]);
+
+  // True when the shared Beginner Bridge card leads the grid (paid members).
+  const isBridgeFirst = !canManageContent && !isGuestOrBasic && modules[0]?.slug === BASIC_ONLY_SLUG;
+
 
   // Display-only labels so the shared Beginner Bridge module reads correctly
   // for paid members (content and slug stay untouched).
@@ -287,8 +292,11 @@ const AcademyLearn = () => {
                       {/* Module number badge */}
                       <div className="absolute top-3 left-3 flex items-center gap-1.5">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm text-[11px] font-mono text-white/70">
-                          Module {String(i + 1).padStart(2, "0")}
+                          {isBridgeFirst && i === 0
+                            ? "Foundations"
+                            : `Module ${String(isBridgeFirst ? i : i + 1).padStart(2, "0")}`}
                         </span>
+
                         {isHidden && canManageContent && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/80 backdrop-blur-sm text-[10px] font-semibold text-black">
                             <EyeOff className="h-3 w-3" /> Hidden
