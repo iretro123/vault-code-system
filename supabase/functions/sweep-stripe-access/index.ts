@@ -409,15 +409,16 @@ serve(async (req) => {
           continue;
         }
 
-        changes.push({ user_id: uid, email, from: "active", to: "revoked", result: "orphan_revoked" });
+        changes.push({ user_id: uid, email, from: "active", to: "basic_tier", result: "orphan_downgraded_to_basic" });
 
         if (!dryRun) {
-          await admin.from("profiles").update({ access_status: "revoked", updated_at: new Date().toISOString() }).eq("user_id", uid);
+          // Downgrade, never revoke. They keep the app + free community/content.
+          await downgradeToBasic(admin, uid, email);
           await admin.from("audit_logs").insert({
             admin_id: actorId ?? "00000000-0000-0000-0000-000000000000",
             target_user_id: uid,
             action: isCron ? "sweep_orphan_access_cron" : "sweep_orphan_access",
-            metadata: { previous_status: "active", new_status: "revoked", target_email: email, reason: "no_membership_row_and_no_stripe_subscription" },
+            metadata: { previous_status: "active", new_status: "basic_tier", target_email: email, reason: "no_membership_row_and_no_stripe_subscription" },
           });
           orphansRevoked++;
         }
