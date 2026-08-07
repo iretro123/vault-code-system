@@ -285,6 +285,11 @@ serve(async (req) => {
           .eq("product_key", row.product_key);
         updated++;
 
+        // Subscription is gone → drop to Free Basic instead of blocking the account.
+        if (newStatus === "canceled") {
+          await downgradeToBasic(admin, student.auth_user_id, email);
+        }
+
         await admin.from("audit_logs").insert({
           admin_id: actorId ?? "00000000-0000-0000-0000-000000000000",
           target_user_id: row.user_id,
