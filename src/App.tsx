@@ -18,6 +18,8 @@ import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
 import { Loader2 } from "lucide-react";
 import { isSharedGuestAccount } from "@/lib/membership";
+import { hasFullAccess, isFreeBasicAllowedPath } from "@/lib/entitlements";
+
 
 // Lazy-loaded routes — split from main bundle.
 // Wrapped with lazyWithRetry so stale-deploy chunk-hash mismatches
