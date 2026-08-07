@@ -23,6 +23,55 @@ interface StudentRow {
   id: string;
   email: string | null;
   stripe_customer_id: string | null;
+  auth_user_id: string | null;
+}
+
+const PREMIUM_ROLES = ["vault_access", "vault_intelligence"];
+
+/**
+ * Losing a paid subscription must NEVER lock a user out of the app.
+ * Expired / canceled / orphan members are downgraded to the Free Basic tier:
+ * they keep the app, community and free content, and lose Live + Signals +
+ * premium modules. "revoked" is reserved for explicit admin bans only.
+ */
+async function downgradeToBasic(
+  admin: ReturnType<typeof createClient>,
+  authUserId: string | null,
+  email: string | null,
+) {
+  if (!authUserId) return;
+
+  // Clear premium role rows so no paid feature stays unlocked.
+  await admin.from("user_roles").delete().eq("user_id", authUserId).in("role", PREMIUM_ROLES);
+
+  // Ensure a basic_tier role row exists (basic_tier wins in the client role priority).
+  const { data: existing } = await admin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", authUserId)
+    .eq("role", "basic_tier")
+    .maybeSingle();
+  if (existing?.id) {
+    await admin
+      .from("user_roles")
+      .update({ subscription_status: "none", updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+  } else {
+    await admin.from("user_roles").insert({
+      user_id: authUserId,
+      role: "basic_tier",
+      subscription_status: "none",
+    });
+  }
+
+  // Keep the account usable — never flip a non-banned user to "revoked".
+  await admin
+    .from("profiles")
+    .update({ access_status: "active", updated_at: new Date().toISOString() })
+    .eq("user_id", authUserId)
+    .neq("access_status", "banned");
+
+  console.log("[sweep-stripe-access] downgraded_to_basic", JSON.stringify({ authUserId, email }));
 }
 
 interface AccessRow {
