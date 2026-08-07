@@ -23,6 +23,55 @@ interface StudentRow {
   id: string;
   email: string | null;
   stripe_customer_id: string | null;
+  auth_user_id: string | null;
+}
+
+const PREMIUM_ROLES = ["vault_access", "vault_intelligence"];
+
+/**
+ * Losing a paid subscription must NEVER lock a user out of the app.
+ * Expired / canceled / orphan members are downgraded to the Free Basic tier:
+ * they keep the app, community and free content, and lose Live + Signals +
+ * premium modules. "revoked" is reserved for explicit admin bans only.
+ */
+async function downgradeToBasic(
+  admin: ReturnType<typeof createClient>,
+  authUserId: string | null,
+  email: string | null,
+) {
+  if (!authUserId) return;
+
+  // Clear premium role rows so no paid feature stays unlocked.
+  await admin.from("user_roles").delete().eq("user_id", authUserId).in("role", PREMIUM_ROLES);
+
+  // Ensure a basic_tier role row exists (basic_tier wins in the client role priority).
+  const { data: existing } = await admin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", authUserId)
+    .eq("role", "basic_tier")
+    .maybeSingle();
+  if (existing?.id) {
+    await admin
+      .from("user_roles")
+      .update({ subscription_status: "none", updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+  } else {
+    await admin.from("user_roles").insert({
+      user_id: authUserId,
+      role: "basic_tier",
+      subscription_status: "none",
+    });
+  }
+
+  // Keep the account usable — never flip a non-banned user to "revoked".
+  await admin
+    .from("profiles")
+    .update({ access_status: "active", updated_at: new Date().toISOString() })
+    .eq("user_id", authUserId)
+    .neq("access_status", "banned");
+
+  console.log("[sweep-stripe-access] downgraded_to_basic", JSON.stringify({ authUserId, email }));
 }
 
 interface AccessRow {
@@ -100,7 +149,7 @@ serve(async (req) => {
     const studentIds = access.map((r) => r.user_id);
     const { data: students } = await admin
       .from("students")
-      .select("id, email, stripe_customer_id")
+      .select("id, email, stripe_customer_id, auth_user_id")
       .in("id", studentIds);
     const studentMap = new Map<string, StudentRow>((students || []).map((s) => [s.id, s as StudentRow]));
 
@@ -236,6 +285,11 @@ serve(async (req) => {
           .eq("product_key", row.product_key);
         updated++;
 
+        // Subscription is gone → drop to Free Basic instead of blocking the account.
+        if (newStatus === "canceled") {
+          await downgradeToBasic(admin, student.auth_user_id, email);
+        }
+
         await admin.from("audit_logs").insert({
           admin_id: actorId ?? "00000000-0000-0000-0000-000000000000",
           target_user_id: row.user_id,
@@ -262,7 +316,7 @@ serve(async (req) => {
     // not staff, not protected.
     // ---------------------------------------------------------------------
     let orphansScanned = 0;
-    let orphansRevoked = 0;
+    let orphansDowngraded = 0;
     let orphansSkipped = 0;
 
     const { data: activeProfiles } = await admin
@@ -355,24 +409,25 @@ serve(async (req) => {
           continue;
         }
 
-        changes.push({ user_id: uid, email, from: "active", to: "revoked", result: "orphan_revoked" });
+        changes.push({ user_id: uid, email, from: "active", to: "basic_tier", result: "orphan_downgraded_to_basic" });
 
         if (!dryRun) {
-          await admin.from("profiles").update({ access_status: "revoked", updated_at: new Date().toISOString() }).eq("user_id", uid);
+          // Downgrade, never revoke. They keep the app + free community/content.
+          await downgradeToBasic(admin, uid, email);
           await admin.from("audit_logs").insert({
             admin_id: actorId ?? "00000000-0000-0000-0000-000000000000",
             target_user_id: uid,
             action: isCron ? "sweep_orphan_access_cron" : "sweep_orphan_access",
-            metadata: { previous_status: "active", new_status: "revoked", target_email: email, reason: "no_membership_row_and_no_stripe_subscription" },
+            metadata: { previous_status: "active", new_status: "basic_tier", target_email: email, reason: "no_membership_row_and_no_stripe_subscription" },
           });
-          orphansRevoked++;
+          orphansDowngraded++;
         }
       }
     }
 
     log("DONE", {
       scanned: access.length, updated, noStripe, skippedProtected, skippedLookupFailed,
-      orphansScanned, orphansRevoked, orphansSkipped, dryRun,
+      orphansScanned, orphansDowngraded, orphansSkipped, dryRun,
     });
 
 
@@ -380,7 +435,7 @@ serve(async (req) => {
       JSON.stringify({
         scanned: access.length, updated, no_stripe: noStripe,
         skipped_protected: skippedProtected, skipped_lookup_failed: skippedLookupFailed,
-        orphans_scanned: orphansScanned, orphans_revoked: orphansRevoked, orphans_skipped: orphansSkipped,
+        orphans_scanned: orphansScanned, orphans_downgraded: orphansDowngraded, orphans_skipped: orphansSkipped,
         dry_run: dryRun, changes,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
