@@ -166,6 +166,13 @@ serve(async (req) => {
         .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
     );
 
+    // Whitelisted members (manual/owner grants) keep full access regardless of
+    // what Stripe says — they were never meant to have a Stripe subscription.
+    const { data: mainWhitelist } = await admin.from("allowed_signups").select("email");
+    const whitelistedEmails = new Set(
+      (mainWhitelist || []).map((w) => (w.email || "").trim().toLowerCase()).filter(Boolean),
+    );
+
     let skippedProtected = 0;
     let skippedLookupFailed = 0;
 
@@ -174,11 +181,12 @@ serve(async (req) => {
       if (!student) continue;
       const email = student.email?.trim().toLowerCase() || null;
 
-      if (email && protectedEmails.has(email)) {
+      if (email && (protectedEmails.has(email) || whitelistedEmails.has(email))) {
         skippedProtected++;
         changes.push({ user_id: row.user_id, email, result: "skipped_protected", from: row.status, to: row.status });
         continue;
       }
+
 
       // Resolve Stripe customer (exact email match, then fuzzy search fallback)
       let customerId = row.stripe_customer_id || student.stripe_customer_id || null;
