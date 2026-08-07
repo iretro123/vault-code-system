@@ -128,11 +128,21 @@ const ResetPassword = () => {
             <p className="text-sm text-foreground font-medium">Password updated successfully.</p>
             <p className="text-xs text-muted-foreground">Redirecting to sign in…</p>
           </Card>
+        ) : !ready && error ? (
+          <Card className="p-6 text-center space-y-4">
+            <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
+            <p className="text-sm text-foreground font-medium">Reset link no longer valid</p>
+            <p className="text-xs text-muted-foreground">{error}</p>
+            <Button className="w-full h-12" onClick={() => navigate("/auth?reset=1")}>
+              Request a new reset link
+            </Button>
+          </Card>
         ) : !ready ? (
           <Card className="p-6 text-center space-y-3">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Verifying your reset link…</p>
-            <p className="text-xs text-muted-foreground">If this takes too long, the link may have expired. <button onClick={() => navigate("/auth")} className="text-primary hover:underline">Request a new one.</button></p>
+            <p className="text-xs text-muted-foreground">If this takes too long, the link may have expired. <button onClick={() => navigate("/auth?reset=1")} className="text-primary hover:underline">Request a new one.</button></p>
+
           </Card>
         ) : (
           <Card className="p-6">
