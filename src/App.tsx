@@ -94,25 +94,21 @@ function ReloadGuardReset() {
 }
 
 /**
- * Redirect basic_tier members away from full-app routes before
+ * Redirect Free Basic members away from full-app routes before
  * any heavy layout/data fetching mounts. Uses AuthContext's
  * already-loaded role to stay synchronous.
+ *
+ * Deny-by-default: only roles in FULL_ACCESS_ROLES pass through.
  */
 function BasicTierRedirect({ children }: { children: ReactNode }) {
   const { userRole, loading } = useAuth();
   const location = useLocation();
   if (loading) return <RouteFallback />;
-  if (userRole?.role !== "basic_tier") return <>{children}</>;
-  const path = location.pathname;
-  const allowed =
-    path === "/academy/learn" || path.startsWith("/academy/learn/") ||
-    path === "/academy/bootcamp" || path.startsWith("/academy/bootcamp") ||
-    path === "/academy/community" || path.startsWith("/academy/community") ||
-    path === "/academy/settings" || path.startsWith("/academy/settings") ||
-    path === "/academy/profile";
-  if (allowed) return <>{children}</>;
+  if (hasFullAccess(userRole?.role)) return <>{children}</>;
+  if (isFreeBasicAllowedPath(location.pathname)) return <>{children}</>;
   return <Navigate to="/academy/learn" replace />;
 }
+
 
 function RouteFallback() {
   return (
