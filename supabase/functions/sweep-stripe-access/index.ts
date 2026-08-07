@@ -149,7 +149,7 @@ serve(async (req) => {
     const studentIds = access.map((r) => r.user_id);
     const { data: students } = await admin
       .from("students")
-      .select("id, email, stripe_customer_id")
+      .select("id, email, stripe_customer_id, auth_user_id")
       .in("id", studentIds);
     const studentMap = new Map<string, StudentRow>((students || []).map((s) => [s.id, s as StudentRow]));
 
