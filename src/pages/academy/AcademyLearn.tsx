@@ -288,8 +288,11 @@ const AcademyLearn = () => {
                       {/* Module number badge */}
                       <div className="absolute top-3 left-3 flex items-center gap-1.5">
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm text-[11px] font-mono text-white/70">
-                          Module {String(i + 1).padStart(2, "0")}
+                          {isBridgeFirst && i === 0
+                            ? "Foundations"
+                            : `Module ${String(isBridgeFirst ? i : i + 1).padStart(2, "0")}`}
                         </span>
+
                         {isHidden && canManageContent && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/80 backdrop-blur-sm text-[10px] font-semibold text-black">
                             <EyeOff className="h-3 w-3" /> Hidden
