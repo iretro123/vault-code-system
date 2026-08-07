@@ -291,8 +291,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       let roleData: UserRole | null = null;
       if (roleRows && roleRows.length > 0) {
-        // basic_tier always wins (locked-down membership), then operator, then hierarchy order.
-        const priority: AppRole[] = ["basic_tier", "operator", "vault_intelligence", "vault_access", "vault_os_owner", "free"];
+        // Highest entitlement wins. basic_tier/free rank LAST so a leftover
+        // signup row can never demote a staff member or a paying customer.
+        // Visibility itself is deny-by-default in src/lib/entitlements.ts.
+        const priority: AppRole[] = ["operator", "vault_intelligence", "vault_access", "vault_os_owner", "basic_tier", "free"];
+
         const sorted = [...roleRows].sort(
           (a, b) => priority.indexOf(a.role as AppRole) - priority.indexOf(b.role as AppRole)
         );
