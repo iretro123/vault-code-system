@@ -16,6 +16,8 @@ import {
   clearMembershipUiState,
   isSharedGuestAccount,
 } from "@/lib/membership";
+import { hasFullAccess as hasFullAccessRole } from "@/lib/entitlements";
+
 import { StoreKitMembership, type MembershipProduct, type MembershipTransaction } from "@/lib/nativeMembership";
 import { GooglePlayMembership, type GooglePlayMembershipTransaction } from "@/lib/googlePlayMembership";
 
