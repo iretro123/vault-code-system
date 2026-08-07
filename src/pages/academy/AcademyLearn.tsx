@@ -52,11 +52,12 @@ const AcademyLearn = () => {
       list = list.filter(m => (m as any).basic_only === true || m.slug === BASIC_ONLY_SLUG);
       return list;
     }
-    // Paid members: same Beginner Bridge videos, blended in as the foundations
-    // module so it doesn't collide with the paid "Chapter 1" naming.
+    // Paid members: same Beginner Bridge videos, shown first as the foundations
+    // module (labelled separately so it doesn't collide with paid "Chapter 1").
     const bridge = list.filter(m => m.slug === BASIC_ONLY_SLUG);
     const rest = list.filter(m => m.slug !== BASIC_ONLY_SLUG);
-    return [...rest, ...bridge];
+    return [...bridge, ...rest];
+
   }, [allModules, canManageContent, isGuestOrBasic]);
 
   // Display-only labels so the shared Beginner Bridge module reads correctly
