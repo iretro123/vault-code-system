@@ -125,9 +125,10 @@ function LaunchRedirect() {
 
   if (loading) return <RouteFallback />;
   if (!user) return <Navigate to="/welcome" replace />;
-  if (userRole?.role === "basic_tier") {
+  if (!hasFullAccess(userRole?.role)) {
     return <Navigate to="/academy/community?tab=trade-floor" replace />;
   }
+
   return <Navigate to="/academy/home" replace />;
 }
 
