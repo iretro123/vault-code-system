@@ -316,10 +316,11 @@ const AcademyLearn = () => {
 
                     {/* Content */}
                     <div className="p-5">
-                      <h3 className="font-semibold text-foreground text-base leading-snug mb-1">{mod.title}</h3>
-                      {mod.subtitle && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{mod.subtitle}</p>
+                      <h3 className="font-semibold text-foreground text-base leading-snug mb-1">{labelFor(mod).title}</h3>
+                      {labelFor(mod).subtitle && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{labelFor(mod).subtitle}</p>
                       )}
+
 
                       {/* Progress */}
                       <div className="mb-4">
