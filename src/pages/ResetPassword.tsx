@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,11 @@ import { Shield, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PasswordStrengthChecklist, isPasswordStrong } from "@/components/PasswordStrengthChecklist";
 
+// Module-level guard: a recovery token_hash can only be redeemed ONCE.
+// Without this, a remount (or double effect run) burns the token and the
+// second call fails with "One-time token not found".
+let redeemedToken: string | null = null;
+
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
@@ -16,20 +21,40 @@ const ResetPassword = () => {
   const [ready, setReady] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const startedRef = useRef(false);
 
   useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+
     // Primary: read token_hash from query params (direct link, bypasses Supabase redirect)
     const params = new URLSearchParams(window.location.search);
     const tokenHash = params.get("token_hash");
     const type = params.get("type");
 
     if (tokenHash && type === "recovery") {
+      if (redeemedToken === tokenHash) {
+        // Already redeemed in this browsing session — trust the existing session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) setReady(true);
+          else setError("This reset link was already used. Please request a new one.");
+        });
+        return;
+      }
+      redeemedToken = tokenHash;
       supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
-        .then(({ error: otpError }) => {
-          if (otpError) {
-            setError("Reset link is invalid or expired. Please request a new one.");
-          } else {
+        .then(async ({ error: otpError }) => {
+          if (!otpError) {
             setReady(true);
+            return;
+          }
+          // The token may have been consumed already (double request) — if a
+          // recovery session exists we can still let them set a password.
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setReady(true);
+          } else {
+            setError("This reset link is invalid, already used, or expired. Please request a new one.");
           }
         });
       return; // no cleanup needed
@@ -54,6 +79,7 @@ const ResetPassword = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
