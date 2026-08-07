@@ -60,6 +60,10 @@ const AcademyLearn = () => {
 
   }, [allModules, canManageContent, isGuestOrBasic]);
 
+  // True when the shared Beginner Bridge card leads the grid (paid members).
+  const isBridgeFirst = !canManageContent && !isGuestOrBasic && modules[0]?.slug === BASIC_ONLY_SLUG;
+
+
   // Display-only labels so the shared Beginner Bridge module reads correctly
   // for paid members (content and slug stay untouched).
   const labelFor = (mod: { slug: string; title: string; subtitle?: string | null }) => {
