@@ -168,7 +168,12 @@ const AcademyModule = () => {
           <span className="hidden sm:inline">Courses</span>
         </button>
         <div className="h-4 w-px bg-border" />
-        <h1 className="text-sm font-semibold text-foreground truncate flex-1">{mod!.title}</h1>
+        <h1 className="text-sm font-semibold text-foreground truncate flex-1">
+          {isBasicMiniCourse && !isGuestOrBasic && !canManageContent
+            ? "Beginner Bridge — Foundations"
+            : mod!.title}
+        </h1>
+
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground">{progressPct}%</span>
           <Progress value={progressPct} className="w-20 h-1.5" />

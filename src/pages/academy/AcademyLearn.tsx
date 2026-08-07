@@ -50,9 +50,27 @@ const AcademyLearn = () => {
     if (canManageContent) return list;
     if (isGuestOrBasic) {
       list = list.filter(m => (m as any).basic_only === true || m.slug === BASIC_ONLY_SLUG);
+      return list;
     }
-    return list;
+    // Paid members: same Beginner Bridge videos, blended in as the foundations
+    // module so it doesn't collide with the paid "Chapter 1" naming.
+    const bridge = list.filter(m => m.slug === BASIC_ONLY_SLUG);
+    const rest = list.filter(m => m.slug !== BASIC_ONLY_SLUG);
+    return [...rest, ...bridge];
   }, [allModules, canManageContent, isGuestOrBasic]);
+
+  // Display-only labels so the shared Beginner Bridge module reads correctly
+  // for paid members (content and slug stay untouched).
+  const labelFor = (mod: { slug: string; title: string; subtitle?: string | null }) => {
+    if (mod.slug !== BASIC_ONLY_SLUG || isGuestOrBasic || canManageContent) {
+      return { title: mod.title, subtitle: mod.subtitle };
+    }
+    return {
+      title: "Beginner Bridge — Foundations",
+      subtitle: "Starter videos: brokerage, TradingView setup, indicators and chart basics.",
+    };
+  };
+
 
   const allowedSlugs = useMemo(() => new Set(modules.map(m => m.slug)), [modules]);
   const lessons = useMemo(() => {
@@ -298,10 +316,11 @@ const AcademyLearn = () => {
 
                     {/* Content */}
                     <div className="p-5">
-                      <h3 className="font-semibold text-foreground text-base leading-snug mb-1">{mod.title}</h3>
-                      {mod.subtitle && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{mod.subtitle}</p>
+                      <h3 className="font-semibold text-foreground text-base leading-snug mb-1">{labelFor(mod).title}</h3>
+                      {labelFor(mod).subtitle && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{labelFor(mod).subtitle}</p>
                       )}
+
 
                       {/* Progress */}
                       <div className="mb-4">
