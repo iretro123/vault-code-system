@@ -96,7 +96,8 @@ const AcademyAdminUsers = () => {
       // prefer highest priority role
       const prev = roleMap.get(r.user_id);
       const priority = (role: string) =>
-        INTERNAL_ROLES.has(role) ? 4 : PAID_ROLES.has(role) ? 3 : FREE_ROLES.has(role) ? 2 : 1;
+        INTERNAL_ROLES.has(role) ? 4 : PAID_ROLES.has(role) ? 3 : 2;
+
       if (!prev || priority(r.role) > priority(prev.role)) {
         roleMap.set(r.user_id, {
           role: r.role,
