@@ -1317,6 +1317,26 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     return true;
   }), [messages, blockedUserIds]);
 
+  // How many posts in this room are hidden purely because of a block. Without
+  // this, blocking a coach silently empties the whole room with no explanation.
+  const hiddenByBlockCount = useMemo(
+    () => messages.filter((m) => !m.is_deleted && !m.parent_message_id && blockedUserIds.has(m.user_id)).length,
+    [messages, blockedUserIds],
+  );
+
+  const unblockAll = async () => {
+    if (!user?.id) return;
+    const ids = Array.from(blockedUserIds);
+    const { error } = await dynamicSupabase.from("user_blocks").delete().eq("blocker_id", user.id);
+    if (error) {
+      toast.error("Could not unblock. Please try again.");
+      return;
+    }
+    setBlockedUserIds(new Set());
+    toast.success(ids.length > 1 ? "Unblocked. Posts are visible again." : "Unblocked. Posts are visible again.");
+  };
+
+
 
   if (loading) {
     return (
