@@ -210,6 +210,7 @@ function AcademyLayoutInner() {
             </div>
           </div>}
           <main className="academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in pb-4 md:pb-6">
+            <NotificationOptInBanner />
             <Outlet />
           </main>
           <CoachDrawer />
