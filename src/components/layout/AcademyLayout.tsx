@@ -9,6 +9,7 @@ import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
 import { PastDueBanner } from "@/components/academy/PastDueBanner";
+import { NotificationOptInBanner } from "@/components/academy/NotificationOptInBanner";
 import { isBillingVisible } from "@/lib/featureFlags";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
@@ -295,6 +296,7 @@ function AcademyLayoutInner() {
 
         <main className={`academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in ${isCommunity ? "pb-4" : "pb-4 md:pb-6"}`}>
           {showPastDueBanner && <PastDueBanner />}
+          <NotificationOptInBanner />
           <Outlet />
         </main>
 
