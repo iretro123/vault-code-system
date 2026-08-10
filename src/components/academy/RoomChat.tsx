@@ -128,6 +128,9 @@ type DynamicTableClient = {
   };
   insert: (values: ContentReportInsert) => Promise<{ error: unknown | null }>;
   upsert: (values: UserBlockInsert, options?: { onConflict?: string }) => Promise<{ error: unknown | null }>;
+  delete: () => {
+    eq: (column: string, value: string) => Promise<{ error: unknown | null }>;
+  };
 };
 
 type DynamicSupabaseClient = {
