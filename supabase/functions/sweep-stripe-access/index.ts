@@ -41,6 +41,18 @@ async function downgradeToBasic(
 ) {
   if (!authUserId) return;
 
+  // Staff (owner/operator) must never be touched by an automated sweep.
+  const { data: staffRow } = await admin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", authUserId)
+    .in("role", ["vault_os_owner", "operator"])
+    .maybeSingle();
+  if (staffRow?.id) {
+    console.log("[sweep-stripe-access] skipped_staff", JSON.stringify({ authUserId, email }));
+    return;
+  }
+
   // Clear premium role rows so no paid feature stays unlocked.
   await admin.from("user_roles").delete().eq("user_id", authUserId).in("role", PREMIUM_ROLES);
 
