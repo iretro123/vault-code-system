@@ -1571,9 +1571,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <ItemComponent onClick={() => reportMessage(msg)} className="gap-2 text-xs text-amber-400 focus:text-amber-400">
                     <Flag className="h-3 w-3" /> Report message
                   </ItemComponent>
-                  <ItemComponent onClick={() => blockUser(msg)} className="gap-2 text-xs text-destructive focus:text-destructive">
-                    <UserX className="h-3 w-3" /> Block user
-                  </ItemComponent>
+                  {!isProtectedAuthor(msg.user_id, msg.user_role) && (
+                    <ItemComponent onClick={() => blockUser(msg)} className="gap-2 text-xs text-destructive focus:text-destructive">
+                      <UserX className="h-3 w-3" /> Block user
+                    </ItemComponent>
+                  )}
                 </>
               )}
               {/* Moderator-only actions */}
