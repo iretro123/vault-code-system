@@ -1,17 +1,13 @@
 import { useEffect } from "react";
 import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
-import { Device } from "@capacitor/device";
 import { PushNotifications } from "@capacitor/push-notifications";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { hapticStrong } from "@/lib/nativeFeedback";
-
-function isNativePlatform() {
-  if (typeof window === "undefined") return false;
-  if (Capacitor.isNativePlatform()) return true;
-  if (window.location?.protocol === "capacitor:") return true;
-  return /Capacitor/i.test(navigator.userAgent);
-}
+import {
+  getPlatformKey,
+  isNativePushPlatform,
+  registerTokenForCurrentUser,
+} from "@/lib/pushPermission";
 
 const HAPTIC_NOTIFICATION_TYPES = new Set([
   "mention",
@@ -38,86 +34,29 @@ interface PushReceivedNotification {
   };
 }
 
-async function registerTokenForCurrentUser(params: {
-  token: string;
-  userId: string;
-  platformKey: string;
-  basePlatform: string;
-}) {
-  const { token, userId, platformKey, basePlatform } = params;
-
-  const { error: rpcError } = await supabase.rpc("register_device_token", {
-    _token: token,
-    _platform: platformKey,
-  });
-
-  if (!rpcError) return;
-
-  console.warn("register_device_token RPC failed, falling back to direct token upsert", rpcError);
-
-  await supabase
-    .from("device_tokens")
-    .upsert({
-      user_id: userId,
-      token,
-      platform: platformKey,
-      last_seen_at: new Date().toISOString(),
-    }, { onConflict: "token" });
-
-  // Replace legacy plain-platform rows and stale rows for this exact device
-  // so one physical device does not keep generating duplicate pushes.
-  await supabase
-    .from("device_tokens")
-    .delete()
-    .eq("user_id", userId)
-    .eq("platform", platformKey)
-    .neq("token", token);
-
-  if (platformKey !== basePlatform) {
-    await supabase
-      .from("device_tokens")
-      .delete()
-      .eq("user_id", userId)
-      .eq("platform", basePlatform)
-      .neq("token", token);
-  }
-}
-
+/**
+ * Keeps push listeners mounted and silently re-registers the device token
+ * whenever permission is ALREADY granted. It never triggers the OS prompt —
+ * that only happens from an explicit user tap (see NotificationOptInBanner).
+ */
 export function usePushNotifications() {
   const { user } = useAuth();
   const userId = user?.id;
 
   useEffect(() => {
     if (!userId) return;
-    if (!isNativePlatform()) return;
+    if (!isNativePushPlatform()) return;
 
     let active = true;
     let removeListeners = async () => {};
 
-    async function getPlatformKey() {
-      const basePlatform = Capacitor.getPlatform();
-      try {
-        const { identifier } = await Device.getId();
-        const stableId = String(identifier || "").trim();
-        if (stableId) return `${basePlatform}:${stableId}`;
-      } catch (err) {
-        console.warn("Failed to resolve device id for push token registration", err);
-      }
-      return basePlatform;
-    }
-
-    async function registerPush() {
+    async function silentRegisterIfGranted() {
       try {
         const perm = await PushNotifications.checkPermissions();
-        console.info("Push permission status", perm.receive);
-        if (perm.receive !== "granted") {
-          const request = await PushNotifications.requestPermissions();
-          console.info("Push permission request result", request.receive);
-          if (request.receive !== "granted") return;
-        }
+        if (perm.receive !== "granted") return;
         await PushNotifications.register();
       } catch (err) {
-        console.warn("Push registration failed", err);
+        console.warn("Push re-registration failed", err);
       }
     }
 
@@ -125,7 +64,6 @@ export function usePushNotifications() {
       const listeners = await Promise.all<PluginListenerHandle>([
         PushNotifications.addListener("registration", async (token: PushRegistrationToken) => {
           try {
-            console.info("Push registration token received", String(token?.value || "").slice(0, 18));
             const platformKey = await getPlatformKey();
             const basePlatform = Capacitor.getPlatform();
             await registerTokenForCurrentUser({
@@ -134,7 +72,6 @@ export function usePushNotifications() {
               platformKey,
               basePlatform,
             });
-            console.info("Push token saved for user", userId);
           } catch (err) {
             console.warn("Failed to save push token", err);
           }
@@ -166,7 +103,7 @@ export function usePushNotifications() {
     }
 
     void setupPush();
-    void registerPush();
+    void silentRegisterIfGranted();
 
     return () => {
       active = false;
