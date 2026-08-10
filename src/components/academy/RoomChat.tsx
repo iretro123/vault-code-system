@@ -1467,7 +1467,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </div>
         )}
 
+        {hiddenByBlockCount > 0 && (
+          <div className="mx-auto my-3 flex max-w-md flex-col items-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3 text-center">
+            <p className="text-xs font-semibold text-foreground/80">
+              {hiddenByBlockCount} {hiddenByBlockCount === 1 ? "post is" : "posts are"} hidden because you blocked someone in this room.
+            </p>
+            <Button variant="outline" size="sm" onClick={unblockAll} className="h-7 text-xs">
+              Unblock and show posts
+            </Button>
+          </div>
+        )}
+
         {messages.length === 0 && (
+
            <div className="text-center py-16 max-w-xs mx-auto space-y-2">
             {roomSlug === "options-lounge" ? (
               <>
