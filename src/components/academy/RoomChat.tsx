@@ -128,6 +128,9 @@ type DynamicTableClient = {
   };
   insert: (values: ContentReportInsert) => Promise<{ error: unknown | null }>;
   upsert: (values: UserBlockInsert, options?: { onConflict?: string }) => Promise<{ error: unknown | null }>;
+  delete: () => {
+    eq: (column: string, value: string) => Promise<{ error: unknown | null }>;
+  };
 };
 
 type DynamicSupabaseClient = {
@@ -1317,6 +1320,26 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     return true;
   }), [messages, blockedUserIds]);
 
+  // How many posts in this room are hidden purely because of a block. Without
+  // this, blocking a coach silently empties the whole room with no explanation.
+  const hiddenByBlockCount = useMemo(
+    () => messages.filter((m) => !m.is_deleted && !m.parent_message_id && blockedUserIds.has(m.user_id)).length,
+    [messages, blockedUserIds],
+  );
+
+  const unblockAll = async () => {
+    if (!user?.id) return;
+    const ids = Array.from(blockedUserIds);
+    const { error } = await dynamicSupabase.from("user_blocks").delete().eq("blocker_id", user.id);
+    if (error) {
+      toast.error("Could not unblock. Please try again.");
+      return;
+    }
+    setBlockedUserIds(new Set());
+    toast.success(ids.length > 1 ? "Unblocked. Posts are visible again." : "Unblocked. Posts are visible again.");
+  };
+
+
 
   if (loading) {
     return (
@@ -1444,7 +1467,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </div>
         )}
 
+        {hiddenByBlockCount > 0 && (
+          <div className="mx-auto my-3 flex max-w-md flex-col items-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] px-4 py-3 text-center">
+            <p className="text-xs font-semibold text-foreground/80">
+              {hiddenByBlockCount} {hiddenByBlockCount === 1 ? "post is" : "posts are"} hidden because you blocked someone in this room.
+            </p>
+            <Button variant="outline" size="sm" onClick={unblockAll} className="h-7 text-xs">
+              Unblock and show posts
+            </Button>
+          </div>
+        )}
+
         {messages.length === 0 && (
+
            <div className="text-center py-16 max-w-xs mx-auto space-y-2">
             {roomSlug === "options-lounge" ? (
               <>
