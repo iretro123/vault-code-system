@@ -94,11 +94,23 @@ const AcademyCommunity = () => {
   });
   const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
   const canPostRestricted = isCEO || isAdmin || isOperator;
-  const { session, user, profile, signOut } = useAuth();
-  const { isBasicTier } = useIsBasicTier();
+  const { session, user, profile, signOut, refetchProfile } = useAuth();
+  const { isBasicTier, loading: tierLoading } = useIsBasicTier();
   const userId = session?.user?.id || null;
   const sharedGuest = isSharedGuestAccount(user, profile);
-  const shouldGateSignals = (isBasicTier || sharedGuest) && !canPostRestricted;
+  // Never show the paywall until the role has actually resolved — a stale or
+  // still-loading role must not lock a paying member out of Signals.
+  const shouldGateSignals = !tierLoading && (isBasicTier || sharedGuest) && !canPostRestricted;
+
+  // Refresh entitlements whenever the Community page opens so role changes
+  // (upgrade, whitelist restore) land without a full app reload.
+  const refreshedRef = useRef(false);
+  useEffect(() => {
+    if (!userId || refreshedRef.current) return;
+    refreshedRef.current = true;
+    void refetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const activeRoomSlug = TABS.find((t) => t.key === activeTab)?.roomSlug || "trade-floor";
   const { counts, markRead } = useUnreadCounts(activeRoomSlug || "trade-floor", userId);
