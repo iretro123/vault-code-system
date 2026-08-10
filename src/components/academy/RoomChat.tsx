@@ -1288,8 +1288,21 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     toast.success("Reported to moderators. We'll review it within 24 hours.");
   };
 
+  // Staff/coach posts are official content (signals, live calls, announcements).
+  // Members must always see them, so they can never be blocked or hidden.
+  const isProtectedAuthor = useCallback((userId: string, userRole?: string) => {
+    const academyRole = getProfile(userId)?.academy_role_name;
+    if (academyRole === "CEO" || academyRole === "Admin" || academyRole === "Coach") return true;
+    const r = (userRole || "").toLowerCase();
+    return r === "operator" || r === "vault_os_owner";
+  }, [getProfile]);
+
   const blockUser = async (msg: RoomChatMessage) => {
     if (!user?.id || msg.user_id === user.id) return;
+    if (isProtectedAuthor(msg.user_id, msg.user_role)) {
+      toast.info("Coaches and admins can't be blocked — their posts are official content.");
+      return;
+    }
 
     setBlockedUserIds((prev) => new Set(prev).add(msg.user_id));
 
@@ -1316,15 +1329,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const filteredMessages = useMemo(() => messages.filter((msg) => {
     if (msg.is_deleted) return false;
     if (msg.parent_message_id) return false;
-    if (blockedUserIds.has(msg.user_id)) return false;
+    if (blockedUserIds.has(msg.user_id) && !isProtectedAuthor(msg.user_id, msg.user_role)) return false;
     return true;
-  }), [messages, blockedUserIds]);
+  }), [messages, blockedUserIds, isProtectedAuthor]);
 
   // How many posts in this room are hidden purely because of a block. Without
-  // this, blocking a coach silently empties the whole room with no explanation.
+  // this, blocking someone silently empties the room with no explanation.
   const hiddenByBlockCount = useMemo(
-    () => messages.filter((m) => !m.is_deleted && !m.parent_message_id && blockedUserIds.has(m.user_id)).length,
-    [messages, blockedUserIds],
+    () => messages.filter((m) => !m.is_deleted && !m.parent_message_id && blockedUserIds.has(m.user_id) && !isProtectedAuthor(m.user_id, m.user_role)).length,
+    [messages, blockedUserIds, isProtectedAuthor],
   );
 
   const unblockAll = async () => {
@@ -1558,9 +1571,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <ItemComponent onClick={() => reportMessage(msg)} className="gap-2 text-xs text-amber-400 focus:text-amber-400">
                     <Flag className="h-3 w-3" /> Report message
                   </ItemComponent>
-                  <ItemComponent onClick={() => blockUser(msg)} className="gap-2 text-xs text-destructive focus:text-destructive">
-                    <UserX className="h-3 w-3" /> Block user
-                  </ItemComponent>
+                  {!isProtectedAuthor(msg.user_id, msg.user_role) && (
+                    <ItemComponent onClick={() => blockUser(msg)} className="gap-2 text-xs text-destructive focus:text-destructive">
+                      <UserX className="h-3 w-3" /> Block user
+                    </ItemComponent>
+                  )}
                 </>
               )}
               {/* Moderator-only actions */}
