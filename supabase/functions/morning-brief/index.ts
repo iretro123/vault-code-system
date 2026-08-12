@@ -237,6 +237,7 @@ Rules: titles max 5 words. Each body max 240 characters, 1-2 sentences. Never in
       .map((e: any) => ({
         date: e.date,
         time: fmtTime(e.time_et),
+        time_et: e.time_et,
         name: e.event_name.replace(/\s+(m\/m|y\/y)$/i, ""),
         impact: e.impact,
       }));
