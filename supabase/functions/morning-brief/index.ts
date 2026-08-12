@@ -219,12 +219,27 @@ Rules: titles max 5 words. Each body max 240 characters, 1-2 sentences. Never in
       }
     }
 
-    const keyEvents = (bigEvents.length ? bigEvents : allEvents.slice(0, 6)).map((e: any) => ({
-      date: e.date,
-      time: fmtTime(e.time_et),
-      name: e.event_name,
-      impact: e.impact,
-    }));
+    // Collapse near-duplicate releases (CPI m/m, CPI y/y, Core CPI...) into one chip per family/day.
+    const familyKey = (name: string) =>
+      name
+        .replace(/\b(m\/m|y\/y|q\/q|core|advance|final|prelim|revised)\b/gi, "")
+        .replace(/[^a-z]/gi, "")
+        .toLowerCase();
+    const seenFamily = new Set<string>();
+    const keyEvents = (bigEvents.length ? bigEvents : allEvents)
+      .filter((e: any) => {
+        const k = `${e.date}|${familyKey(e.event_name)}`;
+        if (seenFamily.has(k)) return false;
+        seenFamily.add(k);
+        return true;
+      })
+      .slice(0, 6)
+      .map((e: any) => ({
+        date: e.date,
+        time: fmtTime(e.time_et),
+        name: e.event_name.replace(/\s+(m\/m|y\/y)$/i, ""),
+        impact: e.impact,
+      }));
 
     await admin
       .from("daily_briefs")
