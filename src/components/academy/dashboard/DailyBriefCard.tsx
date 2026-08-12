@@ -16,11 +16,36 @@ interface BriefEvent {
   impact: string;
 }
 
-const ROW_META: Record<BriefItem["kind"], { label: string; accent: string; dot: string }> = {
-  focus: { label: "Focus", accent: "bg-primary", dot: "bg-primary" },
-  caution: { label: "Caution", accent: "bg-amber-400", dot: "bg-amber-400" },
-  ahead: { label: "Ahead", accent: "bg-emerald-400", dot: "bg-emerald-400" },
+const NOTE_META: Record<
+  BriefItem["kind"],
+  { label: string; surface: string; edge: string; tape: string; text: string; tilt: string }
+> = {
+  focus: {
+    label: "Today's Focus",
+    surface: "bg-[hsl(215_85%_58%_/_0.10)]",
+    edge: "border-[hsl(215_85%_62%_/_0.28)]",
+    tape: "bg-[hsl(215_85%_62%_/_0.35)]",
+    text: "text-[hsl(213_95%_78%)]",
+    tilt: "-rotate-[0.5deg]",
+  },
+  caution: {
+    label: "Be Careful",
+    surface: "bg-[hsl(38_92%_55%_/_0.10)]",
+    edge: "border-[hsl(38_92%_60%_/_0.28)]",
+    tape: "bg-[hsl(38_92%_60%_/_0.35)]",
+    text: "text-[hsl(41_96%_74%)]",
+    tilt: "rotate-[0.6deg]",
+  },
+  ahead: {
+    label: "Coming Up",
+    surface: "bg-[hsl(158_70%_48%_/_0.10)]",
+    edge: "border-[hsl(158_70%_52%_/_0.26)]",
+    tape: "bg-[hsl(158_70%_52%_/_0.32)]",
+    text: "text-[hsl(156_72%_72%)]",
+    tilt: "-rotate-[0.35deg]",
+  },
 };
+
 
 function formatDay(date: string): string {
   const todayStr = new Date().toISOString().slice(0, 10);
