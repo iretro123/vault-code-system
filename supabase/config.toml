@@ -68,3 +68,6 @@ verify_jwt = true
 
 [functions.economic-calendar]
 verify_jwt = false
+
+[functions.morning-brief]
+verify_jwt = false
