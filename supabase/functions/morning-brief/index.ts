@@ -59,13 +59,13 @@ Deno.serve(async (req) => {
     // ── Cached brief for today ──
     const { data: cached } = await admin
       .from("daily_briefs")
-      .select("items")
+      .select("items, events")
       .eq("user_id", user.id)
       .eq("brief_date", today)
       .maybeSingle();
 
     if (cached?.items) {
-      return json({ date: today, items: cached.items, cached: true });
+      return json({ date: today, items: cached.items, events: cached.events || [], cached: true });
     }
 
     const weekAhead = etDateStr(7);
