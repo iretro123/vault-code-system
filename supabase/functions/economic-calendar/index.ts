@@ -37,34 +37,71 @@ Deno.serve(async (req) => {
       let eventsCount = 0;
       let earningsCount = 0;
 
-      // ── Economic Calendar: Scrape MarketWatch ──
+      // ── Economic Calendar: FairEconomy JSON feed (this week + next week) ──
       try {
-        const mwRes = await fetch("https://www.marketwatch.com/economy-politics/calendar", {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            Accept: "text/html,application/xhtml+xml",
-          },
-        });
-        const html = await mwRes.text();
-        console.log(`MarketWatch HTML length: ${html.length}`);
+        const feeds = [
+          "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+          "https://nfs.faireconomy.media/ff_calendar_nextweek.json",
+        ];
+        const events: any[] = [];
+        for (const url of feeds) {
+          try {
+            const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+            if (!res.ok) {
+              console.error(`Feed ${url} failed: ${res.status}`);
+              continue;
+            }
+            const rows = await res.json();
+            for (const r of rows || []) {
+              if (r?.country !== "USD") continue;
+              const raw = String(r.date || "");
+              if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) continue;
+              // Feed timestamps are already US Eastern with an offset suffix — keep local parts.
+              const date = raw.slice(0, 10);
+              const timeEt = raw.slice(11, 16);
+              const name = String(r.title || "").trim();
+              if (!name) continue;
+              const impactRaw = String(r.impact || "").toLowerCase();
+              const impact =
+                impactRaw === "high" ? "high" : impactRaw === "medium" ? "medium" : classifyImpact(name) === "high" ? "high" : "low";
+              events.push({
+                id: `ff-${slugify(name)}-${date}`,
+                date,
+                time_et: timeEt,
+                country: "US",
+                event_name: name,
+                impact,
+                actual: parseNumericValue(r.actual || ""),
+                estimate: parseNumericValue(r.forecast || ""),
+                prev: parseNumericValue(r.previous || ""),
+                unit: detectUnit(r.forecast || r.previous || ""),
+                fetched_at: new Date().toISOString(),
+              });
+            }
+          } catch (e) {
+            console.error(`Feed ${url} error:`, (e as Error).message);
+          }
+        }
 
-        const events = parseMarketWatchEvents(html);
-        console.log(`Parsed ${events.length} economic events from MarketWatch`);
+        const seen = new Set<string>();
+        const unique = events.filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)));
+        console.log(`Parsed ${unique.length} US economic events from feed`);
 
-        if (events.length > 0) {
+        if (unique.length > 0) {
           await sb.from("market_events").delete().lt("date", from);
-          for (let i = 0; i < events.length; i += 50) {
-            const chunk = events.slice(i, i + 50);
+          for (let i = 0; i < unique.length; i += 50) {
+            const chunk = unique.slice(i, i + 50);
             const { error } = await sb
               .from("market_events")
               .upsert(chunk, { onConflict: "id" });
             if (error) console.error("market_events upsert:", error.message);
           }
-          eventsCount = events.length;
+          eventsCount = unique.length;
         }
       } catch (err) {
-        console.error("Failed to scrape MarketWatch:", (err as Error).message);
+        console.error("Failed to load economic calendar:", (err as Error).message);
       }
+
 
       // ── Earnings Calendar: Finnhub ──
       if (finnhubKey) {
