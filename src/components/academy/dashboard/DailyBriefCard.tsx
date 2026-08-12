@@ -16,11 +16,36 @@ interface BriefEvent {
   impact: string;
 }
 
-const ROW_META: Record<BriefItem["kind"], { label: string; accent: string; dot: string }> = {
-  focus: { label: "Focus", accent: "bg-primary", dot: "bg-primary" },
-  caution: { label: "Caution", accent: "bg-amber-400", dot: "bg-amber-400" },
-  ahead: { label: "Ahead", accent: "bg-emerald-400", dot: "bg-emerald-400" },
+const NOTE_META: Record<
+  BriefItem["kind"],
+  { label: string; surface: string; edge: string; tape: string; text: string; tilt: string }
+> = {
+  focus: {
+    label: "Today's Focus",
+    surface: "bg-[hsl(215_85%_58%_/_0.10)]",
+    edge: "border-[hsl(215_85%_62%_/_0.28)]",
+    tape: "bg-[hsl(215_85%_62%_/_0.35)]",
+    text: "text-[hsl(213_95%_78%)]",
+    tilt: "-rotate-[0.5deg]",
+  },
+  caution: {
+    label: "Be Careful",
+    surface: "bg-[hsl(38_92%_55%_/_0.10)]",
+    edge: "border-[hsl(38_92%_60%_/_0.28)]",
+    tape: "bg-[hsl(38_92%_60%_/_0.35)]",
+    text: "text-[hsl(41_96%_74%)]",
+    tilt: "rotate-[0.6deg]",
+  },
+  ahead: {
+    label: "Coming Up",
+    surface: "bg-[hsl(158_70%_48%_/_0.10)]",
+    edge: "border-[hsl(158_70%_52%_/_0.26)]",
+    tape: "bg-[hsl(158_70%_52%_/_0.32)]",
+    text: "text-[hsl(156_72%_72%)]",
+    tilt: "-rotate-[0.35deg]",
+  },
 };
+
 
 function formatDay(date: string): string {
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -95,10 +120,10 @@ export function DailyBriefCard() {
       <header className="flex items-baseline justify-between gap-3 px-5 pt-4 pb-3">
         <div className="flex items-baseline gap-2.5 min-w-0">
           <h2 className="text-[15px] md:text-base font-semibold tracking-tight text-foreground">
-            The Brief
+            Today's Notes
           </h2>
           <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50">
-            Daily
+            Updated daily
           </span>
         </div>
         <time className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50 shrink-0">
@@ -106,23 +131,30 @@ export function DailyBriefCard() {
         </time>
       </header>
 
-      {/* Editorial rows — hairline separated, no nested boxes */}
-      <div className="divide-y divide-white/[0.05] border-y border-white/[0.05]">
+      {/* Sticky notes */}
+      <div className="px-4 pb-1 space-y-2.5">
         {items.map((item, i) => {
-          const meta = ROW_META[item.kind] || ROW_META.focus;
+          const meta = NOTE_META[item.kind] || NOTE_META.focus;
           return (
-            <article key={i} className="relative pl-5 pr-5 py-4">
-              <span className={`absolute left-0 top-4 bottom-4 w-[2px] rounded-full ${meta.accent} opacity-60`} />
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className={`h-1 w-1 rounded-full ${meta.dot}`} />
-                <span className="text-[9.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/55">
-                  {meta.label}
-                </span>
-              </div>
-              <h3 className="text-[15px] font-semibold leading-snug tracking-tight text-foreground">
+            <article
+              key={i}
+              className={`relative rounded-[14px] border ${meta.edge} ${meta.surface} ${meta.tilt} px-4 pt-4 pb-3.5 shadow-[0_10px_24px_-16px_rgba(0,0,0,0.9)] backdrop-blur-[2px]`}
+            >
+              {/* tape strip */}
+              <span
+                className={`absolute -top-[3px] left-1/2 -translate-x-1/2 h-1.5 w-12 rounded-full ${meta.tape}`}
+              />
+              <span
+                className={`text-[9.5px] font-semibold uppercase tracking-[0.22em] ${meta.text}`}
+              >
+                {meta.label}
+              </span>
+              <h3 className="mt-1.5 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
                 {item.title}
               </h3>
               <p className="mt-1 text-[13px] leading-[1.65] text-muted-foreground/85">{item.body}</p>
+              {/* folded corner */}
+              <span className="pointer-events-none absolute bottom-0 right-0 h-5 w-5 rounded-br-[14px] bg-gradient-to-tl from-white/[0.07] to-transparent" />
             </article>
           );
         })}
@@ -130,15 +162,16 @@ export function DailyBriefCard() {
 
       {/* Data rail */}
       {events.length > 0 && (
-        <div className="px-5 pt-3.5 pb-4">
+        <div className="px-5 pt-4 pb-4">
           <div className="flex items-baseline justify-between mb-2.5">
             <p className="text-[9.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/50">
-              Market Catalysts
+              Big News This Week
             </p>
             <p className="text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground/35">
-              Official releases · ET
+              Release times · ET
             </p>
           </div>
+
           <ul className="space-y-0">
             {events.slice(0, 6).map((e, i) => {
               const local = localEquivalent(e.date, e.time_et);
