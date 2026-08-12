@@ -881,6 +881,33 @@ export type Database = {
           },
         ]
       }
+      daily_briefs: {
+        Row: {
+          brief_date: string
+          created_at: string
+          events: Json
+          id: string
+          items: Json
+          user_id: string
+        }
+        Insert: {
+          brief_date: string
+          created_at?: string
+          events?: Json
+          id?: string
+          items?: Json
+          user_id: string
+        }
+        Update: {
+          brief_date?: string
+          created_at?: string
+          events?: Json
+          id?: string
+          items?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_checkin_responses: {
         Row: {
           created_at: string
