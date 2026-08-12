@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, X, GraduationCap } from "lucide-react";
+import { Play, X, GraduationCap, Check } from "lucide-react";
 import { QUIZ_MAP } from "@/components/academy/LessonQuiz";
 import { getVideoEmbedUrl, getYouTubeThumbnail } from "@/lib/videoEmbeds";
+import { getLessonTakeaways } from "@/lib/lessonTakeaways";
 
 interface LatestLesson {
   id: string;
@@ -11,6 +12,14 @@ interface LatestLesson {
   module_slug: string;
   module_title: string;
   video_url: string;
+}
+
+/** Days elapsed since epoch in the viewer's local time — changes exactly once a day. */
+function dayIndex(): number {
+  const now = new Date();
+  return Math.floor(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86_400_000,
+  );
 }
 
 export function StartLearningCard() {
@@ -28,12 +37,20 @@ export function StartLearningCard() {
         .from("academy_lessons")
         .select("id, lesson_title, module_slug, module_title, video_url")
         .eq("visible", true)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      setLesson(data?.[0] || null);
+        .not("video_url", "is", null)
+        .order("created_at", { ascending: false });
+
+      const pool = (data || []).filter((l) => !!l.video_url);
+      if (!pool.length) {
+        setLesson(null);
+      } else {
+        // Rotates to a different lesson each day, same pick for everyone.
+        setLesson(pool[dayIndex() % pool.length]);
+      }
       setLoading(false);
     })();
   }, []);
+
 
   if (loading) {
     return (
