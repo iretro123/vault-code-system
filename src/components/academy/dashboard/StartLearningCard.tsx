@@ -77,6 +77,7 @@ export function StartLearningCard() {
 
   const thumbnail = getYouTubeThumbnail(lesson.video_url);
   const embedUrl = getVideoEmbedUrl(lesson.video_url);
+  const takeaways = getLessonTakeaways(lesson.lesson_title, lesson.module_title);
 
   return (
     <div className="vault-luxury-card p-6 h-full flex flex-col">
@@ -84,7 +85,7 @@ export function StartLearningCard() {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           <span className="text-xs font-bold uppercase tracking-[0.12em] text-primary/80">
-            New Lesson Drop
+            Today's Lesson
           </span>
         </div>
       </div>
@@ -92,9 +93,20 @@ export function StartLearningCard() {
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-1">
         {lesson.module_title}
       </p>
-      <h3 className="text-base font-semibold text-foreground mb-4">
+      <h3 className="text-base font-semibold text-foreground">
         {lesson.lesson_title}
       </h3>
+
+      {/* What you'll learn */}
+      <ul className="mt-3 mb-4 space-y-1.5">
+        {takeaways.map((t, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <Check className="mt-[3px] h-3 w-3 shrink-0 text-primary/70" strokeWidth={3} />
+            <span className="text-[12.5px] leading-[1.5] text-muted-foreground/85">{t}</span>
+          </li>
+        ))}
+      </ul>
+
 
       {/* Video area */}
       {playing && embedUrl ? (
