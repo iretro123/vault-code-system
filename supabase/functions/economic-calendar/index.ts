@@ -54,10 +54,11 @@ Deno.serve(async (req) => {
             const rows = await res.json();
             for (const r of rows || []) {
               if (r?.country !== "USD") continue;
-              const dt = new Date(r.date);
-              if (isNaN(dt.getTime())) continue;
-              const date = new Date(dt.getTime() - 4 * 60 * 60 * 1000).toISOString().slice(0, 10);
-              const timeEt = new Date(r.date).toISOString().slice(11, 16);
+              const raw = String(r.date || "");
+              if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) continue;
+              // Feed timestamps are already US Eastern with an offset suffix — keep local parts.
+              const date = raw.slice(0, 10);
+              const timeEt = raw.slice(11, 16);
               const name = String(r.title || "").trim();
               if (!name) continue;
               const impactRaw = String(r.impact || "").toLowerCase();
