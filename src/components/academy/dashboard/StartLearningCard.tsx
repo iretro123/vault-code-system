@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, X, GraduationCap } from "lucide-react";
+import { Play, X, GraduationCap, Check } from "lucide-react";
 import { QUIZ_MAP } from "@/components/academy/LessonQuiz";
 import { getVideoEmbedUrl, getYouTubeThumbnail } from "@/lib/videoEmbeds";
+import { getLessonTakeaways } from "@/lib/lessonTakeaways";
 
 interface LatestLesson {
   id: string;
@@ -11,6 +12,14 @@ interface LatestLesson {
   module_slug: string;
   module_title: string;
   video_url: string;
+}
+
+/** Days elapsed since epoch in the viewer's local time — changes exactly once a day. */
+function dayIndex(): number {
+  const now = new Date();
+  return Math.floor(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86_400_000,
+  );
 }
 
 export function StartLearningCard() {
@@ -28,12 +37,20 @@ export function StartLearningCard() {
         .from("academy_lessons")
         .select("id, lesson_title, module_slug, module_title, video_url")
         .eq("visible", true)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      setLesson(data?.[0] || null);
+        .not("video_url", "is", null)
+        .order("created_at", { ascending: false });
+
+      const pool = (data || []).filter((l) => !!l.video_url);
+      if (!pool.length) {
+        setLesson(null);
+      } else {
+        // Rotates to a different lesson each day, same pick for everyone.
+        setLesson(pool[dayIndex() % pool.length]);
+      }
       setLoading(false);
     })();
   }, []);
+
 
   if (loading) {
     return (
@@ -60,6 +77,7 @@ export function StartLearningCard() {
 
   const thumbnail = getYouTubeThumbnail(lesson.video_url);
   const embedUrl = getVideoEmbedUrl(lesson.video_url);
+  const takeaways = getLessonTakeaways(lesson.lesson_title, lesson.module_title);
 
   return (
     <div className="vault-luxury-card p-6 h-full flex flex-col">
@@ -67,7 +85,7 @@ export function StartLearningCard() {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           <span className="text-xs font-bold uppercase tracking-[0.12em] text-primary/80">
-            New Lesson Drop
+            Today's Lesson
           </span>
         </div>
       </div>
@@ -75,9 +93,20 @@ export function StartLearningCard() {
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/60 mb-1">
         {lesson.module_title}
       </p>
-      <h3 className="text-base font-semibold text-foreground mb-4">
+      <h3 className="text-base font-semibold text-foreground">
         {lesson.lesson_title}
       </h3>
+
+      {/* What you'll learn */}
+      <ul className="mt-3 mb-4 space-y-1.5">
+        {takeaways.map((t, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <Check className="mt-[3px] h-3 w-3 shrink-0 text-primary/70" strokeWidth={3} />
+            <span className="text-[12.5px] leading-[1.5] text-muted-foreground/85">{t}</span>
+          </li>
+        ))}
+      </ul>
+
 
       {/* Video area */}
       {playing && embedUrl ? (
