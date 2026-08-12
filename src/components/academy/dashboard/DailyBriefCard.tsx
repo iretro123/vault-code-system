@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Sparkles, ShieldAlert, CalendarClock, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,40 +11,34 @@ interface BriefItem {
 interface BriefEvent {
   date: string;
   time: string;
+  time_et?: string | null;
   name: string;
   impact: string;
 }
 
-const STYLES: Record<
-  BriefItem["kind"],
-  { icon: typeof Sparkles; ring: string; iconColor: string; label: string }
-> = {
-  focus: {
-    icon: Sparkles,
-    ring: "border-primary/20 bg-primary/[0.04]",
-    iconColor: "text-primary",
-    label: "Today",
-  },
-  caution: {
-    icon: ShieldAlert,
-    ring: "border-amber-500/20 bg-amber-500/[0.04]",
-    iconColor: "text-amber-400",
-    label: "Watch out",
-  },
-  ahead: {
-    icon: CalendarClock,
-    ring: "border-emerald-500/20 bg-emerald-500/[0.04]",
-    iconColor: "text-emerald-400",
-    label: "Coming up",
-  },
+const ROW_META: Record<BriefItem["kind"], { label: string; accent: string; dot: string }> = {
+  focus: { label: "Focus", accent: "bg-primary", dot: "bg-primary" },
+  caution: { label: "Caution", accent: "bg-amber-400", dot: "bg-amber-400" },
+  ahead: { label: "Ahead", accent: "bg-emerald-400", dot: "bg-emerald-400" },
 };
 
 function formatDay(date: string): string {
-  const d = new Date(`${date}T12:00:00Z`);
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = new Date().toISOString().slice(0, 10);
   if (date === todayStr) return "Today";
+  const d = new Date(`${date}T12:00:00Z`);
   return d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+}
+
+/** Converts an ET clock time into the viewer's local clock, when it differs. */
+function localEquivalent(date: string, timeEt?: string | null): string | null {
+  if (!timeEt) return null;
+  const [h, m] = timeEt.split(":").map(Number);
+  if (Number.isNaN(h)) return null;
+  const utc = new Date(`${date}T${String(h).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}:00-04:00`);
+  if (isNaN(utc.getTime())) return null;
+  const local = utc.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const et = utc.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" });
+  return local === et ? null : local;
 }
 
 export function DailyBriefCard() {
@@ -83,72 +76,106 @@ export function DailyBriefCard() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border bg-card/60 p-5 space-y-3 animate-pulse">
-        <div className="h-3 w-28 rounded bg-muted/50" />
-        <div className="h-14 rounded-xl bg-muted/30" />
-        <div className="h-14 rounded-xl bg-muted/30" />
-      </div>
+      <section className="vault-luxury-card overflow-hidden animate-pulse">
+        <div className="px-5 py-4 space-y-4">
+          <div className="h-2.5 w-32 rounded-full bg-muted/40" />
+          <div className="h-3 w-3/4 rounded-full bg-muted/25" />
+          <div className="h-3 w-2/3 rounded-full bg-muted/20" />
+          <div className="h-3 w-1/2 rounded-full bg-muted/15" />
+        </div>
+      </section>
     );
   }
 
   if (failed || !items?.length) return null;
 
   return (
-    <section className="rounded-2xl border border-border bg-card/60 p-4 md:p-5 space-y-3.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <RefreshCw className="h-3.5 w-3.5 text-primary" />
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Your Daily Brief
+    <section className="vault-luxury-card overflow-hidden">
+      {/* Masthead */}
+      <header className="flex items-baseline justify-between gap-3 px-5 pt-4 pb-3">
+        <div className="flex items-baseline gap-2.5 min-w-0">
+          <h2 className="text-[15px] md:text-base font-semibold tracking-tight text-foreground">
+            The Brief
           </h2>
+          <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] text-muted-foreground/50">
+            Daily
+          </span>
         </div>
-        <span className="text-[10px] text-muted-foreground/60">
-          {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-        </span>
-      </div>
+        <time className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50 shrink-0">
+          {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+        </time>
+      </header>
 
-      <div className="space-y-2.5">
+      {/* Editorial rows — hairline separated, no nested boxes */}
+      <div className="divide-y divide-white/[0.05] border-y border-white/[0.05]">
         {items.map((item, i) => {
-          const style = STYLES[item.kind] || STYLES.focus;
-          const Icon = style.icon;
+          const meta = ROW_META[item.kind] || ROW_META.focus;
           return (
-            <div
-              key={i}
-              className={`rounded-xl border ${style.ring} p-3.5 flex gap-3 items-start`}
-            >
-              <div className="mt-0.5 shrink-0">
-                <Icon className={`h-4 w-4 ${style.iconColor}`} />
+            <article key={i} className="relative pl-5 pr-5 py-4">
+              <span className={`absolute left-0 top-4 bottom-4 w-[2px] rounded-full ${meta.accent} opacity-60`} />
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className={`h-1 w-1 rounded-full ${meta.dot}`} />
+                <span className="text-[9.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/55">
+                  {meta.label}
+                </span>
               </div>
-              <div className="min-w-0 space-y-1">
-                <p className="text-sm font-semibold text-foreground leading-tight">{item.title}</p>
-                <p className="text-[13px] leading-relaxed text-muted-foreground">{item.body}</p>
-              </div>
-            </div>
+              <h3 className="text-[15px] font-semibold leading-snug tracking-tight text-foreground">
+                {item.title}
+              </h3>
+              <p className="mt-1 text-[13px] leading-[1.65] text-muted-foreground/85">{item.body}</p>
+            </article>
           );
         })}
       </div>
 
+      {/* Data rail */}
       {events.length > 0 && (
-        <div className="pt-1 space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">
-            Key data this week
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {events.slice(0, 6).map((e, i) => (
-              <span
-                key={i}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] ${
-                  e.impact === "high"
-                    ? "border-amber-500/25 bg-amber-500/[0.06] text-amber-300"
-                    : "border-border bg-muted/20 text-muted-foreground"
-                }`}
-              >
-                <span className="font-semibold">{formatDay(e.date)}</span>
-                <span className="truncate max-w-[150px]">{e.name}</span>
-                {e.time && <span className="text-muted-foreground/60">{e.time}</span>}
-              </span>
-            ))}
+        <div className="px-5 pt-3.5 pb-4">
+          <div className="flex items-baseline justify-between mb-2.5">
+            <p className="text-[9.5px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/50">
+              Market Catalysts
+            </p>
+            <p className="text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground/35">
+              Official releases · ET
+            </p>
           </div>
+          <ul className="space-y-0">
+            {events.slice(0, 6).map((e, i) => {
+              const local = localEquivalent(e.date, e.time_et);
+              const isToday = formatDay(e.date) === "Today";
+              return (
+                <li
+                  key={i}
+                  className="flex items-baseline gap-3 py-2 border-b border-white/[0.04] last:border-0"
+                >
+                  <span
+                    className={`w-11 shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] ${
+                      isToday ? "text-primary" : "text-muted-foreground/50"
+                    }`}
+                  >
+                    {formatDay(e.date)}
+                  </span>
+                  <span className="flex-1 min-w-0 text-[12.5px] font-medium text-foreground/90 truncate">
+                    {e.name}
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span
+                      className={`block text-[11.5px] font-semibold tabular-nums ${
+                        e.impact === "high" ? "text-amber-300/90" : "text-muted-foreground/70"
+                      }`}
+                    >
+                      {e.time}
+                    </span>
+                    {local && (
+                      <span className="block text-[9.5px] tabular-nums text-muted-foreground/40">
+                        {local} local
+                      </span>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
     </section>
