@@ -66,10 +66,17 @@ function localEquivalent(date: string, timeEt?: string | null): string | null {
   return local === et ? null : local;
 }
 
+interface NextLive {
+  title: string;
+  session_date: string;
+  join_url: string | null;
+}
+
 export function DailyBriefCard() {
   const { user } = useAuth();
   const [items, setItems] = useState<BriefItem[] | null>(null);
   const [events, setEvents] = useState<BriefEvent[]>([]);
+  const [nextLive, setNextLive] = useState<NextLive | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
@@ -94,10 +101,24 @@ export function DailyBriefCard() {
       }
     })();
 
+    // Live sessions are read fresh (not from the cached brief) so a call
+    // scheduled later today shows up on the sticky note immediately.
+    (async () => {
+      const { data } = await supabase
+        .from("live_sessions")
+        .select("title, session_date, join_url")
+        .eq("is_replay", false)
+        .gte("session_date", new Date(Date.now() - 60 * 60 * 1000).toISOString())
+        .order("session_date", { ascending: true })
+        .limit(1);
+      if (!cancelled && data?.[0]) setNextLive(data[0] as NextLive);
+    })();
+
     return () => {
       cancelled = true;
     };
   }, [user]);
+
 
   if (loading) {
     return (
