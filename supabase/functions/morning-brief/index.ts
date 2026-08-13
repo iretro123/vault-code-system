@@ -176,6 +176,7 @@ Rules: titles max 5 words. Each body max 240 characters, 1-2 sentences. Never in
       try {
         const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
           method: "POST",
+          signal: AbortSignal.timeout(9000),
           headers: {
             "Lovable-API-Key": lovableKey,
             "Content-Type": "application/json",

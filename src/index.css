@@ -2,6 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .daily-sticky-note {
+    --note-hue: 215;
+    --note-saturation: 84%;
+    --note-lightness: 61%;
+    background:
+      linear-gradient(145deg, hsl(var(--note-hue) var(--note-saturation) var(--note-lightness) / 0.22), hsl(var(--note-hue) var(--note-saturation) 24% / 0.18));
+    border-color: hsl(var(--note-hue) var(--note-saturation) var(--note-lightness) / 0.42);
+    box-shadow: 0 14px 28px -18px hsl(0 0% 0% / 0.9), inset 0 1px 0 hsl(var(--note-hue) 90% 88% / 0.1);
+  }
+
+  .daily-note-focus { --note-hue: 215; --note-saturation: 85%; --note-lightness: 62%; }
+  .daily-note-caution { --note-hue: 39; --note-saturation: 92%; --note-lightness: 58%; }
+  .daily-note-ahead { --note-hue: 158; --note-saturation: 70%; --note-lightness: 52%; }
+
+  .daily-note-tape {
+    background: hsl(var(--note-hue) var(--note-saturation) 76% / 0.38);
+    box-shadow: 0 1px 4px hsl(0 0% 0% / 0.24);
+  }
+
+  .daily-note-label,
+  .daily-note-action {
+    color: hsl(var(--note-hue) 88% 80%);
+  }
+
+  .daily-note-action {
+    border-color: hsl(var(--note-hue) var(--note-saturation) var(--note-lightness) / 0.38);
+  }
+
+  .daily-note-action:hover {
+    background: hsl(var(--note-hue) var(--note-saturation) var(--note-lightness) / 0.14);
+  }
+
+  .daily-note-divider {
+    border-color: hsl(var(--note-hue) var(--note-saturation) var(--note-lightness) / 0.18);
+  }
+
+  .daily-note-fold {
+    background: linear-gradient(315deg, hsl(var(--note-hue) var(--note-saturation) 75% / 0.2), transparent 58%);
+  }
+}
+
 /* VAULT OS — Robinhood Dark / Black Aero Theme
    Clean, readable, beginner-friendly
    All colors MUST be HSL for Tailwind compatibility

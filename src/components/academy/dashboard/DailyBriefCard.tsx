@@ -16,32 +16,41 @@ interface BriefEvent {
   impact: string;
 }
 
+const QUICK_FALLBACK_ITEMS: BriefItem[] = [
+  {
+    kind: "focus",
+    title: "Trade the plan",
+    body: "Slow down, wait for your setup, and protect the habits that keep you consistent.",
+  },
+  {
+    kind: "caution",
+    title: "Watch the calendar",
+    body: "Check this week's major news before entering. Fast releases can create sudden, uneven price moves.",
+  },
+  {
+    kind: "ahead",
+    title: "Stay connected",
+    body: "Review the next lesson and check below for your next scheduled live call.",
+  },
+];
+
 const NOTE_META: Record<
   BriefItem["kind"],
-  { label: string; surface: string; edge: string; tape: string; text: string; tilt: string }
+  { label: string; noteClass: string; tilt: string }
 > = {
   focus: {
     label: "Today's Focus",
-    surface: "bg-[hsl(215_85%_58%_/_0.10)]",
-    edge: "border-[hsl(215_85%_62%_/_0.28)]",
-    tape: "bg-[hsl(215_85%_62%_/_0.35)]",
-    text: "text-[hsl(213_95%_78%)]",
+    noteClass: "daily-note-focus",
     tilt: "-rotate-[0.5deg]",
   },
   caution: {
     label: "Be Careful",
-    surface: "bg-[hsl(38_92%_55%_/_0.10)]",
-    edge: "border-[hsl(38_92%_60%_/_0.28)]",
-    tape: "bg-[hsl(38_92%_60%_/_0.35)]",
-    text: "text-[hsl(41_96%_74%)]",
+    noteClass: "daily-note-caution",
     tilt: "rotate-[0.6deg]",
   },
   ahead: {
     label: "Coming Up",
-    surface: "bg-[hsl(158_70%_48%_/_0.10)]",
-    edge: "border-[hsl(158_70%_52%_/_0.26)]",
-    tape: "bg-[hsl(158_70%_52%_/_0.32)]",
-    text: "text-[hsl(156_72%_72%)]",
+    noteClass: "daily-note-ahead",
     tilt: "-rotate-[0.35deg]",
   },
 };
@@ -81,21 +90,32 @@ export function DailyBriefCard() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setItems(QUICK_FALLBACK_ITEMS);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
+
+    const fallbackTimer = window.setTimeout(() => {
+      if (!cancelled) {
+        setItems((current) => current ?? QUICK_FALLBACK_ITEMS);
+        setLoading(false);
+      }
+    }, 8000);
 
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("morning-brief");
         if (cancelled) return;
         if (error || !data?.items?.length) {
-          setFailed(true);
+          setItems(QUICK_FALLBACK_ITEMS);
         } else {
           setItems(data.items as BriefItem[]);
           setEvents((data.events || []) as BriefEvent[]);
         }
       } catch {
-        if (!cancelled) setFailed(true);
+        if (!cancelled) setItems(QUICK_FALLBACK_ITEMS);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -116,6 +136,7 @@ export function DailyBriefCard() {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(fallbackTimer);
     };
   }, [user]);
 
@@ -159,15 +180,11 @@ export function DailyBriefCard() {
           return (
             <article
               key={i}
-              className={`relative rounded-[14px] border ${meta.edge} ${meta.surface} ${meta.tilt} px-4 pt-4 pb-3.5 shadow-[0_10px_24px_-16px_rgba(0,0,0,0.9)] backdrop-blur-[2px]`}
+              className={`daily-sticky-note ${meta.noteClass} ${meta.tilt} relative rounded-[14px] border px-4 pt-4 pb-3.5`}
             >
               {/* tape strip */}
-              <span
-                className={`absolute -top-[3px] left-1/2 -translate-x-1/2 h-1.5 w-12 rounded-full ${meta.tape}`}
-              />
-              <span
-                className={`text-[9.5px] font-semibold uppercase tracking-[0.22em] ${meta.text}`}
-              >
+              <span className="daily-note-tape absolute -top-1 left-1/2 h-2 w-14 -translate-x-1/2 rounded-sm" />
+              <span className="daily-note-label text-[9.5px] font-semibold uppercase tracking-[0.22em]">
                 {meta.label}
               </span>
               <h3 className="mt-1.5 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
@@ -177,7 +194,7 @@ export function DailyBriefCard() {
 
               {/* Live call row — always reflects the latest scheduled session */}
               {item.kind === "ahead" && nextLive && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/[0.06] pt-2.5">
+                <div className="daily-note-divider mt-3 flex flex-wrap items-center gap-2 border-t pt-2.5">
                   <span className="min-w-0 flex-1 text-[12px] font-medium text-foreground/90">
                     <span className="truncate">{nextLive.title}</span>
                     <span className="ml-1.5 text-muted-foreground/60 tabular-nums">
@@ -193,7 +210,7 @@ export function DailyBriefCard() {
                       href={nextLive.join_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`shrink-0 rounded-full border ${meta.edge} px-3 py-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] ${meta.text} hover:bg-white/[0.06]`}
+                      className="daily-note-action shrink-0 rounded-full border px-3 py-1 text-[10.5px] font-semibold uppercase tracking-[0.14em]"
                     >
                       Join call
                     </a>
@@ -206,7 +223,7 @@ export function DailyBriefCard() {
               )}
 
               {/* folded corner */}
-              <span className="pointer-events-none absolute bottom-0 right-0 h-5 w-5 rounded-br-[14px] bg-gradient-to-tl from-white/[0.07] to-transparent" />
+              <span className="daily-note-fold pointer-events-none absolute bottom-0 right-0 h-6 w-6 rounded-br-[14px]" />
             </article>
           );
         })}
