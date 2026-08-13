@@ -452,13 +452,15 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
 
     subscribe();
 
-    // Safety net: poll for new messages. Fast when the socket is down,
-    // relaxed when realtime is healthy (keeps it truly 1s-fresh).
+    // Safety net: cheap catch-up poll. Every 2s while the socket is down,
+    // every 6s when realtime is healthy — new messages never get stranded.
+    let tick = 0;
     const poll = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      if (live && Date.now() % 1 !== 0) return; // no-op guard (kept simple)
+      tick += 1;
+      if (live && tick % 3 !== 0) return;
       catchUp();
-    }, live ? 5000 : 2000);
+    }, 2000);
 
     const onWake = () => {
       if (document.visibilityState === "visible") catchUp();
