@@ -335,8 +335,6 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     fetchMessages();
   }, [canUseRoom, fetchMessages]);
 
-  // No per-hook visibility listener — useSmartRefresh handles global resume
-
   // Re-fetch when activation key changes (tab re-activated)
   useEffect(() => {
     if (canUseRoom && _activationKey && _activationKey > 0 && hasFetchedRef.current) {
@@ -344,66 +342,141 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     }
   }, [canUseRoom, _activationKey, fetchMessages]);
 
-  // Realtime subscription
+  // ── Live sync engine ──────────────────────────────────────────────
+  // Realtime stream + self-healing resubscribe + lightweight catch-up poll
+  // so a new message always lands within ~1s without a manual refresh.
+  const latestRef = useRef<string | null>(null);
+  useEffect(() => {
+    latestRef.current = messages.length ? messages[messages.length - 1].created_at : null;
+  }, [messages]);
+
+  const applyIncoming = useCallback((rows: any[]) => {
+    if (!rows.length) return;
+    const incoming = castMessages(rows);
+    updateMessages((prev) => {
+      let next = prev;
+      for (const msg of incoming) {
+        if (next.some((m) => m.id === msg.id)) continue;
+        next = next.filter(
+          (m) => !(m.id.startsWith("optimistic-") && m.user_id === msg.user_id && m.body === msg.body)
+        );
+        next = [...next, msg];
+      }
+      if (next === prev) return prev;
+      next.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      return next;
+    });
+  }, [updateMessages]);
+
+  // Catch-up: pull anything newer than what we already have (cheap, indexed)
+  const catchUp = useCallback(async () => {
+    if (!canUseRoom) return;
+    if (!latestRef.current) {
+      if (hasFetchedRef.current) await fetchMessages();
+      return;
+    }
+    const { data } = await supabase
+      .from("academy_messages")
+      .select("*")
+      .eq("room_slug", roomSlug)
+      .is("parent_message_id", null)
+      .eq("is_deleted", false)
+      .gt("created_at", latestRef.current)
+      .order("created_at", { ascending: true })
+      .limit(PAGE_SIZE);
+    if (data?.length) applyIncoming(data);
+  }, [canUseRoom, roomSlug, applyIncoming, fetchMessages]);
+
   useEffect(() => {
     if (!canUseRoom) return;
 
-    const channel = supabase
-      .channel(`room-${roomSlug}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "academy_messages",
-          filter: `room_slug=eq.${roomSlug}`,
-        },
-        (payload) => {
-          const msg = castMessages([payload.new])[0];
-          updateMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            // Remove any optimistic message from the same user with same body (replaced by real)
-            const cleaned = prev.filter(
-              (m) => !(m.id.startsWith("optimistic-") && m.user_id === msg.user_id && m.body === msg.body)
+    let disposed = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let retry = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let live = false;
+
+    const subscribe = () => {
+      if (disposed) return;
+      channel = supabase
+        .channel(`room-${roomSlug}-${Math.random().toString(36).slice(2, 8)}`, {
+          config: { broadcast: { ack: false } },
+        })
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "academy_messages", filter: `room_slug=eq.${roomSlug}` },
+          (payload) => applyIncoming([payload.new])
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "academy_messages", filter: `room_slug=eq.${roomSlug}` },
+          (payload) => {
+            const updated = castMessages([payload.new])[0];
+            updateMessages((prev) =>
+              updated.is_deleted
+                ? prev.filter((m) => m.id !== updated.id)
+                : prev.map((m) => (m.id === updated.id ? updated : m))
             );
-            return [...cleaned, msg];
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "academy_messages",
-          filter: `room_slug=eq.${roomSlug}`,
-        },
-        (payload) => {
-          const updated = castMessages([payload.new])[0];
-          updateMessages((prev) =>
-            prev.map((m) => (m.id === updated.id ? updated : m))
-          );
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "academy_messages",
-          filter: `room_slug=eq.${roomSlug}`,
-        },
-        (payload) => {
-          const id = (payload.old as any).id;
-          updateMessages((prev) => prev.filter((m) => m.id !== id));
-        }
-      )
-      .subscribe();
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "DELETE", schema: "public", table: "academy_messages", filter: `room_slug=eq.${roomSlug}` },
+          (payload) => {
+            const id = (payload.old as any).id;
+            updateMessages((prev) => prev.filter((m) => m.id !== id));
+          }
+        )
+        .subscribe((status) => {
+          if (disposed) return;
+          if (status === "SUBSCRIBED") {
+            live = true;
+            retry = 0;
+            // Fill any gap created while the socket was down
+            catchUp();
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            live = false;
+            if (retryTimer) clearTimeout(retryTimer);
+            const delay = Math.min(1000 * 2 ** retry, 15000);
+            retry += 1;
+            retryTimer = setTimeout(async () => {
+              if (disposed) return;
+              if (channel) supabase.removeChannel(channel);
+              const { data } = await supabase.auth.getSession();
+              if (data.session?.access_token) supabase.realtime.setAuth(data.session.access_token);
+              subscribe();
+            }, delay);
+          }
+        });
+    };
+
+    subscribe();
+
+    // Safety net: poll for new messages. Fast when the socket is down,
+    // relaxed when realtime is healthy (keeps it truly 1s-fresh).
+    const poll = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      if (live && Date.now() % 1 !== 0) return; // no-op guard (kept simple)
+      catchUp();
+    }, live ? 5000 : 2000);
+
+    const onWake = () => {
+      if (document.visibilityState === "visible") catchUp();
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("online", onWake);
+    window.addEventListener("focus", onWake);
 
     return () => {
-      supabase.removeChannel(channel);
+      disposed = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      clearInterval(poll);
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("online", onWake);
+      window.removeEventListener("focus", onWake);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [canUseRoom, roomSlug, updateMessages]);
+  }, [canUseRoom, roomSlug, updateMessages, applyIncoming, catchUp]);
 
   return { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage };
 }
