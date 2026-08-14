@@ -1,27 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import {
+  LEGACY_PRICE_MAP,
+  VAULT_OS_PLAN,
+  resolvePlanForPrice,
+  syncRolesFromStatus,
+} from "../_shared/vaultAccess.ts";
 
-// ─── Centralized Stripe Price → Internal Plan Mapping ───
-const PRICE_MAP: Record<string, { product_key: string; tier: string; billing_cycle: string }> = {
-  // Vault Academy Elite — $200/mo (main active price)
-  "price_1SB2aaAMsd1FtcvL44ONekRC": {
-    product_key: "vault_academy",
-    tier: "elite_v1",
-    billing_cycle: "monthly",
-  },
-  // Vault Academy Elite — $200/mo (alt prices for same product)
-  "price_1SB2YsAMsd1FtcvLHfcvmDCr": {
-    product_key: "vault_academy",
-    tier: "elite_v1",
-    billing_cycle: "monthly",
-  },
-  "price_1SB2VTAMsd1FtcvLjvrGfpm6": {
-    product_key: "vault_academy",
-    tier: "elite_v1",
-    billing_cycle: "monthly",
-  },
-};
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -179,41 +165,41 @@ async function matchOrCreateStudent(
   },
   traceId: string,
   supabase: ReturnType<typeof createClient>
-): Promise<string> {
+): Promise<{ id: string; auth_user_id: string | null; email: string }> {
   const normalizedEmail = opts.email.toLowerCase().trim();
   log(traceId, "MATCH_USER", { email: normalizedEmail, stripeCustomerId: opts.stripeCustomerId, internalUserId: opts.internalUserId });
 
   // 1. Try by internal user ID (auth user ID)
   if (opts.internalUserId) {
-    const { data } = await supabase.from("students").select("id").eq("auth_user_id", opts.internalUserId).maybeSingle();
+    const { data } = await supabase.from("students").select("id, auth_user_id").eq("auth_user_id", opts.internalUserId).maybeSingle();
     if (data) {
       log(traceId, "MATCHED_BY_AUTH_USER_ID", { studentId: data.id });
       // Backfill stripe_customer_id if needed
       if (opts.stripeCustomerId) {
         await supabase.from("students").update({ stripe_customer_id: opts.stripeCustomerId, updated_at: new Date().toISOString() }).eq("id", data.id);
       }
-      return data.id;
+      return { id: data.id, auth_user_id: (data.auth_user_id as string) ?? opts.internalUserId, email: normalizedEmail };
     }
   }
 
   // 2. Try by stripe_customer_id
   if (opts.stripeCustomerId) {
-    const { data } = await supabase.from("students").select("id").eq("stripe_customer_id", opts.stripeCustomerId).maybeSingle();
+    const { data } = await supabase.from("students").select("id, auth_user_id").eq("stripe_customer_id", opts.stripeCustomerId).maybeSingle();
     if (data) {
       log(traceId, "MATCHED_BY_STRIPE_CUSTOMER", { studentId: data.id });
-      return data.id;
+      return { id: data.id, auth_user_id: (data.auth_user_id as string) ?? null, email: normalizedEmail };
     }
   }
 
   // 3. Try by email
-  const { data: emailMatch } = await supabase.from("students").select("id").eq("email", normalizedEmail).maybeSingle();
+  const { data: emailMatch } = await supabase.from("students").select("id, auth_user_id").eq("email", normalizedEmail).maybeSingle();
   if (emailMatch) {
     log(traceId, "MATCHED_BY_EMAIL", { studentId: emailMatch.id });
     // Backfill stripe_customer_id
     if (opts.stripeCustomerId) {
       await supabase.from("students").update({ stripe_customer_id: opts.stripeCustomerId, updated_at: new Date().toISOString() }).eq("id", emailMatch.id);
     }
-    return emailMatch.id;
+    return { id: emailMatch.id, auth_user_id: (emailMatch.auth_user_id as string) ?? null, email: normalizedEmail };
   }
 
   // 4. Create new student
@@ -223,11 +209,11 @@ async function matchOrCreateStudent(
     full_name: opts.fullName || null,
     stripe_customer_id: opts.stripeCustomerId,
     auth_user_id: opts.internalUserId || null,
-  }).select("id").single();
+  }).select("id, auth_user_id").single();
 
   if (error) throw new Error(`Failed to create student: ${error.message}`);
   log(traceId, "STUDENT_CREATED", { studentId: newStudent.id });
-  return newStudent.id;
+  return { id: newStudent.id, auth_user_id: (newStudent.auth_user_id as string) ?? opts.internalUserId ?? null, email: normalizedEmail };
 }
 
 // Upsert access record
@@ -241,6 +227,8 @@ async function upsertAccess(
     stripeSubscriptionId?: string | null;
     stripeCheckoutSessionId?: string | null;
     stripePriceId?: string | null;
+    authUserId?: string | null;
+    email?: string | null;
   },
   traceId: string,
   supabase: ReturnType<typeof createClient>
@@ -275,20 +263,41 @@ async function upsertAccess(
 
   if (error) throw new Error(`Failed to upsert access: ${error.message}`);
   log(traceId, "ACCESS_UPSERTED", { status: opts.status });
+
+  // Keep app-facing entitlement state (user_roles + profiles) in sync with billing.
+  let authUserId = opts.authUserId ?? null;
+  let email = opts.email ?? null;
+  if (!authUserId) {
+    const { data: student } = await supabase
+      .from("students")
+      .select("auth_user_id, email")
+      .eq("id", opts.studentId)
+      .maybeSingle();
+    authUserId = (student?.auth_user_id as string) ?? null;
+    email = email ?? ((student?.email as string) ?? null);
+  }
+  await syncRolesFromStatus(supabase, {
+    authUserId,
+    studentId: opts.studentId,
+    email,
+    status: opts.status,
+    productKey: opts.productKey,
+  });
+  log(traceId, "ROLES_SYNCED", { authUserId, status: opts.status });
 }
 
-// Resolve price to plan mapping
+// Resolve price to plan mapping (current Vault OS price + legacy prices)
 function resolvePlan(priceId: string | null | undefined, traceId: string): { product_key: string; tier: string } {
   if (!priceId) {
-    log(traceId, "NO_PRICE_ID_DEFAULTING");
-    return { product_key: "vault_academy", tier: "elite_v1" };
+    log(traceId, "NO_PRICE_ID_DEFAULTING_VAULT_OS");
+    return { product_key: VAULT_OS_PLAN.product_key, tier: VAULT_OS_PLAN.tier };
   }
-  const plan = PRICE_MAP[priceId];
+  const plan = resolvePlanForPrice(priceId);
   if (!plan) {
-    log(traceId, "UNKNOWN_PRICE_ID", { priceId });
-    throw new Error(`Unknown Stripe price ID: ${priceId}. Add it to the PRICE_MAP.`);
+    log(traceId, "UNKNOWN_PRICE_ID", { priceId, knownLegacy: Object.keys(LEGACY_PRICE_MAP) });
+    throw new Error(`Unknown Stripe price ID: ${priceId}. Set STRIPE_VAULT_OS_MONTHLY_PRICE_ID or add it as a legacy price.`);
   }
-  return plan;
+  return { product_key: plan.product_key, tier: plan.tier };
 }
 
 // ═══════════════════════════════════════════
@@ -322,7 +331,7 @@ async function handleCheckoutCompleted(
   const plan = resolvePlan(priceId || metadata.app_price_id, traceId);
   const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id || null;
 
-  const studentId = await matchOrCreateStudent({
+  const student = await matchOrCreateStudent({
     email,
     stripeCustomerId: customerId,
     internalUserId: metadata.internal_user_id,
@@ -330,7 +339,9 @@ async function handleCheckoutCompleted(
   }, traceId, supabase);
 
   await upsertAccess({
-    studentId,
+    studentId: student.id,
+    authUserId: student.auth_user_id,
+    email: student.email,
     productKey: plan.product_key,
     tier: plan.tier,
     status: "active",
@@ -358,13 +369,15 @@ async function handleInvoicePaid(
 
   const plan = resolvePlan(priceId, traceId);
 
-  const studentId = await matchOrCreateStudent({
+  const student = await matchOrCreateStudent({
     email,
     stripeCustomerId: customerId,
   }, traceId, supabase);
 
   await upsertAccess({
-    studentId,
+    studentId: student.id,
+    authUserId: student.auth_user_id,
+    email: student.email,
     productKey: plan.product_key,
     tier: plan.tier,
     status: "active",
@@ -391,16 +404,18 @@ async function handleInvoicePaymentFailed(
   try {
     plan = resolvePlan(priceId, traceId);
   } catch {
-    plan = { product_key: "vault_academy", tier: "elite_v1" };
+    plan = { product_key: VAULT_OS_PLAN.product_key, tier: VAULT_OS_PLAN.tier };
   }
 
-  const studentId = await matchOrCreateStudent({
+  const student = await matchOrCreateStudent({
     email,
     stripeCustomerId: customerId,
   }, traceId, supabase);
 
   await upsertAccess({
-    studentId,
+    studentId: student.id,
+    authUserId: student.auth_user_id,
+    email: student.email,
     productKey: plan.product_key,
     tier: plan.tier,
     status: "past_due",
@@ -442,13 +457,15 @@ async function handleSubscriptionUpdated(
   };
   const internalStatus = statusMap[subscription.status] || "active";
 
-  const studentId = await matchOrCreateStudent({
+  const student = await matchOrCreateStudent({
     email,
     stripeCustomerId: customerId,
   }, traceId, supabase);
 
   await upsertAccess({
-    studentId,
+    studentId: student.id,
+    authUserId: student.auth_user_id,
+    email: student.email,
     productKey: plan.product_key,
     tier: plan.tier,
     status: internalStatus,
@@ -480,7 +497,7 @@ async function handleSubscriptionDeleted(
   try {
     plan = resolvePlan(priceId, traceId);
   } catch {
-    plan = { product_key: "vault_academy", tier: "elite_v1" };
+    plan = { product_key: VAULT_OS_PLAN.product_key, tier: VAULT_OS_PLAN.tier };
   }
 
   await upsertAccess({

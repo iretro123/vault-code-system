@@ -1,13 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-
-// Shared PRICE_MAP — must match stripe-webhook/index.ts
-const PRICE_MAP: Record<string, { product_key: string; tier: string }> = {
-  "price_1SB2aaAMsd1FtcvL44ONekRC": { product_key: "vault_academy", tier: "elite_v1" },
-  "price_1SB2YsAMsd1FtcvLHfcvmDCr": { product_key: "vault_academy", tier: "elite_v1" },
-  "price_1SB2VTAMsd1FtcvLjvrGfpm6": { product_key: "vault_academy", tier: "elite_v1" },
-};
+import { VAULT_OS_PLAN, resolvePlanForPrice, syncRolesFromStatus } from "../_shared/vaultAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,7 +63,7 @@ serve(async (req) => {
     // Get student record
     const { data: student, error: studentErr } = await supabase
       .from("students")
-      .select("id, email, stripe_customer_id")
+      .select("id, email, stripe_customer_id, auth_user_id")
       .eq("id", student_id)
       .single();
     if (studentErr || !student) throw new Error("Student not found");
@@ -191,9 +185,7 @@ serve(async (req) => {
 
     // Resolve plan from PRICE_MAP — same source as webhook
     const priceId = subscription.items?.data?.[0]?.price?.id || null;
-    const plan = priceId && PRICE_MAP[priceId]
-      ? PRICE_MAP[priceId]
-      : { product_key: "vault_academy", tier: "elite_v1" };
+    const plan = resolvePlanForPrice(priceId) ?? VAULT_OS_PLAN;
 
     const now = new Date().toISOString();
     const changed = newStatus !== previousStatus;
@@ -219,6 +211,15 @@ serve(async (req) => {
 
     await supabase.from("student_access").upsert(accessData, {
       onConflict: "user_id,product_key",
+    });
+
+    // Keep user_roles + profiles in sync with the reconciled billing status.
+    await syncRolesFromStatus(supabase, {
+      authUserId: student.auth_user_id as string | null,
+      studentId: student_id,
+      email: student.email as string | null,
+      status: newStatus,
+      productKey: plan.product_key,
     });
 
     // Audit log — always log, even when no_change

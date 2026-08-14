@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { VAULT_OS_PRODUCT_KEY, VAULT_OS_TIER, grantPaidRole } from "../_shared/vaultAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -210,40 +211,47 @@ async function provisionUser(
     .eq("auth_user_id", auth_user_id)
     .maybeSingle();
 
-  if (existingStudent) {
-    console.log("[provision] Student already exists for:", auth_user_id);
-    return new Response(JSON.stringify({ provisioned: false, reason: "already_exists" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  let studentId: string | null = existingStudent?.id ?? null;
+
+  if (!studentId) {
+    const { data: newStudent, error: studentErr } = await sb
+      .from("students")
+      .insert({
+        email: normalizedEmail,
+        auth_user_id,
+        stripe_customer_id: stripeCustomerId,
+      })
+      .select("id")
+      .single();
+
+    if (studentErr || !newStudent) {
+      console.error("[provision] Failed to create student:", studentErr?.message);
+      return new Response(JSON.stringify({ error: "Failed to create student record" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    studentId = newStudent.id;
+  } else if (stripeCustomerId) {
+    await sb.from("students").update({ stripe_customer_id: stripeCustomerId }).eq("id", studentId);
   }
 
-  const { data: newStudent, error: studentErr } = await sb
-    .from("students")
-    .insert({
-      email: normalizedEmail,
-      auth_user_id,
-      stripe_customer_id: stripeCustomerId,
-    })
-    .select("id")
-    .single();
+  const newStudent = { id: studentId as string };
 
-  if (studentErr || !newStudent) {
-    console.error("[provision] Failed to create student:", studentErr?.message);
-    return new Response(JSON.stringify({ error: "Failed to create student record" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
 
   const { error: accessErr } = await sb
     .from("student_access")
-    .insert({
+    .upsert({
       user_id: newStudent.id,
       status: "active",
-      product_key: "vault_academy",
-      tier: "elite_v1",
+      product_key: VAULT_OS_PRODUCT_KEY,
+      tier: VAULT_OS_TIER,
       stripe_customer_id: stripeCustomerId,
-    });
+      access_granted_at: new Date().toISOString(),
+      access_ended_at: null,
+      last_synced_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,product_key" });
 
   if (accessErr) {
     console.error("[provision] Failed to create student_access:", accessErr.message);
@@ -253,14 +261,8 @@ async function provisionUser(
     });
   }
 
-  const { error: profileErr } = await sb
-    .from("profiles")
-    .update({ access_status: "active" })
-    .eq("user_id", auth_user_id);
-
-  if (profileErr) {
-    console.warn("[provision] Failed to update profiles.access_status:", profileErr.message);
-  }
+  // Grant the paid Vault OS role (removes basic_tier/free) + mark profile active.
+  await grantPaidRole(sb, auth_user_id, "active");
 
   console.log(`[provision] Successfully provisioned via ${source} for:`, normalizedEmail, "student_id:", newStudent.id);
   return new Response(JSON.stringify({ provisioned: true, student_id: newStudent.id, source }), {

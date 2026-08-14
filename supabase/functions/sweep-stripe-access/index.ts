@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { grantPaidRole } from "../_shared/vaultAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,7 +147,7 @@ serve(async (req) => {
     const { data: rows, error: fetchErr } = await admin
       .from("student_access")
       .select("user_id, status, is_lifetime, stripe_customer_id, stripe_subscription_id, product_key, tier, updated_at")
-      .eq("product_key", "vault_academy")
+      .in("product_key", ["vault_academy", "vault_os"])
       .in("status", ["active", "trialing", "past_due"])
       .eq("is_lifetime", false)
       .limit(limit);
@@ -308,6 +309,9 @@ serve(async (req) => {
         // Subscription is gone → drop to Free Basic instead of blocking the account.
         if (newStatus === "canceled") {
           await downgradeToBasic(admin, student.auth_user_id, email);
+        } else if (["active", "trialing", "past_due"].includes(newStatus)) {
+          // Still paying (or in grace) → make sure the paid role/profile state matches.
+          await grantPaidRole(admin, student.auth_user_id, "active");
         }
 
         await admin.from("audit_logs").insert({
