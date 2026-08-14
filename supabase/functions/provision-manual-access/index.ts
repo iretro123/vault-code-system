@@ -211,22 +211,34 @@ async function provisionUser(
     .eq("auth_user_id", auth_user_id)
     .maybeSingle();
 
-  if (existingStudent) {
-    console.log("[provision] Student already exists for:", auth_user_id);
-    return new Response(JSON.stringify({ provisioned: false, reason: "already_exists" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  let studentId: string | null = existingStudent?.id ?? null;
+
+  if (!studentId) {
+    const { data: newStudent, error: studentErr } = await sb
+      .from("students")
+      .insert({
+        email: normalizedEmail,
+        auth_user_id,
+        stripe_customer_id: stripeCustomerId,
+      })
+      .select("id")
+      .single();
+
+    if (studentErr || !newStudent) {
+      console.error("[provision] Failed to create student:", studentErr?.message);
+      return new Response(JSON.stringify({ error: "Failed to create student record" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    studentId = newStudent.id;
+  } else if (stripeCustomerId) {
+    await sb.from("students").update({ stripe_customer_id: stripeCustomerId }).eq("id", studentId);
   }
 
-  const { data: newStudent, error: studentErr } = await sb
-    .from("students")
-    .insert({
-      email: normalizedEmail,
-      auth_user_id,
-      stripe_customer_id: stripeCustomerId,
-    })
-    .select("id")
-    .single();
+  const newStudent = { id: studentId };
+  const studentErr = null as { message: string } | null;
+
 
   if (studentErr || !newStudent) {
     console.error("[provision] Failed to create student:", studentErr?.message);
