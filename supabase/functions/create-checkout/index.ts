@@ -1,31 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-
-// ─── Centralized Price Map (same as stripe-webhook) ───
-const PRICE_MAP: Record<string, { product_key: string; tier: string; billing_cycle: string; label: string }> = {
-  "price_1SB2aaAMsd1FtcvL44ONekRC": {
-    product_key: "vault_academy",
-    tier: "elite_v1",
-    billing_cycle: "monthly",
-    label: "Vault Academy Elite — Monthly",
-  },
-  "price_1SB2YsAMsd1FtcvLHfcvmDCr": {
-    product_key: "vault_academy",
-    tier: "elite_v1",
-    billing_cycle: "monthly",
-    label: "Vault Academy Elite — Monthly",
-  },
-  "price_1SB2VTAMsd1FtcvLjvrGfpm6": {
-    product_key: "vault_academy",
-    tier: "elite_v1",
-    billing_cycle: "monthly",
-    label: "Vault Academy Elite — Monthly",
-  },
-};
-
-// Default price to use for checkout
-const DEFAULT_PRICE_ID = "price_1SB2aaAMsd1FtcvL44ONekRC";
+import {
+  LEGACY_PRICE_MAP,
+  VAULT_OS_PLAN,
+  vaultOsMonthlyPriceId,
+} from "../_shared/vaultAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,6 +29,9 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // The current $99/mo Vault OS Full Access price. No legacy fallback.
+    const defaultPriceId = vaultOsMonthlyPriceId();
+
     // Authenticate user (optional — supports guest checkout)
     const authHeader = req.headers.get("Authorization");
     let user: { id: string; email?: string } | null = null;
@@ -63,14 +46,30 @@ serve(async (req) => {
 
     // Parse request body
     const body = await req.json().catch(() => ({}));
-    const requestedPriceId = body.price_id || DEFAULT_PRICE_ID;
+    const requestedPriceId: string | null = body.price_id || defaultPriceId;
 
-    // Validate price ID exists in our mapping
-    if (!PRICE_MAP[requestedPriceId]) {
-      throw new Error(`Invalid price_id: ${requestedPriceId}. Not in approved price map.`);
+    if (!requestedPriceId) {
+      logStep("MISSING_PRICE_SECRET");
+      return new Response(
+        JSON.stringify({
+          error:
+            "Checkout is not configured: STRIPE_VAULT_OS_MONTHLY_PRICE_ID is not set. Add the Vault OS Full Access $99/month price ID in Project Settings → Secrets.",
+          code: "missing_price_config",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
 
-    const plan = PRICE_MAP[requestedPriceId];
+    // Resolve plan: current Vault OS price, or a legacy price for legacy customers.
+    const plan =
+      requestedPriceId === defaultPriceId
+        ? VAULT_OS_PLAN
+        : LEGACY_PRICE_MAP[requestedPriceId] ?? null;
+
+    if (!plan) {
+      throw new Error(`Invalid price_id: ${requestedPriceId}. Not an approved Vault OS price.`);
+    }
+
     logStep("Plan resolved", { priceId: requestedPriceId, plan });
 
     // Initialize Stripe
@@ -97,7 +96,7 @@ serve(async (req) => {
     };
     if (user?.id) metadata.internal_user_id = user.id;
 
-    const origin = req.headers.get("origin") || "https://vault.academy";
+    const origin = req.headers.get("origin") || "https://member.vaulttradingacademy.com";
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
@@ -106,8 +105,8 @@ serve(async (req) => {
       line_items: [{ price: requestedPriceId, quantity: 1 }],
       mode: "subscription",
       metadata,
-      success_url: `${origin}/academy?checkout=success`,
-      cancel_url: `${origin}/academy?checkout=canceled`,
+      success_url: `${origin}/academy?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/membership?checkout=canceled`,
       subscription_data: {
         metadata,
       },
