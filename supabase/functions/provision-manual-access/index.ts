@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { VAULT_OS_PRODUCT_KEY, VAULT_OS_TIER, grantPaidRole } from "../_shared/vaultAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -237,13 +238,17 @@ async function provisionUser(
 
   const { error: accessErr } = await sb
     .from("student_access")
-    .insert({
+    .upsert({
       user_id: newStudent.id,
       status: "active",
-      product_key: "vault_academy",
-      tier: "elite_v1",
+      product_key: VAULT_OS_PRODUCT_KEY,
+      tier: VAULT_OS_TIER,
       stripe_customer_id: stripeCustomerId,
-    });
+      access_granted_at: new Date().toISOString(),
+      access_ended_at: null,
+      last_synced_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,product_key" });
 
   if (accessErr) {
     console.error("[provision] Failed to create student_access:", accessErr.message);
@@ -253,14 +258,8 @@ async function provisionUser(
     });
   }
 
-  const { error: profileErr } = await sb
-    .from("profiles")
-    .update({ access_status: "active" })
-    .eq("user_id", auth_user_id);
-
-  if (profileErr) {
-    console.warn("[provision] Failed to update profiles.access_status:", profileErr.message);
-  }
+  // Grant the paid Vault OS role (removes basic_tier/free) + mark profile active.
+  await grantPaidRole(sb, auth_user_id, "active");
 
   console.log(`[provision] Successfully provisioned via ${source} for:`, normalizedEmail, "student_id:", newStudent.id);
   return new Response(JSON.stringify({ provisioned: true, student_id: newStudent.id, source }), {
