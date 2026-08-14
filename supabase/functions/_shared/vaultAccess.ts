@@ -222,7 +222,7 @@ export async function syncRolesFromStatus(
 ) {
   if (!opts.authUserId) return;
   if (isActiveStatus(opts.status)) {
-    await grantPaidRole(admin, opts.authUserId, opts.status === "past_due" ? "past_due" : "active");
+    await grantPaidRole(admin, opts.authUserId, "active");
   } else {
     await revokePaidRole(admin, {
       authUserId: opts.authUserId,
