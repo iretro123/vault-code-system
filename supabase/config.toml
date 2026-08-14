@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.morning-brief]
 verify_jwt = false
+
+[functions.ghl-full-access-started]
+verify_jwt = true
