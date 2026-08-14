@@ -236,17 +236,8 @@ async function provisionUser(
     await sb.from("students").update({ stripe_customer_id: stripeCustomerId }).eq("id", studentId);
   }
 
-  const newStudent = { id: studentId };
-  const studentErr = null as { message: string } | null;
+  const newStudent = { id: studentId as string };
 
-
-  if (studentErr || !newStudent) {
-    console.error("[provision] Failed to create student:", studentErr?.message);
-    return new Response(JSON.stringify({ error: "Failed to create student record" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
 
   const { error: accessErr } = await sb
     .from("student_access")
