@@ -3406,6 +3406,7 @@ export type Database = {
           event_type: string
         }[]
       }
+      grant_whitelist_access: { Args: { _email: string }; Returns: undefined }
       has_academy_permission: {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
@@ -3429,6 +3430,8 @@ export type Database = {
         Args: { _platform?: string; _token: string }
         Returns: undefined
       }
+      repair_whitelist_access: { Args: never; Returns: number }
+      revoke_whitelist_access: { Args: { _email: string }; Returns: undefined }
       set_account_balance: {
         Args: { _balance: number; _user_id: string }
         Returns: {
