@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Sparkles,
 } from "lucide-react";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 import { cn } from "@/lib/utils";
 import { enableGuestMode } from "@/lib/guestMode";
 import introWins from "@/assets/intro/intro-wins.jpg";
@@ -225,8 +226,9 @@ const IntroCarousel = () => {
         `,
       }}
     >
-      {/* Top bar — dots + skip */}
+      {/* Top bar — back + dots + skip */}
       <div className="w-full max-w-md flex items-center justify-between shrink-0">
+        <AuthBackButton fallback="/welcome" />
         <div className="flex items-center gap-1.5">
           {SLIDES.map((_, i) => (
             <button

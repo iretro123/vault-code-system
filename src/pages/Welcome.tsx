@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Gem, LogIn, UserRound } from "lucide-react";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 
 import {
   VAULT_OS_MONTHLY_FALLBACK_PRICE,
@@ -31,7 +32,8 @@ const Welcome = () => {
         boxSizing: "border-box",
       }}
     >
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
+      <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
+        <AuthBackButton className="absolute left-0 top-4 z-10" fallback="/" />
         {/* Logo */}
         <h1 className="text-6xl font-black tracking-tight text-center animate-fade-in">
           <span className="text-foreground">VAULT</span>

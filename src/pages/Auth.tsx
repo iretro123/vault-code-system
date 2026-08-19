@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AtSign, Lock, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, AlertCircle, UserRound, UserPlus, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -125,7 +126,8 @@ const Auth = () => {
         boxSizing: "border-box",
       }}
     >
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
+      <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
+        <AuthBackButton className="absolute left-0 top-4 z-10" />
         {/* Logo */}
         <div className="text-center mb-10">
           <h1 className="text-5xl font-black tracking-tight">

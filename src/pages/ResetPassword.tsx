@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Shield, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { PasswordStrengthChecklist, isPasswordStrong } from "@/components/PasswordStrengthChecklist";
 
@@ -114,6 +115,9 @@ const ResetPassword = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
+        <div className="flex items-center justify-start pb-6">
+          <AuthBackButton fallback="/auth" />
+        </div>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 mb-4">
             <Shield className="w-7 h-7 text-primary" />
