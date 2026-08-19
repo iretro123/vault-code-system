@@ -94,7 +94,7 @@ const Welcome = () => {
                   Log in to your account
                 </span>
                 <span className="mt-1 block text-sm text-muted-foreground">
-                  Bought through Stripe or Whop? Use that same email here.
+                  Have an existing membership? Use the same email from your checkout.
                 </span>
               </span>
               <ChevronRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
