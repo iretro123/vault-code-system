@@ -292,7 +292,7 @@ const Signup = () => {
             <div>
               <label className={labelClass}>
                 Email <span className="text-destructive">*</span>{" "}
-                <span className="text-[11px] font-normal text-muted-foreground">(use your purchase email)</span>
+                <span className="text-[11px] font-normal text-muted-foreground/70">(use your purchase email)</span>
               </label>
               <div className="relative">
                 <Input
