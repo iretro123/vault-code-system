@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AtSign, Lock, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, AlertCircle, UserRound } from "lucide-react";
+import { AtSign, Lock, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2, AlertCircle, UserRound, UserPlus, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -259,15 +259,23 @@ const Auth = () => {
               </form>
 
 
-              <p className="text-center text-sm text-muted-foreground mt-5">
-                First time here?{" "}
-                <Link
-                  to={isNativeCapacitorApp() ? "/create-account/full" : "/signup"}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Create an account
-                </Link>
-              </p>
+              <Link
+                to={isNativeCapacitorApp() ? "/create-account/full" : "/signup"}
+                className="group mt-5 flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-secondary/40 p-4 text-left transition-all hover:border-primary/40 hover:bg-primary/10"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
+                  <UserPlus className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-foreground">
+                    First time here?
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Create your account to continue
+                  </span>
+                </span>
+                <ChevronRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </div>
           </>
         )}
