@@ -261,20 +261,20 @@ const Auth = () => {
 
               <Link
                 to={isNativeCapacitorApp() ? "/create-account/full" : "/signup"}
-                className="group mt-5 flex w-full items-center gap-3 rounded-2xl border border-border/70 bg-secondary/40 p-4 text-left transition-all hover:border-primary/40 hover:bg-primary/10"
+                className="group mt-4 flex w-full items-center gap-3 rounded-xl border border-border/30 bg-gradient-to-r from-primary/[0.07] via-transparent to-primary/[0.03] p-3 text-left transition-all hover:border-primary/40 hover:from-primary/[0.12] hover:to-primary/[0.06]"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary">
-                  <UserPlus className="h-5 w-5" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                  <UserPlus className="h-4 w-4" strokeWidth={1.5} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold text-foreground">
                     First time here?
                   </span>
-                  <span className="block text-xs text-muted-foreground">
+                  <span className="block text-[11px] text-muted-foreground leading-tight">
                     Create your account to continue
                   </span>
                 </span>
-                <ChevronRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-primary/70 transition-transform group-hover:translate-x-0.5" strokeWidth={1.5} />
               </Link>
             </div>
           </>
