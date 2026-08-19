@@ -291,7 +291,8 @@ const Signup = () => {
             {/* Email */}
             <div>
               <label className={labelClass}>
-                Email <span className="text-destructive">*</span>
+                Email <span className="text-destructive">*</span>{" "}
+                <span className="text-[11px] font-normal text-muted-foreground">(use your purchase email)</span>
               </label>
               <div className="relative">
                 <Input
