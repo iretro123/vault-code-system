@@ -1,6 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Gem, UserRound } from "lucide-react";
+import { ChevronRight, Gem, LogIn, UserRound } from "lucide-react";
+
 import {
   VAULT_OS_MONTHLY_FALLBACK_PRICE,
   VAULT_OS_PRIVACY_POLICY_URL,
@@ -74,15 +75,32 @@ const Welcome = () => {
             </p>
           </div>
 
-          <p className="text-center text-base font-semibold text-foreground pt-1">
-            Already have an account?{" "}
-            <Link
-              to="/auth"
-              className="font-bold text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.45)] hover:text-[#6ea8ff] hover:drop-shadow-[0_0_14px_rgba(59,130,246,0.7)] transition-all"
-            >
-              Log in
-            </Link>
-          </p>
+          {/* Existing members */}
+          <button
+            type="button"
+            onClick={() => navigate("/auth")}
+            className="group relative w-full overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/25 via-primary/10 to-transparent p-5 text-left transition-all hover:border-primary/70 hover:from-primary/35 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.45)]"
+          >
+            <span className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-primary/25 blur-2xl" />
+            <span className="relative flex items-center gap-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/25 text-primary">
+                <LogIn className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                  Already a member
+                </span>
+                <span className="mt-1 block text-lg font-bold text-foreground">
+                  Log in to your account
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  Bought through Stripe or Whop? Use that same email here.
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </button>
+
 
           <p className="text-center text-xs text-muted-foreground/90">
             <button
