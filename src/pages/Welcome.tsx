@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Gem, UserRound } from "lucide-react";
+import { ChevronRight, Gem, LogIn, UserRound } from "lucide-react";
 
 import {
   VAULT_OS_MONTHLY_FALLBACK_PRICE,
