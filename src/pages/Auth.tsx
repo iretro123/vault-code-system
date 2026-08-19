@@ -126,7 +126,8 @@ const Auth = () => {
         boxSizing: "border-box",
       }}
     >
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
+      <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
+        <AuthBackButton className="absolute left-0 top-4 z-10" />
         {/* Logo */}
         <div className="text-center mb-10">
           <h1 className="text-5xl font-black tracking-tight">

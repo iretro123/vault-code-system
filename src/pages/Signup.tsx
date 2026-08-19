@@ -226,6 +226,9 @@ const Signup = () => {
       }}
     >
       <div className="w-full max-w-md">
+        <div className="flex items-center justify-start pt-4 pb-2">
+          <AuthBackButton />
+        </div>
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-5xl font-black tracking-tight">

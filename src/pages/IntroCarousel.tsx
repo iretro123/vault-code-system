@@ -226,8 +226,9 @@ const IntroCarousel = () => {
         `,
       }}
     >
-      {/* Top bar — dots + skip */}
+      {/* Top bar — back + dots + skip */}
       <div className="w-full max-w-md flex items-center justify-between shrink-0">
+        <AuthBackButton fallback="/welcome" />
         <div className="flex items-center gap-1.5">
           {SLIDES.map((_, i) => (
             <button
