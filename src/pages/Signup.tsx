@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";

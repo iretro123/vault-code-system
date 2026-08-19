@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Shield, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 import { supabase } from "@/integrations/supabase/client";
 import { PasswordStrengthChecklist, isPasswordStrong } from "@/components/PasswordStrengthChecklist";
 

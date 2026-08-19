@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Sparkles,
 } from "lucide-react";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 import { cn } from "@/lib/utils";
 import { enableGuestMode } from "@/lib/guestMode";
 import introWins from "@/assets/intro/intro-wins.jpg";
