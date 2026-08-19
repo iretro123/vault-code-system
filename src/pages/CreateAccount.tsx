@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, VAULT_OS_PRIVACY_POLICY_URL, VAULT_OS_TERMS_URL } from "@/lib/membership";
 import { Capacitor } from "@capacitor/core";
 import { ExternalLink } from "lucide-react";
+import { AuthBackButton } from "@/components/auth/AuthBackButton";
 
 const isNativeAndroidApp = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 import { disableGuestMode } from "@/lib/guestMode";
