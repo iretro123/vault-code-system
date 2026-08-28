@@ -13,6 +13,8 @@ interface ReactionRow {
   created_at: string;
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export interface ReactionSummary {
   emoji: ReactionEmoji;
   count: number;
@@ -25,7 +27,9 @@ export function useMessageReactions(roomSlug: string, userId?: string) {
 
   // Update tracked message IDs
   const trackMessages = useCallback((ids: string[]) => {
-    setMessageIds(ids);
+    // Optimistic chat rows use temporary IDs until the database confirms them.
+    // Never send those temporary values to UUID-backed reaction queries.
+    setMessageIds(ids.filter((id) => UUID_PATTERN.test(id)));
   }, []);
 
   // Fetch reactions for current messages
@@ -121,7 +125,7 @@ export function useMessageReactions(roomSlug: string, userId?: string) {
   // Toggle a reaction
   const toggleReaction = useCallback(
     async (messageId: string, emoji: ReactionEmoji) => {
-      if (!userId) return;
+      if (!userId || !UUID_PATTERN.test(messageId)) return;
 
       const rows = reactionsMap.get(messageId) || [];
       const existing = rows.find((r) => r.user_id === userId && r.emoji === emoji);
