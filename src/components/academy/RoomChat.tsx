@@ -857,7 +857,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
     // Prepend quote block if replying
     if (replyingTo && !text) {
-      const truncated = replyingTo.body.length > 60 ? replyingTo.body.slice(0, 60) + "…" : replyingTo.body;
+      const truncated = truncateText(replyingTo.body, 60);
       body = `> **@${replyingTo.user_name}:** ${truncated}\n\n${body}`;
       setReplyingTo(null);
     }
@@ -883,7 +883,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         }));
         const { mentionedUserIds, hasEveryone } = parseMentions(body, userList);
         const senderName = displayName;
-        const preview = body.length > 80 ? body.slice(0, 80) + "…" : body;
+        const preview = truncateText(body, 80);
 
         const uniqueMentionedUserIds = [...new Set(mentionedUserIds)].filter((uid) => uid !== user.id);
         const notifyEveryone = hasEveryone && canPingEveryone;
@@ -1282,7 +1282,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       user_id: null,
       type: "moderation_report",
       title: `Content report in #${roomSlug}`,
-      body: `${displayName} reported ${msg.user_name}: ${msg.body.slice(0, 120)}`,
+      body: `${displayName} reported ${msg.user_name}: ${truncateText(msg.body, 120, "")}`,
       link_path: "/academy/admin/panel",
     });
 
@@ -2074,7 +2074,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                  <div className="flex items-center gap-2 rounded-xl border-l-2 border-l-primary bg-white/[0.04] px-3 py-1.5">
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-semibold text-primary">Replying to {replyingTo.user_name}</span>
-                    <p className="text-[11px] text-muted-foreground truncate">{replyingTo.body.slice(0, 80)}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{truncateText(replyingTo.body, 80, "")}</p>
                   </div>
                   <button
                     type="button"
