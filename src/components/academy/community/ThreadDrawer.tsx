@@ -122,7 +122,19 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
     });
 
     if (error) {
-      toast.error("Failed to send reply");
+      console.error("[ThreadDrawer] Reply insert failed", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        roomSlug: parentMessage.room_slug,
+        parentMessageId: parentMessage.id,
+      });
+      toast.error(
+        error.code === "42501"
+          ? "Your session could not post this reply. Sign out, sign back in, and try again."
+          : "Reply failed to send. Your text was kept so you can try again."
+      );
     } else {
       setDraft("");
     }

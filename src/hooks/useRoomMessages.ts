@@ -168,8 +168,9 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
 
       const roleStr = computeRole();
 
-      // Optimistic message — appears instantly in the UI
-      const optimisticId = `optimistic-${Date.now()}`;
+      // Use the final database-compatible ID for the optimistic row. This keeps
+      // reactions and every other UUID-backed query safe while the insert is pending.
+      const optimisticId = crypto.randomUUID();
       const optimisticMsg: Message = {
         id: optimisticId,
         room_slug: roomSlug,
@@ -191,6 +192,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
       const { data: insertedMessage, error: err } = await supabase
         .from("academy_messages")
         .insert({
+          id: optimisticId,
           room_slug: roomSlug,
           user_id: user.id,
           user_name: userName,
@@ -204,7 +206,17 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
       if (err) {
         // Remove optimistic message on failure
         updateMessages((prev) => prev.filter((m) => m.id !== optimisticId));
-        toast.error("Message failed to send. Try again.");
+        console.error("[useRoomMessages] Message insert failed", {
+          code: err.code,
+          message: err.message,
+          details: err.details,
+          hint: err.hint,
+          roomSlug,
+        });
+        const errorMessage = err.code === "42501"
+          ? "Your session could not post this message. Sign out, sign back in, and try again."
+          : "Message failed to send. Your text was kept so you can try again.";
+        toast.error(errorMessage);
 
         setSending(false);
         return {
@@ -218,6 +230,17 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
           },
         };
       }
+
+      updateMessages((prev) =>
+        prev.map((message) =>
+          message.id === optimisticId
+            ? {
+                ...message,
+                created_at: insertedMessage?.created_at ?? message.created_at,
+              }
+            : message
+        )
+      );
 
       // The realtime subscription will replace the optimistic message with the real one.
       // We remove the optimistic entry when realtime INSERT arrives (dedup by body+timestamp is handled there).
