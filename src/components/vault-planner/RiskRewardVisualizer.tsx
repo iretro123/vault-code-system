@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Target, ArrowRight, Copy, Check } from "lucide-react";
 import { formatCurrency } from "@/lib/vaultApprovalCalc";
+import { copyToClipboardSync } from "@/lib/copyToClipboard";
 
 interface RiskRewardVisualizerProps {
   riskPerContract: number;
