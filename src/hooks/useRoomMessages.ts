@@ -237,7 +237,6 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
             ? {
                 ...message,
                 created_at: insertedMessage?.created_at ?? message.created_at,
-                attachments: insertedMessage?.attachments ?? message.attachments,
               }
             : message
         )
