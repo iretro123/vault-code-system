@@ -46,7 +46,7 @@ export function RiskRewardVisualizer({
   ];
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(brokerSteps.join("\n"));
+    void copyToClipboardSync(brokerSteps.join("\n"));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
