@@ -8,6 +8,7 @@ import { AcademyRoleBadge } from "@/components/academy/AcademyRoleBadge";
 import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { sanitizeText } from "@/lib/safeText";
 
 interface ThreadMessage {
   id: string;
