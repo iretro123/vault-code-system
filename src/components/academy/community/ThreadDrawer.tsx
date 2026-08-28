@@ -116,7 +116,7 @@ export function ThreadDrawer({ parentMessage, onClose }: ThreadDrawerProps) {
       room_slug: parentMessage.room_slug,
       user_id: user.id,
       user_name: userName,
-      body: draft.trim(),
+      body: sanitizeText(draft.trim()),
       user_role: roleStr,
       parent_message_id: parentMessage.id,
     });
