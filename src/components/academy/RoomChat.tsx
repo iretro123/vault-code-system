@@ -55,6 +55,7 @@ import { toast } from "sonner";
 import { getAppleEmojiAsset } from "@/lib/appleEmoji";
 import { containsObjectionableContent } from "@/lib/communitySafety";
 import { copyToClipboardSync } from "@/lib/copyToClipboard";
+import { truncateText } from "@/lib/safeText";
 import {
   AlertDialog,
   AlertDialogAction,
