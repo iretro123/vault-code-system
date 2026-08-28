@@ -55,6 +55,7 @@ import { toast } from "sonner";
 import { getAppleEmojiAsset } from "@/lib/appleEmoji";
 import { containsObjectionableContent } from "@/lib/communitySafety";
 import {
+import { copyToClipboardSync } from "@/lib/copyToClipboard";
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -1527,8 +1528,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           const isEditing = editingId === msg.id;
 
           const copyMessage = async () => {
-            const { copyToClipboard } = await import("@/lib/copyToClipboard");
-            const ok = await copyToClipboard(msg.body);
+                    const ok = await copyToClipboardSync(msg.body);
             if (ok) {
               toast.success("Copied to clipboard");
             } else {
