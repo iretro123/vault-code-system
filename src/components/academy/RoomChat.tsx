@@ -54,8 +54,8 @@ import { hapticNotification, playMessageSound } from "@/lib/nativeFeedback";
 import { toast } from "sonner";
 import { getAppleEmojiAsset } from "@/lib/appleEmoji";
 import { containsObjectionableContent } from "@/lib/communitySafety";
-import {
 import { copyToClipboardSync } from "@/lib/copyToClipboard";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
