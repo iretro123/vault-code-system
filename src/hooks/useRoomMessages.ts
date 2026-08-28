@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { sanitizeText } from "@/lib/safeText";
 
 export interface Attachment {
   type: "image" | "file" | "signal-watchlist" | "signal-live";
@@ -177,7 +178,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
         user_id: user.id,
         user_name: userName,
         user_role: roleStr,
-        body: body.trim() || (attachments?.length ? "📎 Attachment" : ""),
+        body: sanitizeText(body.trim()) || (attachments?.length ? "📎 Attachment" : ""),
         attachments: attachments ?? [],
         created_at: new Date().toISOString(),
         edited_at: null,
