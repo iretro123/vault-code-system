@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
+import { copyToClipboardSync } from "@/lib/copyToClipboard";
 
 interface ReferralModalProps {
   open: boolean;
@@ -90,8 +91,7 @@ function ReferralBody({ onClose }: { onClose: () => void }) {
   const refLink = `${window.location.origin}/ref/${user?.id || ""}`;
 
   const handleCopy = async () => {
-    const { copyToClipboard } = await import("@/lib/copyToClipboard");
-    const ok = await copyToClipboard(refLink);
+    const ok = await copyToClipboardSync(refLink);
     if (ok) toast.success("Referral link copied!");
     else toast.error("Failed to copy");
   };

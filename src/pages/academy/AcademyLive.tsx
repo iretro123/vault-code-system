@@ -31,6 +31,7 @@ import { WeekScheduleSheet } from "@/components/academy/live/WeekScheduleSheet";
 import liveSessionPrep from "@/assets/live-session-prep.jpg";
 import liveSessionTrading from "@/assets/live-session-trading.jpg";
 import liveSessionQA from "@/assets/live-session-qa.jpg";
+import { copyToClipboardSync } from "@/lib/copyToClipboard";
 
 // Google Calendar helper
 function buildGoogleCalendarUrl(s: { title: string; session_date: string; duration_minutes: number; description: string; join_url: string }) {
@@ -356,8 +357,7 @@ const AcademyLive = () => {
   };
 
   const copyLink = async (url: string) => {
-    const { copyToClipboard } = await import("@/lib/copyToClipboard");
-    const ok = await copyToClipboard(url);
+    const ok = await copyToClipboardSync(url);
     ok ? toast.success("Link copied") : toast.error("Failed to copy");
   };
 
