@@ -18,6 +18,30 @@ The core loop should be:
 
 Trade tracking, calculators, and journals can remain available as optional tools, but they should not define the product or occupy primary navigation.
 
+## The million-dollar thesis
+
+AI will make explanations, summaries, market information, and generic course content abundant. Vault should not build its moat around owning more information than everyone else. Its scarce assets should be:
+
+- **Curation:** members trust what Vault chooses to teach and what it refuses to promote.
+- **Live context:** a reliable weekly rhythm of classes, discussions, and events that matters now.
+- **People:** recognizable instructors, study partners, community captains, and member reputation.
+- **Progression:** a clear path from newcomer to capable member to contributor to certified host.
+- **Identity:** a professional trading-learning profile and relationships that members do not want to lose.
+- **Production:** every live moment becomes a useful, searchable, multilingual learning asset.
+- **Standards:** educators participate under Vault teaching, claims, conduct, and content-rights rules.
+
+The long-term model is a **branded trading-school network**. Vault owns the campus, curriculum architecture, quality bar, member graph, event system, and subscription. Carefully selected outside educators own shows or limited “creator residencies” inside that system. Members subscribe to Vault, not to a single personality.
+
+This should grow in three deliberate horizons:
+
+| Horizon | Product | Business model | Proof needed before advancing |
+|---|---|---|---|
+| 1 — School | One excellent Vault campus with repeatable weekly programming | Free Lobby + $99 House + limited $199 Studio | Members repeatedly attend, learn, connect, and retain without founder dependence |
+| 2 — Network | Certified guest teachers, creator residencies, multilingual rooms, regional schedules | Subscription plus creator revenue share | Creator cohorts generate retained members and meet teaching/compliance standards |
+| 3 — Platform | Tools for approved educators to program classes and grow communities within Vault | Subscription, premium rooms, event revenue, selective B2B licensing | Supply quality, moderation, rights, payments, and discovery are operationally reliable |
+
+Do not jump straight to a marketplace. First prove one school format so strong that other educators want to teach inside it.
+
 ## Honest end-to-end audit
 
 ### What is already valuable
@@ -35,8 +59,8 @@ Trade tracking, calculators, and journals can remain available as optional tools
 | 1 | No sharp promise | Welcome says only “Join a team of serious traders”; checkout sells “full app access” | A stranger cannot see why this is worth $99 in five seconds |
 | 2 | Product has no single daily destination | Home mixes onboarding, notes, markets, community, lessons, tools, and inactivity | Members must decide what to do instead of being given a compelling “Today” |
 | 3 | Trade OS dominates the brand | Trade tracking and risk utilities are primary navigation | It contradicts the intended education/community positioning |
-| 4 | The curriculum feels like a catalog | Learn opens into ten broad chapters | Beginners are overwhelmed; advanced members cannot quickly find their lane |
-| 5 | Live classes are not yet a complete event product | Zoom links and notify buttons exist, but no RSVP, attendee identity, pre-class question, calendar flow, or replay discussion loop | The strongest value is being delivered like a utility instead of a show |
+| 4 | The curriculum feels like a catalog | Learn opens at 0/89 lessons across eleven large modules, including two Chapter 1 labels | Beginners are overwhelmed; advanced members cannot quickly find their lane |
+| 5 | Live classes are not yet a complete event product | Add to Calendar and Notify Me now exist, but RSVP identity, pre-class questions, a true lobby, and a replay discussion loop do not | The strongest value is being delivered like a utility instead of a show |
 | 6 | Founder dependency remains visible | “Schedule 1:1” is primary navigation | The product promises access to a person, which cannot scale |
 | 7 | Community feels chronological, not intentional | Chat, Signals, Wins, and older posts are the main structure | Energy disappears quickly and useful knowledge is hard to rediscover |
 | 8 | Social identity is hidden | Social-profile fields exist, but Profile and Settings largely show the same settings experience | Members cannot build reputations, friendships, or reasons to return for one another |
@@ -45,8 +69,23 @@ Trade tracking, calculators, and journals can remain available as optional tools
 | 11 | Public distribution is underbuilt | No strong app-store path in the product, generic store metadata, only one public App Store rating | Promotion leaks at the install decision |
 | 12 | Schedules can contradict one another | Static Live copy says Tue/Thu at 9:30 while current programming differs | Missed sessions destroy trust faster than almost any visual flaw |
 | 13 | Personalization is collected but underused | Onboarding asks beginner/intermediate/advanced and goals | The app knows who a member is but still shows a largely generic experience |
-| 14 | Release hygiene needs work | Build and 158 tests pass, but lint reports 75 issues; major bundles exceed 500 KB and one source image is about 20 MB | Slower first use and preventable regressions hurt activation |
+| 14 | Release hygiene needs work | Build and 152 tests pass, but lint reports 75 issues; major bundles exceed 500 KB and one source image is about 20 MB | Slower first use and preventable regressions hurt activation |
 | 15 | Compliance details conflict | Local privacy copy says 17+ while the current App Store listing says 9+ | Hard promotion should not begin with avoidable policy inconsistency |
+
+### What the current walkthrough revealed
+
+- The first public tour leads with **“Real trader wins, every week”** and ends with **“Personal Vault OS mentoring.”** That frames the offer around profit proof and founder-style access before it explains education.
+- Free signup calls the product a **“video library account”** and says the membership provides **“on-demand video content only.”** That language erases Live, community, and the school concept.
+- The $99 signup path asks for an account and subscription commitment without showing a real weekly schedule, teachers, rooms, replays, or the first-week experience.
+- Home begins with an inactivity warning, trade-plan language, economic events, a partially completed onboarding checklist, a Trade Floor card, and one lesson. It has many widgets but no single exciting next action.
+- Live has the best foundation: current session, countdown, Zoom, Add to Calendar, Notify Me, and weekly program cards. However, its static copy still advertises “entries, exits, and alerts” and a schedule that conflicts with the real scheduled event.
+- Learn shows 89 lessons and eleven modules at once. The first viewport is dominated by a large course poster rather than a recommended seven-day path or a live-linked lesson.
+- Community can surface months-old P&L screenshots as the first visible content. It currently rewards claimed returns more visibly than questions, explanations, attendance, or helpfulness.
+- `/academy/profile` redirects a completed member to Settings. There is no destination where a member can discover another member’s story, expertise, interests, rooms, or contributions.
+- Weekly Progress emphasizes journal entries, trades posted, and mistakes. It does not show classes attended, concepts mastered, questions answered, classmates helped, or current learning path.
+- Resources still shows six unfinished “Coming soon” cards.
+- Bootcamp looks visually stronger but presents a static “9 spots left” and “Every Beginning of the Month” rather than a real cohort, exact date, teachers, syllabus, classmates, or cohort room.
+- Support remains a sparse 1:1 Calendly page and says requested product updates may be handled after calls. That is expensive, founder-dependent positioning.
 
 ## The first 15 moves
 
@@ -67,6 +106,33 @@ These are the moves that create the largest change in member perception and grow
 13. Wire referrals to paid and retained conversions before paying influencers at scale.
 14. Rebuild the App Store product page around real screens, real programming, and member identity, then launch In-App Events.
 15. Run a 30-day Founding Creator pilot with 10 carefully matched micro-creators, not a wide celebrity blast.
+
+## The product architecture to build toward
+
+Vault should feel small and obvious in navigation even as the school becomes large:
+
+| Destination | Member question it answers | Core content |
+|---|---|---|
+| **Today** | What should I do now? | Live Now, Next Up, one recommended lesson, one active conversation |
+| **Live** | What can I attend? | Schedule, RSVP, lobbies, attendance, questions, replays |
+| **Learn** | What is my path? | Start Here, Build Consistency, Advanced Lab, seasons and mastery marks |
+| **Campus** | Who can I learn with? | Classrooms, study crews, Member Wall, hosts, clubs, contribution feed |
+| **Profile** | Who am I becoming here? | Learning identity, interests, attendance, contributions, connections, optional social links |
+| **More** | Where are utilities? | Trade journal, calculators, settings, support, policies |
+
+The global layer should be built into those destinations rather than becoming another feed: timezone-correct schedules, captions and translated summaries, language/topic clubs, regional hosts, follow-the-sun programming, and optional broad-region discovery. Never expose precise location by default.
+
+### Rebuild onboarding as one commitment loop
+
+The current eight-step feature tour should become five purposeful steps:
+
+1. **Choose a lane:** Beginner, Intermediate, or Advanced, with a concrete outcome for each.
+2. **Reserve the first class:** Show the next two relevant sessions in the member's timezone and let them RSVP immediately.
+3. **Create a learning identity:** Add a photo, short introduction, topics of interest, timezone, and optional social links.
+4. **Meet the room:** Join a new-member table or study crew and follow three recommended classmates/hosts.
+5. **Set the return trigger:** Choose class and daily-learning reminders, then land in the live lobby or first seven-minute lesson.
+
+Do not celebrate “account created.” Celebrate the first meaningful action: reserved a class, completed a primer, introduced themselves, or joined the room.
 
 ## 100 concrete ways to make Vault OS a real category-leading app
 
@@ -246,6 +312,40 @@ This tiering should be validated with real conversion and retention data before 
 
 The founder can host one marquee monthly show and set the vision. The weekly member promise should still be delivered if the founder takes a month off.
 
+## The creator and TikTok model
+
+### What Vault can safely build first
+
+1. **Connected creator profiles.** Let an educator link a TikTok username and display the creator’s official embedded profile or approved published videos with TikTok attribution.
+2. **Creator Passport.** A Vault profile shows teaching topics, timezone, languages, upcoming Vault classes, previous sessions, member feedback, and linked social profiles.
+3. **TikTok-to-Vault event funnel.** A creator goes live on their own TikTok account and sends viewers to a public Vault class page or Open Week. Vault does not copy the stream.
+4. **Vault Creator Residency.** Invite a creator to produce a four-week Vault-native educational series under a written agreement, teaching rubric, and claims policy.
+5. **Authorized dual broadcast.** Only when the creator owns/controls the presentation and has granted Vault explicit rights, produce a clean feed that can be distributed to both the creator’s approved channels and Vault. Avoid music, clips, chart data, or other media that is licensed only for one platform.
+6. **Official post embeds.** After a creator publishes an educational TikTok, use TikTok’s supported embed or Display API rather than downloading and re-uploading the video.
+7. **Share back to TikTok.** Give members and hosts original Vault-made takeaway clips/cards that they can intentionally share using TikTok’s supported sharing or posting products after developer review.
+
+### What Vault should not do
+
+- Do not scrape, screen-record, restream, download, crop out attribution, or charge for access to arbitrary creators’ TikTok LIVE broadcasts.
+- Do not assume public availability equals permission to rebroadcast.
+- Do not assume a creator’s permission covers music, third-party clips, chart feeds, guest likenesses, or every jurisdiction.
+- Do not promise that linking or embedding TikTok content means TikTok endorses Vault.
+- Do not let any creator issue personalized investment advice, guaranteed returns, or undisclosed paid endorsements through Vault.
+
+TikTok’s current public developer documentation supports official embeds for published videos and creator profiles, plus Display API access after authorization/review. It does not document a general-purpose product for embedding arbitrary third-party LIVE video inside another subscription app. The safer product decision is therefore to link to the creator’s TikTok LIVE or contract for a separate Vault-native class—not to rebroadcast the TikTok feed.
+
+### Minimum creator agreement checklist
+
+- Non-exclusive permission to livestream, record, edit, caption, clip, translate, distribute, and promote the specifically commissioned Vault content.
+- Exact term, territories, channels, takedown process, archive rights, name/likeness rights, and payment/revenue share.
+- Creator warranty that submitted assets, guests, music, recordings, and examples are authorized.
+- Clear educational-only boundaries, prohibited performance claims, testimonial standards, and escalation rules.
+- Required sponsorship disclosures in the post and periodically during sponsored live streams.
+- Vault moderation, brand-safety review, correction, suspension, and termination rights.
+- Member privacy and consent rules, especially before featuring a member’s image, voice, chart, story, or social handle.
+
+This is a product design direction, not legal advice. Have qualified counsel review creator agreements, securities/financial-education boundaries, privacy, and the intended use of every third-party platform before launch.
+
 ## 90-day execution plan
 
 ### Days 1–14: Stop the leaks
@@ -343,7 +443,11 @@ These are business and learning-experience metrics, not member trade or P&L trac
 - Google Play promotional content supports real-time events, offers, and major updates that can attract downloads and re-engagement, subject to eligibility: <https://support.google.com/googleplay/android-developer/answer/12929029?hl=en>
 - Circle’s event model demonstrates the baseline members now expect: event pages, RSVP, calendar support, reminders, live access, replays, transcripts, summaries, and follow-on discussion: <https://circle.so/events>
 - Duolingo reports that learners with at least one Friend Streak were 22% more likely to complete a daily lesson, which supports a learning-duo mechanic rather than a trading-performance leaderboard: <https://blog.duolingo.com/product-lessons-friend-streak/>
+- TikTok provides official embeds for published videos that retain creator attribution and link back to TikTok: <https://developers.tiktok.com/docs/en/embed-videos>
+- TikTok’s Display API is designed for authorized display of a creator’s profile and published videos; production integrations require registration and review: <https://developers.tiktok.com/docs/en/display-api-overview>
+- TikTok’s terms prohibit broadcasting, copying, or exploiting TikTok content outside expressly permitted uses without the appropriate consent: <https://www.tiktok.com/legal/page/us/terms-of-service/en>
 - The FTC requires clear disclosure of material influencer relationships. Vault should provide disclosure language and review placements rather than leaving compliance entirely to creators: <https://www.ftc.gov/business-guidance/resources/disclosures-101-social-media-influencers>
+- The SEC’s February 2026 investor alert warns that stock-tip scams may operate through social groups and says investors should not make decisions solely from social media or apps. Vault’s education-first boundaries should be visible in product design, not only buried in legal copy: <https://www.investor.gov/introduction-investing/general-resources/news-alerts/alerts-bulletins/investor-bulletins/social-media-stock-scams>
 
 ## Bottom line
 
@@ -352,4 +456,3 @@ Vault OS does not have a shortage of features. It has a focus, packaging, habit,
 The winning version is not “another trading app.” It is a living private school with a daily front door, recognizable weekly shows, multiple trusted hosts, structured learning lanes, replay products, member identity, small-group belonging, and creator-powered acquisition that can be traced to retained revenue.
 
 If Vault ships the first 15 moves in order, it will feel like a different product before it needs a large amount of new technology.
-
