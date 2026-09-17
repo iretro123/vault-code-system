@@ -13,6 +13,7 @@
 .curriculum-title{flex:1;min-width:0;font-size:16px;font-weight:500;line-height:1.5}
 .curriculum-title small{display:block;font-size:12px;color:#9aabc1;font-weight:400}
 .curriculum-play{height:30px;width:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#ffffff05;color:#9bb4da;flex-shrink:0}
-@media(max-width:600px){.academy-curriculum{padding:20px 16px 100px}.curriculum-lesson{padding:18px 15px;gap:12px;min-height:68px}.curriculum-header{margin-bottom:22px}}
+@media(max-width:600px){.academy-curriculum{padding:16px 16px 100px}.curriculum-back{margin-bottom:16px;min-height:44px}.curriculum-header{margin-bottom:18px}.curriculum-header h1{font-size:26px;overflow-wrap:anywhere}.curriculum-meta{flex-wrap:wrap;line-height:1.5}.curriculum-lesson{padding:14px 12px;gap:12px;min-height:68px}}
 .curriculum-thumbnail{width:104px;aspect-ratio:16/9;object-fit:cover;border-radius:7px;flex-shrink:0;border:1px solid #ffffff14;background:#182233}
-@media(max-width:600px){.curriculum-thumbnail{width:76px}.curriculum-lesson{gap:10px}.curriculum-lesson .curriculum-number{width:19px;font-size:12px}.curriculum-lesson .curriculum-play{width:24px;height:24px}.curriculum-lesson .curriculum-title{font-size:15px}}
+@media(max-width:600px){.curriculum-thumbnail{width:72px}.curriculum-lesson{gap:10px}.curriculum-lesson .curriculum-number{width:19px;font-size:13px}.curriculum-lesson .curriculum-play{width:32px;height:32px}.curriculum-lesson .curriculum-title{font-size:16px;line-height:1.5;overflow-wrap:anywhere}}
+@media(max-width:360px){.academy-curriculum{padding-inline:12px}.curriculum-thumbnail{width:64px}.curriculum-lesson{padding-inline:10px;gap:8px}}
