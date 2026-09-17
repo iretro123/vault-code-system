@@ -628,7 +628,7 @@ function LegacyCoachDrawer() {
   const displayName = profile?.display_name || user.email?.split("@")[0] || "Trader";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center p-3 pt-5 pb-[calc(4.75rem+env(safe-area-inset-bottom,20px))] md:p-4">
+    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center p-2 pt-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,20px))] sm:p-3 sm:pt-5 md:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/65 backdrop-blur-[6px]"
@@ -639,7 +639,7 @@ function LegacyCoachDrawer() {
       <div className="relative w-[min(860px,100%)] rounded-2xl border border-white/[0.10] bg-[linear-gradient(180deg,#0E1218_0%,#0A0E14_100%)] shadow-[0_12px_60px_-10px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.05)] animate-in slide-in-from-bottom-4 duration-200 max-h-full md:max-h-[85vh] flex flex-col overflow-hidden">
 
         {/* ── Premium Vault AI Header ── */}
-        <div className="px-6 pt-5 pb-3 shrink-0 relative">
+        <div className="px-4 pt-4 pb-3 sm:px-6 sm:pt-5 shrink-0 relative">
           {/* Animated glow line */}
           <div className="absolute bottom-0 left-6 right-6 h-px vault-ai-header-glow" />
           <div className="flex items-start justify-between">
@@ -663,7 +663,7 @@ function LegacyCoachDrawer() {
             <button
               aria-label="Close coach"
               onClick={() => setOpen(false)}
-              className="min-w-[36px] min-h-[36px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/[0.06] transition-colors"
+              className="min-w-11 min-h-11 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/[0.06] transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
@@ -671,7 +671,7 @@ function LegacyCoachDrawer() {
         </div>
 
         {/* ── Segmented tabs ── */}
-        <div className="flex shrink-0 mx-6 rounded-lg bg-white/[0.04] border border-white/[0.06] p-0.5">
+        <div className="flex shrink-0 mx-4 sm:mx-6 rounded-lg bg-white/[0.04] border border-white/[0.06] p-0.5">
           <button
             onClick={() => {
               if (isLocalDesignPreview() || import.meta.env.VITE_ATLAS_ENABLED === 'true') {
@@ -775,10 +775,10 @@ function LegacyCoachDrawer() {
           {tab === "instant" && !showHistory && (
             <div className="flex flex-col flex-1 min-h-0">
               {/* Chat messages area */}
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 space-y-4">
                 {chatMessages.length === 0 ? (
                   /* Premium empty state */
-                  <div className="flex flex-col items-center justify-center h-full py-12 space-y-6">
+                  <div className="flex flex-col items-center justify-center h-full py-6 sm:py-12 space-y-4 sm:space-y-6">
                     <div className="text-center space-y-3">
                       <div className="relative h-16 w-16 mx-auto">
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/15 vault-ai-brain-pulse" />
@@ -923,7 +923,7 @@ function LegacyCoachDrawer() {
                       }
                     }}
                     placeholder="Ask about trading, your trades, or what to study..."
-                    className="flex-1 resize-none text-sm bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 min-h-[40px] max-h-[120px]"
+                    className="flex-1 resize-none text-base bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 min-h-11 max-h-[120px] leading-6"
                     rows={1}
                     maxLength={1000}
                     disabled={chatLoading}
@@ -932,7 +932,7 @@ function LegacyCoachDrawer() {
                   <button
                     onClick={() => handleChatSend()}
                     disabled={!chatInput.trim() || chatLoading}
-                    className="shrink-0 h-10 w-10 rounded-xl flex items-center justify-center bg-gradient-to-b from-primary to-primary/80 text-primary-foreground hover:shadow-[0_0_16px_2px_hsl(217_91%_60%/0.2)] disabled:opacity-40 disabled:pointer-events-none transition-all duration-150 active:scale-95"
+                    className="shrink-0 h-11 w-11 rounded-xl flex items-center justify-center bg-gradient-to-b from-primary to-primary/80 text-primary-foreground hover:shadow-[0_0_16px_2px_hsl(217_91%_60%/0.2)] disabled:opacity-40 disabled:pointer-events-none transition-all duration-150 active:scale-95"
                   >
                     {chatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </button>
@@ -967,7 +967,7 @@ function LegacyCoachDrawer() {
 
           {/* ========== COACH TAB ========== */}
           {tab === "coach" && coachView === "new" && (
-            <div className="px-6 py-5 space-y-4 overflow-y-auto">
+            <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 overflow-y-auto">
               <p className="text-[13px] text-muted-foreground">
                 Standard: usually within 1–2 hours
               </p>
@@ -1070,7 +1070,7 @@ function LegacyCoachDrawer() {
           )}
 
           {tab === "coach" && coachView === "detail" && activeTicket && (
-            <div className="px-6 py-5 space-y-4 overflow-y-auto">
+            <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-4 overflow-y-auto">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {statusIcon(activeTicket.status)}
