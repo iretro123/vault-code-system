@@ -2,22 +2,21 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
+import { MarketWatch } from "@/components/academy/community/MarketWatch";
 import { RoomChat } from "@/components/academy/RoomChat";
-import { AdminActionBar } from "@/components/admin/AdminActionBar";
-import { EconomicCalendarTab } from "@/components/academy/community/EconomicCalendarTab";
+import "./academy-community.css";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BellRing, LockKeyhole, Radio, ShieldCheck } from "lucide-react";
+import { ArrowRight, BellRing, LockKeyhole, Radio, ShieldCheck, MessageCircle } from "lucide-react";
 
 const TABS = [
   { key: "trade-floor", label: "Chat", roomSlug: "trade-floor" },
   { key: "daily-setups", label: "Signals", roomSlug: "daily-setups" },
   { key: "wins", label: "Wins", roomSlug: "wins-proof" },
-  { key: "calendar", label: "Calendar", roomSlug: null },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -89,7 +88,8 @@ const AcademyCommunity = () => {
       const queryTab = new URLSearchParams(window.location.search).get("tab");
       if (isTabKey(queryTab)) return queryTab;
     }
-    const saved = localStorage.getItem("vault_community_tab");
+    let saved: string | null = null;
+    try { saved = localStorage.getItem("vault_community_tab"); } catch { /* Storage is optional. */ }
     return isTabKey(saved) ? saved : "trade-floor";
   });
   const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
@@ -112,32 +112,28 @@ const AcademyCommunity = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const activeRoomSlug = TABS.find((t) => t.key === activeTab)?.roomSlug || "trade-floor";
-  const { counts, markRead } = useUnreadCounts(activeRoomSlug || "trade-floor", userId);
+  const activeRoomSlug = activeTab === "daily-setups" && (tierLoading || shouldGateSignals)
+    ? null : TABS.find((t) => t.key === activeTab)?.roomSlug ?? null;
+  const { counts } = useUnreadCounts(activeRoomSlug, userId);
 
   const handleTabChange = (tab: TabKey) => {
     setActiveTab(tab);
-    setSearchParams({ tab }, { replace: true });
-    localStorage.setItem("vault_community_tab", tab);
-    const slug = TABS.find((t) => t.key === tab)?.roomSlug;
-    if (slug) markRead(slug);
+    setSearchParams((previous) => { const next = new URLSearchParams(previous); next.set("tab", tab); return next; }, { replace: true });
+    try { localStorage.setItem("vault_community_tab", tab); } catch { /* Storage is optional. */ }
   };
-
-  // Mark initial tab as read on mount
-  useEffect(() => {
-    const slug = TABS.find((t) => t.key === activeTab)?.roomSlug;
-    if (slug && userId) markRead(slug);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
 
   useEffect(() => {
     const queryTab = searchParams.get("tab");
+    if (queryTab === "calendar") {
+      setActiveTab("trade-floor");
+      setSearchParams(previous => { const next = new URLSearchParams(previous); next.set("tab", "trade-floor"); return next; }, { replace: true });
+      try { localStorage.setItem("vault_community_tab", "trade-floor"); } catch { /* Storage is optional. */ }
+      return;
+    }
     if (!isTabKey(queryTab) || queryTab === activeTab) return;
     setActiveTab(queryTab);
-    localStorage.setItem("vault_community_tab", queryTab);
-    const slug = TABS.find((t) => t.key === queryTab)?.roomSlug;
-    if (slug && userId) markRead(slug);
-  }, [searchParams, activeTab, userId, markRead]);
+    try { localStorage.setItem("vault_community_tab", queryTab); } catch { /* Storage is optional. */ }
+  }, [searchParams, activeTab, setSearchParams]);
 
   const handleSignalsUpgrade = async () => {
     if (sharedGuest) {
@@ -150,27 +146,22 @@ const AcademyCommunity = () => {
 
   return (
     <>
-      <div className="flex flex-col h-full overflow-hidden bg-background">
+      <div className="vault-community flex flex-col h-full overflow-hidden bg-background">
         <div className="flex flex-col flex-1 m-2 md:m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
-          <div className="shrink-0 px-3 md:px-4 pt-1">
-            <AdminActionBar
-              title="Community Admin"
-              permission="moderate_chat"
-              actions={[
-                { label: "Lock Room", disabled: true },
-                { label: "Pin Message", disabled: true },
-              ]}
-            />
+          <div className="community-heading">
+            <div className="flex items-center justify-between gap-3"><h1>Community</h1><button className="flex items-center gap-2 rounded-xl border border-blue-300/20 bg-blue-400/10 px-3 py-2 text-sm text-blue-200 hover:bg-blue-400/20" onClick={() => navigate('/academy/community/messages?resume=1')}><MessageCircle size={17}/> Messages</button></div>
+            <div className="community-header-actions"><MarketWatch/><button onClick={() => navigate("/academy/live")}><Radio size={17} /> Classroom <ArrowRight size={15} /></button></div>
           </div>
 
           <div className="shrink-0 px-3 md:px-4 pt-1">
-            <div className="flex w-full items-center justify-center gap-0 border-b border-white/[0.06]">
+            <div className="community-room-tabs flex w-full items-center justify-center gap-0 border-b border-white/[0.06]">
               {TABS.map((tab) => {
                 const count = counts[tab.roomSlug] || 0;
                 const badge = formatBadge(count);
                 return (
                   <button
                     key={tab.key}
+                    aria-current={activeTab === tab.key ? "page" : undefined}
                     onClick={() => handleTabChange(tab.key)}
                     className={cn(
                       "relative flex-1 md:flex-none whitespace-nowrap px-2 md:px-6 pb-2.5 pt-1.5 text-[12px] md:text-[13px] font-semibold tracking-wide transition-colors duration-150",
@@ -204,9 +195,6 @@ const AcademyCommunity = () => {
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />
-            </div>
-            <div className={cn("absolute inset-0", activeTab === "calendar" ? "block" : "hidden")}>
-              <EconomicCalendarTab active={activeTab === "calendar"} />
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Gem, LogIn, UserRound } from "lucide-react";
+import { isNativeAndroidApp, isNativeIOSApp } from "@/lib/platform";
 
 import {
   VAULT_OS_MONTHLY_FALLBACK_PRICE,
@@ -108,7 +109,7 @@ const Welcome = () => {
               onClick={() => navigate("/membership")}
               className="hover:text-foreground transition-colors"
             >
-              Restore Apple Purchase
+              {isNativeIOSApp() ? "Restore Apple Purchase" : isNativeAndroidApp() ? "Restore Google Play Purchase" : "Manage membership"}
             </button>
             {" · "}
             <a

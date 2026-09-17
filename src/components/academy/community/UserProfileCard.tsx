@@ -8,8 +8,12 @@ import { useUserPresence } from "@/hooks/useUserPresence";
 import { useAuth } from "@/hooks/useAuth";
 import { generateBannerGradient } from "@/lib/bannerGradient";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, BookOpen, Calendar, Pencil, X, Camera, Save, Trash2 } from "lucide-react";
+import { Loader2, BookOpen, Calendar, Pencil, X, Camera, Save, Trash2, MessageCircle, ArrowUpRight } from "lucide-react";
+import { socialProfileUrl } from '@/lib/memberSocialLinks';
+import { isLocalDesignPreview } from '@/integrations/supabase/localPreviewFetch';
+import './member-profile-card.css';
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 /* ── Social icons (inline SVG for brand accuracy) ── */
 
@@ -58,10 +62,16 @@ interface UserProfileCardProps {
 }
 
 export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
-  const { profile, loading, refetch } = usePublicProfile(userId);
+  const navigate = useNavigate();
+  const { profile: fetchedProfile, loading, refetch } = usePublicProfile(userId);
   const { online } = useUserPresence(userId);
   const { user } = useAuth();
   const isOwnProfile = user?.id === userId;
+  let profile=fetchedProfile;
+  if(profile&&isOwnProfile&&isLocalDesignPreview())try{
+    const draft=JSON.parse(sessionStorage.getItem(`vault-profile-draft:${userId}`)||'null');
+    if(draft)profile={...profile,bio:typeof draft.bio==='string'?draft.bio:profile.bio,display_name:typeof draft.displayName==='string'?draft.displayName:profile.display_name,social_instagram:typeof draft.instagram==='string'?draft.instagram:profile.social_instagram,social_youtube:typeof draft.youtube==='string'?draft.youtube:profile.social_youtube};
+  }catch{/* Ignore invalid local previews. */}
 
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -122,7 +132,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
         newBannerUrl = urlData.publicUrl;
       }
 
-      const updates: Record<string, string | null> = {
+      const updates: import("@/integrations/supabase/types").TablesUpdate<"profiles"> = {
         bio: bio.trim(),
         social_twitter: socials.social_twitter.trim() || null,
         social_instagram: socials.social_instagram.trim() || null,
@@ -147,13 +157,15 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
     }
   };
 
-  if (loading || !profile) {
+  if (loading) {
     return (
       <div className="vault-profile-card w-[300px] p-6 flex items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  if(!profile)return <div className="vault-profile-card w-[300px] p-6 space-y-3"><p role="status">This profile couldn’t load.</p><button className="min-h-11 text-blue-200 underline" onClick={refetch}>Try again</button></div>;
 
   const hasSocials = SOCIAL_LINKS.some((s) => profile[s.key]);
   const memberSince = profile.created_at ? format(new Date(profile.created_at), "MMM yyyy") : null;
@@ -196,6 +208,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
           {/* Close edit */}
           <button
             onClick={cancelEdit}
+            aria-label="Cancel profile editing"
             className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors z-10"
           >
             <X className="h-3.5 w-3.5 text-white" />
@@ -263,12 +276,12 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
 
   /* ── VIEW MODE ── */
   return (
-    <div className="vault-profile-card w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="vault-profile-card member-profile-upgraded w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
       {/* Banner */}
       <div className="h-20 relative" style={currentBannerStyle}>
         {isOwnProfile && (
           <button
-            onClick={enterEditMode}
+            onClick={() => {onClose();navigate('/academy/settings?section=profile');}}
             className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
             title="Edit Profile"
           >
@@ -307,6 +320,8 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
           )}
         </div>
 
+        {!isOwnProfile && <button className="member-profile-message" onClick={() => { onClose?.(); navigate(`/academy/community/messages?member=${encodeURIComponent(userId)}`); }}><MessageCircle size={18}/>Message<ArrowUpRight size={16}/></button>}
+
         {/* Badges row */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <AcademyRoleBadge roleName={profile.academy_role_name} />
@@ -315,7 +330,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
 
         {/* Bio */}
         {profile.bio && (
-          <p className="text-[12px] text-muted-foreground/80 leading-relaxed line-clamp-3">
+          <p className="member-profile-bio text-[12px] text-muted-foreground/80 leading-relaxed">
             {profile.bio}
           </p>
         )}
@@ -333,19 +348,22 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
           )}
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <BookOpen className="h-3 w-3 shrink-0" />
-            <span>{profile.lessons_completed} lessons</span>
+            <span>{profile.lessons_completed===null?'Progress unavailable':`${profile.lessons_completed} lessons`}</span>
           </div>
         </div>
+
+        {profile.lessons_completed!==null&&<div className="member-profile-progress"><div><BookOpen size={15}/><strong>Learning journey</strong><span>{profile.lessons_completed}/{Math.max(5,(Math.floor(profile.lessons_completed/5)+1)*5)}</span></div><progress aria-label="Lesson milestone" value={profile.lessons_completed} max={Math.max(5,(Math.floor(profile.lessons_completed/5)+1)*5)}/><small>{profile.lessons_completed===0?'Your first lesson starts the journey.':`Next milestone: ${Math.max(5,(Math.floor(profile.lessons_completed/5)+1)*5)} completed lessons.`}</small></div>}
 
         {/* Social links */}
         {hasSocials && (
           <>
             <div className="h-px bg-border/50" />
-            <div className="flex items-center gap-1.5">
+            <div className="member-profile-socials">
               {SOCIAL_LINKS.map((s) => {
                 const handle = profile[s.key];
                 if (!handle) return null;
-                const url = handle.startsWith("http") ? handle : `${s.baseUrl}${handle.replace(/^@/, "")}`;
+                const url = s.key==='social_instagram'?socialProfileUrl(handle,'instagram'):s.key==='social_youtube'?socialProfileUrl(handle,'youtube'):handle.startsWith('https://')?handle:!handle.includes(':')?`${s.baseUrl}${encodeURIComponent(handle.replace(/^@/,''))}`:null;
+                if(!url)return null;
                 const Icon = s.icon;
                 return (
                   <a
@@ -353,16 +371,18 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-7 w-7 rounded-lg bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors"
+                    className="member-profile-social"
                     title={s.label}
                   >
                     <Icon className="h-3.5 w-3.5" />
+                    <span><small>{s.label}</small><strong>{handle.startsWith('https://')?new URL(url).pathname.replace(/^\//,''):handle.startsWith('@')?handle:`@${handle}`}</strong></span><ArrowUpRight size={15}/>
                   </a>
                 );
               })}
             </div>
           </>
         )}
+        {isOwnProfile&&<button className="member-profile-message" onClick={()=>{onClose();navigate('/academy/settings?section=profile');}}><Pencil size={16}/>{hasSocials?'Edit profile':'Add bio & social links'}<ArrowUpRight size={16}/></button>}
       </div>
     </div>
   );

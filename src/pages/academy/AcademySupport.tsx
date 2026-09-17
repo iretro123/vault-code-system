@@ -1,6 +1,7 @@
 import { CalendarCheck, ExternalLink } from "lucide-react";
+import ScheduleTrainingPreview from "@/components/academy/ScheduleTrainingPreview";
 
-export default function AcademySupport() {
+function AcademySupport() {
   return (
     <div className="flex flex-col items-center w-full max-w-3xl mx-auto px-4 py-10 md:py-16">
       {/* Icon */}
@@ -45,4 +46,8 @@ export default function AcademySupport() {
       </p>
     </div>
   );
+}
+
+export default function SupportPage() {
+  return <ScheduleTrainingPreview />;
 }

@@ -19,6 +19,7 @@ import { ClaimRoleModal } from "@/components/academy/ClaimRoleModal";
 import { toast } from "sonner";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useRoleEvolution } from "@/hooks/useRoleEvolution";
+import LocalCampusDashboard from "@/components/academy/dashboard/LocalCampusDashboard";
 
 const AcademyHome = () => {
   const { user, profile, loading } = useAuth();
@@ -144,4 +145,6 @@ const AcademyHome = () => {
   );
 };
 
-export default AcademyHome;
+export default function AcademyHomeRoute() {
+  return <LocalCampusDashboard />;
+}

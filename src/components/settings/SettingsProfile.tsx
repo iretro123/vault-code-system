@@ -5,10 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TIMEZONES, formatTimezone } from "@/lib/timezones";
-import { Loader2, Check, Upload, Sparkles, RefreshCw } from "lucide-react";
+import { Loader2, Check, Upload, Sparkles, RefreshCw, Camera, LockKeyhole, Instagram, Youtube, ExternalLink } from "lucide-react";
+import { socialProfileUrl } from '@/lib/memberSocialLinks';
+import { clearProfileCache } from '@/hooks/usePublicProfile';
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {localPreviewFetch,isLocalDesignPreview} from '@/integrations/supabase/localPreviewFetch';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from '@/components/ui/dialog';
+import {Textarea} from '@/components/ui/textarea';
+import './profile-editor.css';
+import './profile-refined.css';
 
 const AVATAR_COLORS = [
   "hsl(220, 70%, 50%)", "hsl(260, 60%, 55%)", "hsl(340, 65%, 50%)", "hsl(10, 70%, 50%)",
@@ -89,6 +96,11 @@ export function SettingsProfile() {
   const initialAv = parseAvatarUrl(profileData?.avatar_url);
 
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
+  const [bio,setBio]=useState(profile?.bio||'');
+  const [instagram,setInstagram]=useState(profile?.social_instagram||'');
+  const [youtube,setYoutube]=useState(profile?.social_youtube||'');
+  const [socialError,setSocialError]=useState('');
+  const [avatarOpen,setAvatarOpen]=useState(false);
   const [username, setUsername] = useState(profileData?.username || "");
   const [timezone, setTimezone] = useState(profileData?.timezone || "America/New_York");
   const [phoneNumber, setPhoneNumber] = useState(profileData?.phone_number || "");
@@ -108,12 +120,35 @@ export function SettingsProfile() {
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const restoredDraft=useRef<string|null>(null);
+  useEffect(()=>{
+    if(!isLocalDesignPreview()||!user?.id||!hydrated||restoredDraft.current===user.id)return;
+    restoredDraft.current=user.id;
+    try{
+      const draft=JSON.parse(sessionStorage.getItem(`vault-profile-draft:${user.id}`)||'null');
+      if(!draft)return;
+      if(typeof draft.displayName==='string')setDisplayName(draft.displayName.slice(0,50));
+      if(typeof draft.bio==='string')setBio(draft.bio.slice(0,240));
+      if(typeof draft.instagram==='string')setInstagram(draft.instagram.slice(0,200));
+      if(typeof draft.youtube==='string')setYoutube(draft.youtube.slice(0,200));
+      if(typeof draft.timezone==='string')setTimezone(draft.timezone);
+      if(typeof draft.phoneNumber==='string')setPhoneNumber(draft.phoneNumber.slice(0,20));
+      if(['image','icon','initials'].includes(draft.avatarMode))setAvatarMode(draft.avatarMode);
+      if(AVATAR_COLORS.includes(draft.avatarColor))setAvatarColor(draft.avatarColor);
+      if(AVATAR_ICONS.some(i=>i.id===draft.avatarIcon))setAvatarIcon(draft.avatarIcon);
+      if(typeof draft.imageUrl==='string'&&/^(https:\/\/|data:image\/webp;base64,)/.test(draft.imageUrl))setImageUrl(draft.imageUrl);
+    }catch{/* Ignore invalid local drafts. */}
+  },[user?.id,hydrated]);
+  useEffect(()=>{setSaved(false);setSocialError('');},[displayName,bio,instagram,youtube,timezone,phoneNumber,avatarMode,avatarColor,avatarIcon,imageUrl]);
 
   // Sync from profile only once when it arrives (if component mounted before profile loaded)
   useEffect(() => {
     if (!profile || hydrated) return;
     setHydrated(true);
     setDisplayName(profile.display_name || "");
+    setBio(profile.bio||'');
+    setInstagram(profile.social_instagram||'');
+    setYoutube(profile.social_youtube||'');
     setTimezone(profileData?.timezone || "America/New_York");
     setPhoneNumber(profileData?.phone_number || "");
     setUsername(profileData?.username || "");
@@ -152,13 +187,18 @@ export function SettingsProfile() {
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) { toast.error("Session expired. Please sign in again."); setUploading(false); return; }
       const cropped = await cropToSquare(file);
+      if(isLocalDesignPreview()){
+        const reader=new FileReader();
+        const preview=await new Promise<string>((resolve,reject)=>{reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(cropped);});
+        setImageUrl(preview);setAvatarMode('image');return;
+      }
       const path = `${user.id}/profile-${Date.now()}.webp`;
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const formData = new FormData();
       formData.append("", cropped);
       formData.append("cacheControl", "3600");
-      const res = await fetch(`${supabaseUrl}/storage/v1/object/avatars/${path}`, {
+      const res = await localPreviewFetch(`${supabaseUrl}/storage/v1/object/avatars/${path}`, {
         method: "POST",
         headers: { apikey: supabaseKey, authorization: `Bearer ${accessToken}`, "x-upsert": "true" },
         body: formData,
@@ -176,6 +216,7 @@ export function SettingsProfile() {
   };
 
   const handleGenerate = async (styleOverride?: string) => {
+    if(isLocalDesignPreview()){toast.info('AI generation is unavailable locally. Choose a Vault icon, initials, or your own photo.');return;}
     if (!user) return;
     const chosenStyle = styleOverride || aiStyle;
 
@@ -234,6 +275,13 @@ export function SettingsProfile() {
 
   const handleSave = async () => {
     if (!user) return;
+    if ((instagram.trim()&&!socialProfileUrl(instagram,'instagram'))||(youtube.trim()&&!socialProfileUrl(youtube,'youtube'))) {
+      setSocialError('Enter an @handle or a full https:// link to Instagram or YouTube.');return;
+    }
+    if(isLocalDesignPreview()){
+      try{sessionStorage.setItem(`vault-profile-draft:${user.id}`,JSON.stringify({displayName,bio,instagram,youtube,timezone,phoneNumber,avatarMode,avatarColor,avatarIcon,imageUrl}));setSaved(true);toast.success('Preview saved in this tab. Your live profile is unchanged.');}catch{toast.error('This preview could not be saved. Try a smaller photo.');}
+      return;
+    }
     setSaving(true);
     setSaved(false);
 
@@ -241,6 +289,9 @@ export function SettingsProfile() {
       .from("profiles")
       .update({
         display_name: displayName.trim() || null,
+        bio:bio.trim(),
+        social_instagram:instagram.trim()||null,
+        social_youtube:youtube.trim()||null,
         timezone,
         phone_number: phoneNumber.trim() || null,
         avatar_url: avatarUrl,
@@ -249,6 +300,7 @@ export function SettingsProfile() {
 
     setSaving(false);
     if (error) { toast.error(error.message); return; }
+    clearProfileCache(user.id);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -304,20 +356,19 @@ export function SettingsProfile() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="profile-editor space-y-5">
+      <div className="vs-identity-preview" aria-label="Profile preview">
+        <div className="vs-identity-banner"><span>VAULT / COMMUNITY</span></div>
+        <div className="vs-identity-body"><div>{renderAvatar()}</div><div className="profile-identity-text"><h2>{displayName||'Your name'}</h2><p>{username?`@${username}`:'Your community profile'}</p></div><Button variant="outline" className="profile-change-avatar" onClick={()=>setAvatarOpen(true)}><Camera size={16}/>Change avatar</Button></div>
+      </div>
       {/* Avatar Card */}
-      <Card className="vault-card p-5">
-        <div className="mb-1">
-          <h3 className="text-sm font-semibold text-foreground">Avatar</h3>
-          <p className="text-xs text-muted-foreground">This is how you appear in chat and the Academy.</p>
-        </div>
+      <Dialog open={avatarOpen} onOpenChange={setAvatarOpen}><DialogContent className="profile-avatar-dialog"><DialogHeader><DialogTitle>Make it yours.</DialogTitle><DialogDescription>Choose a photo, your initials, or a Vault avatar.</DialogDescription></DialogHeader>
         <div className="flex items-start gap-5 mt-4">
-          {renderAvatar()}
           <div className="space-y-3 flex-1">
-            <div className="flex gap-2 flex-wrap">
-              {(["initials", "icon", "image", "ai"] as const).map((m) => (
-                <button key={m} onClick={() => { setAvatarMode(m); if (m === "ai" && !aiPreviewUrl) handleGenerate(); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === m ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground"}`}>
-                  {m === "image" ? "Photo" : m === "ai" ? "AI Pixel Art" : m.charAt(0).toUpperCase() + m.slice(1)}
+            <div className="profile-avatar-modes flex gap-2 flex-wrap">
+              {(["image", "icon", "initials", "ai"] as const).map((m) => (
+                <button key={m} aria-pressed={avatarMode===m} disabled={m==='ai'&&isLocalDesignPreview()} title={m==='ai'&&isLocalDesignPreview()?'AI avatars are unavailable in local preview':undefined} onClick={() => { setAvatarMode(m); if (m === "ai" && !aiPreviewUrl) handleGenerate(); }} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${avatarMode === m ? "bg-primary text-primary-foreground" : "bg-muted/40 text-muted-foreground hover:text-foreground"}`}>
+                  {m === "image" ? "My photo" : m === "ai" ? "AI avatar" : m==='icon'?'Vault avatars':'Initials'}
                 </button>
               ))}
             </div>
@@ -336,15 +387,15 @@ export function SettingsProfile() {
             {avatarMode !== "image" && avatarMode !== "ai" && (
               <div className="flex gap-1.5 flex-wrap">
                 {AVATAR_COLORS.map((c) => (
-                  <button key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
+                  <button aria-label={`Avatar color ${AVATAR_COLORS.indexOf(c)+1}`} aria-pressed={avatarColor===c} key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
                 ))}
               </div>
             )}
 
             {avatarMode === "icon" && (
-              <div className="grid grid-cols-7 gap-1.5">
+              <div className="profile-avatar-grid">
                 {AVATAR_ICONS.map((icon) => (
-                  <button type="button" key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
+                  <button aria-label={`Avatar icon ${icon.id}`} aria-pressed={avatarIcon===icon.id} type="button" key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
                     {icon.svg}
                   </button>
                 ))}
@@ -382,27 +433,39 @@ export function SettingsProfile() {
             )}
           </div>
         </div>
-      </Card>
+        <Button className="profile-avatar-done" onClick={()=>setAvatarOpen(false)}>Use this avatar</Button>
+      </DialogContent></Dialog>
 
       {/* Identity Card */}
-      <Card className="vault-card p-5 space-y-4">
+      <div className="profile-fields space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Identity</h3>
-          <p className="text-xs text-muted-foreground">Your public profile information.</p>
+          <h3 className="text-sm font-semibold text-foreground">Your details</h3>
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Display Name</Label>
-          <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" maxLength={50} className="vault-input" />
+          <Label htmlFor="profile-name" className="text-xs text-muted-foreground">Display name</Label>
+          <Input id="profile-name" value={displayName} onChange={(e) => {setDisplayName(e.target.value);setSaved(false);}} placeholder="Your name" maxLength={50} className="vault-input" />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Username</Label>
-          <Input value={username} disabled className="vault-input opacity-60 cursor-not-allowed" />
-          <p className="text-[10px] text-muted-foreground/60">Set during registration. Cannot be changed.</p>
+          <Label htmlFor="profile-username" className="text-xs text-muted-foreground">Username</Label>
+          <div className="profile-username-readonly"><Input id="profile-username" value={username} disabled className="vault-input" /><LockKeyhole size={15}/></div>
+          <p className="profile-field-hint">Your permanent Vault username.</p>
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1.5"><Label htmlFor="profile-bio">Bio</Label><Textarea id="profile-bio" value={bio} onChange={e=>{setBio(e.target.value);setSaved(false);}} maxLength={240} rows={3} placeholder="What are you learning? What do you trade?"/><p className="profile-field-hint">Visible to other members when published. <span>{bio.length}/240</span></p></div>
+        <section className="profile-socials" aria-labelledby="profile-social-title">
+          <h3 id="profile-social-title">Social links</h3>
+          <p className="profile-field-hint">Help members find you outside Vault. Optional public links—not verified account connections.</p>
+          {([{key:'instagram',label:'Instagram',Icon:Instagram,value:instagram,setValue:setInstagram},{key:'youtube',label:'YouTube',Icon:Youtube,value:youtube,setValue:setYoutube}] as const).map(({key,label,Icon,value,setValue})=><div className="profile-social-field" key={key}>
+            <Label htmlFor={`profile-${key}`}><Icon size={18}/>{label}</Label>
+            <Input id={`profile-${key}`} value={value} onChange={e=>setValue(e.target.value)} placeholder={key==='instagram'?'@yourname or Instagram profile link':'@yourchannel or YouTube channel link'} maxLength={200} autoCapitalize="none" autoCorrect="off" spellCheck={false}/>
+            {socialProfileUrl(value,key)&&<a href={socialProfileUrl(value,key)!} target="_blank" rel="noopener noreferrer">Preview {label} link <ExternalLink size={13}/></a>}
+          </div>)}
+          <p className="profile-field-hint">Clear a field and save to remove its link.{isLocalDesignPreview()?' Preview saves stay in this browser tab.':''}</p>
+          {socialError&&<p role="alert" className="text-sm text-red-300">{socialError}</p>}
+        </section>
+        <details className="profile-private"><summary>Timezone & contact details</summary><p className="profile-field-hint">These do not appear on your public profile card.</p><div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Timezone</Label>
           <Select value={timezone} onValueChange={setTimezone}>
             <SelectTrigger className="vault-input"><SelectValue /></SelectTrigger>
@@ -413,19 +476,19 @@ export function SettingsProfile() {
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Phone Number <span className="text-muted-foreground/50">(optional)</span></Label>
-          <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+1 555 000 0000" maxLength={20} className="vault-input" />
+          <Label htmlFor="profile-phone" className="text-xs text-muted-foreground">Phone Number <span className="text-muted-foreground/50">(optional)</span></Label>
+          <Input id="profile-phone" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+1 555 000 0000" maxLength={20} className="vault-input" />
           <p className="text-[10px] text-muted-foreground/60">Optional. Used only if you want SMS support/account alerts.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        </details><div className="profile-save flex items-center gap-3">
           <Button onClick={handleSave} disabled={saving} className="gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Save Profile
+            {isLocalDesignPreview()?'Save preview':'Save profile'}
           </Button>
           {saved && <span className="text-xs text-emerald-500 font-medium">Saved</span>}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

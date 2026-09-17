@@ -1,5 +1,10 @@
 project_id = "oemylhcjqncovnmvvgxh"
 
+# Atlas checks the authenticated user and paid entitlement inside the handler.
+# Disabled by default until ATLAS_ENABLED is explicitly set server-side.
+[functions.atlas-chat]
+verify_jwt = false
+
 [functions.generate-reports]
 verify_jwt = false
 

@@ -1,0 +1,18 @@
+.academy-curriculum{max-width:760px;margin:0 auto;padding:24px 24px 110px}
+.curriculum-back{padding:0!important;color:#a6b5ca;margin-bottom:24px;gap:8px}
+.curriculum-header{margin-bottom:26px}
+.curriculum-header h1{font-size:clamp(24px,3vw,30px);font-weight:600;letter-spacing:-.7px;line-height:1.25;margin:0 0 12px}
+.curriculum-meta{display:flex;align-items:center;gap:12px;color:#96a7bf;font-size:14px}
+.curriculum-meta span+span{padding-left:12px;border-left:1px solid #ffffff20}
+.curriculum-lessons{border:1px solid #ffffff12;background:#161e2980;border-radius:14px;overflow:hidden}
+.curriculum-lesson{width:100%;display:flex;align-items:center;gap:16px;text-align:left;padding:20px;min-height:72px;color:#e0e7f2;transition:background .15s}
+.curriculum-lesson+.curriculum-lesson{border-top:1px solid #ffffff0a}
+.curriculum-lesson:hover{background:#26354a80}
+.curriculum-lesson:focus-visible{outline:2px solid #a5c2f6;outline-offset:-3px}
+.curriculum-number{width:24px;flex-shrink:0;color:#8aa8d7;font-size:14px;font-variant-numeric:tabular-nums}
+.curriculum-title{flex:1;min-width:0;font-size:16px;font-weight:500;line-height:1.5}
+.curriculum-title small{display:block;font-size:12px;color:#9aabc1;font-weight:400}
+.curriculum-play{height:30px;width:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#ffffff05;color:#9bb4da;flex-shrink:0}
+@media(max-width:600px){.academy-curriculum{padding:20px 16px 100px}.curriculum-lesson{padding:18px 15px;gap:12px;min-height:68px}.curriculum-header{margin-bottom:22px}}
+.curriculum-thumbnail{width:104px;aspect-ratio:16/9;object-fit:cover;border-radius:7px;flex-shrink:0;border:1px solid #ffffff14;background:#182233}
+@media(max-width:600px){.curriculum-thumbnail{width:76px}.curriculum-lesson{gap:10px}.curriculum-lesson .curriculum-number{width:19px;font-size:12px}.curriculum-lesson .curriculum-play{width:24px;height:24px}.curriculum-lesson .curriculum-title{font-size:15px}}

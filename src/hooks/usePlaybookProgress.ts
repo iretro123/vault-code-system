@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { toast } from "sonner";
+import { isLocalDesignPreview } from '@/integrations/supabase/localPreviewFetch';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -37,22 +39,30 @@ function readPbCache<T>(key: string, fallback: T): T {
 export function usePlaybookProgress() {
   const { user } = useAuth();
   const [chapters, setChapters] = useState<PlaybookChapter[]>(() => readPbCache(PB_CHAPTERS_CACHE, []));
-  const [progress, setProgress] = useState<Record<string, ChapterProgress>>(() => readPbCache(PB_PROGRESS_CACHE, {}));
+  const [progressState, setProgressState] = useState<{owner:string; data:Record<string, ChapterProgress>}>({owner:user?.id || '',data:readPbCache(`${PB_PROGRESS_CACHE}:${user?.id || 'signed-out'}`, {})});
+  const progress = progressState.owner === user?.id ? progressState.data : {};
+  const activeUser = useRef(user?.id);
+  activeUser.current = user?.id;
   const [loading, setLoading] = useState(() => readPbCache(PB_CHAPTERS_CACHE, []).length === 0);
   const [lastChapterId, setLastChapterId] = useState<string | null>(null);
 
   useEffect(() => {
+    setLastChapterId(null);
+    setProgressState({owner:user?.id || '',data:user?readPbCache(`${PB_PROGRESS_CACHE}:${user.id}`, {}):{}});
     if (!user) { setLoading(false); return; }
     fetchAll();
   }, [user]);
 
   async function fetchAll() {
+    const owner = user?.id;
+    if (!owner) return;
     if (chapters.length === 0) setLoading(true);
     const [chapRes, progRes, stateRes] = await Promise.all([
       supabase.from("playbook_chapters").select("*").order("order_index"),
       supabase.from("playbook_progress").select("*").eq("user_id", user!.id),
       supabase.from("user_playbook_state").select("*").eq("user_id", user!.id).maybeSingle(),
     ]);
+    if (activeUser.current !== owner) return;
 
     if (chapRes.data) {
       const mapped = chapRes.data.map((c: any) => ({
@@ -66,8 +76,9 @@ export function usePlaybookProgress() {
     if (progRes.data) {
       const map: Record<string, ChapterProgress> = {};
       progRes.data.forEach((p: any) => { map[p.chapter_id] = p; });
-      setProgress(map);
-      try { localStorage.setItem(PB_PROGRESS_CACHE, JSON.stringify(map)); } catch {}
+      const current = isLocalDesignPreview() ? readPbCache(`${PB_PROGRESS_CACHE}:${owner}`, map) : map;
+      setProgressState({owner,data:current});
+      try { localStorage.setItem(`${PB_PROGRESS_CACHE}:${owner}`, JSON.stringify(current)); } catch {}
     }
 
     if (stateRes.data?.last_chapter_id) {
@@ -102,8 +113,8 @@ export function usePlaybookProgress() {
   const gatesPassed = chaptersWithGates.every(c => progress[c.id]?.checkpoint_passed);
 
   const updateProgress = useCallback(async (chapterId: string, updates: Partial<ChapterProgress>) => {
-    if (!user) return;
-    const existing = progress[chapterId];
+    if (!user) return false;
+    const owner = user.id;
     const payload = {
       user_id: user.id,
       chapter_id: chapterId,
@@ -111,46 +122,60 @@ export function usePlaybookProgress() {
       updated_at: new Date().toISOString(),
     };
 
-    if (existing) {
-      await supabase.from("playbook_progress")
-        .update(payload as any)
-        .eq("user_id", user.id)
-        .eq("chapter_id", chapterId);
-    } else {
-      await supabase.from("playbook_progress").insert(payload as any);
+    try {
+      if (!isLocalDesignPreview()) {
+        const {error} = await supabase.from("playbook_progress").upsert(payload as any, {onConflict:'user_id,chapter_id'});
+        if (error) throw error;
+      }
+    } catch {
+      toast.error('Reading progress was not saved. Try again when your connection is back.', {id:'playbook-save'});
+      return false;
     }
-
-    setProgress(prev => ({
-      ...prev,
-      [chapterId]: { ...prev[chapterId], ...updates } as ChapterProgress,
-    }));
+    if (activeUser.current !== owner) return false;
+    setProgressState(prev => {
+      const previous = prev.owner === owner ? prev.data : {};
+      const data = {...previous,[chapterId]:{...previous[chapterId],...updates} as ChapterProgress};
+      try { localStorage.setItem(`${PB_PROGRESS_CACHE}:${owner}`, JSON.stringify(data)); } catch {}
+      return {owner,data};
+    });
+    return true;
   }, [user, progress]);
 
   const saveReadingState = useCallback(async (chapterId: string, page: number) => {
     if (!user) return;
+    const owner = user.id;
     // Save last page to progress
-    updateProgress(chapterId, {
+    const saved = await updateProgress(chapterId, {
       last_page_viewed: page,
       status: progress[chapterId]?.status === "completed" ? "completed" : "in_progress",
     });
+    if (!saved) return;
 
+    if (isLocalDesignPreview()) {
+      if (activeUser.current === owner) setLastChapterId(chapterId);
+      return;
+    }
     // Save last chapter to user_playbook_state
-    const { data: existing } = await supabase
+    try {
+    const { data: existing, error: readError } = await supabase
       .from("user_playbook_state")
       .select("user_id")
       .eq("user_id", user.id)
       .maybeSingle();
-
+    if (readError) throw readError;
+    let result;
     if (existing) {
-      await supabase.from("user_playbook_state")
+      result = await supabase.from("user_playbook_state")
         .update({ last_chapter_id: chapterId, last_page_viewed: page, updated_at: new Date().toISOString() } as any)
         .eq("user_id", user.id);
     } else {
-      await supabase.from("user_playbook_state")
+      result = await supabase.from("user_playbook_state")
         .insert({ user_id: user.id, last_chapter_id: chapterId, last_page_viewed: page } as any);
     }
 
-    setLastChapterId(chapterId);
+    if (result.error) throw result.error;
+    if (activeUser.current === owner) setLastChapterId(chapterId);
+    } catch { toast.error('Your reading position was not saved. Please try again.', {id:'playbook-save'}); }
   }, [user, progress, updateProgress]);
 
   return {

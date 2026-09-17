@@ -14,14 +14,17 @@ import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
+import { isLocalDesignPreview } from "@/integrations/supabase/localPreviewFetch";
 
 // Module-level signed URL cache
 let cachedPdfUrl: string | null = null;
 let cachedAt = 0;
+let cachedForUser: string | null = null;
 const URL_TTL = 50 * 60 * 1000; // 50 min (refresh before 1hr expiry)
 
 const AcademyPlaybook = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams,setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const {
@@ -37,6 +40,7 @@ const AcademyPlaybook = () => {
   const { isAdmin } = useAcademyRole();
   const { user } = useAuth();
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
+  const [startAtFirstPage,setStartAtFirstPage]=useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(true);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -63,7 +67,7 @@ const AcademyPlaybook = () => {
   useEffect(() => {
     if (!user) return;
     const now = Date.now();
-    if (cachedPdfUrl && now - cachedAt < URL_TTL) {
+    if (cachedPdfUrl && cachedForUser === user.id && now - cachedAt < URL_TTL) {
       setPdfUrl(cachedPdfUrl);
       setPdfLoading(false);
       return;
@@ -83,6 +87,7 @@ const AcademyPlaybook = () => {
           setPdfError("Unable to load Playbook PDF. Check storage path.");
         } else if (data?.signedUrl) {
           cachedPdfUrl = data.signedUrl;
+          cachedForUser = user.id;
           cachedAt = Date.now();
           setPdfUrl(data.signedUrl);
         } else {
@@ -112,6 +117,7 @@ const AcademyPlaybook = () => {
   }, [chapters, lastChapterId]);
 
   const activeChapter = chapters.find((c) => c.id === activeChapterId);
+  const followingChapter=activeChapter?chapters.filter(c=>c.order_index>activeChapter.order_index).sort((a,b)=>a.order_index-b.order_index)[0]:undefined;
   const isLocked = activeChapter
     ? activeChapter.order_index > unlockedIndex &&
       !(progress[activeChapter.id]?.status === "completed" || progress[activeChapter.id]?.checkpoint_passed)
@@ -119,16 +125,29 @@ const AcademyPlaybook = () => {
 
   const handleSelectChapter = useCallback(
     (id: string) => {
+      setStartAtFirstPage(false);
       setActiveChapterId(id);
+      setSearchParams(prev=>{const next=new URLSearchParams(prev);next.set('chapter',id);return next;},{replace:true});
       setReachedEnd(false);
       if (isMobile) setMobileReaderOpen(true);
     },
-    [isMobile]
+    [isMobile,setSearchParams]
   );
+
+  const handleNextChapter=()=>{
+    if(!followingChapter)return;
+    clearTimeout(debounceRef.current);
+    setStartAtFirstPage(true);
+    setActiveChapterId(followingChapter.id);
+    setSearchParams(prev=>{const next=new URLSearchParams(prev);next.set('chapter',followingChapter.id);return next;},{replace:true});
+    setReachedEnd(false);
+    if(isMobile)setMobileReaderOpen(true);
+    // Same chapter access/preview rules as the chapter list; no completion is granted.
+  };
 
   const handlePageChange = useCallback(
     (page: number) => {
-      if (!activeChapterId) return;
+      if (!activeChapterId || isLocalDesignPreview()) return;
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         saveReadingState(activeChapterId, page);
@@ -145,6 +164,23 @@ const AcademyPlaybook = () => {
     const ch = chapters.find((c) => c.order_index === unlockedIndex);
     if (ch) handleSelectChapter(ch.id);
   }, [chapters, unlockedIndex, handleSelectChapter]);
+
+  useEffect(() => () => clearTimeout(debounceRef.current), []);
+
+  const checkpointDialog = activeChapter && (
+    <Dialog>
+      <DialogTrigger asChild><Button variant="outline" className="min-h-11">Study notes</Button></DialogTrigger>
+      <DialogContent className="max-h-[85dvh] overflow-y-auto z-[70]">
+        <DialogTitle>{activeChapter.title}</DialogTitle>
+        <DialogDescription>Review your notes and check what you’ve learned.</DialogDescription>
+        {isLocalDesignPreview() && <p className="text-sm text-muted-foreground">Reading preview only. Notes and course progress won’t be saved.</p>}
+        <fieldset disabled={isLocalDesignPreview()}>
+          <PlaybookRightPanel chapter={activeChapter} chProgress={progress[activeChapter.id]} chapters={chapters} progress={progress} onUpdateProgress={updateProgress} isLocked={isLocked} unlockedIndex={unlockedIndex} reachedEnd={reachedEnd} onGoToUnlocked={handleGoToUnlocked} />
+        </fieldset>
+      </DialogContent>
+    </Dialog>
+  );
+  const openPdf = pdfUrl && <Button asChild variant="outline" className="min-h-11"><a href={pdfUrl} target="_blank" rel="noopener noreferrer">Open PDF</a></Button>;
 
   if (!hasAccess && !accessLoading) {
     return (
@@ -182,10 +218,10 @@ const AcademyPlaybook = () => {
   if (isMobile && mobileReaderOpen && activeChapter) {
     return (
       <>
-        <div className={`fixed inset-0 bg-background flex flex-col ${mobileFullscreen ? "z-[60]" : "z-50 pb-16"}`}>
+        <div className={`fixed inset-0 bg-background flex flex-col ${mobileFullscreen ? "z-[60]" : "z-50 pb-[calc(80px+env(safe-area-inset-bottom))]"}`}>
           {/* Mobile reader header — hidden in fullscreen */}
           {!mobileFullscreen && (
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
+            <div className="playbook-mobile-toolbar px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
@@ -194,9 +230,7 @@ const AcademyPlaybook = () => {
               >
                 <ChevronLeft className="h-4 w-4" /> Chapters
               </Button>
-              <span className="text-xs font-medium text-muted-foreground truncate max-w-[50%]">
-                {activeChapter.title}
-              </span>
+              <div className="flex gap-2">{openPdf}{checkpointDialog}</div>
             </div>
           )}
 
@@ -204,7 +238,9 @@ const AcademyPlaybook = () => {
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             <PlaybookReader
               chapter={activeChapter}
-              progress={progress[activeChapter.id]}
+              progress={startAtFirstPage?undefined:progress[activeChapter.id]}
+              onNextChapter={followingChapter?handleNextChapter:undefined}
+              nextChapterTitle={followingChapter?.title}
               pdfUrl={pdfUrl}
               pdfLoading={pdfLoading}
               pdfError={pdfError}
@@ -242,7 +278,7 @@ const AcademyPlaybook = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">Vault Playbook</h1>
-                <p className="text-xs text-muted-foreground">Your Trading Operating System</p>
+                <p className="text-sm text-muted-foreground">Your trading e-book · {chapters.length} chapters</p>
               </div>
             </div>
           </div>
@@ -275,21 +311,22 @@ const AcademyPlaybook = () => {
               { label: "Edit Chapters", disabled: true },
             ]}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
               <VaultPlaybookIcon className="h-5 w-5" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Vault Playbook</h1>
-              <p className="text-xs text-muted-foreground">Your Trading Operating System</p>
+              <p className="text-sm text-muted-foreground">Your trading e-book · {chapters.length} chapters</p>
             </div>
+            <div className="ml-auto flex gap-2">{openPdf}{checkpointDialog}</div>
           </div>
         </div>
 
         {/* 3-Column Layout */}
         <div className="flex-1 min-h-0 flex">
           {/* Left: Chapter list */}
-          <div className="w-[260px] shrink-0 border-r border-border overflow-y-auto p-4">
+          <div className={`${isExpanded ? "hidden" : "w-[220px] xl:w-[260px]"} shrink-0 border-r border-border overflow-y-auto p-4`}>
             <PlaybookChapterList
               chapters={chapters}
               progress={progress}
@@ -311,10 +348,10 @@ const AcademyPlaybook = () => {
             }}
           >
             {/* Expand/Collapse toggle */}
-            <button
+            <button style={{display:'none'}}
               onClick={() => setIsExpanded((v) => !v)}
               aria-label={isExpanded ? "Exit expanded view" : "Expand reader"}
-              className="absolute top-6 right-6 z-30 h-8 w-8 flex items-center justify-center rounded-lg bg-black/50 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="absolute top-[88px] left-6 z-30 h-10 w-10 flex items-center justify-center rounded-lg bg-black/80 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               title={isExpanded ? "Exit expanded view (Esc)" : "Expand reader"}
             >
               {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -323,7 +360,9 @@ const AcademyPlaybook = () => {
             {activeChapter ? (
               <PlaybookReader
                 chapter={activeChapter}
-                progress={progress[activeChapter.id]}
+                progress={startAtFirstPage?undefined:progress[activeChapter.id]}
+                onNextChapter={followingChapter?handleNextChapter:undefined}
+                nextChapterTitle={followingChapter?.title}
                 pdfUrl={pdfUrl}
                 pdfLoading={pdfLoading}
                 pdfError={pdfError}
@@ -331,6 +370,8 @@ const AcademyPlaybook = () => {
                 onPageChange={handlePageChange}
                 onReachedEnd={handleReachedEnd}
                 isAdmin={isAdmin}
+                isFullscreen={isExpanded}
+                onToggleFullscreen={()=>setIsExpanded(v=>!v)}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -339,9 +380,9 @@ const AcademyPlaybook = () => {
             )}
           </div>
 
-          {/* Right: Notes + Checkpoint + Progress — hidden below xl */}
-          <div
-            className={`shrink-0 border-l border-border overflow-y-auto p-4 transition-all duration-200 ease-in-out hidden xl:block ${
+          {/* Smaller screens use the checkpoint dialog above. */}
+          <fieldset disabled={isLocalDesignPreview()}
+            className={`shrink-0 border-l border-border overflow-y-auto p-4 transition-all duration-200 ease-in-out hidden ${
               isExpanded ? "w-0 opacity-0 overflow-hidden p-0 border-l-0" : "w-[300px] opacity-100"
             }`}
           >
@@ -358,7 +399,7 @@ const AcademyPlaybook = () => {
                 onGoToUnlocked={handleGoToUnlocked}
               />
             )}
-          </div>
+          </fieldset>
         </div>
       </div>
     </>

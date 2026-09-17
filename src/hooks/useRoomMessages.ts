@@ -38,7 +38,9 @@ const DEFERRED_ROOM_SLUG = "__deferred__";
 // ── Global message cache per room (survives remounts) ──
 const roomMessageCache = new Map<string, Message[]>();
 
-export function useRoomMessages(roomSlug: string, _activationKey?: number) {
+export function useRoomMessages(roomSlug: string, _activationKey?: number, active = true) {
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const canUseRoom = Boolean(roomSlug) && roomSlug !== DEFERRED_ROOM_SLUG;
   const { user, profile, userRole } = useAuth();
   const cachedRef = useRef(canUseRoom ? roomMessageCache.get(roomSlug) : undefined);
@@ -49,6 +51,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
   const [hasMore, setHasMore] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connection, setConnection] = useState("connecting");
   const oldestRef = useRef<string | null>(cached?.length ? cached[0].created_at : null);
   const hasFetchedRef = useRef(false);
 
@@ -103,6 +106,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     }
 
     const sorted = castMessages(data ?? []).reverse();
+    setError(null);
     // Diff by IDs — skip update if identical to prevent unnecessary re-render
     setMessages((prev) => {
       const same = prev.length === sorted.length && prev.every((m, i) => m.id === sorted[i].id && m.edit_count === sorted[i].edit_count && m.is_deleted === sorted[i].is_deleted);
@@ -368,7 +372,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
 
   // ── Live sync engine ──────────────────────────────────────────────
   // Realtime stream + self-healing resubscribe + lightweight catch-up poll
-  // so a new message always lands within ~1s without a manual refresh.
+  // Realtime delivers promptly; fallback timing depends on network/server health.
   const latestRef = useRef<string | null>(null);
   useEffect(() => {
     latestRef.current = messages.length ? messages[messages.length - 1].created_at : null;
@@ -376,7 +380,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
 
   const applyIncoming = useCallback((rows: any[]) => {
     if (!rows.length) return;
-    const incoming = castMessages(rows);
+    const incoming = castMessages(rows).filter(row => row.room_slug === roomSlug && !row.parent_message_id && !row.is_deleted);
     updateMessages((prev) => {
       let next = prev;
       for (const msg of incoming) {
@@ -390,11 +394,15 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
       next.sort((a, b) => a.created_at.localeCompare(b.created_at));
       return next;
     });
-  }, [updateMessages]);
+  }, [updateMessages, roomSlug]);
 
   // Catch-up: pull anything newer than what we already have (cheap, indexed)
+  const catchUpBusy = useRef(false);
   const catchUp = useCallback(async () => {
     if (!canUseRoom) return;
+    if (catchUpBusy.current) return;
+    catchUpBusy.current = true;
+    try {
     if (!latestRef.current) {
       if (hasFetchedRef.current) await fetchMessages();
       return;
@@ -409,6 +417,9 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
       .order("created_at", { ascending: true })
       .limit(PAGE_SIZE);
     if (data?.length) applyIncoming(data);
+    } catch {
+      // Retain the visible conversation; realtime/retry polling will recover.
+    } finally { catchUpBusy.current = false; }
   }, [canUseRoom, roomSlug, applyIncoming, fetchMessages]);
 
   useEffect(() => {
@@ -437,7 +448,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
           (payload) => {
             const updated = castMessages([payload.new])[0];
             updateMessages((prev) =>
-              updated.is_deleted
+              updated.is_deleted || updated.parent_message_id
                 ? prev.filter((m) => m.id !== updated.id)
                 : prev.map((m) => (m.id === updated.id ? updated : m))
             );
@@ -454,11 +465,13 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
         .subscribe((status) => {
           if (disposed) return;
           if (status === "SUBSCRIBED") {
+            setConnection("connected");
             live = true;
             retry = 0;
             // Fill any gap created while the socket was down
             catchUp();
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            setConnection("reconnecting");
             live = false;
             if (retryTimer) clearTimeout(retryTimer);
             const delay = Math.min(1000 * 2 ** retry, 15000);
@@ -480,7 +493,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     // every 6s when realtime is healthy — new messages never get stranded.
     let tick = 0;
     const poll = setInterval(() => {
-      if (document.visibilityState !== "visible") return;
+      if (!activeRef.current || document.visibilityState !== "visible") return;
       tick += 1;
       if (live && tick % 3 !== 0) return;
       catchUp();
@@ -504,5 +517,5 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number) {
     };
   }, [canUseRoom, roomSlug, updateMessages, applyIncoming, catchUp]);
 
-  return { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage };
+  return { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage, connection, refresh: fetchMessages };
 }

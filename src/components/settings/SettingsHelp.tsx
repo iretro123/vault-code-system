@@ -14,14 +14,14 @@ export function SettingsHelp() {
       </div>
 
       <div className="space-y-3">
-        <Button variant="outline" onClick={() => navigate("/academy/my-questions")} className="w-full gap-2 justify-start">
+        <Button variant="outline" onClick={() => window.dispatchEvent(new CustomEvent('toggle-coach-drawer'))} className="w-full gap-2 justify-start">
           <MessageSquare className="h-4 w-4" />
           Open Ask Coach
         </Button>
 
-        <Button variant="outline" onClick={() => navigate("/academy/home")} className="w-full gap-2 justify-start">
+        <Button variant="outline" onClick={() => navigate("/academy/setup")} className="w-full gap-2 justify-start">
           <Rocket className="h-4 w-4" />
-          How to Start
+          Getting started
         </Button>
 
         <Button variant="outline" asChild className="w-full gap-2 justify-start">

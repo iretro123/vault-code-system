@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Mail, KeyRound, RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {isLocalDesignPreview} from '@/integrations/supabase/localPreviewFetch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ export function SettingsSecurity() {
   const [resetting, setResetting] = useState(false);
 
   const handleResetPassword = async () => {
+    if(isLocalDesignPreview()){toast.info('Password emails are disabled in the local preview.');return;}
     if (!user?.email) return;
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -38,6 +40,7 @@ export function SettingsSecurity() {
   };
 
   const handleResetTradeOS = async () => {
+    if(isLocalDesignPreview()){toast.info('Live resets are disabled in the local preview.');return;}
     if (!user) return;
     setResetting(true);
     try {

@@ -15,20 +15,23 @@ export function EmojiPicker({ onSelect }: EmojiPickerProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors"
+          className="p-2 min-w-10 min-h-10 rounded-lg text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
           title="Emoji"
           aria-label="Emoji"
         >
-          <Smile className="h-4 w-4" />
+          <Smile className="h-5 w-5" />
         </button>
       </PopoverTrigger>
       <PopoverContent
         side="top"
         align="start"
         sideOffset={8}
+        collisionPadding={12}
+        onOpenAutoFocus={event=>event.preventDefault()}
         className="p-0 border-0 bg-transparent shadow-none w-auto"
       >
         <NativeEmojiPicker
+          onClose={()=>setOpen(false)}
           onSelect={(emoji) => {
             onSelect(emoji);
             setOpen(false);

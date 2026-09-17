@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cleanupAccountStorage } from "../_shared/accountStorageCleanup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,6 +53,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405, headers: { ...corsHeaders, Allow: "POST, OPTIONS", "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -82,6 +88,20 @@ Deno.serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceKey);
     const warnings: string[] = [];
+
+    // Finish storage cleanup before deleting profile/access records. A missing
+    // migration or failed remove must remain retryable, not report success.
+    await cleanupAccountStorage({
+      listOwned: async (userId) => {
+        const { data, error } = await sb.rpc("list_account_uploads_for_deletion", { target_user: userId });
+        if (error || !Array.isArray(data)) throw new Error("Unable to inventory account uploads");
+        return data;
+      },
+      remove: async (bucket, paths) => {
+        const { error } = await sb.storage.from(bucket).remove(paths);
+        if (error) throw new Error("Unable to remove account uploads");
+      },
+    }, callerId);
 
     console.log("[delete-account] deleting self account:", callerId);
 

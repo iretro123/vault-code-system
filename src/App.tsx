@@ -10,7 +10,7 @@ import { AcademyDataProvider } from "@/contexts/AcademyDataContext";
 import { AdminModeProvider } from "@/contexts/AdminModeContext";
 import { captureReferral } from "@/lib/referralCapture";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { lazyWithRetry, clearLazyReloadGuard } from "@/lib/lazyWithRetry";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { VaultOSGate } from "./components/VaultOSGate";
@@ -25,11 +25,13 @@ import { hasFullAccess, isFreeBasicAllowedPath } from "@/lib/entitlements";
 // Wrapped with lazyWithRetry so stale-deploy chunk-hash mismatches
 // trigger a single auto-reload instead of a permanent error.
 const AcademyHome = lazyWithRetry(() => import("./pages/academy/AcademyHome"));
+const TradingSetup = lazyWithRetry(() => import("./components/academy/setup/TradingSetup"));
 const AcademyLearn = lazyWithRetry(() => import("./pages/academy/AcademyLearn"));
 const AcademyModule = lazyWithRetry(() => import("./pages/academy/AcademyModule"));
 const AcademyBootcamp = lazyWithRetry(() => import("./pages/academy/AcademyBootcamp"));
 const AcademyCommunity = lazyWithRetry(() => import("./pages/academy/AcademyCommunity"));
-const AcademyTrade = lazyWithRetry(() => import("./pages/academy/AcademyTrade"));
+const AcademyMessages = lazyWithRetry(() => import("./pages/academy/AcademyMessages"));
+const AcademyTrade = lazyWithRetry(() => import("./components/trade-os/DailyLossCalculator"));
 const AcademyRoom = lazyWithRetry(() => import("./pages/academy/AcademyRoom"));
 const AcademyLive = lazyWithRetry(() => import("./pages/academy/AcademyLive"));
 const AcademyResources = lazyWithRetry(() => import("./pages/academy/AcademyResources"));
@@ -88,12 +90,6 @@ function PushBootstrap() {
   return null;
 }
 
-function ReloadGuardReset() {
-  useEffect(() => {
-    clearLazyReloadGuard();
-  }, []);
-  return null;
-}
 
 /**
  * Redirect Free Basic members away from full-app routes before
@@ -146,7 +142,6 @@ const App = () => (
       <ReferralCapture />
       <AuthProvider>
         <PushBootstrap />
-        <ReloadGuardReset />
         <VaultStateProvider>
         <AcademyDataProvider>
         <AdminModeProvider>
@@ -181,11 +176,13 @@ const App = () => (
 
               <Route index element={<Navigate to="home" replace />} />
               <Route path="home" element={<Suspense fallback={<RouteFallback />}><AcademyHome /></Suspense>} />
+              <Route path="setup" element={<Suspense fallback={<RouteFallback />}><TradingSetup /></Suspense>} />
               <Route path="start" element={<Navigate to="/academy/home" replace />} />
               <Route path="learn" element={<Suspense fallback={<RouteFallback />}><AcademyLearn /></Suspense>} />
               <Route path="learn/:moduleSlug" element={<Suspense fallback={<RouteFallback />}><AcademyModule /></Suspense>} />
               <Route path="bootcamp" element={<Suspense fallback={<RouteFallback />}><AcademyBootcamp /></Suspense>} />
               <Route path="community" element={<Suspense fallback={<RouteFallback />}><AcademyCommunity /></Suspense>} />
+              <Route path="community/messages" element={<Suspense fallback={<RouteFallback />}><AcademyMessages /></Suspense>} />
               <Route path="trade" element={<Suspense fallback={<RouteFallback />}><AcademyTrade /></Suspense>} />
               <Route path="rooms" element={<Navigate to="/academy/community" replace />} />
               <Route path="room/:roomSlug" element={<Suspense fallback={<RouteFallback />}><AcademyRoom /></Suspense>} />

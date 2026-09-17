@@ -9,11 +9,16 @@
  * 2. NUL characters (\u0000) cannot be stored in Postgres text columns.
  */
 
-const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
-
 /** Remove characters that cannot be serialized or stored safely. */
 export function sanitizeText(input: string): string {
-  return input.replace(LONE_SURROGATE, "").replace(/\u0000/g, "");
+  // Iterate code points instead of regex lookbehind, which older iOS WebViews
+  // cannot parse. Valid emoji pairs stay intact; lone UTF-16 surrogates do not.
+  let clean = "";
+  for (const character of input) {
+    const code = character.codePointAt(0)!;
+    if (code !== 0 && (code < 0xd800 || code > 0xdfff)) clean += character;
+  }
+  return clean;
 }
 
 /**

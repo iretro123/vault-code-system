@@ -154,6 +154,16 @@ const Sidebar = React.forwardRef<
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
+          aria-label="Navigation menu"
+          onKeyDownCapture={(event) => {
+            // A focused icon tooltip can otherwise consume the first Escape.
+            // Do not dismiss this menu when Escape belongs to a nested dialog.
+            if (event.key === "Escape" && (event.target as HTMLElement).closest('[role="dialog"]') === event.currentTarget) {
+              event.preventDefault();
+              event.stopPropagation();
+              setOpenMobile(false);
+            }
+          }}
           data-sidebar="sidebar"
           data-mobile="true"
           className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"

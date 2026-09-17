@@ -1,0 +1,42 @@
+import {afterEach,expect,it,vi} from 'vitest';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+import AcademySettings from '../pages/academy/AcademySettings';
+vi.mock('@/components/settings/SettingsProfile',()=>({SettingsProfile:()=> <input aria-label="Draft name" defaultValue="Trader"/>}));
+vi.mock('@/components/settings/SettingsAccount',()=>({SettingsAccount:()=> <p>Account deletion control</p>}));
+vi.mock('@/components/settings/SettingsSecurity',()=>({SettingsSecurity:()=> <p>Security panel</p>}));
+vi.mock('@/components/settings/SettingsPrivacy',()=>({SettingsPrivacy:()=> <p>Privacy panel</p>}));
+vi.mock('@/components/settings/SettingsNotifications',()=>({SettingsNotifications:()=> <p>Notification panel</p>}));
+vi.mock('@/components/settings/SettingsTradingPrefs',()=>({SettingsTradingPrefs:()=> <p>Trading panel</p>}));
+vi.mock('@/components/settings/SettingsHelp',()=>({SettingsHelp:()=> <p>Help panel</p>}));
+vi.mock('@/components/settings/SettingsBilling',()=>({SettingsBilling:()=> <p>Billing panel</p>}));
+vi.mock('@/lib/featureFlags',()=>({isBillingVisible:()=>false}));
+vi.mock('@/integrations/supabase/localPreviewFetch',()=>({isLocalDesignPreview:()=>true}));
+afterEach(cleanup);
+it('mounts one form and retains its draft when navigating',()=>{
+ render(<MemoryRouter><AcademySettings/></MemoryRouter>);
+ expect(screen.getAllByLabelText('Draft name')).toHaveLength(1);
+ fireEvent.change(screen.getByLabelText('Draft name'),{target:{value:'Draft RZ'}});
+ fireEvent.click(screen.getByRole('button',{name:'Notifications'}));
+ expect(screen.getByRole('heading',{level:1}).textContent).toBe('Notifications');
+ fireEvent.click(screen.getByRole('button',{name:'My profile'}));
+ expect((screen.getByLabelText('Draft name') as HTMLInputElement).value).toBe('Draft RZ');
+ expect(screen.queryByText('Billing panel')).toBeNull();
+});
+it('respects deep links and keeps Account available without a deletion banner',()=>{
+ render(<MemoryRouter initialEntries={['/academy/settings?section=account&focus=delete-account']}><AcademySettings/></MemoryRouter>);
+ expect(screen.getByText('Account deletion control')).toBeTruthy();
+ expect(screen.getByRole('heading',{level:1}).textContent).toBe('Account');
+ expect(screen.queryByLabelText('Draft name')).toBeNull();
+});
+it('filters the category list and recovers from an empty search',()=>{
+ render(<MemoryRouter><AcademySettings/></MemoryRouter>);
+ const search=screen.getByRole('textbox',{name:'Find a setting'});
+ fireEvent.change(search,{target:{value:'privacy'}});
+ expect(screen.getByRole('button',{name:'Privacy & data'})).toBeTruthy();
+ expect(screen.queryByRole('button',{name:'Notifications'})).toBeNull();
+ fireEvent.change(search,{target:{value:'zzzz'}});
+ expect(screen.getByText(/No settings found/)).toBeTruthy();
+ fireEvent.change(search,{target:{value:''}});
+ expect(screen.getByRole('button',{name:'Notifications'})).toBeTruthy();
+});

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { getVideoPageOrigin } from '@/lib/videoEmbeds';
 
 const YOUTUBE_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 
@@ -14,7 +15,7 @@ const YouTubeEmbed = () => {
       rel: "0",
       modestbranding: "1",
       playsinline: "1",
-      origin: "https://member.vaulttradingacademy.com",
+      origin: getVideoPageOrigin(),
     });
     return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
   }, [isValidVideo, videoId]);

@@ -1,4 +1,5 @@
 import { SessionTimer } from "@/components/academy/live/SessionTimer";
+import VaultLivePreview from "@/components/academy/live/VaultLivePreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -648,4 +649,19 @@ const AcademyLive = () => {
   );
 };
 
-export default AcademyLive;
+// Keep live membership enforcement and the existing staff management surface.
+function ReleasedLivePage() {
+  const { hasAccess, status, loading } = useStudentAccess();
+  const { isAdminActive } = useAdminMode();
+  const { hasPermission } = useAcademyPermissions();
+  if (loading) return <div className="p-6" role="status">Loading classroom access…</div>;
+  if (!hasAccess) return <PremiumGate status={status} pageName="Live Sessions" />;
+  if (isAdminActive && hasPermission("manage_live_sessions")) return <AcademyLive />;
+  return <VaultLivePreview />;
+}
+
+export default function LivePage() {
+  return import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? <VaultLivePreview />
+    : <ReleasedLivePage />;
+}

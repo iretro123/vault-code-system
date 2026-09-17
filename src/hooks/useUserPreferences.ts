@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import {isLocalDesignPreview} from '@/integrations/supabase/localPreviewFetch';
 
 export type AlertChannel = "in_app" | "email" | "both";
 
@@ -53,7 +54,7 @@ export function useUserPreferences() {
       } else {
         // Create default row
         const newRow = { user_id: user.id, ...DEFAULTS };
-        await supabase.from("user_preferences").insert(newRow);
+        if(!isLocalDesignPreview()) await supabase.from("user_preferences").insert(newRow);
         setPrefs(newRow as UserPreferences);
       }
       setLoading(false);
@@ -62,6 +63,10 @@ export function useUserPreferences() {
 
   const updatePrefs = useCallback(async (updates: Partial<Omit<UserPreferences, "user_id">>) => {
     if (!user || !prefs) return false;
+    if(isLocalDesignPreview()){
+      setPrefs(p=>p?{...p,...updates}:p);
+      return true;
+    }
     const { error } = await supabase
       .from("user_preferences")
       .update({ ...updates, updated_at: new Date().toISOString() })

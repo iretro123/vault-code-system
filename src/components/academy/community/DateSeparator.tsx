@@ -1,8 +1,8 @@
 export function DateSeparator({ date }: { date: string }) {
   return (
-    <div className="flex items-center gap-3 px-6 py-3">
+    <div className="community-date-divider flex items-center gap-3 px-6 py-3">
       <div className="flex-1 h-px bg-white/[0.08]" />
-      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] shrink-0">{date}</span>
+      <span className="text-xs font-medium text-muted-foreground shrink-0">{date}</span>
       <div className="flex-1 h-px bg-white/[0.08]" />
     </div>
   );
@@ -13,8 +13,9 @@ export function getDateLabel(dateStr: string): string {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diff = today.getTime() - msgDate.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  // Compare calendar dates, not elapsed hours (DST days can be 23 or 25 hours).
+  const days = (Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) -
+    Date.UTC(msgDate.getFullYear(), msgDate.getMonth(), msgDate.getDate())) / 86400000;
 
   if (days === 0) return "Today";
   if (days === 1) return "Yesterday";

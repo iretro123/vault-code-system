@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from "react";
+import { claimChunkReload } from '@/lib/chunkReloadGuard';
 
 interface Props {
   children: ReactNode;
@@ -33,15 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
       error?.name === "ChunkLoadError";
 
     if (isChunkError) {
-      try {
-        const RELOAD_KEY = "__lazy_chunk_reloaded__";
-        if (sessionStorage.getItem(RELOAD_KEY) !== "1") {
-          sessionStorage.setItem(RELOAD_KEY, "1");
-          window.location.reload();
-        }
-      } catch {
-        window.location.reload();
-      }
+      if(claimChunkReload())window.location.reload();
     }
   }
 

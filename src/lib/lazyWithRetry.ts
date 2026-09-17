@@ -1,4 +1,5 @@
 import { lazy, ComponentType } from "react";
+import { claimChunkReload } from './chunkReloadGuard';
 
 const RELOAD_KEY = "__lazy_chunk_reloaded__";
 
@@ -26,18 +27,7 @@ export function lazyWithRetry<T extends ComponentType<unknown>>(
       return await factory();
     } catch (err) {
       if (isChunkLoadError(err)) {
-        let alreadyReloaded = false;
-        try {
-          alreadyReloaded = sessionStorage.getItem(RELOAD_KEY) === "1";
-        } catch {
-          // sessionStorage unavailable — fall through to rethrow
-        }
-        if (!alreadyReloaded) {
-          try {
-            sessionStorage.setItem(RELOAD_KEY, "1");
-          } catch {
-            // ignore
-          }
+        if (claimChunkReload()) {
           window.location.reload();
           // Return a never-resolving promise so React shows Suspense
           // fallback until the reload kicks in.
@@ -49,7 +39,7 @@ export function lazyWithRetry<T extends ComponentType<unknown>>(
   });
 }
 
-/** Clear the reload guard after a successful render — call once at app mount. */
+/** Explicit recovery only. Do not call on shell mount: a lazy route may still fail. */
 export function clearLazyReloadGuard() {
   try {
     sessionStorage.removeItem(RELOAD_KEY);

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Radar, Crosshair, ImagePlus, X, ChevronDown, ChevronUp, Link2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { localPreviewFetch } from "@/integrations/supabase/localPreviewFetch";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Attachment } from "@/hooks/useRoomMessages";
@@ -39,7 +40,7 @@ function hasDraftContent(d: Partial<DraftState>): boolean {
 }
 
 interface SignalPostFormProps {
-  onSubmit: (body: string, attachments?: Attachment[]) => Promise<void>;
+  onSubmit: (body: string, attachments?: Attachment[]) => Promise<boolean>;
   sending: boolean;
   roomSlug: string;
 }
@@ -117,7 +118,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const encodedPath = path.split("/").map(encodeURIComponent).join("/");
-    const res = await fetch(`${supabaseUrl}/storage/v1/object/academy-chat-files/${encodedPath}`, {
+    const res = await localPreviewFetch(`${supabaseUrl}/storage/v1/object/academy-chat-files/${encodedPath}`, {
       method: "POST",
       headers: { apikey: supabaseKey, authorization: `Bearer ${accessToken}`, "content-type": file.type || "application/octet-stream", "x-upsert": "false" },
       body: file,
@@ -159,7 +160,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
     const t = quickTicker.trim().toUpperCase();
     if (!t || sending || !user) return;
     const { body, attachments } = buildSignalPayload(t, quickBias, "watchlist", {});
-    await onSubmit(body, attachments);
+    if (!await onSubmit(body, attachments)) return;
     setQuickTicker("");
     setQuickBias("bullish");
   };
@@ -183,7 +184,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
       { levels, notes, tvLink, direction, strike, exp, fill, chartAtt }
     );
 
-    await onSubmit(body, attachments);
+    if (!await onSubmit(body, attachments)) return;
     reset();
     setOpen(false);
   };
@@ -192,8 +193,10 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
 
   if (!open) {
     return (
-      <div className="space-y-2">
+      <div className="community-signal-form space-y-2">
         {/* Quick Watchlist Row */}
+        <details>
+        <summary>Quick watchlist</summary>
         <div className="flex items-center gap-1.5">
           <Input
             value={quickTicker}
@@ -214,17 +217,19 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
             ))}
           </div>
           <Button size="sm" onClick={handleQuickSubmit} disabled={!quickTicker.trim() || sending}
+            aria-label="Post quick watchlist"
             className="h-8 px-2.5 bg-sky-600 hover:bg-sky-500 text-white text-[11px]">
             {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
           </Button>
         </div>
+        </details>
 
         {/* Expand full form */}
         <button type="button" onClick={() => setOpen(true)}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] transition-colors text-[13px] font-medium text-foreground/80 relative"
         >
           <Crosshair className="h-4 w-4 text-primary" />
-          Post Signal
+          Create signal or watchlist
           <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
           {draftExists && <span className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-sky-400" />}
         </button>
@@ -233,7 +238,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
   }
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-card overflow-hidden">
+    <div className="community-signal-form rounded-xl border border-white/[0.08] bg-card overflow-hidden">
       {/* Mode toggle header */}
       <div className="flex items-center border-b border-white/[0.06]">
         <button type="button" onClick={() => setMode("watchlist")}

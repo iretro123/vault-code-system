@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { useUserPreferences, type AlertChannel } from "@/hooks/useUserPreference
 import { cn } from "@/lib/utils";
 import { Bell, CheckCircle2, Mail, Smartphone, TriangleAlert } from "lucide-react";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
+import {isLocalDesignPreview} from '@/integrations/supabase/localPreviewFetch';
 
 const TOGGLES = [
   { key: "notifications_enabled", label: "Enable Notifications", desc: "Master toggle for all alerts." },
@@ -40,6 +42,20 @@ export function SettingsNotifications() {
     notify_live_events: true,
   });
   const [channel, setChannel] = useState<AlertChannel>("in_app");
+  const [saving, setSaving] = useState(false);
+  const saveLock = useRef(false);
+
+  const savePreference = async (updates: Parameters<typeof updatePrefs>[0]) => {
+    if (saveLock.current) return false;
+    saveLock.current = true; setSaving(true);
+    try {
+      if (!await updatePrefs(updates)) throw new Error('save failed');
+      return true;
+    } catch {
+      toast.error('Your notification settings were not saved. Please try again.');
+      return false;
+    } finally { saveLock.current = false; setSaving(false); }
+  };
 
   useEffect(() => {
     if (prefs) {
@@ -83,9 +99,9 @@ export function SettingsNotifications() {
   };
 
   const handleToggle = async (key: ToggleKey, checked: boolean) => {
+    if (!await savePreference({ [key]: checked })) return;
     setValues((v) => ({ ...v, [key]: checked }));
-    await updatePrefs({ [key]: checked });
-    if (key === "notifications_enabled" && checked) {
+    if (key === "notifications_enabled" && checked && !isLocalDesignPreview()) {
       if (Capacitor.isNativePlatform()) {
         await requestNativePush();
       } else {
@@ -95,8 +111,7 @@ export function SettingsNotifications() {
   };
 
   const handleChannelChange = async (val: AlertChannel) => {
-    setChannel(val);
-    await updatePrefs({ preferred_alert_channel: val });
+    if (await savePreference({ preferred_alert_channel: val })) setChannel(val);
   };
 
   if (loading) {
@@ -152,7 +167,7 @@ export function SettingsNotifications() {
         <div className="space-y-4">
           {TOGGLES.map(({ key, label, desc }) => {
             const isMaster = key === "notifications_enabled";
-            const disabled = !isMaster && masterOff;
+            const disabled = saving || (!isMaster && masterOff);
             return (
               <div key={key} className={`flex items-center justify-between gap-4 ${disabled ? "opacity-40" : ""}`}>
                 <div>
@@ -160,6 +175,7 @@ export function SettingsNotifications() {
                   <p className="text-[10px] text-muted-foreground/70">{desc}</p>
                 </div>
                 <Switch
+                  aria-label={label}
                   checked={values[key]}
                   onCheckedChange={(v) => handleToggle(key, v)}
                   disabled={disabled}
@@ -179,6 +195,8 @@ export function SettingsNotifications() {
           {CHANNEL_OPTIONS.map(({ value, label, icon: Icon, desc }) => (
             <button
               key={value}
+              aria-pressed={channel === value}
+              disabled={masterOff || saving}
               onClick={() => handleChannelChange(value)}
               className={cn(
                 "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all duration-100",

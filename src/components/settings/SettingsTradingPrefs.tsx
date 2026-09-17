@@ -62,7 +62,7 @@ export function SettingsTradingPrefs() {
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Default Market</Label>
         <Select value={market} onValueChange={setMarket}>
-          <SelectTrigger className="vault-input"><SelectValue /></SelectTrigger>
+          <SelectTrigger aria-label="Default market" className="vault-input"><SelectValue /></SelectTrigger>
           <SelectContent className="bg-popover border-border z-50">
             <SelectItem value="options">Options</SelectItem>
             <SelectItem value="stocks">Stocks</SelectItem>
@@ -73,7 +73,7 @@ export function SettingsTradingPrefs() {
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Trading Style <span className="text-muted-foreground/50">(optional)</span></Label>
         <Select value={style} onValueChange={setStyle}>
-          <SelectTrigger className="vault-input"><SelectValue placeholder="Select style" /></SelectTrigger>
+          <SelectTrigger aria-label="Trading style" className="vault-input"><SelectValue placeholder="Select style" /></SelectTrigger>
           <SelectContent className="bg-popover border-border z-50">
             {TRADING_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
           </SelectContent>
@@ -83,7 +83,7 @@ export function SettingsTradingPrefs() {
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Session Auto-Pause</Label>
         <Select value={autopause} onValueChange={setAutopause}>
-          <SelectTrigger className="vault-input"><SelectValue /></SelectTrigger>
+          <SelectTrigger aria-label="Session auto-pause" className="vault-input"><SelectValue /></SelectTrigger>
           <SelectContent className="bg-popover border-border z-50">
             {AUTOPAUSE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>

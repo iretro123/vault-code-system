@@ -43,6 +43,7 @@ export function PlaybookChapterList({
             <button
               key={ch.id}
               onClick={() => onSelect(ch.id)}
+              aria-current={isActive ? "step" : undefined}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all duration-100",
                 isActive
@@ -75,7 +76,7 @@ export function PlaybookChapterList({
               <div className="flex-1 min-w-0">
                 <p
                   className={cn(
-                    "text-sm font-medium truncate",
+                    "text-sm font-medium leading-snug",
                     isCompleted ? "text-white/50" : "text-foreground/90"
                   )}
                 >
@@ -83,7 +84,7 @@ export function PlaybookChapterList({
                 </p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <Clock className="h-3 w-3 text-white/20" />
-                  <span className="text-[11px] text-white/25">{ch.minutes_estimate} min</span>
+                  <span className="text-xs text-white/60">{ch.minutes_estimate} min</span>
                   {isCompleted && (
                     <span
                       className="text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap leading-none"

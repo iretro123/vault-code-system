@@ -1,0 +1,175 @@
+.vault-community .community-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px 12px}
+.community-heading h1{font-size:20px;font-weight:650;letter-spacing:-.5px}
+.community-heading button{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid #3b82f640;border-radius:10px;color:#b8d3ff;background:#3b82f610;font-size:14px}
+.vault-community button[aria-current]{min-height:48px;font-size:14px;letter-spacing:0}
+.vault-community button[aria-current] span.rounded-full{background:#3b82f6;font-size:11px;min-width:19px;height:19px}
+.vault-community button:focus-visible,.vault-community a:focus-visible{outline:2px solid #82b3ff;outline-offset:3px}
+.vault-community .chat-quick-action{min-height:36px;font-size:12px}
+.community-guide{padding:24px 20px;overflow:auto;font-size:14px;line-height:1.6}
+.community-guide h2{font-weight:650;font-size:16px;color:#e5edf8;margin-bottom:8px}
+.community-guide p{color:#a7b4c7}
+.community-guide section+section{border-top:1px solid #ffffff12;padding-top:22px;margin-top:22px}
+.community-guide a,.community-guide button{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;width:100%;text-align:left;color:#b8d3ff}
+.community-guide small{display:block;color:#8492a6;font-size:12px;margin-top:10px}
+@media(max-width:767px){.vault-community .community-heading{padding:10px 12px 4px}.community-heading h1{font-size:18px}.community-heading button{padding:0 10px}.vault-community>div{margin:0;border-radius:0;border-inline:0;box-shadow:none}.vault-community button[aria-current]{padding-inline:8px}}
+
+/* One chat surface, one writing surface. No stacked footer trays. */
+.vault-community{min-height:0;--community-surface:#141922;--community-raised:#202833}
+.vault-community>div{background:var(--community-surface);border-color:#ffffff0d;box-shadow:0 12px 40px #00000020}
+.vault-community .community-heading{padding:16px 20px 10px}
+.vault-community .community-heading h1{font-size:21px;letter-spacing:-.65px}
+.vault-community .community-heading button{background:transparent;border-color:#ffffff16;color:#c4cfdf;border-radius:8px}
+.vault-community .community-heading button:hover{background:#ffffff08;border-color:#8ca9d640}
+.vault-community .community-room-tabs{justify-content:flex-start;gap:6px;padding:0 0 12px;border-bottom:0}
+.vault-community .community-room-tabs button{flex:0 1 auto;min-height:40px;padding:8px 20px;border-radius:8px;font-size:14px;letter-spacing:0;color:#96a4b8}
+.vault-community .community-room-tabs button[aria-current="page"]{background:#2b3546;color:#e6eeff;box-shadow:inset 0 1px #ffffff09}
+.vault-community .community-room-tabs button:after{display:none}
+.vault-community .community-room-tabs button[aria-current="page"]:after{content:"";display:block;position:absolute;bottom:-4px;left:12px;right:12px;height:3px;border-radius:3px;background:linear-gradient(90deg,#4392ff,#b9edff 50%,#4392ff);box-shadow:0 0 5px #84c9ffcc,0 3px 13px #398aff99;pointer-events:none;animation:none}
+.vault-community .community-room-tabs button{border:1px solid transparent}
+.vault-community .community-room-tabs button[aria-current="page"]:before{content:"";position:absolute;inset:45% 12px -6px;background:radial-gradient(ellipse at 50% 100%,#439dff26,transparent 75%);pointer-events:none}
+.community-connection-status{position:absolute;z-index:20;top:8px;right:12px;max-width:calc(100% - 24px);padding:6px 12px;border:1px solid #e8bc6240;border-radius:8px;background:#30323bf5;color:#f0d59b;font-size:13px;line-height:20px;box-shadow:0 3px 10px #00000024;pointer-events:none}
+.vault-community .community-room-tabs button:hover{color:#edf2fb;background:#ffffff07}
+.vault-community .community-room{background:var(--community-surface)}
+.vault-community .community-room .vault-chat-scroll{min-height:0;scrollbar-width:thin;scrollbar-color:#465267 transparent}
+.vault-community .community-composer-footer{padding:10px 18px 14px;background:var(--community-surface);border:0}
+.vault-community .community-composer-shortcuts{display:none}
+.vault-community [data-chat-composer-stack]>[data-chat-composer]{margin-top:0}
+.vault-community [data-chat-composer]{background:var(--community-raised);border:1px solid #ffffff12;border-radius:14px;box-shadow:0 5px 18px #00000016;transition:border-color .15s,box-shadow .15s}
+.vault-community [data-chat-composer]:focus-within{border-color:#789fe48c;box-shadow:0 0 0 3px #78a8ff0a}
+.vault-community .community-composer-grid{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:14px 14px 10px}
+.vault-community .community-composer-grid textarea{grid-column:1/-1;grid-row:1;min-height:48px;max-height:120px;font-size:16px;line-height:24px;padding:0;color:#eef2f8}
+.vault-community .community-composer-grid textarea::placeholder{color:#97a5ba}
+.vault-community .community-composer-tools{grid-column:1;grid-row:2;gap:4px;padding:0}
+.vault-community .community-composer-tools button{display:flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;border-radius:8px;color:#a9b6c9}
+.vault-community .community-composer-tools svg{width:19px;height:19px}
+.vault-community .community-composer-grid>button{grid-column:2;grid-row:2;width:42px;height:40px;border-radius:10px;box-shadow:none;background:#648bd7;color:#fff}
+.vault-community .community-composer-grid>button:disabled{background:#ffffff06;color:#75849b}
+.vault-community .community-guide{background:#171e28;padding:24px 22px}
+.vault-community .community-guide h2{font-size:15px;letter-spacing:-.2px}
+.vault-community .community-guide section+section{margin-top:24px;padding-top:24px}
+@media(max-width:767px){
+ .vault-community .community-heading{padding:10px 14px 8px}
+ .vault-community .community-heading h1{font-size:19px}
+ .vault-community .community-room-tabs{gap:4px;padding-bottom:10px}
+ .vault-community .community-room-tabs button{flex:1;padding:8px 6px;min-height:42px}
+ .vault-community .community-composer-footer{padding:8px 10px 10px}
+ .vault-community .community-composer-grid{padding:12px 12px 8px;gap:4px 8px}
+ .vault-community .community-composer-grid textarea{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){.vault-community *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Brighter members' lounge: color distinguishes content, not extra chrome. */
+.vault-community{--community-surface:#202631;--community-raised:#303a49}
+.vault-community .community-heading{background:linear-gradient(115deg,#29364b,#242c39 65%)}
+.vault-community .community-room-tabs{padding-top:8px}
+.vault-community .community-room-tabs button[aria-current="page"]{background:#405b8b;color:#f2f6ff;border:1px solid #8eb2ee30}
+.vault-community .community-heading button{background:#779bea13;border-color:#99bfff35;color:#dae7ff}
+.vault-community .community-guide{background:#252e3b}
+.vault-community .community-guide section:first-child h2{color:#a9c6ff}
+.vault-community .community-guide section:nth-child(3) h2{color:#c2b8ff}
+.vault-community .community-guide p{color:#bac6d7}
+.vault-community .community-room .vault-chat-scroll{background:#202631}
+.vault-community .vault-signal-card{background:#2a3545;border:1px solid #ffffff16;border-left:3px solid var(--signal-accent,#81baff);box-shadow:0 8px 24px #090f1b24;max-width:580px}
+.vault-community .vault-signal-card::after{display:none}
+.vault-community .vault-signal-card::before{background:linear-gradient(90deg,var(--signal-accent),transparent);opacity:.35}
+.vault-community .vault-signal-watchlist{--signal-accent:#81c9ff;background:linear-gradient(120deg,#293e52,#2a3545 65%)}
+.vault-community .vault-signal-live-calls{--signal-accent:#7cddbd;background:linear-gradient(120deg,#28423f,#2a3545 65%)}
+.vault-community .vault-signal-live-puts{--signal-accent:#ff9eae;background:linear-gradient(120deg,#483342,#2a3545 65%)}
+.vault-community .vault-signal-card>div{flex-wrap:wrap}
+.vault-community .vault-signal-card p{font-size:15px;line-height:1.65;font-style:normal;overflow-wrap:anywhere}
+.vault-community .vault-signal-card span[class*="text-[10px]"],.vault-community .vault-signal-card span[class*="text-[11px]"]{font-size:12px}
+.vault-community .vault-signal-card span[class*="text-[18px]"]{font-size:24px;letter-spacing:-.6px}
+.vault-community .vault-signal-tv-link{min-height:48px;border:1px solid #91c8ff30;background:#97c7ff0c;border-radius:9px;padding:10px 12px}
+.vault-community .vault-signal-tv-link:hover{background:#97c7ff18}
+.vault-community .vault-signal-card>div:last-child{background:#15202c28}
+.vault-community [data-chat-composer]{border-color:#ffffff1c;box-shadow:0 8px 24px #080f1920}
+.vault-community .community-room-tabs button span.rounded-full{background:#548bea;color:#fff;min-width:18px;height:18px;font-size:11px}
+.vault-community .community-signal-form{margin-bottom:10px}
+.vault-community .community-signal-form input,.vault-community .community-signal-form select{min-height:42px;font-size:14px}
+.vault-community .community-signal-form summary{font-size:13px;color:#b6d5ff;cursor:pointer;min-height:40px;display:flex;align-items:center}
+.community-header-actions{display:flex;flex-wrap:wrap;gap:8px}
+.community-premarket-link{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;border:1px solid #99bfff35;border-radius:8px;background:#779bea13;color:#dae7ff;font-size:14px;line-height:1.3}
+.community-premarket-link small{display:block;font-size:11px;color:#aebdd3;margin-top:3px}
+.community-premarket-link:hover{background:#779bea26;border-color:#99bfff65}
+@media(max-width:600px){.community-header-actions .community-premarket-link{flex:1;justify-content:center}}
+.market-watch-dialog{display:block;width:calc(100% - 24px);max-width:1000px;max-height:90dvh;overflow-y:auto;padding:24px;background:#202631;border:1px solid #ffffff20;border-radius:16px;color:#e9eff9}
+.market-watch-dialog>button:last-child{width:40px;height:40px;display:grid;place-items:center;top:12px;right:12px}
+.market-watch-heading{padding-right:38px;margin-bottom:20px}
+.market-watch-heading h2{font-size:24px;margin-bottom:10px}
+.market-watch-heading p{font-size:16px;color:#b7c4d7;line-height:1.5}
+.market-watch-links{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.market-watch-links a{display:grid;grid-template-columns:1fr auto;align-items:center;padding:14px 16px;background:#30405a;border:1px solid #87b5ff26;border-radius:10px;font-size:16px;color:#d8e8ff}
+.market-watch-links a:hover{background:#394c6b}
+.market-watch-links small{grid-column:1/-1;font-size:12px;color:#b9c8df;margin-top:5px}
+.market-watch-note{display:flex;flex-direction:column;gap:5px;margin-bottom:16px;font-size:13px;color:#afbdd0;line-height:1.5}
+.market-watch-note strong{font-weight:550;color:#e6c78e}
+.market-watch-widget{height:480px;overflow:hidden;border-radius:8px;background:#131722}
+.market-watch-dialog .tradingview-widget-copyright{font-size:12px;text-align:center;padding:10px;color:#aabcda}
+.market-watch-footer,.market-watch-status{font-size:13px;line-height:1.6;color:#b7c4d7;margin-top:12px}
+.market-watch-footer a{color:#aacbff;text-decoration:underline}
+.market-movers-dialog{max-width:480px}
+.market-movers-load-state{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;padding:24px;text-align:center;background:#171e29;color:#e3edfc}
+.market-movers-load-state p{font-size:14px;line-height:1.6;color:#afbed3}
+.market-movers-load-state a,.market-movers-load-state button{padding:12px 16px;min-height:44px;border-radius:8px;background:#34578d;color:#e7f1ff;font-size:14px}
+.market-movers-load-state button{background:transparent;border:1px solid #6d8fbc50}
+.market-movers-dialog .market-watch-widget{height:407px}
+.market-movers-dialog .market-watch-heading{margin-bottom:16px}
+.market-movers-dialog .market-watch-heading p{font-size:13px}
+.market-movers-premarket{display:flex;align-items:center;justify-content:space-between;min-height:46px;padding:10px 12px;border:1px solid #8ab5ff30;background:#7aaaff0a;color:#c5dcff;border-radius:9px;font-size:14px;margin-top:8px}
+.market-watch-dialog a:focus-visible{outline:2px solid #82b3ff;outline-offset:3px}
+@media(max-width:600px){.vault-community .community-heading{flex-wrap:wrap}.community-header-actions{width:100%}.community-header-actions button{flex:1;justify-content:center}.market-watch-dialog{padding:18px}.market-watch-links{grid-template-columns:1fr}.market-watch-heading h2{font-size:22px}}
+
+/* Conversation rhythm: identities and content lead, metadata stays quiet. */
+.vault-community .community-thread{background:#252e3b;overflow:hidden}
+.vault-community .community-thread p{font-size:16px;line-height:1.6;overflow-wrap:anywhere;color:#dce4ef}
+.vault-community .community-thread span[class*="text-[1"]{font-size:12px;color:#adbbce}
+.vault-community .community-thread span.font-semibold{font-size:14px;color:#edf2fa}
+.vault-community .community-thread .flex.items-center.gap-2{flex-wrap:wrap}
+.vault-community .community-thread textarea{font-size:16px;min-height:44px;padding-block:8px;color:#edf2fa}
+.vault-community .community-thread textarea+button{width:44px;height:44px;border-radius:10px}
+.vault-community .community-thread textarea::placeholder{color:#acb9cc}
+.vault-community .community-message{padding-inline:20px;border-left-color:transparent}
+.vault-community .community-message:hover,.vault-community .community-message:focus-within{background:#b8d3ff08}
+.vault-community .community-message-meta{line-height:1.35}
+.vault-community .community-message-meta>button{font-size:15px;overflow-wrap:anywhere;text-align:left}
+.vault-community .community-message-time{white-space:nowrap;color:#a3b0c3;font-variant-numeric:tabular-nums}
+.vault-community .community-message-body{overflow-wrap:anywhere;color:#e6ebf3;max-width:75ch}
+.vault-community .community-date-divider{padding:22px 20px 12px}
+.vault-community .community-date-divider span{color:#b2bfd0;padding:3px 10px;border-radius:6px;background:#ffffff05}
+.vault-community .community-quoted-reply{gap:6px;padding-block:3px;color:#b2bfd0}
+.vault-community .community-reaction{min-height:32px;padding:4px 9px;border-radius:8px;font-size:14px}
+.vault-community .community-thread-link{min-height:36px;gap:8px;padding:4px 8px;margin-left:-8px;color:#a9c9ff;border-radius:7px;font-weight:550}
+.vault-community .community-thread-link:hover{background:#8aadff12;color:#d1e2ff}
+.vault-community .community-thread-link svg{width:16px;height:16px}
+.vault-community .community-reply-preview{background:#88acff0d;border-radius:10px 10px 0 0;padding:8px 12px}
+.vault-community .community-reply-preview span,.vault-community .community-reply-preview p{font-size:13px;line-height:1.5}
+.vault-community .community-reply-preview>button{min-height:40px;min-width:40px;display:grid;place-items:center}
+.vault-community .community-message:focus-within .group-hover\:opacity-100{opacity:1;pointer-events:auto}
+.vault-community .vault-chat-scroll{overscroll-behavior-y:contain;scroll-padding-bottom:20px}
+.vault-community .community-composer-grid textarea{scrollbar-width:thin;overflow-y:auto}
+.vault-community .community-message-body{font-size:1rem;line-height:1.55;font-weight:400;letter-spacing:normal}
+.vault-community .community-message-meta>button{font-size:.9375rem;line-height:1.4}
+.vault-community .community-message-time,.vault-community .community-message-edited{font-size:.75rem;line-height:1.5;color:#aebbd0}
+.vault-community .community-date-divider span{font-size:.75rem;line-height:1.5}
+.vault-community .community-room-tabs button{font-size:.9375rem;line-height:1.4;min-height:44px}
+.vault-community .vault-signal-card p,.vault-community .community-trade-card p:not(.uppercase){font-size:1rem;line-height:1.55;color:#e6ebf3;overflow-wrap:anywhere}
+.vault-community .community-trade-card .uppercase{font-size:.75rem;line-height:1.5;letter-spacing:.06em;color:#b6c8e2}
+.vault-community .community-trade-card .grid>div{min-width:0}
+.vault-community .community-trade-card>div:last-child{flex-wrap:wrap}
+.vault-community .vault-signal-card .text-muted-foreground{color:#b2bfd0}
+.vault-community .community-signal-form input,.vault-community .community-signal-form select{font-size:1rem}
+.vault-community .community-quoted-reply{font-size:.8125rem;line-height:1.5}
+.vault-community .community-message-meta>span.rounded{font-size:.75rem;line-height:1.2}
+.vault-community .community-attachment-caption{font-size:.75rem;line-height:1.5;color:#aebbd0}
+@media(min-width:768px){
+ .vault-community .community-composer-grid{grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:12px;padding:12px}
+ .vault-community .community-composer-tools{grid-column:1;grid-row:1}
+ .vault-community .community-composer-grid textarea{grid-column:2;grid-row:1;min-height:40px;padding:8px 0}
+ .vault-community .community-composer-grid>button{grid-column:3;grid-row:1}
+}
+@media(max-width:767px){
+ .vault-community .community-message{padding-inline:12px;gap:10px}
+ .vault-community .community-message-meta{column-gap:6px}
+ .vault-community .community-date-divider{padding:18px 12px 10px}
+ .vault-community .community-thread-link{min-height:44px}
+}

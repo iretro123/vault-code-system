@@ -2,7 +2,7 @@ import { useState } from "react";
 import { RoomChat } from "@/components/academy/RoomChat";
 import { ThreadDrawer } from "@/components/academy/community/ThreadDrawer";
 import { TradeFloorHero } from "@/components/academy/community/TradeFloorHero";
-import { CockpitPanel } from "@/components/academy/community/CockpitPanel";
+import { CommunityGuide } from "@/components/academy/community/CommunityGuide";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -44,9 +44,9 @@ export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTra
       </div>
 
       {/* Cockpit Panel — structured right rail */}
-      {!isMobile && (
+      {!isMobile && !threadMessage && (
         <div className="w-[280px] shrink-0 border-l border-white/[0.05] hidden lg:flex flex-col bg-card">
-          <CockpitPanel onSwitchTab={onSwitchTab} />
+          <CommunityGuide onSwitchTab={onSwitchTab} />
         </div>
       )}
 
@@ -55,10 +55,11 @@ export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTra
         <div className={cn(
           "shrink-0 border-l border-white/[0.05] overflow-hidden",
           isMobile
-            ? "absolute inset-y-0 right-0 z-30 w-80 bg-background shadow-2xl"
+            ? "absolute inset-0 z-30 w-full bg-background shadow-2xl"
             : "w-80"
         )}>
           <ThreadDrawer
+            key={threadMessage.id}
             parentMessage={threadMessage as any}
             onClose={() => setThreadMessage(null)}
           />
