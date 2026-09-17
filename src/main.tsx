@@ -45,60 +45,89 @@ if (isNativeCapacitor) {
   };
 
   const viewport = window.visualViewport;
-  if (viewport) {
-    let baselineViewportHeight = viewport.height;
-    let baselineViewportWidth = viewport.width;
+  let baselineViewportHeight = viewport?.height ?? window.innerHeight;
+  let baselineViewportWidth = viewport?.width ?? window.innerWidth;
+  // Native keyboard height reported by Capacitor, normalised to CSS pixels.
+  let nativeKeyboardHeight = 0;
 
-    const syncKeyboardFromViewport = () => {
-      // Android edge-to-edge can leave 100dvh unchanged while the IME covers it.
-      // Size the app to the visible viewport, but do not reflow on pinch zoom.
-      if (viewport.scale && viewport.scale !== 1) return;
-      const currentHeight = viewport.height;
+  const toCssPixels = (rawHeight: number) => {
+    if (!Number.isFinite(rawHeight) || rawHeight <= 0) return 0;
+    const ratio = window.devicePixelRatio || 1;
+    // Android reports device pixels; a value taller than the viewport itself
+    // can only be device pixels, so scale it down before using it.
+    if (ratio > 1 && rawHeight > baselineViewportHeight * 0.9) {
+      return rawHeight / ratio;
+    }
+    return rawHeight;
+  };
+
+  const applyViewportLayout = () => {
+    // Android edge-to-edge can leave the visual viewport unchanged while the
+    // IME covers the composer, so fall back to the native keyboard height.
+    // Do not reflow on pinch zoom.
+    if (viewport?.scale && viewport.scale !== 1) return;
+
+    const currentHeight = viewport?.height ?? window.innerHeight;
+    const currentWidth = viewport?.width ?? window.innerWidth;
+
+    if (Math.abs(currentWidth - baselineViewportWidth) > 80) {
+      // Rotation, not a keyboard: rebase and drop keyboard state.
+      baselineViewportWidth = currentWidth;
+      baselineViewportHeight = currentHeight;
+      nativeKeyboardHeight = 0;
       document.documentElement.style.setProperty("--academy-visible-height", `${currentHeight}px`);
-      if (Math.abs(viewport.width - baselineViewportWidth) > 80) {
-        baselineViewportWidth = viewport.width;
-        baselineViewportHeight = currentHeight;
-        setKeyboardOpenState(false);
-        return;
-      }
-      if (currentHeight > baselineViewportHeight) {
-        baselineViewportHeight = currentHeight;
-      }
+      setKeyboardOpenState(false);
+      return;
+    }
 
-      const keyboardHeight = Math.max(0, baselineViewportHeight - currentHeight);
-      const editing = document.activeElement?.matches('input, textarea, [contenteditable="true"]');
-      if (editing && keyboardHeight > 120) {
-        setKeyboardOpenState(true, keyboardHeight);
-      } else {
-        baselineViewportHeight = currentHeight;
-        setKeyboardOpenState(false);
-      }
-    };
+    if (currentHeight > baselineViewportHeight) {
+      baselineViewportHeight = currentHeight;
+    }
 
-    viewport.addEventListener("resize", syncKeyboardFromViewport);
-    syncKeyboardFromViewport();
+    const viewportShrink = Math.max(0, baselineViewportHeight - currentHeight);
+    // Never subtract twice: only the part the viewport did not already absorb.
+    const residual = Math.max(0, nativeKeyboardHeight - viewportShrink);
+    const visibleHeight = Math.max(200, currentHeight - residual);
+    document.documentElement.style.setProperty("--academy-visible-height", `${visibleHeight}px`);
+
+    const effectiveKeyboard = Math.max(viewportShrink, nativeKeyboardHeight);
+    const editing = document.activeElement?.matches('input, textarea, [contenteditable="true"]');
+    const keyboardOpen =
+      effectiveKeyboard > 120 && (nativeKeyboardHeight > 120 || !!editing);
+
+    if (keyboardOpen) {
+      setKeyboardOpenState(true, effectiveKeyboard);
+    } else {
+      if (nativeKeyboardHeight === 0) baselineViewportHeight = currentHeight;
+      setKeyboardOpenState(false);
+    }
+  };
+
+  if (viewport) {
+    viewport.addEventListener("resize", applyViewportLayout);
+  } else {
+    window.addEventListener("resize", applyViewportLayout);
   }
+  applyViewportLayout();
 
   import("@capacitor/keyboard")
     .then(({ Keyboard, KeyboardResize }) => {
       Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
       Keyboard.setResizeMode({ mode: KeyboardResize.Body }).catch(() => {});
 
-      Keyboard.addListener("keyboardWillShow", ({ keyboardHeight }) => {
-        setKeyboardOpenState(true, keyboardHeight);
-      }).catch(() => {});
+      const onShow = ({ keyboardHeight }: { keyboardHeight: number }) => {
+        nativeKeyboardHeight = toCssPixels(keyboardHeight);
+        applyViewportLayout();
+      };
+      const onHide = () => {
+        nativeKeyboardHeight = 0;
+        applyViewportLayout();
+      };
 
-      Keyboard.addListener("keyboardDidShow", ({ keyboardHeight }) => {
-        setKeyboardOpenState(true, keyboardHeight);
-      }).catch(() => {});
-
-      Keyboard.addListener("keyboardWillHide", () => {
-        setKeyboardOpenState(false);
-      }).catch(() => {});
-
-      Keyboard.addListener("keyboardDidHide", () => {
-        setKeyboardOpenState(false);
-      }).catch(() => {});
+      Keyboard.addListener("keyboardWillShow", onShow).catch(() => {});
+      Keyboard.addListener("keyboardDidShow", onShow).catch(() => {});
+      Keyboard.addListener("keyboardWillHide", onHide).catch(() => {});
+      Keyboard.addListener("keyboardDidHide", onHide).catch(() => {});
     })
     .catch(() => {});
 }
