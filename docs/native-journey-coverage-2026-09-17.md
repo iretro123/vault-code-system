@@ -58,3 +58,30 @@ learn, `50`–`53` settings, `60`–`63` coach/support.
 No send, upload, save, purchase, restore, membership change, account deletion,
 publish, or backend/data edit. Sign-in flow unchanged; only navigation, reading,
 and dismissal.
+
+## Update — 2026-09-17 (post iPhone 17 Pro / iOS 26.3.1 run of 7655b037)
+
+Observed: Community, Messages, Coach/Support passed. Learn failed at the chapter
+tap (card frame under the bottom navigation, not hittable). Settings failed
+because the section switcher was queried as `app.buttons["Settings page"]` only —
+WebKit surfaces the Radix `role=combobox` trigger as a pop-up button / other
+element on this OS build.
+
+Repairs (test-only, no app or auth changes):
+- `tapWhenReady` scrolls the WebView container until the target is hittable
+  (bounded, adaptive), then taps; coordinate tap only as a last resort, and only
+  after a screenshot + `debugDescription` attachment.
+- `labelledElement` resolves an accessibility label across buttons, pop-up
+  buttons, combo boxes, links, static texts, fields and other elements.
+- Settings profile fields (`Social links`, `Instagram`, `YouTube`) are scrolled
+  into view before assertion.
+- Section open is asserted on that section's own heading, not `staticTexts.count`.
+- Wins, member search and the 1:1 page assert real content instead of element
+  counts.
+- The absent-lesson `XCTSkipUnless` is now a hard assertion — a chapter with no
+  lesson row fails.
+- Every failure attaches a screenshot plus element and app `debugDescription`.
+
+Still unknown (unchanged): video playback, message delivery, settings
+persistence, AI answers, entitlement correctness, push, purchases/restore,
+sign-up and email password reset, Android, basic/guest bottom-nav variant.
