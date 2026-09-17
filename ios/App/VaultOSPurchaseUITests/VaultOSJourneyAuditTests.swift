@@ -74,8 +74,26 @@ extension VaultOSLaunchAuditTests {
         try tapWhenReady(app, newMessage, name: "New message")
         let search = app.textFields["Search members"].firstMatch
         try require(search.waitForExistence(timeout: 15), "Member search field must appear", app, search)
+        let dialogTitle = app.staticTexts["New message"].firstMatch
+        let close = app.buttons["Close member search"].firstMatch
+        try require(
+            elementsWhollyVisible(app, dialogTitle, close, search),
+            "New message heading, close control and search field must be wholly visible",
+            app,
+            dialogTitle,
+            close,
+            search
+        )
         try tapWhenReady(app, search, name: "Search members field")
         search.typeText("a")
+        try require(
+            elementsWhollyVisible(app, dialogTitle, close, search),
+            "New message heading and close control must remain wholly visible with the keyboard open",
+            app,
+            dialogTitle,
+            close,
+            search
+        )
         // Either a member row or an explicit notice must appear — an empty panel
         // is a failure, so assert on real search output, not element counts.
         let searchOutcome = app.descendants(matching: .any).containing(
@@ -89,7 +107,6 @@ extension VaultOSLaunchAuditTests {
         )
         journeyCapture(app, "31-messages-member-search")
 
-        let close = app.buttons["Close member search"].firstMatch
         try require(close.waitForExistence(timeout: 10), "Member search must offer a close control", app, close)
         try tapWhenReady(app, close, name: "Close member search")
         try require(waitUntil(timeout: 15, { !search.exists }), "Member search must dismiss without sending", app)
@@ -127,6 +144,17 @@ extension VaultOSLaunchAuditTests {
 
         let backToLessons = app.buttons["Back to lessons"].firstMatch
         try require(backToLessons.waitForExistence(timeout: 25), "Lesson player must open with a back control", app, backToLessons)
+        let markComplete = app.buttons["Mark Complete"].firstMatch
+        let nextLesson = app.buttons["Next Lesson"].firstMatch
+        let finishCourse = app.buttons["Finish Course"].firstMatch
+        let forwardControl = nextLesson.exists ? nextLesson : finishCourse
+        try require(
+            scrollIntoView(app, forwardControl) && elementsWhollyVisible(app, forwardControl),
+            "Lesson footer controls must be wholly visible above mobile navigation",
+            app,
+            markComplete,
+            forwardControl
+        )
         journeyCapture(app, "42-learn-lesson-player")
         try tapWhenReady(app, backToLessons, name: "Back to lessons")
         try require(waitUntil(timeout: 20, { allCourses.exists }), "Back must return to the lesson list", app)
@@ -239,6 +267,19 @@ extension VaultOSLaunchAuditTests {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    /// Hittability is insufficient when WebKit reports a partly clipped control.
+    /// Compare the complete frame with the usable app window instead.
+    private func elementsWhollyVisible(_ app: XCUIApplication, _ elements: XCUIElement...) -> Bool {
+        let bounds = app.frame
+        return elements.allSatisfy { element in
+            guard element.exists, !element.frame.isEmpty else { return false }
+            let intersection = bounds.intersection(element.frame)
+            return !intersection.isNull
+                && abs(intersection.width - element.frame.width) < 1
+                && abs(intersection.height - element.frame.height) < 1
+        }
     }
 
     /// Fails with a screenshot plus the element/app debugDescription so a real
