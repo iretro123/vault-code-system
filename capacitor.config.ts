@@ -10,6 +10,10 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    Keyboard: {
+      // Android edge-to-edge/fullscreen WebViews do not shrink on their own.
+      resizeOnFullScreen: true,
+    },
   },
 };
 

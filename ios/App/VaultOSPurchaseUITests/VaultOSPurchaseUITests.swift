@@ -8,7 +8,17 @@ final class VaultOSLaunchAuditTests: XCTestCase {
         let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
         XCUIDevice.shared.orientation = .portrait
         app.launch()
-        if !app.buttons["Chat"].waitForExistence(timeout: 3) {
+        // A cached session can resolve slowly: wait for EITHER signed-in
+        // navigation or the welcome/sign-in screen before deciding.
+        let signedIn = app.buttons["Chat"]
+        let welcome = app.buttons.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Log in' OR label == 'Sign In'")
+        ).firstMatch
+        let deadline = Date().addingTimeInterval(25)
+        while Date() < deadline && !signedIn.exists && !welcome.exists {
+            _ = signedIn.waitForExistence(timeout: 1)
+        }
+        if !signedIn.exists {
             openSignIn(app)
             let email = app.textFields["Email"].firstMatch
             XCTAssertTrue(email.waitForExistence(timeout: 20))

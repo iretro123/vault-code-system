@@ -58,3 +58,44 @@ it('does not reflow the app when the user pinch zooms',()=>{
   Object.assign(viewport,{scale:2,height:400});viewport.dispatchEvent(new Event('resize'));
   expect(document.documentElement.style.getPropertyValue('--academy-visible-height')).toBe('844px');
 });
+
+async function keyboardHandlers(){
+  await vi.waitFor(()=>expect(keyboard.addListener).toHaveBeenCalledWith('keyboardDidShow',expect.any(Function)));
+  const calls=keyboard.addListener.mock.calls as [string,(payload?:{keyboardHeight:number})=>void][];
+  return {
+    show:calls.find(([event])=>event==='keyboardDidShow')![1],
+    hide:calls.find(([event])=>event==='keyboardDidHide')![1],
+  };
+}
+
+it('shrinks the app using the native keyboard height when the viewport does not resize',async()=>{
+  const {show,hide}=await keyboardHandlers();
+  const input=document.createElement('textarea');document.body.append(input);input.focus();
+  show({keyboardHeight:340});
+  // Viewport stayed at 844 (Android edge-to-edge), so the full keyboard is subtracted once.
+  expect(document.documentElement.style.getPropertyValue('--academy-visible-height')).toBe('504px');
+  expect(document.body.classList.contains('native-keyboard-open')).toBe(true);
+  expect(document.body.style.getPropertyValue('--academy-keyboard-height')).toBe('340px');
+  hide();
+  expect(document.documentElement.style.getPropertyValue('--academy-visible-height')).toBe('844px');
+  expect(document.body.classList.contains('native-keyboard-open')).toBe(false);
+});
+
+it('does not subtract the keyboard twice when the viewport already shrank',async()=>{
+  const {show,hide}=await keyboardHandlers();
+  const input=document.createElement('textarea');document.body.append(input);input.focus();
+  viewport.height=504;viewport.dispatchEvent(new Event('resize'));
+  show({keyboardHeight:340});
+  expect(document.documentElement.style.getPropertyValue('--academy-visible-height')).toBe('504px');
+  expect(document.body.style.getPropertyValue('--academy-keyboard-height')).toBe('340px');
+  hide();viewport.height=844;viewport.dispatchEvent(new Event('resize'));
+  expect(document.documentElement.style.getPropertyValue('--academy-visible-height')).toBe('844px');
+});
+
+it('ignores the native keyboard height while the user pinch zooms',async()=>{
+  const {show}=await keyboardHandlers();
+  Object.assign(viewport,{scale:2});
+  show({keyboardHeight:340});
+  expect(document.documentElement.style.getPropertyValue('--academy-visible-height')).toBe('844px');
+  expect(document.body.classList.contains('native-keyboard-open')).toBe(false);
+});
