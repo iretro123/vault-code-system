@@ -266,7 +266,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    const updateData: Record<string, string | boolean | null> = {
+    const updateData: import("@/integrations/supabase/types").TablesUpdate<"profiles"> = {
       display_name: displayName.trim() || null,
       role_level: roleLevel,
       timezone,
@@ -400,7 +400,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
             {avatarMode !== "image" && (
               <div className="flex gap-1.5 flex-wrap">
                 {AVATAR_COLORS.map((c) => (
-                  <button type="button" key={c} onClick={() => setAvatarColor(c)} className={`h-6 w-6 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
+                  <button type="button" key={c} aria-label={`Avatar color ${c}`} aria-pressed={avatarColor === c} onClick={() => setAvatarColor(c)} className={`h-11 w-11 rounded-full border-2 transition-transform ${avatarColor === c ? "border-foreground scale-110" : "border-transparent"}`} style={{ backgroundColor: c }} />
                 ))}
               </div>
             )}
@@ -409,7 +409,7 @@ export function AcademyProfileForm({ isOnboarding = false }: Props) {
             {avatarMode === "icon" && (
               <div className="grid grid-cols-7 gap-1.5">
                 {AVATAR_ICONS.map((icon) => (
-                  <button type="button" key={icon.id} onClick={() => setAvatarIcon(icon.id)} className={`h-8 w-8 rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
+                  <button type="button" key={icon.id} aria-label={`Avatar icon ${icon.id}`} aria-pressed={avatarIcon === icon.id} onClick={() => setAvatarIcon(icon.id)} className={`min-h-11 w-full rounded-lg border transition-colors ${avatarIcon === icon.id ? "border-foreground bg-muted" : "border-transparent hover:bg-muted/50"}`} style={{ color: avatarColor }}>
                     {icon.svg}
                   </button>
                 ))}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Plus, Loader2, Pencil, Trash2, Lock, Bell, Play, ArrowRight, EyeOff } from "lucide-react";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { VaultPlaybookIcon } from "@/components/icons/VaultPlaybookIcon";
@@ -27,6 +27,24 @@ import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { isSharedGuestAccount } from "@/lib/membership";
 import { useAuth } from "@/hooks/useAuth";
 import { getYouTubeThumbnail } from "@/lib/videoEmbeds";
+import playbookCover from "@/assets/vault-playbook-cover.jpg";
+import "./academy-learn.css";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { localCourseCover } from "@/lib/localCourseCovers";
+import ChartClassroom from "@/components/academy/ChartClassroom";
+
+const shortChapterNames: Record<number, string> = {
+  1: "Vault Install",
+  2: "Chart Setup",
+  3: "Market Structure",
+  4: "Supply & Demand",
+  5: "Entries & Execution",
+  6: "Trading Playbooks",
+  7: "Trader Mindset",
+  8: "Backtesting Lab",
+  9: "Coaching Replays",
+  10: "Vault Archive",
+};
 
 const AcademyLearn = () => {
   const navigate = useNavigate();
@@ -37,7 +55,7 @@ const AcademyLearn = () => {
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
   const canManageContent = isAdminActive && hasPermission("manage_content");
-  const { totalCount: pbTotal, completedCount: pbDone, pct: pbPct, nextChapter: pbNext } = usePlaybookProgress();
+  const { totalCount: pbTotal, completedCount: pbDone, nextChapter: pbNext } = usePlaybookProgress();
   const { isBasicTier } = useIsBasicTier();
   const { user, profile } = useAuth();
   const isGuestOrBasic = isBasicTier || isSharedGuestAccount(user, profile);
@@ -67,6 +85,13 @@ const AcademyLearn = () => {
   // Display-only labels so the shared Beginner Bridge module reads correctly
   // for paid members (content and slug stay untouched).
   const labelFor = (mod: { slug: string; title: string; subtitle?: string | null }) => {
+    // Short local display names; keep saved titles, routes and grouping intact.
+    if (mod.slug !== BASIC_ONLY_SLUG) {
+      const chapter = Number(mod.title.match(/^Chapter\s+(\d+)\b/i)?.[1]);
+      if (shortChapterNames[chapter]) {
+        return { title: `Chapter ${chapter} — ${shortChapterNames[chapter]}`, subtitle: mod.subtitle };
+      }
+    }
     if (mod.slug !== BASIC_ONLY_SLUG || isGuestOrBasic || canManageContent) {
       return { title: mod.title, subtitle: mod.subtitle };
     }
@@ -148,26 +173,37 @@ const AcademyLearn = () => {
     return acc;
   }, {});
 
+  const curriculumGroups = [
+    { id: "start", title: "Start here", description: "Setup & foundations" },
+    { id: "core", title: "Core skills", description: "Structure, zones & execution" },
+    { id: "practice", title: "Practice & go deeper", description: "Discipline, practice & the library" },
+  ].map(group => ({ ...group, modules: modules.map((mod, index) => ({mod, index})).filter(({mod}) => {
+    const chapter = Number(mod.title.match(/^Chapter\s+(\d+)/i)?.[1]);
+    const groupId = mod.slug === BASIC_ONLY_SLUG || (chapter > 0 && chapter <= 2) ? "start" : chapter >= 3 && chapter <= 6 ? "core" : "practice";
+    return groupId === group.id;
+  }) })).filter(group => group.modules.length > 0);
+
   if (!hasAccess && !accessLoading && !isGuestOrBasic) {
     return <PremiumGate status={status} pageName="Courses" />;
   }
 
   return (
     <>
-      <div className="px-4 md:px-8 pt-6 pb-24 md:pb-10 max-w-5xl mx-auto">
+      <div className="learn-library px-4 md:px-8 pt-6 pb-24 md:pb-10 max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">Courses</h1>
-          <p className="text-muted-foreground mt-1">Master discipline, one module at a time.</p>
+        <div className="learn-heading">
+          <p className="learn-eyebrow">VAULT ACADEMY / LEARN</p>
+          <h1>Learn at your pace.</h1>
+          <p className="learn-intro">Your lessons. Your playbook. A clearer understanding of the market.</p>
           {!loading && lessons.length > 0 && (() => {
             const totalLessons = lessons.length;
             const completedLessons = lessons.filter((l) => progress[l.id]).length;
             const overallPct = Math.round((completedLessons / totalLessons) * 100);
             return (
-              <div className="mt-4 flex items-center gap-3">
+              <div className="learn-overall">
                 <Progress value={overallPct} className="h-2 flex-1 max-w-xs" />
                 <span className="text-sm font-medium text-muted-foreground">
-                  {overallPct}% overall ({completedLessons}/{totalLessons} lessons)
+                  {completedLessons} of {totalLessons} lessons completed
                 </span>
               </div>
             );
@@ -186,32 +222,23 @@ const AcademyLearn = () => {
         {!isGuestOrBasic && <ClaimRoleBanner />}
 
         {/* Playbook Hero Strip — hidden for basic/guest users */}
-        {!isGuestOrBasic && pbTotal > 0 && pbDone < pbTotal && (
-          <div
-            className="vault-glass-card p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-3 cursor-pointer hover:border-primary/20 transition-colors"
-            onClick={() => navigate(`/academy/playbook${pbNext ? `?chapter=${pbNext.id}` : ""}`)}
+        {!isGuestOrBasic && pbTotal > 0 && (
+          <Link
+            className="learn-book"
+            to={`/academy/playbook${pbNext ? `?chapter=${pbNext.id}` : ""}`}
           >
-            <div className="flex items-center gap-4 min-w-0 flex-1">
-              <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <VaultPlaybookIcon className="h-6 w-6" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="text-base font-bold text-foreground">Vault Playbook</h3>
-                <p className="text-xs text-muted-foreground">Finish the OS before you binge modules.</p>
-              </div>
+            <div className="learn-book-art"><img src={playbookCover} alt="Vault Stock Investment Guide — Beginner’s Edition to Options Trading" width="495" height="640" /></div>
+            <div className="learn-book-copy">
+              <p className="learn-eyebrow">THE MEMBER E-BOOK</p>
+              <h2>The Vault <span>Playbook.</span></h2>
+              <p className="learn-book-description">Your reference for the lessons ahead.</p>
+              <p className="learn-book-meta">{pbTotal} chapters <span> / </span> Read online · PDF</p>
+              <span className="learn-book-action">
+                {pbDone === pbTotal ? "Revisit e-book" : pbDone > 0 ? "Continue reading" : "Read the e-book"}
+                <ArrowRight className="h-4 w-4" />
+              </span>
             </div>
-            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2.5">
-              <span className="text-[10px] font-bold uppercase tracking-wide bg-primary/20 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">Start Here</span>
-              <div className="text-right">
-                <span className="text-sm font-bold text-foreground">{pbPct}%</span>
-                <p className="text-[10px] text-muted-foreground">{pbDone}/{pbTotal}</p>
-              </div>
-              <Button size="sm" className="gap-1.5">
-                {pbDone > 0 ? "Continue" : "Open"}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
+          </Link>
         )}
 
         {loading && modules.length === 0 ? (
@@ -230,8 +257,19 @@ const AcademyLearn = () => {
         ) : (
           <>
             {/* Course grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {modules.map((mod, i) => {
+            <div className="learn-curriculum-heading"><div><p className="learn-eyebrow">YOUR COURSES</p><h2>Choose your next step.</h2></div><span>{modules.length} modules</span></div>
+            {modules.length === 0 && <div className="rounded-2xl border border-border p-6 text-center"><h2 className="text-lg font-semibold">No courses available right now</h2><p className="text-base text-muted-foreground mt-2">Try refreshing. If your courses are still missing, contact Vault support.</p><Button variant="outline" className="mt-4 min-h-11" onClick={() => refetchModules()}>Try again</Button></div>}
+            <Accordion type="single" collapsible defaultValue={curriculumGroups[0]?.id} className="learn-sections">
+              {curriculumGroups.map((group, groupIndex) => (
+                <AccordionItem key={group.id} value={group.id} className="learn-section">
+                  <AccordionTrigger className="learn-section-trigger">
+                    <span className="learn-section-number">{String(groupIndex + 1).padStart(2, "0")}</span>
+                    <span className="learn-section-label"><span>{group.title}</span><small>{group.description}</small></span>
+                    <span className="learn-section-count">{group.modules.length} modules</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="learn-section-content">
+                    <div className="learn-course-list">
+              {group.modules.map(({mod, index: i}) => {
                 const modLessons = lessonsByModule[mod.slug] || [];
                 const completedCount = modLessons.filter((l) => progress[l.id]).length;
                 const totalLessons = modLessons.length;
@@ -242,9 +280,10 @@ const AcademyLearn = () => {
                 const isLocked = false;
                 const isHidden = mod.visible === false;
                 const firstLessonThumb = getYouTubeThumbnail(modLessons[0]?.video_url);
-                const coverImage = mod.slug === BASIC_ONLY_SLUG
+                const customCover = localCourseCover(mod);
+                const coverImage = customCover || (mod.slug === BASIC_ONLY_SLUG
                   ? dayTradingVocabularyCover
-                  : mod.cover_image_url || firstLessonThumb || courseCoverDefault;
+                  : mod.cover_image_url || firstLessonThumb || courseCoverDefault);
 
                 if (isEditing && canManageContent) {
                   return (
@@ -270,32 +309,34 @@ const AcademyLearn = () => {
                   <Card
                     key={mod.id}
                     className={cn(
-                      "vault-card overflow-hidden group transition-colors transition-shadow duration-200",
+                      "learn-course group",
                       isLocked ? "opacity-70" : "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 cursor-pointer",
                       isHidden && canManageContent && "opacity-60 border-dashed"
                     )}
-                    onClick={() => !isLocked && navigate(`/academy/learn/${mod.slug}`)}
+                    onClick={() => !isLocked && totalLessons > 0 && navigate(`/academy/learn/${mod.slug}`)}
                   >
                     {/* Cover image */}
-                    <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+                    <div className="learn-course-image relative aspect-[16/9] overflow-hidden bg-muted">
                       <img
                         src={coverImage}
-                        alt={mod.title}
+                        alt={labelFor(mod).title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={(event) => {
                           const img = event.currentTarget;
                           if (!img.src.endsWith(courseCoverDefault)) img.src = courseCoverDefault;
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                      {!customCover && <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />}
 
                       {/* Module number badge */}
                       <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm text-[11px] font-mono text-white/70">
+                        {!customCover && <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-sm text-[11px] font-mono text-white/70">
                           {isBridgeFirst && i === 0
                             ? "Foundations"
                             : `Module ${String(isBridgeFirst ? i : i + 1).padStart(2, "0")}`}
-                        </span>
+                        </span>}
 
                         {isHidden && canManageContent && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-yellow-500/80 backdrop-blur-sm text-[10px] font-semibold text-black">
@@ -323,42 +364,42 @@ const AcademyLearn = () => {
                     </div>
 
                     {/* Content */}
-                    <div className="p-5">
+                    <div className="learn-course-copy">
                       <h3 className="font-semibold text-foreground text-base leading-snug mb-1">{labelFor(mod).title}</h3>
                       {labelFor(mod).subtitle && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{labelFor(mod).subtitle}</p>
+                        <p className="text-base text-muted-foreground mb-4">{labelFor(mod).subtitle}</p>
                       )}
 
 
                       {/* Progress */}
-                      <div className="mb-4">
+                      <div className="learn-course-progress">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-[13px] text-muted-foreground">
                             {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
                           </span>
-                          <span className={cn(
+                          {isStarted && <span className={cn(
                             "text-[13px] font-medium",
                             isComplete ? "text-emerald-400" : "text-muted-foreground"
                           )}>
                             {progressPct}% complete
-                          </span>
+                          </span>}
                         </div>
-                        <Progress value={progressPct} className="h-1.5" />
+                        {isStarted && <Progress value={progressPct} className="h-1.5" />}
                       </div>
 
                       {/* CTA */}
-                      <div className="flex items-center gap-2">
+                      <div className="learn-course-actions flex items-center gap-2">
                         {isLocked ? (
                           <Button disabled variant="secondary" className="w-full gap-2">
                             <Lock className="h-4 w-4" /> Locked
                           </Button>
                         ) : isComplete ? (
-                          <Button variant="secondary" className="w-full gap-2">
+                          <Button variant="secondary" className="w-full min-h-11 gap-2" aria-label={`Review ${labelFor(mod).title}`}>
                             Review <ArrowRight className="h-4 w-4" />
                           </Button>
                         ) : (
-                          <Button className="w-full gap-2">
-                            {isStarted ? "Continue" : "Start"} <ArrowRight className="h-4 w-4" />
+                          <Button disabled={totalLessons === 0} className="w-full min-h-11 gap-2" aria-label={`${isStarted ? "Continue" : "Start"} ${labelFor(mod).title}`}>
+                            {totalLessons === 0 ? "Coming soon" : isStarted ? "Continue" : "Start"} <ArrowRight className="h-4 w-4" />
                           </Button>
                         )}
 
@@ -397,7 +438,12 @@ const AcademyLearn = () => {
                   </Card>
                 );
               })}
-            </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+            <ChartClassroom />
 
             {/* Admin: Add module */}
             {canManageContent && (

@@ -40,6 +40,7 @@ export function useHotTickers() {
         .eq("room_slug", "trade-floor")
         .eq("is_deleted", false)
         .gte("created_at", since)
+        .order("created_at", { ascending: false })
         .limit(200);
 
       if (!data) return;
@@ -47,8 +48,7 @@ export function useHotTickers() {
       const counts = new Map<string, number>();
       for (const msg of data) {
         const matches = msg.body.matchAll(TICKER_REGEX);
-        for (const m of matches) {
-          const t = m[1];
+        for (const t of new Set([...matches].map((m) => m[1]))) {
           counts.set(t, (counts.get(t) ?? 0) + 1);
         }
       }

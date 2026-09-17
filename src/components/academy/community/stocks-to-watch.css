@@ -1,0 +1,10 @@
+.stocks-watch{max-width:500px!important}
+.stocks-watch-status{font-size:14px;line-height:1.5;color:#a9c9f7;margin:20px 0 8px}
+.stocks-watch-list{list-style:none;padding:0;margin:0}
+.stocks-watch-list li{padding:18px 0;border-bottom:1px solid #ffffff12}
+.stocks-watch-list li>div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.stocks-watch-list strong{font-size:19px;color:#f2f6ff;letter-spacing:.02em}
+.stocks-watch-list span{font-size:14px;color:#9faec3}
+.stocks-watch-list p{font-size:16px;line-height:1.55;color:#d9e2f0;margin:5px 0 0}
+.stocks-watch-bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:14px;line-height:1.6;color:#aebbd0;margin-top:18px}
+.stocks-watch-bottom a{color:#9cc6ff;padding:12px 0;white-space:nowrap}

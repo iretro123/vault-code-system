@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import data from "@emoji-mart/data";
-import { Clock, Search } from "lucide-react";
+import { Clock, Search, X } from "lucide-react";
 import { EmojiGlyph } from "./EmojiGlyph";
+import './emoji-picker.css';
 
 const RECENTS_KEY = "emoji_recents";
 const MAX_RECENTS = 24;
@@ -58,6 +59,7 @@ type EmojiCategory = {
 
 interface NativeEmojiPickerProps {
   onSelect: (emoji: string) => void;
+  onClose?: () => void;
 }
 
 function readRecents(): string[] {
@@ -72,7 +74,7 @@ function readRecents(): string[] {
 
 function writeRecent(emoji: string) {
   const next = [emoji, ...readRecents().filter((item) => item !== emoji)].slice(0, MAX_RECENTS);
-  localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+  try { localStorage.setItem(RECENTS_KEY, JSON.stringify(next)); } catch { /* Selection still works when storage is unavailable. */ }
 }
 
 function normalize(value: string) {
@@ -123,7 +125,9 @@ const emojiDataset = (() => {
   return { categories, searchableEntries };
 })();
 
-export function NativeEmojiPicker({ onSelect }: NativeEmojiPickerProps) {
+const searchIndex = emojiDataset.searchableEntries.map(entry => ({entry, text:normalize([entry.id,entry.name,...entry.keywords].join(' '))}));
+
+export function NativeEmojiPicker({ onSelect, onClose }: NativeEmojiPickerProps) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState(() => (readRecents().length > 0 ? "recents" : "people"));
   const [recents, setRecents] = useState<string[]>(() => readRecents());
@@ -137,17 +141,7 @@ export function NativeEmojiPicker({ onSelect }: NativeEmojiPickerProps) {
     if (!query) return [];
 
     const seen = new Set<string>();
-    return emojiDataset.searchableEntries
-      .filter((entry) => {
-        const haystack = [
-          entry.id,
-          entry.name,
-          ...entry.keywords,
-        ]
-          .map(normalize)
-          .join(" ");
-        return haystack.includes(query);
-      })
+    return searchIndex.filter(({text})=>text.includes(query)).map(({entry})=>entry)
       .filter((entry) => {
         if (seen.has(entry.native)) return false;
         seen.add(entry.native);
@@ -184,10 +178,12 @@ export function NativeEmojiPicker({ onSelect }: NativeEmojiPickerProps) {
 
   return (
     <div className="chat-native-emoji-picker w-[352px] max-w-[calc(100vw-32px)] rounded-2xl bg-[#141414] shadow-[0_16px_40px_rgba(0,0,0,0.45)] overflow-hidden border border-white/[0.06]">
+      <header className="ve-heading"><h3>Pick your mood</h3>{onClose && <button type="button" aria-label="Close emoji picker" onClick={onClose}><X size={20}/></button>}</header>
       <div className="flex items-center gap-1 px-3 py-2 border-b border-white/[0.06] overflow-x-auto">
         <button
           type="button"
-          onClick={() => setActiveCategory("recents")}
+          onClick={() => {setActiveCategory("recents");setSearch('');}}
+          aria-label="Frequently used"
           className={`chat-native-emoji-tab ${activeCategory === "recents" && !search ? "is-active" : ""}`}
           title="Frequently used"
         >
@@ -203,6 +199,7 @@ export function NativeEmojiPicker({ onSelect }: NativeEmojiPickerProps) {
             }}
             className={`chat-native-emoji-tab chat-emoji ${activeCategory === category.id && !search ? "is-active" : ""}`}
             title={category.label}
+            aria-label={category.label}
           >
             <EmojiGlyph emoji={category.icon} className="h-5 w-5" />
           </button>
@@ -216,25 +213,27 @@ export function NativeEmojiPicker({ onSelect }: NativeEmojiPickerProps) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search"
+            aria-label="Search emojis"
             className="flex-1 bg-transparent outline-none text-[17px] text-white placeholder:text-white/45"
-            autoFocus
           />
+          {search && <button type="button" aria-label="Clear emoji search" className="ve-clear" onClick={()=>setSearch('')}><X size={18}/></button>}
         </div>
       </div>
 
-      <div className="max-h-[330px] overflow-y-auto px-3 py-2">
+      <div className="ve-results max-h-[330px] overflow-y-auto px-3 py-2">
         <p className="text-[17px] font-semibold text-white/80 mb-2">{activeLabel}</p>
         {activeEntries.length === 0 ? (
           <p className="text-sm text-white/45 py-8 text-center">
             {search.trim() ? "No emojis found" : "Select emojis to build your frequently used list"}
           </p>
         ) : (
-          <div className="grid grid-cols-9 gap-1">
+          <div className="ve-grid">
             {activeEntries.map((entry, index) => (
               <button
                 key={`${entry.native}-${entry.id}-${index}`}
                 type="button"
                 title={entry.name}
+                aria-label={entry.name}
                 onClick={() => handleSelect(entry.native)}
                 className="chat-native-emoji-button chat-emoji"
               >

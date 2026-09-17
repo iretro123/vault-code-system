@@ -1,9 +1,16 @@
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { Device } from "@capacitor/device";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { supabase } from "@/integrations/supabase/client";
 
 export type PushPermissionState = "unsupported" | "granted" | "denied" | "prompt";
+const PushAvailability = registerPlugin<{ check(): Promise<{ configured: boolean }> }>("PushAvailability");
+
+async function isPushConfigured() {
+  if (Capacitor.getPlatform() !== "android") return true;
+  try { return (await PushAvailability.check()).configured === true; }
+  catch { return false; } // Older/misconfigured native bundles fail safely.
+}
 
 export function isNativePushPlatform() {
   if (typeof window === "undefined") return false;
@@ -30,6 +37,7 @@ export async function getPlatformKey() {
 
 export async function getPushPermissionState(): Promise<PushPermissionState> {
   if (!isNativePushPlatform()) return "unsupported";
+  if (!(await isPushConfigured())) return "unsupported";
   try {
     const perm = await PushNotifications.checkPermissions();
     if (perm.receive === "granted") return "granted";
@@ -46,6 +54,7 @@ export async function getPushPermissionState(): Promise<PushPermissionState> {
  */
 export async function requestPushPermission(): Promise<PushPermissionState> {
   if (!isNativePushPlatform()) return "unsupported";
+  if (!(await isPushConfigured())) return "unsupported";
   try {
     const current = await PushNotifications.checkPermissions();
     if (current.receive === "granted") {

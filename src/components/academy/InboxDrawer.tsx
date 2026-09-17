@@ -602,6 +602,7 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
           <h2 className="text-base font-semibold text-foreground">Message</h2>
           <button
             onClick={handleClose}
+            aria-label="Close message"
             className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
           >
             <X className="h-4 w-4" />
@@ -629,9 +630,10 @@ export function InboxDrawer({ open, onOpenChange }: InboxDrawerProps) {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-white/[0.06]">
-        <h2 className="text-base font-semibold text-foreground">Inbox</h2>
+        <h2 className="text-base font-semibold text-foreground">Notifications</h2>
         <button
           onClick={handleClose}
+          aria-label="Close inbox"
           className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
         >
           <X className="h-4 w-4" />

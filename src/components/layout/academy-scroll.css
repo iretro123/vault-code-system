@@ -1,0 +1,36 @@
+/* Keep scrolling browser-native: no wheel/touch interception or synthetic inertia. */
+.academy-main-safe,
+.vault-chat-scroll,
+.atlas-body,
+[data-radix-scroll-area-viewport] {
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scroll-padding-block: 20px;
+  scrollbar-width: thin;
+  scrollbar-color: #7186a566 transparent;
+}
+
+/* Reserve desktop scrollbar space so content doesn't jump as it grows. */
+@media (hover: hover) and (pointer: fine) {
+  .academy-main-safe { scrollbar-gutter: stable; }
+  :is(.academy-main-safe, .vault-chat-scroll, .atlas-body)::-webkit-scrollbar { width: 8px; }
+  :is(.academy-main-safe, .vault-chat-scroll, .atlas-body)::-webkit-scrollbar-track { background: transparent; }
+  :is(.academy-main-safe, .vault-chat-scroll, .atlas-body)::-webkit-scrollbar-thumb {
+    background: #7186a566;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 99px;
+  }
+  :is(.academy-main-safe, .vault-chat-scroll, .atlas-body)::-webkit-scrollbar-thumb:hover { background-color: #9bb5dc99; }
+}
+
+/* Never animate chat anchoring, restored positions or reduced-motion scrolling. */
+.vault-chat-scroll { scroll-behavior: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .academy-main-safe, .academy-main-safe *, .atlas-body, [data-radix-scroll-area-viewport] { scroll-behavior: auto !important; }
+  .academy-main-safe.animate-fade-in { animation: none; }
+}
+@media (forced-colors: active) {
+  .academy-main-safe, .vault-chat-scroll, .atlas-body, [data-radix-scroll-area-viewport] { scrollbar-color: auto; }
+}

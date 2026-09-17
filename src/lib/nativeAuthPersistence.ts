@@ -4,7 +4,7 @@
  * WKWebView / Android WebView can evict localStorage under storage pressure or
  * long inactivity, which silently logs users out. This module mirrors the
  * Supabase auth-token entry (and a few small caches) into Capacitor Preferences
- * (native keychain / SharedPreferences), and hydrates them back into
+ * (iOS UserDefaults / Android SharedPreferences, not encrypted Keychain storage), and hydrates them back into
  * localStorage BEFORE the Supabase client is created.
  *
  * Call `hydrateNativeAuthPersistence()` once during app bootstrap on native

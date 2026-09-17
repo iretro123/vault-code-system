@@ -23,6 +23,8 @@ import { resolvePrivateStorageUrl } from "@/lib/privateStorage";
 import supplyZoneImg from "@/assets/supply-zone-example.png";
 import demandZoneImg from "@/assets/demand-zone-example.png";
 import supplyDemandImg from "@/assets/supply-demand-zones.png";
+import { isLocalDesignPreview, localPreviewFetch } from "@/integrations/supabase/localPreviewFetch";
+import AtlasMentor from "./atlas/AtlasMentor";
 
 const CHART_EXAMPLES = [
   { src: supplyZoneImg, alt: "Supply zone example — large body candles pushing away from zone" },
@@ -199,6 +201,10 @@ type Tab = "instant" | "coach";
 type CoachView = "new" | "list" | "detail";
 
 export function CoachDrawer() {
+  return <>{(isLocalDesignPreview() || import.meta.env.VITE_ATLAS_ENABLED === 'true') && <AtlasMentor />}<LegacyCoachDrawer /></>;
+}
+
+function LegacyCoachDrawer() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -241,8 +247,9 @@ export function CoachDrawer() {
         });
       }
     };
-    window.addEventListener("toggle-coach-drawer", handler);
-    return () => window.removeEventListener("toggle-coach-drawer", handler);
+    const eventName = (isLocalDesignPreview() || import.meta.env.VITE_ATLAS_ENABLED === 'true') ? "open-legacy-coach" : "toggle-coach-drawer";
+    window.addEventListener(eventName, handler);
+    return () => window.removeEventListener(eventName, handler);
   }, [startNewConversation]);
 
   // ESC to close
@@ -422,7 +429,7 @@ export function CoachDrawer() {
       const accessToken = session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
 
-      const resp = await fetch(CHAT_URL, {
+      const resp = await localPreviewFetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -435,7 +442,7 @@ export function CoachDrawer() {
 
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error || `Error ${resp.status}`);
+        throw new Error(errData.error || errData.message || `Error ${resp.status}`);
       }
 
       if (!resp.body) throw new Error("No response body");
@@ -665,7 +672,14 @@ export function CoachDrawer() {
         {/* ── Segmented tabs ── */}
         <div className="flex shrink-0 mx-6 rounded-lg bg-white/[0.04] border border-white/[0.06] p-0.5">
           <button
-            onClick={() => { setTab("instant"); setShowHistory(false); }}
+            onClick={() => {
+              if (isLocalDesignPreview() || import.meta.env.VITE_ATLAS_ENABLED === 'true') {
+                setOpen(false);
+                window.dispatchEvent(new CustomEvent("toggle-coach-drawer", { detail: { tab: "instant" } }));
+                return;
+              }
+              setTab("instant"); setShowHistory(false);
+            }}
             className={cn(
               "flex-1 py-2.5 text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-1.5",
               tab === "instant"

@@ -14,7 +14,7 @@ const SETUPS = [
 ];
 
 interface TradeRecapFormProps {
-  onSubmit: (body: string) => Promise<void>;
+  onSubmit: (body: string) => Promise<boolean>;
   sending: boolean;
 }
 
@@ -40,7 +40,7 @@ export function TradeRecapForm({ onSubmit, sending }: TradeRecapFormProps) {
     ]
       .filter(Boolean)
       .join("\n");
-    await onSubmit(lines);
+    if (!await onSubmit(lines)) return;
     setTicker("");
     setSetup("momentum");
     setRisk("");

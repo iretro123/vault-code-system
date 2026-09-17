@@ -1,0 +1,23 @@
+.vault-community .community-thread{background:linear-gradient(155deg,#242e3d,#1b2431);border-left-color:#ffffff12}
+.community-thread .thread-original{position:relative;flex-shrink:0;background:#101a2738}
+.community-thread .thread-eyebrow{display:block;margin:0 0 9px 42px;font-size:11px;font-weight:600;letter-spacing:.05em;color:#9eb5d3}
+.community-thread .thread-original-details summary{display:flex;align-items:center;gap:8px;min-height:32px;cursor:pointer;list-style:none;color:#bac9dd;font-size:14px}
+.community-thread .thread-original-details summary::-webkit-details-marker{display:none}
+.community-thread .thread-original-details summary::before{content:'';width:12px;height:10px;flex-shrink:0;border-left:2px solid #7992b7;border-top:2px solid #7992b7;border-top-left-radius:5px}
+.community-thread .thread-original-details summary::after{content:'⌄';margin-left:auto;color:#a9c9ff}
+.community-thread .thread-original-details[open] summary::after{content:'⌃'}
+.community-thread .thread-original-details summary span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.community-thread .thread-original-details>p{max-height:140px;overflow-y:auto;margin-top:6px;padding-right:6px}
+.community-thread .thread-reply-row{padding:8px 6px;margin:0 -6px;border-radius:8px}
+.community-thread .thread-reply-row+.thread-reply-row:not(.is-grouped){margin-top:10px}
+.community-thread .thread-reply-row.is-grouped{padding-block:2px}
+.community-thread .thread-reply-row.is-grouped>div:first-child{height:0}
+.community-thread .thread-reply-row:hover{background:#b0c5e009}
+.community-thread .thread-original-details summary:focus-visible{outline:2px solid #95baff;outline-offset:3px;border-radius:5px}
+.vault-community .community-thread .thread-eyebrow{color:#9eb5d3}
+.community-thread .thread-reply-row p,.community-thread .thread-original-details>p{font-size:1rem;line-height:1.55;color:#e6ebf3;overflow-wrap:anywhere}
+.community-thread .thread-reply-row span.font-semibold{font-size:.9375rem;line-height:1.4;color:#edf2fa}
+.community-thread .thread-reply-row span:not(.font-semibold){font-size:.75rem;line-height:1.5;color:#b2bfd0}
+.community-thread .thread-reply-row .flex.items-center{flex-wrap:wrap}
+.community-thread textarea{font-size:1rem;line-height:1.5}
+.community-thread .thread-reply-count{color:#b2bfd0;font-size:.75rem}

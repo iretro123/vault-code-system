@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import pdfWorkerUrl from "vault-pdf-worker?url";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { ChevronLeft, ChevronRight, BookOpen, Loader2, AlertTriangle, ZoomIn, ZoomOut, RotateCcw, Maximize2, Minimize2 } from "lucide-react";
@@ -7,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { PlaybookChapter, ChapterProgress } from "@/hooks/usePlaybookProgress";
 import { cn } from "@/lib/utils";
+import './playbook-reader.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 interface Props {
   chapter: PlaybookChapter;
@@ -19,6 +21,8 @@ interface Props {
   isLocked: boolean;
   onPageChange: (page: number) => void;
   onReachedEnd: () => void;
+  onNextChapter?: () => void;
+  nextChapterTitle?: string;
   isAdmin?: boolean;
   isMobile?: boolean;
   isFullscreen?: boolean;
@@ -34,6 +38,8 @@ function PlaybookReaderInner({
   isLocked,
   onPageChange,
   onReachedEnd,
+  onNextChapter,
+  nextChapterTitle,
   isAdmin,
   isMobile,
   isFullscreen,
@@ -53,17 +59,30 @@ function PlaybookReaderInner({
   const [currentPage, setCurrentPage] = useState(getInitialPage);
   const [docLoaded, setDocLoaded] = useState(false);
   const [zoom, setZoom] = useState(100);
+  const [renderError, setRenderError] = useState(false);
+  const [renderedPage,setRenderedPage]=useState<number|null>(null);
+  const pageReady=renderedPage===currentPage;
+  const setPageReady=(ready:boolean)=>setRenderedPage(ready?currentPage:null);
+  const [slowLoad,setSlowLoad]=useState(false);
+  const [retry,setRetry]=useState(0);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const [pdfWidth, setPdfWidth] = useState(isMobile ? window.innerWidth - 32 : 680);
   const notifiedEnd = useRef(false);
   const prevChapterId = useRef(chapter.id);
 
-  // Responsive width on mobile
+  // Fit the available reading pane, not a fixed desktop width.
   useEffect(() => {
-    if (!isMobile) return;
-    const handleResize = () => setPdfWidth(window.innerWidth - 32);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isMobile]);
+    const pane = viewportRef.current;
+    if (!pane) return;
+    const observer = new ResizeObserver(([entry]) => setPdfWidth(Math.max(120, Math.min(900, entry.contentRect.width - 24))));
+    observer.observe(pane);
+    return () => observer.disconnect();
+  }, [pdfUrl, pdfLoading, pdfError]);
+
+  useEffect(() => { setDocLoaded(false); setRenderError(false);setPageReady(false); }, [pdfUrl,retry]);
+  useEffect(()=>{setPageReady(false);setRenderError(false);},[currentPage]);
+  useEffect(()=>{setSlowLoad(false);if(pageReady||renderError)return;const timer=setTimeout(()=>setSlowLoad(true),12000);return()=>clearTimeout(timer);},[pageReady,renderError,pdfUrl,retry,currentPage]);
+  useEffect(() => { viewportRef.current?.scrollTo({top: 0, left: 0}); }, [currentPage]);
 
   // Reset state when chapter changes (without remounting)
   useEffect(() => {
@@ -77,16 +96,13 @@ function PlaybookReaderInner({
   const localPage = currentPage - chapter.pdf_page_start + 1;
 
   const goNext = useCallback(() => {
+    if(currentPage===chapter.pdf_page_end){onNextChapter?.();return;}
     if (currentPage < chapter.pdf_page_end) {
       const next = currentPage + 1;
       setCurrentPage(next);
       onPageChange(next);
-      if (next === chapter.pdf_page_end && !notifiedEnd.current) {
-        notifiedEnd.current = true;
-        onReachedEnd();
-      }
     }
-  }, [currentPage, chapter.pdf_page_end, onPageChange, onReachedEnd]);
+  }, [currentPage, chapter.pdf_page_end, onPageChange, onNextChapter]);
 
   const goPrev = useCallback(() => {
     if (currentPage > chapter.pdf_page_start) {
@@ -98,11 +114,11 @@ function PlaybookReaderInner({
 
   // Notify end on mount if already at end
   useEffect(() => {
-    if (currentPage === chapter.pdf_page_end && !notifiedEnd.current) {
+    if (pageReady && !renderError && currentPage === chapter.pdf_page_end && !notifiedEnd.current) {
       notifiedEnd.current = true;
       onReachedEnd();
     }
-  }, [currentPage, chapter.pdf_page_end]);
+  }, [currentPage, chapter.pdf_page_end, pageReady, renderError,onReachedEnd]);
 
   if (pdfLoading) {
     return (
@@ -134,11 +150,11 @@ function PlaybookReaderInner({
   }
 
   return (
-    <div className="vault-glass-card overflow-hidden flex flex-col h-full">
+    <div className="playbook-reader vault-glass-card overflow-hidden flex flex-col h-full">
       {/* Chapter header */}
       <div className={cn("border-b border-white/[0.06] flex items-center justify-between", isMobile ? "px-6 py-4" : "px-4 py-2.5")} style={isMobile ? { touchAction: "manipulation" } : undefined}>
         <div>
-          <p className="text-[10px] uppercase tracking-[0.15em] text-white/25 font-bold mb-0.5">
+          <p className="text-xs uppercase tracking-wide text-white/60 font-bold mb-0.5">
             {isLocked ? "Preview Mode" : "Reading"}
           </p>
           <h2 className="text-lg font-bold text-foreground leading-tight">{chapter.title}</h2>
@@ -148,7 +164,7 @@ function PlaybookReaderInner({
             <p className="text-sm font-semibold text-foreground/80">
               Page {localPage} / {totalPages}
             </p>
-            <p className="text-[10px] text-white/25">~{chapter.minutes_estimate} min</p>
+            <p className="text-xs text-white/60">~{chapter.minutes_estimate} min</p>
           </div>
           {onToggleFullscreen && (
             <button
@@ -162,10 +178,10 @@ function PlaybookReaderInner({
         </div>
       </div>
 
-      {/* Zoom controls — hidden on mobile (use pinch-to-zoom) */}
-      <div className="flex-1 min-h-0 relative">
-        {!isMobile && (
-          <div className="absolute top-3 right-3 z-20 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm border border-border px-1.5 py-1">
+      {/* Zoom controls remain available on touch devices. */}
+      <div className="reader-body flex-1 min-h-0 relative">
+        {(
+          <div className="reader-zoom flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -210,26 +226,31 @@ function PlaybookReaderInner({
         )}
 
         {/* Scrollable + zoomable content */}
-        <div className="overflow-auto h-full flex items-start justify-center bg-black/20 py-4" style={isMobile ? { touchAction: "pinch-zoom", overscrollBehavior: "contain" } : undefined}>
+        <div ref={viewportRef} className="reader-pages overflow-auto bg-black/20" style={{ touchAction: "pan-x pan-y pinch-zoom", overscrollBehavior: "contain" }}>
+          {(slowLoad||renderError)&&<div role="status" className="reader-recovery"><p>{renderError?'The e-book could not load.':'This is taking longer than usual.'}</p><Button variant="outline" onClick={()=>setRetry(r=>r+1)}>Try again</Button><a href={pdfUrl} target="_blank" rel="noopener noreferrer">Open PDF instead</a></div>}
           <div
-            style={isMobile ? undefined : {
-              transform: `scale(${zoom / 100})`,
-              transformOrigin: "top center",
-            }}
+            style={{ width: pdfWidth * zoom / 100, margin: "0 auto" }}
           >
             <Document
+              key={`${pdfUrl}-${retry}`}
               file={pdfUrl}
               onLoadSuccess={() => setDocLoaded(true)}
-              onLoadError={(err) => console.error("PDF load error:", err)}
+              onLoadError={() => setRenderError(true)}
+              error={<div role="alert" className="p-6 text-base text-center">The e-book couldn’t load. Check your connection and reopen the Playbook.</div>}
               loading={
-                <div className="flex items-center justify-center py-20">
+                <div role="status" className="flex flex-col gap-3 items-center justify-center py-20">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Opening your e-book…</p>
                 </div>
               }
             >
               <Page
                 pageNumber={currentPage}
-                width={isMobile ? pdfWidth : 680}
+                width={pdfWidth * zoom / 100}
+                onRenderSuccess={()=>setPageReady(true)}
+                loading={<p role="status" className="p-8 text-center text-sm text-muted-foreground">Preparing page…</p>}
+                onRenderError={() => setRenderError(true)}
+                error={<p role="alert" className="p-4">This page couldn’t load. Try another chapter or reopen the e-book.</p>}
                 renderTextLayer={true}
                 renderAnnotationLayer={true}
               />
@@ -245,28 +266,27 @@ function PlaybookReaderInner({
             variant="ghost"
             size="sm"
             onClick={goPrev}
-            disabled={currentPage <= chapter.pdf_page_start}
-            className="gap-1.5 text-white/50 hover:text-foreground"
+            disabled={!pageReady || renderError || currentPage <= chapter.pdf_page_start}
+            className="gap-1.5 min-h-11 text-foreground/80 hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" /> Prev
           </Button>
 
-          <span className="text-xs font-semibold text-foreground/70">
-            Page {localPage} of {totalPages}
-          </span>
+          <label className="reader-page-jump"><span className="sr-only">Go to page</span><select aria-label="Go to page" value={currentPage} disabled={!docLoaded} onChange={e=>{const page=Number(e.target.value);setCurrentPage(page);onPageChange(page);}}>{Array.from({length:totalPages},(_,i)=><option key={i} value={chapter.pdf_page_start+i}>Page {i+1} of {totalPages}</option>)}</select></label>
 
           <Button
             variant="ghost"
             size="sm"
             onClick={goNext}
-            disabled={currentPage >= chapter.pdf_page_end}
-            className="gap-1.5 text-white/50 hover:text-foreground"
+            disabled={!pageReady || renderError || (currentPage >= chapter.pdf_page_end&&!onNextChapter)}
+            title={currentPage===chapter.pdf_page_end&&nextChapterTitle?`Continue to ${nextChapterTitle}`:undefined}
+            className="gap-1.5 min-h-11 text-foreground/80 hover:text-foreground"
           >
-            Next <ChevronRight className="h-4 w-4" />
+            {currentPage===chapter.pdf_page_end?(onNextChapter?'Next chapter':'End of book'):'Next'} <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="flex items-center justify-center gap-1">
+        <div className="hidden">
           {Array.from({ length: Math.min(totalPages, 12) }, (_, i) => {
             const pg = chapter.pdf_page_start + i;
             return (
@@ -287,12 +307,6 @@ function PlaybookReaderInner({
         </div>
       </div>
 
-      {/* Admin debug */}
-      {isAdmin && (
-        <div className="px-4 py-1.5 border-t border-white/[0.06] text-[10px] text-white/20 font-mono">
-          PDF loaded: {docLoaded ? "true" : "false"} · Page: {currentPage} · Range: {chapter.pdf_page_start}–{chapter.pdf_page_end}
-        </div>
-      )}
     </div>
   );
 }

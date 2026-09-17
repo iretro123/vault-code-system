@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { supabase } from "@/integrations/supabase/client";
-import { isAppReviewAccount } from "@/lib/appReview";
+import { isLocalDesignPreview } from "@/integrations/supabase/localPreviewFetch";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -19,9 +19,10 @@ interface AccessState {
 
 const CACHE_KEY = "va_cache_student_access";
 
-function readCache(): AccessState | null {
+function readCache(userId?: string): AccessState | null {
+  if (!userId) return null;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(`${CACHE_KEY}:${userId}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (Date.now() - (parsed.ts || 0) > 60_000) return null;
@@ -31,9 +32,9 @@ function readCache(): AccessState | null {
   }
 }
 
-function writeCache(state: AccessState) {
+function writeCache(userId: string, state: AccessState) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ...state, ts: Date.now() }));
+    localStorage.setItem(`${CACHE_KEY}:${userId}`, JSON.stringify({ ...state, ts: Date.now() }));
   } catch {
     void 0;
   }
@@ -43,7 +44,7 @@ async function fetchAccessState(userId: string): Promise<AccessState> {
   const { data, error } = await supabase.rpc("get_my_access_state");
 
   if (error) {
-    const fallback = readCache();
+    const fallback = readCache(userId);
     if (fallback) return fallback;
     throw error;
   }
@@ -51,7 +52,7 @@ async function fetchAccessState(userId: string): Promise<AccessState> {
   const row = Array.isArray(data) ? data[0] : data;
   if (!row) {
     const result: AccessState = { status: "none", tier: null, productKey: null, hasAccess: false, lastUpdated: Date.now() };
-    writeCache(result);
+    writeCache(userId, result);
     return result;
   }
 
@@ -63,7 +64,7 @@ async function fetchAccessState(userId: string): Promise<AccessState> {
     hasAccess: row.has_access === true,
     lastUpdated: Date.now(),
   };
-  writeCache(result);
+  writeCache(userId, result);
   return result;
 }
 
@@ -73,7 +74,7 @@ export function useStudentAccess() {
   const queryClient = useQueryClient();
   const retryAttemptedRef = useRef(false);
 
-  const cached = readCache();
+  const cached = readCache(user?.id);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["student-access", user?.id],
@@ -86,10 +87,11 @@ export function useStudentAccess() {
   });
 
   const state = data ?? { status: "none" as AccessStatus, tier: null, productKey: null, hasAccess: false, lastUpdated: null };
-  const appReviewBypass = isAppReviewAccount(user, profile as { email?: string | null; username?: string | null; display_name?: string | null } | null);
 
   // Auto-retry provisioning once per session
   useEffect(() => {
+    // The design preview must never provision or change live membership access.
+    if (isLocalDesignPreview()) return;
     if (isLoading) return;
     if (state.status !== "none") return;
     if (!user?.id) return;
@@ -127,7 +129,7 @@ export function useStudentAccess() {
   }, [isLoading, state.status, user?.id, profile]);
 
   const adminBypass = permResolved && (isCEO || isAdmin || isCoach || isOperator);
-  const hasBypassAccess = adminBypass || appReviewBypass;
+  const hasBypassAccess = adminBypass;
   const customerRoleAccess = userRole?.role === "vault_access" || userRole?.role === "vault_os_owner";
 
   const refetch = useCallback(() => {
@@ -135,9 +137,9 @@ export function useStudentAccess() {
   }, [queryClient, user?.id]);
 
   return {
-    status: appReviewBypass || customerRoleAccess ? "active" : state.status,
-    tier: appReviewBypass ? "app_review" : customerRoleAccess ? userRole.role : state.tier,
-    productKey: appReviewBypass ? "vault_academy" : customerRoleAccess ? "vault_os" : state.productKey,
+    status: customerRoleAccess ? "active" : state.status,
+    tier: customerRoleAccess ? userRole.role : state.tier,
+    productKey: customerRoleAccess ? "vault_os" : state.productKey,
     hasAccess: hasBypassAccess || customerRoleAccess ? true : state.hasAccess,
     loading: isLoading || !permResolved,
     error: error?.message ?? null,

@@ -77,6 +77,7 @@ export function StartLearningCard() {
 
   const thumbnail = getYouTubeThumbnail(lesson.video_url);
   const embedUrl = getVideoEmbedUrl(lesson.video_url);
+  const watchLesson = () => embedUrl ? setPlaying(true) : navigate(`/academy/learn/${lesson.module_slug}?lesson=${encodeURIComponent(lesson.id)}`);
   const takeaways = getLessonTakeaways(lesson.lesson_title, lesson.module_title);
 
   return (
@@ -112,6 +113,7 @@ export function StartLearningCard() {
       {playing && embedUrl ? (
         <div className="relative w-full rounded-xl overflow-hidden mb-4" style={{ aspectRatio: "16/9" }}>
           <iframe
+            title={lesson.lesson_title}
             src={embedUrl}
             className="absolute inset-0 w-full h-full"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture; web-share"
@@ -121,6 +123,7 @@ export function StartLearningCard() {
           />
           <button
             onClick={() => setPlaying(false)}
+            aria-label="Close lesson video"
             className="absolute top-2 right-2 z-10 rounded-full bg-black/60 p-1.5 hover:bg-black/80 transition-colors"
           >
             <X className="h-4 w-4 text-white" />
@@ -128,7 +131,7 @@ export function StartLearningCard() {
         </div>
       ) : (
         <button
-          onClick={() => setPlaying(true)}
+          onClick={watchLesson}
           className="relative w-full rounded-xl overflow-hidden mb-4 group cursor-pointer block"
           style={{ aspectRatio: "16/9", background: "hsl(var(--muted))" }}
         >
@@ -151,7 +154,7 @@ export function StartLearningCard() {
 
       <div className="mt-auto space-y-2">
         <button
-          onClick={() => setPlaying(true)}
+          onClick={watchLesson}
           className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-150 active:scale-[0.97]"
         >
           <Play className="h-4 w-4" /> Watch Now

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import './academy-navigation.css';
 import vaultVLogo from "@/assets/vault-v-logo.png";
 import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useLocation } from "react-router-dom";
@@ -12,6 +13,7 @@ import {
   Search,
   Gift,
   Mail,
+  Bell,
   Users,
   TrendingUp,
   Sparkles,
@@ -51,6 +53,7 @@ import {
 
 const coreNav = [
   { icon: Home, label: "Dashboard", path: "/academy/home", pageKey: "dashboard" },
+  ...(import.meta.env.DEV && ["localhost", "127.0.0.1"].includes(window.location.hostname) ? [{ icon: Wrench, label: "Trading Setup", path: "/academy/setup" }] : []),
   { icon: BookOpen, label: "Learn", path: "/academy/learn", pageKey: "learn" },
   { icon: TrendingUp, label: "Trade OS", path: "/academy/trade", pageKey: "trade" },
   { icon: Users, label: "Community", path: "/academy/community", pageKey: "community" },
@@ -69,9 +72,7 @@ interface SidebarProfileShape {
 }
 
 export function AcademySidebar() {
-  const [inboxOpen, setInboxOpen] = useState(() => {
-    try { return localStorage.getItem("va_inbox_open") === "true"; } catch { return false; }
-  });
+  const [inboxOpen, setInboxOpen] = useState(false);
   
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -137,7 +138,7 @@ export function AcademySidebar() {
                         <img
                           src={vaultVLogo}
                           alt=""
-                          className="absolute inset-0 m-auto h-[20px] w-[20px] object-contain transition-all duration-[180ms] opacity-100 scale-100 group-hover/toggle:opacity-0 group-hover/toggle:scale-[0.98]"
+                          className="pointer-events-none absolute inset-0 m-auto h-[28px] w-[28px] object-contain transition-all duration-[180ms] opacity-100 scale-[3] group-hover/toggle:opacity-0 group-hover/toggle:scale-[2.9]"
                         />
                         <PanelLeft
                           className="absolute inset-0 m-auto h-[18px] w-[18px] text-muted-foreground transition-all duration-[180ms] opacity-0 scale-[0.98] group-hover/toggle:opacity-100 group-hover/toggle:scale-100"
@@ -150,8 +151,10 @@ export function AcademySidebar() {
                         className="flex items-center w-full justify-between px-2 h-11 rounded-xl transition-colors duration-[120ms] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       >
                         <span className="flex items-center gap-2">
-                          <img src={vaultVLogo} alt="" className="h-[26px] w-[26px] object-contain shrink-0" />
-                          <span className="text-sm font-semibold text-foreground tracking-tight">Vault</span>
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden" aria-hidden="true">
+                            <img src={vaultVLogo} alt="" className="h-9 w-9 max-w-none object-contain scale-[3]" />
+                          </span>
+                          <span className="text-xl font-medium text-foreground tracking-tight">Vault OS</span>
                         </span>
                         <ChevronLeft className="h-4 w-4 text-muted-foreground transition-transform duration-[120ms]" />
                       </button>
@@ -174,7 +177,7 @@ export function AcademySidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <button
+                <button aria-label="Search Vault"
                   onClick={() => { setSearchOpen(true); if (isMobile) setOpenMobile(false); }}
                   className="group/search flex items-center gap-2 w-full rounded-[10px] bg-white/[0.03] border border-white/[0.04] px-2.5 py-2 h-10 transition-colors duration-[120ms] ease-out hover:bg-[#131922] focus-visible:bg-[#131922] focus-visible:border-primary/40 focus-visible:outline-none"
                 >
@@ -192,99 +195,40 @@ export function AcademySidebar() {
         </SidebarGroup>
         )}
 
-        {/* Main nav */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[11px] tracking-[0.08em] uppercase text-[#8B949E]/60">{!collapsed && "Nav"}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-
-              {navItems.map((item: any) => {
-                const { icon: Icon, label, path, isLive, isCoach, pageKey } = item;
-                // Hide disabled pages from non-admin users
-                if (pageKey && !isPageEnabled(pageKey) && (!isAdmin || pageKey === "vault-os")) return null;
-                const hiddenForMembers = pageKey && !isPageEnabled(pageKey) && isAdmin;
-                if (isCoach) {
-                  return (
-                    <SidebarMenuItem key={path} className="mt-0">
-                      <div className="mx-2 my-3 h-px" style={{ background: 'rgba(255,255,255,0.04)' }} />
-                      <SidebarMenuButton asChild>
-                        <button
-                          onClick={() => {
-                            if (isMobile) {
-                              setOpenMobile(false);
-                              setTimeout(() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")), 150);
-                            } else {
-                              window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
-                            }
-                          }}
-                          className="ask-coach-btn flex items-center gap-2 px-3 py-2 w-full rounded-xl text-left transition-colors duration-150 hover:brightness-110 active:scale-[0.98]"
-                          style={{
-                            background: "#3B82F6",
-                            color: "#fff",
-                          }}
-                        >
-                          {/* SVG gradient def for sparkle icon */}
-                          <svg width="0" height="0" className="absolute">
-                            <defs>
-                              <linearGradient id="coach-sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stopColor="#FDE68A" />
-                                <stop offset="50%" stopColor="#FBBF24" />
-                                <stop offset="100%" stopColor="#F472B6" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                          <Icon
-                            className="h-4 w-4 shrink-0"
-                            style={{
-                              strokeWidth: 2.2,
-                              fill: "url(#coach-sparkle-grad)",
-                              stroke: "url(#coach-sparkle-grad)",
-                              filter: "drop-shadow(0 0 3px rgba(251,191,36,0.35)) drop-shadow(0 0 6px rgba(244,114,182,0.2))",
-                            }}
-                          />
-                          {!collapsed && <span className="text-sm font-semibold tracking-[-0.01em]">{label}</span>}
-                        </button>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                }
-                const active = isActive(path);
-                return (
-                  <SidebarMenuItem key={path}>
-                    <SidebarMenuButton asChild isActive={active}>
-                      <NavLink
-                        to={path}
-                        end
-                        onClick={() => { if (isMobile) setOpenMobile(false); }}
-                        className={`group/nav relative flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors duration-150 text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[#131922]`}
-                        activeClassName="!text-[#E6EDF3] !bg-[#151C26] font-medium border-l-[3px] border-l-[#3B82F6]"
-                      >
-                        <span className="relative flex items-center gap-2.5">
-                          <Icon className={`h-4 w-4 shrink-0${isLive ? ' text-[hsl(217,92%,68%)]' : ''}`} style={{ strokeWidth: active ? 2.2 : 1.8 }} />
-                          {collapsed && label === "Community" && communityBadge && (
-                            <span className="absolute -top-1 -right-1.5 flex items-center justify-center min-w-[15px] h-[15px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-2 ring-[#0B0F14]">
-                              {communityBadge}
-                            </span>
-                          )}
-                          {!collapsed && <span className="text-sm">{label}</span>}
-                          {!collapsed && label === "Community" && communityBadge && (
-                            <span className="ml-auto inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold leading-none ring-1 ring-red-500/20">
-                              {communityBadge}
-                            </span>
-                          )}
-                          {!collapsed && hiddenForMembers && (
-                            <EyeOff className="h-3 w-3 text-muted-foreground/40 ml-auto" />
-                          )}
-                        </span>
-                      </NavLink>
+        <nav aria-label="Academy navigation">
+          {[
+            {title:"Academy",paths:["/academy/home","/academy/learn","/academy/bootcamp","/academy/live","/academy/community"]},
+            {title:"Trading tools",paths:["/academy/setup","/academy/trade"]},
+            {title:"Support",paths:["__coach__","/academy/support","/academy/settings"]},
+          ].map(group=>{
+            const items=group.paths.flatMap(path=>navItems.filter(item=>item.path===path)).filter(item=>!item.pageKey||isPageEnabled(item.pageKey)||isAdmin);
+            if(!items.length)return null;
+            return <SidebarGroup key={group.title} className="vault-nav-group">
+              {!collapsed&&<SidebarGroupLabel className="vault-nav-heading">{group.title}</SidebarGroupLabel>}
+              <SidebarGroupContent><SidebarMenu className="gap-1">
+                {items.map(item=>{
+                  const Icon=item.icon;
+                  const active=isActive(item.path);
+                  const hidden=item.pageKey&&!isPageEnabled(item.pageKey);
+                  return <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton asChild isActive={active} tooltip={item.label} className="vault-nav-row">
+                      {item.path==="__coach__"?<button aria-label={item.label} onClick={()=>{
+                        if(isMobile){setOpenMobile(false);setTimeout(()=>window.dispatchEvent(new CustomEvent("toggle-coach-drawer")),150);}
+                        else window.dispatchEvent(new CustomEvent("toggle-coach-drawer"));
+                      }}><Icon aria-hidden="true"/>{!collapsed&&<span>{item.label}</span>}</button>:
+                      <NavLink to={item.path} end={item.path==="/academy/home"} aria-label={item.label} onClick={()=>{if(isMobile)setOpenMobile(false);}} activeClassName="vault-nav-selected">
+                        <Icon aria-hidden="true" style={item.path === "/academy/live" ? { color: "#60a5fa" } : undefined}/>
+                        {!collapsed&&<span className="flex-1">{item.path==="/academy/live"?"Vault Live":item.label}</span>}
+                        {item.pageKey==="community"&&communityBadge&&<span className={collapsed?"vault-nav-badge vault-nav-badge-collapsed":"vault-nav-badge"} aria-label={`${totalUnread} unread messages`}>{communityBadge}</span>}
+                        {!collapsed&&hidden&&<EyeOff aria-label="Hidden from members" className="!h-3.5 !w-3.5 opacity-50"/>}
+                      </NavLink>}
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  </SidebarMenuItem>;
+                })}
+              </SidebarMenu></SidebarGroupContent>
+            </SidebarGroup>;
+          })}
+        </nav>
       </SidebarContent>
 
       {/* Bottom Dock */}
@@ -304,13 +248,12 @@ export function AcademySidebar() {
         {!isBasicTier && !collapsed && (
           <button
             onClick={() => { if (isMobile) setOpenMobile(false); window.dispatchEvent(new CustomEvent("open-referral-modal")); }}
-            className="group w-full text-left rounded-2xl px-4 py-3.5 mb-1.5 active:scale-[0.98] share-vault-glow overflow-hidden"
+            className="vault-nav-share group w-full text-left rounded-lg px-3 py-2 mb-1 overflow-hidden"
             style={{ background: '#0F1319' }}
           >
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <p className="text-[16px] font-semibold text-[#E6EDF3] leading-tight">Share Vault</p>
-                <p className="text-[13px] text-[#8B949E] mt-0.5">Earn rewards for invites</p>
+                <p className="text-[14px] font-medium text-[#B8C3D4] leading-tight">Invite friends</p>
               </div>
               <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.04] border border-white/[0.04] group-hover:bg-white/[0.06] transition-colors duration-150">
                 <Gift className="h-4 w-4 text-[#8B949E]" />
@@ -346,7 +289,16 @@ export function AcademySidebar() {
             <TooltipContent side="top" className="text-xs">{isBasicTier ? "Sign out" : "Profile"}</TooltipContent>
           </Tooltip>
 
-          {/* Inbox — hidden when collapsed */}
+          {/* Direct messages open the messenger; announcements remain separate. */}
+          {!isBasicTier && !collapsed && <Tooltip><TooltipTrigger asChild>
+            <button aria-label="Direct messages" className="sidebar-dock-btn flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.04] border border-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40" onClick={() => {
+              handleInboxChange(false);
+              if (isMobile) setOpenMobile(false);
+              navigate('/academy/community/messages?resume=1');
+            }}><Mail className="h-[18px] w-[18px] text-[#9BBEFF]" /></button>
+          </TooltipTrigger><TooltipContent side="top" className="text-xs">Direct messages</TooltipContent></Tooltip>}
+
+          {/* Notifications — hidden when collapsed */}
           {!isBasicTier && !collapsed && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -357,10 +309,10 @@ export function AcademySidebar() {
                     e.stopPropagation();
                     handleInboxChange(!inboxOpen);
                   }}
-                  aria-label="Inbox"
+                  aria-label="Notifications"
                   className="sidebar-dock-btn relative flex items-center justify-center h-9 w-9 rounded-full bg-white/[0.04] border border-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
-                  <Mail className="h-[18px] w-[18px] text-[#8B949E]" />
+                  <Bell className="h-[18px] w-[18px] text-[#8B949E]" />
                   {inboxUnreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-[16px] min-w-[16px] px-0.5 rounded-full bg-[#3B82F6] text-white text-[9px] font-bold leading-none">
                       {inboxUnreadCount > 99 ? "99+" : inboxUnreadCount}
@@ -368,7 +320,7 @@ export function AcademySidebar() {
                   )}
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">Inbox</TooltipContent>
+              <TooltipContent side="top" className="text-xs">Notifications</TooltipContent>
             </Tooltip>
           )}
         </div>

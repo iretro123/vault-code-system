@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { useParams, Navigate, useNavigate } from "react-router-dom";
+import { useParams, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { useAcademyModules } from "@/hooks/useAcademyModules";
 import { useAcademyLessons, AcademyLesson } from "@/hooks/useAcademyLessons";
 import { useLessonProgress } from "@/hooks/useLessonProgress";
@@ -19,22 +19,28 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { LessonVideo } from '@/components/academy/LessonVideo';
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import LessonQuiz from "@/components/academy/LessonQuiz";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { isSharedGuestAccount } from "@/lib/membership";
-import { getVideoEmbedUrl } from "@/lib/videoEmbeds";
+import { getYouTubeThumbnail } from "@/lib/videoEmbeds";
+import {localCourseCover} from '@/lib/localCourseCovers';
+import courseCoverDefault from '@/assets/course-cover-default.jpg';
+import dayTradingVocabularyCover from '@/assets/day-trading-vocabulary.png';
 import { openExternalUrl } from "@/lib/externalLinks";
 import { VAULT_BOOTCAMP_URL } from "./AcademyBootcamp";
+import {lessonDisplayTitle} from '@/lib/lessonDisplayTitle';
+import './academy-curriculum.css';
 
 const AcademyModule = () => {
   const { moduleSlug } = useParams();
   const navigate = useNavigate();
+  const [searchParams,setSearchParams]=useSearchParams();
   const { modules, loading: modsLoading } = useAcademyModules();
-  const { lessons: allLessons, loading: lessonsLoading, refetch: refetchLessons } = useAcademyLessons(moduleSlug);
+  const { lessons: allLessons, loading: lessonsLoading, error:lessonsError, refetch: refetchLessons } = useAcademyLessons(moduleSlug);
   const { progress, markComplete } = useLessonProgress();
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
@@ -52,8 +58,10 @@ const AcademyModule = () => {
     [allLessons, canManageContent]
   );
 
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const activeLessonId=searchParams.get('lesson');
+  const setActiveLessonId=(id:string|null)=>{const next=new URLSearchParams(searchParams);if(id)next.set('lesson',id);else next.delete('lesson');setSearchParams(next);};
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [managingLessons,setManagingLessons]=useState(false);
 
   // Admin state
   const [showAdd, setShowAdd] = useState(false);
@@ -70,19 +78,18 @@ const AcademyModule = () => {
   const mod = modules.find((m) => m.slug === moduleSlug);
   const loading = modsLoading || lessonsLoading;
 
-  // Auto-select first incomplete lesson (or first lesson)
+  // A chapter opens its curriculum; only an explicit lesson opens a player.
   const activeLesson = useMemo(() => {
-    if (!lessons.length) return null;
-    if (activeLessonId) return lessons.find((l) => l.id === activeLessonId) || lessons[0];
-    const firstIncomplete = lessons.find((l) => !progress[l.id]);
-    return firstIncomplete || lessons[0];
-  }, [lessons, activeLessonId, progress]);
+    return lessons.find((l) => l.id === activeLessonId) || null;
+  }, [lessons, activeLessonId]);
 
   const activeIndex = activeLesson ? lessons.findIndex((l) => l.id === activeLesson.id) : -1;
   const completedCount = lessons.filter((l) => progress[l.id]).length;
   const progressPct = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
   const isMiniCourseComplete = isBasicMiniCourse && lessons.length > 0 && completedCount === lessons.length;
   const openBootcampLanding = () => openExternalUrl(VAULT_BOOTCAMP_URL);
+
+  if(lessonsError&&!allLessons.length)return <div className="p-6 space-y-4"><Button variant="ghost" onClick={()=>navigate('/academy/learn')}><ArrowLeft size={16}/> All courses</Button><p role="alert">{lessonsError}</p><Button onClick={()=>void refetchLessons()}>Try again</Button></div>;
 
   if (!loading && !mod) {
     return <Navigate to="/academy/learn" replace />;
@@ -150,22 +157,36 @@ const AcademyModule = () => {
     );
   }
 
+  if(!activeLesson && !editingId && !(managingLessons&&canManageContent)){
+    const chapterCover=localCourseCover(mod!)||(isBasicMiniCourse?dayTradingVocabularyCover:mod!.cover_image_url||getYouTubeThumbnail(lessons[0]?.video_url)||courseCoverDefault);
+    return <div className="academy-curriculum">
+      <Button variant="ghost" onClick={()=>navigate('/academy/learn')} className="curriculum-back"><ArrowLeft size={17}/>All courses</Button>
+      <header className="curriculum-header"><h1>{isBasicMiniCourse&&!isGuestOrBasic&&!canManageContent?'Beginner Bridge — Foundations':mod!.title}</h1>
+      <p className="curriculum-meta"><span>{lessons.length} lessons</span><span>{completedCount} completed</span></p></header>
+      {activeLessonId&&<p role="status" className="text-sm text-muted-foreground mb-4">That lesson is unavailable. Choose another lesson below.</p>}
+      <div className="curriculum-lessons">
+        {lessons.map((lesson,index)=><button key={lesson.id} onClick={()=>setActiveLessonId(lesson.id)} className="curriculum-lesson">
+          <img className="curriculum-thumbnail" src={chapterCover} alt="" loading="lazy" onError={e=>{if(!e.currentTarget.dataset.fallback){e.currentTarget.dataset.fallback='true';e.currentTarget.src=courseCoverDefault;}}}/>
+          <span className="curriculum-number">{progress[lesson.id]?<Check aria-label="Completed" size={18}/>:String(index+1).padStart(2,'0')}</span>
+          <span className="curriculum-title">{lessonDisplayTitle(lesson.lesson_title,moduleSlug)}{lesson.visible===false&&<small>Hidden from members</small>}</span><span className="curriculum-play"><Play size={14}/></span>
+        </button>)}
+      </div>
+      {!lessons.length&&<p className="py-6 text-muted-foreground">No lessons available yet.</p>}
+      {canManageContent&&<Button variant="outline" className="mt-6" onClick={()=>{setManagingLessons(true);setSidebarOpen(true);}}>Manage lessons</Button>}
+    </div>;
+  }
+
   return (
     <div className="flex min-w-0 max-w-full flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
         <button
-          onClick={() => {
-            if (isMobile && !sidebarOpen) {
-              setSidebarOpen(true);
-            } else {
-              navigate("/academy/learn");
-            }
-          }}
+          aria-label="Back to lessons"
+          onClick={() => {setActiveLessonId(null);setEditingId(null);setManagingLessons(false);setSidebarOpen(false);}}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Courses</span>
+          <span>All lessons</span>
         </button>
         <div className="h-4 w-px bg-border" />
         <h1 className="text-sm font-semibold text-foreground truncate flex-1">
@@ -181,7 +202,8 @@ const AcademyModule = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 px-2 md:hidden gap-1 text-xs"
+          className="min-h-11 px-3 lg:hidden gap-1 text-sm"
+          aria-expanded={sidebarOpen}
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
           {sidebarOpen ? "Hide" : "Lessons"}
@@ -193,10 +215,10 @@ const AcademyModule = () => {
         {/* Sidebar - lesson list */}
         <div className={cn(
           "border-r border-border bg-card/30 shrink-0 flex flex-col min-w-0 max-w-full overflow-hidden transition-all duration-200",
-          sidebarOpen ? "w-full max-w-[100vw] md:w-72 md:max-w-72 lg:w-80 lg:max-w-80" : "w-0 md:w-72 lg:w-80",
-          !sidebarOpen && "md:flex hidden overflow-hidden"
+          sidebarOpen ? "w-full max-w-[100vw] lg:w-80 lg:max-w-80" : "w-0 lg:w-80",
+          !sidebarOpen && "lg:flex hidden overflow-hidden"
         )}>
-          <div className={cn("flex min-w-0 max-w-full flex-col flex-1 overflow-hidden", !sidebarOpen && "hidden md:flex")}>
+          <div className={cn("flex min-w-0 max-w-full flex-col flex-1 overflow-hidden", !sidebarOpen && "hidden lg:flex")}>
             <div className="px-4 py-3 border-b border-border">
               <p className="text-xs text-muted-foreground font-medium">
                 {completedCount}/{lessons.length} lessons complete
@@ -323,7 +345,7 @@ const AcademyModule = () => {
         {/* Main content area */}
         <div className={cn(
           "flex-1 min-w-0 flex flex-col overflow-y-auto overflow-x-hidden",
-          isMobile && sidebarOpen && "hidden"
+          sidebarOpen && "hidden lg:flex"
         )}>
           {/* Edit panel */}
           {editingId && canManageContent && (() => {
@@ -365,49 +387,7 @@ const AcademyModule = () => {
             <div className="flex flex-col flex-1">
               {/* Video */}
               <div className="w-full bg-black">
-                {activeLesson.video_url ? (() => {
-                  const embedUrl = getVideoEmbedUrl(activeLesson.video_url);
-                  if (embedUrl) {
-                    return (
-                      <div>
-                        <AspectRatio ratio={16 / 9} className="max-h-[70vh]">
-                          <iframe
-                            src={embedUrl}
-                            className="w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            referrerPolicy="strict-origin-when-cross-origin"
-                            title={activeLesson.lesson_title}
-                          />
-                        </AspectRatio>
-                        <div className="flex justify-center border-t border-white/10 bg-black px-4 py-2">
-                          <a
-                            href={activeLesson.video_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-medium text-primary underline underline-offset-4"
-                          >
-                            Video not loading? Open on YouTube
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div className="flex items-center justify-center py-20">
-                      <a href={activeLesson.video_url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary underline">
-                        Open video in new tab →
-                      </a>
-                    </div>
-                  );
-                })() : (
-                  <div className="flex items-center justify-center py-20">
-                    <div className="text-center">
-                      <Play className="h-12 w-12 text-muted-foreground/30 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">No video for this lesson</p>
-                    </div>
-                  </div>
-                )}
+                <LessonVideo key={activeLesson.id} url={activeLesson.video_url||''} title={activeLesson.lesson_title}/>
               </div>
 
               {/* Lesson info */}

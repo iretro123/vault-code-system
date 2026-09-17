@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Check, Trophy, StickyNote, Lock, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isLocalDesignPreview } from "@/integrations/supabase/localPreviewFetch";
 
 /* ── Notes Panel ── */
 function NotesPanel({ chapterId, disabled }: { chapterId: string; disabled?: boolean }) {
@@ -78,7 +79,7 @@ function NotesPanel({ chapterId, disabled }: { chapterId: string; disabled?: boo
         className="min-h-[120px] bg-white/[0.02] border-white/[0.06] text-sm resize-none"
         disabled={disabled || !loaded}
       />
-      {!disabled && <p className="text-[10px] text-white/15">Auto-saved</p>}
+      {!disabled && <p className="text-xs text-muted-foreground">{isLocalDesignPreview() ? "Saving is disabled in this local preview." : "Notes save automatically."}</p>}
     </div>
   );
 }
@@ -100,7 +101,7 @@ function CheckpointPanel({
 }: {
   chapter: PlaybookChapter;
   progress?: ChapterProgress;
-  onUpdateProgress: (chapterId: string, updates: Partial<ChapterProgress>) => Promise<void>;
+  onUpdateProgress: (chapterId: string, updates: Partial<ChapterProgress>) => Promise<boolean | void>;
   disabled?: boolean;
   reachedEnd: boolean;
 }) {
@@ -156,20 +157,21 @@ function CheckpointPanel({
     );
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     let correct = 0;
     questions.forEach((q, i: number) => {
       if (answers[i] === q.answer) correct++;
     });
     const finalScore = Math.round((correct / questions.length) * 100);
     const passed = finalScore >= 70;
-    setScore(finalScore);
-    setSubmitted(true);
-    onUpdateProgress(chapter.id, {
+    const saved = await onUpdateProgress(chapter.id, {
       checkpoint_score: finalScore,
       checkpoint_passed: passed,
       ...(passed && reachedEnd ? { status: "completed", completed_at: new Date().toISOString() } : {}),
     });
+    if (saved === false) return;
+    setScore(finalScore);
+    setSubmitted(true);
   };
 
   return (
@@ -229,6 +231,7 @@ function CheckpointPanel({
           >
             Score: {score}% {score >= 70 ? "— Passed ✓" : "— Try again"}
           </div>
+          {score < 70 && <Button variant="outline" className="w-full mt-3 min-h-11" onClick={() => { setSubmitted(false); setAnswers({}); }}>Try checkpoint again</Button>}
           {score >= 70 && reachedEnd && chProgress?.status !== "completed" && (
             <Button
               size="sm"
@@ -265,7 +268,7 @@ export function PlaybookRightPanel({
   chProgress?: ChapterProgress;
   chapters: PlaybookChapter[];
   progress: Record<string, ChapterProgress>;
-  onUpdateProgress: (chapterId: string, updates: Partial<ChapterProgress>) => Promise<void>;
+  onUpdateProgress: (chapterId: string, updates: Partial<ChapterProgress>) => Promise<boolean | void>;
   isLocked: boolean;
   unlockedIndex: number;
   reachedEnd: boolean;

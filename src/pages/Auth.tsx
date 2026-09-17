@@ -107,7 +107,7 @@ const Auth = () => {
 
   return (
     <div
-      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-10"
+      className="academy-main-safe vault-auth h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-10"
       style={{
         background: `
           radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
@@ -122,6 +122,8 @@ const Auth = () => {
         overscrollBehaviorY: "contain",
         paddingTop: "max(env(safe-area-inset-top, 0px), 2rem)",
         paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 1.5rem)",
+        paddingLeft: "max(env(safe-area-inset-left, 0px), 1rem)",
+        paddingRight: "max(env(safe-area-inset-right, 0px), 1rem)",
         minHeight: "100dvh",
         boxSizing: "border-box",
       }}

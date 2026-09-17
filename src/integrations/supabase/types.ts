@@ -1512,6 +1512,113 @@ export type Database = {
         }
         Relationships: []
       }
+      member_conversations: {
+        Row: {
+          id: string
+          last_message: string | null
+          last_sender_id: string | null
+          member_a: string
+          member_b: string
+          read_a_at: string | null
+          read_b_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          last_message?: string | null
+          last_sender_id?: string | null
+          member_a: string
+          member_b: string
+          read_a_at?: string | null
+          read_b_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          last_message?: string | null
+          last_sender_id?: string | null
+          member_a?: string
+          member_b?: string
+          read_a_at?: string | null
+          read_b_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      member_friendships: {
+        Row: {
+          accepted: boolean
+          created_at: string
+          member_a: string
+          member_b: string
+          requested_by: string
+        }
+        Insert: {
+          accepted?: boolean
+          created_at?: string
+          member_a: string
+          member_b: string
+          requested_by: string
+        }
+        Update: {
+          accepted?: boolean
+          created_at?: string
+          member_a?: string
+          member_b?: string
+          requested_by?: string
+        }
+        Relationships: []
+      }
+      member_message_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+        }
+        Relationships: []
+      }
+      member_messages: {
+        Row: {
+          attachments: Json
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          attachments?: Json
+          body: string
+          conversation_id: string
+          created_at?: string
+          id: string
+          sender_id: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "member_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -3087,6 +3194,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      change_member_friendship: {
+        Args: { action: string; peer: string }
+        Returns: undefined
+      }
       check_trade_permission: {
         Args: { _user_id: string }
         Returns: {
@@ -3419,19 +3530,86 @@ export type Database = {
         Returns: boolean
       }
       is_academy_ceo: { Args: { _user_id: string }; Returns: boolean }
+      list_member_friends: {
+        Args: never
+        Returns: {
+          accepted: boolean
+          avatar_url: string
+          display_name: string
+          incoming: boolean
+          user_id: string
+        }[]
+      }
       log_vault_event: {
         Args: { _event_context?: Json; _event_type: string; _user_id: string }
         Returns: string
       }
+      member_file_access: {
+        Args: { object_name: string; writing: boolean }
+        Returns: boolean
+      }
+      member_messaging_eligible: { Args: { uid: string }; Returns: boolean }
       nightly_memory_aggregation: { Args: never; Returns: undefined }
       notify_live_now: { Args: never; Returns: undefined }
+      open_member_conversation: { Args: { peer: string }; Returns: string }
       promote_to_ceo: { Args: { target_user_id: string }; Returns: undefined }
+      read_member_conversation: {
+        Args: { conversation: string; through_time: string }
+        Returns: undefined
+      }
       register_device_token: {
         Args: { _platform?: string; _token: string }
         Returns: undefined
       }
       repair_whitelist_access: { Args: never; Returns: number }
       revoke_whitelist_access: { Args: { _email: string }; Returns: undefined }
+      search_member_messages: {
+        Args: { conversation: string; term: string }
+        Returns: {
+          attachments: Json
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "member_messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      search_message_members: {
+        Args: { term: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          user_id: string
+        }[]
+      }
+      send_member_message: {
+        Args: {
+          conversation: string
+          message_attachments?: Json
+          message_body: string
+          message_id: string
+        }
+        Returns: {
+          attachments: Json
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "member_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_account_balance: {
         Args: { _balance: number; _user_id: string }
         Returns: {
@@ -3461,6 +3639,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      set_member_message_block: {
+        Args: { blocked: boolean; peer: string }
+        Returns: undefined
       }
       start_live_now: { Args: never; Returns: string }
       start_vault_focus_session: {
