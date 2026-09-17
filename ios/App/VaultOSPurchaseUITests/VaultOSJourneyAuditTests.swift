@@ -148,8 +148,11 @@ extension VaultOSLaunchAuditTests {
         let nextLesson = app.buttons["Next Lesson"].firstMatch
         let finishCourse = app.buttons["Finish Course"].firstMatch
         let forwardControl = nextLesson.exists ? nextLesson : finishCourse
+        let mobileNavigation = bottommostButton(app, label: "Learn")
+        let usableBottom = mobileNavigation?.frame.minY ?? app.frame.maxY
         try require(
-            scrollIntoView(app, forwardControl) && elementsWhollyVisible(app, forwardControl),
+            scrollIntoView(app, forwardControl)
+                && elementsWhollyVisible(app, below: app.frame.minY, above: usableBottom, forwardControl),
             "Lesson footer controls must be wholly visible above mobile navigation",
             app,
             markComplete,
@@ -272,7 +275,21 @@ extension VaultOSLaunchAuditTests {
     /// Hittability is insufficient when WebKit reports a partly clipped control.
     /// Compare the complete frame with the usable app window instead.
     private func elementsWhollyVisible(_ app: XCUIApplication, _ elements: XCUIElement...) -> Bool {
-        let bounds = app.frame
+        elementsWhollyVisible(app, below: app.frame.minY, above: app.frame.maxY, elements)
+    }
+
+    private func elementsWhollyVisible(
+        _ app: XCUIApplication,
+        below usableTop: CGFloat,
+        above usableBottom: CGFloat,
+        _ elements: [XCUIElement]
+    ) -> Bool {
+        let bounds = CGRect(
+            x: app.frame.minX,
+            y: usableTop,
+            width: app.frame.width,
+            height: max(0, usableBottom - usableTop)
+        )
         return elements.allSatisfy { element in
             guard element.exists, !element.frame.isEmpty else { return false }
             let intersection = bounds.intersection(element.frame)
