@@ -177,7 +177,7 @@ const AcademyModule = () => {
   }
 
   return (
-    <div className="flex min-w-0 max-w-full flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="academy-lesson-player flex min-w-0 max-w-full flex-col h-full min-h-0 overflow-hidden">
       {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
         <button
@@ -391,7 +391,7 @@ const AcademyModule = () => {
               </div>
 
               {/* Lesson info */}
-              <div className="px-6 py-5 flex-1 pb-32">
+              <div className="px-6 py-5 flex-1 pb-8">
                 <div className="max-w-3xl mx-auto">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
@@ -480,7 +480,7 @@ const AcademyModule = () => {
               </div>
 
               {/* Bottom action bar */}
-              <div className="border-t border-border bg-card/50 px-4 md:px-6 py-3 shrink-0 mb-16 md:mb-0 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:pb-4">
+              <div data-lesson-actions className="academy-lesson-actions border-t border-border bg-card/50 px-4 md:px-6 py-3 shrink-0">
                 <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-2">
                   <Button
                     variant="ghost"
