@@ -105,3 +105,12 @@ hittability alone did not detect:
 
 These native checks have not been rerun in Lovable; owner simulator rebuild,
 sync and visual verification remain required.
+
+
+Additional device evidence: all five journeys passed on iPad mini. On iPhone 13
+mini, four passed and member-search dismissal failed while the keyboard was
+open. The close control now has a fixed 44×44 touch target in the dialog's top
+layer and dismisses on pointer-down before iOS can consume the first tap while
+closing the keyboard. The strict post-tap dismissal assertion remains intact.
+The current privileged RZ test account does not establish student entitlement
+behavior.

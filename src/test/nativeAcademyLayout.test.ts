@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const messages = readFileSync('src/pages/academy/academy-messages.css', 'utf8');
+const messagesPage = readFileSync('src/pages/academy/AcademyMessages.tsx', 'utf8');
 const modulePage = readFileSync('src/pages/academy/AcademyModule.tsx', 'utf8');
 const globalCss = readFileSync('src/index.css', 'utf8');
 
@@ -10,6 +11,8 @@ describe('native Academy layout safeguards', () => {
     expect(messages).toMatch(/\.vm-dialog-backdrop\{[^}]*position:fixed[^}]*height:var\(--academy-visible-height,100dvh\)[^}]*z-index:100/);
     expect(messages).toMatch(/\.vm-dialog\{[^}]*max-height:100%[^}]*display:flex[^}]*overflow:hidden/);
     expect(messages).toMatch(/\.vm-search-results\{[^}]*min-height:0[^}]*overflow-y:auto/);
+    expect(messages).toMatch(/\.vm-dialog-close\{[^}]*z-index:3[^}]*min-width:44px[^}]*min-height:44px[^}]*touch-action:manipulation/);
+    expect(messagesPage).toContain('onPointerDown={event=>{event.preventDefault();setCreating(false);}}');
   });
 
   it('gives lesson actions one native mobile-navigation clearance', () => {
