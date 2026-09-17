@@ -114,3 +114,25 @@ layer and dismisses on pointer-down before iOS can consume the first tap while
 closing the keyboard. The strict post-tap dismissal assertion remains intact.
 The current privileged RZ test account does not establish student entitlement
 behavior.
+
+## Update — 2026-09-17 (mobile density and readability pass)
+
+Mobile-only presentation was tightened without changing sign-in, membership,
+backend behavior, lesson media, or native safe-area ownership:
+
+- Home reduces first-screen welcome, setup, and Live feature spacing at 320–430px
+  while retaining 16px explanatory copy and 44px-or-larger actions.
+- Learn, curriculum, and lesson views use 24–28px phone headings, 16px reading
+  text, natural wrapping, denser rows, and the existing lesson-footer navigation
+  clearance.
+- Vault Live reduces header, tabs, card padding, and list gaps so the classroom
+  action appears earlier; tabs can wrap and all core copy remains 16px.
+- Community and Messages support wrapped long names, 44px tabs and safety
+  controls, 16px message/composer text, bounded keyboard dialogs, and natural
+  scrolling.
+- Settings choice values wrap at 14px; Support and Coach reduce unused phone
+  space while keeping 16px input/body text and 44px close/send targets.
+
+Source regression checks cover these mobile rules. Physical-device/native
+journeys remain owner-run; this change does not claim student entitlement,
+message delivery, settings persistence, video playback, or AI response success.

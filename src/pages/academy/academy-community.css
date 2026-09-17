@@ -48,10 +48,13 @@
 .vault-community .community-guide h2{font-size:15px;letter-spacing:-.2px}
 .vault-community .community-guide section+section{margin-top:24px;padding-top:24px}
 @media(max-width:767px){
- .vault-community .community-heading{padding:10px 14px 8px}
+ .vault-community .community-heading{padding:10px 12px 8px;flex-wrap:wrap}
  .vault-community .community-heading h1{font-size:19px}
+ .vault-community .community-heading>div:first-child{width:100%;min-width:0}
+ .vault-community .community-heading>div:first-child button{min-height:44px}
+ .vault-community .community-header-actions{width:100%}
  .vault-community .community-room-tabs{gap:4px;padding-bottom:10px}
- .vault-community .community-room-tabs button{flex:1;padding:8px 6px;min-height:42px}
+ .vault-community .community-room-tabs button{flex:1;padding:8px 6px;min-height:44px}
  .vault-community .community-composer-footer{padding:8px 10px 10px}
  .vault-community .community-composer-grid{padding:12px 12px 8px;gap:4px 8px}
  .vault-community .community-composer-grid textarea{min-height:44px}
@@ -169,7 +172,8 @@
 }
 @media(max-width:767px){
  .vault-community .community-message{padding-inline:12px;gap:10px}
- .vault-community .community-message-meta{column-gap:6px}
+ .vault-community .community-message-meta{column-gap:6px;flex-wrap:wrap;min-width:0}
+ .vault-community .community-message-meta>button{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
  .vault-community .community-date-divider{padding:18px 12px 10px}
  .vault-community .community-thread-link{min-height:44px}
 }

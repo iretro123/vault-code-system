@@ -94,21 +94,27 @@
 .learn-section .learn-course-actions { margin: 0; justify-content: end; width: auto; }
 .learn-section .learn-course-actions > button { min-width: 64px; justify-content: end; }
 @media(max-width: 650px) {
-  .learn-library { padding-top: 20px; }
+  .learn-library { padding-top: 16px; }
   .learn-heading .learn-eyebrow { display: none; }
-  .learn-heading h1 { font-size: 30px; }
-  .learn-heading .learn-intro { font-size: 14px; }
-  .learn-book { grid-template-columns: 76px minmax(0, 1fr); gap: 18px; padding: 20px 0; }
+  .learn-heading { padding-bottom: 16px; }
+  .learn-heading h1 { font-size: 28px; line-height: 1.2; overflow-wrap: anywhere; }
+  .learn-heading .learn-intro { font-size: 16px; line-height: 1.5; }
+  .learn-overall { align-items: flex-start; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .learn-overall > div { max-width: none; width: 100%; }
+  .learn-book { grid-template-columns: 72px minmax(0, 1fr); gap: 14px; padding: 16px 0; }
   .learn-book-art { padding: 0; margin-top: 6px; }
-  .learn-book-copy h2 { font-size: 28px; }
-  .learn-book-meta { font-size: 12px; }
-  .learn-section-trigger { gap: 10px; padding: 16px 2px; }
+  .learn-book-copy h2 { font-size: 26px; overflow-wrap: anywhere; }
+  .learn-book-description { font-size: 16px; line-height: 1.5; }
+  .learn-book-meta { font-size: 13px; }
+  .learn-curriculum-heading { padding: 24px 0 14px; align-items: flex-start; }
+  .learn-section-trigger { gap: 10px; padding: 14px 2px; flex-wrap: wrap; }
   .learn-section-label > span { font-size: 18px; }
-  .learn-section-label small { font-size: 13px; }
+  .learn-section-label small { font-size: 14px; line-height: 1.45; }
   .learn-section-number { width: 30px; height: 34px; flex-basis: 30px; font-size: 14px; border-radius: 8px; }
-  .learn-section-count { font-size: 12px; }
+  .learn-section-count { width: 100%; padding-left: 40px; font-size: 13px; white-space: normal; }
   .learn-section-trigger > svg { margin-left: 0; width: 16px; }
-  .learn-library .learn-section .learn-course { grid-template-columns: 90px minmax(0, 1fr); gap: 14px; padding: 18px 2px; }
+  .learn-library .learn-section .learn-course { grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 16px 2px; }
   .learn-section .learn-course-copy h3 { font-size: 16px; line-height: 1.4; }
-  .learn-section .learn-course-copy > p { line-height: 1.45; }
+  .learn-section .learn-course-copy > p { font-size: 16px; line-height: 1.5; }
 }
+@media(max-width:360px){.learn-book{grid-template-columns:64px minmax(0,1fr);gap:12px}.learn-book-copy h2{font-size:24px}.learn-library .learn-section .learn-course{grid-template-columns:80px minmax(0,1fr);gap:10px}.learn-section .learn-course-copy{display:flex}.learn-section .learn-course-actions{margin-top:6px}.learn-section-count{padding-left:40px}}

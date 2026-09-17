@@ -179,14 +179,14 @@ const AcademyModule = () => {
   return (
     <div className="academy-lesson-player flex min-w-0 max-w-full flex-col h-full min-h-0 overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-2 md:gap-3 md:px-4 md:py-3 border-b border-border bg-card/50 shrink-0">
         <button
           aria-label="Back to lessons"
           onClick={() => {setActiveLessonId(null);setEditingId(null);setManagingLessons(false);setSidebarOpen(false);}}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>All lessons</span>
+          <span className="hidden sm:inline">All lessons</span>
         </button>
         <div className="h-4 w-px bg-border" />
         <h1 className="text-sm font-semibold text-foreground truncate flex-1">
@@ -197,7 +197,7 @@ const AcademyModule = () => {
 
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-xs text-muted-foreground">{progressPct}%</span>
-          <Progress value={progressPct} className="w-20 h-1.5" />
+          <Progress value={progressPct} className="hidden sm:block w-20 h-1.5" />
         </div>
         <Button
           variant="ghost"
@@ -391,14 +391,14 @@ const AcademyModule = () => {
               </div>
 
               {/* Lesson info */}
-              <div className="px-6 py-5 flex-1 pb-8">
+              <div className="px-4 py-4 md:px-6 md:py-5 flex-1 pb-6 md:pb-8">
                 <div className="max-w-3xl mx-auto">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">
                         Lesson {activeIndex + 1} of {lessons.length}
                       </p>
-                      <h2 className="text-xl font-semibold text-foreground">
+                      <h2 className="text-xl font-semibold leading-snug text-foreground break-words">
                         {activeLesson.lesson_title}
                       </h2>
                     </div>
@@ -432,7 +432,7 @@ const AcademyModule = () => {
                     <div className="rounded-lg bg-muted/30 border border-border p-4 mb-6">
                       <p className="text-xs font-medium text-muted-foreground mb-2">Study Notes</p>
                       {activeLesson.notes ? (
-                        <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
+                        <p className="text-base text-foreground/90 whitespace-pre-line leading-relaxed">
                           {activeLesson.notes.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
                             /^https?:\/\//.test(part) ? (
                               <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80 break-all">{part}</a>
@@ -450,7 +450,7 @@ const AcademyModule = () => {
 
                   {isBasicMiniCourse && isGuestOrBasic && (
                     <div className={cn(
-                      "mt-6 overflow-hidden rounded-2xl border p-5",
+                      "mt-5 overflow-hidden rounded-xl border p-4 md:mt-6 md:rounded-2xl md:p-5",
                       isMiniCourseComplete
                         ? "border-primary/30 bg-primary/10"
                         : "border-white/10 bg-card/70"
@@ -481,7 +481,7 @@ const AcademyModule = () => {
 
               {/* Bottom action bar */}
               <div data-lesson-actions className="academy-lesson-actions border-t border-border bg-card/50 px-4 md:px-6 py-3 shrink-0">
-                <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-2">
+                <div className="max-w-3xl mx-auto flex flex-wrap items-center justify-between gap-2 [&_button]:min-h-11">
                   <Button
                     variant="ghost"
                     size="sm"
