@@ -17,29 +17,40 @@ extension VaultOSLaunchAuditTests {
         journeyCapture(app, "20-community-chat")
 
         let signals = app.buttons["Signals"].firstMatch
-        XCTAssertTrue(signals.waitForExistence(timeout: 20), "Community must expose a Signals tab")
-        signals.tap()
+        try require(signals.waitForExistence(timeout: 20), "Community must expose a Signals tab", app, signals)
+        try tapWhenReady(app, signals, name: "Signals tab")
         // A full member sees the signals room; a basic member sees the upgrade
         // gate. Both are valid; neither may be silently skipped.
         let gate = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'Full Access'")).firstMatch
         let roomReady = app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'read-only' OR label CONTAINS[c] 'Load older'")).firstMatch
-        XCTAssertTrue(
-            waitUntil(timeout: 25, { gate.exists || roomReady.exists || app.textViews.count > 0 }),
-            "Signals tab must render either the room or the upgrade gate"
+        let composer = app.textViews.firstMatch
+        try require(
+            waitUntil(timeout: 25, { gate.exists || roomReady.exists || composer.exists }),
+            "Signals tab must render either the signals room (composer or read-only footer) or the upgrade gate",
+            app
         )
         journeyCapture(app, "21-community-signals\(gate.exists ? "-gated" : "")")
 
         let wins = app.buttons["Wins"].firstMatch
-        XCTAssertTrue(wins.waitForExistence(timeout: 15), "Community must expose a Wins tab")
-        wins.tap()
-        XCTAssertTrue(waitUntil(timeout: 25, { app.buttons["Chat"].firstMatch.exists }))
+        try require(wins.waitForExistence(timeout: 15), "Community must expose a Wins tab", app, wins)
+        try tapWhenReady(app, wins, name: "Wins tab")
+        // Wins is a real room: it must show posts or its own empty-state copy,
+        // not merely keep the tab bar on screen.
+        let winsBody = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS[c] 'win' OR label CONTAINS[c] 'Load older' OR label CONTAINS[c] 'read-only'")
+        ).firstMatch
+        try require(
+            waitUntil(timeout: 25, { winsBody.exists || app.textViews.firstMatch.exists }),
+            "Wins tab must render its feed or empty state",
+            app
+        )
         journeyCapture(app, "22-community-wins")
 
         // The bottom tab bar also has a "Chat" button; the room tab is the
         // topmost match on screen.
         let chatTab = try XCTUnwrap(topmostButton(app, label: "Chat"), "Chat room tab must be present")
-        chatTab.tap()
-        XCTAssertTrue(waitUntil(timeout: 20, { app.buttons["Signals"].firstMatch.exists }))
+        try tapWhenReady(app, chatTab, name: "Chat room tab")
+        try require(waitUntil(timeout: 20, { app.buttons["Signals"].firstMatch.exists }), "Chat tab must restore the room tab bar", app)
         journeyCapture(app, "23-community-back-to-chat")
     }
 
@@ -49,58 +60,71 @@ extension VaultOSLaunchAuditTests {
         openCommunity(app)
 
         let messages = app.buttons["Messages"].firstMatch
-        XCTAssertTrue(messages.waitForExistence(timeout: 20), "Community header must offer Messages")
-        messages.tap()
+        try require(messages.waitForExistence(timeout: 20), "Community header must offer Messages", app, messages)
+        try tapWhenReady(app, messages, name: "Messages")
         let newMessage = app.buttons["New message"].firstMatch
-        XCTAssertTrue(newMessage.waitForExistence(timeout: 25), "Messages screen must load with member search")
+        try require(newMessage.waitForExistence(timeout: 25), "Messages screen must load with member search", app, newMessage)
         journeyCapture(app, "30-messages-inbox")
 
-        newMessage.tap()
+        try tapWhenReady(app, newMessage, name: "New message")
         let search = app.textFields["Search members"].firstMatch
-        XCTAssertTrue(search.waitForExistence(timeout: 15), "Member search field must appear")
-        search.tap()
+        try require(search.waitForExistence(timeout: 15), "Member search field must appear", app, search)
+        try tapWhenReady(app, search, name: "Search members field")
         search.typeText("a")
-        // Either results or an explanatory notice must appear — never a blank panel.
-        XCTAssertTrue(
-            waitUntil(timeout: 20, { app.staticTexts.count > 0 }),
-            "Member search must show results or a notice"
+        // Either a member row or an explicit notice must appear — an empty panel
+        // is a failure, so assert on real search output, not element counts.
+        let searchOutcome = app.descendants(matching: .any).containing(
+            NSPredicate(format: "label CONTAINS[c] 'No members' OR label CONTAINS[c] 'no results' OR label CONTAINS[c] 'Start a conversation' OR label CONTAINS[c] 'Message '")
+        ).firstMatch
+        let memberRow = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'a'")).firstMatch
+        try require(
+            waitUntil(timeout: 20, { searchOutcome.exists || memberRow.exists }),
+            "Member search must show a member row or an explicit notice",
+            app
         )
         journeyCapture(app, "31-messages-member-search")
 
         let close = app.buttons["Close member search"].firstMatch
-        XCTAssertTrue(close.waitForExistence(timeout: 10))
-        close.tap()
-        XCTAssertTrue(waitUntil(timeout: 15, { !search.exists }), "Member search must dismiss without sending")
+        try require(close.waitForExistence(timeout: 10), "Member search must offer a close control", app, close)
+        try tapWhenReady(app, close, name: "Close member search")
+        try require(waitUntil(timeout: 15, { !search.exists }), "Member search must dismiss without sending", app)
         journeyCapture(app, "32-messages-search-dismissed")
     }
 
     /// Learn: chapter -> lesson player -> back to the lesson list.
     func testJourneyLearnChapterAndLesson() throws {
         let app = try signedInApp()
-        app.buttons["Learn"].firstMatch.tap()
+        let learn = app.buttons["Learn"].firstMatch
+        try require(learn.waitForExistence(timeout: 25), "Bottom navigation must offer Learn", app, learn)
+        try tapWhenReady(app, learn, name: "Learn")
+
         let chapter = app.buttons.containing(
             NSPredicate(format: "label BEGINSWITH 'Start ' OR label BEGINSWITH 'Continue ' OR label BEGINSWITH 'Review '")
         ).firstMatch
-        XCTAssertTrue(chapter.waitForExistence(timeout: 30), "Learn must list at least one openable chapter")
+        try require(chapter.waitForExistence(timeout: 30), "Learn must list at least one openable chapter", app, chapter)
         journeyCapture(app, "40-learn-chapters")
-        chapter.tap()
+        // Chapter cards sit low in the scrolling list and can fall under the
+        // bottom navigation, so scroll the web content until the card is
+        // actually hittable before tapping it.
+        try tapWhenReady(app, chapter, name: "Chapter card")
 
         let allCourses = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'All courses'")).firstMatch
-        XCTAssertTrue(allCourses.waitForExistence(timeout: 25), "Chapter curriculum must open")
+        try require(allCourses.waitForExistence(timeout: 25), "Chapter curriculum must open", app, allCourses)
         journeyCapture(app, "41-learn-curriculum")
 
         // Lesson rows are numbered 01, 02, ... or show a Completed check.
+        // A chapter with no lesson row is a real failure, never a skip.
         let lesson = app.buttons.containing(
             NSPredicate(format: "label MATCHES '^0[0-9].*' OR label CONTAINS[c] 'Completed'")
         ).firstMatch
-        try XCTSkipUnless(lesson.waitForExistence(timeout: 15), "This chapter has no lessons on this account — nothing to assert")
-        lesson.tap()
+        try require(lesson.waitForExistence(timeout: 20), "Chapter must list at least one lesson row", app, lesson)
+        try tapWhenReady(app, lesson, name: "Lesson row")
 
         let backToLessons = app.buttons["Back to lessons"].firstMatch
-        XCTAssertTrue(backToLessons.waitForExistence(timeout: 25), "Lesson player must open with a back control")
+        try require(backToLessons.waitForExistence(timeout: 25), "Lesson player must open with a back control", app, backToLessons)
         journeyCapture(app, "42-learn-lesson-player")
-        backToLessons.tap()
-        XCTAssertTrue(waitUntil(timeout: 20, { allCourses.exists }), "Back must return to the lesson list")
+        try tapWhenReady(app, backToLessons, name: "Back to lessons")
+        try require(waitUntil(timeout: 20, { allCourses.exists }), "Back must return to the lesson list", app)
         journeyCapture(app, "43-learn-back-to-curriculum")
     }
 
@@ -110,34 +134,46 @@ extension VaultOSLaunchAuditTests {
         let app = try signedInApp()
         try openFromMenu(app, label: "Settings")
 
-        let picker = app.buttons["Settings page"].firstMatch
-        XCTAssertTrue(
-            waitUntil(timeout: 25, { picker.exists || app.buttons["My profile"].firstMatch.exists }),
-            "Settings must load its section navigation"
+        // The section switcher is a WebKit combobox: depending on the iOS
+        // version it surfaces as a button, a pop-up button, an other element or
+        // a combo box. Never assume one type.
+        let picker = labelledElement(app, label: "Settings page")
+        let profileHeading = labelledElement(app, label: "My profile")
+        try require(
+            waitUntil(timeout: 25, { picker.exists || profileHeading.exists }),
+            "Settings must load its section navigation (accessible 'Settings page' switcher or the My profile panel)",
+            app,
+            picker,
+            profileHeading
         )
         journeyCapture(app, "50-settings-profile")
 
         // Profile identity + social fields (read only, never saved).
-        XCTAssertTrue(app.staticTexts["Social links"].firstMatch.waitForExistence(timeout: 20), "Profile must show Social links")
+        let socialLinks = labelledElement(app, label: "Social links")
+        try require(scrollIntoView(app, socialLinks), "Profile must show Social links", app, socialLinks)
         for field in ["Instagram", "YouTube"] {
-            XCTAssertTrue(
-                app.staticTexts[field].firstMatch.exists || app.textFields[field].firstMatch.exists,
-                "Profile must expose the \(field) field"
-            )
+            let element = labelledElement(app, label: field)
+            try require(scrollIntoView(app, element), "Profile must expose the \(field) field", app, element)
         }
         journeyCapture(app, "51-settings-profile-socials")
 
         let sections = ["Account", "Password & security", "Notifications", "Trading preferences", "Privacy & data", "Help & support"]
         for (index, section) in sections.enumerated() {
-            let opened = openSettingsSection(app, named: section, picker: picker)
-            XCTAssertTrue(opened, "Settings section '\(section)' must be reachable")
+            let heading = try openSettingsSection(app, named: section, picker: picker)
+            try require(heading, "Settings section '\(section)' must open and show its own heading", app, picker)
             journeyCapture(app, "52-settings-\(index)-\(section)")
         }
 
         // Back out through the app's own control, not a swipe.
         let back = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'Back to Vault'")).firstMatch
-        if back.exists { back.tap() } else { app.buttons["Home"].firstMatch.tap() }
-        XCTAssertTrue(waitUntil(timeout: 20, { app.buttons["Menu"].firstMatch.exists }), "Settings must exit cleanly")
+        if back.exists {
+            try tapWhenReady(app, back, name: "Back to Vault")
+        } else {
+            let home = app.buttons["Home"].firstMatch
+            try require(home.waitForExistence(timeout: 10), "Settings must offer a way back", app, home)
+            try tapWhenReady(app, home, name: "Home")
+        }
+        try require(waitUntil(timeout: 20, { app.buttons["Menu"].firstMatch.exists }), "Settings must exit cleanly", app)
         journeyCapture(app, "53-settings-exit")
     }
 
@@ -145,9 +181,10 @@ extension VaultOSLaunchAuditTests {
     func testJourneyCoachAndSupportPanels() throws {
         let app = try signedInApp()
         try openFromMenu(app, label: "Ask Coach")
-        XCTAssertTrue(
+        try require(
             waitUntil(timeout: 25, { app.staticTexts["Vault AI"].firstMatch.exists || app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'mentor'")).firstMatch.exists }),
-            "Ask Coach must open a coach panel"
+            "Ask Coach must open a coach panel",
+            app
         )
         journeyCapture(app, "60-coach-open")
 
@@ -159,16 +196,26 @@ extension VaultOSLaunchAuditTests {
         }
 
         let close = app.buttons["Close coach"].firstMatch
-        XCTAssertTrue(close.waitForExistence(timeout: 15), "Coach panel must offer a close control")
-        close.tap()
-        XCTAssertTrue(waitUntil(timeout: 15, { !close.exists }), "Coach panel must close")
+        try require(close.waitForExistence(timeout: 15), "Coach panel must offer a close control", app, close)
+        try tapWhenReady(app, close, name: "Close coach")
+        try require(waitUntil(timeout: 15, { !close.exists }), "Coach panel must close", app)
         journeyCapture(app, "62-coach-closed")
 
         try openFromMenu(app, label: "Schedule 1:1")
-        XCTAssertTrue(waitUntil(timeout: 25, { app.staticTexts.count > 0 && app.buttons["Menu"].firstMatch.exists }), "Support page must render")
+        let supportBody = app.descendants(matching: .any).containing(
+            NSPredicate(format: "label CONTAINS[c] '1:1' OR label CONTAINS[c] 'session' OR label CONTAINS[c] 'coach'")
+        ).firstMatch
+        try require(
+            waitUntil(timeout: 25, { supportBody.exists && app.buttons["Menu"].firstMatch.exists }),
+            "Support page must render its own 1:1 content",
+            app,
+            supportBody
+        )
         journeyCapture(app, "63-support-page")
-        app.buttons["Home"].firstMatch.tap()
-        XCTAssertTrue(waitUntil(timeout: 20, { app.buttons["Menu"].firstMatch.exists }))
+        let home = app.buttons["Home"].firstMatch
+        try require(home.waitForExistence(timeout: 10), "Support page must offer Home", app, home)
+        try tapWhenReady(app, home, name: "Home")
+        try require(waitUntil(timeout: 20, { app.buttons["Menu"].firstMatch.exists }), "Returning home must restore navigation", app)
     }
 
     // MARK: - Helpers (adaptive waits only, no blanket sleeps)
@@ -187,6 +234,86 @@ extension VaultOSLaunchAuditTests {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    /// Fails with a screenshot plus the element/app debugDescription so a real
+    /// layout problem can be told apart from a wrong selector.
+    private func require(
+        _ condition: Bool,
+        _ message: String,
+        _ app: XCUIApplication,
+        _ elements: XCUIElement...,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        if condition { return }
+        journeyCapture(app, "FAIL-\(message.prefix(48))")
+        var dump = "FAILURE: \(message)\n"
+        for element in elements {
+            dump += "\n--- element ---\nexists=\(element.exists) hittable=\(element.exists ? String(element.isHittable) : "n/a") frame=\(element.exists ? String(describing: element.frame) : "n/a")\n\(element.debugDescription)\n"
+        }
+        dump += "\n--- app tree ---\n\(app.debugDescription)"
+        let attachment = XCTAttachment(string: dump)
+        attachment.name = "debug-\(message.prefix(48))"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        XCTFail(message, file: file, line: line)
+        throw XCTSkip("unreachable: failure already recorded")
+    }
+
+    /// Finds an element by accessibility label across every XCUI type WebKit may
+    /// use for it (button, link, pop-up button, combo box, static text, field).
+    private func labelledElement(_ app: XCUIApplication, label: String) -> XCUIElement {
+        let predicate = NSPredicate(format: "label == %@", label)
+        let queries: [XCUIElementQuery] = [
+            app.buttons, app.popUpButtons, app.comboBoxes, app.links,
+            app.staticTexts, app.textFields, app.secureTextFields, app.otherElements
+        ]
+        for query in queries {
+            let match = query.matching(predicate).firstMatch
+            if match.exists { return match }
+        }
+        return app.descendants(matching: .any).matching(predicate).firstMatch
+    }
+
+    /// Scrolls the web content until the element is hittable. Bounded, adaptive,
+    /// no blanket sleeps.
+    @discardableResult
+    private func scrollIntoView(_ app: XCUIApplication, _ element: XCUIElement, attempts: Int = 8) -> Bool {
+        if !waitUntil(timeout: 10, { element.exists }) { return false }
+        if element.isHittable { return true }
+        let container = app.webViews.firstMatch.exists ? app.webViews.firstMatch
+            : (app.scrollViews.firstMatch.exists ? app.scrollViews.firstMatch : app)
+        for _ in 0..<attempts {
+            if element.isHittable { return true }
+            let frame = element.frame
+            let window = app.frame
+            if frame.midY > window.midY {
+                container.swipeUp(velocity: .slow)
+            } else {
+                container.swipeDown(velocity: .slow)
+            }
+            _ = waitUntil(timeout: 1.5, { element.isHittable })
+        }
+        return element.isHittable
+    }
+
+    /// Scrolls the element into view and taps it; falls back to a coordinate tap
+    /// on the element itself when WebKit still reports it as not hittable.
+    private func tapWhenReady(
+        _ app: XCUIApplication,
+        _ element: XCUIElement,
+        name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        if scrollIntoView(app, element) {
+            element.tap()
+            return
+        }
+        try require(element.exists, "\(name) must exist before tapping", app, element, file: file, line: line)
+        journeyCapture(app, "not-hittable-\(name)")
+        element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
     /// Launches, reuses an existing session, and signs in only when the app is
@@ -232,32 +359,42 @@ extension VaultOSLaunchAuditTests {
 
     private func openFromMenu(_ app: XCUIApplication, label: String) throws {
         let menu = app.buttons["Menu"].firstMatch
-        XCTAssertTrue(menu.waitForExistence(timeout: 25), "Navigation menu must be reachable")
-        menu.tap()
+        try require(menu.waitForExistence(timeout: 25), "Navigation menu must be reachable", app, menu)
+        try tapWhenReady(app, menu, name: "Menu")
         let item = app.descendants(matching: .any).matching(
             NSPredicate(format: "label == %@ AND (elementType == %d OR elementType == %d)", label, XCUIElement.ElementType.button.rawValue, XCUIElement.ElementType.link.rawValue)
         ).firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 15), "Menu must contain '\(label)'")
-        item.tap()
+        try require(item.waitForExistence(timeout: 15), "Menu must contain '\(label)'", app, item)
+        try tapWhenReady(app, item, name: "Menu item \(label)")
     }
 
-    /// Opens a settings section via the desktop list or the mobile dropdown.
-    private func openSettingsSection(_ app: XCUIApplication, named section: String, picker: XCUIElement) -> Bool {
+    /// Opens a settings section via the desktop list or the mobile combobox and
+    /// verifies the section's own heading is shown.
+    private func openSettingsSection(_ app: XCUIApplication, named section: String, picker: XCUIElement) throws -> Bool {
         let direct = app.buttons[section].firstMatch
-        if direct.exists && direct.isHittable {
+        if direct.exists && scrollIntoView(app, direct) {
             direct.tap()
-            return waitUntil(timeout: 20, { app.staticTexts[section].firstMatch.exists || app.buttons[section].firstMatch.exists })
+            return waitUntil(timeout: 20, { self.sectionHeadingVisible(app, section) })
         }
         guard picker.exists else { return false }
-        picker.tap()
-        let option = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", section)).firstMatch
+        try tapWhenReady(app, picker, name: "Settings page switcher")
+        let option = labelledElement(app, label: section)
         guard option.waitForExistence(timeout: 10) else {
-            // Dismiss the dropdown rather than leaving it open for the next step.
+            // Dismiss the switcher rather than leaving it open for the next step.
             app.tap()
             return false
         }
-        option.tap()
-        return waitUntil(timeout: 20, { app.staticTexts.count > 0 })
+        try tapWhenReady(app, option, name: "Settings option \(section)")
+        return waitUntil(timeout: 20, { self.sectionHeadingVisible(app, section) })
+    }
+
+    /// A section is open only when its own heading/panel label is on screen.
+    private func sectionHeadingVisible(_ app: XCUIApplication, _ section: String) -> Bool {
+        let predicate = NSPredicate(format: "label == %@", section)
+        return app.staticTexts.matching(predicate).firstMatch.exists
+            || app.otherElements.matching(predicate).firstMatch.exists
+            || app.popUpButtons.matching(predicate).firstMatch.exists
+            || app.comboBoxes.matching(predicate).firstMatch.exists
     }
 
     private func topmostButton(_ app: XCUIApplication, label: String) -> XCUIElement? {
