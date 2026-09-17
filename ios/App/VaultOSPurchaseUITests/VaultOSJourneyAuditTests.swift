@@ -6,6 +6,11 @@ import XCTest
 // account. Every interaction below is navigation, reading, or dismissing.
 // Credentials come from the test environment only (VAULT_AUDIT_EMAIL /
 // VAULT_AUDIT_PASSWORD); the sign-in flow itself is unchanged.
+struct JourneyFailure: Error, CustomStringConvertible {
+    let message: String
+    var description: String { message }
+}
+
 extension VaultOSLaunchAuditTests {
 
     // MARK: - Journeys
@@ -258,7 +263,7 @@ extension VaultOSLaunchAuditTests {
         attachment.lifetime = .keepAlways
         add(attachment)
         XCTFail(message, file: file, line: line)
-        throw XCTSkip("unreachable: failure already recorded")
+        throw JourneyFailure(message: message)
     }
 
     /// Finds an element by accessibility label across every XCUI type WebKit may
