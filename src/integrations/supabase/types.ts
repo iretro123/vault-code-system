@@ -3259,6 +3259,17 @@ export type Database = {
         Returns: undefined
       }
       detect_session_behavior: { Args: { _user_id: string }; Returns: string }
+      discover_message_members: {
+        Args: { term?: string }
+        Returns: {
+          activity_count: number
+          avatar_url: string
+          display_name: string
+          is_rz: boolean
+          user_id: string
+          username: string
+        }[]
+      }
       generate_reports_for_user: {
         Args: { _period: string; _user_id: string }
         Returns: undefined
@@ -3530,6 +3541,13 @@ export type Database = {
         Returns: boolean
       }
       is_academy_ceo: { Args: { _user_id: string }; Returns: boolean }
+      list_account_uploads_for_deletion: {
+        Args: { target_user: string }
+        Returns: {
+          bucket_id: string
+          name: string
+        }[]
+      }
       list_member_friends: {
         Args: never
         Returns: {
