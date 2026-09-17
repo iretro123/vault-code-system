@@ -189,7 +189,7 @@ const AcademyLearn = () => {
 
   return (
     <>
-      <div className="learn-library px-4 md:px-8 pt-6 pb-24 md:pb-10 max-w-5xl mx-auto">
+      <div className="learn-library px-4 md:px-8 pt-4 md:pt-6 pb-24 md:pb-10 max-w-5xl mx-auto">
         {/* Header */}
         <div className="learn-heading">
           <p className="learn-eyebrow">VAULT ACADEMY / LEARN</p>

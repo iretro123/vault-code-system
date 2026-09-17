@@ -27,8 +27,8 @@ function isTabKey(value: string | null): value is TabKey {
 
 function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
   return (
-    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-28 pt-10">
-      <div className="relative mx-auto w-full max-w-[29rem] overflow-hidden rounded-[1.55rem] border border-primary/25 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.22),transparent_34%),linear-gradient(145deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] px-5 pb-5 pt-12 text-center shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden px-3 pb-28 pt-5 md:px-4 md:pt-10">
+      <div className="relative mx-auto w-full max-w-[29rem] overflow-hidden rounded-2xl border border-primary/25 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.22),transparent_34%),linear-gradient(145deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] px-4 pb-4 pt-6 text-center shadow-[0_24px_80px_rgba(0,0,0,0.38)] md:rounded-[1.55rem] md:px-5 md:pb-5 md:pt-12">
         <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/25 blur-[60px]" />
         <div className="pointer-events-none absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-blue-500/10 blur-[70px]" />
         <div className="relative z-10">
@@ -38,7 +38,7 @@ function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
           <p className="mt-5 text-[12px] font-black uppercase tracking-[0.24em] text-primary">
             Full Access Signals
           </p>
-          <h2 className="mt-3 text-3xl font-black leading-[1.02] tracking-[-0.055em] text-white">
+          <h2 className="mt-3 text-2xl font-black leading-tight tracking-normal text-white md:text-3xl">
             Unlock live trade signals inside Vault OS.
           </h2>
           <p className="mx-auto mt-3 max-w-sm text-sm font-medium leading-6 text-slate-300">
@@ -55,7 +55,7 @@ function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary">
                   <Icon className="h-5 w-5" />
                 </span>
-                <span>
+                <span className="min-w-0">
                   <span className="block text-sm font-black text-white">{title}</span>
                   <span className="mt-0.5 block text-xs leading-5 text-slate-400">{copy}</span>
                 </span>

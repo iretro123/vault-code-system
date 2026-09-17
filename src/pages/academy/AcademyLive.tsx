@@ -396,10 +396,10 @@ const AcademyLive = () => {
       </Dialog>
 
       {/* Premium Header */}
-      <header className="px-4 md:px-6 pt-8 pb-2">
+      <header className="px-4 md:px-6 pt-4 md:pt-8 pb-2">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-[32px] md:text-[36px] font-bold tracking-tight leading-tight text-foreground">Live Sessions</h1>
+            <h1 className="text-[28px] md:text-[36px] font-bold tracking-tight leading-tight text-foreground">Live Sessions</h1>
             <p className="text-muted-foreground mt-1.5 text-sm md:text-base">Prepare. Execute. Review. Attend live sessions to build real trading skillset.</p>
           </div>
           <div className="flex items-center gap-2 pt-2">
@@ -463,7 +463,7 @@ const AcademyLive = () => {
               const isLiveNow = Date.now() >= new Date(nextSession.session_date).getTime();
               return (
               <div className={cn(
-                "live-glass-card live-glass-card--hero p-6 md:p-8 relative group transition-all duration-300",
+                "live-glass-card live-glass-card--hero p-4 md:p-8 relative group transition-all duration-300",
                 isLiveNow && "ring-1 ring-red-500/30 shadow-[0_0_40px_-10px_rgba(239,68,68,0.2)]",
                 canManage && "cursor-pointer",
                 selectedId === nextSession.id && canManage && "ring-1 ring-primary/40"
@@ -488,7 +488,7 @@ const AcademyLive = () => {
                 {nextSession.description && <p className="text-sm text-white/50 mt-1">{nextSession.description}</p>}
                 <p className="text-sm font-semibold text-white mt-2">{formatDateInTZ(nextSession.session_date, userTZ)} at {formatTimeInTZ(nextSession.session_date, userTZ)} {tzLabel}{nextSession.duration_minutes > 0 && <span className="ml-2 text-white/50">· {nextSession.duration_minutes} min</span>}</p>
                 <p className="text-xs text-white/30 mt-1">Bring notebook · headphones · charts ready</p>
-                <div className="flex items-center gap-3 mt-6 flex-wrap">
+                <div className="flex items-center gap-2 mt-4 md:mt-6 flex-wrap">
                   {nextSession.join_url && <a href={nextSession.join_url} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); trackZoomClick(nextSession); }}><button className={cn("live-btn-primary", isLiveNow && "!bg-gradient-to-r !from-red-600 !to-red-500 hover:!shadow-[0_0_20px_4px_rgba(239,68,68,0.25)]")}><ExternalLink className="h-4 w-4" /> {isLiveNow ? "Join Live Now" : "Join Zoom"}</button></a>}
                   {nextSession.join_url && <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); copyLink(nextSession.join_url); }}><Link2 className="h-3.5 w-3.5" /> Copy Link</button>}
                   <button className="live-btn-glass" onClick={(e) => { e.stopPropagation(); window.open(buildGoogleCalendarUrl(nextSession), '_blank'); }}><CalendarPlus className="h-3.5 w-3.5" /> Add to Calendar</button>

@@ -36,12 +36,15 @@
 .vault-settings[data-section=help] .vs-panels button,.vault-settings[data-section=help] .vs-panels a{min-height:64px;background:transparent;border:0;border-bottom:1px solid #ffffff1a;border-radius:0;font-size:16px;box-shadow:none;padding:16px 4px}
 .vault-settings[data-section=help] .vs-panels button:hover,.vault-settings[data-section=help] .vs-panels a:hover{background:#ffffff06}
 @media(max-width:767px){
- .vs-navigation{padding:16px 17px;border:0}
+ .vs-navigation{padding:12px 16px;border:0}
  .vs-navigation .vs-back,.vs-navigation .vs-search,.vs-navigation nav,.vs-navigation .vs-nav-title{display:none}
  .vs-mobile-picker{display:block}
  .vs-mobile-picker>button{width:100%;min-height:48px;background:#1b2534;border-color:#3c4c65;font-size:16px;border-radius:9px}
- .vs-main,.vault-settings[data-section=profile] .vs-main{padding:10px 17px 100px}
+ .vs-main,.vault-settings[data-section=profile] .vs-main{padding:8px 16px 100px}
+ .vs-page-heading{margin-bottom:16px}
+ .vs-page-heading h1{font-size:26px;line-height:1.25;overflow-wrap:anywhere}
  .vs-local-note{margin-bottom:22px;font-size:12px}
  .vs-panels .vault-card{padding:0!important}
- .vs-panels button[aria-pressed] span:last-child{font-size:12px}
+ .vs-panels button[aria-pressed]{align-items:flex-start;flex-wrap:wrap}
+ .vs-panels button[aria-pressed] span:last-child{font-size:14px;line-height:1.45;max-width:100%;margin-left:0;overflow-wrap:anywhere}
 }
