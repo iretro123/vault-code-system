@@ -132,6 +132,21 @@ body.native-capacitor .academy-content-safe {
   padding-bottom: var(--academy-mobile-nav-offset);
 }
 
+/* Lesson controls own the mobile-navigation clearance inside their bounded player. */
+body.native-capacitor .academy-content-safe:has(.academy-lesson-player) {
+  padding-bottom: 0;
+}
+
+body.native-capacitor .academy-lesson-actions {
+  padding-bottom: calc(0.75rem + var(--academy-mobile-nav-offset));
+}
+
+@media (min-width: 768px) {
+  body.native-capacitor .academy-lesson-actions {
+    padding-bottom: 1rem;
+  }
+}
+
 body.native-capacitor .academy-mobile-nav-fixed {
   position: fixed;
   left: 0;

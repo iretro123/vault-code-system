@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronDown, MessageCircle, Plus, Search, Send, X, UserRound } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -138,12 +139,12 @@ export default function AcademyMessages() {
       {(api.error||notice)&&!creating&&<div className="vm-error" role="alert">{notice||api.error}<button onClick={()=>{setNotice('');void api.refresh();}}>Retry</button></div>}
     </div>
     {peer&&detailsOpen&&<MemberDetails key={peer.user_id} member={peer} messages={api.messages} open={detailsOpen} onClose={()=>setDetailsOpen(false)}/>}
-    {creating&&<div className="vm-dialog-backdrop" onClick={e=>{if(e.target===e.currentTarget)setCreating(false);}}><div role="dialog" aria-modal="true" aria-labelledby="vm-new-title" className="vm-dialog" onKeyDown={e=>{
+    {creating&&createPortal(<div className="vm-dialog-backdrop" onClick={e=>{if(e.target===e.currentTarget)setCreating(false);}}><div role="dialog" aria-modal="true" aria-labelledby="vm-new-title" className="vm-dialog" onKeyDown={e=>{
       if(e.key==='Escape')setCreating(false);
       if(e.key==='Tab'){const nodes=e.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),input');const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}
     }}><header><h2 id="vm-new-title">New message</h2><button className="vm-icon" aria-label="Close member search" onClick={()=>setCreating(false)}><X size={20}/></button></header>
       <p>{query.trim()?'Find a member by name or username.':'RZ and recently active members.'}</p>
       <label className="vm-search"><Search size={18}/><input aria-label="Search members" placeholder="Search members…" value={query} maxLength={80} onChange={e=>setQuery(e.target.value)}/></label>
-      <div className="vm-search-results">{searching?<p role="status">Loading members…</p>:results.map(p=><button className="vm-person" key={p.user_id} disabled={busy||p.user_id===user?.id} onClick={()=>void start(p)}><ChatAvatar userName={p.display_name} avatarUrl={p.avatar_url} size="h-10 w-10"/><span><strong>{p.display_name}{p.user_id===user?.id?' (you)':''}</strong><small>{p.is_rz?'Vault founder':p.username?`@${p.username}`:'Recently active in community'}</small></span>{p.user_id!==user?.id&&<MessageCircle size={18}/>}</button>)}{!searching&&!results.length&&!notice&&<p>{query.trim()?'No members found. Try another name.':'No recent members to show yet.'}</p>}</div>{notice&&<p role="alert">{notice}</p>}</div></div>}
+      <div className="vm-search-results">{searching?<p role="status">Loading members…</p>:results.map(p=><button className="vm-person" key={p.user_id} disabled={busy||p.user_id===user?.id} onClick={()=>void start(p)}><ChatAvatar userName={p.display_name} avatarUrl={p.avatar_url} size="h-10 w-10"/><span><strong>{p.display_name}{p.user_id===user?.id?' (you)':''}</strong><small>{p.is_rz?'Vault founder':p.username?`@${p.username}`:'Recently active in community'}</small></span>{p.user_id!==user?.id&&<MessageCircle size={18}/>}</button>)}{!searching&&!results.length&&!notice&&<p>{query.trim()?'No members found. Try another name.':'No recent members to show yet.'}</p>}</div>{notice&&<p role="alert">{notice}</p>}</div></div>,document.body)}
   </section>;
 }

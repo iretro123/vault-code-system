@@ -27,8 +27,8 @@ out and they are unset, the journey **skips** rather than reporting a pass.
 | Journey | Asserted |
 | --- | --- |
 | Community tabs | Signed-in nav loads; Signals tab exists and renders EITHER the room or the upgrade gate; Wins tab exists and opens; returning to the Chat room tab restores the tab bar (top-most "Chat" match, distinct from the bottom tab bar) |
-| Messages | `Messages` opens the inbox; `New message` opens member search; typing yields results or a notice; `Close member search` dismisses; no compose, no send |
-| Learn | A chapter card (`Start…`/`Continue…`/`Review…`) opens the curriculum; a lesson row opens the player (`Back to lessons` present); back returns to the lesson list |
+| Messages | `Messages` opens the inbox; `New message` opens member search; heading, close control and search field remain wholly visible before and after the keyboard opens; typing yields results or a notice; dismisses without sending |
+| Learn | A chapter card (`Start…`/`Continue…`/`Review…`) opens the curriculum; a lesson row opens the player; the forward footer control is wholly visible above mobile navigation; back returns to the lesson list |
 | Settings | Section navigation loads (desktop list or `Settings page` dropdown); `Social links` plus Instagram and YouTube fields are present; Account, Password & security, Notifications, Trading preferences, Privacy & data, Help & support each open; exit via the app's own back control |
 | Coach / support | `Ask Coach` opens the coach panel; the human-coach tab switches; `Close coach` closes it; `Schedule 1:1` renders and returns Home |
 
@@ -85,3 +85,23 @@ Repairs (test-only, no app or auth changes):
 Still unknown (unchanged): video playback, message delivery, settings
 persistence, AI answers, entitlement correctness, push, purchases/restore,
 sign-up and email password reset, Android, basic/guest bottom-nav variant.
+
+## Update — 2026-09-17 (post iPhone 17 Pro run of 3b5ef0fc)
+
+All five journeys passed, but screenshot review exposed two layout defects that
+hittability alone did not detect:
+
+- Member search now renders in a document-level fixed overlay above the Academy
+  header. Its height follows the native visible-height variable, safe-area
+  padding stays inside that boundary, and only the results list scrolls. The
+  heading and close control remain visible when the keyboard opens.
+- The lesson player now fills its already-bounded content area instead of
+  subtracting header/navigation heights again. Its action bar owns one explicit
+  native bottom-navigation offset, keeping completion and next controls above
+  navigation without hiding it or changing lesson content.
+- XCTest now compares complete element frames with the app window for the
+  member-search header controls and lesson footer. A partly clipped but
+  technically hittable control fails with screenshot and debug output.
+
+These native checks have not been rerun in Lovable; owner simulator rebuild,
+sync and visual verification remain required.
