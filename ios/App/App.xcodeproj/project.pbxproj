@@ -19,6 +19,7 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		8A75B6552E3D6E940028A917 /* StoreKitMembershipPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A75B6542E3D6E940028A917 /* StoreKitMembershipPlugin.swift */; };
 		A5EB57BA5239BA54A663E3B3 /* VaultOSPurchaseUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25FEA8C200F0B4C60304B5B /* VaultOSPurchaseUITests.swift */; };
+		A5EB57BB5239BA54A663E3B4 /* VaultOSJourneyAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C25FEA8D200F0B4C60304B5C /* VaultOSJourneyAuditTests.swift */; };
 		D776F9ECC951B621730E9060 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 580E487D40E7218079BDF80B /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -49,6 +50,7 @@
 		8A75B6562E4B9C310028A917 /* VaultOS.storekit */ = {isa = PBXFileReference; lastKnownFileType = text.storekit; path = VaultOS.storekit; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		C25FEA8C200F0B4C60304B5B /* VaultOSPurchaseUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VaultOSPurchaseUITests.swift; sourceTree = "<group>"; };
+		C25FEA8D200F0B4C60304B5C /* VaultOSJourneyAuditTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VaultOSJourneyAuditTests.swift; sourceTree = "<group>"; };
 		DE17D82CD8D50D2E9CADFBFF /* VaultOSPurchaseUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = VaultOSPurchaseUITests.xctest; path = VaultOSPurchaseUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -131,6 +133,7 @@
 			isa = PBXGroup;
 			children = (
 				C25FEA8C200F0B4C60304B5B /* VaultOSPurchaseUITests.swift */,
+				C25FEA8D200F0B4C60304B5C /* VaultOSJourneyAuditTests.swift */,
 			);
 			name = VaultOSPurchaseUITests;
 			path = VaultOSPurchaseUITests;
@@ -263,6 +266,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A5EB57BA5239BA54A663E3B3 /* VaultOSPurchaseUITests.swift in Sources */,
+				A5EB57BB5239BA54A663E3B4 /* VaultOSJourneyAuditTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

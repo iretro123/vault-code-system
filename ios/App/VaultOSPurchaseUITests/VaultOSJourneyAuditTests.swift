@@ -72,8 +72,6 @@ extension VaultOSLaunchAuditTests {
         close.tap()
         XCTAssertTrue(waitUntil(timeout: 15, { !search.exists }), "Member search must dismiss without sending")
         journeyCapture(app, "32-messages-search-dismissed")
-        // No message is ever composed or sent in this journey.
-        XCTAssertFalse(app.buttons["Send message"].firstMatch.isHittable && false)
     }
 
     /// Learn: chapter -> lesson player -> back to the lesson list.
@@ -179,7 +177,7 @@ extension VaultOSLaunchAuditTests {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             if condition() { return true }
-            _ = XCUIApplication().wait(for: .runningForeground, timeout: 0.4)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
         }
         return condition()
     }
