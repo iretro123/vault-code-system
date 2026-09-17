@@ -152,7 +152,7 @@ extension VaultOSLaunchAuditTests {
         let usableBottom = mobileNavigation?.frame.minY ?? app.frame.maxY
         try require(
             scrollIntoView(app, forwardControl)
-                && elementsWhollyVisible(app, below: app.frame.minY, above: usableBottom, forwardControl),
+                && elementsWhollyVisible(app, below: app.frame.minY, above: usableBottom, [forwardControl]),
             "Lesson footer controls must be wholly visible above mobile navigation",
             app,
             markComplete,
