@@ -1,0 +1,50 @@
+.daily-loss { max-width: 880px; margin: 0 auto; padding: 28px 24px 60px; color: #edf2fc; }
+.daily-loss header { margin-bottom: 24px; }
+.daily-eyebrow { color: #aebfdf; font-size: 12px; letter-spacing: .16em; font-weight: 600; }
+.daily-loss h1 { font-size: clamp(28px,3.5vw,42px); font-weight: 600; letter-spacing: -.045em; line-height: 1.2; margin: 8px 0; }
+.daily-loss header > p:last-child { font-size: 16px; color: #afbdd3; line-height: 1.6; }
+.daily-loss [role=tablist] { background: #192132; padding: 4px; height: auto; border: 1px solid #36435b; border-radius: 10px; }
+.daily-loss [role=tab] { min-height: 42px; padding: 8px 18px; font-size: 14px; border-radius: 7px; color: #b9c6de; }
+.daily-loss [role=tab][data-state=active] { color: #182644; background: #c1d1fa; }
+.daily-market-note { font-size: 14px; line-height: 1.5; color: #aebcd4; margin: 14px 0 24px; }
+.daily-calculator { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); border: 1px solid #465575; border-radius: 18px; overflow: hidden; background: #121b2b; box-shadow: 0 16px 38px #0003; }
+.daily-inputs { padding: 24px; }
+.daily-field + .daily-field { margin-top: 22px; }
+.daily-field label { display: flex; gap: 10px; justify-content: space-between; color: #dde6f6; font-size: 16px; margin-bottom: 12px; }
+.daily-field label span { color: #94a6c7; font-size: 13px; }
+.daily-field input { height: 58px; background: #1c273a; border: 1px solid #526283; border-radius: 9px; color: #f0f5ff; padding: 12px 15px; font-size: 24px; }
+.daily-field input::placeholder { color: #899ab6; font-size: 16px; }
+.daily-field small { display: block; color: #a4b3ce; font-size: 12px; line-height: 1.6; margin-top: 10px; }
+.daily-presets { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin-top: 12px; }
+.daily-presets button { flex: 1; background: transparent; color: #c8d8ff; border-color: #455673; min-height: 42px; font-size: 15px; }
+.daily-presets button:hover { background: #263651; }
+.daily-presets button[aria-pressed=true] { background: #304264; border-color: #9fb9ef; }
+.daily-presets .daily-high-risk { grid-column: 1 / -1; color: #ffb7bd; border-color: #884852; background: #40232b; gap: 6px; }
+.daily-presets .daily-high-risk span { font-size: 13px; }
+.daily-presets .daily-high-risk:hover,.daily-presets .daily-high-risk[aria-pressed=true] { background: #612e39; border-color: #ef8b98; }
+.daily-warning.daily-risk-warning { color: #ffb7bd; }
+.daily-result { padding: 24px; background: linear-gradient(140deg,#2b3d61,#1d2a44); border-left: 1px solid #485978; }
+.daily-result-label { display: flex; align-items: center; gap: 8px; color: #c2d2f1; font-size: 12px; letter-spacing: .1em; }
+.daily-result output { display: block; margin: 22px 0 4px; font-size: clamp(38px,5vw,64px); letter-spacing: -.05em; font-weight: 600; line-height: 1.1; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.daily-formula { font-size: 13px; color: #b8c7e1; line-height: 1.5; }
+.daily-ceiling { font-size: 20px; margin-top: 28px; color: #e7eeff; }
+.daily-ceiling strong { font-weight: 500; color: #b9cbfa; }
+.daily-result-description { font-size: 15px; color: #c6d3e9; line-height: 1.65; margin-top: 8px; }
+.daily-save { margin-top: 24px; width: 100%; min-height: 48px; font-size: 16px; background: #c6d6ff; color: #192847; gap: 8px; }
+.daily-save:hover { background: #e0e9ff; }
+.daily-result > small { display: block; margin-top: 10px; color: #adbedc; font-size: 12px; line-height: 1.5; }
+.daily-warning { margin-top: 14px; font-size: 13px; line-height: 1.6; color: #f1d09c; }
+.daily-return-note { margin-top: 18px; font-size: 13px; color: #c4d4f2; line-height: 1.5; }
+.daily-bottom-rule { display: flex; align-items: baseline; gap: 16px; padding: 24px 0; border-bottom: 1px solid #303e55; }
+.daily-bottom-rule span { color: #a4b5d3; font-size: 14px; }
+.daily-bottom-rule p { color: #dce6f7; font-size: 16px; }
+.daily-how { margin-top: 12px; color: #aebed6; font-size: 14px; line-height: 1.65; }
+.daily-how summary { cursor: pointer; padding: 12px 0; min-height: 44px; color: #d0ddf3; }
+.daily-how p { margin: 10px 0; }
+.daily-how + .daily-how { margin-top: 0; border-top: 1px solid #303e55; }
+.daily-how ul { list-style: disc; padding-left: 20px; margin: 10px 0 16px; }
+.daily-how li { margin: 9px 0; }
+.daily-how strong { color: #dce6f7; font-weight: 500; }
+.daily-how a { display: inline-block; color: #bbcefa; text-decoration: underline; text-underline-offset: 3px; margin-bottom: 14px; }
+.daily-loss footer { margin-top: 16px; font-size: 12px; line-height: 1.6; color: #95a6c2; }
+@media(max-width: 700px) { .daily-loss { padding: 24px 16px 70px; } .daily-calculator { grid-template-columns: 1fr; } .daily-inputs,.daily-result { padding: 22px; } .daily-result { border-left: 0; border-top: 1px solid #485978; } .daily-result output { font-size: 52px; margin-top: 14px; } .daily-field + .daily-field { margin-top: 20px; } .daily-ceiling { margin-top: 18px; } .daily-bottom-rule { display: block; } .daily-bottom-rule p { margin-top: 5px; } }

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { hapticStrong } from "@/lib/nativeFeedback";
 import {
   getPlatformKey,
+  getPushPermissionState,
   isNativePushPlatform,
   registerTokenForCurrentUser,
 } from "@/lib/pushPermission";
@@ -52,8 +53,7 @@ export function usePushNotifications() {
 
     async function silentRegisterIfGranted() {
       try {
-        const perm = await PushNotifications.checkPermissions();
-        if (perm.receive !== "granted") return;
+        if (!active || await getPushPermissionState() !== "granted" || !active) return;
         await PushNotifications.register();
       } catch (err) {
         console.warn("Push re-registration failed", err);
@@ -102,7 +102,7 @@ export function usePushNotifications() {
       }
     }
 
-    void setupPush();
+    void setupPush().catch((err) => console.warn("Push listeners unavailable", err));
     void silentRegisterIfGranted();
 
     return () => {

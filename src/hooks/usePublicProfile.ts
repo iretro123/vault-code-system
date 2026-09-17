@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PublicProfile {
@@ -16,7 +16,7 @@ export interface PublicProfile {
   social_youtube: string | null;
   created_at: string;
   academy_role_name: string | null;
-  lessons_completed: number;
+  lessons_completed: number | null;
 }
 
 const profileCache = new Map<string, PublicProfile>();
@@ -31,6 +31,7 @@ export function usePublicProfile(userId: string | null) {
   );
   const [loading, setLoading] = useState(false);
   const [version, setVersion] = useState(0);
+  const request = useRef(0);
 
   const refetch = useCallback(() => {
     if (userId) {
@@ -40,19 +41,25 @@ export function usePublicProfile(userId: string | null) {
   }, [userId]);
 
   const fetchProfile = useCallback(async () => {
-    if (!userId) return;
+    const ticket = ++request.current;
+    setProfile(null);
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const cached = profileCache.get(userId);
     if (cached) {
       setProfile(cached);
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const [{ data: profileData }, { data: roleData }, { data: lessonData }] =
+      const [{ data: profileData }, { data: roleData }, lessonResult] =
         await Promise.all([
-          supabase.rpc("get_community_profiles", { _user_ids: [userId] }),
+          supabase.rpc("get_community_profiles", { _user_ids: [userId] }, { get: true }),
           supabase
             .from("academy_user_roles")
             .select("user_id, academy_roles(name)")
@@ -64,6 +71,7 @@ export function usePublicProfile(userId: string | null) {
             .eq("user_id", userId)
             .eq("completed", true),
         ]);
+      if (ticket !== request.current) return;
 
       if (profileData && profileData.length > 0) {
         const row = profileData[0] as {
@@ -81,7 +89,7 @@ export function usePublicProfile(userId: string | null) {
           social_youtube?: string | null;
           created_at: string;
         };
-        const lessonCount = (lessonData as any)?.count ?? (Array.isArray(lessonData) ? lessonData.length : 0);
+        const lessonCount = lessonResult.error ? null : lessonResult.count ?? null;
         const result: PublicProfile = {
           user_id: row.user_id,
           avatar_url: row.avatar_url,
@@ -105,12 +113,13 @@ export function usePublicProfile(userId: string | null) {
     } catch (err) {
       console.error("usePublicProfile error:", err);
     } finally {
-      setLoading(false);
+      if (ticket === request.current) setLoading(false);
     }
   }, [userId, version]);
 
   useEffect(() => {
     fetchProfile();
+    return () => { request.current++; };
   }, [fetchProfile]);
 
   return { profile, loading, refetch };

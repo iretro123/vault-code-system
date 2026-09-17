@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { ImageLightbox } from "./community/ImageLightbox";
 import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./community/DateSeparator";
+import { ChatConnectionStatus } from "./community/ChatConnectionStatus";
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
+import { useCommunityDraft } from "@/hooks/useCommunityDraft";
+import { setUnreadIsAtBottom } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useMessageReactions, QUICK_EMOJIS, type ReactionEmoji } from "@/hooks/useMessageReactions";
@@ -44,6 +47,7 @@ import { ChatEffects } from "./chat/ChatEffects";
 import { LinkPreviewCard } from "./chat/LinkPreviewCard";
 import { detectChatEffect, type ChatEffectType } from "@/lib/chatEffects";
 import { supabase } from "@/integrations/supabase/client";
+import { localPreviewFetch } from "@/integrations/supabase/localPreviewFetch";
 import logTradeEmoji from "@/assets/emoji/log-trade.svg";
 import askQuestionEmoji from "@/assets/emoji/ask-question.svg";
 import shareWinEmoji from "@/assets/emoji/share-win.svg";
@@ -290,7 +294,7 @@ function isTradeFormatPost(body: string) {
   );
 }
 
-function renderTradeCard(body: string, attachments?: Attachment[]) {
+function renderTradeCard(body: string, attachments: Attachment[] | undefined, actions: { log: () => void; reply: () => void }) {
   const lines = body.split("\n").filter(Boolean);
   const fields: { label: string; value: string }[] = [];
   for (const line of lines) {
@@ -301,8 +305,8 @@ function renderTradeCard(body: string, attachments?: Attachment[]) {
   const imageAtt = attachments?.find((a) => a.type === "image");
 
   return (
-    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] mt-2 overflow-hidden max-w-full sm:max-w-[560px] hover:border-white/[0.12] transition-colors">
-      <div className="flex">
+    <div className="community-trade-card rounded-[20px] border border-white/[0.08] bg-white/[0.04] mt-2 overflow-hidden max-w-full sm:max-w-[560px] hover:border-white/[0.12] transition-colors">
+      <div className="flex flex-col sm:flex-row">
         {/* Left — Fields */}
         <div className="flex-1 min-w-0 p-5 space-y-3">
           <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Setup</p>
@@ -333,14 +337,14 @@ function renderTradeCard(body: string, attachments?: Attachment[]) {
 
       {/* Bottom actions */}
       <div className="flex items-center gap-1 px-5 py-3 border-t border-white/[0.06] bg-white/[0.02]">
-        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
+        <button onClick={() => window.dispatchEvent(new CustomEvent("toggle-coach-drawer"))} className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
           Ask Coach
         </button>
-        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
+        <button onClick={actions.log} className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
           Log Trade
         </button>
-        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
-          Request Feedback
+        <button onClick={actions.reply} className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3.5 py-2 rounded-xl hover:bg-white/[0.06] font-medium">
+          Discuss trade
         </button>
       </div>
     </div>
@@ -356,7 +360,7 @@ function renderRecapCard(body: string) {
   }
 
   return (
-    <div className="rounded-[20px] border border-white/[0.08] bg-white/[0.04] p-5 space-y-3 mt-2 hover:border-white/[0.12] transition-colors max-w-full sm:max-w-[560px]">
+    <div className="community-trade-card rounded-[20px] border border-white/[0.08] bg-white/[0.04] p-5 space-y-3 mt-2 hover:border-white/[0.12] transition-colors max-w-full sm:max-w-[560px]">
       <p className="text-[10px] font-bold text-primary uppercase tracking-[0.15em]">Trade Post</p>
       <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
         {fields.map((f, i) => (
@@ -481,12 +485,12 @@ function renderPlainBody(body: string) {
         <div className="flex items-center gap-1.5 ml-0 mb-0.5 relative pl-6">
           {/* Connector arm */}
           <div className="absolute left-[7px] top-[3px] w-[14px] h-[12px] border-l-2 border-t-2 border-muted-foreground/30 rounded-tl-md" />
-          <div className="flex items-center gap-1 text-[13px] text-muted-foreground truncate max-w-[85%] cursor-pointer hover:text-foreground/70 transition-colors">
+          <div className="community-quoted-reply flex items-center gap-1 text-[13px] text-muted-foreground truncate max-w-full">
             <div className="w-4 h-4 rounded-full bg-primary/20 shrink-0 flex items-center justify-center">
               <span className="text-[8px] font-bold text-primary">@</span>
             </div>
             <span className="font-semibold text-primary/80 shrink-0">{replyMatch[1]}</span>
-            <span className="truncate">{replyMatch[2] || "Click to see message"}</span>
+            <span className="truncate">{replyMatch[2] || "Original message"}</span>
           </div>
         </div>
       )}
@@ -549,8 +553,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     prevActiveRef.current = active;
   }, [active]);
 
-  const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage } =
-    useRoomMessages(shouldLoad ? roomSlug : "__deferred__", activationCount);
+  const { messages, loading, hasMore, loadMore, sendMessage, sending, error, editMessage, deleteMessage, connection, refresh } =
+    useRoomMessages(shouldLoad ? roomSlug : "__deferred__", activationCount, active);
   const { user, profile, userRole: authUserRole } = useAuth();
   const {
     canModerate, isRoomLocked, isMuted, muteExpiresAt,
@@ -584,7 +588,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     return [...new Set(targets.filter(Boolean))];
   }, [profile, user]);
 
-  const { typingText, broadcastTyping } = useTypingIndicator(roomSlug, user?.id, displayName);
+  const { typingText, broadcastTyping, stopTyping } = useTypingIndicator(roomSlug, user?.id, displayName, active);
   const { trackMessages, getReactions, toggleReaction } = useMessageReactions(roomSlug, user?.id);
   const { ensureProfiles, getProfile } = useChatProfiles();
   const lastNotifiedRef = useRef<string | null>(null);
@@ -625,7 +629,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     }
   }, [active, messages, mentionTargets, user?.id]);
 
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useCommunityDraft(user?.id, roomSlug);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -657,28 +661,29 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const [chatEffect, setChatEffect] = useState<ChatEffectType>(null);
   const isComposing = isComposerFocused || draft.trim().length > 0;
+  useEffect(() => { if (!draft.trim()) stopTyping(); }, [draft, stopTyping]);
   const scrollToBottomInstant = useCallback(() => {
     const el = containerRef.current;
     autoScrollingRef.current = true;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    if (active) setUnreadIsAtBottom(true);
     setShowJumpToLatest(false);
     seenMessageCount.current = messages.length;
     requestAnimationFrame(() => {
       autoScrollingRef.current = false;
     });
-  }, [messages.length]);
+  }, [active, messages.length]);
 
   const handleDraftChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const val = e.target.value;
       setDraft(val);
-      broadcastTyping();
+      if (val.trim()) broadcastTyping(); else stopTyping();
       // Update mention autocomplete
       const cursor = e.target.selectionStart ?? val.length;
       updateMentionState(val, cursor);
     },
-    [broadcastTyping, updateMentionState]
+    [broadcastTyping, stopTyping, updateMentionState]
   );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -748,6 +753,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   // ── New messages arrived ──
   useEffect(() => {
+    if (!active) return;
     if (shouldAutoScroll.current && messages.length > 0) {
       scrollToBottomInstant();
       return;
@@ -755,7 +761,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     if (messages.length > seenMessageCount.current && seenMessageCount.current > 0) {
       setShowJumpToLatest(true);
     }
-  }, [messages.length, scrollToBottomInstant]);
+  }, [active, messages.length, scrollToBottomInstant]);
 
   // ── Initial scroll on first activation ──
   useEffect(() => {
@@ -812,6 +818,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
     const el = containerRef.current;
     if (!el) return;
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (active) setUnreadIsAtBottom(atBottom);
     savedScrollRef.current = el.scrollTop;
     if (!atBottom) userScrolledRef.current = true;
     shouldAutoScroll.current = atBottom;
@@ -820,7 +827,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       seenMessageCount.current = messages.length;
       setShowJumpToLatest(false);
     }
-  }, [messages.length]);
+  }, [active, messages.length]);
 
   const jumpToLatest = () => {
     userScrolledRef.current = false;
@@ -849,24 +856,30 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   const handleSend = async (text?: string, attachments?: Attachment[]) => {
     let body = text ?? draft;
-    if (!body.trim() && (!attachments || attachments.length === 0)) return;
-    if (sending) return;
+    if (!body.trim() && (!attachments || attachments.length === 0)) return false;
+    if (sending) return false;
     if (containsObjectionableContent(body)) {
       toast.error("This message appears to violate the community safety rules and was not posted.");
-      return;
+      return false;
     }
 
     // Prepend quote block if replying
     if (replyingTo && !text) {
       const truncated = truncateText(replyingTo.body, 60);
       body = `> **@${replyingTo.user_name}:** ${truncated}\n\n${body}`;
-      setReplyingTo(null);
     }
 
-    if (!text) setDraft("");
-    clearSuggestions();
     shouldAutoScroll.current = true;
     const result = await sendMessage(body, attachments);
+    if (!result?.ok) {
+      toast.error("Message wasn’t sent. Your draft is still here—try again.");
+      return false;
+    }
+    if (text === undefined) {
+      setDraft("");
+      setReplyingTo(null);
+    }
+    clearSuggestions();
     // Trigger local chat effect Easter egg
     const effect = detectChatEffect(body);
     if (effect) setChatEffect(effect);
@@ -914,6 +927,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         console.error("Failed to create mention notifications:", err);
       }
     }
+    return true;
   };
 
   const ALLOWED_MIME = [
@@ -962,7 +976,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const encodedPath = path.split("/").map(encodeURIComponent).join("/");
 
-      const res = await fetch(`${supabaseUrl}/storage/v1/object/academy-chat-files/${encodedPath}`, {
+      const res = await localPreviewFetch(`${supabaseUrl}/storage/v1/object/academy-chat-files/${encodedPath}`, {
         method: "POST",
         headers: {
           apikey: supabaseKey,
@@ -1149,7 +1163,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const handleEmojiSelect = useCallback((emoji: string) => {
     const el = textareaRef.current;
     if (!el) {
-      setDraft((prev) => prev + emoji);
+      setDraft(draft + emoji);
       return;
     }
     const start = el.selectionStart ?? draft.length;
@@ -1163,6 +1177,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   }, [draft]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return;
     // Mention autocomplete navigation
     if (suggestions.length > 0) {
       if (e.key === "ArrowDown") {
@@ -1187,7 +1202,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       }
     }
 
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !isMobile) {
       e.preventDefault();
       handleSend();
     }
@@ -1378,7 +1393,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   return (
     <>
     <div
-      className={cn("relative flex flex-col h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}
+      className={cn("community-room relative flex flex-col min-h-0 h-full w-full bg-background", chatEffect === "shake" && "animate-chat-shake")}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -1414,6 +1429,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       </AlertDialog>
 
       {/* Messages */}
+      {error && <div role="alert" className="flex items-center justify-between gap-3 px-4 py-2 text-sm bg-red-500/10 text-red-200">Messages couldn’t load.<button className="min-h-11 underline" onClick={() => void refresh()}>Try again</button></div>}
+      {!error && <ChatConnectionStatus reconnecting={connection === "reconnecting"} />}
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -1617,7 +1634,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                  <div
                   {...(isMobile ? longPressHandlers(() => setSheetMsgId(msg.id)) : {})}
                   className={cn(
-                    "group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75 select-none sm:select-auto",
+                    "community-message group relative flex gap-3 px-4 hover:bg-white/[0.04] transition-colors duration-75 select-none sm:select-auto",
                     startsNewGroup ? "pt-3 pb-1" : (isGroupedWithNext ? "py-0.5" : "pt-0.5 pb-1"),
                     startsNewGroup && "mt-1",
                     isEditing && "bg-white/[0.04]",
@@ -1631,7 +1648,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       msgProfile ? (
                         <Popover>
                           <PopoverTrigger asChild>
-                            <button type="button" className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-primary">
+                            <button type="button" aria-label={`View ${msg.user_name}'s profile`} className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-1 focus-visible:ring-primary">
                               <ChatAvatar
                                 avatarUrl={msgProfile.avatar_url}
                                 userName={msg.user_name}
@@ -1639,12 +1656,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               />
                             </button>
                           </PopoverTrigger>
-                          <PopoverContent side="right" align="start" sideOffset={8} className="p-0 border-0 bg-transparent shadow-none w-auto">
+                          <PopoverContent side="right" align="center" sideOffset={8} collisionPadding={{top:72,bottom:100,left:12,right:12}} className="p-0 border-0 bg-transparent shadow-none w-auto">
                             <UserProfileCard userId={msg.user_id} onClose={() => {}} />
                           </PopoverContent>
                         </Popover>
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-white/[0.06] animate-pulse" />
+                        <ChatAvatar avatarUrl="initials:hsl(218, 28%, 58%)" userName={msg.user_name} size="h-9 w-9" />
                       )
                     ) : (
                       <span className="hidden group-hover:flex items-center justify-center h-5 text-[11px] text-muted-foreground select-none">
@@ -1656,7 +1673,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     {showHdr && (
-                      <div className="flex items-center gap-2 mb-0.5 min-h-[22px]">
+                      <div className="community-message-meta flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5 min-h-[22px]">
                         <Popover>
                           <PopoverTrigger asChild>
                             <button type="button" className={cn(
@@ -1666,7 +1683,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               {msg.user_name}
                             </button>
                           </PopoverTrigger>
-                          <PopoverContent side="right" align="start" sideOffset={8} className="p-0 border-0 bg-transparent shadow-none w-auto">
+                          <PopoverContent side="right" align="center" sideOffset={8} collisionPadding={{top:72,bottom:100,left:12,right:12}} className="p-0 border-0 bg-transparent shadow-none w-auto">
                             <UserProfileCard userId={msg.user_id} onClose={() => {}} />
                           </PopoverContent>
                         </Popover>
@@ -1681,11 +1698,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                              )}
                            </>
                          ) : (
-                          <div className="h-4 w-16 rounded bg-white/[0.06] animate-pulse" />
+                          null
                          )}
-                         <span className="text-[12px] text-muted-foreground">
-                          {formatDateTime(msg.created_at)}
-                        </span>
+                         <time dateTime={msg.created_at} title={formatDateTime(msg.created_at)} className="community-message-time text-[12px] text-muted-foreground">
+                          {formatTime(msg.created_at)}
+                        </time>
                       </div>
                     )}
 
@@ -1695,7 +1712,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         <div className="flex items-start gap-0 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] overflow-hidden">
                           <div className="w-1 self-stretch bg-amber-500/50 shrink-0" />
                           <div className="px-3 py-2 flex-1">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
+                            <span className="inline-flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wider text-amber-300 mb-1">
                               <Megaphone className="h-3 w-3" /> Official Announcement
                             </span>
                              <p className="text-[15px] text-foreground/90 leading-relaxed whitespace-pre-line">
@@ -1729,18 +1746,18 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           <button
                             type="button"
                             onClick={confirmEdit}
-                            className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 transition-colors"
+                            className="flex items-center gap-1 text-[13px] text-primary hover:text-primary/80 transition-colors"
                           >
                             <Check className="h-3 w-3" /> Save
                           </button>
                           <button
                             type="button"
                             onClick={cancelEdit}
-                            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <X className="h-3 w-3" /> Cancel
                           </button>
-                          <span className="text-[10px] text-muted-foreground">esc to cancel · enter to save</span>
+                          <span className="text-[12px] text-muted-foreground">esc to cancel · enter to save</span>
                         </div>
                       </div>
                     ) : (() => {
@@ -1753,6 +1770,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             chartImageUrl={chartAtt?.url}
                             userName={msg.user_name}
                             userRole={msg.user_role}
+                            avatarUrl={msgProfile?.avatar_url}
                             createdAt={msg.created_at}
                             onImageClick={(src) => setLightboxImage({ src, alt: "Chart", filename: "chart" })}
                           />
@@ -1762,13 +1780,19 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     })() || (isRecap ? (
                       renderRecapCard(msg.body)
                     ) : !msg.is_deleted && isTradeFormatPost(msg.body) ? (
-                      renderTradeCard(msg.body, msg.attachments)
+                      renderTradeCard(msg.body, msg.attachments, {
+                        log: () => navigate('/academy/journal'),
+                        reply: () => {
+                          setReplyingTo({ id: msg.id, user_name: msg.user_name, body: msg.body });
+                          setTimeout(() => textareaRef.current?.focus(), 50);
+                        },
+                      })
                     ) : isAnnouncements ? (
                       <div className="max-w-[90%] mt-1">
                         <div className="flex items-start gap-0 rounded-xl border border-amber-500/15 bg-white/[0.03] overflow-hidden">
                           <div className="w-1 self-stretch bg-amber-500/60 shrink-0" />
                           <div className="px-3 py-2 flex-1">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1">
+                            <span className="inline-flex items-center gap-1 text-[12px] font-semibold uppercase tracking-wider text-amber-300 mb-1">
                               <Megaphone className="h-3 w-3" /> Official
                             </span>
                              <p className="text-[15px] text-foreground/90 leading-relaxed whitespace-pre-line">
@@ -1781,11 +1805,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       <>
                         {msg.body && msg.body !== "📎 Attachment" && (
                           <div className={startsNewGroup ? "mt-0.5" : "mt-0"}>
-                            <p className="text-[15px] leading-[1.55] whitespace-pre-line text-foreground">
+                            <div className="community-message-body text-[16px] leading-[1.55] whitespace-pre-line text-foreground">
                               {renderPlainBody(msg.body)}
-                            </p>
+                            </div>
                             {msg.edited_at && (new Date(msg.edited_at).getTime() - new Date(msg.created_at).getTime() > 10000) && (
-                              <span className="text-[10px] mt-0.5 block text-muted-foreground">(edited)</span>
+                              <span className="community-message-edited text-[12px] mt-0.5 block text-muted-foreground">(edited)</span>
                             )}
                           </div>
                         )}
@@ -1828,7 +1852,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                   )}
                                 />
                                 {!isGif && (
-                                  <span className="text-[10px] text-muted-foreground mt-0.5 block truncate max-w-full">{att.filename}</span>
+                                  <span className="community-attachment-caption text-[12px] text-muted-foreground mt-0.5 block truncate max-w-full" title={att.filename}>{att.filename}</span>
                                 )}
                               </button>
                             );
@@ -1843,8 +1867,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             >
                               <FileText className="h-4 w-4 text-primary shrink-0" />
                               <div className="min-w-0">
-                                <p className="text-xs text-foreground truncate max-w-[200px]">{att.filename}</p>
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-[14px] text-foreground truncate max-w-[200px]" title={att.filename}>{att.filename}</p>
+                                <p className="text-[12px] text-muted-foreground">
                                   {att.size >= 1024 * 1024
                                     ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
                                     : `${(att.size / 1024).toFixed(0)} KB`}
@@ -1895,6 +1919,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                             <DropdownMenuTrigger asChild>
                               <button
                                 type="button"
+                                aria-label={`More options for ${msg.user_name}'s message`}
                                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.08] transition-colors"
                               >
                                 <MoreHorizontal className="h-3.5 w-3.5" />
@@ -1920,14 +1945,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               type="button"
                               onClick={() => toggleReaction(msg.id, r.emoji)}
                               className={cn(
-                                "inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
+                                "community-reaction inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
                                 r.reacted
                                   ? "bg-primary/15 border-primary/30 text-primary"
                                   : "bg-white/[0.06] border-white/[0.08] text-muted-foreground hover:bg-white/[0.1]"
                               )}
                             >
                               {renderReactionEmoji(r.emoji)}
-                              <span className="text-[11px] font-medium">{r.count}</span>
+                              <span className="text-[12px] font-medium">{r.count}</span>
                             </button>
                           ))}
 
@@ -1946,7 +1971,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     {!msg.is_deleted && !isEditing && !isAnnouncements && onThreadOpen && replyCount > 0 && (
                       <button
                         onClick={() => onThreadOpen({ ...msg, reply_count: replyCount })}
-                        className="flex items-center gap-1.5 mt-1 text-[11px] transition-all duration-75 text-primary hover:text-primary/80"
+                        className="community-thread-link flex items-center gap-1.5 mt-1 text-sm transition-all duration-75 text-primary hover:text-primary/80"
                       >
                         <MessageSquare className="h-3 w-3" />
                         {replyCount} {replyCount === 1 ? "reply" : "replies"}
@@ -1997,7 +2022,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             </div>
           );
         })}
-        <div ref={bottomRef} className="h-8 shrink-0" />
+        <div ref={bottomRef} className="h-3 shrink-0" />
       </div>
 
       {/* Jump to latest */}
@@ -2015,16 +2040,16 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       )}
 
       {/* Typing indicator */}
-      {typingText && (
-        <div className="px-3 md:px-4 py-1 flex items-center gap-1.5">
-          <span className="flex gap-0.5">
+        <div role="status" aria-live="polite" aria-atomic="true" className="h-6 shrink-0 px-3 md:px-4 flex items-center gap-2">
+        {typingText && <>
+          <span aria-hidden="true" className="flex gap-0.5 motion-reduce:[&>span]:animate-none">
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:0ms]" />
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:150ms]" />
             <span className="w-1 h-1 rounded-full bg-primary/50 animate-bounce [animation-delay:300ms]" />
           </span>
-          <span className="text-[11px] text-muted-foreground">{typingText}…</span>
+          <span className="text-xs text-slate-300 truncate">{typingText}…</span>
+        </>}
         </div>
-      )}
 
       {/* Composer */}
       {isMuted ? (
@@ -2043,7 +2068,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </p>
         </div>
       ) : canPost ? (
-        <div className="border-t border-white/[0.06] bg-card px-3 md:px-4 pt-1.5 md:pt-2 pb-1 md:pb-3">
+        <div className="community-composer-footer shrink-0 border-t border-white/[0.06] bg-card px-3 md:px-4 pt-1.5 md:pt-2 pb-1 md:pb-3">
           {roomSlug === "daily-setups" && (
             <SignalPostForm onSubmit={handleSend} sending={sending} roomSlug={roomSlug} />
           )}
@@ -2052,9 +2077,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           ) : (
             <div data-chat-composer-stack className="relative space-y-1.5">
               {/* Template chips */}
-              <div data-chat-quick-actions className="flex items-center justify-between gap-1 px-0.5">
+              <div data-chat-quick-actions className="community-composer-shortcuts flex items-center justify-between gap-1 px-0.5">
                 {[
-                  { label: "Log Trade", emojiSrc: logTradeEmoji, action: () => navigate("/academy/trade") },
+                  { label: "Daily risk", emojiSrc: logTradeEmoji, action: () => navigate("/academy/trade") },
                   { label: "Ask Question", emojiSrc: askQuestionEmoji, action: () => window.dispatchEvent(new CustomEvent("toggle-coach-drawer")) },
                   { label: "Share Win", emojiSrc: shareWinEmoji, action: () => onSwitchTab?.("wins") },
                 ].map((chip) => (
@@ -2072,7 +2097,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
               {/* Reply preview bar */}
               {replyingTo && (
-                 <div className="flex items-center gap-2 rounded-xl border-l-2 border-l-primary bg-white/[0.04] px-3 py-1.5">
+                 <div className="community-reply-preview flex items-center gap-2 rounded-xl border-l-2 border-l-primary bg-white/[0.04] px-3 py-1.5">
                   <div className="flex-1 min-w-0">
                     <span className="text-[11px] font-semibold text-primary">Replying to {replyingTo.user_name}</span>
                     <p className="text-[11px] text-muted-foreground truncate">{truncateText(replyingTo.body, 80, "")}</p>
@@ -2080,6 +2105,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <button
                     type="button"
                     onClick={() => setReplyingTo(null)}
+                    aria-label="Cancel reply"
                     className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -2147,7 +2173,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   "border-white/[0.08]"
                 )}
               >
-                <div className="flex min-w-0 items-end gap-2 px-3 py-1.5">
+                <div className="community-composer-grid flex min-w-0 items-end gap-2 px-3 py-1.5">
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -2158,7 +2184,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   />
 
                   {/* Left icon row */}
-                  <div className="flex items-center gap-0.5 pb-0.5">
+                  <div className="community-composer-tools flex items-center gap-0.5 pb-0.5">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
@@ -2179,8 +2205,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     onChange={handleDraftChange}
                     onKeyDown={handleKeyDown}
                     onFocus={() => setIsComposerFocused(true)}
-                    onBlur={() => setIsComposerFocused(false)}
+                    onBlur={() => { setIsComposerFocused(false); stopTyping(); }}
                     placeholder="Type a message…"
+                    aria-label="Message this room"
                     maxLength={1000}
                     disabled={sending}
                     rows={1}
@@ -2191,6 +2218,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <button
                     type="button"
                     onClick={() => handleSend()}
+                    aria-label={sending ? "Sending message" : "Send message"}
                     disabled={(!draft.trim() && !uploading) || sending}
                     className={cn(
                       "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-100",

@@ -1,143 +1,43 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Search } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
-
-interface GifResult {
-  id: string;
-  title: string;
-  url: string;
-  preview_url: string;
-  width: number;
-  height: number;
-}
-
-interface GifPickerProps {
-  onSelect: (gifUrl: string) => void;
-}
-
-export function GifPicker({ onSelect }: GifPickerProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [gifs, setGifs] = useState<GifResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const fetchGifs = useCallback(async (query?: string) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("giphy-search", {
-        body: query ? { q: query, type: "search" } : { type: "trending" },
-      });
-      if (error) throw error;
-      setGifs(data?.gifs ?? []);
-    } catch (e) {
-      console.error("[GifPicker] fetch error:", e);
-      setGifs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch trending on open
-  useEffect(() => {
-    if (open) {
-      setSearch("");
-      fetchGifs();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  // Debounced search — only fires when search changes (not on open)
-  useEffect(() => {
-    if (!open || search === "") return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      fetchGifs(search.trim() || undefined);
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
-  const handleSelect = useCallback(
-    (gif: GifResult) => {
-      onSelect(gif.url);
-      setOpen(false);
-    },
-    [onSelect]
-  );
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="px-1.5 py-1 rounded-lg text-[10px] font-bold tracking-wide text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-colors leading-none"
-          title="GIF"
-        >
-          GIF
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="start"
-        className="w-[320px] p-0 bg-[hsl(215,25%,10%)] border-[hsl(217,30%,18%)] shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
-      >
-        {/* Search */}
-        <div className="flex items-center gap-2 px-2.5 py-2 border-b border-white/[0.06]">
-          <Search className="h-3.5 w-3.5 text-white/30 shrink-0" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search GIFs…"
-            className="flex-1 bg-transparent text-xs text-white placeholder:text-white/30 outline-none"
-            autoFocus
-          />
-        </div>
-
-        {/* Grid */}
-        <div className="p-1.5 max-h-[280px] overflow-y-auto">
-          {loading ? (
-            <div className="grid grid-cols-2 gap-1.5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Skeleton key={i} className="w-full h-[100px] rounded-md bg-white/[0.06]" />
-              ))}
-            </div>
-          ) : gifs.length === 0 ? (
-            <p className="text-[11px] text-white/30 text-center py-6">
-              {search ? "No GIFs found" : "No trending GIFs"}
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 gap-1.5">
-              {gifs.map((gif) => (
-                <button
-                  key={gif.id}
-                  type="button"
-                  onClick={() => handleSelect(gif)}
-                  className="rounded-md overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer"
-                  title={gif.title}
-                >
-                  <img
-                    src={gif.preview_url}
-                    alt={gif.title}
-                    className="w-full h-auto object-cover"
-                    loading="lazy"
-                    style={{ minHeight: 60 }}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* GIPHY attribution */}
-        <div className="px-2.5 py-1.5 border-t border-white/[0.06] flex justify-end">
-          <span className="text-[9px] text-white/20">Powered by GIPHY</span>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+import {useState,useEffect,useRef} from 'react';
+import {Popover,PopoverContent,PopoverTrigger} from '@/components/ui/popover';
+import {Search,X,RefreshCw} from 'lucide-react';
+import {Skeleton} from '@/components/ui/skeleton';
+import {supabase} from '@/integrations/supabase/client';
+import './gif-picker.css';
+interface GifResult {id:string;title:string;url:string;preview_url:string;}
+export function GifPicker({onSelect}:{onSelect:(url:string)=>void}){
+ const cache=useRef(new Map<string,{time:number;gifs:GifResult[]}>());
+ const [open,setOpen]=useState(false),[search,setSearch]=useState(''),[gifs,setGifs]=useState<GifResult[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(false),[retry,setRetry]=useState(0);
+ useEffect(()=>{
+  if(!open)return;
+  const q=search.trim();
+  const cached=cache.current.get(q);
+  if(cached && Date.now()-cached.time<5*60*1000){setGifs(cached.gifs);setLoading(false);setError(false);return;}
+  let current=true;setLoading(true);setError(false);
+  const controller=new AbortController();
+  let deadline:ReturnType<typeof setTimeout>;
+  const timer=setTimeout(async()=>{try{
+   const {data,error:failure}=await Promise.race([
+    supabase.functions.invoke('giphy-search',{body:q?{q,type:'search'}:{type:'trending'},signal:controller.signal}),
+    new Promise<never>((_,reject)=>{deadline=setTimeout(()=>{controller.abort();reject(new Error('GIF request timed out'));},10000);}),
+   ]);
+   if(failure)throw failure;
+   const results=Array.isArray(data?.gifs)?data.gifs.filter((g:GifResult)=>g.url&&g.preview_url):[];
+   if(current){
+    if(cache.current.size>=20)cache.current.delete(cache.current.keys().next().value!);
+    cache.current.set(q,{time:Date.now(),gifs:results});setGifs(results);
+   }
+  }catch{if(current){setError(true);setGifs([]);}}finally{clearTimeout(deadline);if(current)setLoading(false);}},q?200:0);
+  return()=>{current=false;clearTimeout(timer);clearTimeout(deadline);controller.abort();};
+ },[open,search,retry]);
+ return <Popover open={open} onOpenChange={v=>{setOpen(v);if(v)setSearch('');}}>
+  <PopoverTrigger asChild><button type="button" className="vault-gif-trigger" title="GIF" aria-label="Choose a GIF">GIF</button></PopoverTrigger>
+  <PopoverContent side="top" align="start" sideOffset={10} collisionPadding={12} className="vault-gif-picker" aria-label="GIF picker" onOpenAutoFocus={e=>e.preventDefault()}>
+   <header className="vg-header"><div><h3>Find your reaction</h3><span>Search GIFs from GIPHY</span></div><button type="button" aria-label="Close GIF picker" onClick={()=>setOpen(false)}><X size={20}/></button></header>
+   <div className="vg-search"><Search size={19}/><input aria-label="Search GIFs" placeholder="Search a mood or reaction…" value={search} maxLength={120} onChange={e=>setSearch(e.target.value)}/>{search&&<button type="button" aria-label="Clear GIF search" onClick={()=>setSearch('')}><X size={18}/></button>}</div>
+   <div className="vg-results" aria-busy={loading}><div className="vg-label">{search.trim()?'Search results':'Trending now'}</div>
+    {loading?<div className="vg-grid">{Array.from({length:6},(_,i)=><Skeleton key={i} className="vg-tile"/>)}</div>:error?<div className="vg-empty" role="status"><strong>GIFs couldn’t load.</strong><p>Your message is still here. Try again.</p><button type="button" onClick={()=>setRetry(v=>v+1)}><RefreshCw size={16}/> Try again</button></div>:gifs.length===0?<div className="vg-empty" role="status"><strong>No GIFs found.</strong><p>Try another word, like “celebrate”.</p></div>:<div className="vg-grid">{gifs.map(g=><button className="vg-tile" key={g.id} type="button" aria-label={`Send ${g.title||'GIF'}`} onClick={()=>{onSelect(g.url);setOpen(false);}}><img src={g.preview_url} alt={g.title||'GIF'} loading="lazy"/></button>)}</div>}
+   </div><footer><span>Tap a GIF to send</span><span>Powered by <strong>GIPHY</strong></span></footer>
+  </PopoverContent>
+ </Popover>;
 }

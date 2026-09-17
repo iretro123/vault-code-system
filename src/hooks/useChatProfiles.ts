@@ -48,13 +48,17 @@ export function useChatProfiles() {
     missing.forEach((id) => globalFetchedIds.add(id));
 
     // Fetch profiles via security-definer function (non-PII only) + roles in parallel
-    const [{ data }, { data: roleData }] = await Promise.all([
-      supabase.rpc("get_community_profiles", { _user_ids: missing }),
+    const [{ data, error }, { data: roleData }] = await Promise.all([
+      supabase.rpc("get_community_profiles", { _user_ids: missing }, { get: true }),
       supabase
         .from("academy_user_roles")
         .select("user_id, academy_roles(name)")
         .in("user_id", missing),
     ]);
+    if (error) {
+      missing.forEach((id) => globalFetchedIds.delete(id));
+      return;
+    }
 
     const roleMap = new Map<string, string>();
     if (roleData) {

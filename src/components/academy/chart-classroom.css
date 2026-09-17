@@ -1,0 +1,38 @@
+.chart-classroom { margin: 42px 0 20px; border-top: 1px solid #3a424f; padding-top: 30px; }
+.chart-classroom header h2 { color: #f3f5fa; font-size: clamp(25px,3vw,34px); line-height: 1.2; letter-spacing: -.035em; font-weight: 600; margin: 10px 0; }
+.chart-classroom header > p:last-child { color: #b3bfd2; font-size: 16px; line-height: 1.6; margin-bottom: 22px; max-width: 590px; }
+.classroom-stage { background: #111b2b; border: 1px solid #425574; border-radius: 16px; overflow: hidden; box-shadow: 0 18px 36px #0005, 0 2px 0 #6a88b52b inset; }
+.classroom-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #7b95be26; }
+.classroom-toolbar > span { font-size: 12px; letter-spacing: .12em; color: #dce8fa; }
+.classroom-toolbar small { display: block; margin-top: 5px; font-size: 12px; color: #9baec9; letter-spacing: 0; }
+.classroom-toolbar button { min-height: 44px; color: #c8d8f6; gap: 8px; }
+.classroom-chart-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+.classroom-svg { display: block; width: 100%; min-width: 680px; }
+.classroom-region { cursor: pointer; outline: none; }
+.classroom-region:focus-visible rect, .classroom-region:hover rect { stroke-width: 3px; fill-opacity: .22; }
+.classroom-choices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-top: 1px solid #7b95be26; }
+.classroom-choices button { display: flex; align-items: center; gap: 12px; padding: 20px; text-align: left; min-height: 68px; color: #e8edf7; transition: background .2s, box-shadow .2s; }
+.classroom-choices button + button { border-left: 1px solid #7b95be26; }
+.classroom-choices button:hover { background: #a6bcff0c; box-shadow: inset 0 -3px var(--topic-color); }
+.classroom-choices button:focus-visible { outline: 2px solid var(--topic-color); outline-offset: -3px; }
+.classroom-choices span { color: var(--topic-color); font-size: 14px; }
+.classroom-choices strong { font-size: 16px; font-weight: 500; }
+.classroom-choices svg { color: var(--topic-color); margin-left: auto; }
+.classroom-caption { font-size: 12px; line-height: 1.6; color: #97a7c0; margin-top: 12px; }
+.classroom-mobile-hint { display: none; font-size: 12px; color: #9cafcd; padding: 0 16px 12px; }
+.classroom-dialog { width: calc(100vw - 28px); max-width: 1060px; max-height: 92dvh; overflow-y: auto; background: #121c2d; border-color: #506484; color: #ecf2fc; border-radius: 16px; gap: 12px; }
+.classroom-dialog > h2 { font-size: 25px; padding-right: 24px; }
+.classroom-dialog > p { color: #9fb0cb; font-size: 14px; line-height: 1.5; }
+.classroom-detail-controls { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.classroom-detail-controls > div { display: flex; flex-wrap: wrap; }
+.classroom-detail-controls button { min-height: 44px; gap: 8px; color: #c5d5f0; }
+.classroom-detail-controls button[aria-pressed=true] { background: #30435f; color: #fff; }
+.classroom-detail-chart { background: #0c1523; border: 1px solid #344761; border-radius: 10px; }
+.classroom-detail-chart .classroom-svg { min-width: 520px; max-height: 350px; }
+.classroom-explanation { border-left: 3px solid var(--topic-color); padding: 5px 0 5px 18px; }
+.classroom-explanation h3 { font-size: 20px; line-height: 1.4; font-weight: 500; }
+.classroom-explanation p { font-size: 16px; color: #becce0; line-height: 1.65; margin-top: 9px; }
+.classroom-explanation .classroom-look { color: var(--topic-color); }
+.classroom-explanation small { display: block; color: #9aadc8; font-size: 13px; line-height: 1.6; margin-top: 12px; }
+@media(max-width:700px) { .classroom-mobile-hint { display: block; } .classroom-toolbar { padding: 12px; flex-wrap: wrap; } .classroom-choices button { flex-wrap: wrap; padding: 14px 10px; gap: 6px; } .classroom-choices strong { width: 100%; font-size: 14px; } .classroom-choices svg { display: none; } .classroom-dialog { padding: 20px 14px; } .classroom-detail-controls button { padding: 8px 10px; font-size: 13px; } }
+@media(prefers-reduced-motion:reduce) { .classroom-choices button { transition: none; } }

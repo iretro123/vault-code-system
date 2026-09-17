@@ -32,6 +32,7 @@ interface SignalCardProps {
   chartImageUrl?: string;
   userName: string;
   userRole: string;
+  avatarUrl?: string | null;
   createdAt: string;
   onImageClick?: (src: string) => void;
 }
@@ -52,8 +53,7 @@ function TvLinkButton({ url }: { url: string }) {
     >
       <BarChart3 className="h-3.5 w-3.5 text-sky-400 shrink-0" />
       <div className="flex-1 min-w-0">
-        <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-wide">TradingView</span>
-        <p className="text-[10px] text-foreground/40 truncate">{url}</p>
+        <span className="text-sm font-semibold text-sky-300">Open chart on TradingView</span>
       </div>
       <ExternalLink className="h-3 w-3 text-foreground/25 group-hover:text-sky-400 transition-colors shrink-0" />
     </a>
@@ -65,16 +65,17 @@ export const SignalCard = React.memo(function SignalCard({
   chartImageUrl,
   userName,
   userRole,
+  avatarUrl,
   createdAt,
   onImageClick,
 }: SignalCardProps) {
   if (signal.type === "signal-watchlist") {
-    return <WatchlistCard signal={signal} chartImageUrl={chartImageUrl} userName={userName} userRole={userRole} createdAt={createdAt} onImageClick={onImageClick} />;
+    return <WatchlistCard signal={signal} chartImageUrl={chartImageUrl} userName={userName} userRole={userRole} avatarUrl={avatarUrl} createdAt={createdAt} onImageClick={onImageClick} />;
   }
-  return <LiveSignalCard signal={signal} chartImageUrl={chartImageUrl} userName={userName} userRole={userRole} createdAt={createdAt} onImageClick={onImageClick} />;
+  return <LiveSignalCard signal={signal} chartImageUrl={chartImageUrl} userName={userName} userRole={userRole} avatarUrl={avatarUrl} createdAt={createdAt} onImageClick={onImageClick} />;
 });
 
-function WatchlistCard({ signal, chartImageUrl, userName, userRole, createdAt, onImageClick }: { signal: SignalWatchlistData } & Omit<SignalCardProps, "signal">) {
+function WatchlistCard({ signal, chartImageUrl, userName, userRole, avatarUrl, createdAt, onImageClick }: { signal: SignalWatchlistData } & Omit<SignalCardProps, "signal">) {
   const bias = BIAS_CONFIG[signal.bias] || BIAS_CONFIG.neutral;
   const BiasIcon = bias.icon;
 
@@ -122,7 +123,7 @@ function WatchlistCard({ signal, chartImageUrl, userName, userRole, createdAt, o
       {/* Author */}
       <div className="h-px bg-white/[0.06]" />
       <div className="flex items-center gap-2 px-4 py-2.5">
-        <ChatAvatar userName={userName} size="h-5 w-5" />
+        <ChatAvatar avatarUrl={avatarUrl} userName={userName} size="h-7 w-7" />
         <span className="text-[11px] font-medium text-foreground/70">{userName}</span>
         <AcademyRoleBadge roleName={userRole} />
         <span className="text-[10px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>
@@ -131,7 +132,7 @@ function WatchlistCard({ signal, chartImageUrl, userName, userRole, createdAt, o
   );
 }
 
-function LiveSignalCard({ signal, chartImageUrl, userName, userRole, createdAt, onImageClick }: { signal: SignalLiveData } & Omit<SignalCardProps, "signal">) {
+function LiveSignalCard({ signal, chartImageUrl, userName, userRole, avatarUrl, createdAt, onImageClick }: { signal: SignalLiveData } & Omit<SignalCardProps, "signal">) {
   const isCalls = signal.direction === "calls";
 
   return (
@@ -164,13 +165,13 @@ function LiveSignalCard({ signal, chartImageUrl, userName, userRole, createdAt, 
       <div className="flex items-center gap-4 px-4 py-2.5 bg-white/[0.02]">
         {signal.exp && (
           <div>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">Exp</span>
+            <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Expiration</span>
             <p className="text-[13px] text-foreground font-semibold">{signal.exp}</p>
           </div>
         )}
         {signal.fill && (
           <div>
-            <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">Fill</span>
+            <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Posted fill</span>
             <p className="text-[13px] text-foreground font-semibold">${signal.fill}</p>
           </div>
         )}
@@ -194,7 +195,7 @@ function LiveSignalCard({ signal, chartImageUrl, userName, userRole, createdAt, 
       {/* Author */}
       <div className="h-px bg-white/[0.06]" />
       <div className="flex items-center gap-2 px-4 py-2.5">
-        <ChatAvatar userName={userName} size="h-5 w-5" />
+        <ChatAvatar avatarUrl={avatarUrl} userName={userName} size="h-7 w-7" />
         <span className="text-[11px] font-medium text-foreground/70">{userName}</span>
         <AcademyRoleBadge roleName={userRole} />
         <span className="text-[10px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>

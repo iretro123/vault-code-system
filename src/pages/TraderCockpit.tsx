@@ -90,7 +90,7 @@ function CockpitContent() {
             onToggle={async () => {
               if (!user) return;
               const newPaused = !vaultState.session_paused;
-              const updates: Record<string, any> = { session_paused: newPaused };
+              const updates: import("@/integrations/supabase/types").TablesUpdate<"vault_state"> = { session_paused: newPaused };
               // Stamp activity time when activating session
               if (!newPaused) {
                 updates.last_activity_at = new Date().toISOString();

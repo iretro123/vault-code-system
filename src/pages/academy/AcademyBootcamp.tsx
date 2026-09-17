@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { safeBack } from "@/lib/safeBack";
 import vaultVLogo from "@/assets/vault-v-logo.png";
 
 export const VAULT_BOOTCAMP_URL = "https://vaulttradingacademy.com/optin-6";
@@ -17,11 +18,7 @@ export default function AcademyBootcamp() {
   const navigate = useNavigate();
   const openBootcamp = () => openExternalUrl(VAULT_BOOTCAMP_URL);
   const goBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-    navigate("/academy/community?tab=trade-floor", { replace: true });
+    safeBack(navigate, "/academy/community?tab=trade-floor");
   };
 
   return (

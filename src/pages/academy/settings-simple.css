@@ -1,0 +1,47 @@
+.vs-mobile-picker{display:none}
+.vs-mobile-picker .vs-section-trigger{height:50px;background:#171d27;border:1px solid #ffffff16;border-radius:11px;padding:0 16px;box-shadow:0 3px 12px #00000012;transition:border-color .15s,background .15s}
+.vs-mobile-picker .vs-section-trigger:hover,.vs-mobile-picker .vs-section-trigger[data-state=open]{background:#1d2532;border-color:#6d83a7}
+.vs-picker-value{display:flex!important;align-items:center;gap:11px;color:#e2eaf7;font-size:15px;font-weight:500}
+.vs-picker-value>svg{color:#a7bfeb;flex-shrink:0}
+.vs-picker-value .vs-option-label>svg{display:none}
+.vs-section-trigger>svg{opacity:1;color:#a3b4cc}
+.vs-section-menu{width:var(--radix-select-trigger-width);max-height:min(440px,var(--radix-select-content-available-height));background:#1a212d;color:#dbe5f5;border:1px solid #46536a;border-radius:13px;padding:5px;box-shadow:0 20px 60px #0009,0 2px 6px #0004}
+.vs-section-menu .vs-section-option{min-height:46px;border-radius:8px;padding:11px 38px 11px 12px;margin:2px 0;cursor:pointer;font-size:15px}
+.vs-section-option>span:first-child{left:auto;right:12px;color:#bcd0f8}
+.vs-option-label{display:flex;align-items:center;gap:12px;line-height:1.4}
+.vs-option-label>svg{color:#93a6c3;stroke-width:1.6;flex-shrink:0}
+.vs-section-option[data-state=checked]{background:#2d3b52;color:#f0f5ff}
+.vs-section-option[data-highlighted]{background:#35445c;color:#fff}
+.vs-section-option[data-state=checked] .vs-option-label>svg{color:#bed3fa}
+.vault-settings{max-width:1120px;background:transparent}
+.vs-navigation{background:transparent;padding-top:24px}
+.vs-main{padding-top:24px}
+.vs-page-heading{border:0;padding:0;margin-bottom:12px}
+.vs-page-heading h1{margin:0;font-size:26px}
+.vs-local-note{margin:0 0 28px;color:#8f9eb4}
+.vs-panels{max-width:720px}
+.vs-panels .vault-card{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:0!important}
+.vs-panels .vault-card+.vault-card{padding-top:24px!important;border-top:1px solid #ffffff14!important;margin-top:24px}
+.vs-panels>section>.vault-card>div:first-child>h3,.vs-panels>section>div>.vault-card:first-child>div:first-child>h3{display:none}
+.vs-panels p[class*="text-[10px]"],.vs-panels p[class*="text-[11px]"],.vs-panels span[class*="text-[9px]"],.vs-panels span[class*="text-[11px]"]{font-size:14px;line-height:1.5;color:#aab8cc}
+.vs-panels button:not([role=switch]):not([aria-label^="Avatar"]){min-height:44px}
+.vs-panels [role=switch]{flex-shrink:0}
+.vs-panels [role=switch]:focus-visible{outline:2px solid #b4caff;outline-offset:4px}
+.vs-panels [data-state=checked][role=switch]{background:#6e90e6}
+.vs-panels .space-y-4>div:has(>[role=switch]){padding:14px 0;border-bottom:1px solid #ffffff0d;margin:0}
+.vs-panels .grid-cols-3:has(>button[aria-pressed]){grid-template-columns:1fr}
+.vs-panels button[aria-pressed]{flex-direction:row;text-align:left;gap:12px;border-radius:8px}
+.vs-panels button[aria-pressed] span:last-child{margin-left:auto;max-width:55%}
+.vault-settings[data-section=help] .vs-panels .vault-card>div:first-child{display:none}
+.vault-settings[data-section=help] .vs-panels button,.vault-settings[data-section=help] .vs-panels a{min-height:64px;background:transparent;border:0;border-bottom:1px solid #ffffff1a;border-radius:0;font-size:16px;box-shadow:none;padding:16px 4px}
+.vault-settings[data-section=help] .vs-panels button:hover,.vault-settings[data-section=help] .vs-panels a:hover{background:#ffffff06}
+@media(max-width:767px){
+ .vs-navigation{padding:16px 17px;border:0}
+ .vs-navigation .vs-back,.vs-navigation .vs-search,.vs-navigation nav,.vs-navigation .vs-nav-title{display:none}
+ .vs-mobile-picker{display:block}
+ .vs-mobile-picker>button{width:100%;min-height:48px;background:#1b2534;border-color:#3c4c65;font-size:16px;border-radius:9px}
+ .vs-main,.vault-settings[data-section=profile] .vs-main{padding:10px 17px 100px}
+ .vs-local-note{margin-bottom:22px;font-size:12px}
+ .vs-panels .vault-card{padding:0!important}
+ .vs-panels button[aria-pressed] span:last-child{font-size:12px}
+}

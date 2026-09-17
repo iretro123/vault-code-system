@@ -1,13 +1,97 @@
 import XCTest
 import StoreKitTest
 
+// Launch checks: optional environment-supplied sign-in; no messages or purchases.
+final class VaultOSLaunchAuditTests: XCTestCase {
+    func testAuthenticatedNavigation() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
+        XCUIDevice.shared.orientation = .portrait
+        app.launch()
+        if !app.buttons["Chat"].waitForExistence(timeout: 3) {
+            openSignIn(app)
+            let email = app.textFields["Email"].firstMatch
+            XCTAssertTrue(email.waitForExistence(timeout: 20))
+            let env = ProcessInfo.processInfo.environment
+            let login = try XCTUnwrap(env["VAULT_AUDIT_EMAIL"])
+            let secret = try XCTUnwrap(env["VAULT_AUDIT_PASSWORD"])
+            email.tap()
+            email.typeText(login)
+            app.secureTextFields["Password"].firstMatch.tap()
+            app.secureTextFields["Password"].firstMatch.typeText(secret)
+            app.buttons["Sign In"].firstMatch.tap()
+        }
+        XCTAssertTrue(app.buttons["Chat"].waitForExistence(timeout: 40), "Authenticated navigation must load")
+        capture(app, "10-authenticated-home")
+        for tab in ["Chat", "Learn", "Home"] {
+            app.buttons[tab].firstMatch.tap()
+            XCTAssertTrue(app.buttons["Menu"].firstMatch.waitForExistence(timeout: 15))
+            capture(app, "11-tab-\(tab)")
+        }
+        app.buttons["Menu"].firstMatch.tap()
+        capture(app, "12-navigation-drawer")
+        let live = app.links.containing(NSPredicate(format: "label == 'Live' OR label == 'Vault Live'")).firstMatch
+        XCTAssertTrue(live.waitForExistence(timeout: 10))
+        live.tap()
+        capture(app, "13-native-live")
+        XCTAssertTrue(app.buttons["Home"].firstMatch.isHittable)
+        app.buttons["Home"].firstMatch.tap()
+    }
+
+    func testSignedOutKeyboardRecoveryAndRotation() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
+        XCUIDevice.shared.orientation = .portrait
+        app.launch()
+        let email = app.textFields["Email"].firstMatch
+        openSignIn(app)
+        XCTAssertTrue(email.waitForExistence(timeout: 30), "Native app must reach sign-in")
+        capture(app, "01-native-sign-in")
+        email.tap()
+        email.typeText("qa@example.invalid")
+        let password = app.secureTextFields["Password"].firstMatch
+        password.tap()
+        password.typeText("NotARealPassword")
+        capture(app, "02-native-keyboard")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        capture(app, "03-native-landscape-keyboard")
+        XCUIDevice.shared.orientation = .portrait
+        app.terminate()
+        app.launch()
+        openSignIn(app)
+        XCTAssertTrue(email.waitForExistence(timeout: 20))
+        let forgot = app.buttons["Forgot password?"].firstMatch
+        XCTAssertTrue(forgot.waitForExistence(timeout: 10))
+        forgot.tap()
+        let back = app.buttons["Back to sign in"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 10))
+        capture(app, "04-native-recovery")
+        back.tap()
+        XCTAssertTrue(app.buttons["Sign In"].firstMatch.waitForExistence(timeout: 10))
+        capture(app, "05-native-recovery-return")
+    }
+
+    private func capture(_ app: XCUIApplication, _ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func openSignIn(_ app: XCUIApplication) {
+        if app.textFields["Email"].firstMatch.waitForExistence(timeout: 3) { return }
+        let login = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'Log in to your account'")).firstMatch
+        if login.waitForExistence(timeout: 10) { login.tap() }
+    }
+}
+
 final class VaultOSPurchaseUITests: XCTestCase {
     private let bundleId = "com.vaulttradingacademy.vaultos"
     private let productId = "com.vaulttradingacademy.vaultos.fullaccess.monthly99v2"
-    private let email = "appreview+1778972025@vault.dev"
-    private let password = "VaultOSReview2026!"
-    private let basicTestEmail = ProcessInfo.processInfo.environment["VAULTOS_BASIC_TEST_EMAIL"] ?? "codex-basic-signals-1784988264767@vault.dev"
-    private let basicTestPassword = ProcessInfo.processInfo.environment["VAULTOS_BASIC_TEST_PASSWORD"] ?? "VaultOSBasic2026!"
+    private let email = ProcessInfo.processInfo.environment["VAULTOS_REVIEW_EMAIL"] ?? ""
+    private let password = ProcessInfo.processInfo.environment["VAULTOS_REVIEW_PASSWORD"] ?? ""
+    private let basicTestEmail = ProcessInfo.processInfo.environment["VAULTOS_BASIC_TEST_EMAIL"] ?? ""
+    private let basicTestPassword = ProcessInfo.processInfo.environment["VAULTOS_BASIC_TEST_PASSWORD"] ?? ""
     private let sandboxAppleId = ProcessInfo.processInfo.environment["VAULTOS_SANDBOX_APPLE_ID"] ?? ""
     private let sandboxPassword = ProcessInfo.processInfo.environment["VAULTOS_SANDBOX_APPLE_PASSWORD"] ?? ""
     private var storeKitSession: SKTestSession?

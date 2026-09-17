@@ -1,0 +1,14 @@
+.vault-profile-card.member-profile-upgraded{width:340px;max-width:calc(100vw - 32px);max-height:min(650px,calc(100dvh - 120px),var(--radix-popover-content-available-height,650px));overflow-y:auto;background:#252b36;border:1px solid #ffffff1c;border-radius:20px;box-shadow:0 18px 60px #0006;scrollbar-width:thin}
+.member-profile-upgraded>div:first-child{height:92px}
+.member-profile-upgraded>div:first-child>button{width:36px;height:36px}
+.member-profile-upgraded h3{font-size:23px;line-height:1.25;font-weight:650;overflow-wrap:anywhere}
+.member-profile-upgraded h3+p{font-size:13px;color:#afbed3;margin-top:5px}
+.member-profile-upgraded .member-profile-bio{font-size:15px;line-height:1.55;color:#d8e2f0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:140px;overflow:auto}
+.member-profile-upgraded .vault-profile-avatar-ring{box-shadow:0 0 0 2px #a0b8ee45;background:linear-gradient(140deg,#96c3ff,#b69cde)}
+.member-profile-upgraded .member-profile-message{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:44px;border-radius:10px;background:#b3c9ed;color:#14243e;font-size:14px;font-weight:600}
+.member-profile-message:hover{filter:brightness(1.08)}
+.member-profile-progress{padding:12px;border:1px solid #b4bbff20;background:linear-gradient(120deg,#a6a0ff16,#81d0e808);border-radius:12px}
+.member-profile-progress>div{display:flex;align-items:center;gap:7px}.member-profile-progress strong{font-size:12px;color:#e0e8f7;font-weight:550;flex:1}.member-profile-progress span,.member-profile-progress small{font-size:11px;color:#afc0d9}.member-profile-progress small{display:block;margin-top:6px}
+.member-profile-progress progress{display:block;width:100%;height:5px;border:0;margin-top:9px;background:#414c60;accent-color:#b3b5fb;border-radius:9px}.member-profile-progress progress::-webkit-progress-bar{background:#414c60;border-radius:9px}.member-profile-progress progress::-webkit-progress-value{background:linear-gradient(90deg,#95c5ff,#c0a3ed);border-radius:9px}
+.member-profile-socials{display:grid;gap:7px}.member-profile-social{display:flex;align-items:center;gap:10px;min-height:48px;border-radius:10px;background:#ffffff06;border:1px solid #ffffff0b;padding:9px 11px;color:#d2dff4}.member-profile-social:hover{background:#ffffff0c}.member-profile-social>span{flex:1;min-width:0}.member-profile-social small{display:block;font-size:11px;color:#aabbd3}.member-profile-social strong{display:block;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.member-profile-upgraded a:focus-visible,.member-profile-upgraded button:focus-visible{outline:2px solid #afcaff;outline-offset:2px}

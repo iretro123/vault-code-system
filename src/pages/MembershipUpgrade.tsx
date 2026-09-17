@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import { safeBack } from "@/lib/safeBack";
 import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -65,12 +66,7 @@ const MembershipUpgrade = () => {
     : `${displayPrice} per month`;
 
   function handleBack() {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-
-    navigate("/academy/learn", { replace: true });
+    safeBack(navigate, "/academy/learn");
   }
 
   async function loadProducts(showToastOnFailure = true) {

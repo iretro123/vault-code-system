@@ -27,6 +27,7 @@ import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { BASIC_UPGRADE_BANNER_DISMISSED_KEY, VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 import { isNativeAndroidApp } from "@/lib/platform";
+import './academy-scroll.css';
 
 const ambientBgStyle = {
   background: [
@@ -278,7 +279,7 @@ function AcademyLayoutInner() {
           <div className="flex h-14 items-center justify-between px-4">
             <div className="flex items-center gap-2">
               {isMobile && isCommunity && (
-                <Button variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setOpenMobile(true)}>
+                <Button aria-label="Open navigation menu" variant="ghost" size="icon" className="-ml-2 mr-1 h-8 w-8" onClick={() => setOpenMobile(true)}>
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
               )}
@@ -294,10 +295,12 @@ function AcademyLayoutInner() {
           </div>
         </header>
 
-        <main className={`academy-main-safe academy-content-safe flex-1 min-h-0 overflow-y-auto overflow-x-hidden animate-fade-in ${isCommunity ? "pb-4" : "pb-4 md:pb-6"}`}>
-          {showPastDueBanner && <PastDueBanner />}
-          <NotificationOptInBanner />
-          <Outlet />
+        <main className={`academy-main-safe academy-content-safe flex-1 min-h-0 overflow-x-hidden animate-fade-in ${isCommunity ? "flex flex-col overflow-y-hidden pb-0" : "overflow-y-auto pb-4 md:pb-6"}`}>
+          <div className="shrink-0">
+            {showPastDueBanner && <PastDueBanner />}
+            <NotificationOptInBanner />
+          </div>
+          {isCommunity ? <div className="flex-1 min-h-0 overflow-hidden"><Outlet /></div> : <Outlet />}
         </main>
 
         <CoachDrawer />

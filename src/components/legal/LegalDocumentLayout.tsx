@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { safeBack } from "@/lib/safeBack";
 
 type LegalDocumentLayoutProps = {
   title: string;
@@ -32,7 +33,7 @@ export function LegalDocumentLayout({ title, updatedOn, children }: LegalDocumen
           type="button"
           variant="ghost"
           className="mb-5 -ml-2 gap-2 rounded-xl text-muted-foreground hover:text-foreground"
-          onClick={() => navigate(-1)}
+          onClick={() => safeBack(navigate, "/academy/home")}
         >
           <ArrowLeft className="h-4 w-4" />
           Back
