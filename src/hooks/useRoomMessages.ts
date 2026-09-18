@@ -34,6 +34,9 @@ interface Message {
 
 const PAGE_SIZE = 40;
 const DEFERRED_ROOM_SLUG = "__deferred__";
+// A stalled network request must never leave the room in a permanent skeleton.
+export const ROOM_LOAD_TIMEOUT_MS = 12000;
+
 
 // ── Global message cache per room (survives remounts) ──
 const roomMessageCache = new Map<string, Message[]>();
@@ -87,36 +90,55 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
     }
 
     if (!cachedRef.current) setLoading(true);
+    setError(null);
 
-    const { data, error: err } = await supabase
-      .from("academy_messages")
-      .select("*")
-      .eq("room_slug", roomSlug)
-      .is("parent_message_id", null)
-      .eq("is_deleted", false)
-      .order("created_at", { ascending: false })
-      .limit(PAGE_SIZE);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const request = supabase
+        .from("academy_messages")
+        .select("*")
+        .eq("room_slug", roomSlug)
+        .is("parent_message_id", null)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
 
-    if (err) {
-      setError(err.message);
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("Messages took too long to load.")),
+          ROOM_LOAD_TIMEOUT_MS
+        );
+      });
+
+      const { data, error: err } = (await Promise.race([
+        request as unknown as Promise<{ data: any[] | null; error: { message: string } | null }>,
+        timeout,
+      ])) as { data: any[] | null; error: { message: string } | null };
+
+      if (err) throw new Error(err.message);
+
+      const sorted = castMessages(data ?? []).reverse();
+      setError(null);
+      // Diff by IDs — skip update if identical to prevent unnecessary re-render
+      setMessages((prev) => {
+        const same = prev.length === sorted.length && prev.every((m, i) => m.id === sorted[i].id && m.edit_count === sorted[i].edit_count && m.is_deleted === sorted[i].is_deleted);
+        if (same) return prev;
+        roomMessageCache.set(roomSlug, sorted);
+        return sorted;
+      });
+      setHasMore((data?.length ?? 0) >= PAGE_SIZE);
+      oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
+    } catch (loadError) {
+      // Surface a retryable failure instead of an endless skeleton, and never
+      // let a failed load look like an empty room.
+      setError(loadError instanceof Error ? loadError.message : "Messages couldn’t load.");
       // Clear stale cache on error so next activation does a clean fetch
       roomMessageCache.delete(roomSlug);
+    } finally {
+      if (timer) clearTimeout(timer);
       setLoading(false);
-      return;
     }
 
-    const sorted = castMessages(data ?? []).reverse();
-    setError(null);
-    // Diff by IDs — skip update if identical to prevent unnecessary re-render
-    setMessages((prev) => {
-      const same = prev.length === sorted.length && prev.every((m, i) => m.id === sorted[i].id && m.edit_count === sorted[i].edit_count && m.is_deleted === sorted[i].is_deleted);
-      if (same) return prev;
-      roomMessageCache.set(roomSlug, sorted);
-      return sorted;
-    });
-    setHasMore((data?.length ?? 0) >= PAGE_SIZE);
-    oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
-    setLoading(false);
   }, [canUseRoom, roomSlug, updateMessages]);
 
   // Load older messages

@@ -19,6 +19,9 @@ extension VaultOSLaunchAuditTests {
     func testJourneyCommunityTabs() throws {
         let app = try signedInApp()
         openCommunity(app)
+        // The room must reach a real result — messages or its own empty state.
+        // A skeleton that never resolves, or a load error, is a failure.
+        try requireFeedSettled(app, context: "Chat room")
         journeyCapture(app, "20-community-chat")
 
         let signals = app.buttons["Signals"].firstMatch
@@ -27,28 +30,20 @@ extension VaultOSLaunchAuditTests {
         // A full member sees the signals room; a basic member sees the upgrade
         // gate. Both are valid; neither may be silently skipped.
         let gate = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'Full Access'")).firstMatch
-        let roomReady = app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'read-only' OR label CONTAINS[c] 'Load older'")).firstMatch
-        let composer = app.textViews.firstMatch
         try require(
-            waitUntil(timeout: 25, { gate.exists || roomReady.exists || composer.exists }),
-            "Signals tab must render either the signals room (composer or read-only footer) or the upgrade gate",
+            waitUntil(timeout: 25, { gate.exists || self.feedStateLabel(app) != nil || self.feedErrorVisible(app) }),
+            "Signals tab must render either the signals room or the upgrade gate",
             app
         )
+        if !gate.exists { try requireFeedSettled(app, context: "Signals room") }
         journeyCapture(app, "21-community-signals\(gate.exists ? "-gated" : "")")
 
         let wins = app.buttons["Wins"].firstMatch
         try require(wins.waitForExistence(timeout: 15), "Community must expose a Wins tab", app, wins)
         try tapWhenReady(app, wins, name: "Wins tab")
-        // Wins is a real room: it must show posts or its own empty-state copy,
-        // not merely keep the tab bar on screen.
-        let winsBody = app.staticTexts.containing(
-            NSPredicate(format: "label CONTAINS[c] 'win' OR label CONTAINS[c] 'Load older' OR label CONTAINS[c] 'read-only'")
-        ).firstMatch
-        try require(
-            waitUntil(timeout: 25, { winsBody.exists || app.textViews.firstMatch.exists }),
-            "Wins tab must render its feed or empty state",
-            app
-        )
+        // Wins is a real room: it must reach a settled feed state, not merely
+        // keep the tab bar on screen.
+        try requireFeedSettled(app, context: "Wins room")
         journeyCapture(app, "22-community-wins")
 
         // The bottom tab bar also has a "Chat" button; the room tab is the
@@ -56,6 +51,7 @@ extension VaultOSLaunchAuditTests {
         let chatTab = try XCTUnwrap(topmostButton(app, label: "Chat"), "Chat room tab must be present")
         try tapWhenReady(app, chatTab, name: "Chat room tab")
         try require(waitUntil(timeout: 20, { app.buttons["Signals"].firstMatch.exists }), "Chat tab must restore the room tab bar", app)
+        try requireFeedSettled(app, context: "Chat room after returning")
         journeyCapture(app, "23-community-back-to-chat")
     }
 
@@ -96,14 +92,21 @@ extension VaultOSLaunchAuditTests {
         )
         // Either a member row or an explicit notice must appear — an empty panel
         // is a failure, so assert on real search output, not element counts.
-        let searchOutcome = app.descendants(matching: .any).containing(
-            NSPredicate(format: "label CONTAINS[c] 'No members' OR label CONTAINS[c] 'no results' OR label CONTAINS[c] 'Start a conversation' OR label CONTAINS[c] 'Message '")
+        let noMembersNotice = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS[c] 'No members found' OR label CONTAINS[c] 'No recent members'")
         ).firstMatch
-        let memberRow = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'a'")).firstMatch
+        // Member rows carry their own accessible name; never match a generic button.
+        let memberRow = app.buttons.matching(
+            NSPredicate(format: "label BEGINSWITH 'Open conversation with '")
+        ).firstMatch
+        let stillLoading = app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'Loading members'")).firstMatch
         try require(
-            waitUntil(timeout: 20, { searchOutcome.exists || memberRow.exists }),
-            "Member search must show a member row or an explicit notice",
-            app
+            waitUntil(timeout: 20, { (noMembersNotice.exists || memberRow.exists) && !stillLoading.exists }),
+            "Member search must settle on a named member row or an explicit no-results notice",
+            app,
+            noMembersNotice,
+            memberRow,
+            stillLoading
         )
         journeyCapture(app, "31-messages-member-search")
 
@@ -261,6 +264,52 @@ extension VaultOSLaunchAuditTests {
     }
 
     // MARK: - Helpers (adaptive waits only, no blanket sleeps)
+
+    /// Accessible marker the room renders once loading has finished:
+    /// "Chat feed ready" or "Chat feed empty". Nil while still skeletonised.
+    private func feedStateLabel(_ app: XCUIApplication) -> String? {
+        let predicate = NSPredicate(format: "label == 'Chat feed ready' OR label == 'Chat feed empty'")
+        for query in [app.staticTexts, app.otherElements] {
+            let match = query.matching(predicate).firstMatch
+            if match.exists { return match.label }
+        }
+        return nil
+    }
+
+    private func feedErrorVisible(_ app: XCUIApplication) -> Bool {
+        app.descendants(matching: .any).containing(
+            NSPredicate(format: "label CONTAINS[c] 'Chat feed error' OR label CONTAINS[c] 'Messages couldn'")
+        ).firstMatch.exists
+    }
+
+    private func feedSkeletonVisible(_ app: XCUIApplication) -> Bool {
+        app.descendants(matching: .any).matching(
+            NSPredicate(format: "label == 'Loading messages'")
+        ).firstMatch.exists
+    }
+
+    /// Passes only when the room reports a real result. A load error, or a
+    /// skeleton that never resolves inside the timeout, is a hard failure.
+    private func requireFeedSettled(
+        _ app: XCUIApplication,
+        context: String,
+        timeout: TimeInterval = 30,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        let settled = waitUntil(timeout: timeout, {
+            self.feedErrorVisible(app) || (self.feedStateLabel(app) != nil && !self.feedSkeletonVisible(app))
+        })
+        try require(
+            settled && !feedErrorVisible(app),
+            feedErrorVisible(app)
+                ? "\(context) reported a message load error"
+                : "\(context) never left the loading skeleton (no 'Chat feed ready'/'Chat feed empty' result)",
+            app,
+            file: file,
+            line: line
+        )
+    }
 
     private func waitUntil(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)

@@ -12,6 +12,8 @@ const communityCss = readFileSync('src/pages/academy/academy-community.css', 'ut
 const settingsCss = readFileSync('src/pages/academy/settings-simple.css', 'utf8');
 const supportCss = readFileSync('src/components/academy/schedule-training-preview.css', 'utf8');
 const coach = readFileSync('src/components/academy/CoachDrawer.tsx', 'utf8');
+const roomChat = readFileSync('src/components/academy/RoomChat.tsx', 'utf8');
+const academyLayout = readFileSync('src/components/layout/AcademyLayout.tsx', 'utf8');
 
 describe('native Academy layout safeguards', () => {
   it('keeps member search above the header and inside the visible viewport', () => {
@@ -62,5 +64,20 @@ describe('native Academy layout safeguards', () => {
     expect(coach).toContain('min-w-[44px] min-h-[44px]');
     expect(modulePage).toContain('aria-label="Back to lessons"');
     expect(modulePage).toMatch(/aria-label="Back to lessons"[\s\S]{0,400}?min-w-\[44px\][\s\S]{0,200}?justify-center[\s\S]{0,200}?sm:min-w-0[\s\S]{0,200}?sm:justify-start/);
+  });
+
+  it('reports a real community feed result and never an endless skeleton', () => {
+    expect(roomChat).toContain('role="status" aria-label="Loading messages"');
+    expect(roomChat).toContain('aria-label="Chat feed error"');
+    expect(roomChat).toMatch(/aria-label=\{messages\.length > 0 \? "Chat feed ready" : "Chat feed empty"\}/);
+    // A failed load must not render the "no messages yet" empty state.
+    expect(roomChat).toContain('{messages.length === 0 && !error && (');
+  });
+
+  it('keeps the offline notice below the native safe-area header', () => {
+    const headerIndex = academyLayout.indexOf('academy-top-safe sticky top-0');
+    const bannerIndex = academyLayout.indexOf('academy-offline-banner');
+    expect(headerIndex).toBeGreaterThan(-1);
+    expect(bannerIndex).toBeGreaterThan(headerIndex);
   });
 });

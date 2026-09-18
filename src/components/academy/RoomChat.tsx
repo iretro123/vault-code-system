@@ -1374,7 +1374,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   if (loading) {
     return (
       <div className="flex flex-col h-full w-full bg-background">
-      <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
+      <div role="status" aria-label="Loading messages" className="flex-1 overflow-hidden px-3 py-4 space-y-4">
+
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
               <div className="h-8 w-8 rounded-full bg-white/[0.06] shrink-0" />
@@ -1429,8 +1430,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       </AlertDialog>
 
       {/* Messages */}
-      {error && <div role="alert" className="flex items-center justify-between gap-3 px-4 py-2 text-sm bg-red-500/10 text-red-200">Messages couldn’t load.<button className="min-h-11 underline" onClick={() => void refresh()}>Try again</button></div>}
+      {error && <div role="alert" aria-label="Chat feed error" className="flex items-center justify-between gap-3 px-4 py-2 text-sm bg-red-500/10 text-red-200">Messages couldn’t load.<button className="min-h-[44px] underline" onClick={() => void refresh()}>Try again</button></div>}
       {!error && <ChatConnectionStatus reconnecting={connection === "reconnecting"} />}
+      {!error && (
+        <span className="sr-only" role="status" aria-label={messages.length > 0 ? "Chat feed ready" : "Chat feed empty"}>
+          {messages.length > 0 ? "Chat feed ready" : "Chat feed empty"}
+        </span>
+      )}
+
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -1510,7 +1517,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </div>
         )}
 
-        {messages.length === 0 && (
+        {messages.length === 0 && !error && (
 
            <div className="text-center py-16 max-w-xs mx-auto space-y-2">
             {roomSlug === "options-lounge" ? (
