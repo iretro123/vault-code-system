@@ -34,6 +34,9 @@ interface Message {
 
 const PAGE_SIZE = 40;
 const DEFERRED_ROOM_SLUG = "__deferred__";
+// A stalled network request must never leave the room in a permanent skeleton.
+export const ROOM_LOAD_TIMEOUT_MS = 12000;
+
 
 // ── Global message cache per room (survives remounts) ──
 const roomMessageCache = new Map<string, Message[]>();
