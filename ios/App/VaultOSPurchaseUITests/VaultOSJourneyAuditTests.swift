@@ -233,6 +233,12 @@ extension VaultOSLaunchAuditTests {
 
         let close = app.buttons["Close coach"].firstMatch
         try require(close.waitForExistence(timeout: 15), "Coach panel must offer a close control", app, close)
+        try require(
+            elementsWhollyVisible(app, close),
+            "Coach close control must sit wholly below the native status area",
+            app,
+            close
+        )
         try tapWhenReady(app, close, name: "Close coach")
         try require(waitUntil(timeout: 15, { !close.exists }), "Coach panel must close", app)
         journeyCapture(app, "62-coach-closed")
