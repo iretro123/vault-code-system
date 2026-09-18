@@ -1374,7 +1374,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   if (loading) {
     return (
       <div className="flex flex-col h-full w-full bg-background">
-      <div className="flex-1 overflow-hidden px-3 py-4 space-y-4">
+      <div role="status" aria-label="Loading messages" className="flex-1 overflow-hidden px-3 py-4 space-y-4">
+
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
               <div className="h-8 w-8 rounded-full bg-white/[0.06] shrink-0" />
