@@ -30,7 +30,7 @@ const {chromium} = require('/Users/user/.cache/codex-runtimes/codex-primary-runt
         await play.click({timeout:3000}).catch(e=>console.log(JSON.stringify({clickError:e.message.slice(0,300),buttons:'play unavailable'})));
         await frame.waitForFunction(()=>[...document.querySelectorAll('video')].some(v=>!v.paused&&v.currentTime>0&&v.readyState>=2),null,{timeout:12000}).catch(()=>{});
         console.log(JSON.stringify({slug,id:lesson.id,lesson:lesson.lesson_title,playerText:(await frame.locator('body').innerText().catch(()=>'')).slice(0,500),video:await frame.locator('video').evaluateAll(vs=>vs.map(v=>({paused:v.paused,time:v.currentTime,ready:v.readyState,error:v.error?.code}))),bounds:await page.locator('iframe').first().boundingBox()}));
-      } else console.log(JSON.stringify({slug,id:lesson.id,error:'No YouTube frame',body:(await page.locator('body').innerText()).slice(-400)}));
+      } else console.log(JSON.stringify({slug,id:lesson.id,error:'No YouTube frame',source:lesson.video_url,frames:page.frames().map(f=>f.url()),body:(await page.locator('body').innerText()).slice(-400)}));
       } catch(e){console.log(JSON.stringify({slug,id:lesson.id,error:e.message.slice(0,300)}));} finally{await page.close();}
     }));
   } finally {await browser.close();}

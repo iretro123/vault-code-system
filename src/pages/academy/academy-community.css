@@ -1,5 +1,9 @@
 .vault-community .community-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px 12px}
 .community-heading h1{font-size:20px;font-weight:650;letter-spacing:-.5px}
+.community-tools-menu{position:relative}
+.community-tools-menu>summary{display:none}
+.community-tools-menu:not([open])>.community-header-actions{display:flex}
+.community-composer-grid>.community-tools-toggle{display:none}
 .community-heading button{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid #3b82f640;border-radius:10px;color:#b8d3ff;background:#3b82f610;font-size:14px}
 .vault-community button[aria-current]{min-height:48px;font-size:14px;letter-spacing:0}
 .vault-community button[aria-current] span.rounded-full{background:#3b82f6;font-size:11px;min-width:19px;height:19px}
@@ -150,7 +154,7 @@
 .vault-community .community-message:focus-within .group-hover\:opacity-100{opacity:1;pointer-events:auto}
 .vault-community .vault-chat-scroll{overscroll-behavior-y:contain;scroll-padding-bottom:20px}
 .vault-community .community-composer-grid textarea{scrollbar-width:thin;overflow-y:auto}
-.vault-community .community-message-body{font-size:1rem;line-height:1.55;font-weight:400;letter-spacing:normal}
+.vault-community .community-message-body{font-size:16px;line-height:1.5;font-weight:400;letter-spacing:normal}
 .vault-community .community-message-meta>button{font-size:.9375rem;line-height:1.4}
 .vault-community .community-message-time,.vault-community .community-message-edited{font-size:.75rem;line-height:1.5;color:#aebbd0}
 .vault-community .community-date-divider span{font-size:.75rem;line-height:1.5}
@@ -165,10 +169,11 @@
 .vault-community .community-message-meta>span.rounded{font-size:.75rem;line-height:1.2}
 .vault-community .community-attachment-caption{font-size:.75rem;line-height:1.5;color:#aebbd0}
 @media(min-width:768px){
- .vault-community .community-composer-grid{grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:12px;padding:12px}
+ .vault-community .community-composer-grid{grid-template-columns:auto minmax(0,1fr) 44px 44px;align-items:end;gap:8px;padding:12px}
  .vault-community .community-composer-tools{grid-column:1;grid-row:1}
  .vault-community .community-composer-grid textarea{grid-column:2;grid-row:1;min-height:40px;padding:8px 0}
- .vault-community .community-composer-grid>button{grid-column:3;grid-row:1}
+ .vault-community .community-composer-grid>button{grid-column:4;grid-row:1}
+ .vault-community .community-composer-grid>.community-expression-trigger{grid-column:3;grid-row:1;background:transparent;color:#c5c7ce}
 }
 @media(max-width:767px){
  .vault-community .community-message{padding-inline:12px;gap:10px}
@@ -177,3 +182,48 @@
  .vault-community .community-date-divider{padding:18px 12px 10px}
  .vault-community .community-thread-link{min-height:44px}
 }
+
+/* Phone chat: spend vertical space on messages, not repeated navigation. */
+@media(max-width:767px){
+ .community-shell-header>div{display:none}
+ .community-shell-header{border:0;background:#292b30}
+ .vault-community{--community-surface:#313338;--community-raised:#383a40;background:var(--community-surface)}
+ .vault-community .community-room .vault-chat-scroll{background:var(--community-surface)}
+ .vault-community>div{min-height:0;margin:0;border:0;border-radius:0}
+ .vault-community .community-heading{position:relative;z-index:30;flex-wrap:nowrap;gap:4px;padding:4px 12px;background:#292b30;min-height:52px;flex-shrink:0}
+ .vault-community .community-title-row{flex:1;min-width:0}
+ .vault-community .community-heading h1{font-size:19px;letter-spacing:-.3px}
+ .vault-community .community-inbox-button{width:44px;height:44px;padding:0;justify-content:center;border:0}
+ .community-inbox-button span{display:none}
+ .community-tools-menu>summary{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;list-style:none;color:#c5c7ce;cursor:pointer;border-radius:8px}
+ .community-tools-menu>summary::-webkit-details-marker{display:none}
+ .community-tools-menu>summary:focus-visible{outline:2px solid #82b3ff}
+ .community-tools-menu:not([open])>.community-header-actions{display:none}
+ .community-tools-menu .community-header-actions{position:absolute;top:48px;right:0;width:240px;max-width:calc(100vw - 24px);padding:8px;display:flex;flex-direction:column;background:#232428;border:1px solid #ffffff20;border-radius:12px;box-shadow:0 8px 24px #0006}
+ .community-tools-menu .community-header-actions button{width:100%;justify-content:flex-start;background:transparent;border:0}
+ .vault-community .community-room-tabs{gap:0;padding:0;border-bottom:1px solid #ffffff10}
+ .vault-community .community-room-tabs button{flex:1;min-height:44px;padding:8px;border:0;border-radius:0;font-size:15px}
+ .vault-community .community-room-tabs button[aria-current="page"]{background:transparent;border:0;box-shadow:none;color:#f2f3f5}
+ .vault-community .community-room-tabs button[aria-current="page"]:after{bottom:0;left:18px;right:18px;height:2px;background:#78aaff;box-shadow:none}
+ .vault-community .community-room-tabs button[aria-current="page"]:before{display:none}
+ .vault-community .community-message-body{font-size:17px;line-height:1.45;color:#f2f3f5}
+ .vault-community .community-message-meta>button{font-size:16px;color:#f2f3f5}
+ .vault-community .community-message-time{font-size:12px;color:#b5b7bf}
+ .vault-community .community-date-divider{padding:10px 12px 6px}
+ .vault-community .community-composer-footer{padding:6px 8px 8px}
+ .vault-community [data-chat-composer]{border:0;border-radius:22px;box-shadow:none;overflow:visible}
+ .vault-community .community-composer-grid{display:grid;grid-template-columns:44px minmax(0,1fr) 44px 44px;align-items:end;gap:0;padding:4px}
+ .vault-community .community-composer-grid>.community-tools-toggle{display:flex;grid-column:1;grid-row:1;width:44px;height:44px;align-items:center;justify-content:center;background:transparent;color:#d5d7de;box-shadow:none;font-size:28px}
+ .vault-community .community-composer-grid textarea{grid-column:2;grid-row:1;min-height:44px;max-height:120px;padding:10px 4px;font-size:17px;line-height:24px}
+ .vault-community .community-composer-grid>.community-composer-tools{display:none;grid-column:1/-1;grid-row:2}
+ .vault-community .community-composer-grid.community-tools-open>.community-composer-tools{display:flex;padding:4px 0;border-top:1px solid #ffffff0c}
+ .vault-community .community-composer-tools button{min-width:44px;min-height:44px}
+ .vault-community .community-composer-grid>button:not(.community-tools-toggle){grid-column:4;grid-row:1;width:44px;height:44px;border-radius:50%}
+ .vault-community .community-composer-grid>.community-expression-trigger{grid-column:3!important;grid-row:1;background:transparent;color:#c5c7ce;box-shadow:none}
+}
+.community-expression-trigger{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;flex-shrink:0;border-radius:50%;color:#c5c7ce}
+.community-expression-picker{width:352px;max-width:calc(100vw - 16px);max-height:var(--radix-popover-content-available-height);padding:0;overflow-y:auto;background:#292b30;border:1px solid #ffffff20;border-radius:16px;overscroll-behavior:contain}
+.community-expression-tabs{display:flex;gap:6px;padding:8px;border-bottom:1px solid #ffffff12}
+.community-expression-tabs button{flex:1;min-height:44px;border-radius:8px;color:#c5c7ce;font-size:15px;font-weight:600}
+.community-expression-tabs button[aria-pressed="true"]{background:#41434a;color:white}
+.community-expression-picker .chat-native-emoji-picker,.community-expression-picker .vault-gif-picker{width:100%;max-width:100%;border:0;border-radius:0;box-shadow:none}

@@ -211,8 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetchedForRef.current = uid;
 
           setTimeout(async () => {
-            await ensureProfile(uid, newSession.user.email);
-            fetchUserData(uid);
+            void fetchUserData(uid, newSession.user.email);
             // Silently reconcile any Apple StoreKit entitlement the user is
             // paying for but hasn't been credited yet. Never blocks UI.
             void reconcileMembershipNow(uid);
@@ -241,8 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (fetchedForRef.current === uid) return;
         fetchedForRef.current = uid;
 
-        await ensureProfile(uid, initialSession.user.email);
-        fetchUserData(uid);
+        void fetchUserData(uid, initialSession.user.email);
         void reconcileMembershipNow(uid);
       } else {
         setLoading(false);
@@ -252,17 +250,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchUserData(userId: string) {
+  async function fetchUserData(userId: string, email?: string | null) {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
+      // Both authoritative checks are required, but neither depends on the other.
+      const [profileResult, roleResult] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role, subscription_status").eq("user_id", userId),
+      ]);
+      const { data: profileData, error: profileError } = profileResult;
 
       if (profileError) throw profileError;
 
       if (!profileData) {
+        await ensureProfile(userId, email);
         console.warn("[Auth] No profile data yet — retaining the saved session and retrying on refresh");
         const { data: retryData } = await supabase
           .from("profiles")
@@ -282,10 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch user role(s) — a user may have multiple rows; pick the most restrictive.
-      const { data: roleRows, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role, subscription_status")
-        .eq("user_id", userId);
+      const { data: roleRows, error: roleError } = roleResult;
 
       if (roleError) throw roleError;
 

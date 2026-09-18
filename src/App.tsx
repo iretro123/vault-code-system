@@ -16,7 +16,7 @@ import Auth from "./pages/Auth";
 import { VaultOSGate } from "./components/VaultOSGate";
 import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
-import { Loader2 } from "lucide-react";
+import { AppLoading } from "@/components/AppLoading";
 import { isSharedGuestAccount } from "@/lib/membership";
 import { hasFullAccess, isFreeBasicAllowedPath } from "@/lib/entitlements";
 
@@ -109,11 +109,7 @@ function BasicTierRedirect({ children }: { children: ReactNode }) {
 
 
 function RouteFallback() {
-  return (
-    <div className="flex-1 flex items-center justify-center min-h-[200px]">
-      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-    </div>
-  );
+  return <AppLoading />;
 }
 
 function LaunchRedirect() {

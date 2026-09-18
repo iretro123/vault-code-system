@@ -36,13 +36,12 @@ import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { SignalPostForm } from "./chat/SignalPostForm";
 import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
-import { EmojiPicker } from "./chat/EmojiPicker";
+import { ExpressionPicker } from "./chat/ExpressionPicker";
 import { EmojiReactionPicker } from "./chat/EmojiReactionPicker";
 import { EmojiGlyph } from "./chat/EmojiGlyph";
 import { hasAppleEmojiSprite } from "@/lib/appleEmojiSprite";
 import { MessageActionSheet, SheetActionItem } from "./chat/MessageActionSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { GifPicker } from "./chat/GifPicker";
 import { ChatEffects } from "./chat/ChatEffects";
 import { LinkPreviewCard } from "./chat/LinkPreviewCard";
 import { detectChatEffect, type ChatEffectType } from "@/lib/chatEffects";
@@ -255,6 +254,8 @@ function longPressHandlers(onLongPress: () => void, ms = 420) {
   };
   return {
     onTouchStart: (e: React.TouchEvent) => {
+      cancel();
+      if (e.touches.length !== 1 || (e.target as HTMLElement).closest('button, a, input, textarea, [role="button"]')) return;
       moved = false;
       const t = e.touches[0];
       start = { x: t.clientX, y: t.clientY };
@@ -266,6 +267,7 @@ function longPressHandlers(onLongPress: () => void, ms = 420) {
       }, ms);
     },
     onTouchMove: (e: React.TouchEvent) => {
+      if (e.touches.length !== 1) { cancel(); return; }
       if (!start) return;
       const t = e.touches[0];
       if (Math.abs(t.clientX - start.x) > 10 || Math.abs(t.clientY - start.y) > 10) {
@@ -687,6 +689,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [composerToolsOpen, setComposerToolsOpen] = useState(false);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -1373,8 +1376,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
 
   if (loading) {
     return (
-      <div className="flex flex-col h-full w-full bg-background">
-      <div role="status" aria-label="Loading messages" className="flex-1 overflow-hidden px-3 py-4 space-y-4">
+      <div className="community-room flex flex-col min-h-0 h-full w-full bg-background">
+      <div role="status" aria-label="Loading messages" className="vault-chat-scroll flex-1 overflow-hidden px-3 py-4 space-y-4">
 
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-start gap-2.5">
@@ -1386,7 +1389,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             </div>
           ))}
         </div>
-        <div className="h-14 border-t border-white/[0.06] bg-card" />
+        <div className="community-composer-footer h-14 shrink-0" />
       </div>
     );
   }
@@ -1637,7 +1640,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
             <div key={msg.id}>
               {showDate && <DateSeparator date={getDateLabel(msg.created_at)} />}
             <ContextMenu>
-              <ContextMenuTrigger asChild>
+              <ContextMenuTrigger asChild disabled={isMobile}>
                  <div
                   {...(isMobile ? longPressHandlers(() => setSheetMsgId(msg.id)) : {})}
                   className={cn(
@@ -1891,7 +1894,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     })()}
 
                     {/* Hover action bar — Discord-style floating toolbar, absolutely positioned to avoid reflow */}
-                    {!msg.is_deleted && !isEditing && (
+                    {!isMobile && !msg.is_deleted && !isEditing && (
                       <div className="absolute -top-4 right-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-10">
                         <div className="flex items-center gap-0.5 rounded-lg bg-card border border-white/[0.08] shadow-md px-1 py-0.5">
                           {/* Quick reactions */}
@@ -1964,12 +1967,12 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           ))}
 
                           {/* Hover add-reaction trigger */}
-                          <span className="inline-flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-75">
+                          {!isMobile && <span className="inline-flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-75">
                             <EmojiReactionPicker
                               onSelect={(e) => toggleReaction(msg.id, e)}
                               triggerClassName="px-1 py-0.5 rounded text-muted-foreground hover:text-foreground"
                             />
-                          </span>
+                          </span>}
                         </div>
                       );
                     })()}
@@ -2180,7 +2183,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   "border-white/[0.08]"
                 )}
               >
-                <div className="community-composer-grid flex min-w-0 items-end gap-2 px-3 py-1.5">
+                <div className={`community-composer-grid flex min-w-0 items-end gap-2 px-3 py-1.5 ${composerToolsOpen ? 'community-tools-open' : ''}`}>
+                  <button type="button" className="community-tools-toggle" aria-label="Attachment options" aria-expanded={composerToolsOpen} onClick={() => setComposerToolsOpen(open => !open)}><span aria-hidden="true">{composerToolsOpen ? '×' : '+'}</span></button>
                   {/* Hidden file input */}
                   <input
                     ref={fileInputRef}
@@ -2201,8 +2205,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     >
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                     </button>
-                    <EmojiPicker onSelect={handleEmojiSelect} />
-                    <GifPicker onSelect={(gifUrl) => handleSend("", [{ type: "image", url: gifUrl, filename: "gif", size: 0, mime: "image/gif" }])} />
                   </div>
 
                   {/* Textarea — light input surface */}
@@ -2221,6 +2223,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                     className="min-h-[24px] max-h-[120px] w-full flex-1 min-w-0 resize-none bg-transparent py-0.5 text-[16px] md:text-[15px] leading-relaxed text-foreground caret-primary outline-none placeholder:text-muted-foreground"
                   />
 
+                  <ExpressionPicker onEmoji={handleEmojiSelect} onGif={(gifUrl)=>handleSend("", [{ type: "image", url: gifUrl, filename: "gif", size: 0, mime: "image/gif" }])}/>
                   {/* Send button — premium Vault blue */}
                   <button
                     type="button"

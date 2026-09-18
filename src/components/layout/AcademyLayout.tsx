@@ -13,14 +13,14 @@ import { NotificationOptInBanner } from "@/components/academy/NotificationOptInB
 import { isBillingVisible } from "@/lib/featureFlags";
 import { useAuth } from "@/hooks/useAuth";
 import { useSmartNotifications } from "@/hooks/useSmartNotifications";
-import { useAcademyData } from "@/contexts/AcademyDataContext";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, ShieldAlert, WifiOff, X } from "lucide-react";
+import { ArrowLeft, ShieldAlert, WifiOff, X } from "lucide-react";
+import { AppLoading } from "@/components/AppLoading";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { AppOnboarding } from "@/components/onboarding/AppOnboarding";
@@ -48,17 +48,7 @@ interface AcademyProfileShape {
 function LoadingShell() {
   return (
     <div className="academy-mobile-fit h-[100dvh] flex w-full bg-background relative overflow-hidden">
-      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true" style={ambientBgStyle} />
-      <div className="flex-1 flex min-h-0 flex-col min-w-0 relative z-[1] overflow-hidden">
-        <div className="h-14 border-b border-white/[0.06] bg-background flex items-center px-4">
-          <span className="text-lg font-bold tracking-tight text-foreground">
-            Vault<span className="text-primary">Academy</span>
-          </span>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </div>
+      <AppLoading />
     </div>
   );
 }
@@ -67,17 +57,6 @@ function LoadingShell() {
 function AcademyLayoutInner() {
   const { user, profile, loading, signOut } = useAuth();
   const { isBasicTier, loading: basicLoading } = useIsBasicTier();
-  const { hydrated } = useAcademyData();
-  // Persist hydration flag to sessionStorage so tab discards don't reset it
-  const [everHydrated, setEverHydrated] = useState(() => {
-    try { return sessionStorage.getItem("va_ever_hydrated") === "1"; } catch { return false; }
-  });
-  useEffect(() => {
-    if (hydrated && !everHydrated) {
-      setEverHydrated(true);
-      try { sessionStorage.setItem("va_ever_hydrated", "1"); } catch { void 0; }
-    }
-  }, [hydrated, everHydrated]);
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -222,8 +201,9 @@ function AcademyLayoutInner() {
     );
   }
 
-  // 3. User exists but profile/hydration still loading — skip if we've been hydrated before
-  if (!profile || (!hydrated && !everHydrated)) {
+  // Auth/profile still gate access. Inbox, referrals and notification counts
+  // load independently; they must not block the entire signed-in navigation.
+  if (!profile) {
     return <LoadingShell />;
   }
 
@@ -269,7 +249,7 @@ function AcademyLayoutInner() {
       <AcademySidebar />
 
       <div className="flex-1 flex min-h-0 flex-col min-w-0 relative z-[1] overflow-hidden">
-        <header className="academy-top-safe sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background">
+        <header className={`academy-top-safe sticky top-0 z-40 w-full border-b border-white/[0.06] bg-background ${location.pathname.replace(/\/$/, '') === '/academy/community' ? 'community-shell-header' : ''}`}>
           <div className="flex h-14 items-center justify-between px-4">
             <div className="flex items-center gap-2">
               {isMobile && isCommunity && (

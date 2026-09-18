@@ -118,12 +118,16 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       if (err) throw new Error(err.message);
 
       const sorted = castMessages(data ?? []).reverse();
+      // A successful load (including an empty room) makes subsequent refreshes
+      // background-only. The original mount-time ref otherwise stays undefined
+      // and replaces the entire feed with a skeleton on every tab activation.
+      cachedRef.current = sorted;
+      roomMessageCache.set(roomSlug, sorted);
       setError(null);
       // Diff by IDs — skip update if identical to prevent unnecessary re-render
       setMessages((prev) => {
         const same = prev.length === sorted.length && prev.every((m, i) => m.id === sorted[i].id && m.edit_count === sorted[i].edit_count && m.is_deleted === sorted[i].is_deleted);
         if (same) return prev;
-        roomMessageCache.set(roomSlug, sorted);
         return sorted;
       });
       setHasMore((data?.length ?? 0) >= PAGE_SIZE);

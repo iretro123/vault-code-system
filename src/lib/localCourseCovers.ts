@@ -1,6 +1,5 @@
-import { isLocalDesignPreview } from "@/integrations/supabase/localPreviewFetch";
-
-// Local artwork overrides only. Published course records remain untouched.
+// Bundled course artwork is shared by web and native releases.
+// Published course records and video URLs remain untouched.
 const artwork = import.meta.glob<string>("../assets/course-covers/*.png", {
   eager: true,
   query: "?url",
@@ -8,7 +7,6 @@ const artwork = import.meta.glob<string>("../assets/course-covers/*.png", {
 });
 
 export function localCourseCover(module: { slug: string; title: string }) {
-  if (!isLocalDesignPreview()) return undefined;
   const chapter = module.slug === "chapter-1-basic-bridge"
     ? 0
     : Number(module.title.match(/^Chapter\s+(\d+)\b/i)?.[1]);

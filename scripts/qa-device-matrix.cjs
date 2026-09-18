@@ -75,7 +75,8 @@ for(const [device,width,height] of sizes){
    }
    if(process.env.QA_NAV==='1'){
      try{
-       const home=page.getByRole('link',{name:'VaultAcademy',exact:true});
+       const mobileHome=page.getByRole('button',{name:'Home',exact:true});
+       const home=await mobileHome.isVisible()?mobileHome:page.getByRole('link',{name:'VaultAcademy',exact:true});
        await home.click();
        await page.waitForURL('**/academy/home');
        if(route!=='home') await page.goBack();
@@ -96,6 +97,8 @@ for(const [device,width,height] of sizes){
          if(await composer.inputValue()!=='Backspace tes')throw Error('Backspace did not edit draft');
          await composer.fill('');
          for(const label of ['Signals','Wins','Chat'])await page.getByRole('button',{name:label,exact:true}).first().click();
+         const tools=page.getByLabel('Community tools',{exact:true});
+         if(await tools.isVisible())await tools.click();
          await page.getByRole('button',{name:'Stocks to watch',exact:true}).click();
          await page.waitForTimeout(300);
          await page.keyboard.press('Escape');

@@ -8,10 +8,11 @@ import "./academy-community.css";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BellRing, LockKeyhole, Radio, ShieldCheck, MessageCircle } from "lucide-react";
+import { ArrowRight, BellRing, LockKeyhole, Radio, ShieldCheck, MessageCircle, MoreHorizontal } from "lucide-react";
 
 const TABS = [
   { key: "trade-floor", label: "Chat", roomSlug: "trade-floor" },
@@ -81,6 +82,7 @@ function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
 }
 
 const AcademyCommunity = () => {
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
@@ -149,8 +151,8 @@ const AcademyCommunity = () => {
       <div className="vault-community flex flex-col h-full overflow-hidden bg-background">
         <div className="flex flex-col flex-1 m-2 md:m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
           <div className="community-heading">
-            <div className="flex items-center justify-between gap-3"><h1>Community</h1><button className="flex items-center gap-2 rounded-xl border border-blue-300/20 bg-blue-400/10 px-3 py-2 text-sm text-blue-200 hover:bg-blue-400/20" onClick={() => navigate('/academy/community/messages?resume=1')}><MessageCircle size={17}/> Messages</button></div>
-            <div className="community-header-actions"><MarketWatch/><button onClick={() => navigate("/academy/live")}><Radio size={17} /> Classroom <ArrowRight size={15} /></button></div>
+            <div className="community-title-row flex items-center justify-between gap-3"><h1>Community</h1><button aria-label="Messages" className="community-inbox-button flex items-center gap-2 rounded-xl border border-blue-300/20 bg-blue-400/10 px-3 py-2 text-sm text-blue-200 hover:bg-blue-400/20" onClick={() => navigate('/academy/community/messages?resume=1')}><MessageCircle size={21}/><span>Messages</span></button></div>
+            {isMobile ? <details className="community-tools-menu"><summary aria-label="Community tools"><MoreHorizontal size={23}/></summary><div className="community-header-actions"><MarketWatch/><button onClick={() => navigate("/academy/live")}><Radio size={17} /> Classroom <ArrowRight size={15} /></button></div></details> : <div className="community-header-actions"><MarketWatch/><button onClick={() => navigate("/academy/live")}><Radio size={17} /> Classroom <ArrowRight size={15} /></button></div>}
           </div>
 
           <div className="shrink-0 px-3 md:px-4 pt-1">

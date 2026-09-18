@@ -15,6 +15,19 @@ extension VaultOSLaunchAuditTests {
 
     // MARK: - Journeys
 
+    /// Repeated process launches; preserves the signed-in user's data.
+    func testRepeatedStartup() throws {
+        let app = try signedInApp()
+        for run in 1...3 {
+            app.terminate()
+            let started = Date()
+            app.launch()
+            try require(app.buttons["Chat"].firstMatch.waitForExistence(timeout: 25), "Startup must restore signed-in navigation", app)
+            print("VAULT_STARTUP run=\(run) navigationSeconds=\(Date().timeIntervalSince(started))")
+            journeyCapture(app, "startup-\(run)-ready")
+        }
+    }
+
     /// Community: Chat -> Signals -> Wins -> back to Chat, real taps only.
     func testJourneyCommunityTabs() throws {
         let app = try signedInApp()
@@ -27,6 +40,7 @@ extension VaultOSLaunchAuditTests {
         let signals = app.buttons["Signals"].firstMatch
         try require(signals.waitForExistence(timeout: 20), "Community must expose a Signals tab", app, signals)
         try tapWhenReady(app, signals, name: "Signals tab")
+        journeyCapture(app, "20a-signals-transition")
         // A full member sees the signals room; a basic member sees the upgrade
         // gate. Both are valid; neither may be silently skipped.
         let gate = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'Full Access'")).firstMatch
@@ -41,6 +55,7 @@ extension VaultOSLaunchAuditTests {
         let wins = app.buttons["Wins"].firstMatch
         try require(wins.waitForExistence(timeout: 15), "Community must expose a Wins tab", app, wins)
         try tapWhenReady(app, wins, name: "Wins tab")
+        journeyCapture(app, "21a-wins-transition")
         // Wins is a real room: it must reach a settled feed state, not merely
         // keep the tab bar on screen.
         try requireFeedSettled(app, context: "Wins room")
@@ -50,6 +65,7 @@ extension VaultOSLaunchAuditTests {
         // topmost match on screen.
         let chatTab = try XCTUnwrap(topmostButton(app, label: "Chat"), "Chat room tab must be present")
         try tapWhenReady(app, chatTab, name: "Chat room tab")
+        journeyCapture(app, "22a-chat-transition")
         try require(waitUntil(timeout: 20, { app.buttons["Signals"].firstMatch.exists }), "Chat tab must restore the room tab bar", app)
         try requireFeedSettled(app, context: "Chat room after returning")
         journeyCapture(app, "23-community-back-to-chat")

@@ -23,6 +23,25 @@ import { useRoomMessages, ROOM_LOAD_TIMEOUT_MS } from '@/hooks/useRoomMessages';
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); vi.useRealTimers(); });
 
+it.each([false, true])('keeps a loaded room visible on tab refresh (empty=%s)', async (empty) => {
+  const rows = empty ? [] : [{ id: 'retained', body: 'Keep visible', created_at: '2026-09-17T12:00:00Z' }];
+  m.limit.mockResolvedValue({ data: rows, error: null });
+  const { result, rerender } = renderHook(({ activation }) => useRoomMessages(`stable-${empty}`, activation), { initialProps: { activation: 0 } });
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  let resolve!: (value: any) => void;
+  m.limit.mockImplementation(() => new Promise(r => { resolve = r; }));
+  rerender({ activation: 1 });
+  expect(result.current.loading).toBe(false);
+  expect(result.current.messages).toHaveLength(rows.length);
+  await act(async () => { resolve({ data: null, error: { message: 'refresh failed' } }); });
+  expect(result.current.error).toBe('refresh failed');
+  rerender({ activation: 2 });
+  expect(result.current.loading).toBe(false);
+  expect(result.current.messages).toHaveLength(rows.length);
+  await act(async () => { resolve({ data: rows, error: null }); });
+  expect(result.current.error).toBeNull();
+});
+
 it('surfaces a load failure instead of an empty room', async () => {
   m.limit.mockResolvedValue({ data: null, error: { message: 'network down' } });
   const { result } = renderHook(() => useRoomMessages('error-room'));
