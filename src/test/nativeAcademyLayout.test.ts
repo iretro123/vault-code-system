@@ -53,5 +53,7 @@ describe('native Academy layout safeguards', () => {
     expect(supportCss).toMatch(/\.st-header h1\{font-size:1\.75rem;line-height:1\.18/);
     expect(coach).toContain('resize-none text-base');
     expect(coach).toContain('min-w-11 min-h-11');
+    expect(modulePage).toContain('aria-label="Back to lessons"');
+    expect(modulePage).toContain('min-w-11 justify-center sm:min-w-0 sm:justify-start');
   });
 });
