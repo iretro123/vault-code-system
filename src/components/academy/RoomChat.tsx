@@ -1517,7 +1517,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           </div>
         )}
 
-        {messages.length === 0 && (
+        {messages.length === 0 && !error && (
 
            <div className="text-center py-16 max-w-xs mx-auto space-y-2">
             {roomSlug === "options-lounge" ? (
