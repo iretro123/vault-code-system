@@ -31,6 +31,13 @@ describe('native Academy layout safeguards', () => {
     expect(globalCss).toMatch(/\.academy-lesson-actions\s*\{\s*padding-bottom: calc\(0\.75rem \+ var\(--academy-mobile-nav-offset\)\);/);
   });
 
+  it('keeps the coach drawer clear of the native status bar', () => {
+    expect(coach).toContain('academy-coach-overlay fixed inset-0');
+    expect(globalCss).toMatch(/\.academy-coach-overlay \{\s*padding-top: max\(env\(safe-area-inset-top, 0px\), 0\.75rem\);/);
+    expect(globalCss).toMatch(/body\.native-capacitor \.academy-coach-overlay \{[\s\S]*?height: var\(--academy-visible-height, 100dvh\);[\s\S]*?padding-top: calc\(var\(--academy-safe-top\) \+ 8px\);[\s\S]*?padding-bottom: var\(--academy-mobile-nav-offset\);/);
+    expect(globalCss).toMatch(/native-keyboard-open \.academy-coach-overlay \{\s*padding-bottom: 8px;/);
+  });
+
   it('keeps phone dashboards dense without shrinking readable body copy', () => {
     expect(campusCss).toMatch(/@media\(max-width:720px\)[\s\S]*?\.tc-feature\{padding:18px 16px[^}]*border-radius:14px/);
     expect(campusCss).toMatch(/\.tc-feature-copy>p\{font-size:16px;line-height:1\.5/);

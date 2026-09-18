@@ -628,7 +628,7 @@ function LegacyCoachDrawer() {
   const displayName = profile?.display_name || user.email?.split("@")[0] || "Trader";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start md:items-center justify-center p-2 pt-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,20px))] sm:p-3 sm:pt-5 md:p-4">
+    <div className="academy-coach-overlay fixed inset-0 z-[60] flex items-start md:items-center justify-center p-2 pt-3 pb-[calc(4.75rem+env(safe-area-inset-bottom,20px))] sm:p-3 sm:pt-5 md:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/65 backdrop-blur-[6px]"

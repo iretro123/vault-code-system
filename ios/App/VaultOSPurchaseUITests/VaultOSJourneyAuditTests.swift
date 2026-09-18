@@ -233,6 +233,12 @@ extension VaultOSLaunchAuditTests {
 
         let close = app.buttons["Close coach"].firstMatch
         try require(close.waitForExistence(timeout: 15), "Coach panel must offer a close control", app, close)
+        try require(
+            elementsWhollyVisible(app, close),
+            "Coach close control must sit wholly below the native status area",
+            app,
+            close
+        )
         try tapWhenReady(app, close, name: "Close coach")
         try require(waitUntil(timeout: 15, { !close.exists }), "Coach panel must close", app)
         journeyCapture(app, "62-coach-closed")
@@ -275,7 +281,21 @@ extension VaultOSLaunchAuditTests {
     /// Hittability is insufficient when WebKit reports a partly clipped control.
     /// Compare the complete frame with the usable app window instead.
     private func elementsWhollyVisible(_ app: XCUIApplication, _ elements: XCUIElement...) -> Bool {
-        elementsWhollyVisible(app, below: app.frame.minY, above: app.frame.maxY, elements)
+        elementsWhollyVisible(app, below: nativeUsableTop(app), above: app.frame.maxY, elements)
+    }
+
+    /// Top of the area the app may actually draw controls in: below the native
+    /// status bar / notch when the system exposes it, otherwise the app frame.
+    private func nativeUsableTop(_ app: XCUIApplication) -> CGFloat {
+        let statusBar = XCUIApplication(bundleIdentifier: "com.apple.springboard").statusBars.firstMatch
+        if statusBar.exists, !statusBar.frame.isEmpty {
+            return max(app.frame.minY, statusBar.frame.maxY)
+        }
+        let inAppStatusBar = app.statusBars.firstMatch
+        if inAppStatusBar.exists, !inAppStatusBar.frame.isEmpty {
+            return max(app.frame.minY, inAppStatusBar.frame.maxY)
+        }
+        return app.frame.minY
     }
 
     private func elementsWhollyVisible(
