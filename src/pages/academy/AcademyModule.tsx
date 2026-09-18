@@ -183,7 +183,7 @@ const AcademyModule = () => {
         <button
           aria-label="Back to lessons"
           onClick={() => {setActiveLessonId(null);setEditingId(null);setManagingLessons(false);setSidebarOpen(false);}}
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors sm:min-w-0 sm:justify-start"
+          className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors sm:min-w-0 sm:justify-start"
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="hidden sm:inline">All lessons</span>

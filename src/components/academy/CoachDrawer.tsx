@@ -663,7 +663,7 @@ function LegacyCoachDrawer() {
             <button
               aria-label="Close coach"
               onClick={() => setOpen(false)}
-              className="min-w-11 min-h-11 flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/[0.06] transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground rounded-lg hover:bg-white/[0.06] transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
