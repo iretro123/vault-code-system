@@ -1430,8 +1430,14 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
       </AlertDialog>
 
       {/* Messages */}
-      {error && <div role="alert" className="flex items-center justify-between gap-3 px-4 py-2 text-sm bg-red-500/10 text-red-200">Messages couldn’t load.<button className="min-h-11 underline" onClick={() => void refresh()}>Try again</button></div>}
+      {error && <div role="alert" aria-label="Chat feed error" className="flex items-center justify-between gap-3 px-4 py-2 text-sm bg-red-500/10 text-red-200">Messages couldn’t load.<button className="min-h-[44px] underline" onClick={() => void refresh()}>Try again</button></div>}
       {!error && <ChatConnectionStatus reconnecting={connection === "reconnecting"} />}
+      {!error && (
+        <span className="sr-only" role="status" aria-label={messages.length > 0 ? "Chat feed ready" : "Chat feed empty"}>
+          {messages.length > 0 ? "Chat feed ready" : "Chat feed empty"}
+        </span>
+      )}
+
       <div
         ref={containerRef}
         onScroll={handleScroll}
