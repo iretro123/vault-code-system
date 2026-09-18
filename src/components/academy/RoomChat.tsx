@@ -1848,7 +1848,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                 key={idx}
                                 type="button"
                                 onClick={() => setLightboxImage({ src: att.url, alt: att.filename, filename: att.filename })}
-                                className="block text-left"
+                                className="block text-left min-w-0 max-w-full"
+                                aria-label={`Enlarge ${att.filename || "image"}`}
                               >
                                 <img
                                   src={att.url}
@@ -1858,11 +1859,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                                     "rounded-xl w-auto h-auto object-contain cursor-pointer transition-all",
                                     isGif
                                       ? "max-w-[240px] max-h-[200px]"
-                                      : cn("max-w-full sm:max-w-[360px] border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md", compact && "max-h-[300px]")
+                                      : cn("community-chart-preview max-w-full sm:max-w-[360px] border border-white/[0.08] hover:border-white/[0.15] hover:shadow-md", compact && "max-h-[300px]")
                                   )}
                                 />
                                 {!isGif && (
-                                  <span className="community-attachment-caption text-[12px] text-muted-foreground mt-0.5 block truncate max-w-full" title={att.filename}>{att.filename}</span>
+                                  <span className="community-attachment-caption text-[12px] text-muted-foreground mt-0.5 block truncate max-w-full" title={att.filename}>{att.filename}<span className="community-chart-hint">Tap to enlarge</span></span>
                                 )}
                               </button>
                             );

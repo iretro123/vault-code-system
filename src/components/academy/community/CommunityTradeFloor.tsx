@@ -45,7 +45,7 @@ export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTra
 
       {/* Cockpit Panel — structured right rail */}
       {!isMobile && !threadMessage && (
-        <div className="w-[280px] shrink-0 border-l border-white/[0.05] hidden lg:flex flex-col bg-card">
+        <div className="community-guide-rail w-[280px] shrink-0 border-l border-white/[0.05] hidden lg:flex flex-col bg-card">
           <CommunityGuide onSwitchTab={onSwitchTab} />
         </div>
       )}

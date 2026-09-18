@@ -15,6 +15,35 @@ extension VaultOSLaunchAuditTests {
 
     // MARK: - Journeys
 
+    /// Read-only chart attachment regression: bounded preview, full-size viewing, exit.
+    func testCommunityChartPreview() throws {
+        let app = try signedInApp()
+        openCommunity(app)
+        try requireFeedSettled(app, context: "Chart preview room")
+        let chart = app.buttons.containing(NSPredicate(format: "label BEGINSWITH 'Enlarge Screenshot 2026-09-18 at 10.43.48'")).firstMatch
+        for _ in 0..<15 {
+            if chart.exists && chart.isHittable && chart.frame.minY > 250 && chart.frame.maxY < app.frame.height - 120 { break }
+            let towardEarlier = chart.exists && chart.frame.minY < 250
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.55))
+                .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: towardEarlier ? 0.68 : 0.42)))
+        }
+        XCTAssertTrue(chart.exists, "The real chart attachment must be loaded")
+        XCTAssertLessThanOrEqual(chart.frame.height, 380, "Chart and caption must stay compact")
+        journeyCapture(app, "chart-bounded-preview")
+        chart.tap()
+        let zoom = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'Actual size'")).firstMatch
+        XCTAssertTrue(zoom.waitForExistence(timeout: 10))
+        XCTAssertGreaterThan(zoom.frame.minY, 40, "Viewer controls must clear the status area")
+        journeyCapture(app, "chart-fit-viewer")
+        zoom.tap()
+        let fit = app.descendants(matching: .any).matching(NSPredicate(format: "label == 'Fit to screen'")).firstMatch
+        XCTAssertTrue(fit.exists)
+        journeyCapture(app, "chart-original-resolution")
+        fit.tap()
+        app.buttons["Close preview"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["Signals"].firstMatch.exists)
+    }
+
     /// Repeated process launches; preserves the signed-in user's data.
     func testRepeatedStartup() throws {
         let app = try signedInApp()

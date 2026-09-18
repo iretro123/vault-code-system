@@ -28,4 +28,17 @@ describe('conversation-first phone layout', () => {
     expect(room).toContain('onTouchEnd: cancel');
     expect(room).toContain('onTouchCancel: cancel');
   });
+  it('limits the denser containers to desktop without reducing message text', () => {
+    const desktop = css.slice(css.indexOf('/* Desktop density:'));
+    expect(desktop).toContain('@media(min-width:1024px){');
+    expect(desktop).toContain('.community-heading{padding:8px 16px;min-height:56px}');
+    expect(desktop).toContain('.community-guide-rail{width:240px}');
+    expect(desktop).not.toContain('.community-message-body');
+    expect(desktop).not.toContain('@media(max-width:');
+  });
+  it('bounds chart previews on phones as well as desktop without cropping', () => {
+    const shared = css.slice(0, css.indexOf('/* Desktop density:'));
+    expect(shared).toContain('.community-chart-preview{max-height:320px;max-width:min(360px,100%);object-fit:contain}');
+    expect(room).toContain('Tap to enlarge');
+  });
 });

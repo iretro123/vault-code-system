@@ -227,3 +227,27 @@
 .community-expression-tabs button{flex:1;min-height:44px;border-radius:8px;color:#c5c7ce;font-size:15px;font-weight:600}
 .community-expression-tabs button[aria-pressed="true"]{background:#41434a;color:white}
 .community-expression-picker .chat-native-emoji-picker,.community-expression-picker .vault-gif-picker{width:100%;max-width:100%;border:0;border-radius:0;box-shadow:none}
+
+.vault-community .community-chart-preview{max-height:320px;max-width:min(360px,100%);object-fit:contain}
+.vault-community .community-chart-hint{display:block;color:#b8d3ff;font-size:12px;margin-top:2px}
+
+/* Desktop density: reclaim room for conversation without shrinking message text.
+   Deliberately above the phone/tablet breakpoint; touch layouts stay unchanged. */
+@media(min-width:1024px){
+ .vault-community .community-heading{padding:8px 16px;min-height:56px}
+ .vault-community .community-heading h1{font-size:20px;letter-spacing:-.4px}
+ .vault-community .community-heading button{min-height:36px;padding:6px 10px;font-size:13px}
+ .vault-community .community-room-tabs{padding:4px 0 8px;gap:4px}
+ .vault-community .community-room-tabs button{min-height:36px;padding:6px 16px;font-size:14px}
+ .vault-community .community-composer-footer{padding:6px 14px 10px}
+ .vault-community [data-chat-composer]{border-radius:10px;box-shadow:none}
+ .vault-community .community-composer-grid{padding:6px 10px;gap:6px;grid-template-columns:auto minmax(0,1fr) 40px 40px}
+ .vault-community .community-composer-grid textarea{min-height:40px;padding:8px 0}
+ .vault-community .community-composer-grid>button{width:40px;height:40px;min-width:40px;min-height:40px}
+ .vault-community .community-message{padding-inline:16px}
+ .vault-community .community-message.mt-1{margin-top:2px;padding-top:8px}
+ .vault-community .community-date-divider{padding:14px 16px 8px}
+ .vault-community .community-guide-rail{width:240px}
+ .vault-community .community-guide{padding:18px 16px}
+ .vault-community .community-guide section+section{margin-top:16px;padding-top:16px}
+}
