@@ -482,7 +482,8 @@ Deno.serve(async (req) => {
     if (iosTokens.length > 0) {
       const apnsResult = await sendApns(iosTokens, notificationPayload);
       sent += apnsResult.sent || 0;
-      if (apnsResult.error) platformErrors.ios = apnsResult.error;
+      const apnsError = (apnsResult as { error?: string }).error;
+      if (apnsError) platformErrors.ios = apnsError;
     }
 
     if (sent > 0) {
