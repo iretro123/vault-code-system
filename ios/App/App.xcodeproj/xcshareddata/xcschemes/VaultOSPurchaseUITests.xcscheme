@@ -40,11 +40,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      selectedStoreKitConfigurationFileReference = "container:App/VaultOS.storekit"
       shouldUseLaunchSchemeArgsEnv = "YES">
-      <StoreKitConfigurationFileReference
-         identifier = "../../../App/VaultOS.storekit">
-      </StoreKitConfigurationFileReference>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"

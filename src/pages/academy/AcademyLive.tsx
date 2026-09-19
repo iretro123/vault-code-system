@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Radio, Calendar, Clock, ExternalLink, Plus, Pencil, Trash2, Loader2,
   Bell, Link2, CalendarPlus, Play, ChevronRight, CalendarDays, Settings2,
-  Eye, EyeOff, Monitor, Mic, Users, CheckCircle2, ArrowDown,
+  Eye, EyeOff, Monitor, Mic, Users, CheckCircle2, ArrowDown, ChevronLeft, Settings,
 } from "lucide-react";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { AdminOnly } from "@/components/admin/AdminOnly";
@@ -650,7 +650,7 @@ const AcademyLive = () => {
 };
 
 // Keep live membership enforcement and the existing staff management surface.
-function ReleasedLivePage() {
+export function ReleasedLivePage() {
   const { hasAccess, status, loading } = useStudentAccess();
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
