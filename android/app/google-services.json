@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "857748286139",
+    "project_id": "vault-os-android-push",
+    "storage_bucket": "vault-os-android-push.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857748286139:android:d7e86f8c5aed757f53d79e",
+        "android_client_info": {
+          "package_name": "com.vaulttradingacademy.vaultos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSkni2PUJzD2WlLxzNMlHALoWQs3nRSPc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
