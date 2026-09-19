@@ -654,10 +654,50 @@ function ReleasedLivePage() {
   const { hasAccess, status, loading } = useStudentAccess();
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
+  const [managing, setManaging] = useState(false);
+  // Re-checked on every render: losing admin mode or the permission hides management.
+  const canManage = isAdminActive && hasPermission("manage_live_sessions");
+
   if (loading) return <div className="p-6" role="status">Loading classroom access…</div>;
   if (!hasAccess) return <PremiumGate status={status} pageName="Live Sessions" />;
-  if (isAdminActive && hasPermission("manage_live_sessions")) return <AcademyLive />;
-  return <VaultLivePreview />;
+
+  if (canManage && managing) {
+    return (
+      <div>
+        <div className="px-4 pt-3">
+          <button
+            type="button"
+            aria-label="Back to Vault Live"
+            onClick={() => setManaging(false)}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back to Vault Live
+          </button>
+        </div>
+        <AcademyLive />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {canManage && (
+        <div className="flex justify-end px-4 pt-3">
+          <button
+            type="button"
+            aria-label="Manage sessions"
+            onClick={() => setManaging(true)}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 text-sm font-medium text-violet-200 hover:bg-violet-500/20 transition-colors"
+          >
+            <Settings className="h-4 w-4" />
+            Manage sessions
+          </button>
+        </div>
+      )}
+      <VaultLivePreview />
+    </div>
+  );
 }
 
 export default function LivePage() {
