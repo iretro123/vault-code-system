@@ -66,9 +66,6 @@ function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
 }
 
 
-type FcmResult = {
-  error?: string;
-};
 
 function defaultLinkPath(type: string) {
   switch (type) {
