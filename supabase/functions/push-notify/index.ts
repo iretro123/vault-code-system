@@ -497,7 +497,7 @@ Deno.serve(async (req) => {
       await releaseDispatch();
     }
 
-    return new Response(JSON.stringify({ ok: true, sent }), {
+    return new Response(JSON.stringify({ ok: true, sent, errors: platformErrors }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
