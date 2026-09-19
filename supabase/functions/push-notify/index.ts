@@ -7,7 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-push-secret",
 };
 
-const FCM_URL = "https://fcm.googleapis.com/fcm/send";
+const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const FCM_SEND_TIMEOUT_MS = 10_000;
+const FCM_MAX_CONCURRENCY = 10;
 const PUSHABLE_TYPES = new Set(["mention", "rz_message", "live_now", "announcement", "new_module", "motivation"]);
 
 type NotificationRow = {
@@ -63,9 +66,6 @@ function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
 }
 
 
-type FcmResult = {
-  error?: string;
-};
 
 function defaultLinkPath(type: string) {
   switch (type) {
@@ -218,6 +218,157 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
   return { sent };
 }
 
+type ServiceAccount = { client_email: string; private_key: string; project_id: string };
+
+// Accepts either secret name used by the Firebase project notes.
+export function readFcmServiceAccount(
+  env: (name: string) => string | undefined = (n) => Deno.env.get(n),
+): ServiceAccount | null {
+  const raw = env("FCM_SERVICE_ACCOUNT_JSON") || env("FIREBASE_SERVICE_ACCOUNT_JSON");
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    const clientEmail = String(parsed.client_email || "");
+    const privateKey = String(parsed.private_key || "").replace(/\\n/g, "\n");
+    const projectId = String(parsed.project_id || "");
+    if (!clientEmail || !privateKey || !projectId) return null;
+    return { client_email: clientEmail, private_key: privateKey, project_id: projectId };
+  } catch {
+    return null;
+  }
+}
+
+async function getFcmAccessToken(account: ServiceAccount): Promise<string> {
+  const key = await importPKCS8(account.private_key, "RS256");
+  const assertion = await new SignJWT({ scope: FCM_SCOPE })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(account.client_email)
+    .setSubject(account.client_email)
+    .setAudience(GOOGLE_TOKEN_URL)
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(key);
+
+  const res = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  const body = await res.text();
+  if (!res.ok) throw new Error(`FCM token exchange failed [${res.status}]: ${body}`);
+  const token = JSON.parse(body)?.access_token;
+  if (!token) throw new Error("FCM token exchange returned no access_token");
+  return String(token);
+}
+
+// HTTP v1 requires every data value to be a string.
+export function buildFcmV1Message(
+  token: string,
+  notif: ReturnType<typeof normalizeNotification>,
+) {
+  return {
+    message: {
+      token,
+      notification: { title: notif.title, body: notif.body },
+      android: {
+        priority: "HIGH",
+        notification: { sound: "default", channel_id: "default", tag: notif.threadId },
+      },
+      data: {
+        notification_id: String(notif.id),
+        type: String(notif.type),
+        category: String(notif.category),
+        thread_id: String(notif.threadId),
+        link_path: String(notif.linkPath),
+      },
+    },
+  };
+}
+
+export function isUnregisteredResponse(status: number, body: string): boolean {
+  if (status !== 404) return false;
+  try {
+    const parsed = JSON.parse(body);
+    const details = parsed?.error?.details;
+    const code = Array.isArray(details)
+      ? details.find((d: { errorCode?: string }) => d?.errorCode)?.errorCode
+      : undefined;
+    if (code) return code === "UNREGISTERED";
+  } catch {
+    // fall through to text match
+  }
+  return body.includes("UNREGISTERED");
+}
+
+export async function sendFcmV1(
+  tokens: string[],
+  notif: ReturnType<typeof normalizeNotification>,
+  deps: {
+    account: ServiceAccount;
+    accessToken?: string;
+    fetchImpl?: typeof fetch;
+  },
+): Promise<{ sent: number; staleTokens: string[]; error?: string }> {
+  if (tokens.length === 0) return { sent: 0, staleTokens: [] };
+  const doFetch = deps.fetchImpl ?? fetch;
+  let accessToken: string;
+  try {
+    accessToken = deps.accessToken ?? (await getFcmAccessToken(deps.account));
+  } catch (err) {
+    return { sent: 0, staleTokens: [], error: String(err) };
+  }
+
+  const url = `https://fcm.googleapis.com/v1/projects/${deps.account.project_id}/messages:send`;
+  const staleTokens: string[] = [];
+  let sent = 0;
+  let firstError: string | undefined;
+
+  const queue = [...tokens];
+  const worker = async () => {
+    for (;;) {
+      const token = queue.shift();
+      if (!token) return;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), FCM_SEND_TIMEOUT_MS);
+      try {
+        const res = await doFetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(buildFcmV1Message(token, notif)),
+          signal: controller.signal,
+        });
+        if (res.ok) {
+          sent += 1;
+        } else {
+          const body = await res.text();
+          if (isUnregisteredResponse(res.status, body)) {
+            staleTokens.push(token);
+          }
+          if (!firstError) firstError = `FCM send failed [${res.status}]: ${body}`;
+          console.error(`FCM v1 send failed [${res.status}]: ${body}`);
+        }
+      } catch (err) {
+        if (!firstError) firstError = String(err);
+        console.error("FCM v1 send error:", String(err));
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(FCM_MAX_CONCURRENCY, tokens.length) }, () => worker()),
+  );
+
+  return { sent, staleTokens, error: firstError };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -308,55 +459,22 @@ Deno.serve(async (req) => {
     }
 
     let sent = 0;
+    const platformErrors: Record<string, string> = {};
 
+    // Android uses FCM HTTP v1. A missing/invalid Firebase service account is a
+    // per-platform failure only: iOS must still deliver.
     if (androidTokens.length > 0) {
-      if (!fcmKey) {
-        return new Response(JSON.stringify({ error: "FCM_SERVER_KEY not set" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      for (const group of chunk(androidTokens, 900)) {
-        const payload = {
-          registration_ids: group,
-          notification: {
-            title: notificationPayload.title,
-            body: notificationPayload.body,
-            sound: "default",
-          },
-          data: {
-            notification_id: notificationPayload.id,
-            type: notificationPayload.type,
-            category: notificationPayload.category,
-            thread_id: notificationPayload.threadId,
-            link_path: notificationPayload.linkPath,
-          },
-          android: { priority: "high" },
-        };
-
-        const res = await fetch(FCM_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `key=${fcmKey}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const result = await res.json();
-        sent += result?.success ?? 0;
-
-        // Cleanup invalid tokens
-        if (result?.results && Array.isArray(result.results)) {
-          const badTokens: string[] = [];
-          (result.results as FcmResult[]).forEach((r, idx: number) => {
-            if (r?.error === "NotRegistered" || r?.error === "InvalidRegistration") {
-              badTokens.push(group[idx]);
-            }
-          });
-          if (badTokens.length > 0) {
-            await admin.from("device_tokens").delete().in("token", badTokens);
-          }
+      const serviceAccount = readFcmServiceAccount();
+      if (!serviceAccount) {
+        platformErrors.android =
+          "Firebase service account not configured (FCM_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_JSON)";
+        console.error(platformErrors.android);
+      } else {
+        const result = await sendFcmV1(androidTokens, notificationPayload, { account: serviceAccount });
+        sent += result.sent;
+        if (result.error) platformErrors.android = result.error;
+        if (result.staleTokens.length > 0) {
+          await admin.from("device_tokens").delete().in("token", result.staleTokens);
         }
       }
     }
@@ -364,6 +482,8 @@ Deno.serve(async (req) => {
     if (iosTokens.length > 0) {
       const apnsResult = await sendApns(iosTokens, notificationPayload);
       sent += apnsResult.sent || 0;
+      const apnsError = (apnsResult as { error?: string }).error;
+      if (apnsError) platformErrors.ios = apnsError;
     }
 
     if (sent > 0) {
@@ -375,7 +495,7 @@ Deno.serve(async (req) => {
       await releaseDispatch();
     }
 
-    return new Response(JSON.stringify({ ok: true, sent }), {
+    return new Response(JSON.stringify({ ok: true, sent, errors: platformErrors }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
