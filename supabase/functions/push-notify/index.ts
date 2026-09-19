@@ -7,7 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-push-secret",
 };
 
-const FCM_URL = "https://fcm.googleapis.com/fcm/send";
+const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
+const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const FCM_SEND_TIMEOUT_MS = 10_000;
+const FCM_MAX_CONCURRENCY = 10;
 const PUSHABLE_TYPES = new Set(["mention", "rz_message", "live_now", "announcement", "new_module", "motivation"]);
 
 type NotificationRow = {
