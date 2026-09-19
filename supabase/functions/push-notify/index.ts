@@ -462,55 +462,22 @@ Deno.serve(async (req) => {
     }
 
     let sent = 0;
+    const platformErrors: Record<string, string> = {};
 
+    // Android uses FCM HTTP v1. A missing/invalid Firebase service account is a
+    // per-platform failure only: iOS must still deliver.
     if (androidTokens.length > 0) {
-      if (!fcmKey) {
-        return new Response(JSON.stringify({ error: "FCM_SERVER_KEY not set" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      for (const group of chunk(androidTokens, 900)) {
-        const payload = {
-          registration_ids: group,
-          notification: {
-            title: notificationPayload.title,
-            body: notificationPayload.body,
-            sound: "default",
-          },
-          data: {
-            notification_id: notificationPayload.id,
-            type: notificationPayload.type,
-            category: notificationPayload.category,
-            thread_id: notificationPayload.threadId,
-            link_path: notificationPayload.linkPath,
-          },
-          android: { priority: "high" },
-        };
-
-        const res = await fetch(FCM_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `key=${fcmKey}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const result = await res.json();
-        sent += result?.success ?? 0;
-
-        // Cleanup invalid tokens
-        if (result?.results && Array.isArray(result.results)) {
-          const badTokens: string[] = [];
-          (result.results as FcmResult[]).forEach((r, idx: number) => {
-            if (r?.error === "NotRegistered" || r?.error === "InvalidRegistration") {
-              badTokens.push(group[idx]);
-            }
-          });
-          if (badTokens.length > 0) {
-            await admin.from("device_tokens").delete().in("token", badTokens);
-          }
+      const serviceAccount = readFcmServiceAccount();
+      if (!serviceAccount) {
+        platformErrors.android =
+          "Firebase service account not configured (FCM_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_JSON)";
+        console.error(platformErrors.android);
+      } else {
+        const result = await sendFcmV1(androidTokens, notificationPayload, { account: serviceAccount });
+        sent += result.sent;
+        if (result.error) platformErrors.android = result.error;
+        if (result.staleTokens.length > 0) {
+          await admin.from("device_tokens").delete().in("token", result.staleTokens);
         }
       }
     }
