@@ -7,7 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-push-secret",
 };
 
-const FCM_URL = "https://fcm.googleapis.com/fcm/send";
+const GOOGLE_OAUTH_URL = "https://oauth2.googleapis.com/token";
+const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const PUSHABLE_TYPES = new Set(["mention", "rz_message", "live_now", "announcement", "new_module", "motivation"]);
 
 type NotificationRow = {
@@ -63,13 +64,15 @@ function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
 }
 
 
-type FcmResult = {
-  error?: string;
-};
-
 type DeliveryError = {
   provider: "fcm" | "apns";
   message: string;
+};
+
+type FirebaseServiceAccount = {
+  project_id: string;
+  client_email: string;
+  private_key: string;
 };
 
 function defaultLinkPath(type: string) {
@@ -170,6 +173,82 @@ async function createApnsJwt() {
     .sign(key);
 }
 
+function getFirebaseServiceAccount(): FirebaseServiceAccount | null {
+  const raw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+  if (!raw) return null;
+  try {
+    const account = JSON.parse(raw) as Partial<FirebaseServiceAccount>;
+    if (!account.project_id || !account.client_email || !account.private_key) return null;
+    return account as FirebaseServiceAccount;
+  } catch {
+    return null;
+  }
+}
+
+async function createFirebaseAccessToken(account: FirebaseServiceAccount) {
+  const key = await importPKCS8(account.private_key.replace(/\\n/g, "\n"), "RS256");
+  const assertion = await new SignJWT({ scope: FCM_SCOPE })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(account.client_email)
+    .setAudience(GOOGLE_OAUTH_URL)
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(key);
+  const response = await fetch(GOOGLE_OAUTH_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  if (!response.ok) throw new Error(`Google OAuth failed with status ${response.status}`);
+  const body = await response.json() as { access_token?: string };
+  if (!body.access_token) throw new Error("Google OAuth response did not include an access token");
+  return body.access_token;
+}
+
+async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
+  if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
+  const account = getFirebaseServiceAccount();
+  if (!account) {
+    return { sent: 0, invalidTokens: [] as string[], errors: ["FIREBASE_SERVICE_ACCOUNT_JSON not set"] };
+  }
+  const accessToken = await createFirebaseAccessToken(account);
+  const url = `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`;
+  let sent = 0;
+  const invalidTokens: string[] = [];
+  const errors: string[] = [];
+  for (const token of tokens) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          token,
+          notification: { title: notif.title, body: notif.body },
+          data: {
+            notification_id: notif.id,
+            type: notif.type,
+            category: notif.category,
+            thread_id: notif.threadId,
+            link_path: notif.linkPath,
+          },
+          android: { priority: "HIGH", notification: { sound: "default" } },
+        },
+      }),
+    });
+    if (response.ok) {
+      sent += 1;
+      continue;
+    }
+    const raw = await response.text();
+    if (response.status === 404 || raw.includes("UNREGISTERED")) invalidTokens.push(token);
+    errors.push(`FCM request failed with status ${response.status}`);
+  }
+  return { sent, invalidTokens, errors };
+}
+
 async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
   if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
   const bundleId = Deno.env.get("APNS_BUNDLE_ID");
@@ -265,8 +344,6 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const fcmKey = Deno.env.get("FCM_SERVER_KEY");
-
     const admin = createClient(supabaseUrl, serviceKey);
 
     // Idempotency: claim this notification_id before doing anything
@@ -333,71 +410,15 @@ Deno.serve(async (req) => {
     const deliveryErrors: DeliveryError[] = [];
 
     if (androidTokens.length > 0) {
-      if (!fcmKey) {
-        deliveryErrors.push({ provider: "fcm", message: "FCM_SERVER_KEY not set" });
-      } else {
-        for (const group of chunk(androidTokens, 900)) {
-          try {
-            const payload = {
-              registration_ids: group,
-              notification: {
-                title: notificationPayload.title,
-                body: notificationPayload.body,
-                sound: "default",
-              },
-              data: {
-                notification_id: notificationPayload.id,
-                type: notificationPayload.type,
-                category: notificationPayload.category,
-                thread_id: notificationPayload.threadId,
-                link_path: notificationPayload.linkPath,
-              },
-              android: { priority: "high" },
-            };
-
-            const res = await fetch(FCM_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `key=${fcmKey}`,
-              },
-              body: JSON.stringify(payload),
-            });
-            const raw = await res.text();
-            let result: { success?: number; results?: FcmResult[] } = {};
-            try {
-              result = raw ? JSON.parse(raw) : {};
-            } catch {
-              deliveryErrors.push({
-                provider: "fcm",
-                message: `FCM returned non-JSON status ${res.status}`,
-              });
-              continue;
-            }
-            if (!res.ok) {
-              deliveryErrors.push({
-                provider: "fcm",
-                message: `FCM request failed with status ${res.status}`,
-              });
-              continue;
-            }
-            sent += result.success ?? 0;
-
-            if (result.results && Array.isArray(result.results)) {
-              const badTokens: string[] = [];
-              result.results.forEach((r, idx: number) => {
-                if (r?.error === "NotRegistered" || r?.error === "InvalidRegistration") {
-                  badTokens.push(group[idx]);
-                }
-              });
-              if (badTokens.length > 0) {
-                await admin.from("device_tokens").delete().in("token", badTokens);
-              }
-            }
-          } catch (err) {
-            deliveryErrors.push({ provider: "fcm", message: String(err) });
-          }
+      try {
+        const fcmResult = await sendFcm(androidTokens, notificationPayload);
+        sent += fcmResult.sent;
+        if (fcmResult.invalidTokens.length > 0) {
+          await admin.from("device_tokens").delete().in("token", fcmResult.invalidTokens);
         }
+        for (const message of fcmResult.errors) deliveryErrors.push({ provider: "fcm", message });
+      } catch (err) {
+        deliveryErrors.push({ provider: "fcm", message: String(err) });
       }
     }
 
