@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, ToggleLeft, Loader2, MessageSquare, ShieldCheck, Activity, LockKeyhole } from "lucide-react";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, ToggleLeft, Loader2, MessageSquare, ShieldCheck, Activity, LockKeyhole, Radio } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
@@ -13,6 +13,7 @@ import { AdminStripeTab } from "@/components/admin/AdminStripeTab";
 import { AdminReferralsTab } from "@/components/admin/AdminReferralsTab";
 import { AdminFeatureFlagsTab } from "@/components/admin/AdminFeatureFlagsTab";
 import { AdminDMsTab } from "@/components/admin/AdminDMsTab";
+import { AcademyLive } from "@/pages/academy/AcademyLive";
 import "./admin-panel.css";
 
 const TAB_CONFIG = [
@@ -21,6 +22,7 @@ const TAB_CONFIG = [
   { value: "announcements", label: "Announcements", detail: "In-app updates", icon: Megaphone, perm: "manage_notifications" },
   { value: "broadcast", label: "Broadcast", detail: "Push, SMS and email", icon: Send, perm: "manage_notifications" },
   { value: "content", label: "Content", detail: "Academy library", icon: BookOpen, perm: "manage_content" },
+  { value: "live", label: "Live Sessions", detail: "Schedule, links and replays", icon: Radio, perm: "manage_live_sessions" },
   { value: "stripe", label: "Stripe", detail: "Billing and access", icon: CreditCard, perm: "view_admin_panel" },
   { value: "referrals", label: "Referrals", detail: "Invites and rewards", icon: UserPlus, perm: "view_admin_panel" },
   { value: "flags", label: "Feature Flags", detail: "Release controls", icon: ToggleLeft, perm: "view_admin_panel" },
@@ -172,6 +174,11 @@ const AdminPanel = () => {
           {visibleTabs.some((t) => t.value === "content") && (
             <TabsContent value="content" className="vault-admin-panel-content">
               <AdminContentTab />
+            </TabsContent>
+          )}
+          {visibleTabs.some((t) => t.value === "live") && (
+            <TabsContent value="live" className="vault-admin-panel-content vault-admin-live-content">
+              <AcademyLive />
             </TabsContent>
           )}
           {visibleTabs.some((t) => t.value === "stripe") && (
