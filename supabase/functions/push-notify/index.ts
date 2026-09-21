@@ -67,6 +67,11 @@ type FcmResult = {
   error?: string;
 };
 
+type DeliveryError = {
+  provider: "fcm" | "apns";
+  message: string;
+};
+
 function defaultLinkPath(type: string) {
   switch (type) {
     case "live_now":
@@ -166,11 +171,11 @@ async function createApnsJwt() {
 }
 
 async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
-  if (tokens.length === 0) return { sent: 0 };
+  if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
   const bundleId = Deno.env.get("APNS_BUNDLE_ID");
-  if (!bundleId) return { sent: 0, error: "APNS_BUNDLE_ID not set" };
+  if (!bundleId) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS_BUNDLE_ID not set"] };
   const jwt = await createApnsJwt();
-  if (!jwt) return { sent: 0, error: "APNS credentials missing" };
+  if (!jwt) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS credentials missing"] };
   const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") || "").toLowerCase() === "true";
   const primaryHost = useSandbox ? "https://api.sandbox.push.apple.com" : "https://api.push.apple.com";
   const alternateHost = useSandbox ? "https://api.push.apple.com" : "https://api.sandbox.push.apple.com";
@@ -199,10 +204,12 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     fetch(`${host}/3/device/${token}`, { method: "POST", headers, body });
 
   let sent = 0;
+  const invalidTokens: string[] = [];
+  const errors: string[] = [];
   for (const token of tokens) {
     let res = await postTo(primaryHost, token);
+    let reason = "";
     if (!res.ok) {
-      let reason = "";
       try {
         const txt = await res.clone().text();
         reason = txt ? (JSON.parse(txt)?.reason || "") : "";
@@ -211,11 +218,26 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
       }
       if (reason === "BadDeviceToken") {
         res = await postTo(alternateHost, token);
+        if (!res.ok) {
+          try {
+            const txt = await res.clone().text();
+            reason = txt ? (JSON.parse(txt)?.reason || reason) : reason;
+          } catch {
+            // Keep the first APNs reason if the retry body is not JSON.
+          }
+        }
       }
     }
-    if (res.ok) sent += 1;
+    if (res.ok) {
+      sent += 1;
+      continue;
+    }
+    if (reason === "BadDeviceToken" || reason === "Unregistered" || reason === "DeviceTokenNotForTopic") {
+      invalidTokens.push(token);
+    }
+    errors.push(reason || `APNs request failed with status ${res.status}`);
   }
-  return { sent };
+  return { sent, invalidTokens, errors };
 }
 
 Deno.serve(async (req) => {
@@ -308,62 +330,90 @@ Deno.serve(async (req) => {
     }
 
     let sent = 0;
+    const deliveryErrors: DeliveryError[] = [];
 
     if (androidTokens.length > 0) {
       if (!fcmKey) {
-        return new Response(JSON.stringify({ error: "FCM_SERVER_KEY not set" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      for (const group of chunk(androidTokens, 900)) {
-        const payload = {
-          registration_ids: group,
-          notification: {
-            title: notificationPayload.title,
-            body: notificationPayload.body,
-            sound: "default",
-          },
-          data: {
-            notification_id: notificationPayload.id,
-            type: notificationPayload.type,
-            category: notificationPayload.category,
-            thread_id: notificationPayload.threadId,
-            link_path: notificationPayload.linkPath,
-          },
-          android: { priority: "high" },
-        };
+        deliveryErrors.push({ provider: "fcm", message: "FCM_SERVER_KEY not set" });
+      } else {
+        for (const group of chunk(androidTokens, 900)) {
+          try {
+            const payload = {
+              registration_ids: group,
+              notification: {
+                title: notificationPayload.title,
+                body: notificationPayload.body,
+                sound: "default",
+              },
+              data: {
+                notification_id: notificationPayload.id,
+                type: notificationPayload.type,
+                category: notificationPayload.category,
+                thread_id: notificationPayload.threadId,
+                link_path: notificationPayload.linkPath,
+              },
+              android: { priority: "high" },
+            };
 
-        const res = await fetch(FCM_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `key=${fcmKey}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const result = await res.json();
-        sent += result?.success ?? 0;
-
-        // Cleanup invalid tokens
-        if (result?.results && Array.isArray(result.results)) {
-          const badTokens: string[] = [];
-          (result.results as FcmResult[]).forEach((r, idx: number) => {
-            if (r?.error === "NotRegistered" || r?.error === "InvalidRegistration") {
-              badTokens.push(group[idx]);
+            const res = await fetch(FCM_URL, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `key=${fcmKey}`,
+              },
+              body: JSON.stringify(payload),
+            });
+            const raw = await res.text();
+            let result: { success?: number; results?: FcmResult[] } = {};
+            try {
+              result = raw ? JSON.parse(raw) : {};
+            } catch {
+              deliveryErrors.push({
+                provider: "fcm",
+                message: `FCM returned non-JSON status ${res.status}`,
+              });
+              continue;
             }
-          });
-          if (badTokens.length > 0) {
-            await admin.from("device_tokens").delete().in("token", badTokens);
+            if (!res.ok) {
+              deliveryErrors.push({
+                provider: "fcm",
+                message: `FCM request failed with status ${res.status}`,
+              });
+              continue;
+            }
+            sent += result.success ?? 0;
+
+            if (result.results && Array.isArray(result.results)) {
+              const badTokens: string[] = [];
+              result.results.forEach((r, idx: number) => {
+                if (r?.error === "NotRegistered" || r?.error === "InvalidRegistration") {
+                  badTokens.push(group[idx]);
+                }
+              });
+              if (badTokens.length > 0) {
+                await admin.from("device_tokens").delete().in("token", badTokens);
+              }
+            }
+          } catch (err) {
+            deliveryErrors.push({ provider: "fcm", message: String(err) });
           }
         }
       }
     }
 
     if (iosTokens.length > 0) {
-      const apnsResult = await sendApns(iosTokens, notificationPayload);
-      sent += apnsResult.sent || 0;
+      try {
+        const apnsResult = await sendApns(iosTokens, notificationPayload);
+        sent += apnsResult.sent || 0;
+        if (apnsResult.invalidTokens.length > 0) {
+          await admin.from("device_tokens").delete().in("token", apnsResult.invalidTokens);
+        }
+        for (const message of apnsResult.errors) {
+          deliveryErrors.push({ provider: "apns", message });
+        }
+      } catch (err) {
+        deliveryErrors.push({ provider: "apns", message: String(err) });
+      }
     }
 
     if (sent > 0) {
@@ -375,7 +425,7 @@ Deno.serve(async (req) => {
       await releaseDispatch();
     }
 
-    return new Response(JSON.stringify({ ok: true, sent }), {
+    return new Response(JSON.stringify({ ok: true, sent, errors: deliveryErrors }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
