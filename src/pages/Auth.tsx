@@ -61,7 +61,7 @@ const Auth = () => {
     const result = await signIn(normalizedEmail, password);
 
     if (result.error) {
-      toast({ title: "Error", description: result.error.message, variant: "destructive" });
+      toast({ title: "Sign in failed", description: authErrorMessage(result.error), variant: "destructive" });
       setLoading(false);
       return;
     }
