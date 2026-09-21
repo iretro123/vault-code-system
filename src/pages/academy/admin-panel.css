@@ -86,6 +86,10 @@
 .vault-admin-secure-pill { display: inline-flex; align-items: center; gap: .4rem; flex: 0 0 auto; padding: .45rem .65rem; border: 1px solid rgba(86, 205, 155, .18); border-radius: 999px; background: rgba(42, 157, 105, .08); color: #7dd9ad; font-size: .65rem; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
 .vault-admin-secure-pill svg { width: .75rem; height: .75rem; }
 .vault-admin-panel-content { margin: 0; padding: clamp(1rem, 2.5vw, 1.5rem); outline: none; }
+.vault-admin-live-content .liveSessionsPage { min-height: auto; background: transparent; }
+.vault-admin-live-content .liveSessionsPage > header { padding: 0 0 1.25rem; }
+.vault-admin-live-content .liveSessionsPage > header h1 { font-size: clamp(1.35rem, 2.5vw, 1.75rem); }
+.vault-admin-live-content .liveSessionsPage > header ~ div { margin-left: 0; margin-right: 0; }
 
 .vault-admin-panel-content [class*="border-border"],
 .vault-admin-panel-content .border { border-color: rgba(255,255,255,.075); }

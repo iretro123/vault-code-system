@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Radio, Calendar, Clock, ExternalLink, Plus, Pencil, Trash2, Loader2,
   Bell, Link2, CalendarPlus, Play, ChevronRight, CalendarDays, Settings2,
-  Eye, EyeOff, Monitor, Mic, Users, CheckCircle2, ArrowDown, ChevronLeft, Settings,
+  Eye, EyeOff, Monitor, Mic, Users, CheckCircle2, ArrowDown, Settings,
 } from "lucide-react";
 import { AdminActionBar } from "@/components/admin/AdminActionBar";
 import { AdminOnly } from "@/components/admin/AdminOnly";
@@ -20,7 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStudentAccess } from "@/hooks/useStudentAccess";
 import { PremiumGate } from "@/components/academy/PremiumGate";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { format, isPast, isThisWeek, startOfMonth } from "date-fns";
 import { formatTime } from "@/lib/formatTime";
@@ -223,7 +223,7 @@ const SESSION_TYPES = [
   { title: "Weekly Pro Q&A", subtitle: "Training & Coaching Session", image: liveSessionQA, bullets: ["Trade review", "Q&A and hot seats", "Strategy lessons", "Weekly reset and refinement"], schedule: "Wednesdays @ 8 PM ET", label: "REVIEW" },
 ];
 
-const AcademyLive = () => {
+export const AcademyLive = () => {
   const { sessions: realSessions, loading, refetch } = useLiveSessions();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user, profile } = useAuth();
@@ -654,31 +654,12 @@ export function ReleasedLivePage() {
   const { hasAccess, status, loading } = useStudentAccess();
   const { isAdminActive } = useAdminMode();
   const { hasPermission } = useAcademyPermissions();
-  const [managing, setManaging] = useState(false);
+  const navigate = useNavigate();
   // Re-checked on every render: losing admin mode or the permission hides management.
   const canManage = isAdminActive && hasPermission("manage_live_sessions");
 
   if (loading) return <div className="p-6" role="status">Loading classroom access…</div>;
   if (!hasAccess) return <PremiumGate status={status} pageName="Live Sessions" />;
-
-  if (canManage && managing) {
-    return (
-      <div>
-        <div className="px-4 pt-3">
-          <button
-            type="button"
-            aria-label="Back to Vault Live"
-            onClick={() => setManaging(false)}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to Vault Live
-          </button>
-        </div>
-        <AcademyLive />
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -687,7 +668,7 @@ export function ReleasedLivePage() {
           <button
             type="button"
             aria-label="Manage sessions"
-            onClick={() => setManaging(true)}
+            onClick={() => navigate("/academy/admin/panel?tab=live")}
             className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 text-sm font-medium text-violet-200 hover:bg-violet-500/20 transition-colors"
           >
             <Settings className="h-4 w-4" />
