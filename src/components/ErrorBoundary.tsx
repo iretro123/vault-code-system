@@ -1,5 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from "react";
-import { claimChunkReload } from '@/lib/chunkReloadGuard';
+import { claimChunkReload, isStaleAssetError } from '@/lib/chunkReloadGuard';
 
 interface Props {
   children: ReactNode;
@@ -25,15 +25,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Stale-deploy chunk-hash mismatch: auto-reload once instead of
     // showing the user a dead-end error card.
-    const msg = error?.message ?? "";
-    const isChunkError =
-      /Importing a module script failed/i.test(msg) ||
-      /Failed to fetch dynamically imported module/i.test(msg) ||
-      /Loading chunk [\d]+ failed/i.test(msg) ||
-      /ChunkLoadError/i.test(msg) ||
-      error?.name === "ChunkLoadError";
-
-    if (isChunkError) {
+    if (isStaleAssetError(error)) {
       if(claimChunkReload())window.location.reload();
     }
   }
