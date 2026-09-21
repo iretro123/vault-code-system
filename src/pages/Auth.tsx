@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isGuestModeEnabled } from "@/lib/featureFlags";
 import { enableGuestMode } from "@/lib/guestMode";
 import { isNativeCapacitorApp } from "@/lib/platform";
+import { authErrorMessage } from "@/lib/authErrorMessage";
 
 const Auth = () => {
   const { toast } = useToast();
