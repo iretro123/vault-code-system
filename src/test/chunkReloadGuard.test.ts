@@ -1,5 +1,5 @@
 import {afterEach,expect,it,vi} from 'vitest';
-import {claimChunkReload} from '../lib/chunkReloadGuard';
+import {claimChunkReload,isStaleAssetError} from '../lib/chunkReloadGuard';
 afterEach(()=>{vi.restoreAllMocks();sessionStorage.clear();});
 it('permits one reload only across repeated failures',()=>{
   sessionStorage.clear();expect(claimChunkReload()).toBe(true);
