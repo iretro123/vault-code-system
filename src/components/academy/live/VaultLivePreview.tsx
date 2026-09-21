@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import classroomImage from "@/assets/classroom-open.svg";
 import "./vault-live-preview.css";
 
+const DEFAULT_TRADING_ZOOM_URL = "https://us06web.zoom.us/j/84498145528?pwd=iQ6BKlXurpYAhh2d7F0BiKTUylMsxG.1";
+
 const classrooms = [
   { name: "Live Trading", days: "Monday–Thursday", time: "9:15 AM", description: "Watch the market and learn together.", bullets: ["Watch the market live together", "Understand the thinking behind each setup", "Ask questions as the session unfolds"], action: "Open trading room" },
   { name: "Wednesday Class", days: "Every Wednesday", time: "8:00 PM", description: "Learn a concept. Ask your questions.", bullets: ["Break down one trading concept", "Work through real chart examples", "Get answers in a relaxed Q&A"], action: "Open training room" },
@@ -18,7 +20,7 @@ export default function VaultLivePreview() {
   const [inviteStatus, setInviteStatus] = useState("");
   const [showInviteLink, setShowInviteLink] = useState(false);
   const current = classrooms[activeClass];
-  const zoomUrl = activeClass === 0 ? import.meta.env.VITE_VAULT_TRADING_ZOOM_URL : import.meta.env.VITE_VAULT_WEDNESDAY_ZOOM_URL;
+  const zoomUrl = activeClass === 0 ? (import.meta.env.VITE_VAULT_TRADING_ZOOM_URL || DEFAULT_TRADING_ZOOM_URL) : import.meta.env.VITE_VAULT_WEDNESDAY_ZOOM_URL;
 
   async function inviteFriends() {
     if (!zoomUrl || sharing) return;
