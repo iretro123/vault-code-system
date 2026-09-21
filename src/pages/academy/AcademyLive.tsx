@@ -223,7 +223,7 @@ const SESSION_TYPES = [
   { title: "Weekly Pro Q&A", subtitle: "Training & Coaching Session", image: liveSessionQA, bullets: ["Trade review", "Q&A and hot seats", "Strategy lessons", "Weekly reset and refinement"], schedule: "Wednesdays @ 8 PM ET", label: "REVIEW" },
 ];
 
-export const AcademyLive = () => {
+export const AcademyLive = ({ commandMode = false }: { commandMode?: boolean }) => {
   const { sessions: realSessions, loading, refetch } = useLiveSessions();
   const { hasAccess, status, loading: accessLoading } = useStudentAccess();
   const { user, profile } = useAuth();
@@ -387,7 +387,7 @@ export const AcademyLive = () => {
   }
 
   return (
-    <div className="liveSessionsPage">
+    <div className={cn("liveSessionsPage", commandMode && "liveSessionsPage--command")}>
       <Dialog open={showAdd || !!editingId} onOpenChange={(open) => { if (!open) { setShowAdd(false); setEditingId(null); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>{editingId ? "Edit Session" : "Create Live Session"}</DialogTitle></DialogHeader>
@@ -395,8 +395,19 @@ export const AcademyLive = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Premium Header */}
-      <header className="px-4 md:px-6 pt-4 md:pt-8 pb-2">
+      {commandMode ? (
+        <header className="vault-live-command-bar">
+          <div>
+            <span className="vault-live-command-eyebrow">Programming desk</span>
+            <h3>Control the live room</h3>
+            <p>Create sessions, update room links, publish replays, and notify members.</p>
+          </div>
+          <div className="vault-live-command-actions">
+            <Button className="gap-2" onClick={() => setShowAdd(true)}><Plus className="h-4 w-4" /> New session</Button>
+            <button className="live-btn-glass" onClick={openSchedule}><CalendarDays className="h-4 w-4" /> Full schedule</button>
+          </div>
+        </header>
+      ) : <header className="px-4 md:px-6 pt-4 md:pt-8 pb-2">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-[28px] md:text-[36px] font-bold tracking-tight leading-tight text-foreground">Live Sessions</h1>
@@ -407,14 +418,14 @@ export const AcademyLive = () => {
             <button className="live-btn-glass py-2.5 px-4" onClick={openSchedule}><CalendarDays className="h-4 w-4" /> Full Schedule</button>
           </div>
         </div>
-      </header>
+      </header>}
 
       {isMockMode && realUpcoming.length === 0 && (
         <div className="mx-4 md:mx-6 mb-4 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-300/80 bg-amber-500/10 border border-amber-500/20 inline-flex items-center gap-1.5">⚡ Dev preview — showing mock data</div>
       )}
 
-      <div className="px-4 md:px-6 pb-8 space-y-6">
-        <AdminActionBar title="Live Sessions Admin" permission="manage_live_sessions" actions={[
+      <div className={cn("px-4 md:px-6 pb-8 space-y-6", commandMode && "vault-live-command-body")}>
+        <AdminActionBar title="Session controls" permission="manage_live_sessions" actions={[
           { label: "Create Session", icon: Plus, onClick: () => setShowAdd(true) },
           { label: "Edit", icon: Pencil, onClick: selectedSession ? () => setEditingId(selectedSession.id) : undefined, disabled: !selectedSession },
           { label: "Delete", icon: Trash2, onClick: selectedSession ? () => handleDelete(selectedSession.id) : undefined, disabled: !selectedSession },
