@@ -178,7 +178,7 @@ const AdminPanel = () => {
           )}
           {visibleTabs.some((t) => t.value === "live") && (
             <TabsContent value="live" className="vault-admin-panel-content vault-admin-live-content">
-              <AcademyLive />
+              <AcademyLive commandMode />
             </TabsContent>
           )}
           {visibleTabs.some((t) => t.value === "stripe") && (
