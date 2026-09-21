@@ -20,7 +20,7 @@ export default function VaultLivePreview() {
   const [inviteStatus, setInviteStatus] = useState("");
   const [showInviteLink, setShowInviteLink] = useState(false);
   const current = classrooms[activeClass];
-  const zoomUrl = activeClass === 0 ? import.meta.env.VITE_VAULT_TRADING_ZOOM_URL : import.meta.env.VITE_VAULT_WEDNESDAY_ZOOM_URL;
+  const zoomUrl = activeClass === 0 ? (import.meta.env.VITE_VAULT_TRADING_ZOOM_URL || DEFAULT_TRADING_ZOOM_URL) : import.meta.env.VITE_VAULT_WEDNESDAY_ZOOM_URL;
 
   async function inviteFriends() {
     if (!zoomUrl || sharing) return;
