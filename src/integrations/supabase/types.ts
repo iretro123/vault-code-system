@@ -2139,6 +2139,147 @@ export type Database = {
         }
         Relationships: []
       }
+      pulse_config: {
+        Row: {
+          delivery_hash: string | null
+          enabled: boolean
+          id: boolean
+          started_at: string
+        }
+        Insert: {
+          delivery_hash?: string | null
+          enabled?: boolean
+          id?: boolean
+          started_at?: string
+        }
+        Update: {
+          delivery_hash?: string | null
+          enabled?: boolean
+          id?: boolean
+          started_at?: string
+        }
+        Relationships: []
+      }
+      pulse_events: {
+        Row: {
+          at: number
+          body: Json
+          created_at: string
+          id: string
+          timeframe: number
+        }
+        Insert: {
+          at: number
+          body: Json
+          created_at?: string
+          id: string
+          timeframe: number
+        }
+        Update: {
+          at?: number
+          body?: Json
+          created_at?: string
+          id?: string
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_incidents: {
+        Row: {
+          id: number
+          kind: string
+          message: string
+          opened_at: string
+          resolved_at: string | null
+          timeframe: number
+        }
+        Insert: {
+          id?: never
+          kind: string
+          message: string
+          opened_at?: string
+          resolved_at?: string | null
+          timeframe: number
+        }
+        Update: {
+          id?: never
+          kind?: string
+          message?: string
+          opened_at?: string
+          resolved_at?: string | null
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_status: {
+        Row: {
+          alert_expires_at: string | null
+          at: number
+          price: number | null
+          received_at: string | null
+          timeframe: number
+          zones: Json
+        }
+        Insert: {
+          alert_expires_at?: string | null
+          at?: number
+          price?: number | null
+          received_at?: string | null
+          timeframe: number
+          zones?: Json
+        }
+        Update: {
+          alert_expires_at?: string | null
+          at?: number
+          price?: number | null
+          received_at?: string | null
+          timeframe?: number
+          zones?: Json
+        }
+        Relationships: []
+      }
+      pulse_streams: {
+        Row: {
+          last_at: number
+          revision: number
+          snapshot: Json | null
+          timeframe: number
+        }
+        Insert: {
+          last_at?: number
+          revision?: number
+          snapshot?: Json | null
+          timeframe: number
+        }
+        Update: {
+          last_at?: number
+          revision?: number
+          snapshot?: Json | null
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_zone_states: {
+        Row: {
+          body: Json
+          timeframe: number
+          updated_at: string
+          zone_id: string
+        }
+        Insert: {
+          body: Json
+          timeframe: number
+          updated_at?: string
+          zone_id: string
+        }
+        Update: {
+          body?: Json
+          timeframe?: number
+          updated_at?: string
+          zone_id?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           created_at: string
@@ -3194,6 +3335,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_read_pulse: { Args: { p_user: string }; Returns: boolean }
       change_member_friendship: {
         Args: { action: string; peer: string }
         Returns: undefined
@@ -3571,6 +3713,14 @@ export type Database = {
       notify_live_now: { Args: never; Returns: undefined }
       open_member_conversation: { Args: { peer: string }; Returns: string }
       promote_to_ceo: { Args: { target_user_id: string }; Returns: undefined }
+      pulse_authorize_delivery: { Args: { p_hash: string }; Returns: boolean }
+      pulse_commit_snapshot: {
+        Args: { p_posts: Json; p_revision: number; p_snapshot: Json }
+        Returns: Json
+      }
+      pulse_feed: { Args: { p_after?: number }; Returns: Json }
+      pulse_processing_state: { Args: { p_timeframe: number }; Returns: Json }
+      pulse_watchdog: { Args: never; Returns: undefined }
       read_member_conversation: {
         Args: { conversation: string; through_time: string }
         Returns: undefined
