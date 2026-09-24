@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { MarketWatch } from "@/components/academy/community/MarketWatch";
+import { SpxPulseRoom } from "@/components/academy/community/SpxPulseRoom";
 import { RoomChat } from "@/components/academy/RoomChat";
 import "./academy-community.css";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
@@ -17,6 +18,7 @@ import { ArrowRight, BellRing, LockKeyhole, Radio, ShieldCheck, MessageCircle, M
 const TABS = [
   { key: "trade-floor", label: "Chat", roomSlug: "trade-floor" },
   { key: "daily-setups", label: "Signals", roomSlug: "daily-setups" },
+  { key: "pulse", label: "Pulse", roomSlug: null },
   { key: "wins", label: "Wins", roomSlug: "wins-proof" },
 ] as const;
 
@@ -114,7 +116,7 @@ const AcademyCommunity = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const activeRoomSlug = activeTab === "daily-setups" && (tierLoading || shouldGateSignals)
+  const activeRoomSlug = (activeTab === "daily-setups" || activeTab === "pulse") && (tierLoading || shouldGateSignals)
     ? null : TABS.find((t) => t.key === activeTab)?.roomSlug ?? null;
   const { counts } = useUnreadCounts(activeRoomSlug, userId);
 
@@ -158,7 +160,7 @@ const AcademyCommunity = () => {
           <div className="shrink-0 px-3 md:px-4 pt-1">
             <div className="community-room-tabs flex w-full items-center justify-center gap-0 border-b border-white/[0.06]">
               {TABS.map((tab) => {
-                const count = counts[tab.roomSlug] || 0;
+                const count = tab.roomSlug ? counts[tab.roomSlug] || 0 : 0;
                 const badge = formatBadge(count);
                 return (
                   <button
@@ -189,11 +191,14 @@ const AcademyCommunity = () => {
               <CommunityTradeFloor onSwitchTab={handleTabChange} active={activeTab === "trade-floor"} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
-              {shouldGateSignals ? (
+              {tierLoading ? <div className="pulse-empty" role="status">Checking your membership…</div> : shouldGateSignals ? (
                 <SignalsUpgradeGate onUpgrade={handleSignalsUpgrade} />
               ) : (
                 <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} compact />
               )}
+            </div>
+            <div className={cn("absolute inset-0", activeTab === "pulse" ? "block" : "hidden")}>
+              {tierLoading ? <div className="pulse-empty" role="status">Checking your membership…</div> : shouldGateSignals ? <SignalsUpgradeGate onUpgrade={handleSignalsUpgrade}/> : <SpxPulseRoom active={activeTab === "pulse"}/>}
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />
@@ -206,3 +211,4 @@ const AcademyCommunity = () => {
 };
 
 export default AcademyCommunity;
+
