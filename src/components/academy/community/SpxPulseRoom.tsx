@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, Pause, Play, RotateCcw } from "lucide-react";
-import { PulseOrb, ZonePulseCard } from "../chat/ZonePulseCard";
+import { ZonePulseCard } from "../chat/ZonePulseCard";
+import { PulseNexus } from "../chat/PulseNexus";
 import { pulseAge, pulseWindowOpen, type PulsePost } from "@/lib/spxPulse";
 import { usePulseFeed } from "@/hooks/usePulseFeed";
 
@@ -67,7 +68,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
     {!replay && !paused && noActiveZones && <div className="pulse-zone-wait" role="status"><strong>Waiting for the next zone.</strong><span>Your indicator has no active 5m or 15m zone right now. New zones appear here automatically.</span></div>}
     <div className="pulse-scroll" ref={scroller} onScroll={e=>{const el=e.currentTarget;const latest=el.querySelector<HTMLElement>(".pulse-feed > li:last-child");nearBottom.current=el.scrollHeight-el.scrollTop-el.clientHeight<120 || (!!latest && el.scrollTop>=latest.offsetTop-120);}}>
       <ol className="pulse-feed"><li className="pulse-day">{replay ? "REPLAY" : "ZONE UPDATES"}</li>{posts.map((post,index)=><li key={`${replay ? "replay" : "feed"}-${post.id}`}><ZonePulseCard post={post} featured={index===posts.length-1} arriving={post.id===arrival}/></li>)}</ol>
-      {!posts.length && <div className="pulse-empty"><PulseOrb active={!!replay}/><h3>{replay ? "Replaying updates…" : paused ? "Your view is paused." : indicatorFresh ? "Watching for the next zone." : "Your market updates, in one place."}</h3><p>{replay ? "Original updates. Original timestamps." : paused ? "Zone monitoring continues. Resume to catch up." : "New zones, entries and breaks appear here automatically."}</p></div>}
+      {!posts.length && <div className="pulse-empty"><PulseNexus moving={active && !paused}/><h3>{replay ? "Replaying updates…" : paused ? "Your view is paused." : indicatorFresh ? "Watching for the next zone." : "Your market updates, in one place."}</h3><p>{replay ? "Original updates. Original timestamps." : paused ? "Zone monitoring continues. Resume to catch up." : "New zones, entries and breaks appear here automatically."}</p></div>}
     </div>
     <footer className="pulse-footer"><span aria-hidden="true" className="pulse-wave" data-active={!!arrival}>{[0,1,2,3,4,5,6].map(i=><i key={i} style={{"--i":i} as React.CSSProperties}/>)}</span><span role="status">{replay ? `${replayCount} of ${replay.length} captures` : paused ? "Feed view paused" : indicatorFresh ? "Watching 5m + 15m automatically" : `Last chart check ${pulseAge(latestReview,now)}`}</span><span>{paused ? "Zone monitoring continues" : indicatorFresh ? "Posts when the zone changes" : !monitoring ? "Next session starts at 9 AM ET" : "Connecting to your feed"}</span></footer>
     <span className="sr-only" aria-live="polite">{arrival && last ? `$SPX500 ${last.timeframe} minute ${last.side} chart update received.` : ""}</span>

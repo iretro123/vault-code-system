@@ -1,0 +1,102 @@
+.pulse-nexus {
+  position: relative;
+  display: block;
+  width: 152px;
+  height: 128px;
+  margin: -14px auto 4px;
+  isolation: isolate;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: #bcffe8;
+}
+.pulse-nexus:focus-visible { outline: 1px solid #bcffe866; outline-offset: 5px; }
+.pulse-nexus span { display: block; position: absolute; }
+.nexus-halo {
+  inset: 6% -12%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #72e6c41c 0%, #4fc9c50c 40%, transparent 70%);
+}
+.nexus-stars { position: absolute; inset: 0; width: 100%; height: 100%; }
+.nexus-stars circle { opacity: .6; }
+.nexus-stars circle:nth-child(3n) { animation-delay: -3s; opacity: .3; }
+.nexus-stars circle:nth-child(3n + 1) { animation-delay: -1.5s; }
+.nexus-galaxy { inset: 2px 14px; transform: rotate(-27deg) rotateX(63deg); }
+.nexus-nebula {
+  inset: -10px;
+  border-radius: 50%;
+  background: conic-gradient(from 20deg, transparent 3%, #a8ffdf10 12%, #b9ffe58a 18%, transparent 28%, transparent 43%, #7cbff34d 51%, #d2fff685 57%, transparent 66%, transparent 80%, #70debc4d 87%, transparent 97%);
+  mask-image: radial-gradient(circle, transparent 22%, #0008 38%, #000 48%, transparent 69%);
+  filter: blur(2px);
+}
+.nexus-orbit {
+  inset: 7px 19px;
+  border-radius: 50%;
+  transform: rotate(var(--tilt)) rotateX(66deg);
+}
+.nexus-orbit-wheel {
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid #b8ffe333;
+  border-top-color: #d6fff491;
+  border-right-color: #87e6e44d;
+  box-shadow: 0 0 8px #82e5ca12, inset 0 0 6px #adfbe810;
+}
+.nexus-orbit-wheel i {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  left: calc(50% - 2px);
+  top: -2px;
+  border-radius: 50%;
+  background: #eafff7;
+  box-shadow: 0 0 5px #e6fff3, 0 0 12px #91ffe0;
+}
+.nexus-orbit-wheel i + i { top: auto; bottom: -1px; width: 2px; height: 2px; background: #8ddddd; opacity: .6; }
+.nexus-core {
+  width: 64px;
+  height: 64px;
+  left: calc(50% - 32px);
+  top: calc(50% - 32px);
+  overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 33% 24%, #effff8 0%, #b7f9db 7%, #558f7e 24%, #173d39 48%, #0b2128 72%);
+  box-shadow: inset -7px -8px 13px #061821ad, inset 1px 1px 2px #e1fffba6, 0 0 19px #8affd533, 0 0 42px #71cfee12;
+}
+.nexus-clouds {
+  inset: -25%;
+  border-radius: 50%;
+  background: conic-gradient(from 40deg, transparent, #8cf6c59c 18%, transparent 30%, #75cce44d 44%, transparent 59%, #c0ffe0a6 76%, transparent 90%);
+  filter: blur(5px);
+  mix-blend-mode: screen;
+}
+.nexus-shine { inset: 0; border-radius: 50%; background: radial-gradient(circle at 30% 23%, #f0fffad9, transparent 24%), radial-gradient(circle at 66% 80%, #a7ffe52e, transparent 43%); }
+.nexus-flare {
+  left: 26%;
+  right: 18%;
+  height: 1px;
+  top: 42%;
+  background: linear-gradient(90deg, transparent, #d5ffed91, transparent);
+  opacity: .35;
+  transform: rotate(-27deg);
+}
+.pulse-nexus[data-moving="false"] *, .pulse-nexus[data-moving="false"] { animation-play-state: paused !important; }
+/* Motion defaults to the device preference. A member can opt in for this orb only. */
+.pulse-nexus[data-motion="on"] .nexus-halo { animation: nexus-breathe 7s ease-in-out infinite !important; }
+.pulse-nexus[data-motion="on"] .nexus-stars { animation: nexus-drift 70s linear infinite !important; }
+.pulse-nexus[data-motion="on"] .nexus-stars circle { animation: nexus-twinkle 5s ease-in-out infinite alternate !important; }
+.pulse-nexus[data-motion="on"] .nexus-stars circle:nth-child(3n) { animation-delay: -3s !important; }
+.pulse-nexus[data-motion="on"] .nexus-stars circle:nth-child(3n + 1) { animation-delay: -1.5s !important; }
+.pulse-nexus[data-motion="on"] .nexus-nebula { animation: nexus-spin 24s linear infinite !important; }
+.pulse-nexus[data-motion="on"] .nexus-orbit-wheel { animation: nexus-spin var(--duration) linear var(--delay) infinite !important; }
+.pulse-nexus[data-motion="on"] .nexus-orbit:nth-of-type(4) .nexus-orbit-wheel { animation-direction: reverse !important; }
+.pulse-nexus[data-motion="on"] .nexus-clouds { animation: nexus-spin 18s linear infinite reverse !important; }
+/* Pause view and hidden tabs suspend even explicitly enabled decorative motion. */
+.pulse-nexus[data-moving="false"][data-motion] * { animation-play-state: paused !important; }
+@keyframes nexus-spin { to { transform: rotate(360deg); } }
+@keyframes nexus-drift { to { transform: rotate(-360deg); } }
+@keyframes nexus-breathe { 50% { opacity: .5; transform: scale(.88); } }
+@keyframes nexus-twinkle { to { opacity: .18; } }
+@media (max-width: 600px) { .pulse-nexus { width: 140px; height: 118px; } }
