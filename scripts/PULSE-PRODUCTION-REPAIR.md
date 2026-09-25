@@ -112,3 +112,14 @@ Future hosted capture now renders at 1280×800 with device scale 2 and lossless 
 31 focused tests pass, including stale no-zone protection, chart focus provenance, full-original preservation, portrait rejection and image delivery. App TypeScript, changed-file ESLint, production build, whitespace checks and capture Worker dry-run pass. Live visual verification follows publication.
 
 Verified the custom member domain after Lovable deployment `f080fe5e-cd4e-495d-9940-ff3a5104d244`, commit `e0601a18`. The fresh 5m snapshot showed the centered no-zone state; 15m rendered the exact original zone crop at 616×385 with both 769.78/767.70 labels and nearby candles visible, zero horizontal overflow, and original native size retained at 1024×1158. Capture Worker format update deployed as `97a7c002-b97a-45ed-8a33-cad8db3eac63`. The hosted capture connection remains inactive; this visual verification is not a claim of newly automated screenshots.
+
+## September 25 — readable capture time and responsive card sizing
+
+Published commits `610b5174`, `2667a184`, and `284c7246` through Lovable. Final deployment: `dccd1b02-338b-450f-9065-59c61e01d1b3`. Verified on the actual signed-in member domain.
+
+- Capture timestamp now uses bright, semibold 17px text on desktop and 15px on narrow phones (previous member override was 11px). Semantic capture time remains distinct from the event time. Date/time stays together on narrow screens.
+- Feed column is capped at 704px including gutters; cards at 640px. Chart focus keeps its verified aspect ratio, with a 560px image cap, reduced to 480px on shorter desktop screens. Original image and expand viewer are unchanged.
+- Reduced vertical padding and reaction-row height while retaining at least 44px tap targets. Waiting state is compact too.
+- Actual DOM checks: desktop 1440×900 CSS pixels, card 640×551, focused chart 480×300, card bottom ~883px. Phone 390×844, card 366×497, chart 366×229. No horizontal overflow at either size; also checked 320px before the final date-wrapping refinement, then 343px after it. Final date span is nowrap and fits. Browser zoom changed during QA; viewport tests were adjusted to measured CSS pixels, then the override was reset.
+- 15 existing Pulse room / screenshot integrity tests passed; the 11 screenshot tests and app TypeScript check passed again after the semantic timestamp refinement. Production build, changed-component ESLint, and diff whitespace checks passed. No new layout-only tests added.
+- Existing manual 15m capture still correctly reads Sep 25, 1:07:05 PM ET. This release changes presentation only; automatic capture remains offline pending the previously documented hosted-browser setup. Live zone/price updates continued during QA. No quote, zone, image, or capture timestamp was fabricated or changed.
