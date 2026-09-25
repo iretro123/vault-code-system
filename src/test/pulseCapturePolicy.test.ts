@@ -1,12 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createHmac, webcrypto } from 'node:crypto';
-import { captureWindowOpen, verifyCaptureSource, verifyImageSignature } from '../../workers/pulse-spy/capture-policy.js';
+import { captureWindowOpen, verifyCaptureSource, verifyCaptureZone, verifyImageSignature } from '../../workers/pulse-spy/capture-policy.js';
 beforeAll(()=>vi.stubGlobal('crypto',webcrypto));
 afterAll(()=>vi.unstubAllGlobals());
 
 const now=Date.parse('2026-09-25T16:20:30Z');
-const post={symbol:'AMEX:SPY',timeframe:5,at:now-20000,price:770.1};
-const source={label:'Chart for BATS:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live\n770.10\nSELL',pageText:'Vault Zone Pulse - SPY Live'};
+const post={symbol:'AMEX:SPY',timeframe:5,at:now-20000,price:770.1,side:'demand',kind:'observed',lower:767.70,upper:768.54};
+const zoneText='Supply upper\n∅\nSupply lower\n∅\nDemand upper\n768.54\nDemand lower\n767.70';
+const source={label:'Chart for BATS:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live\n770.10\nSELL',pageText:'Vault Zone Pulse - SPY Live',zoneText};
 describe('hosted chart provenance and private delivery',()=>{
   it('accepts the real SPY source at the requested interval',()=>expect(verifyCaptureSource(source,post,now)).toBe(true));
   it('rejects a different instrument, timeframe and missing Pulse indicator',()=>{
@@ -22,9 +23,21 @@ describe('hosted chart provenance and private delivery',()=>{
     expect(()=>verifyCaptureSource({...source,pageText:'Disconnected from the server'},post,now)).toThrow('chart-needs');
     expect(()=>verifyCaptureSource({...source,text:'Vault Zone Pulse - SPY Live\n765.00 SELL'},post,now)).toThrow('price-mismatch');
   });
+  it('matches exact zone boundaries and rejects a different zone even on the correct SPY timeframe',()=>{
+    expect(()=>verifyCaptureSource({...source,zoneText:zoneText.replace('768.54','769.78')},post,now)).toThrow('chart-zone-mismatch');
+    expect(()=>verifyCaptureSource({...source,zoneText:''},post,now)).toThrow('chart-zone-data-unavailable');
+    expect(verifyCaptureZone(zoneText,{...post,kind:'entered'})).toBe(true);
+  });
+  it('allows a removed zone for a break, but never substitutes a newer zone or omits an active entry zone',()=>{
+    const removed=zoneText.replace('768.54','∅').replace('767.70','∅');
+    expect(verifyCaptureZone(removed,{...post,kind:'broken'})).toBe(true);
+    expect(()=>verifyCaptureZone(removed,{...post,kind:'entered'})).toThrow('chart-zone-mismatch');
+    expect(()=>verifyCaptureZone(zoneText.replace('768.54','769.78'),{...post,kind:'broken'})).toThrow('chart-zone-mismatch');
+  });
   it('tracks Eastern weekday hours across daylight saving changes',()=>{
     expect(captureWindowOpen(Date.parse('2026-09-25T13:00:00Z'))).toBe(true);
-    expect(captureWindowOpen(Date.parse('2026-09-25T20:00:00Z'))).toBe(false);
+    expect(captureWindowOpen(Date.parse('2026-09-25T20:00:00Z'))).toBe(true);
+    expect(captureWindowOpen(Date.parse('2026-09-25T20:01:30Z'))).toBe(false);
     expect(captureWindowOpen(Date.parse('2026-09-26T15:00:00Z'))).toBe(false);
     expect(captureWindowOpen(Date.parse('2026-11-02T13:30:00Z'))).toBe(false);
     expect(captureWindowOpen(Date.parse('2026-11-02T14:00:00Z'))).toBe(true);

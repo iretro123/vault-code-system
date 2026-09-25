@@ -6,6 +6,10 @@
   "workers_dev": false,
   "browser": { "binding": "BROWSER" },
   "kv_namespaces": [{ "binding": "CHART_IMAGES", "id": "8b6525ab04e441518116ae70a8f462b0" }],
+  "queues": {
+    "producers": [{"binding":"CAPTURE_JOBS","queue":"vault-spy-pulse-charts"}],
+    "consumers": [{"queue":"vault-spy-pulse-charts","max_batch_size":1,"max_batch_timeout":1,"max_concurrency":1,"max_retries":3,"retry_delay":10}]
+  },
   "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } },
   "vars": { "CAPTURE_SAVE_LOGIN": "false" },
   "triggers": { "crons": ["* * * * *"] }

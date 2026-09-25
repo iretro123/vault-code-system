@@ -1,10 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { PulseChartPost, type PulseChartPostProps } from "@/components/academy/chat/PulseChartPost";
 import { ZonePulseCard } from "@/components/academy/chat/ZonePulseCard";
 import type { PulsePost } from "@/lib/spxPulse";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 const capture = "https://example.com/spy-pulse-5m.png";
 const props: PulseChartPostProps = {
   symbol: "SPY", timeframe: 5, side: "demand", headline: "New 5m demand.",
@@ -70,10 +70,23 @@ describe("Pulse screenshot integrity", () => {
   it("offers retry on an image failure and restores the same source", () => {
     render(<PulseChartPost {...props}/>);
     fireEvent.error(screen.getByAltText(/^Original TradingView/));
-    expect(screen.getByText("Chart couldn’t load.")).toBeInTheDocument();
+    expect(screen.getByText("Chart loading… retrying automatically.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "See entry example" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(loadImage()).toHaveAttribute("src", capture);
+  });
+  it("automatically recovers a temporarily unavailable image, with bounded retries", () => {
+    vi.useFakeTimers();
+    render(<PulseChartPost {...props}/>);
+    for (const delay of [2000, 5000, 10000, 20000, 30000]) {
+      fireEvent.error(screen.getByAltText(/^Original TradingView/));
+      act(() => vi.advanceTimersByTime(delay));
+      expect(screen.getByAltText(/^Original TradingView/)).toHaveAttribute("src", capture);
+    }
+    fireEvent.error(screen.getByAltText(/^Original TradingView/));
+    act(() => vi.advanceTimersByTime(60000));
+    expect(screen.getByText("Chart couldn’t load.")).toBeInTheDocument();
+    expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
   });
   it("opens the unmarked source and keeps it intact at actual size", () => {
     render(<PulseChartPost {...props}/>);

@@ -53,8 +53,17 @@ export function PulseChartPost({
     setActualSize(false);
     setFailed(false);
     setLoaded(false);
+    setAttempt(0);
     setDimensions({ width: 0, height: 0 });
   }, [chartUrl]);
+  useEffect(() => {
+    // A newly written chart can briefly be unavailable at another storage edge.
+    // Recover without waiting for a member to press Try again.
+    const delays = [2000, 5000, 10000, 20000, 30000];
+    if (!failed || attempt >= delays.length) return;
+    const timer = window.setTimeout(() => { setFailed(false); setAttempt(value => value + 1); }, delays[attempt]);
+    return () => window.clearTimeout(timer);
+  }, [failed, attempt, chartUrl]);
   useEffect(() => { setShowChart(defaultShowChart); }, [defaultShowChart]);
   useEffect(() => {
     const viewer = originalViewer.current;
@@ -96,7 +105,7 @@ export function PulseChartPost({
             </>}
             {loaded && <button type="button" className="pcp-expand" onClick={() => { setActualSize(false); setExpanded(true); }} aria-label={`Expand original ${symbol} ${timeframe}-minute screenshot`}><Expand size={18} aria-hidden="true"/></button>}
           </div>}
-          {failed && <div className="pcp-missing" role="status"><p>Chart couldn’t load.</p><button type="button" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}><RotateCcw size={16} aria-hidden="true"/> Try again</button></div>}
+          {failed && <div className="pcp-missing" role="status"><p>{attempt < 5 ? "Chart loading… retrying automatically." : "Chart couldn’t load."}</p><button type="button" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}><RotateCcw size={16} aria-hidden="true"/> Try again</button></div>}
         </figure>}
       </> : <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Waiting for the original chart."}</p>}
       {(onReact || canAnnotate || (chartUrl && !showChart)) && <footer className="pcp-actions">
