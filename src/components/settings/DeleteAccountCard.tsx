@@ -15,9 +15,10 @@ export function DeleteAccountCard({ autoOpen = false }: DeleteAccountCardProps) 
   const [showDeleteGate, setShowDeleteGate] = useState(autoOpen);
   const [accountDeleteInput, setAccountDeleteInput] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [billingAck, setBillingAck] = useState(false);
 
   const handleDeleteAccount = async () => {
-    if (accountDeleteInput !== "DELETE") return;
+    if (accountDeleteInput !== "DELETE" || !billingAck) return;
     setDeletingAccount(true);
     try {
       const { data, error } = await supabase.functions.invoke("delete-account", {
@@ -66,6 +67,15 @@ export function DeleteAccountCard({ autoOpen = false }: DeleteAccountCardProps) 
           </p>
         </div>
       </div>
+      <div className="rounded-lg border border-destructive/30 bg-background/60 p-3 space-y-2">
+        <p className="text-xs font-semibold text-foreground">
+          Deleting your Vault account does not automatically cancel your paid subscription. Cancel your subscription under Manage Billing before deleting your account.
+        </p>
+        <label className="flex items-start gap-2 text-xs text-foreground cursor-pointer min-h-[44px]">
+          <input type="checkbox" className="mt-0.5 h-4 w-4" checked={billingAck} onChange={(e) => setBillingAck(e.target.checked)} />
+          I understand deleting my Vault account does not cancel my Stripe subscription.
+        </label>
+      </div>
       <div>
         <p className="text-xs text-foreground mb-1.5">
           Type <span className="font-mono text-destructive font-semibold">DELETE</span> to confirm.
@@ -80,7 +90,7 @@ export function DeleteAccountCard({ autoOpen = false }: DeleteAccountCardProps) 
           <Button
             size="sm"
             variant="destructive"
-            disabled={accountDeleteInput !== "DELETE" || deletingAccount}
+            disabled={accountDeleteInput !== "DELETE" || !billingAck || deletingAccount}
             onClick={handleDeleteAccount}
             className="h-8"
           >
