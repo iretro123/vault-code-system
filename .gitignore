@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .vault-zones-state/
+.pulse-local-captures/
 .wrangler/
 worker-configuration.d.ts
 

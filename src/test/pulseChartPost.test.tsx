@@ -20,6 +20,15 @@ function loadImage(width = 910, height = 630) {
 }
 
 describe("Pulse screenshot integrity", () => {
+  it("labels a manually refreshed chart as a later view without changing the zone event time", () => {
+    const post: PulsePost = { id: "refresh", zoneId: "zone", symbol: "AMEX:SPY", timeframe: 5, side: "demand", kind: "observed", source: "indicator", at: props.capturedAt, lower: 766.4, upper: 767.24, price: 768, confirmed: false, chartUrl: capture, capturedAt: props.capturedAt + 3600000, captureContext: "refresh" };
+    render(<ZonePulseCard post={post}/>);
+    loadImage();
+    expect(screen.getByText("Sep 24 · 12:41 PM ET")).toBeInTheDocument();
+    expect(screen.getByText(/Chart refreshed · Sep 24, 1:41:25 PM ET/)).toBeInTheDocument();
+    expect(screen.getByText("Later view of this zone")).toBeInTheDocument();
+    expect(screen.queryByText(/New 5m/)).not.toBeInTheDocument();
+  });
   it("keeps the event timestamp distinct from a later screenshot capture", () => {
     render(<PulseChartPost {...props} chartCapturedAt={props.capturedAt + 60000}/>);
     loadImage();

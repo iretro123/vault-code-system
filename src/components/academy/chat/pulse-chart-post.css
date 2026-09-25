@@ -22,3 +22,4 @@
 @media(max-width:600px){.pcp-copy{padding:23px 21px}.pcp-copy h3{font-size:29px;letter-spacing:-.8px}.pcp-range{font-size:21px;gap:8px}.pcp-actions{padding:13px 14px;gap:8px}.pcp-entry-button{font-size:13px;padding:11px 13px;gap:8px}.pcp-surface{border-radius:17px}.pcp-author time{font-size:11px}}
 @media(max-width:360px){.pcp-copy{padding:21px 18px}.pcp-copy h3{font-size:27px}.pcp-range{font-size:20px}.pcp-reactions{gap:0}.pcp-reactions button{padding:6px}.pcp-entry-button{font-size:12px;padding:11px}}
 @media(prefers-reduced-motion:reduce){.pcp-arriving{animation:none}}
+.pcp-capture-time{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;padding:11px 18px;background:#17212c;color:#cbd6e4;font-size:12px;font-variant-numeric:tabular-nums}.pcp-capture-time span{color:#9aabbe}

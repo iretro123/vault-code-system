@@ -19,6 +19,7 @@ export interface PulseChartPostProps {
   headline: string;
   capturedAt: number;
   chartCapturedAt?: number;
+  captureContext?: "event" | "refresh";
   captureStatus?: "pending" | "unavailable";
   chartUrl?: string;
   lower?: number;
@@ -33,7 +34,7 @@ export interface PulseChartPostProps {
 }
 
 export function PulseChartPost({
-  symbol, timeframe, side, headline, capturedAt, chartCapturedAt = capturedAt, captureStatus = "pending", chartUrl, lower, upper, note,
+  symbol, timeframe, side, headline, capturedAt, chartCapturedAt = capturedAt, captureContext = "event", captureStatus = "pending", chartUrl, lower, upper, note,
   arriving = false, showIdentity = true, defaultShowChart = true,
   entryMarkup, reactions, onReact,
 }: PulseChartPostProps) {
@@ -79,6 +80,7 @@ export function PulseChartPost({
       </div>
       {chartUrl ? <>
         {showChart && <figure className="pcp-chart" aria-label="Original chart screenshot">
+          <figcaption className="pcp-capture-time">{captureContext === "refresh" ? "Chart refreshed" : "Chart captured"} · {chartTime} ET{captureContext === "refresh" && <span>Later view of this zone</span>}</figcaption>
           {!failed && <div className="pcp-photo">
             <img key={attempt} src={chartUrl} alt={chartAlt} onLoad={event => {
               setLoaded(true);
@@ -106,7 +108,7 @@ export function PulseChartPost({
     <Dialog open={expanded} onOpenChange={setExpanded}>
       <DialogContent className="pcp-dialog max-w-6xl border-white/10 bg-[#19222f] text-slate-100">
         <DialogTitle>{symbol} · {timeframe}m · Original chart</DialogTitle>
-        <DialogDescription className="text-slate-400">Captured {chartTime} ET.</DialogDescription>
+        <DialogDescription className="text-slate-400">Captured {chartTime} ET.{captureContext === "refresh" ? " Later view of this zone, after the original update." : ""}</DialogDescription>
         <button type="button" className="pcp-size-switch" aria-pressed={actualSize} onClick={() => setActualSize(value => !value)}>{actualSize ? <ZoomOut size={16}/> : <ZoomIn size={16}/>} {actualSize ? "Fit to screen" : "Actual size"}</button>
         <div ref={originalViewer} className={`pcp-original-view${actualSize ? " pcp-actual" : ""}`}><img src={chartUrl} alt={`Full unmodified screenshot: ${chartAlt}`}/></div>
       </DialogContent>

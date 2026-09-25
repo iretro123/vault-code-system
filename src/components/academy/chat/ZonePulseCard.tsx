@@ -17,6 +17,7 @@ export function ZonePulseCard({ post, featured = true, arriving = false, showIde
     headline={pulseHeadline(post)}
     capturedAt={post.at}
     chartCapturedAt={post.capturedAt ?? post.at}
+    captureContext={post.captureContext}
     captureStatus={post.captureStatus ?? (post.source === "indicator" ? "unavailable" : "pending")}
     chartUrl={imageOk ? post.chartUrl : undefined}
     lower={hasLevels ? post.lower : undefined}

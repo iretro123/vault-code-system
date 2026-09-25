@@ -58,7 +58,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
       {replay && <button type="button" onClick={()=>{setReplay(null);setReplayCount(0);}}><RotateCcw size={12}/>Return to feed</button>}
     </div>
     <div className="pulse-notice">{replay ? <strong className="pulse-replay-label">Replay · Original timestamps</strong> : <><strong>{source === "local" ? "Private test" : "Member channel"}</strong><span>·</span><span>Monday–Friday · 9 AM–4 PM ET</span></>}</div>
-    {source === "cloud" && feed.captureConnected === false && <div className="pulse-delivery-warning" role="status"><strong>Chart screenshots aren’t connected yet.</strong><span>Zone updates continue automatically. Original charts will appear once capture is connected.</span></div>}
+    {source === "cloud" && feed.captureConnected === false && <div className="pulse-delivery-warning" role="status"><strong>Automatic chart capture isn’t connected yet.</strong><span>Zone updates are automatic. Each chart shows when it was captured.</span></div>}
     {error && <div className="pulse-delivery-warning" role="status">{error}</div>}
     {!replay && !paused && monitoring && (connected || feed.quotes) && missingTimeframes.length > 0 && <div className="pulse-delivery-warning" role="alert"><strong>{missingTimeframes.map(interval=>`${interval}m`).join(" + ")} updates interrupted</strong><span>Fresh chart data is missing. Prices and zones below may be out of date.</span></div>}
     {!replay && feed.quotes && <div className="pulse-live-zones">{([5,15] as const).map(interval=>{

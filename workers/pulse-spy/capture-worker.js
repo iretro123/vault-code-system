@@ -18,8 +18,9 @@ export default {
     if (request.method==='GET' && url.pathname.startsWith('/image/')) {
       const id=url.pathname.slice(7);
       if (!await verifyImageSignature(id,url.searchParams.get('expires'),url.searchParams.get('signature'),env.IMAGE_SIGNING_KEY)) return new Response('Not authorized',{status:403,headers:{'Cache-Control':'no-store'}});
-      const image=await env.CHART_IMAGES.get(id,'arrayBuffer');
-      return image ? new Response(image,{headers:{'Content-Type':'image/png','Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}) : new Response('Chart unavailable',{status:404});
+      const image=await env.CHART_IMAGES.getWithMetadata(id,'arrayBuffer');
+      const contentType=image.metadata?.contentType==='image/jpeg' ? 'image/jpeg' : 'image/png';
+      return image.value ? new Response(image.value,{headers:{'Content-Type':contentType,'Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}) : new Response('Chart unavailable',{status:404});
     }
     if (request.method==='POST' && url.pathname==='/drain' && request.headers.get('Authorization')===`Bearer ${env.WORKER_TOKEN}` && env.WORKER_TOKEN) {
       ctx.waitUntil(runCapture(env,database(env)).catch(()=>console.warn('Pulse capture job did not complete; durable lease will recover.')));

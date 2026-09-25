@@ -21,6 +21,7 @@ export interface PulsePost {
   confirmed?: boolean;
   chartUrl?: string;
   capturedAt?: number;
+  captureContext?: "event" | "refresh";
   captureStatus?: "pending" | "unavailable";
   afterHoursTest?: boolean;
   barAt?: number;
