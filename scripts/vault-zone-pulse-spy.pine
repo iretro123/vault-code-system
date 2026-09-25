@@ -1,0 +1,234 @@
+//@version=6
+indicator("Vault Zone Pulse - SPY Live", overlay=true, max_boxes_count=20, max_labels_count=50)
+
+grp1 = "EMA Settings"
+showEMA13 = input.bool(true, "Show 13 EMA", group=grp1)
+showSMA50 = input.bool(true, "Show 50 SMA", group=grp1)
+showEMA200 = input.bool(true, "Show 200 EMA", group=grp1)
+ema13Color = input.color(color.aqua, "13 EMA Color", group=grp1)
+sma50Color = input.color(color.yellow, "50 SMA Color", group=grp1)
+ema200Color = input.color(color.orange, "200 EMA Color", group=grp1)
+
+grp2 = "Logic"
+pivotLen = input.int(2, "Pivot Length", minval=2, maxval=10, group=grp2)
+scanBack = input.int(20, "Scan Back", minval=2, maxval=50, group=grp2)
+showSignals = input.bool(true, "Show Signals", group=grp2)
+showBOS = input.bool(true, "Show BOS Labels", group=grp2)
+
+grp3 = "Trader Filters"
+useChartEMAFilter = input.bool(true, "Use Chart 200 EMA Filter", group=grp3)
+useHTFBias = input.bool(true, "Use Higher Timeframe Bias", group=grp3)
+htfTf = input.timeframe("15", "Higher Timeframe", group=grp3)
+sessionOnly = input.bool(true, "Signals Only In Session", group=grp3)
+tradeSession = input.session("0930-1200", "Trade Session", group=grp3)
+deleteAfterSignal = input.bool(true, "Delete Zone After Signal", group=grp3)
+clearOppositeOnBOS = input.bool(true, "Clear Opposite Zone On New BOS", group=grp3)
+
+grp4 = "Zone Colors"
+demandBorder = input.color(color.lime, "Demand Border", group=grp4)
+demandFill = input.color(color.new(color.lime, 78), "Demand Fill", group=grp4)
+supplyBorder = input.color(color.red, "Supply Border", group=grp4)
+supplyFill = input.color(color.new(color.red, 78), "Supply Fill", group=grp4)
+
+ema13 = ta.ema(close, 13)
+sma50 = ta.sma(close, 50)
+ema200 = ta.ema(close, 200)
+htfClose = request.security(syminfo.tickerid, htfTf, close)
+htfEMA200 = request.security(syminfo.tickerid, htfTf, ta.ema(close, 200))
+inSession = not sessionOnly or not na(time(timeframe.period, tradeSession))
+
+plot(showEMA13 ? ema13 : na, "13 EMA", color=ema13Color, linewidth=2)
+plot(showSMA50 ? sma50 : na, "50 SMA", color=sma50Color, linewidth=2)
+plot(showEMA200 ? ema200 : na, "200 EMA", color=ema200Color, linewidth=3)
+
+allowLong = (not useChartEMAFilter or close > ema200) and (not useHTFBias or htfClose > htfEMA200)
+allowShort = (not useChartEMAFilter or close < ema200) and (not useHTFBias or htfClose < htfEMA200)
+
+isBull(i) => close[i] > open[i]
+isBear(i) => close[i] < open[i]
+closeInside(top, bot, c) => c < top and c > bot
+
+f_findDemandIndex() =>
+    int found = na
+    for i = 1 to scanBack
+        if isBear(i)
+            found := i
+            break
+    found
+
+f_findSupplyIndex() =>
+    int found = na
+    for i = 1 to scanBack
+        if isBull(i)
+            found := i
+            break
+    found
+
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow(low, pivotLen, pivotLen)
+
+var float lastPivotHigh = na
+var float lastPivotLow = na
+var float lastBrokenHigh = na
+var float lastBrokenLow = na
+
+if not na(ph)
+    lastPivotHigh := ph
+if not na(pl)
+    lastPivotLow := pl
+
+bullBos = not na(lastPivotHigh) and high > lastPivotHigh and (na(lastBrokenHigh) or lastBrokenHigh != lastPivotHigh)
+bearBos = not na(lastPivotLow) and low < lastPivotLow and (na(lastBrokenLow) or lastBrokenLow != lastPivotLow)
+
+if bullBos
+    lastBrokenHigh := lastPivotHigh
+if bearBos
+    lastBrokenLow := lastPivotLow
+
+// Read-only origin metadata for the notification adapter.
+var int pulseDemandOrigin = na
+var int pulseSupplyOrigin = na
+var box demandBox = na
+var box supplyBox = na
+var float demandTop = na
+var float demandBot = na
+var float supplyTop = na
+var float supplyBot = na
+
+if bullBos and allowLong
+    int demandIdx = f_findDemandIndex()
+    if not na(demandIdx)
+        float newDemandTop = high[demandIdx]
+        float newDemandBot = low[demandIdx]
+        if clearOppositeOnBOS and not na(supplyBox)
+            box.delete(supplyBox)
+            supplyBox := na
+            supplyTop := na
+            supplyBot := na
+        demandTop := newDemandTop
+        demandBot := newDemandBot
+        if not na(demandBox)
+            box.delete(demandBox)
+        pulseDemandOrigin := time[demandIdx]
+        demandBox := box.new(bar_index - demandIdx, demandTop, bar_index, demandBot, xloc=xloc.bar_index, extend=extend.right, border_color=demandBorder, bgcolor=demandFill)
+
+if bearBos and allowShort
+    int supplyIdx = f_findSupplyIndex()
+    if not na(supplyIdx)
+        float newSupplyTop = high[supplyIdx]
+        float newSupplyBot = low[supplyIdx]
+        if clearOppositeOnBOS and not na(demandBox)
+            box.delete(demandBox)
+            demandBox := na
+            demandTop := na
+            demandBot := na
+        supplyTop := newSupplyTop
+        supplyBot := newSupplyBot
+        if not na(supplyBox)
+            box.delete(supplyBox)
+        pulseSupplyOrigin := time[supplyIdx]
+        supplyBox := box.new(bar_index - supplyIdx, supplyTop, bar_index, supplyBot, xloc=xloc.bar_index, extend=extend.right, border_color=supplyBorder, bgcolor=supplyFill)
+
+if not na(demandBox) and close < demandBot
+    box.delete(demandBox)
+    demandBox := na
+    demandTop := na
+    demandBot := na
+
+if not na(supplyBox) and close > supplyTop
+    box.delete(supplyBox)
+    supplyBox := na
+    supplyTop := na
+    supplyBot := na
+
+plotshape(showBOS and bullBos, title="Bull BOS", style=shape.labelup, location=location.belowbar, color=color.green, text="BOS", textcolor=color.white, size=size.tiny)
+plotshape(showBOS and bearBos, title="Bear BOS", style=shape.labeldown, location=location.abovebar, color=color.red, text="BOS", textcolor=color.white, size=size.tiny)
+
+demandTouchPrev = not na(demandTop) and high[1] >= demandBot and low[1] <= demandTop and not closeInside(demandTop, demandBot, close[1])
+supplyTouchPrev = not na(supplyTop) and high[1] >= supplyBot and low[1] <= supplyTop and not closeInside(supplyTop, supplyBot, close[1])
+
+buySignal = showSignals and inSession and allowLong and demandTouchPrev and high > high[1]
+sellSignal = showSignals and inSession and allowShort and supplyTouchPrev and low < low[1]
+
+if deleteAfterSignal and buySignal and not na(demandBox)
+    box.delete(demandBox)
+    demandBox := na
+    demandTop := na
+    demandBot := na
+
+if deleteAfterSignal and sellSignal and not na(supplyBox)
+    box.delete(supplyBox)
+    supplyBox := na
+    supplyTop := na
+    supplyBot := na
+
+plotshape(buySignal, title="Buy", style=shape.triangleup, location=location.belowbar, size=size.tiny, color=color.lime, text="BUY", textcolor=color.black)
+plotshape(sellSignal, title="Sell", style=shape.triangledown, location=location.abovebar, size=size.tiny, color=color.red, text="SELL", textcolor=color.white)
+
+alertcondition(buySignal, "Vault Buy", "Vault Trading Academy buy signal")
+alertcondition(sellSignal, "Vault Sell", "Vault Trading Academy sell signal")
+
+// Display-only additions. Original zone calculations above are unchanged.
+plot(supplyTop, "Supply upper", display=display.data_window)
+plot(supplyBot, "Supply lower", display=display.data_window)
+plot(demandTop, "Demand upper", display=display.data_window)
+plot(demandBot, "Demand lower", display=display.data_window)
+var label zoneUpperLabel = na
+var label zoneLowerLabel = na
+if barstate.islast
+    label.delete(zoneUpperLabel)
+    label.delete(zoneLowerLabel)
+    float activeTop = not na(supplyBox) ? supplyTop : demandTop
+    float activeBot = not na(supplyBox) ? supplyBot : demandBot
+    string zoneName = not na(supplyBox) ? "SUPPLY" : "DEMAND"
+    color labelColor = not na(supplyBox) ? color.rgb(63, 22, 32) : color.rgb(17, 64, 43)
+    if not na(activeTop)
+        zoneUpperLabel := label.new(bar_index + 3, activeTop, zoneName + " HIGH  " + str.tostring(activeTop, format.mintick), style=label.style_label_left, color=labelColor, textcolor=color.white, size=size.normal)
+        zoneLowerLabel := label.new(bar_index + 3, activeBot, zoneName + " LOW  " + str.tostring(activeBot, format.mintick), style=label.style_label_left, color=labelColor, textcolor=color.white, size=size.normal)
+
+// Notification adapter. Original zone calculations and box rules stay unchanged.
+// Create one "Any alert() function call" alert for 5m and another for 15m.
+pulseEnabled = input.bool(true, "Send app updates", group="Zone Pulse")
+pulseAfterHours = input.bool(false, "Allow after-hours testing", group="Zone Pulse")
+pulseChartOk = (syminfo.tickerid == "AMEX:SPY" or syminfo.tickerid == "BATS:SPY") and (timeframe.period == "5" or timeframe.period == "15")
+pulseSessionOk = not na(time(timeframe.period, "0900-1600:23456", "America/New_York"))
+max_bars_back(time, 60)
+max_bars_back(open, 60)
+max_bars_back(high, 60)
+max_bars_back(low, 60)
+max_bars_back(close, 60)
+pulseZone(box originalBox, string side, int origin) =>
+    string value = ""
+    if not na(originalBox) and not na(origin)
+        float top = box.get_top(originalBox)
+        float bot = box.get_bottom(originalBox)
+        string identity = "SPY:" + timeframe.period + ":" + side + ":" + str.tostring(origin) + ":" + str.tostring(int(math.round(top / syminfo.mintick))) + ":" + str.tostring(int(math.round(bot / syminfo.mintick)))
+        value := '{"zoneId":"' + identity + '","side":"' + side + '","lower":' + str.tostring(bot, format.mintick) + ',"upper":' + str.tostring(top, format.mintick) + '}'
+    value
+pulseLocation(box originalBox) =>
+    na(originalBox) ? "none" : close > box.get_top(originalBox) ? "above" : close < box.get_bottom(originalBox) ? "below" : "inside"
+varip int pulseSentAt = 0
+varip int pulseClosedAt = 0
+varip string pulseSentState = ""
+if pulseEnabled and pulseChartOk and barstate.isrealtime and (pulseSessionOk or pulseAfterHours)
+    string demand = pulseZone(demandBox, "demand", pulseDemandOrigin)
+    string supply = pulseZone(supplyBox, "supply", pulseSupplyOrigin)
+    string zones = "[" + demand + (demand != "" and supply != "" ? "," : "") + supply + "]"
+    string state = zones + pulseLocation(demandBox) + pulseLocation(supplyBox)
+    bool closing = barstate.isconfirmed and pulseClosedAt != time
+    bool changed = state != pulseSentState and timenow - pulseSentAt >= 15000
+    bool heartbeat = timenow - pulseSentAt >= 60000
+    // Combined snapshots keep the 5m/15m alerts below TradingView's frequency limit.
+    if closing or changed or heartbeat
+        string candles = "["
+        int count = math.min(bar_index + 1, 60)
+        for step = 0 to count - 1
+            int i = count - 1 - step
+            candles += (step > 0 ? "," : "") + '{"t":' + str.tostring(time[i]) + ',"o":' + str.tostring(open[i], format.mintick) + ',"h":' + str.tostring(high[i], format.mintick) + ',"l":' + str.tostring(low[i], format.mintick) + ',"c":' + str.tostring(close[i], format.mintick) + '}'
+        candles += "]"
+        string payload = '{"kind":"snapshot","source":"indicator","symbol":"AMEX:SPY","timeframe":' + timeframe.period + ',"at":' + str.tostring(timenow) + ',"barAt":' + str.tostring(time) + ',"confirmed":' + (barstate.isconfirmed ? "true" : "false") + ',"price":' + str.tostring(close, format.mintick) + ',"zones":' + zones + ',"bars":' + candles + '}'
+        alert(payload, alert.freq_all)
+        pulseSentAt := timenow
+        pulseSentState := state
+        if closing
+            pulseClosedAt := time

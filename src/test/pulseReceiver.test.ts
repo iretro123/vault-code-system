@@ -10,7 +10,8 @@ afterAll(()=>vi.unstubAllGlobals());
 const token = "ab".repeat(32); // Test-only delivery capability.
 const payload = (offset=0): PulseSnapshot => ({ kind:"snapshot",source:"indicator",symbol:"CAPITALCOM:SPX500",timeframe:5,at:at+offset,barAt:at-1000,confirmed:false,price:7660,zones:[{zoneId:"test:zone",side:"supply",lower:7658,upper:7664}],bars:[{t:at-301000,o:7658,h:7662,l:7657,c:7660},{t:at-1000,o:7660,h:7661,l:7659,c:7660}] });
 function fixture() {
-  let revision=0, lastAt=0, posts: PulsePost[]=[];
+  let revision=0, lastAt=0;
+  const posts: PulsePost[]=[];
   const store: PulseStore = {
     authorized: async hash => {
       const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
@@ -28,6 +29,19 @@ function fixture() {
 }
 const request = (data: unknown=payload(), key=token) => new Request(`https://example.invalid/functions/v1/pulse-receiver/${key}`,{method:"POST",body:JSON.stringify(data)});
 describe("hosted Pulse receiver",()=>{
+  it("isolates SPY deliveries from the legacy SPX receiver",async()=>{
+    const legacy=fixture();
+    const spy=fixture();
+    const spyHandler=createPulseReceiver(spy.store,()=>at+30000,"AMEX:SPY");
+    const data={...payload(),symbol:"AMEX:SPY",zones:payload().zones.map(z=>({...z,zoneId:"SPY:5:supply:test"}))};
+    expect((await legacy.handler(request(data))).status).toBe(400);
+    expect((await spyHandler(request(payload()))).status).toBe(400);
+    expect(legacy.read().revision).toBe(0);
+    expect(spy.read().revision).toBe(0);
+    expect(await (await spyHandler(request(data))).json()).toEqual({accepted:true,posts:1});
+    expect(spy.read().posts[0].symbol).toBe("AMEX:SPY");
+    expect(await (await spyHandler(request(data))).json()).toEqual({accepted:false,posts:0});
+  });
   it("requires the scoped delivery credential before processing data",async()=>{
     const f=fixture();
     expect((await f.handler(request(payload(),"bad"))).status).toBe(401);

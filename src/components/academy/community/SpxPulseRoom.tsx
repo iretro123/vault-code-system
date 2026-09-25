@@ -8,6 +8,8 @@ import { usePulseFeed } from "@/hooks/usePulseFeed";
 export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cloud" | "local"; active?: boolean }) {
   const [paused, setPaused] = useState(false);
   const { feed, connected, error } = usePulseFeed(source, active && !paused);
+  const symbol = feed.symbol ?? "CAPITALCOM:SPX500";
+  const symbolLabel = symbol.split(":").at(-1);
   const [tf, setTf] = useState<"all" | 5 | 15>("all");
   const [now, setNow] = useState(Date.now());
   const [arrival, setArrival] = useState<string | null>(null);
@@ -49,13 +51,14 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const missingTimeframes = ([5,15] as const).filter(interval => !freshTimeframes.includes(interval));
   const noActiveZones = indicatorFresh && ([5,15] as const).every(interval => feed.quotes?.[interval]?.zones.length === 0);
   const latestReview = feed.posts.filter(p => tf === "all" || p.timeframe === tf).at(-1)?.at;
-  return <section className="zone-pulse-room" aria-label="SPX500 Zone Pulse">
-    <header className="pulse-room-bar"><div className="pulse-room-heading"><Activity size={19} color="#bbffd7"/><div><strong>Vault Pulse</strong><small>SPX500 · 5m & 15m · Capital.com</small></div></div><span className="pulse-state" data-connected={freshTimeframes.length>0}><i/>{paused ? "View paused" : !monitoring ? "Back at 9 AM ET" : freshTimeframes.length ? `${freshTimeframes.map(value=>`${value}m`).join(" + ")} connected` : "Waiting for live updates"}</span></header>
+  return <section className="zone-pulse-room" aria-label={`${symbolLabel} Zone Pulse`}>
+    <header className="pulse-room-bar"><div className="pulse-room-heading"><Activity size={19} color="#bbffd7"/><div><strong>Vault Pulse</strong><small>{symbolLabel} · 5m & 15m · {symbol === "AMEX:SPY" ? "Vault Zone Pulse" : "Capital.com"}</small></div></div><span className="pulse-state" data-connected={freshTimeframes.length>0}><i/>{paused ? "View paused" : !monitoring ? "Back at 9 AM ET" : freshTimeframes.length ? `${freshTimeframes.map(value=>`${value}m`).join(" + ")} connected` : "Waiting for live updates"}</span></header>
     <div className="pulse-room-controls" aria-label="Pulse controls">{(["all",5,15] as const).map(value => <button key={value} type="button" aria-pressed={tf===value} onClick={()=>setTf(value)}>{value === "all" ? "All updates" : `${value}m`}</button>)}<span className="pulse-control-space"/>
       <button type="button" className="pulse-play" disabled={!feed.posts.length} onClick={()=>{setReplay([...feed.posts]);setReplayCount(0);nearBottom.current=true;}}><Play size={12}/>Replay updates</button><button type="button" aria-label={paused ? "Resume feed" : "Pause feed"} onClick={()=>setPaused(v=>!v)}>{paused ? <Play size={14}/> : <Pause size={14}/>}</button>
       {replay && <button type="button" onClick={()=>{setReplay(null);setReplayCount(0);}}><RotateCcw size={12}/>Return to feed</button>}
     </div>
     <div className="pulse-notice">{replay ? <strong className="pulse-replay-label">Replay · Original timestamps</strong> : <><strong>{source === "local" ? "Private test" : "Member channel"}</strong><span>·</span><span>Monday–Friday · 9 AM–4 PM ET</span></>}</div>
+    {source === "cloud" && feed.captureConnected === false && <div className="pulse-delivery-warning" role="status"><strong>Chart screenshots aren’t connected yet.</strong><span>Zone updates continue automatically. Original charts will appear once capture is connected.</span></div>}
     {error && <div className="pulse-delivery-warning" role="status">{error}</div>}
     {!replay && !paused && monitoring && (connected || feed.quotes) && missingTimeframes.length > 0 && <div className="pulse-delivery-warning" role="alert"><strong>{missingTimeframes.map(interval=>`${interval}m`).join(" + ")} updates interrupted</strong><span>Fresh chart data is missing. Prices and zones below may be out of date.</span></div>}
     {!replay && feed.quotes && <div className="pulse-live-zones">{([5,15] as const).map(interval=>{
@@ -71,6 +74,6 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
       {!posts.length && <div className="pulse-empty"><PulseNexus moving={active && !paused}/><h3>{replay ? "Replaying updates…" : paused ? "Your view is paused." : indicatorFresh ? "Watching for the next zone." : "Your market updates, in one place."}</h3><p>{replay ? "Original updates. Original timestamps." : paused ? "Zone monitoring continues. Resume to catch up." : "New zones, entries and breaks appear here automatically."}</p></div>}
     </div>
     <footer className="pulse-footer"><span aria-hidden="true" className="pulse-wave" data-active={!!arrival}>{[0,1,2,3,4,5,6].map(i=><i key={i} style={{"--i":i} as React.CSSProperties}/>)}</span><span role="status">{replay ? `${replayCount} of ${replay.length} captures` : paused ? "Feed view paused" : indicatorFresh ? "Watching 5m + 15m automatically" : `Last chart check ${pulseAge(latestReview,now)}`}</span><span>{paused ? "Zone monitoring continues" : indicatorFresh ? "Posts when the zone changes" : !monitoring ? "Next session starts at 9 AM ET" : "Connecting to your feed"}</span></footer>
-    <span className="sr-only" aria-live="polite">{arrival && last ? `$SPX500 ${last.timeframe} minute ${last.side} chart update received.` : ""}</span>
+    <span className="sr-only" aria-live="polite">{arrival && last ? `$${last.symbol.split(":").at(-1)} ${last.timeframe} minute ${last.side} chart update received.` : ""}</span>
   </section>;
 }

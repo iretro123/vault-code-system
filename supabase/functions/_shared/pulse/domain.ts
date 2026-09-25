@@ -1,11 +1,13 @@
 export const PULSE_SYMBOL = "CAPITALCOM:SPX500" as const;
-export const PULSE_INDICATOR = "Vault Trading Academy - Supply And Demand";
+export const PULSE_SPY_SYMBOL = "AMEX:SPY" as const;
+export type PulseSymbol = typeof PULSE_SYMBOL | typeof PULSE_SPY_SYMBOL;
+export const PULSE_INDICATOR = "Vault Zone Pulse - Live Feed";
 export type PulseKind = "observed" | "entered" | "holding" | "exited" | "breached" | "returned" | "broken" | "retired";
 export interface PulseCandle { t: number; o: number; h: number; l: number; c: number }
 export interface PulsePost {
   id: string;
   zoneId: string;
-  symbol: typeof PULSE_SYMBOL;
+  symbol: PulseSymbol;
   timeframe: 5 | 15;
   side: "supply" | "demand";
   kind: PulseKind;
@@ -19,12 +21,15 @@ export interface PulsePost {
   confirmed?: boolean;
   chartUrl?: string;
   capturedAt?: number;
+  captureStatus?: "pending" | "unavailable";
   afterHoursTest?: boolean;
   barAt?: number;
   bars?: PulseCandle[];
   closedAt?: number;
 }
 export interface PulseFeed {
+  symbol?: PulseSymbol;
+  captureConnected?: boolean;
   posts: PulsePost[];
   receivedAt: number | null;
   indicatorAt: Partial<Record<5 | 15, number>>;
@@ -44,7 +49,7 @@ export function pulseWindowOpen(now: number): boolean {
 export function validatePulsePost(input: unknown, now: number, reviewAllowed = false, afterHoursTest = false, verifiedSessionClose = false): PulsePost {
   if (!input || typeof input !== "object") throw new Error("Invalid event");
   const p = input as PulsePost;
-  if (p.symbol !== PULSE_SYMBOL || ![5, 15].includes(p.timeframe)) throw new Error("Wrong chart");
+  if (![PULSE_SYMBOL, PULSE_SPY_SYMBOL].includes(p.symbol) || ![5, 15].includes(p.timeframe)) throw new Error("Wrong chart");
   if (![p.id, p.zoneId].every(s => typeof s === "string" && /^[a-zA-Z0-9:_-]{1,160}$/.test(s))) throw new Error("Invalid identity");
   if (!["supply", "demand"].includes(p.side) || !["observed", "entered", "holding", "exited", "breached", "returned", "broken", "retired"].includes(p.kind)) throw new Error("Invalid event kind");
   if (!Number.isFinite(p.at) || p.at > now + 5000 || now - p.at > 300000) throw new Error("Stale or future event");
@@ -65,7 +70,7 @@ export function validatePulsePost(input: unknown, now: number, reviewAllowed = f
     if (p.kind === "broken" && (!p.confirmed || !(p.side === "demand" ? p.price! < p.lower! : p.price! > p.upper!))) throw new Error("Unconfirmed break");
   } else throw new Error("Invalid source");
   // Never trust an incoming URL or a client-provided capture timestamp.
-  return { id: p.id, zoneId: p.zoneId, symbol: PULSE_SYMBOL, timeframe: p.timeframe, side: p.side, kind: p.kind, source: p.source, at: p.at,
+  return { id: p.id, zoneId: p.zoneId, symbol: p.symbol, timeframe: p.timeframe, side: p.side, kind: p.kind, source: p.source, at: p.at,
     ...(p.source === "chart-review" ? { summary: p.summary!.trim(), afterHoursTest: !pulseWindowOpen(p.at), ...(p.levelsSource === "indicator-labels" ? { lower: p.lower, upper: p.upper, levelsSource: p.levelsSource } : {}), ...(p.kind === "broken" ? { price: p.price, confirmed: true } : {}) } : { lower: p.lower, upper: p.upper, price: p.price, confirmed: p.confirmed, ...(afterHoursTest && !pulseWindowOpen(p.at) ? { afterHoursTest: true } : {}) }) };
 }
 

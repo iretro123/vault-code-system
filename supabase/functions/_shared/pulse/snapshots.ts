@@ -1,8 +1,8 @@
-import { PULSE_SYMBOL, pulseWindowOpen, validatePulsePost, appendPulsePost, type PulseCandle, type PulseKind, type PulsePost } from "./domain.ts";
+import { PULSE_SYMBOL, PULSE_SPY_SYMBOL, type PulseSymbol, pulseWindowOpen, validatePulsePost, appendPulsePost, type PulseCandle, type PulseKind, type PulsePost } from "./domain.ts";
 
 export interface PulseZone { zoneId: string; side: "supply" | "demand"; lower: number; upper: number }
 export interface PulseSnapshot {
-  kind: "snapshot"; source: "indicator"; symbol: typeof PULSE_SYMBOL;
+  kind: "snapshot"; source: "indicator"; symbol: PulseSymbol;
   timeframe: 5 | 15; at: number; barAt: number; confirmed: boolean;
   price: number; zones: PulseZone[]; bars: PulseCandle[];
 }
@@ -14,7 +14,7 @@ const sessionClose = (s: PulseSnapshot) => s.confirmed === true && positive(s.ba
 export function validatePulseSnapshot(input: unknown, now: number, afterHoursTest = false): PulseSnapshot {
   if (!input || typeof input !== "object") throw new Error("Invalid snapshot");
   const s = input as PulseSnapshot;
-  if (s.kind !== "snapshot" || s.source !== "indicator" || s.symbol !== PULSE_SYMBOL || ![5, 15].includes(s.timeframe)) throw new Error("Wrong chart");
+  if (s.kind !== "snapshot" || s.source !== "indicator" || ![PULSE_SYMBOL, PULSE_SPY_SYMBOL].includes(s.symbol) || ![5, 15].includes(s.timeframe)) throw new Error("Wrong chart");
   if (!positive(s.at) || s.at > now + 5000 || now - s.at > 60000) throw new Error("Stale snapshot");
   if (!afterHoursTest && !sessionClose(s) && (!pulseWindowOpen(now) || !pulseWindowOpen(s.at))) throw new Error("Outside monitoring hours");
   if (!positive(s.price) || typeof s.confirmed !== "boolean" || !positive(s.barAt) || s.barAt > s.at || s.at - s.barAt > s.timeframe * 60000 + 5000) throw new Error("Invalid candle time");
@@ -30,14 +30,14 @@ export function validatePulseSnapshot(input: unknown, now: number, afterHoursTes
     return { t: b.t, o: b.o, h: b.h, l: b.l, c: b.c };
   });
   if (bars.at(-1)!.t !== s.barAt || Math.abs(bars.at(-1)!.c - s.price) > 0.000001) throw new Error("Chart price mismatch");
-  return { kind: "snapshot", source: "indicator", symbol: PULSE_SYMBOL, timeframe: s.timeframe, at: s.at, barAt: s.barAt, confirmed: s.confirmed, price: s.price, zones, bars };
+  return { kind: "snapshot", source: "indicator", symbol: s.symbol, timeframe: s.timeframe, at: s.at, barAt: s.barAt, confirmed: s.confirmed, price: s.price, zones, bars };
 }
 
 // The indicator provides the zones. This only describes changes to those exact zones.
 export function postsFromSnapshot(posts: PulsePost[], s: PulseSnapshot, now: number, afterHoursTest = false): PulsePost[] {
   let result = posts;
   const latest = new Map<string, PulsePost>();
-  for (const p of posts) if (p.source === "indicator" && p.timeframe === s.timeframe) latest.set(p.zoneId, p);
+  for (const p of posts) if (p.source === "indicator" && p.timeframe === s.timeframe && p.symbol === s.symbol) latest.set(p.zoneId, p);
   const emit = (z: PulseZone, kind: PulseKind, price = s.price, confirmed = s.confirmed, barAt = s.barAt) => {
     const validated = validatePulsePost({ id: `${z.zoneId}:${barAt}:${kind}`, ...z, kind, symbol: s.symbol, timeframe: s.timeframe, source: "indicator", price, confirmed, at: s.at }, now, false, afterHoursTest, sessionClose(s));
     result = appendPulsePost(result, { ...validated, barAt, ...(confirmed ? { closedAt: barAt + s.timeframe * 60000 } : {}), bars: s.bars.filter(b => b.t <= barAt) });
