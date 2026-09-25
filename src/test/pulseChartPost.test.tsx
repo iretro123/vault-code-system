@@ -47,7 +47,7 @@ describe("Pulse screenshot integrity", () => {
     render(<ZonePulseCard post={post}/>);
     loadImage();
     expect(screen.getByText("Sep 24 · 12:41 PM ET")).toBeInTheDocument();
-    expect(screen.getByText(/Chart refreshed · Sep 24, 1:41:25 PM ET/)).toBeInTheDocument();
+    expect(screen.getByText("Sep 24, 1:41:25 PM ET").closest("time")).toHaveTextContent("Chart refreshed · Sep 24, 1:41:25 PM ET");
     expect(screen.getByText("Later chart view")).toBeInTheDocument();
     expect(screen.queryByText(/New 5m/)).not.toBeInTheDocument();
   });

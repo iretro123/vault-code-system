@@ -93,7 +93,7 @@ export function PulseChartPost({
       </div>
       {chartUrl ? <>
         {showChart && <figure className="pcp-chart" aria-label="Original chart screenshot">
-          <figcaption className="pcp-capture-time"><time dateTime={new Date(chartCapturedAt).toISOString()}>{captureContext === "refresh" ? "Chart refreshed" : "Chart captured"} · {chartTime} ET</time>{captureContext === "refresh" && <span>Later chart view</span>}</figcaption>
+          <figcaption className="pcp-capture-time"><time dateTime={new Date(chartCapturedAt).toISOString()}>{captureContext === "refresh" ? "Chart refreshed" : "Chart captured"} · <span className="pcp-capture-date">{chartTime} ET</span></time>{captureContext === "refresh" && <span>Later chart view</span>}</figcaption>
           {!failed && <div className={`pcp-photo${focus ? " pcp-focused" : ""}${canAnnotate ? " pcp-annotatable" : ""}`} style={focus ? { aspectRatio: `${focus.width} / ${focus.height}`, maxWidth: `min(${focus.width}px, var(--pcp-chart-width, 800px))` } : undefined}>
             <img key={attempt} src={chartUrl} alt={chartAlt} style={focus ? { width: `${focus.sourceWidth / focus.width * 100}%`, height: "auto", left: `${-focus.x / focus.width * 100}%`, top: `${-focus.y / focus.height * 100}%` } : undefined} onLoad={event => {
               setLoaded(true);
