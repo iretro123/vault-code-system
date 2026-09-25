@@ -4,6 +4,7 @@
   "compatibility_date": "2026-09-25",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "services": [{ "binding": "PULSE_CAPTURE", "service": "vault-spy-pulse-capture" }],
   "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } }
   // Secrets: DELIVERY_HASH, WORKER_TOKEN, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY.
   // Request URLs carry delivery capabilities and must never be logged.

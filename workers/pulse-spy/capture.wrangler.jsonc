@@ -1,0 +1,13 @@
+{
+  "name": "vault-spy-pulse-capture",
+  "main": "capture-worker.js",
+  "compatibility_date": "2026-09-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "browser": { "binding": "BROWSER" },
+  "kv_namespaces": [{ "binding": "CHART_IMAGES", "id": "8b6525ab04e441518116ae70a8f462b0" }],
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } },
+  "vars": { "CAPTURE_SAVE_LOGIN": "false" },
+  "triggers": { "crons": ["* * * * *"] }
+  // Database capture_enabled remains false until login, plan and real-image QA pass.
+}
