@@ -18,6 +18,8 @@ The member app and receiver followed `CAPITALCOM:SPX500`; the local design previ
 
 Cloudflare rejected upload of the prepared `vault-spy-pulse` receiver with `No access to the specified resource`. Browser Run access also returned an authentication error. Lovable's editing agent reported no remaining credits. No software subscriptions were purchased and no credentials were copied from a personal browser.
 
+The scoped repair was pushed as `ce70d60a` and published successfully through Lovable deployment `66d31096-1ada-40c4-aa69-307e854cf3fa`, despite the editing-credit limit. The actual custom-domain member page was verified: 27 original-image cards, zero drawn-chart fallbacks, explicit screenshot-unavailable status, and fresh SPX500 quotes on both timeframes. This verifies the frontend correction, not SPY activation or screenshot delivery.
+
 The prepared receiver is `workers/pulse-spy/index.js`. It uses a dedicated delivery capability and a separate scoped database capability; it never receives the Supabase service-role key. Secrets are excluded from Git. Invocation request logging is disabled because webhook paths contain delivery credentials.
 
 SPY is deliberately disabled and `member_symbol` remains `CAPITALCOM:SPX500` until both real SPY alerts deliver successfully. The member screen continues identifying SPX500 accurately. `scripts/vault-zone-pulse-spy.pine` is a separate SPY adapter using the original zone calculations; it still needs compiling and two webhook alerts in TradingView. It does not modify existing SPX alerts.
