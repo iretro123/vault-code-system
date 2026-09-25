@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowUpRight, Expand, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { validPulseChartFocus, type PulseChartFocus } from "@/lib/pulseChartFocus";
 import "./pulse-chart-post.css";
 
 export interface PulseEntryMarkup {
@@ -22,6 +23,7 @@ export interface PulseChartPostProps {
   captureContext?: "event" | "refresh";
   captureStatus?: "pending" | "unavailable";
   chartUrl?: string;
+  chartFocus?: PulseChartFocus;
   lower?: number;
   upper?: number;
   note?: string;
@@ -35,7 +37,7 @@ export interface PulseChartPostProps {
 }
 
 export function PulseChartPost({
-  symbol, timeframe, side, headline, capturedAt, chartCapturedAt = capturedAt, captureContext = "event", captureStatus = "pending", chartUrl, lower, upper, note,
+  symbol, timeframe, side, headline, capturedAt, chartCapturedAt = capturedAt, captureContext = "event", captureStatus = "pending", chartUrl, chartFocus, lower, upper, note,
   arriving = false, showIdentity = true, defaultShowChart = true,
   entryMarkup, reactions, onReact, reactionsDisabled = false,
 }: PulseChartPostProps) {
@@ -75,7 +77,8 @@ export function PulseChartPost({
   const chartTime = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit" }).format(chartCapturedAt);
   const price = (value: number) => value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const levels = side !== "neutral" && Number.isFinite(lower) && Number.isFinite(upper) && lower! < upper!;
-  const canAnnotate = side !== "neutral" && loaded && !failed && entryMarkup?.sourceUrl === chartUrl
+  const focus = loaded && validPulseChartFocus(chartFocus, chartCapturedAt, dimensions.width, dimensions.height, chartUrl) ? chartFocus : undefined;
+  const canAnnotate = !focus && side !== "neutral" && loaded && !failed && entryMarkup?.sourceUrl === chartUrl
     && entryMarkup.width === dimensions.width && entryMarkup.height === dimensions.height;
   const chartAlt = `Original TradingView ${symbol} ${timeframe}-minute Pulse chart, captured ${chartTime} ET`;
 
@@ -90,9 +93,9 @@ export function PulseChartPost({
       </div>
       {chartUrl ? <>
         {showChart && <figure className="pcp-chart" aria-label="Original chart screenshot">
-          <figcaption className="pcp-capture-time">{captureContext === "refresh" ? "Chart refreshed" : "Chart captured"} · {chartTime} ET{captureContext === "refresh" && <span>Later view of this zone</span>}</figcaption>
-          {!failed && <div className="pcp-photo">
-            <img key={attempt} src={chartUrl} alt={chartAlt} onLoad={event => {
+          <figcaption className="pcp-capture-time">{captureContext === "refresh" ? "Chart refreshed" : "Chart captured"} · {chartTime} ET{captureContext === "refresh" && <span>Later chart view</span>}</figcaption>
+          {!failed && <div className={`pcp-photo${focus ? " pcp-focused" : ""}${canAnnotate ? " pcp-annotatable" : ""}`} style={focus ? { aspectRatio: `${focus.width} / ${focus.height}`, maxWidth: Math.min(focus.width, 800) } : undefined}>
+            <img key={attempt} src={chartUrl} alt={chartAlt} style={focus ? { width: `${focus.sourceWidth / focus.width * 100}%`, height: "auto", left: `${-focus.x / focus.width * 100}%`, top: `${-focus.y / focus.height * 100}%` } : undefined} onLoad={event => {
               setLoaded(true);
               setDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight });
             }} onError={() => { setFailed(true); setLoaded(false); setShowExample(false); }}/>
@@ -111,14 +114,14 @@ export function PulseChartPost({
       </> : <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Waiting for the original chart."}</p>}
       {(onReact || canAnnotate || (chartUrl && !showChart)) && <footer className="pcp-actions">
         {onReact && reactions && <div className="pcp-reactions" aria-label="Reactions">{reactions.map(reaction => <button type="button" key={reaction.emoji} aria-label={`React ${reaction.emoji}`} aria-pressed={reaction.active} disabled={reactionsDisabled} onClick={() => onReact(reaction.emoji)}>{reaction.emoji}{reaction.count > 0 && <span>{reaction.count}</span>}</button>)}</div>}
-        {chartUrl && !showChart && <button type="button" className="pcp-entry-button" onClick={() => setShowChart(true)}>View chart <ArrowUpRight size={17} aria-hidden="true"/></button>}
+        {chartUrl && !showChart && <button type="button" className="pcp-entry-button" onClick={() => { setActualSize(false); setExpanded(true); }}>View chart <ArrowUpRight size={17} aria-hidden="true"/></button>}
         {canAnnotate && <button type="button" className="pcp-entry-button" aria-pressed={showExample} onClick={() => setShowExample(value => !value)}>{showExample ? "Hide example" : "See entry example"}<ArrowUpRight size={17} aria-hidden="true"/></button>}
       </footer>}
     </div>
     <Dialog open={expanded} onOpenChange={setExpanded}>
       <DialogContent className="pcp-dialog max-w-6xl border-white/10 bg-[#19222f] text-slate-100">
         <DialogTitle>{symbol} · {timeframe}m · Original chart</DialogTitle>
-        <DialogDescription className="text-slate-400">Captured {chartTime} ET.{captureContext === "refresh" ? " Later view of this zone, after the original update." : ""}</DialogDescription>
+        <DialogDescription className="text-slate-400">Captured {chartTime} ET.{captureContext === "refresh" ? " Later chart view, after the original update." : ""}</DialogDescription>
         <button type="button" className="pcp-size-switch" aria-pressed={actualSize} onClick={() => setActualSize(value => !value)}>{actualSize ? <ZoomOut size={16}/> : <ZoomIn size={16}/>} {actualSize ? "Fit to screen" : "Actual size"}</button>
         <div ref={originalViewer} className={`pcp-original-view${actualSize ? " pcp-actual" : ""}`}><img src={chartUrl} alt={`Full unmodified screenshot: ${chartAlt}`}/></div>
       </DialogContent>

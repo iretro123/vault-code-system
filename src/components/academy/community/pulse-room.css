@@ -16,3 +16,11 @@
 .pulse-room-clean button:focus-visible,.pulse-room-clean a:focus-visible{outline:2px solid #bad9ff;outline-offset:3px}
 @media(max-width:767px){.pr-toolbar{padding:20px 20px 12px}.pr-content{padding:0 20px 30px}.pr-symbol{font-size:21px}.pr-timeframes button{min-width:76px;min-height:50px;padding:12px 15px;font-size:16px}.pr-now{font-size:12px;margin-bottom:18px}.pulse-room-clean .pcp-copy{padding:26px}.pulse-room-clean .pcp-author>span{font-size:18px}.pulse-room-clean .pcp-author time{font-size:12px}.pulse-room-clean .pcp-surface{border-radius:22px}.pulse-room-clean .pcp-meta{font-size:14px}.pulse-room-clean .pcp-copy h3{font-size:30px}.pulse-room-clean .pcp-actions{padding:14px 20px;min-height:76px}}
 @media(max-width:450px){.pr-toolbar{padding:18px 14px 10px}.pr-content{padding:0 12px 28px}.pr-now{gap:5px;font-size:11px}.pr-now>span:first-child{gap:6px}.pulse-room-clean .pcp-copy{padding:24px 22px}.pulse-room-clean .pcp-copy h3{font-size:29px}.pulse-room-clean .pcp-range{font-size:22px}.pulse-room-clean .pcp-capture-time{padding:9px 16px}.pulse-room-clean .pcp-pending{padding:8px 22px 22px}.pr-source>a{font-size:16px}}
+
+/* Quiet waiting state, driven by the fresh indicator snapshot. */
+.pr-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;padding:64px 12px 58px;background:radial-gradient(ellipse at 50% 48%,#8bbcff08,transparent 65%)}
+.pr-empty>svg{color:#b9d3f3;margin-bottom:25px;filter:drop-shadow(0 0 12px #b2d5ff25)}
+.pr-empty h2{margin:0;color:#edf4ff;font-size:clamp(36px,4.5vw,54px);font-weight:550;letter-spacing:-1.8px;line-height:1.1;text-align:center}
+.pr-history-label{margin:12px 4px 24px;font-size:13px;color:#a5b6cc}
+.pulse-room-clean .pcp-copy{padding-block:25px}.pulse-room-clean .pcp-copy h3{font-size:clamp(28px,3vw,36px);margin-top:15px}.pulse-room-clean .pcp-actions{min-height:72px;padding-block:12px}
+@media(max-width:450px){.pr-empty{min-height:270px;padding-block:52px}.pr-empty h2{font-size:38px;letter-spacing:-1.4px}.pulse-room-clean .pcp-copy{padding-block:23px}.pulse-room-clean .pcp-copy h3{font-size:28px}}

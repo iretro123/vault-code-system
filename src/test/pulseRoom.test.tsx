@@ -19,15 +19,15 @@ function setup() {
 }
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("Live Pulse channel", () => {
-  it("shows the latest real update and never attaches another post's chart", () => {
+  it("shows a clean no-zone state and keeps old breaks and charts in history", () => {
     setup();
-    expect(screen.getByText("5m demand broke. Closed below 770.83.")).toBeInTheDocument();
-    expect(screen.getByText("No active 5m zone")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "No zone yet." })).toBeInTheDocument();
+    expect(screen.queryByText("5m demand broke. Closed below 770.83.")).not.toBeInTheDocument();
     expect(screen.getByText("Zone updates are automatic · Chart capture offline")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Earlier updates (1)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Earlier updates (2)" }));
     fireEvent.click(screen.getByRole("button", { name: "View chart" }));
-    expect(screen.getByAltText(/^Original TradingView/)).toHaveAttribute("src", original.chartUrl);
+    expect(screen.getByAltText(/^Full unmodified screenshot/)).toHaveAttribute("src", original.chartUrl);
   });
   it("switches timeframe, displays its original chart, and opens the same live interval", () => {
     setup();
@@ -40,7 +40,7 @@ describe("Live Pulse channel", () => {
   it("receives new posts and later images without a reload", () => {
     const view = setup();
     const next: PulsePost = { ...original, id: "new", at: at + 500, lower: 771, upper: 772, price: 771.2, chartUrl: undefined };
-    state.feed = { ...state.feed, posts: [...state.feed.posts, next] };
+    state.feed = { ...state.feed, quotes: { ...state.feed.quotes, 5: { at: at + 500, price: 771.2, zones: [{ side: "demand", lower: 771, upper: 772 }] } }, posts: [...state.feed.posts, next] };
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByText("In 5m demand.")).toBeInTheDocument();
     state.feed = { ...state.feed, posts: [...state.feed.posts.slice(0, -1), { ...next, chartUrl: "https://example.com/new.png", capturedAt: at + 900 }] };
@@ -51,6 +51,7 @@ describe("Live Pulse channel", () => {
     setup();
     act(() => vi.advanceTimersByTime(91000));
     expect(screen.queryByText("Live updates")).not.toBeInTheDocument();
+    expect(screen.queryByText("No zone yet.")).not.toBeInTheDocument();
     expect(screen.getByText(/Waiting for fresh 5m data/)).toBeInTheDocument();
   });
 });

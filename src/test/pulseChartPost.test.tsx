@@ -20,13 +20,35 @@ function loadImage(width = 910, height = 630) {
 }
 
 describe("Pulse screenshot integrity", () => {
+  it("focuses only the verified capture and preserves the full original in the viewer", () => {
+    const imageId = "0ac4e4c1-31f2-4dd2-bd1c-7b85a5d828c6";
+    const url = `https://example.com/image/${imageId}?signature=example`;
+    const chartFocus = { imageId, capturedAt: props.capturedAt, sourceWidth: 1024, sourceHeight: 1158, x: 360, y: 340, width: 616, height: 385 };
+    const view = render(<PulseChartPost {...props} chartUrl={url} chartFocus={chartFocus}/>);
+    const photo = loadImage(1024, 1158);
+    expect(photo.parentElement).toHaveClass("pcp-focused");
+    expect(photo).toHaveAttribute("src", url);
+    fireEvent.click(screen.getByRole("button", { name: "Expand original SPY 5-minute screenshot" }));
+    expect(screen.getByAltText(/^Full unmodified screenshot/)).toHaveAttribute("src", url);
+    expect(screen.getByAltText(/^Full unmodified screenshot/)).not.toHaveAttribute("style");
+    view.rerender(<PulseChartPost {...props} chartUrl={url} chartFocus={chartFocus} chartCapturedAt={props.capturedAt + 1000}/>);
+    expect(photo.parentElement).not.toHaveClass("pcp-focused");
+  });
+  it("does not apply crop coordinates to a different original or beyond its bounds", () => {
+    const imageId = "0ac4e4c1-31f2-4dd2-bd1c-7b85a5d828c6";
+    const chartFocus = { imageId, capturedAt: props.capturedAt, sourceWidth: 1024, sourceHeight: 1158, x: 900, y: 340, width: 616, height: 385 };
+    const view = render(<PulseChartPost {...props} chartUrl={`https://example.com/image/${imageId}`} chartFocus={chartFocus}/>);
+    expect(loadImage(1024, 1158).parentElement).not.toHaveClass("pcp-focused");
+    view.rerender(<PulseChartPost {...props} chartUrl={capture} chartFocus={{ ...chartFocus, x: 360 }}/>);
+    expect(loadImage(1024, 1158).parentElement).not.toHaveClass("pcp-focused");
+  });
   it("labels a manually refreshed chart as a later view without changing the zone event time", () => {
     const post: PulsePost = { id: "refresh", zoneId: "zone", symbol: "AMEX:SPY", timeframe: 5, side: "demand", kind: "observed", source: "indicator", at: props.capturedAt, lower: 766.4, upper: 767.24, price: 768, confirmed: false, chartUrl: capture, capturedAt: props.capturedAt + 3600000, captureContext: "refresh" };
     render(<ZonePulseCard post={post}/>);
     loadImage();
     expect(screen.getByText("Sep 24 · 12:41 PM ET")).toBeInTheDocument();
     expect(screen.getByText(/Chart refreshed · Sep 24, 1:41:25 PM ET/)).toBeInTheDocument();
-    expect(screen.getByText("Later view of this zone")).toBeInTheDocument();
+    expect(screen.getByText("Later chart view")).toBeInTheDocument();
     expect(screen.queryByText(/New 5m/)).not.toBeInTheDocument();
   });
   it("keeps the event timestamp distinct from a later screenshot capture", () => {

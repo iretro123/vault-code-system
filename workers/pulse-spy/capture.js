@@ -18,8 +18,9 @@ export async function runCapture(env, rpc) {
     const page = pages.find(p=>p.url().startsWith(CHART_URL));
     if (!page) throw new Error('hosted-chart-login-required');
     page.setDefaultTimeout(6000);
-    // Set a consistent landscape crop; keep the actual candles and indicator untouched.
-    await page.setViewport({width:1440,height:960,deviceScaleFactor:1.5});
+    // Render text at 2x in a compact landscape chart, then retain the lossless PNG.
+    // This avoids shrinking a tall, low-resolution desktop screenshot into a card.
+    await page.setViewport({width:1280,height:800,deviceScaleFactor:2});
     if (task.post) {
       const buttons = await page.$$(`[role="radio"][aria-label="${task.post.timeframe} minutes"]`);
       let selected = false;
@@ -27,7 +28,7 @@ export async function runCapture(env, rpc) {
         if (await button.boundingBox()) { await button.click(); selected=true; break; }
       }
       if (!selected) throw new Error('timeframe-control-unavailable');
-      await page.mouse.move(1430,950);
+      await page.mouse.move(1270,790);
       await page.waitForFunction((tf) => {
         const canvas=document.querySelector('.chart-widget canvas[aria-label]');
         const widget=document.querySelector('.chart-widget');
@@ -41,7 +42,7 @@ export async function runCapture(env, rpc) {
       const dataTab=await page.$('#data-window');
       if (!dataTab) throw new Error('chart-zone-data-unavailable');
       if (await dataTab.evaluate(e=>e.getAttribute('aria-selected'))!=='true') await dataTab.click();
-      await page.mouse.move(1430,10);
+      await page.mouse.move(1270,10);
       await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="row"]')).some(e=>e.innerText.includes('Vault Zone Pulse - SPY Live') && e.innerText.includes('Demand lower')),{timeout:6000});
     }
     const readSource=()=>page.evaluate(()=>({
@@ -54,11 +55,19 @@ export async function runCapture(env, rpc) {
       || /disconnected|connection lost|can't open this chart|verify you are human/i.test(source.pageText)) throw new Error('hosted-chart-login-required');
     if (task.post) {
       verifyCaptureSource(source,task.post);
+      // The Data window is only for verification. It must not squeeze the chart
+      // into a portrait crop or appear in the member image.
+      const dataToggle=await page.$('button[aria-label="Object tree and data window"]');
+      if (!dataToggle) throw new Error('chart-zone-data-unavailable');
+      await dataToggle.click();
+      await page.waitForFunction(()=>document.querySelector('button[aria-label="Object tree and data window"]')?.getAttribute('aria-pressed')!=='true',{timeout:3000});
       const chart = await page.$('.chart-widget');
       const bounds = await chart?.boundingBox();
-      if (!bounds || bounds.width<700 || bounds.height<400) throw new Error('chart-crop-unavailable');
+      if (!bounds || bounds.width<900 || bounds.height<400 || bounds.width/bounds.height<1.3) throw new Error('chart-crop-unavailable');
       const capturedAt=Date.now();
       const bytes=await chart.screenshot({type:'png'});
+      await dataToggle.click();
+      await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="row"]')).some(e=>e.innerText.includes('Vault Zone Pulse - SPY Live') && e.innerText.includes('Demand lower')),{timeout:3000});
       // A slow render may have crossed the freshness deadline; reject it as well.
       verifyCaptureSource(await readSource(),task.post);
       if (bytes.byteLength<10_000 || bytes.byteLength>8_000_000) throw new Error('chart-image-invalid');

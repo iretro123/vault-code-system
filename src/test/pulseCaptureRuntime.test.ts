@@ -22,10 +22,18 @@ beforeEach(()=>{vi.useFakeTimers();vi.setSystemTime(now);vi.stubGlobal('crypto',
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();});
 describe('durable screenshot processing',()=>{
   it('recovers through the session manager without requiring an initial session ID',async()=>{
-    const {env,rpc}=fixture();
+    const {env,rpc,page,chart}=fixture();
     expect(await runCapture(env,rpc)).toBe('more');
+    expect(page.setViewport).toHaveBeenCalledWith({width:1280,height:800,deviceScaleFactor:2});
+    expect(chart.screenshot).toHaveBeenCalledWith({type:'png'});
     expect(session.openChartSession).toHaveBeenCalledWith(env);
     expect(rpc).toHaveBeenLastCalledWith('pulse_spy_capture_finish',expect.objectContaining({p_event_id:'event',p_result:expect.objectContaining({ok:true,timeframe:5,symbol:'AMEX:SPY'})}),5000);
+  });
+  it('rejects a portrait crop rather than publishing another tall chart',async()=>{
+    const {env,rpc,chart}=fixture();chart.boundingBox.mockResolvedValue({width:1000,height:1200});
+    expect(await runCapture(env,rpc)).toBe('retry');
+    expect(chart.screenshot).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenLastCalledWith('pulse_spy_capture_finish',expect.objectContaining({p_result:{ok:false,failure:'chart-crop-unavailable'}}),5000);
   });
   it('persists missing binding failures instead of silently returning',async()=>{
     const {rpc}=fixture();

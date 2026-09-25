@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowUpRight, ArrowUp } from "lucide-react";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
-import { PulseNexus } from "../chat/PulseNexus";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
 import { usePulseFeed } from "@/hooks/usePulseFeed";
 import { usePulseReactions } from "@/hooks/usePulseReactions";
@@ -20,11 +19,13 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const symbolLabel = symbol.split(":").at(-1)!;
   const posts = feed.posts.filter(post => post.timeframe === tf).slice().reverse();
   const latest = posts[0];
-  const shown = history ? posts : posts.slice(0, 1);
-  const reactions = usePulseReactions(shown.map(post => post.id), active && source === "cloud");
   const quote = feed.quotes?.[tf];
   const monitoring = pulseWindowOpen(now) || now < (feed.afterHoursTestUntil || 0);
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
+  const noZone = fresh && quote.zones.length === 0;
+  const shown = history ? posts : noZone ? [] : posts.slice(0, 1);
+  const earlierCount = noZone ? posts.length : Math.max(0, posts.length - 1);
+  const reactions = usePulseReactions(shown.map(post => post.id), active && source === "cloud");
   const inZone = quote?.zones.find(zone => quote.price >= zone.lower && quote.price <= zone.upper);
   const currentState = !fresh ? "" : inZone ? `In ${tf}m ${inZone.side}` : quote?.zones.length ? `${tf}m ${quote.zones.map(zone => zone.side).join(" + ")} on watch` : `No active ${tf}m zone`;
 
@@ -54,17 +55,19 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
       <div className="pr-content">
         <div className="pr-now" role="status" data-fresh={fresh && monitoring}>
           <span><i aria-hidden="true"/>{monitoring ? fresh ? "Live updates" : "Reconnecting" : "Market session ended"}{quote && <b>${quote.price.toFixed(2)}</b>}</span>
-          <span>{monitoring && fresh ? currentState : `Last update ${pulseAge(quote?.at, now)}`}</span>
+          <span>{monitoring && fresh ? noZone ? "" : currentState : `Last update ${pulseAge(quote?.at, now)}`}</span>
         </div>
         {error && <p className="pr-warning" role="alert">{error}</p>}
         {monitoring && connected && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
-        <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
-        {!posts.length && <div className="pr-empty"><PulseNexus moving={active}/><h3>{fresh ? `No active ${tf}m zone.` : "Waiting for your next update."}</h3></div>}
+        {noZone && <div className="pr-empty pr-no-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No zone yet.</h2></div>}
+        {noZone && history && <p className="pr-history-label">Earlier updates</p>}
+        <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} featured={!noZone && index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
+        {!posts.length && !noZone && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
           <a href={liveChart} target="_blank" rel="noreferrer">Open live chart <ArrowUpRight size={20} aria-hidden="true"/></a>
           <p role="status">{source === "cloud" && feed.captureConnected === false ? "Zone updates are automatic · Chart capture offline" : feed.captureConnected ? "New zones and chart captures appear automatically" : "Checking chart connection…"}</p>
         </div>
-        {posts.length > 1 && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Show latest only" : `Earlier updates (${posts.length - 1})`}</button>}
+        {earlierCount > 0 && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}
       </div>
     </div>
     {unseen && <button type="button" className="pr-new" onClick={openLatest}><ArrowUp size={16}/> New update</button>}
