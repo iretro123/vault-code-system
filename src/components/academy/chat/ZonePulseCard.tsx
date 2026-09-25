@@ -1,12 +1,12 @@
 import { pulseHeadline, type PulsePost } from "@/lib/spxPulse";
-import { PulseChartPost } from "./PulseChartPost";
+import { PulseChartPost, type PulseChartPostProps } from "./PulseChartPost";
 import "./zone-pulse.css";
 
 export function PulseOrb({ active = false }: { active?: boolean }) {
   return <span aria-hidden="true" className={`pulse-orb ${active ? "pulse-orb-active" : ""}`}><span/><i/></span>;
 }
 
-export function ZonePulseCard({ post, featured = true, arriving = false, showIdentity = true }: { post: PulsePost; featured?: boolean; arriving?: boolean; showIdentity?: boolean }) {
+export function ZonePulseCard({ post, featured = true, arriving = false, showIdentity = true, reactions, onReact, reactionsDisabled }: { post: PulsePost; featured?: boolean; arriving?: boolean; showIdentity?: boolean } & Pick<PulseChartPostProps, "reactions" | "onReact" | "reactionsDisabled">) {
   const imageOk = !!post.chartUrl && (/^\/api\/spx-pulse\/image\/[a-zA-Z0-9:_-]+$/.test(post.chartUrl) || /^https:\/\//.test(post.chartUrl));
   const hasLevels = post.source === "indicator" || post.levelsSource === "indicator-labels";
   const caughtUp = post.confirmed && post.closedAt !== undefined && post.at - post.closedAt > 90000;
@@ -26,5 +26,8 @@ export function ZonePulseCard({ post, featured = true, arriving = false, showIde
     arriving={arriving}
     showIdentity={showIdentity}
     defaultShowChart={featured}
+    reactions={reactions}
+    onReact={onReact}
+    reactionsDisabled={reactionsDisabled}
   />;
 }

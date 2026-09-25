@@ -31,12 +31,13 @@ export interface PulseChartPostProps {
   entryMarkup?: PulseEntryMarkup;
   reactions?: { emoji: string; count: number; active: boolean }[];
   onReact?: (emoji: string) => void;
+  reactionsDisabled?: boolean;
 }
 
 export function PulseChartPost({
   symbol, timeframe, side, headline, capturedAt, chartCapturedAt = capturedAt, captureContext = "event", captureStatus = "pending", chartUrl, lower, upper, note,
   arriving = false, showIdentity = true, defaultShowChart = true,
-  entryMarkup, reactions, onReact,
+  entryMarkup, reactions, onReact, reactionsDisabled = false,
 }: PulseChartPostProps) {
   const [expanded, setExpanded] = useState(false);
   const [actualSize, setActualSize] = useState(false);
@@ -109,7 +110,7 @@ export function PulseChartPost({
         </figure>}
       </> : <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Waiting for the original chart."}</p>}
       {(onReact || canAnnotate || (chartUrl && !showChart)) && <footer className="pcp-actions">
-        {onReact && reactions && <div className="pcp-reactions" aria-label="Reactions">{reactions.map(reaction => <button type="button" key={reaction.emoji} aria-label={`React ${reaction.emoji}`} aria-pressed={reaction.active} onClick={() => onReact(reaction.emoji)}>{reaction.emoji}{reaction.count > 0 && <span>{reaction.count}</span>}</button>)}</div>}
+        {onReact && reactions && <div className="pcp-reactions" aria-label="Reactions">{reactions.map(reaction => <button type="button" key={reaction.emoji} aria-label={`React ${reaction.emoji}`} aria-pressed={reaction.active} disabled={reactionsDisabled} onClick={() => onReact(reaction.emoji)}>{reaction.emoji}{reaction.count > 0 && <span>{reaction.count}</span>}</button>)}</div>}
         {chartUrl && !showChart && <button type="button" className="pcp-entry-button" onClick={() => setShowChart(true)}>View chart <ArrowUpRight size={17} aria-hidden="true"/></button>}
         {canAnnotate && <button type="button" className="pcp-entry-button" aria-pressed={showExample} onClick={() => setShowExample(value => !value)}>{showExample ? "Hide example" : "See entry example"}<ArrowUpRight size={17} aria-hidden="true"/></button>}
       </footer>}

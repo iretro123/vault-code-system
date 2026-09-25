@@ -251,3 +251,12 @@
  .vault-community .community-guide{padding:18px 16px}
  .vault-community .community-guide section+section{margin-top:16px;padding-top:16px}
 }
+
+/* Pulse keeps the approved preview's quiet blue navigation inside the Vault shell. */
+.vault-community[data-active-tab=pulse]{--community-surface:#202a39}
+.vault-community[data-active-tab=pulse] .community-room-tabs{justify-content:center;gap:24px;padding:12px 0 0;border-bottom:0}
+.vault-community[data-active-tab=pulse] .community-room-tabs button{flex:0 1 auto;min-height:58px;padding:16px 14px 18px;border:0;border-radius:0;font-size:17px;font-weight:550}
+.vault-community[data-active-tab=pulse] .community-room-tabs button[aria-current=page]{background:transparent;box-shadow:none;color:#f6faff;font-weight:650}
+.vault-community[data-active-tab=pulse] .community-room-tabs button[aria-current=page]:before{display:none}
+.vault-community[data-active-tab=pulse] .community-room-tabs button[aria-current=page]:after{left:0;right:0;bottom:0;background:#9acfff;box-shadow:0 0 10px #75baff30;height:3px}
+@media(max-width:600px){.vault-community[data-active-tab=pulse] .community-room-tabs{gap:12px;padding-top:4px}.vault-community[data-active-tab=pulse] .community-room-tabs button{min-height:50px;padding:12px 10px 14px;font-size:15px}}
