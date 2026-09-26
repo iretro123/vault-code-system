@@ -1,5 +1,6 @@
 import { CHART_URL, INDICATOR, captureWindowOpen, verifyCaptureSource } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
+import { CHART_VIEWPORT, waitForChartPixels, verifyChartPng } from './capture-quality.js';
 
 // All chart interaction stays in the dedicated hosted session. Never import
 // cookies from a personal browser or attach to unrelated Cloudflare sessions.
@@ -20,7 +21,7 @@ export async function runCapture(env, rpc) {
     page.setDefaultTimeout(6000);
     // Render text at 2x in a compact landscape chart, then retain the lossless PNG.
     // This avoids shrinking a tall, low-resolution desktop screenshot into a card.
-    await page.setViewport({width:1280,height:800,deviceScaleFactor:2});
+    await page.setViewport(CHART_VIEWPORT);
     if (task.post) {
       const buttons = await page.$$(`[role="radio"][aria-label="${task.post.timeframe} minutes"]`);
       let selected = false;
@@ -61,24 +62,25 @@ export async function runCapture(env, rpc) {
       if (!dataToggle) throw new Error('chart-zone-data-unavailable');
       await dataToggle.click();
       await page.waitForFunction(()=>document.querySelector('button[aria-label="Object tree and data window"]')?.getAttribute('aria-pressed')!=='true',{timeout:3000});
+      await waitForChartPixels(page);
       const chart = await page.$('.chart-widget');
       const bounds = await chart?.boundingBox();
       if (!bounds || bounds.width<900 || bounds.height<400 || bounds.width/bounds.height<1.3) throw new Error('chart-crop-unavailable');
       const capturedAt=Date.now();
       const bytes=await chart.screenshot({type:'png'});
+      const imageSize=verifyChartPng(bytes,bounds);
       await dataToggle.click();
       await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="row"]')).some(e=>e.innerText.includes('Vault Zone Pulse - SPY Live') && e.innerText.includes('Demand lower')),{timeout:3000});
       // A slow render may have crossed the freshness deadline; reject it as well.
       verifyCaptureSource(await readSource(),task.post);
-      if (bytes.byteLength<10_000 || bytes.byteLength>8_000_000) throw new Error('chart-image-invalid');
       const imageId=crypto.randomUUID();
-      await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:30*24*3600});
+      await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:30*24*3600,metadata:{contentType:'image/png',...imageSize}});
       result={ok:true,imageId,capturedAt,symbol:'AMEX:SPY',timeframe:task.post.timeframe,indicator:INDICATOR};
     } else result={ok:true};
     await rememberChartLogin(env,page);
   } catch (error) {
     // Never put provider errors, URLs, page content or credentials into logs.
-    const safe = new Set(['hosted-browser-not-configured','hosted-chart-login-required','timeframe-control-unavailable','wrong-instrument','capture-window-expired','wrong-chart-timeframe','pulse-indicator-missing','chart-needs-attention','chart-price-mismatch','chart-zone-data-unavailable','chart-zone-mismatch','chart-crop-unavailable','chart-image-invalid']);
+    const safe = new Set(['hosted-browser-not-configured','hosted-chart-login-required','timeframe-control-unavailable','wrong-instrument','capture-window-expired','wrong-chart-timeframe','pulse-indicator-missing','chart-needs-attention','chart-price-mismatch','chart-zone-data-unavailable','chart-zone-mismatch','chart-crop-unavailable','chart-image-invalid','chart-resolution-unavailable']);
     result={ok:false,failure:safe.has(error?.message)?error.message:'hosted-browser-unavailable'};
   } finally { if (browser) { try { await browser.disconnect(); } catch { /* Still record the result if the session disconnected itself. */ } } }
   const finished=await rpc('pulse_spy_capture_finish',{p_lease:task.lease,p_event_id:task.post?.id??null,p_result:result},5000);
