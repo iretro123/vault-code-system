@@ -168,5 +168,16 @@ for (const [uid,locks,calendar] of [[free,1,1],[sender,2,1],[banned,0,0],[null,0
  if(uid===free) await assert.rejects(()=>db.query("INSERT INTO message_reactions VALUES((SELECT id FROM academy_messages WHERE room_slug='daily-setups' LIMIT 1),$1)",[free]),/row-level security/);
  await db.exec('RESET ROLE');
 }
+await db.exec(`CREATE FUNCTION daily_vault_reset() RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ SELECT $$;
+CREATE FUNCTION cleanup_deleted_messages() RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ SELECT $$;
+CREATE FUNCTION revoke_whitelist_access(text) RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ SELECT $$;
+CREATE FUNCTION admin_override_access(uuid,text,text) RETURNS jsonb LANGUAGE sql SECURITY DEFINER AS $$ SELECT '{}'::jsonb $$;
+`);
+await db.exec(await readFile(new URL('../supabase/migrations/20260929000600_internal_maintenance_permissions.sql',import.meta.url),'utf8'));
+for(const role of ['anon','authenticated','service_role']) {
+ for(const fn of ['daily_vault_reset()','cleanup_deleted_messages()','grant_whitelist_access(text)','revoke_whitelist_access(text)'])
+  assert.equal((await db.query("SELECT has_function_privilege($1,$2,'execute') AS allowed",[role,fn])).rows[0].allowed,role==='service_role',`${role} ${fn}`);
+ assert.equal((await db.query("SELECT has_function_privilege($1,'admin_override_access(uuid,text,text)','execute') AS allowed",[role])).rows[0].allowed,role!=='anon');
+}
 await db.close();
 console.log('PASS: free/paid chat, Pulse freshness, mute/ban, no self alerts, broadcast permissions, durable queue, exclusive claims, fencing, retries and service-only access.');
