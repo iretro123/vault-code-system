@@ -1,8 +1,10 @@
+import { timingSafeEqual } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const capture=vi.hoisted(()=>({drainCaptures:vi.fn()}));
 vi.mock('../../workers/pulse-spy/capture.js',()=>capture);
+vi.mock('../../workers/pulse-spy/capture-session.js',()=>({openChartSession:vi.fn(),rememberChartLogin:vi.fn()}));
 import worker from '../../workers/pulse-spy/capture-worker.js';
-beforeEach(()=>vi.clearAllMocks());
+beforeEach(()=>{vi.clearAllMocks();Object.defineProperty(crypto.subtle,'timingSafeEqual',{value:timingSafeEqual,configurable:true});});
 describe('persistent chart queue',()=>{
   it('acknowledges a webhook wake only after queue persistence, without running a browser in HTTP background work',async()=>{
     let release:()=>void=()=>{};

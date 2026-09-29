@@ -1,3 +1,4 @@
+import { checkChartConnection, captureAuthorized } from './capture-check.js';
 import { drainCaptures } from './capture.js';
 import { verifyImageSignature } from './capture-policy.js';
 
@@ -22,7 +23,11 @@ export default {
       const contentType=image.metadata?.contentType==='image/jpeg' ? 'image/jpeg' : 'image/png';
       return image.value ? new Response(image.value,{headers:{'Content-Type':contentType,'Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}) : new Response('Chart unavailable',{status:404,headers:{'Cache-Control':'no-store'}});
     }
-    if (request.method==='POST' && url.pathname==='/drain' && request.headers.get('Authorization')===`Bearer ${env.WORKER_TOKEN}` && env.WORKER_TOKEN) {
+    if (request.method==='POST' && url.pathname==='/check' && await captureAuthorized(request,env.WORKER_TOKEN)) {
+      const result = await checkChartConnection(env);
+      return Response.json(result,{status:result.ok ? 200 : 409,headers:{'Cache-Control':'no-store'}});
+    }
+    if (request.method==='POST' && url.pathname==='/drain' && await captureAuthorized(request,env.WORKER_TOKEN)) {
       if (!env.CAPTURE_JOBS) return new Response('Capture queue unavailable',{status:503});
       // Persist the wake before acknowledging it. Browser work runs in a queue
       // consumer, outside the HTTP waitUntil 30-second lifetime.

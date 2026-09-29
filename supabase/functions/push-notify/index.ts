@@ -173,14 +173,15 @@ async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotif
   if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
   const account = getFirebaseServiceAccount();
   if (!account) {
-    return { sent: 0, invalidTokens: [] as string[], errors: ["FIREBASE_SERVICE_ACCOUNT_JSON not set"] };
+    return { sent: 0, invalidTokens: [] as string[], errors: ["FIREBASE_SERVICE_ACCOUNT_JSON not set"], failureCode: "fcm:configuration" };
   }
   const accessToken = await firebaseAccessToken();
-  if (!accessToken) return { sent: 0, invalidTokens: [] as string[], errors: ["Firebase credentials unavailable"] };
+  if (!accessToken) return { sent: 0, invalidTokens: [] as string[], errors: ["Firebase credentials unavailable"], failureCode: "fcm:configuration" };
   const url = `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`;
   let sent = 0;
   const invalidTokens: string[] = [];
   const errors: string[] = [];
+  let failureCode: string | undefined;
   for (const token of tokens) {
     const response = await fetch(url, {
       method: "POST",
@@ -208,15 +209,16 @@ async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotif
     const raw = await response.text();
     if (response.status === 404 || raw.includes("UNREGISTERED")) invalidTokens.push(token);
     console.warn("push_provider_failure", { provider: "fcm", status: response.status });
+    failureCode = `fcm:${response.status}`;
     errors.push(`FCM request failed with status ${response.status}`);
   }
-  return { sent, invalidTokens, errors };
+  return { sent, invalidTokens, errors, failureCode };
 }
 
 async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
   if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
   const bundleId = Deno.env.get("APNS_BUNDLE_ID");
-  if (!bundleId) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS_BUNDLE_ID not set"] };
+  if (!bundleId) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS_BUNDLE_ID not set"], failureCode: "apns:configuration" };
   const jwt = await createApnsJwt();
   if (!jwt) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS credentials missing"] };
   const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") || "").toLowerCase() === "true";
@@ -251,6 +253,7 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
   let sent = 0;
   const invalidTokens: string[] = [];
   const errors: string[] = [];
+  let failureCode: string | undefined;
   for (const token of tokens) {
     let res = await postTo(primaryHost, token);
     let reason = "";
@@ -282,9 +285,10 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     }
     // Apple reason identifiers only: never log token, payload, or credentials.
     console.warn("push_provider_failure", { provider: "apns", status: res.status, reason: /^[A-Za-z]{1,64}$/.test(reason) ? reason : "Unknown" });
+    failureCode = `apns:${res.status}:${/^[A-Za-z]{1,64}$/.test(reason) ? reason : 'Unknown'}`;
     errors.push(reason || `APNs request failed with status ${res.status}`);
   }
-  return { sent, invalidTokens, errors };
+  return { sent, invalidTokens, errors, failureCode };
 }
 
 async function sendWeb(token: string, notif: ReturnType<typeof normalizeNotification>) {
@@ -293,7 +297,7 @@ async function sendWeb(token: string, notif: ReturnType<typeof normalizeNotifica
   const publicKey = Deno.env.get('WEB_PUSH_VAPID_PUBLIC_KEY');
   const privateKey = Deno.env.get('WEB_PUSH_VAPID_PRIVATE_KEY');
   const subject = Deno.env.get('WEB_PUSH_VAPID_SUBJECT');
-  if (!publicKey || !privateKey || !subject) return { sent: 0, invalidTokens: [] };
+  if (!publicKey || !privateKey || !subject) return { sent: 0, invalidTokens: [], failureCode:'web:configuration' };
   try {
     await webPush.sendNotification(subscription, JSON.stringify({ title: notif.title, body: notif.body, notification_id: notif.id, link_path: notif.linkPath }), {
       vapidDetails: { subject, publicKey, privateKey }, TTL: 300, urgency: 'high', timeout: 8000,
@@ -301,7 +305,7 @@ async function sendWeb(token: string, notif: ReturnType<typeof normalizeNotifica
     return { sent: 1, invalidTokens: [] };
   } catch (error) {
     const status = (error as { statusCode?: number }).statusCode;
-    return { sent: 0, invalidTokens: status === 404 || status === 410 ? [token] : [] };
+    return { sent: 0, invalidTokens: status === 404 || status === 410 ? [token] : [], failureCode:status ? `web:${status}` : undefined };
   }
 }
 
@@ -345,8 +349,8 @@ Deno.serve(async (req) => {
             const { error } = await admin.from("device_tokens").update({ token: "invalid:" + device.id, platform: "invalid" }).eq("id", device.id).eq("token", device.token);
             if (error) throw error;
           },
-          finish: async (outcome) => {
-            const { data: acknowledged, error } = await admin.rpc("finish_vault_push_job", { job_id: job.id, lease_token: job.claim_token, outcome });
+          finish: async (outcome, failureCode) => {
+            const { data: acknowledged, error } = await admin.rpc("finish_vault_push_job", { job_id: job.id, lease_token: job.claim_token, outcome, failure_code: failureCode });
             if (error || !acknowledged) throw new Error("Delivery acknowledgement failed");
           },
         });
