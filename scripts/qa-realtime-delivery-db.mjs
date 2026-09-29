@@ -138,5 +138,35 @@ for (const [uid,expected] of [[free,3],[sender,5],[banned,1],[null,1]]) {
  if(uid===sender) assert.ok(!visible.some(r=>r.name.startsWith('dm-')),'paid unrelated DM denied');
  await db.exec('RESET ROLE');
 }
+await db.exec(`CREATE TABLE message_reactions(message_id uuid,user_id uuid);
+CREATE TABLE pinned_messages(message_id uuid);
+CREATE TABLE room_locks(room_slug text);
+CREATE TABLE calendar_posts(id uuid);
+ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pinned_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE room_locks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE calendar_posts ENABLE ROW LEVEL SECURITY;
+GRANT SELECT,INSERT ON message_reactions,pinned_messages,room_locks,calendar_posts TO authenticated,anon;
+CREATE POLICY old_reactions ON message_reactions FOR ALL USING(true) WITH CHECK(true);
+CREATE POLICY old_pins ON pinned_messages FOR ALL USING(true) WITH CHECK(true);
+CREATE POLICY old_locks ON room_locks FOR ALL USING(true) WITH CHECK(true);
+CREATE POLICY old_calendar ON calendar_posts FOR ALL USING(true) WITH CHECK(true);
+INSERT INTO message_reactions SELECT id,user_id FROM academy_messages;
+INSERT INTO pinned_messages SELECT id FROM academy_messages;
+INSERT INTO room_locks VALUES('trade-floor'),('daily-setups');
+INSERT INTO calendar_posts VALUES(gen_random_uuid());
+`);
+await db.exec(await readFile(new URL('../supabase/migrations/20260929000500_private_community_metadata.sql',import.meta.url),'utf8'));
+for (const [uid,locks,calendar] of [[free,1,1],[sender,2,1],[banned,0,0],[null,0,0]]) {
+ await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[uid||'']);
+ await db.exec(`SET ROLE ${uid?'authenticated':'anon'}`);
+ const messages=(await db.query('SELECT id FROM academy_messages WHERE NOT is_deleted')).rows;
+ assert.equal((await db.query('SELECT * FROM message_reactions')).rows.length,messages.length,'reactions follow parent RLS');
+ assert.equal((await db.query('SELECT * FROM pinned_messages')).rows.length,messages.length,'pins follow parent RLS');
+ assert.equal((await db.query('SELECT * FROM room_locks')).rows.length,locks,'locks follow room access');
+ assert.equal((await db.query('SELECT * FROM calendar_posts')).rows.length,calendar,'calendar requires unbanned membership');
+ if(uid===free) await assert.rejects(()=>db.query("INSERT INTO message_reactions VALUES((SELECT id FROM academy_messages WHERE room_slug='daily-setups' LIMIT 1),$1)",[free]),/row-level security/);
+ await db.exec('RESET ROLE');
+}
 await db.close();
 console.log('PASS: free/paid chat, Pulse freshness, mute/ban, no self alerts, broadcast permissions, durable queue, exclusive claims, fencing, retries and service-only access.');
