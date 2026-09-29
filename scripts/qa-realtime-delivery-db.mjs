@@ -54,6 +54,12 @@ await db.exec('CREATE TRIGGER push_notify_on_insert AFTER INSERT ON academy_noti
 await db.exec(await readFile(new URL('../supabase/migrations/20260929000100_reliable_chat_pulse_delivery.sql',import.meta.url),'utf8'));
 await db.exec(await readFile(new URL('../supabase/migrations/20260929000200_private_classroom_links.sql',import.meta.url),'utf8'));
 await db.exec("INSERT INTO vault_classroom_links(classroom,join_url) VALUES('trading','https://zoom.example/member')");
+await db.exec(`CREATE TYPE public.app_role AS ENUM ('operator');
+CREATE FUNCTION public.has_role(uid uuid,r public.app_role) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM user_roles WHERE user_id=uid AND role=r::text) $$;
+GRANT SELECT,UPDATE ON profiles TO authenticated;
+ALTER TABLE profiles ADD COLUMN display_name text;
+`);
+await db.exec(await readFile(new URL('../supabase/migrations/20260929000300_protect_member_access_flags.sql',import.meta.url),'utf8'));
 const ids=Array.from({length:5},(_,i)=>`00000000-0000-0000-0000-${String(i+1).padStart(12,'0')}`);
 const [sender,free,paid,muted,banned]=ids;
 for (const [i,id] of ids.entries()) {
@@ -99,6 +105,9 @@ assert.deepEqual((await db.query("SELECT user_id FROM academy_notifications WHER
 await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[free]);
 await db.exec('SET ROLE authenticated');
 assert.equal((await db.query('SELECT * FROM vault_classroom_links')).rows.length,0,'free classroom link denied');
+await assert.rejects(()=>db.query('UPDATE profiles SET is_banned=false WHERE user_id=$1',[banned]),/Access flags/);
+await assert.rejects(()=>db.query("UPDATE profiles SET access_status='revoked' WHERE user_id=$1",[free]),/Access flags/);
+await db.query("UPDATE profiles SET display_name='My profile' WHERE user_id=$1",[free]);
 await assert.rejects(()=>db.query('SELECT * FROM claim_vault_push_jobs(50)'));
 await assert.rejects(()=>db.query('SELECT * FROM notification_push_jobs'));
 await db.exec('RESET ROLE');
