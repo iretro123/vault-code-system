@@ -1,3 +1,4 @@
+import { cachedProviderToken } from "../_shared/providerTokenCache.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { importPKCS8, SignJWT } from "https://esm.sh/jose@5.9.2";
 import webPush from "npm:web-push@3.6.7";
@@ -111,7 +112,14 @@ function normalizeNotification(notif: NotificationRow) {
   };
 }
 
-async function createApnsJwt() {
+// Apple requires provider-token reuse (refresh between 20 and 60 minutes).
+const createApnsJwt = cachedProviderToken(createApnsJwtUncached, 45 * 60_000);
+const firebaseAccessToken = cachedProviderToken(async () => {
+  const account = getFirebaseServiceAccount();
+  return account ? createFirebaseAccessToken(account) : null;
+}, 45 * 60_000);
+
+async function createApnsJwtUncached() {
   const keyId = Deno.env.get("APNS_KEY_ID");
   const teamId = Deno.env.get("APNS_TEAM_ID");
   const privateKey = Deno.env.get("APNS_PRIVATE_KEY");
@@ -167,7 +175,8 @@ async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotif
   if (!account) {
     return { sent: 0, invalidTokens: [] as string[], errors: ["FIREBASE_SERVICE_ACCOUNT_JSON not set"] };
   }
-  const accessToken = await createFirebaseAccessToken(account);
+  const accessToken = await firebaseAccessToken();
+  if (!accessToken) return { sent: 0, invalidTokens: [] as string[], errors: ["Firebase credentials unavailable"] };
   const url = `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`;
   let sent = 0;
   const invalidTokens: string[] = [];
@@ -198,6 +207,7 @@ async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotif
     }
     const raw = await response.text();
     if (response.status === 404 || raw.includes("UNREGISTERED")) invalidTokens.push(token);
+    console.warn("push_provider_failure", { provider: "fcm", status: response.status });
     errors.push(`FCM request failed with status ${response.status}`);
   }
   return { sent, invalidTokens, errors };
@@ -270,6 +280,8 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     if (reason === "BadDeviceToken" || reason === "Unregistered" || reason === "DeviceTokenNotForTopic") {
       invalidTokens.push(token);
     }
+    // Apple reason identifiers only: never log token, payload, or credentials.
+    console.warn("push_provider_failure", { provider: "apns", status: res.status, reason: /^[A-Za-z]{1,64}$/.test(reason) ? reason : "Unknown" });
     errors.push(reason || `APNs request failed with status ${res.status}`);
   }
   return { sent, invalidTokens, errors };
