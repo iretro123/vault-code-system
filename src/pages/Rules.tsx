@@ -107,7 +107,7 @@
            <p className="text-muted-foreground max-w-sm">
              Rule Vault is only available to Vault OS Owners. Upgrade to unlock.
            </p>
-           <Button className="mt-6" onClick={() => navigate("/upgrade")}>
+           <Button className="mt-6" onClick={() => navigate("/membership")}>
              Upgrade Now
            </Button>
          </div>

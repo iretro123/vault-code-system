@@ -6,11 +6,9 @@ vi.mock('@/assets/classroom-open.svg', () => ({ default: 'classroom-open.svg' })
 
 import VaultLivePreview from '@/components/academy/live/VaultLivePreview';
 
-const EXPECTED_TRADING_ZOOM = 'https://us06web.zoom.us/j/84498145528?pwd=iQ6BKlXurpYAhh2d7F0BiKTUylMsxG.1';
-
-beforeEach(() => {
-  delete import.meta.env.VITE_VAULT_TRADING_ZOOM_URL;
-});
+const links=vi.hoisted(()=>({trading:'https://zoom.example/trading',wednesday:'https://zoom.example/wednesday'}));
+vi.mock('@/hooks/useClassroomLinks',()=>({useClassroomLinks:()=>({links,loading:false})}));
+const EXPECTED_TRADING_ZOOM=links.trading;
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -32,23 +30,19 @@ it('uses the Monday–Thursday trading Zoom link when opening the trading room',
   expect(joinLink).toHaveAttribute('rel', 'noopener noreferrer');
 });
 
-it('prefers the env trading Zoom link when present', () => {
-  import.meta.env.VITE_VAULT_TRADING_ZOOM_URL = 'https://env.zoom.example/trading';
+it('does not embed an env room link over membership-protected data', () => {
+  import.meta.env.VITE_VAULT_TRADING_ZOOM_URL = 'https://unprotected.example/room';
   page();
   fireEvent.click(screen.getByRole('button', { name: 'Open trading room' }));
-  expect(screen.getByRole('link', { name: /Join on Zoom/i })).toHaveAttribute(
-    'href',
-    'https://env.zoom.example/trading'
-  );
+  expect(screen.getByRole('link', { name: /Join on Zoom/i })).toHaveAttribute('href', links.trading);
 });
 
 it('does not change the Wednesday class link', () => {
-  import.meta.env.VITE_VAULT_WEDNESDAY_ZOOM_URL = 'https://env.zoom.example/wednesday';
   page();
   fireEvent.click(screen.getByRole('tab', { name: 'Wednesday Class' }));
   fireEvent.click(screen.getByRole('button', { name: 'Open training room' }));
   expect(screen.getByRole('link', { name: /Join on Zoom/i })).toHaveAttribute(
     'href',
-    'https://env.zoom.example/wednesday'
+    links.wednesday
   );
 });

@@ -76,7 +76,7 @@
          <p className="text-sm text-muted-foreground mb-4">
            Get AI-powered discipline coaching, behavior analysis, and personalized insights.
          </p>
-         <Link to="/upgrade">
+         <Link to="/membership">
            <Button className="w-full h-12 gap-2">
              Upgrade Now
              <ChevronRight className="w-4 h-4" />

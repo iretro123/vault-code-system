@@ -49,7 +49,7 @@
                    Access to educational content requires Vault Access or higher. 
                    Upgrade to unlock all modules.
                  </p>
-                 <Link to="/upgrade">
+                 <Link to="/membership">
                    <Button variant="default" size="sm" className="gap-2">
                      Upgrade Now
                      <ChevronRight className="w-4 h-4" />

@@ -1,3 +1,4 @@
+import { useClassroomLinks } from "@/hooks/useClassroomLinks";
 import { useState } from "react";
 import { Play, Share2, X } from "lucide-react";
 import { AddClassCalendar } from './AddClassCalendar';
@@ -6,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import classroomImage from "@/assets/classroom-open.svg";
 import "./vault-live-preview.css";
 
-const DEFAULT_TRADING_ZOOM_URL = "https://us06web.zoom.us/j/84498145528?pwd=iQ6BKlXurpYAhh2d7F0BiKTUylMsxG.1";
 
 const classrooms = [
   { name: "Live Trading", days: "Monday–Thursday", time: "9:15 AM", description: "Watch the market and learn together.", bullets: ["Watch the market live together", "Understand the thinking behind each setup", "Ask questions as the session unfolds"], action: "Open trading room" },
@@ -20,7 +20,8 @@ export default function VaultLivePreview() {
   const [inviteStatus, setInviteStatus] = useState("");
   const [showInviteLink, setShowInviteLink] = useState(false);
   const current = classrooms[activeClass];
-  const zoomUrl = activeClass === 0 ? (import.meta.env.VITE_VAULT_TRADING_ZOOM_URL || DEFAULT_TRADING_ZOOM_URL) : import.meta.env.VITE_VAULT_WEDNESDAY_ZOOM_URL;
+  const { links, loading: linksLoading } = useClassroomLinks();
+  const zoomUrl = links[activeClass === 0 ? 'trading' : 'wednesday'];
 
   async function inviteFriends() {
     if (!zoomUrl || sharing) return;
@@ -73,7 +74,7 @@ export default function VaultLivePreview() {
 
     <Dialog open={classroomOpen} onOpenChange={open => { setClassroomOpen(open); setInviteStatus(""); setShowInviteLink(false); }}>
       <DialogContent className="vl-dialog sm:max-w-lg">
-        <DialogHeader><DialogTitle>{current.name}</DialogTitle><DialogDescription>{zoomUrl ? "Your dedicated room is ready. Join on Zoom when class starts." : "The room link isn’t available yet. Please contact support."}</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{current.name}</DialogTitle><DialogDescription>{linksLoading ? "Loading your classroom access…" : zoomUrl ? "Your dedicated room is ready. Join on Zoom when class starts." : "The room link isn’t available yet. Please contact support."}</DialogDescription></DialogHeader>
         {activeClass === 0 && <p>{current.days} · {current.time} Eastern</p>}
         {activeClass === 0 ? <section className="vl-rules-board" aria-labelledby="vl-rules-heading">
           <div className="vl-rules-copy">
