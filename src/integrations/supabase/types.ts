@@ -3118,8 +3118,6 @@ export type Database = {
           notifications_enabled: boolean
           notify_announcements: boolean
           notify_coach_reply: boolean
-          notify_chat: boolean
-          notify_pulse: boolean
           notify_live_events: boolean
           notify_new_modules: boolean
           preferred_alert_channel: string
@@ -3135,8 +3133,6 @@ export type Database = {
           notifications_enabled?: boolean
           notify_announcements?: boolean
           notify_coach_reply?: boolean
-          notify_chat?: boolean
-          notify_pulse?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
           preferred_alert_channel?: string
@@ -3152,8 +3148,6 @@ export type Database = {
           notifications_enabled?: boolean
           notify_announcements?: boolean
           notify_coach_reply?: boolean
-          notify_chat?: boolean
-          notify_pulse?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
           preferred_alert_channel?: string
@@ -3732,7 +3726,7 @@ export type Database = {
       }
       get_micro_feedback: { Args: { _user_id: string }; Returns: string }
       get_my_access_state: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           has_access: boolean
           product_key: string
@@ -3969,7 +3963,7 @@ export type Database = {
         Returns: Json
       }
       pulse_feed: { Args: { p_after?: number }; Returns: Json }
-      pulse_feed_current: { Args: Record<PropertyKey, never>; Returns: Json }
+      pulse_feed_current: { Args: never; Returns: Json }
       pulse_feed_spy: { Args: never; Returns: Json }
       pulse_processing_state: { Args: { p_timeframe: number }; Returns: Json }
       pulse_spy_capture_claim: { Args: { p_token: string }; Returns: Json }
