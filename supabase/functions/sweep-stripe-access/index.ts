@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { grantPaidRole } from "../_shared/vaultAccess.ts";
 import { stripeAccessStatus } from "../_shared/membershipValidation.ts";
 
@@ -27,7 +27,7 @@ const PREMIUM_ROLES = ["vault_access", "vault_intelligence"];
  * premium modules. "revoked" is reserved for explicit admin bans only.
  */
 async function downgradeToBasic(
-  admin: ReturnType<typeof createClient<any>>,
+  admin: SupabaseClient,
   authUserId: string | null,
   email: string | null,
 ) {

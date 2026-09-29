@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membershipValidation.ts";
 import {
   LEGACY_PRICE_MAP,
@@ -131,7 +131,7 @@ async function processEvent(
   event: Stripe.Event,
   traceId: string,
   stripe: Stripe,
-  supabase: ReturnType<typeof createClient<any>>
+  supabase: SupabaseClient
 ) {
   switch (event.type) {
     case "checkout.session.completed":
@@ -166,7 +166,7 @@ async function matchOrCreateStudent(
     fullName?: string | null;
   },
   traceId: string,
-  supabase: ReturnType<typeof createClient<any>>
+  supabase: SupabaseClient
 ): Promise<{ id: string; auth_user_id: string | null; email: string }> {
   const normalizedEmail = opts.email.toLowerCase().trim();
   log(traceId, "MATCH_USER", { email: normalizedEmail, stripeCustomerId: opts.stripeCustomerId, internalUserId: opts.internalUserId });
@@ -233,7 +233,7 @@ async function upsertAccess(
     email?: string | null;
   },
   traceId: string,
-  supabase: ReturnType<typeof createClient<any>>
+  supabase: SupabaseClient
 ) {
   const now = new Date().toISOString();
   log(traceId, "UPSERT_ACCESS", { studentId: opts.studentId, productKey: opts.productKey, status: opts.status });
@@ -309,7 +309,7 @@ async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
   traceId: string,
   stripe: Stripe,
-  supabase: ReturnType<typeof createClient<any>>
+  supabase: SupabaseClient
 ) {
   log(traceId, "CHECKOUT_COMPLETED", { sessionId: session.id, mode: session.mode });
   if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
@@ -351,7 +351,7 @@ async function handleInvoicePaid(
   invoice: Stripe.Invoice,
   traceId: string,
   stripe: Stripe,
-  supabase: ReturnType<typeof createClient<any>>
+  supabase: SupabaseClient
 ) {
   log(traceId, "INVOICE_RECONCILE", { invoiceId: invoice.id });
   const subscriptionId = invoiceSubscriptionId(invoice);
@@ -365,7 +365,7 @@ async function handleSubscriptionUpdated(
   subscription: Stripe.Subscription,
   traceId: string,
   stripe: Stripe,
-  supabase: ReturnType<typeof createClient<any>>
+  supabase: SupabaseClient
 ) {
   log(traceId, "SUBSCRIPTION_UPDATED", { subId: subscription.id, status: subscription.status });
 
