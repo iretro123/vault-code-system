@@ -60,6 +60,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
   const [error, setError] = useState<string | null>(null);
   const [connection, setConnection] = useState("connecting");
   const oldestRef = useRef<string | null>(cached?.length ? cached[0].created_at : null);
+  const oldestIdRef = useRef<string | null>(cached?.[0]?.id ?? null);
   const hasFetchedRef = useRef(false);
 
   const castMessages = (data: any[]): Message[] =>
@@ -106,6 +107,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
         .is("parent_message_id", null)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
         .limit(PAGE_SIZE);
 
       const timeout = new Promise<never>((_, reject) => {
@@ -138,6 +140,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       });
       setHasMore((data?.length ?? 0) >= PAGE_SIZE);
       oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
+      oldestIdRef.current = sorted[0]?.id ?? null;
     } catch (loadError) {
       if (currentCacheKey.current !== cacheKey) return;
       // Surface a retryable failure instead of an endless skeleton, and never
@@ -161,14 +164,16 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       .eq("room_slug", roomSlug)
       .is("parent_message_id", null)
       .eq("is_deleted", false)
-      .lt("created_at", oldestRef.current)
+      .or(`created_at.lt.${oldestRef.current},and(created_at.eq.${oldestRef.current},id.lt.${oldestIdRef.current})`)
       .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(PAGE_SIZE);
 
     if (data && data.length > 0) {
       const sorted = castMessages(data).reverse();
       updateMessages((prev) => [...sorted, ...prev]);
       oldestRef.current = sorted[0].created_at;
+      oldestIdRef.current = sorted[0].id;
       setHasMore(data.length >= PAGE_SIZE);
     } else {
       setHasMore(false);
@@ -382,6 +387,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
     cachedRef.current = canUseRoom ? roomMessageCache.get(cacheKey) : undefined;
     setMessages(cachedRef.current ?? []);
     oldestRef.current = cachedRef.current?.length ? cachedRef.current[0].created_at : null;
+    oldestIdRef.current = cachedRef.current?.[0]?.id ?? null;
   }, [cacheKey, canUseRoom]);
 
   useEffect(() => {
@@ -452,10 +458,15 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       .select("*")
       .eq("room_slug", roomSlug)
       .is("parent_message_id", null)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(PAGE_SIZE);
-    if (data?.length) applyIncoming(data);
+      .gte("created_at", latestRef.current)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(PAGE_SIZE + 1);
+    if (data && data.length > PAGE_SIZE) {
+      // A long absence needs a fresh contiguous page. Its history cursor allows
+      // every missed row to be paged, without silently stranding a middle gap.
+      await fetchMessages();
+    } else if (data?.length) applyIncoming(data);
     // Reconcile visible history too: edits/deletes may predate the newest row.
     const ids = visibleMessages.current.slice(-200).filter(m => Date.now() - Date.parse(m.created_at) > 30000).map(m => m.id);
     if (ids.length) {

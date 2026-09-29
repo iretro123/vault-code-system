@@ -3,7 +3,7 @@ import {it,expect,vi,afterEach,beforeEach} from 'vitest';
 const m=vi.hoisted(()=>({userId:'test',statuses:[] as Array<(status:string)=>void>, getSession:vi.fn().mockResolvedValue({data:{session:null},error:null}),handlers:{} as Record<string,(e:{new:Record<string,unknown>})=>void>,limit:vi.fn().mockResolvedValue({data:[],error:null})}));
 vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:{id:m.userId},profile:{},userRole:{role:'member'}})}));
 vi.mock('@/integrations/supabase/client',()=>({supabase:{from:()=>{
- const query={select:()=>query,eq:()=>query,is:()=>query,order:()=>query,gt:()=>query,limit:m.limit};return query;
+ const query={select:()=>query,eq:()=>query,is:()=>query,order:()=>query,gt:()=>query,gte:()=>query,limit:m.limit};return query;
 },auth:{getSession:m.getSession},realtime:{setAuth:vi.fn()},channel:()=>{const channel={on:(_type:string,filter:{event:string},handler:(e:{new:Record<string,unknown>})=>void)=>{m.handlers[filter.event]=handler;return channel;},subscribe:(callback:(status:string)=>void)=>{m.statuses.push(callback);return channel;}};return channel;},removeChannel:vi.fn().mockResolvedValue('ok')}}));
 import {useRoomMessages} from '@/hooks/useRoomMessages';
 beforeEach(()=>{m.getSession.mockResolvedValue({data:{session:null},error:null});vi.spyOn(document,'visibilityState','get').mockReturnValue('visible');vi.spyOn(navigator,'onLine','get').mockReturnValue(true);});
@@ -106,4 +106,19 @@ it('does not reuse another account feed or accept its late realtime callback',as
  expect(view.result.current.messages).toHaveLength(0);
  act(()=>oldHandler({new:{...message,id:'late'}}));
  expect(view.result.current.messages).toHaveLength(0);
+});
+
+it('replaces a long missed backlog with a contiguous latest page and history cursor',async()=>{
+ const room='long-backlog';
+ const row=(i:number)=>({id:`row-${i}`,room_slug:room,user_id:'other',body:`message ${i}`,created_at:new Date(Date.now()+i*1000).toISOString()});
+ m.limit.mockResolvedValueOnce({data:[row(0)],error:null});
+ const {result}=renderHook(()=>useRoomMessages(room));
+ await waitFor(()=>expect(result.current.messages).toHaveLength(1));
+ m.limit.mockResolvedValueOnce({data:Array.from({length:41},(_,i)=>row(i)),error:null});
+ m.limit.mockResolvedValueOnce({data:Array.from({length:40},(_,i)=>row(100-i)),error:null});
+ act(()=>m.statuses[0]('SUBSCRIBED'));
+ await waitFor(()=>expect(result.current.messages).toHaveLength(40));
+ expect(result.current.messages[0].id).toBe('row-61');
+ expect(result.current.messages.at(-1)?.id).toBe('row-100');
+ expect(result.current.hasMore).toBe(true);
 });

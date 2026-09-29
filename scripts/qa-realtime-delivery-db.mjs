@@ -52,6 +52,8 @@ CREATE SCHEMA cron; CREATE FUNCTION cron.schedule(text,text,text) RETURNS bigint
 await db.exec(await readFile(new URL('../supabase/migrations/20260928000200_chat_only_push.sql',import.meta.url),'utf8'));
 await db.exec('CREATE TRIGGER push_notify_on_insert AFTER INSERT ON academy_notifications FOR EACH ROW EXECUTE FUNCTION public.push_notify_on_insert()');
 await db.exec(await readFile(new URL('../supabase/migrations/20260929000100_reliable_chat_pulse_delivery.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../supabase/migrations/20260929000200_private_classroom_links.sql',import.meta.url),'utf8'));
+await db.exec("INSERT INTO vault_classroom_links(classroom,join_url) VALUES('trading','https://zoom.example/member')");
 const ids=Array.from({length:5},(_,i)=>`00000000-0000-0000-0000-${String(i+1).padStart(12,'0')}`);
 const [sender,free,paid,muted,banned]=ids;
 for (const [i,id] of ids.entries()) {
@@ -94,9 +96,15 @@ await db.query('UPDATE profiles SET is_banned=true WHERE user_id=$1',[paid]);
 assert.equal((await db.query('SELECT vault_notification_deliverable($1,$2) AS ok',[paidjob.notification_id,paid])).rows[0].ok,false,'ban rechecked after enqueue');
 await db.query("INSERT INTO academy_notifications(type,title,body,link_path) VALUES('live_now','Live','Join','/academy/live')");
 assert.deepEqual((await db.query("SELECT user_id FROM academy_notifications WHERE type='live_now'")).rows.map(r=>r.user_id),[sender],'live broadcast individual and paid');
+await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[free]);
 await db.exec('SET ROLE authenticated');
+assert.equal((await db.query('SELECT * FROM vault_classroom_links')).rows.length,0,'free classroom link denied');
 await assert.rejects(()=>db.query('SELECT * FROM claim_vault_push_jobs(50)'));
 await assert.rejects(()=>db.query('SELECT * FROM notification_push_jobs'));
+await db.exec('RESET ROLE');
+await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[sender]);
+await db.exec('SET ROLE authenticated');
+assert.equal((await db.query('SELECT * FROM vault_classroom_links')).rows.length,1,'staff classroom link allowed');
 await db.exec('RESET ROLE');
 await db.close();
 console.log('PASS: free/paid chat, Pulse freshness, mute/ban, no self alerts, broadcast permissions, durable queue, exclusive claims, fencing, retries and service-only access.');
