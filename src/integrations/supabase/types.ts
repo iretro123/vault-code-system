@@ -3833,10 +3833,20 @@ export type Database = {
           username: string
         }[]
       }
-      finish_vault_push_job: {
-        Args: { job_id: string; lease_token: string; outcome: string }
-        Returns: boolean
-      }
+      finish_vault_push_job:
+        | {
+            Args: { job_id: string; lease_token: string; outcome: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              failure_code: string
+              job_id: string
+              lease_token: string
+              outcome: string
+            }
+            Returns: boolean
+          }
       generate_reports_for_user: {
         Args: { _period: string; _user_id: string }
         Returns: undefined
