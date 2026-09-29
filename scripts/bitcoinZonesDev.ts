@@ -23,7 +23,7 @@ export function bitcoinZonesDev(): Plugin {
               return [tf, { lastCheckedAt: Number.isFinite(check?.lastCheckedAt) ? check.lastCheckedAt : null, blocked: Boolean(check?.postingBlocked) }];
             }));
           } catch { /* Missing observer evidence must never look live. */ }
-          res.end(JSON.stringify({...data, monitor}));
+          res.end(JSON.stringify({...(data as Record<string, unknown>), monitor}));
           return;
         }
         res.end(Buffer.from(await response.arrayBuffer()));
