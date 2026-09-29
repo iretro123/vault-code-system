@@ -1,5 +1,6 @@
 import puppeteer from '@cloudflare/puppeteer';
 import { CHART_URL } from './capture-policy.js';
+import { reconnectChart } from './capture-reconnect.js';
 
 const encoder=new TextEncoder();
 const hexBytes=value=>Uint8Array.from(value.match(/../g),part=>parseInt(part,16));
@@ -11,7 +12,15 @@ async function authKey(env, usage) {
 export async function openChartSession(env) {
   const sessionId=await env.CHART_IMAGES.get('private:session') || env.CAPTURE_SESSION_ID;
   if (sessionId) {
-    try { return await puppeteer.connect(env.BROWSER,sessionId); } catch { /* Expired sessions require a saved, explicitly authorized login. */ }
+    let existing;
+    try { existing=await puppeteer.connect(env.BROWSER,sessionId); } catch { /* Restore an expired browser using the approved saved login. */ }
+    if (existing) {
+      try {
+        const page=(await existing.pages()).find(p=>p.url().startsWith(CHART_URL));
+        if (page) await reconnectChart(env,page);
+        return existing;
+      } catch(error) { await existing.disconnect(); throw error; }
+    }
   }
   if (env.CAPTURE_SAVE_LOGIN!=='true') throw new Error('hosted-chart-login-required');
   const sealed=await env.CHART_IMAGES.get('private:login','arrayBuffer');
@@ -25,6 +34,8 @@ export async function openChartSession(env) {
     const page=await browser.newPage();
     await page.setCookie(...cookies);
     await page.goto(CHART_URL,{waitUntil:'domcontentloaded',timeout:12_000});
+    await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:12_000});
+    await reconnectChart(env,page);
     await env.CHART_IMAGES.put('private:session',browser.sessionId());
     return browser;
   } catch(error) { await browser.close(); throw error; }

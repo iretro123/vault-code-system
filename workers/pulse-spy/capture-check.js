@@ -19,7 +19,7 @@ export async function checkChartConnection(env, timeframe) {
       const buttons = await page.$$(`[role="radio"][aria-label="${timeframe} minutes"]`);
       let selected=false;
       for (const button of buttons) {
-        if (await button.boundingBox()) { await button.focus(); await button.press('Enter'); selected=true; break; }
+        if (await button.boundingBox()) { await button.evaluate(el=>el.click()); selected=true; break; }
       }
       if (!selected) return {ok:false,failure:'timeframe-control-unavailable'};
       await page.waitForFunction(tf=>document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')?.endsWith(`SPY, ${tf} minutes`),{timeout:6000},timeframe);
@@ -48,7 +48,8 @@ export async function checkChartConnection(env, timeframe) {
     stage='recovery';
     await rememberChartLogin(env,page);
     return { ok:true, symbol:'AMEX:SPY', timeframe:Number(match[2]), indicator:INDICATOR, imageId, capturedAt };
-  } catch {
+  } catch(error) {
+    if (error?.message==='chart-session-conflict') return {ok:false,failure:'chart-session-conflict'};
     // No provider error text, cookies, URLs or page contents cross this boundary.
     return { ok:false, failure:stage==='session' ? 'hosted-chart-login-required' : `chart-check-${stage}-failed` };
   } finally {
