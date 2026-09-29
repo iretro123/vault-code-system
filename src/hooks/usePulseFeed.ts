@@ -33,7 +33,7 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
         busy = true;
         const generation = authGeneration;
         try {
-          const { data, error: failure } = await supabase.rpc("pulse_feed_current", {}, { get: true });
+          const { data, error: failure } = await supabase.rpc("pulse_feed_current");
           if (stopped || generation !== authGeneration) return;
           if (failure) {
             setConnected(false);
