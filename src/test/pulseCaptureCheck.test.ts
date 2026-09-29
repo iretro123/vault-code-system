@@ -5,7 +5,7 @@ vi.mock('../../workers/pulse-spy/capture-session.js',()=>session);
 import { checkChartConnection } from '../../workers/pulse-spy/capture-check.js';
 beforeEach(()=>vi.clearAllMocks());
 function setup(source:object) {
- const page={url:()=> 'https://www.tradingview.com/chart/Db5ipsDu/',evaluate:vi.fn().mockResolvedValue(source),setViewport:vi.fn(),$:vi.fn().mockResolvedValue({boundingBox:vi.fn().mockResolvedValue({width:1100,height:700}),screenshot:vi.fn().mockResolvedValue(new Uint8Array(11000))})};
+ const page={url:()=> 'https://www.tradingview.com/chart/Db5ipsDu/',evaluate:vi.fn().mockResolvedValue({zoneText:'Demand lower ∅ Demand upper ∅ Supply lower 764.42 Supply upper 764.68',...source}),mouse:{move:vi.fn()},waitForFunction:vi.fn(),setViewport:vi.fn(),$:vi.fn().mockResolvedValue({evaluate:vi.fn().mockResolvedValue('true'),boundingBox:vi.fn().mockResolvedValue({width:1100,height:700}),screenshot:vi.fn().mockResolvedValue(new Uint8Array(11000))})};
  const browser={pages:vi.fn().mockResolvedValue([page]),disconnect:vi.fn()};
  session.openChartSession.mockResolvedValue(browser);
  return browser;

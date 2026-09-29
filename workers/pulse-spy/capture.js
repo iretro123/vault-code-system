@@ -1,3 +1,4 @@
+import { setDataWindow, readChartSource } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
 import { CHART_URL, INDICATOR, captureWindowOpen, verifyCaptureSource } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
@@ -37,21 +38,8 @@ export async function runCapture(env, rpc) {
       },{timeout:6000},task.post.timeframe);
     }
     await frameChart(page);
-    if (task.post) {
-      const toggle=await page.$('button[aria-label="Object tree and data window"]');
-      if (!toggle) throw new Error('chart-zone-data-unavailable');
-      if (await toggle.evaluate(e=>e.getAttribute('aria-pressed'))!=='true') await toggle.click();
-      const dataTab=await page.$('#data-window');
-      if (!dataTab) throw new Error('chart-zone-data-unavailable');
-      if (await dataTab.evaluate(e=>e.getAttribute('aria-selected'))!=='true') await dataTab.click();
-      await page.mouse.move(0,0);
-      await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="row"]')).some(e=>e.innerText.includes('Vault Zone Pulse - SPY Live') && e.innerText.includes('Demand lower')),{timeout:6000});
-    }
-    const readSource=()=>page.evaluate(()=>({
-      label:document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'',
-      text:document.querySelector('.chart-widget')?.innerText||'',pageText:document.body.innerText,
-      zoneText:Array.from(document.querySelectorAll('[role="row"]')).find(e=>e.innerText.includes('Vault Zone Pulse - SPY Live'))?.innerText||'',
-    }));
+    if (task.post) await setDataWindow(page,true);
+    const readSource=()=>readChartSource(page);
     const source = await readSource();
     if (!source.label.match(/^Chart for (AMEX|BATS):SPY, (5|15) minutes$/) || !source.text.includes(INDICATOR)
       || /disconnected|connection lost|can't open this chart|verify you are human/i.test(source.pageText)) throw new Error('hosted-chart-login-required');
@@ -59,17 +47,13 @@ export async function runCapture(env, rpc) {
       verifyCaptureSource(source,task.post);
       // The Data window is only for verification. It must not squeeze the chart
       // into a portrait crop or appear in the member image.
-      const dataToggle=await page.$('button[aria-label="Object tree and data window"]');
-      if (!dataToggle) throw new Error('chart-zone-data-unavailable');
-      await dataToggle.click();
-      await page.waitForFunction(()=>document.querySelector('button[aria-label="Object tree and data window"]')?.getAttribute('aria-pressed')!=='true',{timeout:3000});
+      await setDataWindow(page,false);
       const chart = await page.$('.chart-widget');
       const bounds = await chart?.boundingBox();
       if (!bounds || bounds.width<900 || bounds.height<400 || bounds.width/bounds.height<1.3) throw new Error('chart-crop-unavailable');
       const capturedAt=Date.now();
       const bytes=await chart.screenshot({type:'png'});
-      await dataToggle.click();
-      await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="row"]')).some(e=>e.innerText.includes('Vault Zone Pulse - SPY Live') && e.innerText.includes('Demand lower')),{timeout:3000});
+      await setDataWindow(page,true);
       // A slow render may have crossed the freshness deadline; reject it as well.
       verifyCaptureSource(await readSource(),task.post);
       if (bytes.byteLength<10_000 || bytes.byteLength>8_000_000) throw new Error('chart-image-invalid');

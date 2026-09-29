@@ -1,3 +1,4 @@
+import { setDataWindow, readChartSource, readZoneBounds } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
 import { CHART_URL, INDICATOR } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
@@ -38,6 +39,10 @@ export async function checkChartConnection(env, timeframe) {
       || /disconnected|connection lost|reconnect|cannot connect|can't open this chart|sign in to continue|verify you are human/i.test(source.pageText)) {
       return { ok:false, failure:'hosted-chart-login-required' };
     }
+    stage='zones';
+    await setDataWindow(page,true);
+    const zones=readZoneBounds((await readChartSource(page)).zoneText);
+    await setDataWindow(page,false);
     stage='image';
     const chart=await page.$('.chart-widget');
     const bounds=await chart?.boundingBox();
@@ -50,9 +55,9 @@ export async function checkChartConnection(env, timeframe) {
     await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:3600,metadata:{contentType:'image/png',purpose:'operator-preflight'}});
     stage='recovery';
     await rememberChartLogin(env,page);
-    return { ok:true, symbol:'AMEX:SPY', timeframe:Number(match[2]), indicator:INDICATOR, imageId, capturedAt };
+    return { ok:true, symbol:'AMEX:SPY', timeframe:Number(match[2]), indicator:INDICATOR, zones, imageId, capturedAt };
   } catch(error) {
-    if (error?.message==='chart-session-conflict') return {ok:false,failure:'chart-session-conflict'};
+    if (['chart-session-conflict','chart-zone-data-unavailable','chart-zone-mismatch'].includes(error?.message)) return {ok:false,failure:error.message};
     // No provider error text, cookies, URLs or page contents cross this boundary.
     return { ok:false, failure:stage==='session' ? 'hosted-chart-login-required' : `chart-check-${stage}-failed` };
   } finally {
