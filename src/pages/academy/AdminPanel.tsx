@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, ToggleLeft, Loader2, MessageSquare, ShieldCheck, Activity, LockKeyhole, Radio } from "lucide-react";
+import { Users, Megaphone, Send, BookOpen, ScrollText, CreditCard, UserPlus, ToggleLeft, Loader2, MessageSquare, ShieldCheck, FileSearch, Activity, LockKeyhole, Radio } from "lucide-react";
 import { AdminMembersTab } from "@/components/admin/AdminMembersTab";
 import { AdminAnnouncementsTab } from "@/components/admin/AdminAnnouncementsTab";
 import { AdminBroadcastTab } from "@/components/admin/AdminBroadcastTab";
@@ -12,6 +12,7 @@ import { AdminLogsTab } from "@/components/admin/AdminLogsTab";
 import { AdminStripeTab } from "@/components/admin/AdminStripeTab";
 import { AdminReferralsTab } from "@/components/admin/AdminReferralsTab";
 import { AdminFeatureFlagsTab } from "@/components/admin/AdminFeatureFlagsTab";
+import { AdminBillingAuditTab } from "@/components/admin/AdminBillingAuditTab";
 import { AdminDMsTab } from "@/components/admin/AdminDMsTab";
 import { AcademyLive } from "@/pages/academy/AcademyLive";
 import "./admin-panel.css";
@@ -24,6 +25,7 @@ const TAB_CONFIG = [
   { value: "content", label: "Content", detail: "Academy library", icon: BookOpen, perm: "manage_content" },
   { value: "live", label: "Live Sessions", detail: "Schedule, links and replays", icon: Radio, perm: "manage_live_sessions" },
   { value: "stripe", label: "Stripe", detail: "Billing and access", icon: CreditCard, perm: "view_admin_panel" },
+  { value: "billing-audit", label: "Billing & Account Audit", detail: "Disputes, cancellations and deletions", icon: FileSearch, perm: "view_admin_panel" },
   { value: "referrals", label: "Referrals", detail: "Invites and rewards", icon: UserPlus, perm: "view_admin_panel" },
   { value: "flags", label: "Feature Flags", detail: "Release controls", icon: ToggleLeft, perm: "view_admin_panel" },
   { value: "logs", label: "Logs", detail: "Security audit trail", icon: ScrollText, perm: "view_admin_panel" },
@@ -184,6 +186,11 @@ const AdminPanel = () => {
           {visibleTabs.some((t) => t.value === "stripe") && (
             <TabsContent value="stripe" className="vault-admin-panel-content">
               <AdminStripeTab />
+            </TabsContent>
+          )}
+          {visibleTabs.some((t) => t.value === "billing-audit") && (
+            <TabsContent value="billing-audit" className="vault-admin-panel-content">
+              <AdminBillingAuditTab />
             </TabsContent>
           )}
           {visibleTabs.some((t) => t.value === "referrals") && (

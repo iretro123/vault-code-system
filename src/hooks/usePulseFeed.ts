@@ -7,7 +7,7 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    if (!enabled) { setConnected(false); return; }
+    if (!enabled) { setFeed(empty); setConnected(false); setError(null); return; }
     let stopped = false;
     let cleanup = () => {};
     if (source === "local") {
@@ -23,7 +23,6 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
     }
     void import("@/integrations/supabase/client").then(({ supabase }) => {
       if (stopped) return;
-      let cursor = 0;
       let busy = false;
       let requested = false;
       let currentUser: string | null = null;
@@ -34,31 +33,33 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
         busy = true;
         const generation = authGeneration;
         try {
-          const { data, error: failure } = await (supabase as any).rpc("pulse_feed", { p_after: cursor });
+          const { data, error: failure } = await supabase.rpc("pulse_feed_current", {}, { get: true });
           if (stopped || generation !== authGeneration) return;
           if (failure) {
             setConnected(false);
             if (failure.code === "42501") {
-              setFeed(empty); cursor = 0;
+              setFeed(empty);
               setError("Pulse is available with an active Vault membership.");
             } else setError("Pulse is reconnecting. New updates will appear when the connection returns.");
             return;
           }
-          const next = data as PulseFeed;
+          const next = data as unknown as PulseFeed;
           if (!Array.isArray(next?.posts)) throw new Error("Invalid feed");
-          cursor = Math.max(cursor, ...next.posts.map(post => post.at));
-          setFeed(previous => ({ ...next, posts: [...new Map([...previous.posts, ...next.posts].map(post => [post.id,post])).values()].sort((a,b) => a.at-b.at || a.id.localeCompare(b.id)).slice(-100) }));
+          // Fetch a bounded full window so later image changes to older posts are included.
+          setFeed({ ...next, posts: [...next.posts].sort((a,b) => a.at-b.at || a.id.localeCompare(b.id)).slice(-100) });
           setConnected(true); setError(null);
-        } catch { if (!stopped) { setConnected(false); setError("Pulse is reconnecting. Your saved updates will return shortly."); } }
+        } catch { if (!stopped && generation === authGeneration) { setConnected(false); setError("Pulse is reconnecting. Your saved updates will return shortly."); } }
         finally { busy = false; if (requested && !stopped) { requested = false; void refresh(); } }
       };
-      const channel = supabase.channel("vault-pulse-members")
+      const channel = supabase.channel("vault-spy-pulse-members")
         .on("postgres_changes", { event: "*", schema: "public", table: "pulse_status" }, () => void refresh())
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "pulse_events" }, () => void refresh())
-        .subscribe(status => { if (status === "SUBSCRIBED") void refresh(); });
+        .on("postgres_changes", { event: "*", schema: "public", table: "pulse_events" }, () => void refresh())
+        .on("postgres_changes", { event: "*", schema: "public", table: "pulse_spy_status" }, () => void refresh())
+        .on("postgres_changes", { event: "*", schema: "public", table: "pulse_spy_events" }, () => void refresh())
+        .subscribe(status => { if (stopped) return; if (status === "SUBSCRIBED") void refresh(); else if (["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)) setConnected(false); });
       const { data: auth } = supabase.auth.onAuthStateChange((_event, session) => {
         const userId = session?.user.id || null;
-        if (userId !== currentUser) { currentUser=userId; authGeneration++; cursor=0; setFeed(empty); setConnected(false); }
+        if (userId !== currentUser) { currentUser=userId; authGeneration++; setFeed(empty); setConnected(false); }
         // Keep database operations outside the auth callback's internal lock.
         queueMicrotask(() => { if (!stopped) void refresh(); });
       });

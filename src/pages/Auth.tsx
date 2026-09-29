@@ -13,6 +13,7 @@ import { enableGuestMode } from "@/lib/guestMode";
 import { isNativeCapacitorApp } from "@/lib/platform";
 import "./welcome.css";
 import "./auth.css";
+import { authErrorMessage } from "@/lib/authErrorMessage";
 
 const Auth = () => {
   const { toast } = useToast();
@@ -63,7 +64,7 @@ const Auth = () => {
     const result = await signIn(normalizedEmail, password);
 
     if (result.error) {
-      toast({ title: "Error", description: result.error.message, variant: "destructive" });
+      toast({ title: "Sign in failed", description: authErrorMessage(result.error), variant: "destructive" });
       setLoading(false);
       return;
     }

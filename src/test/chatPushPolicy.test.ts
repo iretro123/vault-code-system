@@ -12,3 +12,7 @@ describe("chat-only push policy", () => {
     expect(isChatPush("chat_message", path)).toBe(false);
   });
 });
+
+it.each(['wins-proof','questions','off-topic','daily-setups'])('allows notification routing for %s after server eligibility checks',room=>{
+ expect(isChatPush('chat_message',`/academy/room/${room}`)).toBe(true);
+});

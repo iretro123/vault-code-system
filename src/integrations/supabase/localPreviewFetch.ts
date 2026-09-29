@@ -19,8 +19,9 @@ export const localPreviewFetch: typeof fetch = async (input, init) => {
     const profileRead = url.pathname === '/rest/v1/rpc/get_community_profiles' && method === 'GET';
     // STABLE, SELECT-only RPC scoped to auth.uid(); never provisions access.
     const accessRead = url.pathname === '/rest/v1/rpc/get_my_access_state' && method === 'GET';
+    const pulseRead = url.pathname === '/rest/v1/rpc/pulse_feed_current' && method === 'GET';
     const blocked = (url.pathname.startsWith('/functions/v1/') && !playbookRead && !gifRead) ||
-      (url.pathname.startsWith('/rest/v1/rpc/') && !profileRead && !accessRead) ||
+      (url.pathname.startsWith('/rest/v1/rpc/') && !profileRead && !accessRead && !pulseRead) ||
       (!read && (url.pathname.startsWith('/rest/v1/') || url.pathname.startsWith('/storage/v1/')));
     if (blocked) return new Response(JSON.stringify({message:'Local design preview is read-only. Live writes and server actions are disabled.',code:'LOCAL_PREVIEW_READ_ONLY'}),{status:403,headers:{'Content-Type':'application/json'}});
   }

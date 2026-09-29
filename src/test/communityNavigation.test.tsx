@@ -45,7 +45,7 @@ it("redirects removed calendar links to Chat without a dead end",()=>{
 });
 
 it("switches away from a deep-linked room with deferred router navigation",async()=>{
- renderCommunity(<MemoryRouter future={{v7_startTransition:true}} initialEntries={["/academy/community?tab=wins"]}><AcademyCommunity/><Location/></MemoryRouter>);
+ renderCommunity(<MemoryRouter initialEntries={["/academy/community?tab=wins"]}><AcademyCommunity/><Location/></MemoryRouter>);
  expect(screen.getByRole("button",{name:"Wins"})).toHaveAttribute("aria-current","page");
  fireEvent.click(screen.getByRole("button",{name:"Signals"}));
  await waitFor(()=>expect(screen.getByRole("button",{name:"Signals"})).toHaveAttribute("aria-current","page"));

@@ -1,3 +1,4 @@
+import { syncExistingWebPush } from "@/lib/webPush";
 import { useEffect } from "react";
 import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
@@ -11,7 +12,7 @@ import {
 } from "@/lib/pushPermission";
 
 const HAPTIC_NOTIFICATION_TYPES = new Set([
-  "chat_message",
+  "chat_message", "pulse_zone", "live_now",
 ]);
 
 interface PushRegistrationToken {
@@ -40,6 +41,10 @@ export function usePushNotifications() {
   const userId = user?.id;
 
   useEffect(() => {
+    if (userId && !isNativePushPlatform()) void syncExistingWebPush().catch(() => undefined);
+  }, [userId]);
+
+  useEffect(() => {
     if (!userId) return;
     if (!isNativePushPlatform()) return;
 
@@ -56,7 +61,7 @@ export function usePushNotifications() {
     }
 
     async function setupPush() {
-      const listeners = await Promise.all<PluginListenerHandle>([
+      const results = await Promise.allSettled<PluginListenerHandle>([
         PushNotifications.addListener("registration", async (token: PushRegistrationToken) => {
           try {
             if (!active) return;
@@ -90,10 +95,15 @@ export function usePushNotifications() {
         }),
       ]);
 
+      const listeners = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
       removeListeners = async () => {
         await Promise.allSettled(listeners.map((listener) => listener.remove()));
       };
 
+      if (results.some(result => result.status === "rejected")) {
+        await removeListeners();
+        throw new Error("Push listener setup failed");
+      }
       if (!active) {
         await removeListeners();
       }

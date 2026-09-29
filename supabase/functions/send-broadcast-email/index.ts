@@ -51,112 +51,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { recipientType, userId, title, body, templateKey } = await req.json();
-    if (!body?.trim()) {
-      return new Response(JSON.stringify({ error: "body required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Determine which notification category this maps to for preference filtering
-    const categoryMap: Record<string, string> = {
-      weekly_review: "notify_announcements",
-      log_trades: "notify_announcements",
-      new_lesson: "notify_new_modules",
-      live_session: "notify_live_events",
-    };
-    const prefColumn = categoryMap[templateKey || ""] || "notify_announcements";
-
-    let sent = 0;
-    let failed = 0;
-
-    if (recipientType === "single" && userId) {
-      // Single user — check their preferences
-      const { data: profile } = await admin
-        .from("profiles")
-        .select("email, display_name")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (!profile?.email) {
-        return new Response(JSON.stringify({ error: "User has no email on file" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const { data: prefs } = await admin
-        .from("user_preferences")
-        .select("notifications_enabled, preferred_alert_channel, " + prefColumn)
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      // Check preferences (default to allowing if no prefs row)
-      const notifEnabled = prefs?.notifications_enabled ?? true;
-      const alertChannel = prefs?.preferred_alert_channel ?? "in_app";
-      const categoryEnabled = (prefs as any)?.[prefColumn] ?? true;
-
-      if (!notifEnabled || !categoryEnabled || (alertChannel !== "email" && alertChannel !== "both")) {
-        return new Response(JSON.stringify({ sent: 0, failed: 0, skipped: 1, reason: "User preferences block email" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Enqueue email (placeholder — will be wired to transactional email infra when domain is set up)
-      // For now, log the intent
-      console.log(`[Broadcast Email] Would send to ${profile.email}: ${title}`);
-      sent = 1;
-
-    } else {
-      // All members — query profiles + preferences, filter by opt-in
-      const { data: profiles } = await admin
-        .from("profiles")
-        .select("user_id, email, display_name")
-        .not("email", "is", null)
-        .neq("email", "")
-        .limit(1000);
-
-      if (!profiles?.length) {
-        return new Response(JSON.stringify({ error: "No members with email found" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Batch-fetch preferences
-      const userIds = profiles.map((p) => p.user_id);
-      const { data: allPrefs } = await admin
-        .from("user_preferences")
-        .select("user_id, notifications_enabled, preferred_alert_channel, " + prefColumn)
-        .in("user_id", userIds);
-
-      const prefsMap = new Map((allPrefs || []).map((p: any) => [p.user_id, p]));
-
-      for (const profile of profiles) {
-        const prefs = prefsMap.get(profile.user_id) as any;
-        const notifEnabled = prefs?.notifications_enabled ?? true;
-        const alertChannel = prefs?.preferred_alert_channel ?? "in_app";
-        const categoryEnabled = prefs?.[prefColumn] ?? true;
-
-        if (!notifEnabled || !categoryEnabled || (alertChannel !== "email" && alertChannel !== "both")) {
-          failed++; // skipped due to preferences
-          continue;
-        }
-
-        const personalizedBody = body.trim().replace(/\{\{name\}\}/gi, profile.display_name || "there");
-        console.log(`[Broadcast Email] Would send to ${profile.email}: ${title} — ${personalizedBody.slice(0, 50)}`);
-        sent++;
-      }
-    }
-
-    console.log(`[Broadcast Email] Done — sent: ${sent}, skipped: ${failed}`);
-
-    return new Response(JSON.stringify({ sent, failed }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // No mail provider is configured for broadcasts. Never claim queued/sent
+    // delivery or write recipients and message bodies to logs.
+    return new Response(JSON.stringify({ error: "Broadcast email is not configured. Use in-app announcements until email delivery is connected.", sent: 0 }), {
+      status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("[Broadcast Email] error:", e);
+    console.error("[Broadcast Email] request failed");
     return new Response(JSON.stringify({ error: "internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

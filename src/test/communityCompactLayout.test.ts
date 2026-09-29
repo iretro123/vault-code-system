@@ -29,7 +29,7 @@ describe('conversation-first phone layout', () => {
     expect(room).toContain('onTouchCancel: cancel');
   });
   it('limits the denser containers to desktop without reducing message text', () => {
-    const desktop = css.slice(css.indexOf('/* Desktop density:'));
+    const desktop = css.slice(css.indexOf('/* Desktop density:')).split('/* Pulse')[0];
     expect(desktop).toContain('@media(min-width:1024px){');
     expect(desktop).toContain('.community-heading{padding:8px 16px;min-height:56px}');
     expect(desktop).toContain('.community-guide-rail{width:240px}');

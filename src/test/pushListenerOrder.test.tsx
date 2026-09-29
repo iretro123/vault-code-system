@@ -36,3 +36,11 @@ it("does not register after unmount during listener setup", async () => {
   expect(remove).toHaveBeenCalledTimes(4);
   expect(m.register).not.toHaveBeenCalled();
 });
+
+it('releases successful listeners if another listener fails',async()=>{
+ const remove=vi.fn().mockResolvedValue(undefined);
+ m.listeners.mockResolvedValue({remove}).mockRejectedValueOnce(new Error('plugin unavailable'));
+ renderHook(usePushNotifications);
+ await waitFor(()=>expect(remove).toHaveBeenCalledTimes(3));
+ expect(m.register).not.toHaveBeenCalled();
+});

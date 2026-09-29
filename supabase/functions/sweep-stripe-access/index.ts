@@ -27,7 +27,7 @@ const PREMIUM_ROLES = ["vault_access", "vault_intelligence"];
  * premium modules. "revoked" is reserved for explicit admin bans only.
  */
 async function downgradeToBasic(
-  admin: ReturnType<typeof createClient>,
+  admin: ReturnType<typeof createClient<any>>,
   authUserId: string | null,
   email: string | null,
 ) {
@@ -408,7 +408,7 @@ serve(async (req) => {
           const list = await stripe.customers.list({ email, limit: 3 });
           for (const c of list.data) {
             const subs = await stripe.subscriptions.list({ customer: c.id, status: "all", limit: 5 });
-            if (subs.data.some((s) => ["active", "trialing", "past_due"].includes(s.status))) {
+            if (subs.data.some((s: Stripe.Subscription) => ["active", "trialing", "past_due"].includes(s.status))) {
               stripeOk = true;
               break;
             }

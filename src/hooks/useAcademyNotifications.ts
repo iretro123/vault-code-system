@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useAcademyData } from "@/contexts/AcademyDataContext";
+import { onNativeAppState } from "@/lib/appResume";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
 
 export interface AcademyNotification {
@@ -23,8 +24,10 @@ export function useAcademyNotifications() {
   const [loading, setLoading] = useState(false);
   const [newArrival, setNewArrival] = useState(false);
 
+  const generation = useRef(0);
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
+    const request = ++generation.current;
+    if (!user) { setNotifications([]); setLoading(false); return; }
     setLoading(true);
 
     const { data: notifs } = await supabase
@@ -51,12 +54,20 @@ export function useAcademyNotifications() {
       is_read: readSet.has(n.id),
     }));
 
+    if (request !== generation.current) return;
     setNotifications(items);
     setLoading(false);
   }, [user]);
 
   useEffect(() => {
-    fetchNotifications();
+    setNotifications([]);
+    setNewArrival(false);
+    void fetchNotifications();
+    const wake = () => { if (document.visibilityState === 'visible' && navigator.onLine) void fetchNotifications(); };
+    document.addEventListener('visibilitychange', wake);
+    window.addEventListener('online', wake);
+    const removeNative = onNativeAppState(active => { if (active) void fetchNotifications(); });
+    return () => { ++generation.current; removeNative(); document.removeEventListener('visibilitychange', wake); window.removeEventListener('online', wake); };
   }, [fetchNotifications]);
 
   // Realtime: listen for new notifications
@@ -64,7 +75,7 @@ export function useAcademyNotifications() {
     if (!user) return;
 
     const channel = supabase
-      .channel("academy-notifs-realtime")
+      .channel(`academy-notifs-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -98,7 +109,7 @@ export function useAcademyNotifications() {
           refetchNotifications();
 
           // Other updates remain in-app, without an OS-level alert.
-          if (n.type === "chat_message") {
+          if (["chat_message", "pulse_zone", "live_now"].includes(n.type)) {
             notify({
               id: n.id,
               type: n.type,
@@ -109,12 +120,12 @@ export function useAcademyNotifications() {
           }
         }
       )
-      .subscribe();
+      .subscribe(status => { if (status === "SUBSCRIBED") void fetchNotifications(); });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, refetchNotifications, notify]);
+  }, [user, refetchNotifications, notify, fetchNotifications]);
 
   const clearNewArrival = useCallback(() => setNewArrival(false), []);
 

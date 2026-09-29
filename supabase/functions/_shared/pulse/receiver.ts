@@ -1,5 +1,5 @@
 import { validatePulseSnapshot, postsFromSnapshot, type PulseSnapshot } from "./snapshots.ts";
-import type { PulsePost } from "./domain.ts";
+import { PULSE_SYMBOL, type PulseSymbol, type PulsePost } from "./domain.ts";
 
 export interface PulseStore {
   authorized(hash: string): Promise<boolean>;
@@ -12,7 +12,7 @@ const reply = (status: number, data: unknown) => new Response(JSON.stringify(dat
 });
 
 // Only snapshot delivery is public. There are no public read or administration routes.
-export function createPulseReceiver(store: PulseStore, now = () => Date.now()) {
+export function createPulseReceiver(store: PulseStore, now = () => Date.now(), expectedSymbol: PulseSymbol = PULSE_SYMBOL) {
   return async (request: Request): Promise<Response> => {
     if (request.method !== "POST") return reply(405, { error: "Method not allowed" });
     const token = new URL(request.url).pathname.split("/").at(-1) || "";
@@ -37,7 +37,10 @@ export function createPulseReceiver(store: PulseStore, now = () => Date.now()) {
       let offset = 0;
       for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
       let snapshot: PulseSnapshot;
-      try { snapshot = validatePulseSnapshot(JSON.parse(new TextDecoder().decode(bytes)), now()); }
+      try {
+        snapshot = validatePulseSnapshot(JSON.parse(new TextDecoder().decode(bytes)), now());
+        if (snapshot.symbol !== expectedSymbol) throw new Error("Wrong chart");
+      }
       catch (error) { return reply(400, { error: error instanceof Error ? error.message : "Invalid snapshot" }); }
       // Optimistic concurrency with a database row lock prevents parallel webhooks
       // from overwriting newer zone state or losing a closing update.

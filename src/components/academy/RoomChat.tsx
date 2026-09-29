@@ -165,51 +165,6 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-async function createMentionNotificationFallback(params: {
-  senderName: string;
-  roomSlug: string;
-  preview: string;
-  mentionedUserIds: string[];
-  senderUserId: string;
-  notifyEveryone: boolean;
-}) {
-  const { senderName, roomSlug, preview, mentionedUserIds, senderUserId, notifyEveryone } = params;
-
-  if (notifyEveryone) {
-    const { error } = await supabase.from("academy_notifications").insert({
-      user_id: null,
-      type: "mention",
-      title: `${senderName} mentioned @everyone in #${roomSlug}`,
-      body: preview,
-      link_path: "/academy/community",
-    });
-
-    if (error) {
-      console.warn("Fallback @everyone mention notification failed:", error);
-    }
-
-    // @everyone is already a broadcast notification. Do not also create
-    // per-user mention notifications for the same message.
-    return;
-  }
-
-  for (const uid of mentionedUserIds) {
-    if (uid === senderUserId) continue;
-
-    const { error } = await supabase.from("academy_notifications").insert({
-      user_id: uid,
-      type: "mention",
-      title: `${senderName} mentioned you in #${roomSlug}`,
-      body: preview,
-      link_path: "/academy/community",
-    });
-
-    if (error) {
-      console.warn(`Fallback mention notification failed for ${uid}:`, error);
-    }
-  }
-}
-
 const ROLE_CONFIG: Record<string, { label: string; cls: string }> = {
   advanced:     { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
   professional: { label: "Advanced",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/20" },
@@ -906,7 +861,6 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         }));
         const { mentionedUserIds, hasEveryone } = parseMentions(body, userList);
         const senderName = displayName;
-        const preview = truncateText(body, 80);
 
         const uniqueMentionedUserIds = [...new Set(mentionedUserIds)].filter((uid) => uid !== user.id);
         const notifyEveryone = hasEveryone && canPingEveryone;
@@ -921,15 +875,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
           });
 
           if (rpcError) {
-            console.warn("create_mention_notifications rpc failed, falling back to direct inserts:", rpcError);
-            await createMentionNotificationFallback({
-              senderName,
-              roomSlug,
-              preview,
-              mentionedUserIds: uniqueMentionedUserIds,
-              senderUserId: user.id,
-              notifyEveryone,
-            });
+            console.warn("Mention notification was not accepted by the server.", rpcError.code);
           }
         }
       } catch (err) {

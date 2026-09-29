@@ -1,7 +1,8 @@
+import { enableWebPush, supportsWebPush, hasWebPushSubscription } from "@/lib/webPush";
 import { useCallback, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/hooks/useAuth";
-import { isChatPush } from "../../supabase/functions/_shared/chatPushPolicy";
+import { isRealtimePush } from "../../supabase/functions/_shared/chatPushPolicy";
 
 /**
  * Browser / OS notification delivery layer.
@@ -76,6 +77,7 @@ export function useOSNotifications() {
 
   // ── Request permission (call ONLY from user-gesture handlers) ──
   const requestIfNeeded = useCallback(async (): Promise<boolean> => {
+    if (supportsWebPush()) return enableWebPush();
     if (!isSupported()) return false;
     const perm = Notification.permission;
     if (perm === "granted") return true;
@@ -93,10 +95,11 @@ export function useOSNotifications() {
 
   // ── Show an OS notification (if eligible) ──
   const notify = useCallback(
-    (payload: OSNotifyPayload) => {
+    async (payload: OSNotifyPayload) => {
       if (!user) return;
-      if (!isChatPush(payload.type, payload.linkPath)) return;
+      if (!isRealtimePush(payload.type, payload.linkPath)) return;
       if (!isSupported()) return;
+      if (await hasWebPushSubscription()) return;
       if (Notification.permission !== "granted") return;
       // The open conversation already renders incoming messages in realtime.
       if (document.visibilityState === "visible") return;

@@ -1,0 +1,17 @@
+{
+  "name": "vault-spy-pulse-capture",
+  "main": "capture-worker.js",
+  "compatibility_date": "2026-09-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "browser": { "binding": "BROWSER" },
+  "kv_namespaces": [{ "binding": "CHART_IMAGES", "id": "8b6525ab04e441518116ae70a8f462b0" }],
+  "queues": {
+    "producers": [{"binding":"CAPTURE_JOBS","queue":"vault-spy-pulse-charts"}],
+    "consumers": [{"queue":"vault-spy-pulse-charts","max_batch_size":1,"max_batch_timeout":1,"max_concurrency":1,"max_retries":3,"retry_delay":10}]
+  },
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } },
+  "vars": { "CAPTURE_SAVE_LOGIN": "false" },
+  "triggers": { "crons": ["* * * * *"] }
+  // Database capture_enabled remains false until login, plan and real-image QA pass.
+}

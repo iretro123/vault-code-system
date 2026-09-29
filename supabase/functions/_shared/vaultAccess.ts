@@ -21,6 +21,9 @@ export const LEGACY_PRICE_MAP: Record<string, Plan> = {
   "price_1SB2aaAMsd1FtcvL44ONekRC": { product_key: "vault_academy", tier: "elite_v1", billing_cycle: "monthly", legacy: true },
   "price_1SB2YsAMsd1FtcvLHfcvmDCr": { product_key: "vault_academy", tier: "elite_v1", billing_cycle: "monthly", legacy: true },
   "price_1SB2VTAMsd1FtcvLjvrGfpm6": { product_key: "vault_academy", tier: "elite_v1", billing_cycle: "monthly", legacy: true },
+  // $97/mo "VTA - Vault OS (Subscription)" payment-link price (prod_V4TgrUVSkLgQQX).
+  // Live customers were billed on it but webhooks failed with "Unknown Stripe price ID".
+  "price_1U4KjQAMsd1FtcvLWr8nktLG": { product_key: "vault_os", tier: "full_access", billing_cycle: "monthly", legacy: true },
 };
 
 /** The current $99/mo Vault OS Full Access price, from Supabase secrets. */

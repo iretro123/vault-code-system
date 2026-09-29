@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { importPKCS8, SignJWT } from "https://esm.sh/jose@5.9.2";
-import { isChatPush } from "../_shared/chatPushPolicy.ts";
+import webPush from "npm:web-push@3.6.7";
+import { parseWebSubscription } from "../_shared/webPushPolicy.ts";
+import { deliverPushJob } from "../_shared/pushDelivery.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +10,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-push-secret",
 };
 
-const FCM_URL = "https://fcm.googleapis.com/fcm/send";
+const GOOGLE_OAUTH_URL = "https://oauth2.googleapis.com/token";
+const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 
 type NotificationRow = {
   id: string;
@@ -20,52 +23,10 @@ type NotificationRow = {
   source_message_id?: string | null;
 };
 
-type DeviceTokenRow = {
-  token: string;
-  user_id: string | null;
-  platform: string | null;
-  last_seen_at?: string | null;
-};
-
-function normalizePlatform(rawPlatform: string | null | undefined): { basePlatform: string; deviceKey: string } {
-  const raw = (rawPlatform || "").toLowerCase();
-  const [basePlatform, ...rest] = raw.split(":");
-  const deviceKey = rest.join(":");
-  return { basePlatform, deviceKey };
-}
-
-function dedupeDeviceTokens(rows: DeviceTokenRow[]): DeviceTokenRow[] {
-  // Sort newest first so we always keep the most recently seen row
-  const sorted = [...rows].sort((a, b) => {
-    const at = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
-    const bt = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
-    return bt - at;
-  });
-  const seenLogicalDevices = new Set<string>();
-  const seenTokens = new Set<string>();
-  const out: DeviceTokenRow[] = [];
-  for (const r of sorted) {
-    const token = String(r.token || "").trim();
-    if (!token) continue;
-    if (seenTokens.has(token)) continue;
-
-    const { basePlatform, deviceKey } = normalizePlatform(r.platform);
-    // A single iPhone can move from guest -> free -> paid/admin. Broadcast pushes
-    // must still hit that physical install once, not once per stale account row.
-    const logicalKey = deviceKey
-      ? `${basePlatform}|${deviceKey}`
-      : `${r.user_id || ""}|${basePlatform}|${token}`;
-    if (seenLogicalDevices.has(logicalKey)) continue;
-    seenLogicalDevices.add(logicalKey);
-    seenTokens.add(token);
-    out.push(r);
-  }
-  return out;
-}
-
-
-type FcmResult = {
-  error?: string;
+type FirebaseServiceAccount = {
+  project_id: string;
+  client_email: string;
+  private_key: string;
 };
 
 function defaultLinkPath(type: string) {
@@ -150,12 +111,6 @@ function normalizeNotification(notif: NotificationRow) {
   };
 }
 
-function chunk<T>(arr: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 async function createApnsJwt() {
   const keyId = Deno.env.get("APNS_KEY_ID");
   const teamId = Deno.env.get("APNS_TEAM_ID");
@@ -170,12 +125,90 @@ async function createApnsJwt() {
     .sign(key);
 }
 
+function getFirebaseServiceAccount(): FirebaseServiceAccount | null {
+  const raw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+  if (!raw) return null;
+  try {
+    const account = JSON.parse(raw) as Partial<FirebaseServiceAccount>;
+    if (!account.project_id || !account.client_email || !account.private_key) return null;
+    return account as FirebaseServiceAccount;
+  } catch {
+    return null;
+  }
+}
+
+async function createFirebaseAccessToken(account: FirebaseServiceAccount) {
+  const key = await importPKCS8(account.private_key.replace(/\\n/g, "\n"), "RS256");
+  const assertion = await new SignJWT({ scope: FCM_SCOPE })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(account.client_email)
+    .setAudience(GOOGLE_OAUTH_URL)
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(key);
+  const response = await fetch(GOOGLE_OAUTH_URL, {
+    method: "POST",
+    signal: AbortSignal.timeout(8000),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  if (!response.ok) throw new Error(`Google OAuth failed with status ${response.status}`);
+  const body = await response.json() as { access_token?: string };
+  if (!body.access_token) throw new Error("Google OAuth response did not include an access token");
+  return body.access_token;
+}
+
+async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
+  if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
+  const account = getFirebaseServiceAccount();
+  if (!account) {
+    return { sent: 0, invalidTokens: [] as string[], errors: ["FIREBASE_SERVICE_ACCOUNT_JSON not set"] };
+  }
+  const accessToken = await createFirebaseAccessToken(account);
+  const url = `https://fcm.googleapis.com/v1/projects/${account.project_id}/messages:send`;
+  let sent = 0;
+  const invalidTokens: string[] = [];
+  const errors: string[] = [];
+  for (const token of tokens) {
+    const response = await fetch(url, {
+      method: "POST",
+    signal: AbortSignal.timeout(8000),
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          token,
+          notification: { title: notif.title, body: notif.body },
+          data: {
+            notification_id: notif.id,
+            type: notif.type,
+            category: notif.category,
+            thread_id: notif.threadId,
+            link_path: notif.linkPath,
+          },
+          android: { priority: "HIGH", ttl: "300s", notification: { sound: "default", tag: notif.id } },
+        },
+      }),
+    });
+    if (response.ok) {
+      sent += 1;
+      continue;
+    }
+    const raw = await response.text();
+    if (response.status === 404 || raw.includes("UNREGISTERED")) invalidTokens.push(token);
+    errors.push(`FCM request failed with status ${response.status}`);
+  }
+  return { sent, invalidTokens, errors };
+}
+
 async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
-  if (tokens.length === 0) return { sent: 0 };
+  if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
   const bundleId = Deno.env.get("APNS_BUNDLE_ID");
-  if (!bundleId) return { sent: 0, error: "APNS_BUNDLE_ID not set" };
+  if (!bundleId) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS_BUNDLE_ID not set"] };
   const jwt = await createApnsJwt();
-  if (!jwt) return { sent: 0, error: "APNS credentials missing" };
+  if (!jwt) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS credentials missing"] };
   const useSandbox = (Deno.env.get("APNS_USE_SANDBOX") || "").toLowerCase() === "true";
   const primaryHost = useSandbox ? "https://api.sandbox.push.apple.com" : "https://api.push.apple.com";
   const alternateHost = useSandbox ? "https://api.push.apple.com" : "https://api.sandbox.push.apple.com";
@@ -184,7 +217,6 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     aps: {
       alert: { title: notif.title, body: notif.body },
       sound: "default",
-      badge: 1,
       category: notif.category,
       "thread-id": notif.threadId,
     },
@@ -198,16 +230,21 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     "apns-push-type": "alert",
     "apns-priority": "10",
     authorization: `bearer ${jwt}`,
+    "apns-collapse-id": notif.id,
+    "apns-expiration": String(Math.floor(Date.now()/1000)+300),
   };
 
   const postTo = (host: string, token: string) =>
-    fetch(`${host}/3/device/${token}`, { method: "POST", headers, body });
+    fetch(`${host}/3/device/${token}`, { method: "POST",
+    signal: AbortSignal.timeout(8000), headers, body });
 
   let sent = 0;
+  const invalidTokens: string[] = [];
+  const errors: string[] = [];
   for (const token of tokens) {
     let res = await postTo(primaryHost, token);
+    let reason = "";
     if (!res.ok) {
-      let reason = "";
       try {
         const txt = await res.clone().text();
         reason = txt ? (JSON.parse(txt)?.reason || "") : "";
@@ -216,195 +253,98 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
       }
       if (reason === "BadDeviceToken") {
         res = await postTo(alternateHost, token);
-      }
-    }
-    if (res.ok) sent += 1;
-  }
-  return { sent };
-}
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const secret = Deno.env.get("PUSH_WEBHOOK_SECRET");
-    const provided = req.headers.get("x-push-secret") || "";
-    if (!secret || secret.length === 0 || provided !== secret) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { notification_id } = await req.json();
-    if (!notification_id) {
-      return new Response(JSON.stringify({ error: "notification_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const fcmKey = Deno.env.get("FCM_SERVER_KEY");
-
-    const admin = createClient(supabaseUrl, serviceKey);
-
-    // Idempotency: claim this notification_id before doing anything
-    const { error: dispatchInsertError } = await admin
-      .from("notification_push_dispatches")
-      .insert({ notification_id });
-    if (dispatchInsertError) {
-      if ((dispatchInsertError as { code?: string }).code === "23505") {
-        return new Response(
-          JSON.stringify({ ok: true, skipped: true, reason: "duplicate_dispatch" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      return new Response(JSON.stringify({ error: String(dispatchInsertError.message || dispatchInsertError) }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const releaseDispatch = async () => {
-      await admin.from("notification_push_dispatches").delete().eq("notification_id", notification_id);
-    };
-
-    const { data: notif } = await admin
-      .from("academy_notifications")
-      .select("id, user_id, type, title, body, link_path, source_message_id")
-      .eq("id", notification_id)
-      .maybeSingle();
-
-    if (!notif || !notif.user_id || !notif.source_message_id || !isChatPush(notif.type, notif.link_path)) {
-      await releaseDispatch();
-      return new Response(JSON.stringify({ ok: true, skipped: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Recheck at dispatch time: messages can be deleted and preferences changed
-    // after the notification was queued. Never broadcast to every device.
-    const { data: message } = await admin.from("academy_messages")
-      .select("user_id,room_slug,is_deleted").eq("id", notif.source_message_id).maybeSingle();
-    const { data: profile } = await admin.from("profiles")
-      .select("is_banned,access_status").eq("user_id", notif.user_id).maybeSingle();
-    const { data: preferences, error: preferencesError } = await admin.from("user_preferences")
-      .select("notifications_enabled").eq("user_id", notif.user_id).maybeSingle();
-    if (!message || message.is_deleted || message.room_slug !== "trade-floor" || message.user_id === notif.user_id
-      || !profile || profile.is_banned || ["banned", "revoked"].includes(profile.access_status || "")
-      || preferencesError || preferences?.notifications_enabled === false) {
-      await releaseDispatch();
-      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "chat_recipient_ineligible" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const notificationPayload = normalizeNotification(notif as NotificationRow);
-
-    let tokensQuery = admin.from("device_tokens").select("token, user_id, platform, last_seen_at");
-    if (notif.user_id) {
-      tokensQuery = tokensQuery.eq("user_id", notif.user_id);
-    }
-    const { data: rows = [] } = await tokensQuery;
-    const typedRows = dedupeDeviceTokens(rows as DeviceTokenRow[]);
-    const androidTokens = typedRows
-      .filter((r) => normalizePlatform(r.platform).basePlatform === "android")
-      .map((r) => r.token)
-      .filter(Boolean);
-    const iosTokens = typedRows
-      .filter((r) => normalizePlatform(r.platform).basePlatform === "ios")
-      .map((r) => r.token)
-      .filter(Boolean);
-
-    if (androidTokens.length === 0 && iosTokens.length === 0) {
-      await releaseDispatch();
-      return new Response(JSON.stringify({ ok: true, sent: 0 }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    let sent = 0;
-
-    if (androidTokens.length > 0) {
-      if (!fcmKey) {
-        return new Response(JSON.stringify({ error: "FCM_SERVER_KEY not set" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      for (const group of chunk(androidTokens, 900)) {
-        const payload = {
-          registration_ids: group,
-          notification: {
-            title: notificationPayload.title,
-            body: notificationPayload.body,
-            sound: "default",
-          },
-          data: {
-            notification_id: notificationPayload.id,
-            type: notificationPayload.type,
-            category: notificationPayload.category,
-            thread_id: notificationPayload.threadId,
-            link_path: notificationPayload.linkPath,
-          },
-          android: { priority: "high" },
-        };
-
-        const res = await fetch(FCM_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `key=${fcmKey}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const result = await res.json();
-        sent += result?.success ?? 0;
-
-        // Cleanup invalid tokens
-        if (result?.results && Array.isArray(result.results)) {
-          const badTokens: string[] = [];
-          (result.results as FcmResult[]).forEach((r, idx: number) => {
-            if (r?.error === "NotRegistered" || r?.error === "InvalidRegistration") {
-              badTokens.push(group[idx]);
-            }
-          });
-          if (badTokens.length > 0) {
-            await admin.from("device_tokens").delete().in("token", badTokens);
+        if (!res.ok) {
+          try {
+            const txt = await res.clone().text();
+            reason = txt ? (JSON.parse(txt)?.reason || reason) : reason;
+          } catch {
+            // Keep the first APNs reason if the retry body is not JSON.
           }
         }
       }
     }
-
-    if (iosTokens.length > 0) {
-      const apnsResult = await sendApns(iosTokens, notificationPayload);
-      sent += apnsResult.sent || 0;
+    if (res.ok) {
+      sent += 1;
+      continue;
     }
-
-    if (sent > 0) {
-      await admin
-        .from("notification_push_dispatches")
-        .update({ delivered_at: new Date().toISOString(), sent_count: sent })
-        .eq("notification_id", notification_id);
-    } else {
-      await releaseDispatch();
+    if (reason === "BadDeviceToken" || reason === "Unregistered" || reason === "DeviceTokenNotForTopic") {
+      invalidTokens.push(token);
     }
+    errors.push(reason || `APNs request failed with status ${res.status}`);
+  }
+  return { sent, invalidTokens, errors };
+}
 
-    return new Response(JSON.stringify({ ok: true, sent }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+async function sendWeb(token: string, notif: ReturnType<typeof normalizeNotification>) {
+  const subscription = parseWebSubscription(token);
+  if (!subscription) return { sent: 0, invalidTokens: [token] };
+  const publicKey = Deno.env.get('WEB_PUSH_VAPID_PUBLIC_KEY');
+  const privateKey = Deno.env.get('WEB_PUSH_VAPID_PRIVATE_KEY');
+  const subject = Deno.env.get('WEB_PUSH_VAPID_SUBJECT');
+  if (!publicKey || !privateKey || !subject) return { sent: 0, invalidTokens: [] };
+  try {
+    await webPush.sendNotification(subscription, JSON.stringify({ title: notif.title, body: notif.body, notification_id: notif.id, link_path: notif.linkPath }), {
+      vapidDetails: { subject, publicKey, privateKey }, TTL: 300, urgency: 'high', timeout: 8000,
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return { sent: 1, invalidTokens: [] };
+  } catch (error) {
+    const status = (error as { statusCode?: number }).statusCode;
+    return { sent: 0, invalidTokens: status === 404 || status === 410 ? [token] : [] };
+  }
+}
+
+Deno.serve(async (req) => {
+  const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return reply({ error: "Method not allowed" }, 405);
+  const secret = Deno.env.get("PUSH_WEBHOOK_SECRET");
+  if (!secret || req.headers.get("x-push-secret") !== secret) return reply({ error: "Unauthorized" }, 401);
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  try {
+    const { data: jobs, error } = await admin.rpc("claim_vault_push_jobs", { batch_size: 20 });
+    if (error) throw error;
+    const totals = { sent: 0, skipped: 0, retry: 0, dead: 0 };
+    for (let offset = 0; offset < (jobs || []).length; offset += 10) {
+      await Promise.all(jobs.slice(offset, offset + 10).map(async (job: { id: string; notification_id: string; device_id: string; user_id: string; claim_token: string }) => {
+        const [{ data: notification, error: notificationError }, { data: device, error: deviceError }] = await Promise.all([
+          admin.from("academy_notifications").select("id,user_id,type,title,body,link_path").eq("id", job.notification_id).maybeSingle(),
+          admin.from("device_tokens").select("id,user_id,platform,token").eq("id", job.device_id).maybeSingle(),
+        ]);
+        const outcome = await deliverPushJob({
+          eligible: async () => {
+            if (notificationError || deviceError) throw new Error("Lookup failed");
+            if (!notification || !device || device.user_id !== job.user_id) return false;
+            const { data: allowed, error } = await admin.rpc("vault_notification_deliverable", { nid: job.notification_id, uid: job.user_id });
+            if (error) throw error;
+            return allowed === true;
+          },
+          send: async () => {
+            if (!device || !notification) throw new Error("Missing delivery source");
+            const payload = normalizeNotification(notification as NotificationRow);
+            const platform = device.platform?.split(":")[0];
+            if (platform === "ios") return sendApns([device.token], payload);
+            if (platform === "android") return sendFcm([device.token], payload);
+            if (platform === "web") return sendWeb(device.token, payload);
+            return { sent: 0, invalidTokens: [device.token] };
+          },
+          removeInvalid: async () => {
+            if (!device) return;
+            // Retain the ledger, but remove the token so it is never queued again.
+            const { error } = await admin.from("device_tokens").update({ token: "invalid:" + device.id, platform: "invalid" }).eq("id", device.id).eq("token", device.token);
+            if (error) throw error;
+          },
+          finish: async (outcome) => {
+            const { data: acknowledged, error } = await admin.rpc("finish_vault_push_job", { job_id: job.id, lease_token: job.claim_token, outcome });
+            if (error || !acknowledged) throw new Error("Delivery acknowledgement failed");
+          },
+        });
+        totals[outcome]++;
+      }));
+    }
+    // Drain a backlog without depending on any member keeping the app open.
+    if ((jobs || []).length) await admin.rpc("wake_vault_push");
+    return reply({ ok: true, ...totals });
+  } catch {
+    return reply({ error: "Delivery unavailable; durable jobs retained for retry" }, 503);
   }
 });

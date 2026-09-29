@@ -33,7 +33,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-type Admin = ReturnType<typeof createClient>;
+type Admin = ReturnType<typeof createClient<any>>;
 
 /** Grant full (paid) access without ever touching staff roles. */
 async function grantPaidAccess(admin: Admin, authUserId: string, subscriptionStatus: string) {
@@ -195,7 +195,7 @@ serve(async (req) => {
 
         for (const cid of customers) {
           const subs = await stripe.subscriptions.list({ customer: cid, status: "all", limit: 10 });
-          const live = subs.data.find((s) => LIVE_STRIPE_STATUSES.includes(s.status) && resolvePlanForPrice(s.items.data[0]?.price?.id));
+          const live = subs.data.find((s: Stripe.Subscription) => LIVE_STRIPE_STATUSES.includes(s.status) && resolvePlanForPrice(s.items.data[0]?.price?.id));
           if (live) {
             sub = live;
             customerId = cid;

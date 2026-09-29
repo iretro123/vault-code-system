@@ -668,6 +668,17 @@ export function ReleasedLivePage() {
   const navigate = useNavigate();
   // Re-checked on every render: losing admin mode or the permission hides management.
   const canManage = isAdminActive && hasPermission("manage_live_sessions");
+  const [alertSending, setAlertSending] = useState(false);
+
+  const handleAlertMembers = async () => {
+    if (!canManage || alertSending) return;
+    if (!window.confirm("Send a live alert to all members now?")) return;
+    setAlertSending(true);
+    const { error } = await supabase.rpc("notify_live_now" as any);
+    if (error) toast.error(error.message || "Failed to send live alert.");
+    else toast.success("Live alert sent to members.");
+    setAlertSending(false);
+  };
 
   if (loading) return <div className="p-6" role="status">Loading classroom access…</div>;
   if (!hasAccess) return <PremiumGate status={status} pageName="Live Sessions" />;
@@ -675,7 +686,17 @@ export function ReleasedLivePage() {
   return (
     <div>
       {canManage && (
-        <div className="flex justify-end px-4 pt-3">
+        <div className="flex flex-wrap justify-end gap-2 px-4 pt-3">
+          <button
+            type="button"
+            aria-label="Alert members we are live"
+            onClick={handleAlertMembers}
+            disabled={alertSending}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 text-sm font-medium text-violet-200 hover:bg-violet-500/20 transition-colors disabled:opacity-60"
+          >
+            <Bell className="h-4 w-4" />
+            {alertSending ? "Sending…" : "Alert members"}
+          </button>
           <button
             type="button"
             aria-label="Manage sessions"

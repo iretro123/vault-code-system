@@ -1,0 +1,6 @@
+{
+  "name": "vault-spy-pulse-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": { "@cloudflare/puppeteer": "1.4.0" }
+}

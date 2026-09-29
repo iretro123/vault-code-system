@@ -1,9 +1,11 @@
+import { disableWebPush } from "@/lib/webPush";
 import { useState, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import { ensureProfile } from "@/lib/ensureProfile";
 import { reconcileMembershipNow } from "@/lib/membershipReconciler";
 import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 import { Device } from "@capacitor/device";
 
 type AppRole = "free" | "vault_os_owner" | "vault_access" | "vault_intelligence" | "operator" | "basic_tier";
@@ -105,6 +107,8 @@ async function unregisterPushForCurrentDevice() {
     }
   } catch (err) {
     console.warn("Push token cleanup failed before sign out", err);
+  } finally {
+    await PushNotifications.unregister().catch(() => undefined);
   }
 }
 
@@ -123,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Consolidated sign-out + state clearing */
   async function signOutCleanup() {
+    await disableWebPush().catch(() => undefined);
     await unregisterPushForCurrentDevice();
     await supabase.auth.signOut();
     setSession(null);

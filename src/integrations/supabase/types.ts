@@ -2139,6 +2139,391 @@ export type Database = {
         }
         Relationships: []
       }
+      pulse_config: {
+        Row: {
+          delivery_hash: string | null
+          enabled: boolean
+          id: boolean
+          started_at: string
+        }
+        Insert: {
+          delivery_hash?: string | null
+          enabled?: boolean
+          id?: boolean
+          started_at?: string
+        }
+        Update: {
+          delivery_hash?: string | null
+          enabled?: boolean
+          id?: boolean
+          started_at?: string
+        }
+        Relationships: []
+      }
+      pulse_events: {
+        Row: {
+          at: number
+          body: Json
+          created_at: string
+          id: string
+          timeframe: number
+        }
+        Insert: {
+          at: number
+          body: Json
+          created_at?: string
+          id: string
+          timeframe: number
+        }
+        Update: {
+          at?: number
+          body?: Json
+          created_at?: string
+          id?: string
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_incidents: {
+        Row: {
+          id: number
+          kind: string
+          message: string
+          opened_at: string
+          resolved_at: string | null
+          timeframe: number
+        }
+        Insert: {
+          id?: never
+          kind: string
+          message: string
+          opened_at?: string
+          resolved_at?: string | null
+          timeframe: number
+        }
+        Update: {
+          id?: never
+          kind?: string
+          message?: string
+          opened_at?: string
+          resolved_at?: string | null
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_spy_captures: {
+        Row: {
+          attempts: number
+          captured_at: number | null
+          context: string
+          created_at: string
+          event_id: string
+          failure: string | null
+          image_id: string | null
+          lease: string | null
+          lease_until: string | null
+          retry_at: string
+          state: string
+        }
+        Insert: {
+          attempts?: number
+          captured_at?: number | null
+          context?: string
+          created_at?: string
+          event_id: string
+          failure?: string | null
+          image_id?: string | null
+          lease?: string | null
+          lease_until?: string | null
+          retry_at?: string
+          state?: string
+        }
+        Update: {
+          attempts?: number
+          captured_at?: number | null
+          context?: string
+          created_at?: string
+          event_id?: string
+          failure?: string | null
+          image_id?: string | null
+          lease?: string | null
+          lease_until?: string | null
+          retry_at?: string
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_spy_captures_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "pulse_spy_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pulse_spy_config: {
+        Row: {
+          capture_checked_at: string | null
+          capture_connected: boolean
+          capture_enabled: boolean
+          capture_image_key: string | null
+          capture_lease: string | null
+          capture_lease_until: string | null
+          enabled: boolean
+          id: boolean
+          member_symbol: string
+          started_at: string
+          worker_hash: string | null
+        }
+        Insert: {
+          capture_checked_at?: string | null
+          capture_connected?: boolean
+          capture_enabled?: boolean
+          capture_image_key?: string | null
+          capture_lease?: string | null
+          capture_lease_until?: string | null
+          enabled?: boolean
+          id?: boolean
+          member_symbol?: string
+          started_at?: string
+          worker_hash?: string | null
+        }
+        Update: {
+          capture_checked_at?: string | null
+          capture_connected?: boolean
+          capture_enabled?: boolean
+          capture_image_key?: string | null
+          capture_lease?: string | null
+          capture_lease_until?: string | null
+          enabled?: boolean
+          id?: boolean
+          member_symbol?: string
+          started_at?: string
+          worker_hash?: string | null
+        }
+        Relationships: []
+      }
+      pulse_spy_events: {
+        Row: {
+          at: number
+          body: Json
+          created_at: string
+          id: string
+          timeframe: number
+          updated_at: string
+        }
+        Insert: {
+          at: number
+          body: Json
+          created_at?: string
+          id: string
+          timeframe: number
+          updated_at?: string
+        }
+        Update: {
+          at?: number
+          body?: Json
+          created_at?: string
+          id?: string
+          timeframe?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pulse_spy_incidents: {
+        Row: {
+          id: number
+          kind: string
+          message: string
+          opened_at: string
+          resolved_at: string | null
+          timeframe: number
+        }
+        Insert: {
+          id?: never
+          kind: string
+          message: string
+          opened_at?: string
+          resolved_at?: string | null
+          timeframe: number
+        }
+        Update: {
+          id?: never
+          kind?: string
+          message?: string
+          opened_at?: string
+          resolved_at?: string | null
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_spy_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          event_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          event_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          event_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pulse_spy_reactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_spy_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pulse_spy_status: {
+        Row: {
+          alert_expires_at: string | null
+          at: number
+          price: number | null
+          received_at: string | null
+          timeframe: number
+          zones: Json
+        }
+        Insert: {
+          alert_expires_at?: string | null
+          at?: number
+          price?: number | null
+          received_at?: string | null
+          timeframe: number
+          zones?: Json
+        }
+        Update: {
+          alert_expires_at?: string | null
+          at?: number
+          price?: number | null
+          received_at?: string | null
+          timeframe?: number
+          zones?: Json
+        }
+        Relationships: []
+      }
+      pulse_spy_streams: {
+        Row: {
+          last_at: number
+          revision: number
+          snapshot: Json | null
+          timeframe: number
+        }
+        Insert: {
+          last_at?: number
+          revision?: number
+          snapshot?: Json | null
+          timeframe: number
+        }
+        Update: {
+          last_at?: number
+          revision?: number
+          snapshot?: Json | null
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_spy_zone_states: {
+        Row: {
+          body: Json
+          timeframe: number
+          updated_at: string
+          zone_id: string
+        }
+        Insert: {
+          body: Json
+          timeframe: number
+          updated_at?: string
+          zone_id: string
+        }
+        Update: {
+          body?: Json
+          timeframe?: number
+          updated_at?: string
+          zone_id?: string
+        }
+        Relationships: []
+      }
+      pulse_status: {
+        Row: {
+          alert_expires_at: string | null
+          at: number
+          price: number | null
+          received_at: string | null
+          timeframe: number
+          zones: Json
+        }
+        Insert: {
+          alert_expires_at?: string | null
+          at?: number
+          price?: number | null
+          received_at?: string | null
+          timeframe: number
+          zones?: Json
+        }
+        Update: {
+          alert_expires_at?: string | null
+          at?: number
+          price?: number | null
+          received_at?: string | null
+          timeframe?: number
+          zones?: Json
+        }
+        Relationships: []
+      }
+      pulse_streams: {
+        Row: {
+          last_at: number
+          revision: number
+          snapshot: Json | null
+          timeframe: number
+        }
+        Insert: {
+          last_at?: number
+          revision?: number
+          snapshot?: Json | null
+          timeframe: number
+        }
+        Update: {
+          last_at?: number
+          revision?: number
+          snapshot?: Json | null
+          timeframe?: number
+        }
+        Relationships: []
+      }
+      pulse_zone_states: {
+        Row: {
+          body: Json
+          timeframe: number
+          updated_at: string
+          zone_id: string
+        }
+        Insert: {
+          body: Json
+          timeframe: number
+          updated_at?: string
+          zone_id: string
+        }
+        Update: {
+          body?: Json
+          timeframe?: number
+          updated_at?: string
+          zone_id?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           created_at: string
@@ -2733,6 +3118,8 @@ export type Database = {
           notifications_enabled: boolean
           notify_announcements: boolean
           notify_coach_reply: boolean
+          notify_chat: boolean
+          notify_pulse: boolean
           notify_live_events: boolean
           notify_new_modules: boolean
           preferred_alert_channel: string
@@ -2748,6 +3135,8 @@ export type Database = {
           notifications_enabled?: boolean
           notify_announcements?: boolean
           notify_coach_reply?: boolean
+          notify_chat?: boolean
+          notify_pulse?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
           preferred_alert_channel?: string
@@ -2763,6 +3152,8 @@ export type Database = {
           notifications_enabled?: boolean
           notify_announcements?: boolean
           notify_coach_reply?: boolean
+          notify_chat?: boolean
+          notify_pulse?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
           preferred_alert_channel?: string
@@ -3194,6 +3585,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      can_read_pulse: { Args: { p_user: string }; Returns: boolean }
       change_member_friendship: {
         Args: { action: string; peer: string }
         Returns: undefined
@@ -3571,6 +3963,55 @@ export type Database = {
       notify_live_now: { Args: never; Returns: undefined }
       open_member_conversation: { Args: { peer: string }; Returns: string }
       promote_to_ceo: { Args: { target_user_id: string }; Returns: undefined }
+      pulse_authorize_delivery: { Args: { p_hash: string }; Returns: boolean }
+      pulse_commit_snapshot: {
+        Args: { p_posts: Json; p_revision: number; p_snapshot: Json }
+        Returns: Json
+      }
+      pulse_feed: { Args: { p_after?: number }; Returns: Json }
+      pulse_feed_current: { Args: Record<PropertyKey, never>; Returns: Json }
+      pulse_feed_spy: { Args: never; Returns: Json }
+      pulse_processing_state: { Args: { p_timeframe: number }; Returns: Json }
+      pulse_spy_capture_claim: { Args: { p_token: string }; Returns: Json }
+      pulse_spy_capture_finish: {
+        Args: {
+          p_event_id: string
+          p_lease: string
+          p_result: Json
+          p_token: string
+        }
+        Returns: boolean
+      }
+      pulse_spy_capture_watchdog: { Args: never; Returns: undefined }
+      pulse_spy_commit_snapshot: {
+        Args: {
+          p_posts: Json
+          p_revision: number
+          p_snapshot: Json
+          p_token: string
+        }
+        Returns: Json
+      }
+      pulse_spy_processing_state: {
+        Args: { p_timeframe: number; p_token: string }
+        Returns: Json
+      }
+      pulse_spy_reaction_set: {
+        Args: { p_active: boolean; p_emoji: string; p_event_id: string }
+        Returns: undefined
+      }
+      pulse_spy_reactions_read: {
+        Args: { p_event_ids: string[] }
+        Returns: {
+          active: boolean
+          count: number
+          emoji: string
+          event_id: string
+        }[]
+      }
+      pulse_spy_watchdog: { Args: never; Returns: undefined }
+      pulse_spy_worker_allowed: { Args: { p_token: string }; Returns: boolean }
+      pulse_watchdog: { Args: never; Returns: undefined }
       read_member_conversation: {
         Args: { conversation: string; through_time: string }
         Returns: undefined

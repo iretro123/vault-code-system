@@ -14,6 +14,8 @@ export interface UserPreferences {
   notify_announcements: boolean;
   notify_new_modules: boolean;
   notify_coach_reply: boolean;
+  notify_chat: boolean;
+  notify_pulse: boolean;
   notify_live_events: boolean;
   sounds_enabled: boolean;
   preferred_alert_channel: AlertChannel;
@@ -28,6 +30,8 @@ const DEFAULTS: Omit<UserPreferences, "user_id"> = {
   notify_announcements: true,
   notify_new_modules: true,
   notify_coach_reply: true,
+  notify_chat: true,
+  notify_pulse: true,
   notify_live_events: true,
   sounds_enabled: true,
   preferred_alert_channel: "in_app",
@@ -40,7 +44,10 @@ export function useUserPreferences() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+    setPrefs(null);
     if (!user) { setLoading(false); return; }
+    setLoading(true);
 
     (async () => {
       const { data, error } = await supabase
@@ -49,8 +56,10 @@ export function useUserPreferences() {
         .eq("user_id", user.id)
         .maybeSingle();
 
+      if (cancelled) return;
+      if (error) { setLoading(false); return; }
       if (data) {
-        setPrefs(data as UserPreferences);
+        setPrefs({ ...DEFAULTS, ...data } as UserPreferences);
       } else {
         // Create default row
         const newRow = { user_id: user.id, ...DEFAULTS };
@@ -59,10 +68,11 @@ export function useUserPreferences() {
       }
       setLoading(false);
     })();
+    return () => { cancelled = true; };
   }, [user]);
 
   const updatePrefs = useCallback(async (updates: Partial<Omit<UserPreferences, "user_id">>) => {
-    if (!user || !prefs) return false;
+    if (!user || !prefs || prefs.user_id !== user.id) return false;
     if(isLocalDesignPreview()){
       setPrefs(p=>p?{...p,...updates}:p);
       return true;
@@ -72,7 +82,7 @@ export function useUserPreferences() {
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq("user_id", user.id);
     if (error) return false;
-    setPrefs((p) => p ? { ...p, ...updates } : p);
+    setPrefs((p) => p?.user_id === user.id ? { ...p, ...updates } : p);
     return true;
   }, [user, prefs]);
 

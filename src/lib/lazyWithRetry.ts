@@ -1,18 +1,9 @@
 import { lazy, ComponentType } from "react";
-import { claimChunkReload } from './chunkReloadGuard';
+import { claimChunkReload, isStaleAssetError } from './chunkReloadGuard';
 
 const RELOAD_KEY = "__lazy_chunk_reloaded__";
 
-function isChunkLoadError(err: unknown): boolean {
-  const msg = (err as { message?: string } | null)?.message ?? "";
-  return (
-    /Importing a module script failed/i.test(msg) ||
-    /Failed to fetch dynamically imported module/i.test(msg) ||
-    /Loading chunk [\d]+ failed/i.test(msg) ||
-    /ChunkLoadError/i.test(msg) ||
-    (err as { name?: string } | null)?.name === "ChunkLoadError"
-  );
-}
+const isChunkLoadError = isStaleAssetError;
 
 /**
  * Wrap React.lazy so that a stale-deploy chunk-hash mismatch

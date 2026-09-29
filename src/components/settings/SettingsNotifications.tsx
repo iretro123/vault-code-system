@@ -1,19 +1,22 @@
+import { supportsWebPush, hasWebPushSubscription } from "@/lib/webPush";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Capacitor } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications";
+import { getPushPermissionState, requestPushPermission } from "@/lib/pushPermission";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useUserPreferences, type AlertChannel } from "@/hooks/useUserPreferences";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { cn } from "@/lib/utils";
-import { Bell, CheckCircle2, Mail, Smartphone, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Smartphone, TriangleAlert } from "lucide-react";
 import { useOSNotifications } from "@/hooks/useOSNotifications";
 import {isLocalDesignPreview} from '@/integrations/supabase/localPreviewFetch';
 
 const TOGGLES = [
   { key: "notifications_enabled", label: "Enable Notifications", desc: "Master toggle for all alerts." },
+  { key: "notify_chat", label: "Chat Messages", desc: "New messages in rooms you can access." },
+  { key: "notify_pulse", label: "Pulse Zone Alerts", desc: "New zones, entries and breaks with Full Access." },
   { key: "sounds_enabled", label: "Message Sounds", desc: "Play a chime for new community messages." },
   { key: "notify_announcements", label: "Announcements", desc: "Important updates from the team." },
   { key: "notify_new_modules", label: "New Module Drops", desc: "When new courses or lessons are added." },
@@ -22,12 +25,6 @@ const TOGGLES = [
 ] as const;
 
 type ToggleKey = (typeof TOGGLES)[number]["key"];
-
-const CHANNEL_OPTIONS: { value: AlertChannel; label: string; icon: typeof Bell; desc: string }[] = [
-  { value: "in_app", label: "In-App Only", icon: Bell, desc: "Notifications inside the platform" },
-  { value: "email", label: "Email Only", icon: Mail, desc: "Receive alerts via email" },
-  { value: "both", label: "Both", icon: Smartphone, desc: "In-app + email notifications" },
-];
 
 export function SettingsNotifications() {
   const { prefs, loading, updatePrefs } = useUserPreferences();
@@ -39,9 +36,10 @@ export function SettingsNotifications() {
     notify_announcements: true,
     notify_new_modules: true,
     notify_coach_reply: true,
+    notify_chat: true,
+    notify_pulse: true,
     notify_live_events: true,
   });
-  const [channel, setChannel] = useState<AlertChannel>("in_app");
   const [saving, setSaving] = useState(false);
   const saveLock = useRef(false);
 
@@ -65,18 +63,22 @@ export function SettingsNotifications() {
         notify_announcements: prefs.notify_announcements,
         notify_new_modules: prefs.notify_new_modules,
         notify_coach_reply: prefs.notify_coach_reply,
+        notify_chat: prefs.notify_chat ?? true,
+        notify_pulse: prefs.notify_pulse ?? true,
         notify_live_events: prefs.notify_live_events,
       });
-      setChannel(prefs.preferred_alert_channel);
     }
   }, [prefs]);
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
+    if (!Capacitor.isNativePlatform()) {
+      if (supportsWebPush()) void hasWebPushSubscription().then(active => setNativePermission(active ? 'granted' : Notification.permission));
+      return;
+    }
     let cancelled = false;
-    PushNotifications.checkPermissions()
+    getPushPermissionState()
       .then((status) => {
-        if (!cancelled) setNativePermission(status.receive);
+        if (!cancelled) setNativePermission(status);
       })
       .catch(() => {
         if (!cancelled) setNativePermission("unknown");
@@ -88,30 +90,24 @@ export function SettingsNotifications() {
 
   const requestNativePush = async () => {
     if (!Capacitor.isNativePlatform()) {
-      await requestOSPermission();
+      try {
+        const granted = await requestOSPermission();
+        setNativePermission(granted ? 'granted' : 'prompt');
+        if (!granted) toast.error('Alerts are not enabled. Check browser permissions. On iPhone, add Vault to your Home Screen first.');
+      } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to connect browser alerts.'); }
       return;
     }
-    const request = await PushNotifications.requestPermissions();
-    setNativePermission(request.receive);
-    if (request.receive === "granted") {
-      await PushNotifications.register();
-    }
+    const permission = await requestPushPermission();
+    setNativePermission(permission);
+    if (permission === 'unsupported') toast.error('Push is unavailable in this app build. Please install the latest version.');
   };
 
   const handleToggle = async (key: ToggleKey, checked: boolean) => {
     if (!await savePreference({ [key]: checked })) return;
     setValues((v) => ({ ...v, [key]: checked }));
     if (key === "notifications_enabled" && checked && !isLocalDesignPreview()) {
-      if (Capacitor.isNativePlatform()) {
-        await requestNativePush();
-      } else {
-        await requestOSPermission();
-      }
+      await requestNativePush();
     }
-  };
-
-  const handleChannelChange = async (val: AlertChannel) => {
-    if (await savePreference({ preferred_alert_channel: val })) setChannel(val);
   };
 
   if (loading) {
@@ -122,7 +118,7 @@ export function SettingsNotifications() {
 
   return (
     <div className="space-y-4">
-      {Capacitor.isNativePlatform() && (
+      {(Capacitor.isNativePlatform() || supportsWebPush()) && (
         <Card className="vault-card p-5 space-y-4">
           <div className="flex items-start gap-3">
             <div className={cn(
@@ -132,27 +128,27 @@ export function SettingsNotifications() {
               {nativePermission === "granted" ? <CheckCircle2 className="h-4 w-4" /> : <Smartphone className="h-4 w-4" />}
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-foreground">iPhone Push Alerts</h3>
+              <h3 className="text-sm font-semibold text-foreground">Device Push Alerts</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 {nativePermission === "granted"
                   ? "This device is allowed to receive Vault OS alerts."
                   : nativePermission === "denied"
-                    ? "Notifications are blocked in iPhone Settings. Turn them on for Vault OS to receive alerts."
-                    : "Allow iPhone notifications so mentions, signals, and important updates can reach you outside the app."}
+                    ? "Notifications are blocked in device Settings. Turn them on for Vault OS to receive alerts."
+                    : "Allow device notifications so chat, Pulse, and live-session alerts can reach you outside the app."}
               </p>
             </div>
           </div>
 
-          {nativePermission !== "granted" && (
+          {nativePermission !== "granted" && nativePermission !== "denied" && (
             <Button onClick={requestNativePush} className="w-full">
-              Enable iPhone Alerts
+              Enable Device Alerts
             </Button>
           )}
 
           {nativePermission === "denied" && (
             <div className="flex gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-100">
               <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              <span>Open iPhone Settings → Vault OS → Notifications, then enable Allow Notifications.</span>
+              <span>Open device Settings → Vault OS → Notifications, then enable Allow Notifications.</span>
             </div>
           )}
         </Card>
@@ -186,32 +182,7 @@ export function SettingsNotifications() {
         </div>
       </Card>
 
-      <Card className={cn("vault-card p-5 space-y-4", masterOff && "opacity-40 pointer-events-none")}>
-        <div>
-          <h3 className="text-sm font-semibold text-foreground">Alert Channel</h3>
-          <p className="text-xs text-muted-foreground">Choose how you receive notifications outside the app.</p>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {CHANNEL_OPTIONS.map(({ value, label, icon: Icon, desc }) => (
-            <button
-              key={value}
-              aria-pressed={channel === value}
-              disabled={masterOff || saving}
-              onClick={() => handleChannelChange(value)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all duration-100",
-                channel === value
-                  ? "border-primary/40 bg-primary/[0.08] text-primary"
-                  : "border-border/40 text-muted-foreground hover:bg-muted/30 hover:text-foreground"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="text-[11px] font-semibold leading-tight">{label}</span>
-              <span className="text-[9px] text-muted-foreground/60 leading-tight">{desc}</span>
-            </button>
-          ))}
-        </div>
-      </Card>
+      <p className="px-1 text-xs text-muted-foreground">Alerts appear in your notification inbox. Enable device notifications for chat, Pulse and live-session alerts outside the app.</p>
     </div>
   );
 }

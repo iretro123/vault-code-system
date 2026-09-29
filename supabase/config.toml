@@ -77,3 +77,6 @@ verify_jwt = true
 
 [functions.pulse-receiver]
 verify_jwt = false
+
+[functions.web-push-config]
+verify_jwt = false

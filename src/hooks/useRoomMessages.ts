@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { onNativeAppState } from "@/lib/appResume";
 import { sanitizeText } from "@/lib/safeText";
 
 export interface Attachment {
@@ -407,24 +408,30 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
   // Realtime stream + self-healing resubscribe + lightweight catch-up poll
   // Realtime delivers promptly; fallback timing depends on network/server health.
   const latestRef = useRef<string | null>(null);
+  const visibleMessages = useRef(messages);
+  visibleMessages.current = messages;
   useEffect(() => {
     latestRef.current = messages.length ? messages[messages.length - 1].created_at : null;
   }, [messages]);
 
   const applyIncoming = useCallback((rows: any[]) => {
     if (!rows.length) return;
-    const incoming = castMessages(rows).filter(row => row.room_slug === roomSlug && !row.parent_message_id && !row.is_deleted);
+    const incoming = castMessages(rows).filter(row => row.room_slug === roomSlug && !row.parent_message_id);
     updateMessages((prev) => {
       let next = prev;
       for (const msg of incoming) {
-        if (next.some((m) => m.id === msg.id)) continue;
+        if (msg.is_deleted) { next = next.filter(m => m.id !== msg.id); continue; }
+        if (next.some((m) => m.id === msg.id)) {
+          next = next.map(m => m.id === msg.id ? msg : m);
+          continue;
+        }
         next = next.filter(
           (m) => !(m.id.startsWith("optimistic-") && m.user_id === msg.user_id && m.body === msg.body)
         );
         next = [...next, msg];
       }
       if (next === prev) return prev;
-      next.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      next.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
       return next;
     });
   }, [updateMessages, roomSlug]);
@@ -445,15 +452,24 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       .select("*")
       .eq("room_slug", roomSlug)
       .is("parent_message_id", null)
-      .eq("is_deleted", false)
-      .gt("created_at", latestRef.current)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(PAGE_SIZE);
     if (data?.length) applyIncoming(data);
+    // Reconcile visible history too: edits/deletes may predate the newest row.
+    const ids = visibleMessages.current.slice(-200).filter(m => Date.now() - Date.parse(m.created_at) > 30000).map(m => m.id);
+    if (ids.length) {
+      const { data: current, error } = await supabase.from('academy_messages').select('*').eq('room_slug', roomSlug).in('id', ids);
+      if (!error && current) {
+        const surviving = new Set(current.map(m => m.id));
+        updateMessages(prev => prev.filter(m => !ids.includes(m.id) || surviving.has(m.id)));
+        applyIncoming(current);
+      }
+    }
     } catch {
       // Retain the visible conversation; realtime/retry polling will recover.
     } finally { catchUpBusy.current = false; }
-  }, [canUseRoom, roomSlug, applyIncoming, fetchMessages]);
+  }, [canUseRoom, roomSlug, applyIncoming, fetchMessages, updateMessages]);
 
   useEffect(() => {
     if (!canUseRoom) return;
@@ -464,7 +480,8 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let live = false;
     let restarting = false;
-    const canConnect = () => document.visibilityState === "visible" && navigator.onLine;
+    let nativeActive = true;
+    const canConnect = () => nativeActive && document.visibilityState === "visible" && navigator.onLine;
 
     const scheduleRetry = () => {
       if (disposed || !canConnect()) return;
@@ -483,12 +500,13 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
         .on(
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "academy_messages", filter: `room_slug=eq.${roomSlug}` },
-          (payload) => applyIncoming([payload.new])
+          (payload) => { if (!disposed && channel === nextChannel) applyIncoming([payload.new]); }
         )
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "academy_messages", filter: `room_slug=eq.${roomSlug}` },
           (payload) => {
+            if (disposed || channel !== nextChannel) return;
             const updated = castMessages([payload.new])[0];
             updateMessages((prev) =>
               updated.is_deleted || updated.parent_message_id
@@ -501,6 +519,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
           "postgres_changes",
           { event: "DELETE", schema: "public", table: "academy_messages", filter: `room_slug=eq.${roomSlug}` },
           (payload) => {
+            if (disposed || channel !== nextChannel) return;
             const id = (payload.old as any).id;
             updateMessages((prev) => prev.filter((m) => m.id !== id));
           }
@@ -582,6 +601,11 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
         void restartConnection();
       }
     };
+    const removeNative = onNativeAppState(active => {
+      nativeActive = active;
+      if (!active) live = false;
+      onWake();
+    });
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("online", onWake);
     window.addEventListener("offline", onWake);
@@ -590,6 +614,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
 
     return () => {
       disposed = true;
+      removeNative();
       if (retryTimer) clearTimeout(retryTimer);
       clearInterval(poll);
       document.removeEventListener("visibilitychange", onWake);
