@@ -24,7 +24,7 @@ export default {
       return image.value ? new Response(image.value,{headers:{'Content-Type':contentType,'Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}) : new Response('Chart unavailable',{status:404,headers:{'Cache-Control':'no-store'}});
     }
     if (request.method==='POST' && url.pathname==='/check' && await captureAuthorized(request,env.WORKER_TOKEN)) {
-      const result = await checkChartConnection(env);
+      const result = await checkChartConnection(env,url.searchParams.has('timeframe') ? Number(url.searchParams.get('timeframe')) : undefined);
       return Response.json(result,{status:result.ok ? 200 : 409,headers:{'Cache-Control':'no-store'}});
     }
     if (request.method==='POST' && url.pathname==='/drain' && await captureAuthorized(request,env.WORKER_TOKEN)) {

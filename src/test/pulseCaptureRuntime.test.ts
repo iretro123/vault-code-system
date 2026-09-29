@@ -9,7 +9,7 @@ const post={id:'event',symbol:'AMEX:SPY',timeframe:5,at:now-1000,price:770,side:
 const source={label:'Chart for BATS:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live\n770.00 SELL',pageText:'Vault Zone Pulse - SPY Live',zoneText:'Demand upper\n768.54\nDemand lower\n767.70'};
 function fixture(){
   const chart={boundingBox:vi.fn().mockResolvedValue({width:1100,height:800}),screenshot:vi.fn().mockResolvedValue(new Uint8Array(11000))};
-  const control={boundingBox:vi.fn().mockResolvedValue({width:30,height:30}),click:vi.fn(),evaluate:vi.fn().mockResolvedValue('true')};
+  const control={boundingBox:vi.fn().mockResolvedValue({width:30,height:30}),click:vi.fn(),focus:vi.fn(),press:vi.fn(),evaluate:vi.fn().mockResolvedValue('true')};
   const page={url:()=> 'https://www.tradingview.com/chart/Db5ipsDu/',setDefaultTimeout:vi.fn(),setViewport:vi.fn(),$$:vi.fn().mockResolvedValue([control]),$:vi.fn(selector=>Promise.resolve(selector==='.chart-widget'?chart:control)),mouse:{move:vi.fn()},waitForFunction:vi.fn(),evaluate:vi.fn().mockResolvedValue(source)};
   const browser={pages:vi.fn().mockResolvedValue([page]),disconnect:vi.fn()};
   session.openChartSession.mockResolvedValue(browser);

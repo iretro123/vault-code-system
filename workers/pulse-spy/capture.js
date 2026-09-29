@@ -25,7 +25,7 @@ export async function runCapture(env, rpc) {
       const buttons = await page.$$(`[role="radio"][aria-label="${task.post.timeframe} minutes"]`);
       let selected = false;
       for (const button of buttons) {
-        if (await button.boundingBox()) { await button.click(); selected=true; break; }
+        if (await button.boundingBox()) { await button.focus(); await button.press('Enter'); selected=true; break; }
       }
       if (!selected) throw new Error('timeframe-control-unavailable');
       await page.mouse.move(1270,790);
