@@ -240,6 +240,8 @@ export type Database = {
           created_at: string
           id: string
           link_path: string | null
+          source_message_id: string | null
+          source_pulse_id: string | null
           title: string
           type: string
           user_id: string | null
@@ -249,6 +251,8 @@ export type Database = {
           created_at?: string
           id?: string
           link_path?: string | null
+          source_message_id?: string | null
+          source_pulse_id?: string | null
           title: string
           type?: string
           user_id?: string | null
@@ -258,11 +262,28 @@ export type Database = {
           created_at?: string
           id?: string
           link_path?: string | null
+          source_message_id?: string | null
+          source_pulse_id?: string | null
           title?: string
           type?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "academy_notifications_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "academy_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academy_notifications_source_pulse_id_fkey"
+            columns: ["source_pulse_id"]
+            isOneToOne: false
+            referencedRelation: "pulse_spy_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       academy_permissions: {
         Row: {
@@ -431,6 +452,54 @@ export type Database = {
           email?: string
           id?: string
           stripe_customer_id?: string | null
+        }
+        Relationships: []
+      }
+      android_membership_activations: {
+        Row: {
+          acknowledgement_state: string | null
+          created_at: string
+          expires_date: string | null
+          id: string
+          metadata: Json
+          order_id: string | null
+          package_name: string
+          product_id: string
+          purchase_date: string | null
+          purchase_token: string
+          subscription_state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          acknowledgement_state?: string | null
+          created_at?: string
+          expires_date?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          package_name: string
+          product_id: string
+          purchase_date?: string | null
+          purchase_token: string
+          subscription_state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          acknowledgement_state?: string | null
+          created_at?: string
+          expires_date?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          package_name?: string
+          product_id?: string
+          purchase_date?: string | null
+          purchase_token?: string
+          subscription_state?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1779,6 +1848,66 @@ export type Database = {
           },
         ]
       }
+      notification_push_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          claim_token: string | null
+          created_at: string
+          device_id: string
+          finished_at: string | null
+          id: string
+          last_error: string | null
+          lease_until: string | null
+          notification_id: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          claim_token?: string | null
+          created_at?: string
+          device_id: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          lease_until?: string | null
+          notification_id: string
+          state?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          claim_token?: string | null
+          created_at?: string
+          device_id?: string
+          finished_at?: string | null
+          id?: string
+          last_error?: string | null
+          lease_until?: string | null
+          notification_id?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_push_jobs_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "device_tokens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_push_jobs_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "academy_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_state: {
         Row: {
           claimed_role: boolean
@@ -3117,11 +3246,11 @@ export type Database = {
           default_market: string
           notifications_enabled: boolean
           notify_announcements: boolean
-          notify_coach_reply: boolean
           notify_chat: boolean
-          notify_pulse: boolean
+          notify_coach_reply: boolean
           notify_live_events: boolean
           notify_new_modules: boolean
+          notify_pulse: boolean
           preferred_alert_channel: string
           risk_percent_override: number | null
           session_autopause_minutes: number
@@ -3134,11 +3263,11 @@ export type Database = {
           default_market?: string
           notifications_enabled?: boolean
           notify_announcements?: boolean
-          notify_coach_reply?: boolean
           notify_chat?: boolean
-          notify_pulse?: boolean
+          notify_coach_reply?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
+          notify_pulse?: boolean
           preferred_alert_channel?: string
           risk_percent_override?: number | null
           session_autopause_minutes?: number
@@ -3151,11 +3280,11 @@ export type Database = {
           default_market?: string
           notifications_enabled?: boolean
           notify_announcements?: boolean
-          notify_coach_reply?: boolean
           notify_chat?: boolean
-          notify_pulse?: boolean
+          notify_coach_reply?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
+          notify_pulse?: boolean
           preferred_alert_channel?: string
           risk_percent_override?: number | null
           session_autopause_minutes?: number
@@ -3586,6 +3715,7 @@ export type Database = {
         Returns: boolean
       }
       can_read_pulse: { Args: { p_user: string }; Returns: boolean }
+      can_use_free_community: { Args: never; Returns: boolean }
       change_member_friendship: {
         Args: { action: string; peer: string }
         Returns: undefined
@@ -3601,6 +3731,29 @@ export type Database = {
           reason: string
           trades_remaining: number
         }[]
+      }
+      claim_vault_push_jobs: {
+        Args: { batch_size?: number }
+        Returns: {
+          attempts: number
+          available_at: string
+          claim_token: string | null
+          created_at: string
+          device_id: string
+          finished_at: string | null
+          id: string
+          last_error: string | null
+          lease_until: string | null
+          notification_id: string
+          state: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_push_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       cleanup_deleted_messages: { Args: never; Returns: undefined }
       close_trade_intent: {
@@ -3661,6 +3814,10 @@ export type Database = {
           user_id: string
           username: string
         }[]
+      }
+      finish_vault_push_job: {
+        Args: { job_id: string; lease_token: string; outcome: string }
+        Returns: boolean
       }
       generate_reports_for_user: {
         Args: { _period: string; _user_id: string }
@@ -3732,7 +3889,7 @@ export type Database = {
       }
       get_micro_feedback: { Args: { _user_id: string }; Returns: string }
       get_my_access_state: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           has_access: boolean
           product_key: string
@@ -3925,6 +4082,7 @@ export type Database = {
         Args: { _permission_key: string; _user_id: string }
         Returns: boolean
       }
+      has_current_full_access: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3969,7 +4127,7 @@ export type Database = {
         Returns: Json
       }
       pulse_feed: { Args: { p_after?: number }; Returns: Json }
-      pulse_feed_current: { Args: Record<PropertyKey, never>; Returns: Json }
+      pulse_feed_current: { Args: never; Returns: Json }
       pulse_feed_spy: { Args: never; Returns: Json }
       pulse_processing_state: { Args: { p_timeframe: number }; Returns: Json }
       pulse_spy_capture_claim: { Args: { p_token: string }; Returns: Json }
@@ -4161,6 +4319,17 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      vault_access_for_user: { Args: { uid: string }; Returns: boolean }
+      vault_can_broadcast: { Args: { uid: string }; Returns: boolean }
+      vault_notification_deliverable: {
+        Args: { nid: string; uid: string }
+        Returns: boolean
+      }
+      vault_paid_notification: {
+        Args: { kind: string; path: string; title: string }
+        Returns: boolean
+      }
+      wake_vault_push: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:
