@@ -1,3 +1,4 @@
+import { ProtectedStorageUrl } from "./ProtectedStorageUrl";
 import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
 import { ImageLightbox } from "./community/ImageLightbox";
 import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./community/DateSeparator";
@@ -287,12 +288,12 @@ function renderTradeCard(body: string, attachments: Attachment[] | undefined, ac
         {/* Right — Chart image */}
         {imageAtt && (
           <div className="shrink-0 bg-white/[0.03] border-t sm:border-t-0 sm:border-l border-white/[0.06] w-full sm:max-w-[280px]">
-            <img
-              src={imageAtt.url}
+            <ProtectedStorageUrl url={imageAtt.url}>{resolved => <img
+              src={resolved}
               alt="Chart"
               className="w-full h-auto object-contain"
               loading="lazy"
-            />
+            />}</ProtectedStorageUrl>
           </div>
         )}
       </div>
@@ -1800,18 +1801,18 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       return (
                       <div className="flex flex-wrap gap-2 mt-1">
                         {displayAtts.map((att: Attachment, idx: number) =>
-                          att.type === "image" ? (() => {
+                          <ProtectedStorageUrl key={idx} url={att.url}>{resolved => att.type === "image" ? (() => {
                             const isGif = att.mime === "image/gif" || att.filename === "gif";
                             return (
                               <button
                                 key={idx}
                                 type="button"
-                                onClick={() => setLightboxImage({ src: att.url, alt: att.filename, filename: att.filename })}
+                                onClick={() => setLightboxImage({ src: resolved, alt: att.filename, filename: att.filename })}
                                 className="block text-left min-w-0 max-w-full"
                                 aria-label={`Enlarge ${att.filename || "image"}`}
                               >
                                 <img
-                                  src={att.url}
+                                  src={resolved}
                                   alt={att.filename}
                                   loading="lazy"
                                   className={cn(
@@ -1829,7 +1830,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                           })() : (
                             <a
                               key={idx}
-                              href={att.url}
+                              href={resolved}
                               target="_blank"
                               rel="noopener noreferrer"
                               download={att.filename}
@@ -1848,6 +1849,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                               </div>
                             </a>
                           )
+                          }</ProtectedStorageUrl>
                         )}
                       </div>
                       );

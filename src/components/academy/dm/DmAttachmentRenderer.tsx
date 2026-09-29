@@ -1,3 +1,4 @@
+import { ProtectedStorageUrl } from "../ProtectedStorageUrl";
 import { useState } from "react";
 import { FileText, Download } from "lucide-react";
 import { ImageLightbox } from "../community/ImageLightbox";
@@ -24,16 +25,16 @@ export function DmAttachmentRenderer({ attachments }: { attachments: DmAttachmen
   return (
     <>
       <div className="space-y-1.5 mt-1">
-        {attachments.map((att, i) => {
+        {attachments.map((att, i) => <ProtectedStorageUrl key={i} url={att.url}>{resolved => {
           if (att.type === "image") {
             return (
               <button
                 key={i}
-                onClick={() => setLightboxUrl(att.url)}
+                onClick={() => setLightboxUrl(resolved)}
                 className="block rounded-lg overflow-hidden max-w-[220px] border border-white/[0.08] hover:border-white/[0.16] transition-colors"
               >
                 <img
-                  src={att.url}
+                  src={resolved}
                   alt={att.filename}
                   className="w-full h-auto max-h-[180px] object-cover"
                   loading="lazy"
@@ -44,7 +45,7 @@ export function DmAttachmentRenderer({ attachments }: { attachments: DmAttachmen
           return (
             <a
               key={i}
-              href={att.url}
+              href={resolved}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12] transition-colors max-w-[220px]"
@@ -57,7 +58,7 @@ export function DmAttachmentRenderer({ attachments }: { attachments: DmAttachmen
               <Download className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             </a>
           );
-        })}
+        }}</ProtectedStorageUrl>)}
       </div>
       {lightboxUrl && (
         <ImageLightbox src={lightboxUrl} onClose={() => setLightboxUrl(null)} />

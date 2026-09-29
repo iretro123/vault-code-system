@@ -1,3 +1,4 @@
+import { ProtectedStorageUrl } from "../ProtectedStorageUrl";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useChatProfiles } from "@/hooks/useChatProfiles";
@@ -134,13 +135,12 @@ export function CommunityDailySetups() {
               {imageAtts.length > 0 && (
                 <div className="space-y-3">
                   {imageAtts.map((img, i: number) => (
-                    <img
-                      key={i}
-                      src={img.url}
+                    <ProtectedStorageUrl key={i} url={img.url || ""}>{resolved => <img
+                      src={resolved}
                       alt="Chart screenshot"
                       className="rounded-xl max-w-full sm:max-w-[360px] w-auto h-auto object-contain border border-white/[0.08]"
                       loading="lazy"
-                    />
+                    />}</ProtectedStorageUrl>
                   ))}
                 </div>
               )}

@@ -1,3 +1,4 @@
+import { resolveProtectedStorageUrl } from "@/lib/protectedStorage";
 import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -240,9 +241,20 @@ function DbToolkitGrid({ items }: { items: ToolkitItem[] }) {
                 <Card
                   key={item.id}
                   className="p-5 flex flex-col gap-3 cursor-pointer hover:border-primary/30 transition-colors"
-                  onClick={() => {
-                    const url = item.file_url || item.external_url;
-                    if (url) window.open(url, "_blank");
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.currentTarget.click(); } }}
+                  onClick={async () => {
+                    const raw = item.file_url || item.external_url;
+                    if (!raw) return;
+                    // Open synchronously so mobile browsers do not block the async download.
+                    const tab = window.open('about:blank', '_blank');
+                    if (tab) tab.opener = null;
+                    try {
+                      const url = await resolveProtectedStorageUrl(raw);
+                      if (!url) throw new Error('Invalid resource link');
+                      if (tab) tab.location.href = url; else window.location.assign(url);
+                    } catch { tab?.close(); toast.error('Resource unavailable. Check your access and try again.'); }
                   }}
                 >
                   <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">

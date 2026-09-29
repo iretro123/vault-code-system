@@ -1,3 +1,4 @@
+import { ProtectedStorageUrl } from "../ProtectedStorageUrl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -278,18 +279,18 @@ export function EconomicCalendarTab({ active }: Props) {
                 className="group relative rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02]"
               >
                 {post.image_url ? (
-                  <button
+                  <ProtectedStorageUrl url={post.image_url}>{resolved => <button
                     type="button"
-                    onClick={() => setLightbox(post.image_url)}
+                    onClick={() => setLightbox(resolved)}
                     className="block w-full"
                   >
                     <img
-                      src={post.image_url}
+                      src={resolved}
                       alt={post.caption ?? "Calendar post"}
                       loading="lazy"
                       className="w-full h-auto object-cover max-h-[520px]"
                     />
-                  </button>
+                  </button>}</ProtectedStorageUrl>
                 ) : null}
 
                 {post.caption && (

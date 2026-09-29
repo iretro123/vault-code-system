@@ -1,3 +1,4 @@
+import { ProtectedStorageUrl } from "../ProtectedStorageUrl";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -103,12 +104,12 @@ export function CommunityWins() {
                 {/* Image */}
                 {imageAtt && (
                   <div className="p-4 pb-0">
-                    <img
-                      src={imageAtt?.url}
+                    <ProtectedStorageUrl url={imageAtt.url || ""}>{resolved => <img
+                      src={resolved}
                       alt="Trade screenshot"
                       className="rounded-xl max-w-full sm:max-w-[300px] max-h-[240px] object-cover border border-white/[0.08]"
                       loading="lazy"
-                    />
+                    />}</ProtectedStorageUrl>
                   </div>
                 )}
 

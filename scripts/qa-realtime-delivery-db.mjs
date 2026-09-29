@@ -115,5 +115,28 @@ await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[sender]);
 await db.exec('SET ROLE authenticated');
 assert.equal((await db.query('SELECT * FROM vault_classroom_links')).rows.length,1,'staff classroom link allowed');
 await db.exec('RESET ROLE');
+await db.exec(`CREATE SCHEMA storage;
+CREATE TABLE storage.objects(bucket_id text,name text);
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA storage TO authenticated,anon;
+GRANT SELECT ON storage.objects TO authenticated,anon;
+CREATE POLICY old_broad_file_read ON storage.objects FOR SELECT USING(true);
+CREATE TABLE dm_threads(id uuid PRIMARY KEY,user_id uuid);
+ALTER TABLE dm_threads ENABLE ROW LEVEL SECURITY;
+GRANT SELECT ON dm_threads TO authenticated,anon;
+CREATE POLICY own_dm ON dm_threads FOR SELECT USING(user_id=auth.uid());
+`);
+await db.exec(await readFile(new URL('../supabase/migrations/20260929000400_protected_storage_reads.sql',import.meta.url),'utf8'));
+await db.query('INSERT INTO dm_threads VALUES($1,$2)',[free,free]);
+for(const [bucket,path] of [['playbook','paid.pdf'],['toolkit-files','paid.pdf'],['academy-chat-files','trade-floor/file'],['academy-chat-files','daily-setups/file'],['academy-chat-files',`dm-${free}/file`],['academy-chat-files','unknown/file'],['avatars','avatar.png']]) await db.query('INSERT INTO storage.objects VALUES($1,$2)',[bucket,path]);
+for (const [uid,expected] of [[free,3],[sender,5],[banned,1],[null,1]]) {
+ await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[uid||'']);
+ await db.exec(`SET ROLE ${uid?'authenticated':'anon'}`);
+ const visible=(await db.query('SELECT bucket_id,name FROM storage.objects')).rows;
+ assert.equal(visible.length,expected,`file access matrix for ${uid}`);
+ if(uid===free) assert.ok(visible.some(r=>r.name===`dm-${free}/file`),'own DM accessible');
+ if(uid===sender) assert.ok(!visible.some(r=>r.name.startsWith('dm-')),'paid unrelated DM denied');
+ await db.exec('RESET ROLE');
+}
 await db.close();
 console.log('PASS: free/paid chat, Pulse freshness, mute/ban, no self alerts, broadcast permissions, durable queue, exclusive claims, fencing, retries and service-only access.');

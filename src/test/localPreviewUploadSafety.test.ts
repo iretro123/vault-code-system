@@ -42,3 +42,12 @@ it('permits only the read-only access request, keeping mutations blocked', async
   expect((await localPreviewFetch('https://example.supabase.co/rest/v1/rpc/grant_whitelist_access', { method: 'GET' })).status).toBe(403);
   expect(network).toHaveBeenCalledTimes(1);
 });
+
+it('allows only protected-object signing while uploads stay blocked', async () => {
+  vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false);
+  vi.stubGlobal('window', { location: { hostname: '127.0.0.1' } });
+  const network=vi.fn().mockResolvedValue(new Response('{}')); vi.stubGlobal('fetch',network);
+  await localPreviewFetch('https://example.supabase.co/storage/v1/object/sign/academy-chat-files/room/file.png',{method:'POST'});
+  expect(network).toHaveBeenCalledTimes(1);
+  expect((await localPreviewFetch('https://example.supabase.co/storage/v1/object/academy-chat-files/room/file.png',{method:'POST'})).status).toBe(403);
+});

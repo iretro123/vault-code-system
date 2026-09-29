@@ -1,3 +1,5 @@
+import { ProtectedStorageUrl } from "../ProtectedStorageUrl";
+import { safeMediaUrl } from "@/lib/protectedStorage";
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Crosshair, Radar, TrendingUp, TrendingDown, Minus, ExternalLink, BarChart3 } from "lucide-react";
@@ -46,7 +48,7 @@ const BIAS_CONFIG = {
 function TvLinkButton({ url }: { url: string }) {
   return (
     <a
-      href={url}
+      href={safeMediaUrl(url) || undefined}
       target="_blank"
       rel="noopener noreferrer"
       className="vault-signal-tv-link group"
@@ -69,10 +71,10 @@ export const SignalCard = React.memo(function SignalCard({
   createdAt,
   onImageClick,
 }: SignalCardProps) {
-  if (signal.type === "signal-watchlist") {
-    return <WatchlistCard signal={signal} chartImageUrl={chartImageUrl} userName={userName} userRole={userRole} avatarUrl={avatarUrl} createdAt={createdAt} onImageClick={onImageClick} />;
-  }
-  return <LiveSignalCard signal={signal} chartImageUrl={chartImageUrl} userName={userName} userRole={userRole} avatarUrl={avatarUrl} createdAt={createdAt} onImageClick={onImageClick} />;
+  const render = (resolved?: string) => signal.type === "signal-watchlist"
+    ? <WatchlistCard signal={signal} chartImageUrl={resolved} userName={userName} userRole={userRole} avatarUrl={avatarUrl} createdAt={createdAt} onImageClick={onImageClick} />
+    : <LiveSignalCard signal={signal} chartImageUrl={resolved} userName={userName} userRole={userRole} avatarUrl={avatarUrl} createdAt={createdAt} onImageClick={onImageClick} />;
+  return chartImageUrl ? <ProtectedStorageUrl url={chartImageUrl}>{render}</ProtectedStorageUrl> : render();
 });
 
 function WatchlistCard({ signal, chartImageUrl, userName, userRole, avatarUrl, createdAt, onImageClick }: { signal: SignalWatchlistData } & Omit<SignalCardProps, "signal">) {
