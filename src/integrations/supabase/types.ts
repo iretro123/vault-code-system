@@ -4339,6 +4339,10 @@ export type Database = {
       }
       vault_access_for_user: { Args: { uid: string }; Returns: boolean }
       vault_can_broadcast: { Args: { uid: string }; Returns: boolean }
+      vault_can_read_chat_file: {
+        Args: { object_name: string }
+        Returns: boolean
+      }
       vault_notification_deliverable: {
         Args: { nid: string; uid: string }
         Returns: boolean
