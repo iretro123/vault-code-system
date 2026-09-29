@@ -1,5 +1,5 @@
 -- Production deployment history marker, September 29, 2026.
--- The canonical SQL lives in 20260929000200.
+-- The canonical SQL lives in 20260928000100, 20260928000200 and 20260929000100.
 -- Lovable applied it under this generated version. Fresh databases execute the
 -- earlier canonical files; do not repeat their non-idempotent DDL here.
 SELECT 1;

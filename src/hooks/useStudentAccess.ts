@@ -21,7 +21,7 @@ const provisioningAttempts = new Set<string>();
 
 async function fetchAccessState(userId: string): Promise<AccessState> {
   // This STABLE, SELECT-only RPC reads the signed-in caller's access decision.
-  const { data, error } = await supabase.rpc("get_my_access_state", undefined as never, { get: true });
+  const { data, error } = await supabase.rpc("get_my_access_state", {} as never, { get: true });
 
   if (error) {
     throw error;
