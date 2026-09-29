@@ -1,3 +1,4 @@
+vi.mock('../../workers/pulse-spy/capture-framing.js',()=>({frameChart:vi.fn()}));
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const session=vi.hoisted(()=>({openChartSession:vi.fn(),rememberChartLogin:vi.fn()}));
 vi.mock('../../workers/pulse-spy/capture-session.js',()=>session);

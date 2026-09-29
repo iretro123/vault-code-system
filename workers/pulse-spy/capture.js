@@ -1,3 +1,4 @@
+import { frameChart } from './capture-framing.js';
 import { CHART_URL, INDICATOR, captureWindowOpen, verifyCaptureSource } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
 
@@ -35,6 +36,7 @@ export async function runCapture(env, rpc) {
         return canvas?.getAttribute('aria-label')?.endsWith(`SPY, ${tf} minutes`) && widget?.innerText.includes('Vault Zone Pulse - SPY Live');
       },{timeout:6000},task.post.timeframe);
     }
+    await frameChart(page);
     if (task.post) {
       const toggle=await page.$('button[aria-label="Object tree and data window"]');
       if (!toggle) throw new Error('chart-zone-data-unavailable');
@@ -42,7 +44,7 @@ export async function runCapture(env, rpc) {
       const dataTab=await page.$('#data-window');
       if (!dataTab) throw new Error('chart-zone-data-unavailable');
       if (await dataTab.evaluate(e=>e.getAttribute('aria-selected'))!=='true') await dataTab.click();
-      await page.mouse.move(1270,10);
+      await page.mouse.move(0,0);
       await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="row"]')).some(e=>e.innerText.includes('Vault Zone Pulse - SPY Live') && e.innerText.includes('Demand lower')),{timeout:6000});
     }
     const readSource=()=>page.evaluate(()=>({

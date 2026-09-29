@@ -1,3 +1,4 @@
+vi.mock('../../workers/pulse-spy/capture-framing.js',()=>({frameChart:vi.fn()}));
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { webcrypto } from 'node:crypto';
 const session=vi.hoisted(()=>({openChartSession:vi.fn(),rememberChartLogin:vi.fn()}));

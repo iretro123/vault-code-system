@@ -1,3 +1,4 @@
+import { frameChart } from './capture-framing.js';
 import { CHART_URL, INDICATOR } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
 
@@ -24,6 +25,8 @@ export async function checkChartConnection(env, timeframe) {
       if (!selected) return {ok:false,failure:'timeframe-control-unavailable'};
       await page.waitForFunction(tf=>document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')?.endsWith(`SPY, ${tf} minutes`),{timeout:6000},timeframe);
     }
+    stage='framing';
+    await frameChart(page);
     stage='source';
     const source = await page.evaluate(() => ({
       label:document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label') || '',
