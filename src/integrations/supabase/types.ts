@@ -3367,6 +3367,24 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_classroom_links: {
+        Row: {
+          classroom: string
+          join_url: string
+          updated_at: string
+        }
+        Insert: {
+          classroom: string
+          join_url: string
+          updated_at?: string
+        }
+        Update: {
+          classroom?: string
+          join_url?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vault_daily_checklist: {
         Row: {
           completed: boolean
