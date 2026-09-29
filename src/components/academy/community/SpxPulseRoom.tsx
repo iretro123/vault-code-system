@@ -44,7 +44,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
     scroller.current?.scrollTo({ top: 0, behavior: "instant" });
   };
   const openLatest = () => { scroller.current?.scrollTo({ top: 0, behavior: "smooth" }); setUnseen(false); };
-  const liveChart = symbol === "AMEX:SPY" ? `https://www.tradingview.com/chart/Db5ipsDu/?symbol=AMEX%3ASPY&interval=${tf}` : `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}&interval=${tf}`;
+  const liveChart = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}&interval=${tf}`;
 
   return <section className="zone-pulse-room pulse-room-clean" aria-label={`${symbolLabel} Zone Pulse`}>
     <header className="pr-toolbar">
@@ -64,7 +64,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} featured={!noZone && index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
         {!posts.length && !noZone && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
-          <a href={liveChart} target="_blank" rel="noreferrer">Open live chart <ArrowUpRight size={20} aria-hidden="true"/></a>
+          <a href={liveChart} target="_blank" rel="noreferrer">Open {symbolLabel} on TradingView <ArrowUpRight size={20} aria-hidden="true"/></a>
           <p role="status">{source === "cloud" && feed.captureConnected === false ? "Zone updates are automatic · Chart capture offline" : feed.captureConnected ? "New zones and chart captures appear automatically" : "Checking chart connection…"}</p>
         </div>
         {earlierCount > 0 && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}

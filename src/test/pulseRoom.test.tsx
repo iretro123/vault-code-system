@@ -35,7 +35,7 @@ describe("Live Pulse channel", () => {
     expect(screen.getByText("15m demand on watch.")).toBeInTheDocument();
     expect(screen.queryByText("5m demand broke. Closed below 770.83.")).not.toBeInTheDocument();
     expect(screen.getByAltText(/^Original TradingView SPY 15-minute/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open live chart" })).toHaveAttribute("href", "https://www.tradingview.com/chart/Db5ipsDu/?symbol=AMEX%3ASPY&interval=15");
+    expect(screen.getByRole("link", { name: "Open SPY on TradingView" })).toHaveAttribute("href", "https://www.tradingview.com/chart/?symbol=AMEX%3ASPY&interval=15");
   });
   it("receives new posts and later images without a reload", () => {
     const view = setup();
