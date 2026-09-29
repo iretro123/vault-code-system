@@ -3,6 +3,56 @@ import StoreKitTest
 
 // Launch checks: optional environment-supplied sign-in; no messages or purchases.
 final class VaultOSLaunchAuditTests: XCTestCase {
+    func testLaunchSurface() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
+        XCUIDevice.shared.orientation = .portrait
+        let start = Date()
+        app.launch()
+        let ready = NSPredicate { _, _ in
+            app.links["Log in"].firstMatch.exists ||
+            app.textFields["Email"].firstMatch.exists ||
+            app.buttons["Chat"].firstMatch.exists
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: ready, object: nil)], timeout: 30), .completed,
+                       "Launch must reach welcome, login, or authenticated navigation, not a blank screen")
+        print("VAULT_LAUNCH_SURFACE seconds=\(Date().timeIntervalSince(start))")
+        let startButton = app.buttons["Get started"].firstMatch
+        if startButton.exists {
+            XCTAssertGreaterThanOrEqual(startButton.frame.minX, app.frame.minX + 16, "Welcome needs a left gutter")
+            XCTAssertLessThanOrEqual(startButton.frame.maxX, app.frame.maxX - 16, "Welcome needs a right gutter")
+        }
+        capture(app, "00-launch-surface")
+    }
+
+    func testEntryPlansAndSignIn() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
+        XCUIDevice.shared.orientation = .portrait
+        app.launch()
+        try XCTSkipIf(app.buttons["Chat"].firstMatch.waitForExistence(timeout: 3), "Preserve existing member session; public funnel needs a signed-out simulator")
+        openSignIn(app)
+        XCTAssertTrue(app.textFields["Email"].firstMatch.waitForExistence(timeout: 20))
+        app.links["Vault OS welcome"].firstMatch.tap()
+        let start = app.buttons["Get started"].firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        start.tap()
+        let free = app.links["Join free"].firstMatch
+        XCTAssertTrue(free.waitForExistence(timeout: 10))
+        free.tap()
+        XCTAssertTrue(app.textFields["Email"].firstMatch.waitForExistence(timeout: 10))
+        capture(app, "06-free-account-form")
+        app.buttons["Back"].firstMatch.tap()
+        let full = app.links["Get full access"].firstMatch
+        XCTAssertTrue(full.waitForExistence(timeout: 10))
+        full.tap()
+        XCTAssertTrue(app.textFields["Email"].firstMatch.waitForExistence(timeout: 10))
+        capture(app, "07-full-account-form")
+        app.links["Log in"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["Sign In"].firstMatch.waitForExistence(timeout: 10))
+        capture(app, "08-existing-member-login")
+    }
+
     func testAuthenticatedNavigation() throws {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
@@ -54,6 +104,7 @@ final class VaultOSLaunchAuditTests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app.launch()
         let email = app.textFields["Email"].firstMatch
+        try XCTSkipIf(app.buttons["Chat"].firstMatch.waitForExistence(timeout: 3), "Preserve existing member session; keyboard test needs a signed-out simulator")
         openSignIn(app)
         XCTAssertTrue(email.waitForExistence(timeout: 30), "Native app must reach sign-in")
         capture(app, "01-native-sign-in")
@@ -62,10 +113,15 @@ final class VaultOSLaunchAuditTests: XCTestCase {
         let password = app.secureTextFields["Password"].firstMatch
         password.tap()
         password.typeText("NotARealPassword")
+        XCTAssertFalse((password.value as? String ?? "").isEmpty, "Password must accept input above the keyboard")
         capture(app, "02-native-keyboard")
         XCUIDevice.shared.orientation = .landscapeLeft
+        let landscape = NSPredicate { _, _ in app.frame.width > app.frame.height }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: landscape, object: nil)], timeout: 10), .completed)
         capture(app, "03-native-landscape-keyboard")
         XCUIDevice.shared.orientation = .portrait
+        let portrait = NSPredicate { _, _ in app.frame.height > app.frame.width }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: portrait, object: nil)], timeout: 10), .completed)
         app.terminate()
         app.launch()
         openSignIn(app)
@@ -90,7 +146,7 @@ final class VaultOSLaunchAuditTests: XCTestCase {
 
     private func openSignIn(_ app: XCUIApplication) {
         if app.textFields["Email"].firstMatch.waitForExistence(timeout: 3) { return }
-        let login = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'Log in to your account'")).firstMatch
+        let login = app.links["Log in"].firstMatch
         if login.waitForExistence(timeout: 10) { login.tap() }
     }
 }

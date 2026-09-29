@@ -74,6 +74,13 @@ describe('native Academy layout safeguards', () => {
     expect(roomChat).toContain('{messages.length === 0 && !error && (');
   });
 
+  it('keeps signal posting and GIF selection inside the keyboard-safe viewport', () => {
+    expect(roomChat).toContain('<SignalPostForm onSubmit={handleSend}');
+    expect(communityCss).toContain('.community-composer-footer:has([data-signal-form-expanded])');
+    expect(communityCss).toContain('.community-signal-actions{position:sticky');
+    expect(communityCss).toMatch(/native-keyboard-open \.community-expression-picker\{[\s\S]*?position:fixed!important;[\s\S]*?bottom:max\(8px,calc\(100dvh - var\(--academy-visible-height,100dvh\) \+ 8px\)\)!important;/);
+  });
+
   it('keeps the offline notice below the native safe-area header', () => {
     const headerIndex = academyLayout.indexOf('academy-top-safe sticky top-0');
     const bannerIndex = academyLayout.indexOf('academy-offline-banner');

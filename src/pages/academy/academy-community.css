@@ -86,6 +86,12 @@
 .vault-community .vault-signal-card p{font-size:15px;line-height:1.65;font-style:normal;overflow-wrap:anywhere}
 .vault-community .vault-signal-card span[class*="text-[10px]"],.vault-community .vault-signal-card span[class*="text-[11px]"]{font-size:12px}
 .vault-community .vault-signal-card span[class*="text-[18px]"]{font-size:24px;letter-spacing:-.6px}
+/* Watchlists are compact feed posts; open the chart for its full resolution. */
+.vault-community .vault-signal-watchlist{width:100%;max-width:440px;min-width:0;border-radius:12px}
+.vault-community .vault-signal-watchlist .signal-watchlist-ticker{font-size:20px;letter-spacing:-.3px}
+.vault-community .vault-signal-watchlist .signal-watchlist-body p{font-size:14px;line-height:1.45}
+.vault-community .signal-watchlist-chart img{max-height:180px;object-fit:contain}
+.vault-community .signal-watchlist-author{row-gap:4px}
 .vault-community .vault-signal-tv-link{min-height:48px;border:1px solid #91c8ff30;background:#97c7ff0c;border-radius:9px;padding:10px 12px}
 .vault-community .vault-signal-tv-link:hover{background:#97c7ff18}
 .vault-community .vault-signal-card>div:last-child{background:#15202c28}
@@ -227,6 +233,27 @@
 .community-expression-tabs button{flex:1;min-height:44px;border-radius:8px;color:#c5c7ce;font-size:15px;font-weight:600}
 .community-expression-tabs button[aria-pressed="true"]{background:#41434a;color:white}
 .community-expression-picker .chat-native-emoji-picker,.community-expression-picker .vault-gif-picker{width:100%;max-width:100%;border:0;border-radius:0;box-shadow:none}
+
+/* Keep tall staff tools usable inside the iOS visual viewport. */
+.vault-community .community-signal-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;scroll-padding-bottom:64px}
+.vault-community .community-signal-actions{position:sticky;z-index:2;bottom:-12px;padding:8px 0 12px;background:linear-gradient(180deg,transparent 0,var(--community-surface,#202631) 28%)}
+@media(max-width:767px){
+ .vault-community .community-composer-footer:has([data-signal-form-expanded]){min-height:0;max-height:calc(var(--academy-visible-height,100dvh) - 118px);overflow-y:auto;overscroll-behavior:contain}
+ .vault-community [data-signal-form-expanded] .community-signal-body{max-height:max(190px,calc(var(--academy-visible-height,100dvh) - 250px))}
+}
+body.native-capacitor.native-keyboard-open .community-expression-picker{
+ position:fixed!important;
+ z-index:120!important;
+ left:8px!important;
+ right:8px!important;
+ top:auto!important;
+ bottom:max(8px,calc(100dvh - var(--academy-visible-height,100dvh) + 8px))!important;
+ width:auto!important;
+ max-width:none!important;
+ max-height:calc(var(--academy-visible-height,100dvh) - 16px)!important;
+ transform:none!important;
+}
+body.native-capacitor.native-keyboard-open .community-expression-picker .vault-gif-picker{max-height:calc(var(--academy-visible-height,100dvh) - 68px)}
 
 .vault-community .community-chart-preview{max-height:320px;max-width:min(360px,100%);object-fit:contain}
 .vault-community .community-chart-hint{display:block;color:#b8d3ff;font-size:12px;margin-top:2px}

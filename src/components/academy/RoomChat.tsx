@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, memo } from "
 import { ImageLightbox } from "./community/ImageLightbox";
 import { DateSeparator, getDateLabel, shouldShowDateSeparator } from "./community/DateSeparator";
 import { ChatConnectionStatus } from "./community/ChatConnectionStatus";
+import { ShareWinModal } from "./community/ShareWinModal";
+import { canShareWin } from "@/lib/winShare";
+import { Share2 } from "lucide-react";
 import { useRoomMessages, type Attachment } from "@/hooks/useRoomMessages";
 import { useCommunityDraft } from "@/hooks/useCommunityDraft";
 import { setUnreadIsAtBottom } from "@/hooks/useUnreadCounts";
@@ -36,6 +39,8 @@ import { formatTime, formatDateTime } from "@/lib/formatTime";
 import { TradeRecapForm } from "./chat/TradeRecapForm";
 import { SignalPostForm } from "./chat/SignalPostForm";
 import { SignalCard, type SignalAttachment } from "./chat/SignalCard";
+import { ZonePulseCard } from "./chat/ZonePulseCard";
+import type { PulsePost } from "@/lib/spxPulse";
 import { ExpressionPicker } from "./chat/ExpressionPicker";
 import { EmojiReactionPicker } from "./chat/EmojiReactionPicker";
 import { EmojiGlyph } from "./chat/EmojiGlyph";
@@ -656,6 +661,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: string; user_name: string; body: string } | null>(null);
   const [sheetMsgId, setSheetMsgId] = useState<string | null>(null);
+  const [shareWinId, setShareWinId] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
 
@@ -1576,6 +1582,11 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                   <Copy className="h-3 w-3" /> Copy
                 </ItemComponent>
               )}
+              {canShareWin(roomSlug, msg, user?.id) && (
+                <ItemComponent onClick={() => { setSheetMsgId(null); setShareWinId(msg.id); }} className="gap-2 text-xs">
+                  <Share2 className="h-3 w-3" /> Create share card
+                </ItemComponent>
+              )}
               {!msg.is_deleted && !isAnnouncements && (
                 <ItemComponent onClick={() => {
                   setReplyingTo({ id: msg.id, user_name: msg.user_name, body: msg.body });
@@ -1771,6 +1782,8 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                         </div>
                       </div>
                     ) : (() => {
+                      const pulse = msg.attachments?.find(a => a.type === "zone-pulse")?.post as PulsePost | undefined;
+                      if (pulse && pulse.symbol === "CAPITALCOM:SPX500" && [5, 15].includes(pulse.timeframe) && Number.isFinite(pulse.at)) return <ZonePulseCard post={pulse} showIdentity={false} />;
                       const signalAtt = msg.attachments?.find((a) => a.type === "signal-watchlist" || a.type === "signal-live") as unknown as SignalAttachment | undefined;
                       if (signalAtt) {
                         const chartAtt = msg.attachments?.find((a) => a.type === "image");
@@ -1836,7 +1849,7 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       const hasSignal = msg.attachments.some((a) => a.type === "signal-watchlist" || a.type === "signal-live");
                       const displayAtts = hasSignal
                         ? msg.attachments.filter((a) => a.type !== "signal-watchlist" && a.type !== "signal-live" && a.type !== "image")
-                        : msg.attachments;
+                        : msg.attachments.filter(a => a.type !== "zone-pulse");
                       if (displayAtts.length === 0) return null;
                       return (
                       <div className="flex flex-wrap gap-2 mt-1">
@@ -1944,6 +1957,9 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
                       </div>
                     )}
 
+                    {canShareWin(roomSlug, msg, user?.id) && (
+                      <button className="win-share-entry" onClick={() => setShareWinId(msg.id)}><Share2 size={14} /> Create share card</button>
+                    )}
                     {!isAnnouncements && !msg.is_deleted && (() => {
                       const reactions = getReactions(msg.id);
                       if (reactions.length === 0) return null;
@@ -2257,6 +2273,15 @@ export function RoomChat({ roomSlug, canPost, isAnnouncements = false, onThreadO
         </div>
       )}
     </div>
+      {(() => {
+        const win = messages.find(message => message.id === shareWinId && message.user_id === user?.id && !message.is_deleted);
+        if (!win || !canShareWin(roomSlug, win, user?.id) || !active) return null;
+        return <ShareWinModal key={win.id} open onOpenChange={open => { if (!open) setShareWinId(null); }} win={{
+          userName: win.user_name, avatarUrl: getProfile(win.user_id)?.avatar_url,
+          body: win.body, createdAt: win.created_at,
+          imageUrl: win.attachments?.find(attachment => attachment.type === "image")?.url,
+        }} />;
+      })()}
     {lightboxImage && (
       <ImageLightbox
         src={lightboxImage.src}

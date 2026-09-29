@@ -1,13 +1,14 @@
+import type { ReactNode, ReactElement } from "react";
 import {act,cleanup,render,screen,fireEvent,waitFor} from '@testing-library/react';
 import {afterEach,it,expect,vi} from 'vitest';
 // Test request/state behavior here; real-browser checks cover Radix positioning.
 vi.mock('@/components/ui/popover',async()=>{
  const React=await import('react');
- const Context=React.createContext<any>(null);
+ const Context=React.createContext<{open:boolean;onOpenChange:(open:boolean)=>void}>({open:false,onOpenChange:()=>{}});
  return {
-  Popover:({open,onOpenChange,children}:any)=><Context.Provider value={{open,onOpenChange}}>{children}</Context.Provider>,
-  PopoverTrigger:({children}:any)=>{const c=React.useContext(Context);return React.cloneElement(children,{onClick:()=>c.onOpenChange(!c.open)});},
-  PopoverContent:({children}:any)=>React.useContext(Context).open?<div>{children}</div>:null,
+  Popover:({open,onOpenChange,children}:{open:boolean;onOpenChange:(open:boolean)=>void;children:ReactNode})=><Context.Provider value={{open,onOpenChange}}>{children}</Context.Provider>,
+  PopoverTrigger:({children}:{children:ReactElement<{onClick:()=>void}>})=>{const c=React.useContext(Context);return React.cloneElement(children,{onClick:()=>c.onOpenChange(!c.open)});},
+  PopoverContent:({children}:{children:ReactNode})=>React.useContext(Context).open?<div>{children}</div>:null,
  };
 });
 const {invoke}=vi.hoisted(()=>({invoke:vi.fn()}));
@@ -41,8 +42,8 @@ it('times out stalled requests and aborts them',async()=>{
  expect(screen.getByText('GIFs couldn’t load.')).toBeInTheDocument();
 });
 it('ignores late results when the search changes',async()=>{
- vi.useFakeTimers();let resolveOld:any;
- invoke.mockImplementationOnce(()=>new Promise(resolve=>{resolveOld=resolve;}))
+ vi.useFakeTimers();let resolveOld!:(value:unknown)=>void;
+ invoke.mockImplementationOnce(()=>new Promise<unknown>(resolve=>{resolveOld=resolve;}))
   .mockResolvedValue({data:{gifs:[{id:'new',title:'New result',url:'https://example.com/new.gif',preview_url:'https://example.com/new.gif'}]}});
  render(<GifPicker onSelect={vi.fn()}/>);fireEvent.click(screen.getByRole('button',{name:'Choose a GIF'}));
  await act(async()=>{await vi.advanceTimersByTimeAsync(1);});

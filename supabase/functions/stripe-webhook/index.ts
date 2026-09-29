@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membershipValidation.ts";
 import {
   LEGACY_PRICE_MAP,
-  VAULT_OS_PLAN,
   resolvePlanForPrice,
   syncRolesFromStatus,
 } from "../_shared/vaultAccess.ts";
@@ -61,13 +61,8 @@ serve(async (req) => {
       .eq("stripe_event_id", event.id)
       .maybeSingle();
 
-    if (existing) {
+    if (existing && ["processed", "ignored"].includes(existing.status)) {
       log(traceId, "DUPLICATE_EVENT", { existingId: existing.id, status: existing.status });
-      // Mark duplicate
-      await supabase
-        .from("stripe_webhook_events")
-        .update({ status: "duplicate" })
-        .eq("id", existing.id);
       return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200, headers: corsHeaders });
     }
 
@@ -88,12 +83,17 @@ serve(async (req) => {
     if (obj.id && event.type.startsWith("checkout")) eventRow.checkout_session_id = obj.id as string;
     if (obj.amount_total) { eventRow.amount = obj.amount_total as number; eventRow.currency = obj.currency as string; }
 
-    const { data: logRow } = await supabase.from("stripe_webhook_events").insert(eventRow).select("id").single();
+    // Failed deliveries must be retried, not permanently marked as duplicates.
+    const { data: logRow, error: logError } = existing
+      ? await supabase.from("stripe_webhook_events").update({status:"received", error_message:null}).eq("id", existing.id).select("id").single()
+      : await supabase.from("stripe_webhook_events").insert(eventRow).select("id").single();
+    if (logError || !logRow) throw new Error("Unable to record webhook delivery");
     const logId = logRow?.id;
 
     // ─── 4. Route by event type ───
     const supportedEvents = [
       "checkout.session.completed",
+      "checkout.session.async_payment_succeeded",
       "invoice.paid",
       "invoice.payment_failed",
       "customer.subscription.updated",
@@ -114,6 +114,7 @@ serve(async (req) => {
       const msg = (err as Error).message;
       log(traceId, "PROCESSING_ERROR", { error: msg });
       await supabase.from("stripe_webhook_events").update({ status: "failed", error_message: msg, processed_at: new Date().toISOString() }).eq("id", logId);
+      return new Response(JSON.stringify({ error: "Membership update failed; retry required" }), { status: 500, headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
@@ -134,19 +135,20 @@ async function processEvent(
 ) {
   switch (event.type) {
     case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded":
       await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, traceId, stripe, supabase);
       break;
     case "invoice.paid":
       await handleInvoicePaid(event.data.object as Stripe.Invoice, traceId, stripe, supabase);
       break;
     case "invoice.payment_failed":
-      await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice, traceId, supabase);
+      await handleInvoicePaid(event.data.object as Stripe.Invoice, traceId, stripe, supabase);
       break;
     case "customer.subscription.updated":
-      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription, traceId, stripe, supabase);
+      await handleSubscriptionUpdated(await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id), traceId, stripe, supabase);
       break;
     case "customer.subscription.deleted":
-      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, traceId, supabase);
+      await handleSubscriptionUpdated(await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id), traceId, stripe, supabase);
       break;
   }
 }
@@ -289,8 +291,7 @@ async function upsertAccess(
 // Resolve price to plan mapping (current Vault OS price + legacy prices)
 function resolvePlan(priceId: string | null | undefined, traceId: string): { product_key: string; tier: string } {
   if (!priceId) {
-    log(traceId, "NO_PRICE_ID_DEFAULTING_VAULT_OS");
-    return { product_key: VAULT_OS_PLAN.product_key, tier: VAULT_OS_PLAN.tier };
+    throw new Error("A verified Stripe price is required for Full Access");
   }
   const plan = resolvePlanForPrice(priceId);
   if (!plan) {
@@ -311,6 +312,10 @@ async function handleCheckoutCompleted(
   supabase: ReturnType<typeof createClient>
 ) {
   log(traceId, "CHECKOUT_COMPLETED", { sessionId: session.id, mode: session.mode });
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
+    log(traceId, "AWAITING_PAYMENT", { sessionId: session.id });
+    return;
+  }
 
   const email = session.customer_email || session.customer_details?.email;
   if (!email) throw new Error("No email in checkout session");
@@ -328,28 +333,18 @@ async function handleCheckoutCompleted(
     priceId = lineItems.data[0]?.price?.id || null;
   }
 
-  const plan = resolvePlan(priceId || metadata.app_price_id, traceId);
+  resolvePlan(priceId || metadata.app_price_id, traceId);
   const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id || null;
+  if (!subscriptionId) throw new Error("A subscription is required for Full Access");
 
-  const student = await matchOrCreateStudent({
+  await matchOrCreateStudent({
     email,
     stripeCustomerId: customerId,
     internalUserId: metadata.internal_user_id,
     fullName: session.customer_details?.name,
   }, traceId, supabase);
 
-  await upsertAccess({
-    studentId: student.id,
-    authUserId: student.auth_user_id,
-    email: student.email,
-    productKey: plan.product_key,
-    tier: plan.tier,
-    status: "active",
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: subscriptionId,
-    stripeCheckoutSessionId: session.id,
-    stripePriceId: priceId,
-  }, traceId, supabase);
+  await handleSubscriptionUpdated(await stripe.subscriptions.retrieve(subscriptionId), traceId, stripe, supabase);
 }
 
 async function handleInvoicePaid(
@@ -358,71 +353,13 @@ async function handleInvoicePaid(
   stripe: Stripe,
   supabase: ReturnType<typeof createClient>
 ) {
-  log(traceId, "INVOICE_PAID", { invoiceId: invoice.id });
-
-  const email = invoice.customer_email;
-  if (!email) throw new Error("No email in invoice");
-
-  const customerId = typeof invoice.customer === "string" ? invoice.customer : null;
-  const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription : null;
-  const priceId = invoice.lines?.data?.[0]?.price?.id || null;
-
-  const plan = resolvePlan(priceId, traceId);
-
-  const student = await matchOrCreateStudent({
-    email,
-    stripeCustomerId: customerId,
-  }, traceId, supabase);
-
-  await upsertAccess({
-    studentId: student.id,
-    authUserId: student.auth_user_id,
-    email: student.email,
-    productKey: plan.product_key,
-    tier: plan.tier,
-    status: "active",
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: subscriptionId,
-    stripePriceId: priceId,
-  }, traceId, supabase);
+  log(traceId, "INVOICE_RECONCILE", { invoiceId: invoice.id });
+  const subscriptionId = invoiceSubscriptionId(invoice);
+  if (!subscriptionId) return;
+  // A delayed invoice event must not reactivate an already-canceled subscription.
+  await handleSubscriptionUpdated(await stripe.subscriptions.retrieve(subscriptionId), traceId, stripe, supabase);
 }
 
-async function handleInvoicePaymentFailed(
-  invoice: Stripe.Invoice,
-  traceId: string,
-  supabase: ReturnType<typeof createClient>
-) {
-  log(traceId, "INVOICE_PAYMENT_FAILED", { invoiceId: invoice.id });
-
-  const email = invoice.customer_email;
-  if (!email) return;
-
-  const customerId = typeof invoice.customer === "string" ? invoice.customer : null;
-  const priceId = invoice.lines?.data?.[0]?.price?.id || null;
-
-  let plan: { product_key: string; tier: string };
-  try {
-    plan = resolvePlan(priceId, traceId);
-  } catch {
-    plan = { product_key: VAULT_OS_PLAN.product_key, tier: VAULT_OS_PLAN.tier };
-  }
-
-  const student = await matchOrCreateStudent({
-    email,
-    stripeCustomerId: customerId,
-  }, traceId, supabase);
-
-  await upsertAccess({
-    studentId: student.id,
-    authUserId: student.auth_user_id,
-    email: student.email,
-    productKey: plan.product_key,
-    tier: plan.tier,
-    status: "past_due",
-    stripeCustomerId: customerId,
-    stripePriceId: priceId,
-  }, traceId, supabase);
-}
 
 async function handleSubscriptionUpdated(
   subscription: Stripe.Subscription,
@@ -435,6 +372,16 @@ async function handleSubscriptionUpdated(
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
   if (!customerId) throw new Error("No customer on subscription");
 
+  if (subscription.status !== "active") {
+    const originalPlan = resolvePlan(subscription.items?.data?.[0]?.price?.id, traceId);
+    for await (const candidate of stripe.subscriptions.list({ customer: customerId, status: "active", limit: 100 })) {
+      if (resolvePlanForPrice(candidate.items.data[0]?.price?.id)?.product_key === originalPlan.product_key) {
+        subscription = candidate;
+        break;
+      }
+    }
+  }
+
   // Get email from Stripe customer
   const customer = await stripe.customers.retrieve(customerId);
   if (customer.deleted) throw new Error("Customer deleted");
@@ -445,17 +392,7 @@ async function handleSubscriptionUpdated(
   const plan = resolvePlan(priceId, traceId);
 
   // Map Stripe sub status to internal status
-  const statusMap: Record<string, string> = {
-    active: "active",
-    trialing: "trialing",
-    past_due: "past_due",
-    canceled: "canceled",
-    unpaid: "past_due",
-    incomplete: "past_due",
-    incomplete_expired: "canceled",
-    paused: "paused",
-  };
-  const internalStatus = statusMap[subscription.status] || "active";
+  const internalStatus = stripeAccessStatus(subscription.status);
 
   const student = await matchOrCreateStudent({
     email,
@@ -469,42 +406,6 @@ async function handleSubscriptionUpdated(
     productKey: plan.product_key,
     tier: plan.tier,
     status: internalStatus,
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: priceId,
-  }, traceId, supabase);
-}
-
-async function handleSubscriptionDeleted(
-  subscription: Stripe.Subscription,
-  traceId: string,
-  supabase: ReturnType<typeof createClient>
-) {
-  log(traceId, "SUBSCRIPTION_DELETED", { subId: subscription.id });
-
-  const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
-  if (!customerId) return;
-
-  // Find student by stripe_customer_id and revoke access
-  const { data: student } = await supabase.from("students").select("id").eq("stripe_customer_id", customerId).maybeSingle();
-  if (!student) {
-    log(traceId, "NO_STUDENT_FOR_DELETED_SUB", { customerId });
-    return;
-  }
-
-  const priceId = subscription.items?.data?.[0]?.price?.id || null;
-  let plan: { product_key: string; tier: string };
-  try {
-    plan = resolvePlan(priceId, traceId);
-  } catch {
-    plan = { product_key: VAULT_OS_PLAN.product_key, tier: VAULT_OS_PLAN.tier };
-  }
-
-  await upsertAccess({
-    studentId: student.id,
-    productKey: plan.product_key,
-    tier: plan.tier,
-    status: "canceled",
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId,

@@ -1,0 +1,18 @@
+.vault-profile-review { width:100%; }
+.vault-review-heading { margin-bottom:24px; }
+.vault-review-heading>span { font-size:10px; font-weight:600; letter-spacing:2px; color:#8db8ff; }
+.vault-review-heading h2 { font-size:clamp(30px,5vw,42px); line-height:1.08; letter-spacing:-1.5px; font-weight:650; color:#f2f6ff; margin:12px 0; }
+.vault-review-heading p { font-size:15px; line-height:1.5; color:#a7b6cc; }
+.vault-review-identity { display:flex; align-items:center; gap:24px; padding:26px; border:1px solid #8bb6ff26; border-bottom:0; border-radius:26px 26px 0 0; background:radial-gradient(ellipse at 0 0,#357be52b,transparent 75%),linear-gradient(135deg,#141e30,#0e1520); }
+.vault-review-avatar { position:relative; border-radius:50%; padding:5px; flex-shrink:0; background:#0c1421; border:1px solid #83b3ff70; box-shadow:0 0 0 6px #77aaff09,0 10px 25px #0004; }
+.vault-review-avatar:focus-visible { outline:2px solid #a5c8ff; outline-offset:7px; }
+.vault-review-edit { position:absolute; bottom:1px; right:1px; display:grid; place-items:center; width:27px; height:27px; border-radius:50%; border:3px solid #121d2d; background:#377bef; color:white; }
+.vault-review-name { min-width:0; }
+.vault-review-name>span { color:#8db8ff; font-size:9px; letter-spacing:1.5px; font-weight:600; }
+.vault-review-name strong { display:block; font-size:clamp(26px,4vw,34px); line-height:1.15; letter-spacing:-1px; margin:8px 0 6px; overflow-wrap:anywhere; }
+.vault-review-name small { color:#a7b6cc; font-size:14px; overflow-wrap:anywhere; }
+.vault-review-details { display:grid; grid-template-columns:1fr 1.3fr; gap:18px; padding:20px 26px; border:1px solid #8bb6ff26; border-top:1px solid #ffffff0b; border-radius:0 0 26px 26px; background:#0d1522; }
+.vault-review-details>div+div { border-left:1px solid #ffffff12; padding-left:18px; }
+.vault-review-details span { display:block; font-size:9px; letter-spacing:1.3px; color:#8197b6; }
+.vault-review-details strong { display:block; margin-top:7px; font-size:14px; font-weight:550; color:#e1ebff; }
+@media(max-width:480px) { .vault-review-identity { padding:20px 18px; gap:18px; } .vault-review-avatar>div { width:76px; height:76px; } .vault-review-details { padding:18px; gap:12px; } .vault-review-details>div+div { padding-left:12px; } }

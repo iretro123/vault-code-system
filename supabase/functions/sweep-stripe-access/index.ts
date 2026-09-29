@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { grantPaidRole } from "../_shared/vaultAccess.ts";
+import { stripeAccessStatus } from "../_shared/membershipValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,16 +10,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const STATUS_MAP: Record<string, string> = {
-  active: "active",
-  trialing: "trialing",
-  past_due: "past_due",
-  canceled: "canceled",
-  unpaid: "past_due",
-  incomplete: "past_due",
-  incomplete_expired: "canceled",
-  paused: "paused",
-};
 
 interface StudentRow {
   id: string;
@@ -41,6 +32,10 @@ async function downgradeToBasic(
   email: string | null,
 ) {
   if (!authUserId) return;
+
+  const { data: entitled, error: entitlementError } = await admin.rpc("vault_access_for_user", { uid: authUserId });
+  if (entitlementError) throw entitlementError;
+  if (entitled === true) return;
 
   // Staff (owner/operator) must never be touched by an automated sweep.
   const { data: staffRow } = await admin
@@ -82,7 +77,7 @@ async function downgradeToBasic(
     .from("profiles")
     .update({ access_status: "active", updated_at: new Date().toISOString() })
     .eq("user_id", authUserId)
-    .neq("access_status", "banned");
+    .not("access_status", "in", "(banned,revoked)");
 
   console.log("[sweep-stripe-access] downgraded_to_basic", JSON.stringify({ authUserId, email }));
 }
@@ -266,7 +261,7 @@ serve(async (req) => {
       }
 
       const stripeStatus = sub?.status || "canceled";
-      let newStatus = sub ? (STATUS_MAP[stripeStatus] || "canceled") : "canceled";
+      let newStatus = sub ? stripeAccessStatus(stripeStatus) : "canceled";
 
       // 3-day grace: if row has been past_due for longer than graceDays and Stripe is still
       // not active, escalate to canceled (auto-boot).
@@ -307,10 +302,10 @@ serve(async (req) => {
         updated++;
 
         // Subscription is gone → drop to Free Basic instead of blocking the account.
-        if (newStatus === "canceled") {
+        if (newStatus !== "active") {
           await downgradeToBasic(admin, student.auth_user_id, email);
-        } else if (["active", "trialing", "past_due"].includes(newStatus)) {
-          // Still paying (or in grace) → make sure the paid role/profile state matches.
+        } else {
+          // Only active subscriptions qualify; whitelist/native access is separate.
           await grantPaidRole(admin, student.auth_user_id, "active");
         }
 
@@ -413,7 +408,7 @@ serve(async (req) => {
           const list = await stripe.customers.list({ email, limit: 3 });
           for (const c of list.data) {
             const subs = await stripe.subscriptions.list({ customer: c.id, status: "all", limit: 5 });
-            if (subs.data.some((s) => ["active", "trialing", "past_due", "unpaid", "incomplete"].includes(s.status))) {
+            if (subs.data.some((s) => ["active", "trialing", "past_due"].includes(s.status))) {
               stripeOk = true;
               break;
             }

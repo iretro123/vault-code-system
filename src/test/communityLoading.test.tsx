@@ -6,11 +6,11 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'test' }, prof
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     from: () => {
-      const query: any = { select: () => query, eq: () => query, is: () => query, order: () => query, gt: () => query, limit: m.limit };
+      const query = { select: () => query, eq: () => query, is: () => query, order: () => query, gt: () => query, limit: m.limit };
       return query;
     },
     channel: () => {
-      const channel: any = { on: () => channel, subscribe: () => channel };
+      const channel = { on: () => channel, subscribe: () => channel };
       return channel;
     },
     removeChannel: vi.fn(),
@@ -28,8 +28,8 @@ it.each([false, true])('keeps a loaded room visible on tab refresh (empty=%s)', 
   m.limit.mockResolvedValue({ data: rows, error: null });
   const { result, rerender } = renderHook(({ activation }) => useRoomMessages(`stable-${empty}`, activation), { initialProps: { activation: 0 } });
   await waitFor(() => expect(result.current.loading).toBe(false));
-  let resolve!: (value: any) => void;
-  m.limit.mockImplementation(() => new Promise(r => { resolve = r; }));
+  let resolve!: (value: unknown) => void;
+  m.limit.mockImplementation(() => new Promise<unknown>(r => { resolve = r; }));
   rerender({ activation: 1 });
   expect(result.current.loading).toBe(false);
   expect(result.current.messages).toHaveLength(rows.length);

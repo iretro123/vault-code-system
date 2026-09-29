@@ -40,6 +40,7 @@ const ambientBgStyle = {
 };
 
 interface AcademyProfileShape {
+  is_banned?: boolean | null;
   access_status?: string | null;
   profile_completed?: boolean | null;
   onboarding_completed?: boolean | null;
@@ -112,6 +113,18 @@ function AcademyLayoutInner() {
   // 2. No user → send to Welcome landing (first impression on app download)
   if (!user) {
     return <Navigate to="/welcome" replace />;
+  }
+
+  const restrictedProfile = profile as AcademyProfileShape | null;
+  if (restrictedProfile?.is_banned || ["banned", "revoked"].includes(restrictedProfile?.access_status ?? "")) {
+    return <div className="min-h-screen flex items-center justify-center bg-background px-6">
+      <section className="max-w-md text-center space-y-4">
+        <ShieldAlert className="mx-auto h-10 w-10 text-destructive" />
+        <h1 className="text-2xl font-semibold">Account access restricted</h1>
+        <p className="text-muted-foreground">Please contact support about your account. A new subscription will not remove this restriction.</p>
+        <Button variant="outline" onClick={() => void signOut()}>Sign out</Button>
+      </section>
+    </div>;
   }
 
   // 2b. Basic-tier members are locked to the Learn experience inside Academy.

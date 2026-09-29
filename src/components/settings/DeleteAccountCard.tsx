@@ -66,13 +66,15 @@ export function DeleteAccountCard({ autoOpen = false }: DeleteAccountCardProps) 
           </p>
         </div>
       </div>
+      <p className="text-sm text-foreground">Deleting your Vault account does not cancel a subscription. Cancel with your billing provider first if you want to stop future charges.</p>
       <div>
         <p className="text-xs text-foreground mb-1.5">
           Type <span className="font-mono text-destructive font-semibold">DELETE</span> to confirm.
         </p>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <Input
-            className="max-w-[120px] h-8 text-sm font-mono"
+            aria-label="Type DELETE to confirm account deletion"
+            className="max-w-[120px] h-11 text-sm font-mono"
             placeholder="DELETE"
             value={accountDeleteInput}
             onChange={(e) => setAccountDeleteInput(e.target.value.toUpperCase())}
@@ -82,14 +84,14 @@ export function DeleteAccountCard({ autoOpen = false }: DeleteAccountCardProps) 
             variant="destructive"
             disabled={accountDeleteInput !== "DELETE" || deletingAccount}
             onClick={handleDeleteAccount}
-            className="h-8"
+            className="h-11"
           >
             {deletingAccount ? "Deleting..." : "Confirm Delete"}
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 text-xs"
+            className="h-11 text-xs"
             onClick={() => { setShowDeleteGate(false); setAccountDeleteInput(""); }}
           >
             Cancel

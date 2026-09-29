@@ -16,9 +16,15 @@ import Auth from "./pages/Auth";
 import { VaultOSGate } from "./components/VaultOSGate";
 import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
+import { AppOnboarding } from "./components/onboarding/AppOnboarding";
+import { OnboardingDashboardPreview } from "./components/onboarding/OnboardingDashboardPreview";
+import { WebMembershipCheckout } from "./components/academy/WebMembershipCheckout";
+import { ShareWinPreview } from "./components/academy/community/ShareWinPreview";
+import MembershipConfirmation from "./pages/MembershipConfirmation";
 import { AppLoading } from "@/components/AppLoading";
 import { isSharedGuestAccount } from "@/lib/membership";
-import { hasFullAccess, isFreeBasicAllowedPath } from "@/lib/entitlements";
+import { isFreeBasicAllowedPath } from "@/lib/entitlements";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
 
 
 // Lazy-loaded routes — split from main bundle.
@@ -99,10 +105,16 @@ function PushBootstrap() {
  * Deny-by-default: only roles in FULL_ACCESS_ROLES pass through.
  */
 function BasicTierRedirect({ children }: { children: ReactNode }) {
-  const { userRole, loading } = useAuth();
+  const { loading } = useAuth();
+  const access = useStudentAccess();
   const location = useLocation();
   if (loading) return <RouteFallback />;
-  if (hasFullAccess(userRole?.role)) return <>{children}</>;
+  // Preserve checkout returns before stale free-role redirects or index navigation.
+  if (new URLSearchParams(location.search).get("checkout") === "success") {
+    return <MembershipConfirmation />;
+  }
+  if (access.loading) return <RouteFallback />;
+  if (access.hasAccess) return <>{children}</>;
   if (isFreeBasicAllowedPath(location.pathname)) return <>{children}</>;
   return <Navigate to="/academy/learn" replace />;
 }
@@ -113,11 +125,13 @@ function RouteFallback() {
 }
 
 function LaunchRedirect() {
-  const { user, profile, userRole, loading } = useAuth();
+  const { user, loading } = useAuth();
+  const access = useStudentAccess();
 
   if (loading) return <RouteFallback />;
   if (!user) return <Navigate to="/welcome" replace />;
-  if (!hasFullAccess(userRole?.role)) {
+  if (access.loading) return <RouteFallback />;
+  if (!access.hasAccess) {
     return <Navigate to="/academy/community?tab=trade-floor" replace />;
   }
 
@@ -154,6 +168,10 @@ const App = () => (
             <Route path="/reports" element={<BasicTierRedirect><VaultOSGate><Reports /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/settings" element={<BasicTierRedirect><VaultOSGate><Settings /></VaultOSGate></BasicTierRedirect>} />
             <Route path="/welcome" element={<Suspense fallback={<RouteFallback />}><WelcomeRoute /></Suspense>} />
+            {import.meta.env.DEV && <Route path="/__preview/onboarding" element={<AppOnboarding isPreview />} />}
+            {import.meta.env.DEV && <Route path="/__preview/onboarding/home" element={<OnboardingDashboardPreview />} />}
+            {import.meta.env.DEV && <Route path="/__preview/payment" element={<WebMembershipCheckout email="you@example.com" preview />} />}
+            {import.meta.env.DEV && <Route path="/__preview/share-win" element={<ShareWinPreview />} />}
             <Route path="/intro" element={<Suspense fallback={<RouteFallback />}><IntroCarousel /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />

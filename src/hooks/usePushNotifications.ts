@@ -11,12 +11,7 @@ import {
 } from "@/lib/pushPermission";
 
 const HAPTIC_NOTIFICATION_TYPES = new Set([
-  "mention",
-  "rz_message",
-  "live_now",
-  "announcement",
-  "new_module",
-  "motivation",
+  "chat_message",
 ]);
 
 interface PushRegistrationToken {
@@ -64,7 +59,9 @@ export function usePushNotifications() {
       const listeners = await Promise.all<PluginListenerHandle>([
         PushNotifications.addListener("registration", async (token: PushRegistrationToken) => {
           try {
+            if (!active) return;
             const platformKey = await getPlatformKey();
+            if (!active) return;
             const basePlatform = Capacitor.getPlatform();
             await registerTokenForCurrentUser({
               token: token.value,
@@ -79,12 +76,12 @@ export function usePushNotifications() {
         PushNotifications.addListener("pushNotificationActionPerformed", (notification: PushActionPerformedNotification) => {
           const data = notification.notification?.data || {};
           const linkPath = typeof data.link_path === "string" ? data.link_path : "/academy/community";
-          if (linkPath) {
+          if (active && linkPath.startsWith("/academy/") && !linkPath.includes("\\")) {
             window.location.assign(linkPath);
           }
         }),
         PushNotifications.addListener("pushNotificationReceived", (notification: PushReceivedNotification) => {
-          if (notification.data?.type && HAPTIC_NOTIFICATION_TYPES.has(notification.data.type)) {
+          if (active && notification.data?.type && HAPTIC_NOTIFICATION_TYPES.has(notification.data.type)) {
             void hapticStrong();
           }
         }),
@@ -102,8 +99,8 @@ export function usePushNotifications() {
       }
     }
 
-    void setupPush().catch((err) => console.warn("Push listeners unavailable", err));
-    void silentRegisterIfGranted();
+    // The native registration event can arrive immediately; listen first.
+    void setupPush().then(silentRegisterIfGranted).catch((err) => console.warn("Push listeners unavailable", err));
 
     return () => {
       active = false;

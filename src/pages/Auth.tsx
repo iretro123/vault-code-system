@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { isGuestModeEnabled } from "@/lib/featureFlags";
 import { enableGuestMode } from "@/lib/guestMode";
 import { isNativeCapacitorApp } from "@/lib/platform";
+import "./welcome.css";
+import "./auth.css";
 
 const Auth = () => {
   const { toast } = useToast();
@@ -74,7 +76,8 @@ const Auth = () => {
 
     // useAuth's onAuthStateChange handles profile fetch + ban enforcement
     toast({ title: "Welcome back", description: "You have been signed in." });
-    navigate("/academy");
+    navigate(new URLSearchParams(window.location.search).get("resume") === "membership"
+      ? "/academy?checkout=success" : "/academy");
     setLoading(false);
   };
 
@@ -107,7 +110,7 @@ const Auth = () => {
 
   return (
     <div
-      className="academy-main-safe vault-auth h-[100dvh] overflow-y-auto overflow-x-hidden px-4 py-10"
+      className="academy-main-safe vault-entry vault-login"
       style={{
         background: `
           radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
@@ -124,54 +127,62 @@ const Auth = () => {
         paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 1.5rem)",
         paddingLeft: "max(env(safe-area-inset-left, 0px), 1rem)",
         paddingRight: "max(env(safe-area-inset-right, 0px), 1rem)",
-        minHeight: "100dvh",
+        minHeight: "var(--academy-visible-height, 100dvh)",
         boxSizing: "border-box",
       }}
     >
-      <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
-        <AuthBackButton className="absolute left-0 top-4 z-10" />
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-black tracking-tight">
-            <span className="text-foreground">VAULT</span>
-            <span className="text-primary">OS</span>
-          </h1>
-        </div>
+      <div className="vault-entry-shell">
+        <header className="vault-entry-header">
+          <AuthBackButton fallback="/welcome" />
+          <Link to="/welcome" className="vault-login-brand vault-entry-brand" aria-label="Vault OS welcome">VAULT <b>OS</b></Link>
+        </header>
+        <section className="vault-login-content">
+          <div className="vault-entry-title vault-login-title">
+            <span className="vault-login-eyebrow">MEMBER LOGIN</span>
+            <h1>{mode === "forgot" ? "Let's get you back in." : <>Welcome<br/><span>back.</span></>}</h1>
+            <p>{mode === "forgot" ? "We'll send a reset link to your account email." : "Sign in to your Vault account."}</p>
+          </div>
 
         {mode === "forgot" ? (
-          <div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-            <p className="text-center text-sm text-muted-foreground mb-6">
-              Enter your email to receive a reset link
-            </p>
+          <div className="vault-login-card">
 
             <form onSubmit={handleForgotPassword} className="space-y-5">
               {/* Email */}
-              <div className="relative">
+              <div className="vault-login-field">
+                <label htmlFor="reset-email">Email</label>
+                <div className="relative">
                 <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="email"
+                  id="reset-email"
+                  name="email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  inputMode="email"
+                  spellCheck={false}
                   placeholder="Email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setResetError(""); setResetSent(false); }}
                   className="h-12 pl-10 bg-muted/50 border-border/40 rounded-xl text-sm"
                   required
                 />
+                </div>
               </div>
 
               {resetSent && (
-                <div className="flex items-start gap-1.5 text-xs text-emerald-500">
+                <div role="status" className="vault-login-notice">
                   <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                   <span>Password reset email sent. Check your inbox.</span>
                 </div>
               )}
               {resetError && (
-                <div className="flex items-start gap-1.5 text-xs text-destructive">
+                <div role="alert" className="vault-login-notice vault-login-notice--error">
                   <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                   <span>{resetError}</span>
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-12 text-base font-semibold rounded-xl gap-2" disabled={loading || !email.trim()}>
+              <Button type="submit" className="vault-entry-button" disabled={loading || !email.trim()}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Send Reset Link <ArrowRight className="h-4 w-4" /></>}
               </Button>
             </form>
@@ -184,30 +195,39 @@ const Auth = () => {
           </div>
         ) : (
           <>
-            <div className="rounded-2xl border border-border/40 bg-card p-8 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="vault-login-card">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Email */}
-                <div className="relative">
+                <div className="vault-login-field">
+                  <label htmlFor="login-email">Email</label>
+                  <div className="relative">
                   <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     type="email"
-                    placeholder="Email"
+                    id="login-email"
+                    name="email"
+                    placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-12 pl-10 bg-muted/50 border-border/40 rounded-xl text-sm"
                     required
-                    autoComplete="email"
+                    autoComplete="username"
                     inputMode="email"
                     autoCapitalize="none"
                     spellCheck={false}
                   />
+                  </div>
                 </div>
 
                 {/* Password */}
-                <div className="relative">
+                <div className="vault-login-field">
+                  <label htmlFor="login-password">Password</label>
+                  <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
                     type={showPassword ? "text" : "password"}
+                    id="login-password"
+                    name="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -221,13 +241,15 @@ const Auth = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                  </div>
                 </div>
 
                 {/* Remember me + Forgot password */}
-                <div className="flex items-center justify-between">
+                <div className="vault-login-options">
                   <label className="flex items-center gap-2 cursor-pointer select-none group">
                     <input
                       type="checkbox"
@@ -241,10 +263,10 @@ const Auth = () => {
                         } catch { /* ignore */ }
                       }}
                       className="h-4 w-4 rounded border-border/60 bg-muted/50 text-primary focus:ring-1 focus:ring-primary/50 cursor-pointer"
-                      aria-label="Remember me on this device"
+                      aria-label="Remember email on this device"
                     />
                     <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">
-                      Remember me
+                      Remember email
                     </span>
                   </label>
                   <button type="button" onClick={() => setMode("forgot")} className="text-xs text-muted-foreground hover:text-primary transition-colors">
@@ -253,7 +275,7 @@ const Auth = () => {
                 </div>
 
                 {/* Submit */}
-                <Button type="submit" className="w-full h-12 text-base font-semibold rounded-xl gap-2" disabled={loading}>
+                <Button type="submit" className="vault-entry-button" disabled={loading}>
                   {loading ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Signing in…</>
                   ) : (
@@ -263,30 +285,11 @@ const Auth = () => {
               </form>
 
 
-              <Link
-                to={isNativeCapacitorApp() ? "/create-account/full" : "/signup"}
-                className="group mt-4 flex w-full items-center gap-3 rounded-xl border border-border/30 bg-gradient-to-r from-primary/[0.07] via-transparent to-primary/[0.03] p-3 text-left transition-all hover:border-primary/40 hover:from-primary/[0.12] hover:to-primary/[0.06]"
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-                  <UserPlus className="h-4 w-4" strokeWidth={1.5} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-foreground">
-                    First time here?
-                  </span>
-                  <span className="block text-[11px] text-muted-foreground leading-tight">
-                    Create your account to continue
-                  </span>
-                </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-primary/70 transition-transform group-hover:translate-x-0.5" strokeWidth={1.5} />
-              </Link>
             </div>
           </>
         )}
-
-        <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60 pt-8">
-          Powered by Vault Trading Academy
-        </p>
+        </section>
+        <footer className="vault-entry-footer">Vault Trading Academy</footer>
       </div>
     </div>
   );

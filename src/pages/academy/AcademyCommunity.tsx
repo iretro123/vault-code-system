@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { CommunityTradeFloor } from "@/components/academy/community/CommunityTradeFloor";
 import { MarketWatch } from "@/components/academy/community/MarketWatch";
+import { LiveZonesPreview, liveZonesPreviewEnabled } from "@/components/academy/community/LiveZonesPreview";
+import { SpxPulseRoom } from "@/components/academy/community/SpxPulseRoom";
 import { RoomChat } from "@/components/academy/RoomChat";
 import "./academy-community.css";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
@@ -12,11 +14,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, isSharedGuestAccount } from "@/lib/membership";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BellRing, LockKeyhole, Radio, ShieldCheck, MessageCircle, MoreHorizontal } from "lucide-react";
+import { ArrowRight, LockKeyhole, Radio, ShieldCheck, MessageCircle, MoreHorizontal } from "lucide-react";
 
 const TABS = [
   { key: "trade-floor", label: "Chat", roomSlug: "trade-floor" },
   { key: "daily-setups", label: "Signals", roomSlug: "daily-setups" },
+  { key: "pulse", label: "Pulse", roomSlug: null },
   { key: "wins", label: "Wins", roomSlug: "wins-proof" },
 ] as const;
 
@@ -43,13 +46,13 @@ function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
             Unlock live trade signals inside Vault OS.
           </h2>
           <p className="mx-auto mt-3 max-w-sm text-sm font-medium leading-6 text-slate-300">
-            Signals are part of the full member experience. Upgrade to unlock the live setups room, alerts, lessons, tools, and member-only areas.
+            Signals are part of the full member experience. Upgrade to unlock the live setups room, lessons, tools, and member-only areas.
           </p>
 
           <div className="mt-5 grid gap-2 text-left">
             {[
               { icon: Radio, title: "Live setups room", copy: "See the Signals tab when full access is active." },
-              { icon: BellRing, title: "Member alerts", copy: "Get notified when important updates are posted." },
+              { icon: MessageCircle, title: "Member channels", copy: "Follow setups and discussion in member-only areas." },
               { icon: ShieldCheck, title: "Full Vault OS access", copy: "Unlock the paid lessons, tools, live areas, and member sections." },
             ].map(({ icon: Icon, title, copy }) => (
               <div key={title} className="flex gap-3 rounded-2xl border border-white/10 bg-black/18 p-3">
@@ -73,7 +76,7 @@ function SignalsUpgradeGate({ onUpgrade }: { onUpgrade: () => void }) {
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
           <p className="mt-3 text-[11px] font-medium leading-5 text-slate-500">
-            Secure Apple in-app purchase. No web checkout required inside the app.
+            Review the available purchase options for your device on the next screen.
           </p>
         </div>
       </div>
@@ -85,15 +88,16 @@ const AcademyCommunity = () => {
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabKey>(() => {
-    if (typeof window !== "undefined") {
-      const queryTab = new URLSearchParams(window.location.search).get("tab");
-      if (isTabKey(queryTab)) return queryTab;
-    }
+  const zonesOpen = liveZonesPreviewEnabled && searchParams.get("preview") === "live-zones";
+  const pulseOpen = liveZonesPreviewEnabled && searchParams.get("preview") === "spx500-pulse";
+  const [savedTab] = useState<TabKey>(() => {
     let saved: string | null = null;
     try { saved = localStorage.getItem("vault_community_tab"); } catch { /* Storage is optional. */ }
     return isTabKey(saved) ? saved : "trade-floor";
   });
+  const queryTab = searchParams.get("tab");
+  // The URL is the single source of truth, including deferred router updates.
+  const activeTab: TabKey = isTabKey(queryTab) ? queryTab : queryTab === "calendar" ? "trade-floor" : savedTab;
   const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
   const canPostRestricted = isCEO || isAdmin || isOperator;
   const { session, user, profile, signOut, refetchProfile } = useAuth();
@@ -114,12 +118,11 @@ const AcademyCommunity = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const activeRoomSlug = activeTab === "daily-setups" && (tierLoading || shouldGateSignals)
+  const activeRoomSlug = (activeTab === "daily-setups" || activeTab === "pulse") && (tierLoading || shouldGateSignals)
     ? null : TABS.find((t) => t.key === activeTab)?.roomSlug ?? null;
   const { counts } = useUnreadCounts(activeRoomSlug, userId);
 
   const handleTabChange = (tab: TabKey) => {
-    setActiveTab(tab);
     setSearchParams((previous) => { const next = new URLSearchParams(previous); next.set("tab", tab); return next; }, { replace: true });
     try { localStorage.setItem("vault_community_tab", tab); } catch { /* Storage is optional. */ }
   };
@@ -127,15 +130,13 @@ const AcademyCommunity = () => {
   useEffect(() => {
     const queryTab = searchParams.get("tab");
     if (queryTab === "calendar") {
-      setActiveTab("trade-floor");
       setSearchParams(previous => { const next = new URLSearchParams(previous); next.set("tab", "trade-floor"); return next; }, { replace: true });
       try { localStorage.setItem("vault_community_tab", "trade-floor"); } catch { /* Storage is optional. */ }
       return;
     }
-    if (!isTabKey(queryTab) || queryTab === activeTab) return;
-    setActiveTab(queryTab);
+    if (!isTabKey(queryTab)) return;
     try { localStorage.setItem("vault_community_tab", queryTab); } catch { /* Storage is optional. */ }
-  }, [searchParams, activeTab, setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
   const handleSignalsUpgrade = async () => {
     if (sharedGuest) {
@@ -148,6 +149,7 @@ const AcademyCommunity = () => {
 
   return (
     <>
+      {zonesOpen ? <LiveZonesPreview onBack={() => setSearchParams(previous => { const next = new URLSearchParams(previous); next.delete("preview"); return next; })} /> : <>
       <div className="vault-community flex flex-col h-full overflow-hidden bg-background">
         <div className="flex flex-col flex-1 m-2 md:m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
           <div className="community-heading">
@@ -156,9 +158,10 @@ const AcademyCommunity = () => {
           </div>
 
           <div className="shrink-0 px-3 md:px-4 pt-1">
+            {liveZonesPreviewEnabled && <button className="my-2 flex min-h-11 items-center gap-2 rounded-lg border border-sky-300/20 bg-sky-300/5 px-3 text-sm text-sky-200" onClick={() => setSearchParams(previous => { const next = new URLSearchParams(previous); next.set("preview", "live-zones"); return next; })}><Radio size={17}/> Live Zones <span className="text-xs text-slate-400">Local test</span></button>}
             <div className="community-room-tabs flex w-full items-center justify-center gap-0 border-b border-white/[0.06]">
               {TABS.map((tab) => {
-                const count = counts[tab.roomSlug] || 0;
+                const count = tab.roomSlug ? counts[tab.roomSlug] || 0 : 0;
                 const badge = formatBadge(count);
                 return (
                   <button
@@ -189,11 +192,14 @@ const AcademyCommunity = () => {
               <CommunityTradeFloor onSwitchTab={handleTabChange} active={activeTab === "trade-floor"} />
             </div>
             <div className={cn("absolute inset-0", activeTab === "daily-setups" ? "block" : "hidden")}>
-              {shouldGateSignals ? (
+              {tierLoading ? <div className="pulse-empty" role="status">Checking your membership…</div> : shouldGateSignals ? (
                 <SignalsUpgradeGate onUpgrade={handleSignalsUpgrade} />
-              ) : (
+              ) : pulseOpen ? <SpxPulseRoom source="local" active={activeTab === "daily-setups"}/> : (
                 <RoomChat roomSlug="daily-setups" canPost={canPostRestricted} isAnnouncements={false} active={activeTab === "daily-setups"} compact />
               )}
+            </div>
+            <div className={cn("absolute inset-0", activeTab === "pulse" ? "block" : "hidden")}>
+              {tierLoading ? <div className="pulse-empty" role="status">Checking your membership…</div> : shouldGateSignals ? <SignalsUpgradeGate onUpgrade={handleSignalsUpgrade}/> : <SpxPulseRoom active={activeTab === "pulse"}/>}
             </div>
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />
@@ -201,6 +207,7 @@ const AcademyCommunity = () => {
           </div>
         </div>
       </div>
+      </>}
     </>
   );
 };

@@ -1,0 +1,111 @@
+//@version=5
+indicator("Vault Bitcoin Zones TEST", overlay=true, max_boxes_count=20)
+// Isolated adaptation of the user's pivot/BOS + last opposing candle zone logic.
+// No orders, no buy/sell markers. New zones and breaks confirmed at candle close.
+pivotLen = input.int(2, "Pivot length", minval=2, maxval=10)
+scanBack = input.int(20, "Opposing candle scan", minval=2, maxval=50)
+useChartFilter = input.bool(true, "Use chart 200 EMA filter")
+useHTF = input.bool(true, "Use confirmed 15m bias")
+emit = input.bool(false, "Enable TEST webhook events")
+ema200 = ta.ema(close, 200)
+htfClose = request.security(syminfo.tickerid, "15", close[1], lookahead=barmerge.lookahead_on)
+htfEMA = request.security(syminfo.tickerid, "15", ta.ema(close, 200)[1], lookahead=barmerge.lookahead_on)
+plot(ema200, "200 EMA", color=color.orange)
+chartOK = syminfo.tickerid == "COINBASE:BTCUSD" and (timeframe.period == "5" or timeframe.period == "15")
+longOK = (not useChartFilter or close > ema200) and (not useHTF or htfClose > htfEMA)
+shortOK = (not useChartFilter or close < ema200) and (not useHTF or htfClose < htfEMA)
+f_trend(bool demand) =>
+    na(ema200) or na(htfEMA) ? "unknown" : (demand ? close > ema200 and htfClose > htfEMA : close < ema200 and htfClose < htfEMA) ? "aligned" : "countertrend"
+f_event(string zid, string kind, bool demand, float bot, float top) =>
+    if emit and chartOK and barstate.isrealtime
+        string eid = zid + ":" + kind + ":" + str.tostring(time)
+        string message = '{"id":"' + eid + '","zoneId":"' + zid + '","symbol":"COINBASE:BTCUSD","timeframe":' + timeframe.period + ',"kind":"' + kind + '","side":"' + (demand ? "demand" : "supply") + '","lower":' + str.tostring(bot, format.mintick) + ',"upper":' + str.tostring(top, format.mintick) + ',"price":' + str.tostring(close, format.mintick) + ',"at":' + str.tostring(timenow) + ',"confirmed":' + (barstate.isconfirmed ? "true" : "false") + ',"trend":"' + f_trend(demand) + '"}'
+        alert(message, alert.freq_all)
+f_index(bool demand) =>
+    int found = na
+    for i = 1 to scanBack
+        if demand ? close[i] < open[i] : close[i] > open[i]
+            found := i
+            break
+    found
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow(low, pivotLen, pivotLen)
+var float pivotHigh = na
+var float pivotLow = na
+var float brokenHigh = na
+var float brokenLow = na
+if not na(ph)
+    pivotHigh := ph
+if not na(pl)
+    pivotLow := pl
+bullBos = not na(pivotHigh) and high > pivotHigh and (na(brokenHigh) or brokenHigh != pivotHigh)
+bearBos = not na(pivotLow) and low < pivotLow and (na(brokenLow) or brokenLow != pivotLow)
+var box demandBox = na
+var box supplyBox = na
+var string demandId = ""
+var string supplyId = ""
+varip string announcedD = ""
+varip string announcedS = ""
+varip bool touchedD = false
+varip bool touchedS = false
+varip bool heldD = false
+varip bool heldS = false
+varip bool insideD = false
+varip bool insideS = false
+if barstate.isconfirmed
+    if bullBos
+        brokenHigh := pivotHigh
+        int idx = f_index(true)
+        if longOK and not na(idx)
+            box.delete(demandBox)
+            demandBox := box.new(bar_index-idx, high[idx], bar_index, low[idx], extend=extend.right, border_color=color.lime, bgcolor=color.new(color.lime, 82))
+            demandId := "btc:" + timeframe.period + ":d:" + str.tostring(time)
+    if bearBos
+        brokenLow := pivotLow
+        int idx = f_index(false)
+        if shortOK and not na(idx)
+            box.delete(supplyBox)
+            supplyBox := box.new(bar_index-idx, high[idx], bar_index, low[idx], extend=extend.right, border_color=color.red, bgcolor=color.new(color.red, 82))
+            supplyId := "btc:" + timeframe.period + ":s:" + str.tostring(time)
+if not na(demandBox)
+    float bot = box.get_bottom(demandBox)
+    float top = box.get_top(demandBox)
+    if barstate.isrealtime and demandId != announcedD
+        f_event(demandId, "created", true, bot, top)
+        announcedD := demandId
+        touchedD := false
+        heldD := false
+        insideD := false
+    bool inside = close >= bot and close <= top
+    if barstate.isrealtime and inside and not insideD
+        f_event(demandId, "entered", true, bot, top)
+        touchedD := true
+    insideD := inside
+    if barstate.isconfirmed and close < bot
+        f_event(demandId, "broken", true, bot, top)
+        box.delete(demandBox)
+        demandBox := na
+    else if barstate.isconfirmed and touchedD and not heldD and close >= bot
+        f_event(demandId, "holding", true, bot, top)
+        heldD := true
+if not na(supplyBox)
+    float bot = box.get_bottom(supplyBox)
+    float top = box.get_top(supplyBox)
+    if barstate.isrealtime and supplyId != announcedS
+        f_event(supplyId, "created", false, bot, top)
+        announcedS := supplyId
+        touchedS := false
+        heldS := false
+        insideS := false
+    bool inside = close >= bot and close <= top
+    if barstate.isrealtime and inside and not insideS
+        f_event(supplyId, "entered", false, bot, top)
+        touchedS := true
+    insideS := inside
+    if barstate.isconfirmed and close > top
+        f_event(supplyId, "broken", false, bot, top)
+        box.delete(supplyBox)
+        supplyBox := na
+    else if barstate.isconfirmed and touchedS and not heldS and close <= top
+        f_event(supplyId, "holding", false, bot, top)
+        heldS := true

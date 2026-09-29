@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,16 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { OnboardingProgressBar, OnboardingStep } from "./OnboardingStep";
 import { VaultTourCarousel } from "./VaultTourCarousel";
+import { VaultProductPreview } from "./VaultProductPreview";
+import { VaultSocialInvite } from "./VaultSocialInvite";
+import { VaultProfileReview } from "./VaultProfileReview";
+import { VaultArrival } from "./VaultArrival";
+import "./vault-alert-setup.css";
 import { AVATAR_ICONS } from "@/lib/avatarIcons";
 import { ChatAvatar } from "@/lib/chatAvatars";
+import { VAULT_AVATARS } from "@/lib/vaultAvatars";
+import { requestPushPermission, isNativePushPlatform } from "@/lib/pushPermission";
+import "./app-onboarding.css";
 import {
   Loader2,
   ChevronRight,
@@ -22,12 +30,17 @@ import {
   Sparkles,
   Camera,
   Upload,
+  ArrowLeft,
+  LockKeyhole,
+  MessageCircle,
+  Radio,
 } from "lucide-react";
 
 const AVATAR_COLORS = [
   "hsl(220, 70%, 55%)",
-  "hsl(260, 65%, 55%)",
-  "hsl(340, 65%, 55%)",
+  "hsl(325, 90%, 65%)",
+  "hsl(205, 95%, 70%)",
+  "hsl(340, 85%, 78%)",
   "hsl(160, 60%, 45%)",
   "hsl(30, 80%, 55%)",
   "hsl(190, 70%, 50%)",
@@ -49,18 +62,18 @@ const EXPERIENCE_OPTIONS: {
 }[] = [
   {
     value: "beginner",
-    label: "Beginner",
-    desc: "New to trading or under 6 months of experience.",
+    label: "I'm starting fresh",
+    desc: "Help me understand the basics, one step at a time.",
   },
   {
     value: "intermediate",
-    label: "Intermediate",
-    desc: "1–3 years. You have a strategy but need consistency.",
+    label: "I've started trading",
+    desc: "I know the basics. I want a more consistent process.",
   },
   {
     value: "advanced",
-    label: "Advanced",
-    desc: "3+ years. You're refining your edge and scaling.",
+    label: "I have a routine",
+    desc: "I'm here to refine my decisions and review my execution.",
   },
 ];
 
@@ -75,11 +88,21 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
   const navigate = useNavigate();
   const { user, profile, refetchProfile } = useAuth();
   const [step, setStep] = useState(0);
+  const stageRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    stageRef.current?.scrollTo({ top: 0, behavior: "instant" });
+    const heading = stageRef.current?.querySelector<HTMLElement>(".onboarding-step h1, .onboarding-step h2");
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus({ preventScroll: true });
+  }, [step]);
   const profileData = profile as { first_name?: string; last_name?: string } | null | undefined;
 
   // Step 1 — Identity
-  const [firstName, setFirstName] = useState(profileData?.first_name || "");
-  const [lastName, setLastName] = useState(profileData?.last_name || "");
+  const [fullName, setFullName] = useState(
+    typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name :
+      [profileData?.first_name, profileData?.last_name].filter(Boolean).join(" ")
+  );
+  const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const detectedTz = (() => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -91,6 +114,8 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
   // Step 2 — Avatar
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [selectedIcon, setSelectedIcon] = useState<string | null>(null);
+  const [selectedLegend, setSelectedLegend] = useState<string | null>(null);
+  const [avatarTab, setAvatarTab] = useState<"characters" | "emblems">("characters");
   const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -103,11 +128,18 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
   // Final
   const [submitting, setSubmitting] = useState(false);
   const [activated, setActivated] = useState(false);
-  const [dismissing, setDismissing] = useState(false);
+  const [notificationBusy, setNotificationBusy] = useState(false);
 
   const handleIconSelect = (iconId: string) => {
     setSelectedIcon(iconId);
+    setSelectedLegend(null);
     setAvatarUrl(`icon:${iconId}|${selectedColor}`);
+  };
+
+  const handleLegendSelect = (id: string) => {
+    setSelectedLegend(id);
+    setSelectedIcon(null);
+    setAvatarUrl(`character:${id}`);
   };
 
   const handleColorSelect = (color: string) => {
@@ -131,6 +163,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
       const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
       setAvatarUrl(urlData.publicUrl);
       setSelectedIcon(null);
+      setSelectedLegend(null);
     } catch (err) {
       console.error("Avatar upload failed:", err);
     } finally {
@@ -138,46 +171,70 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
     }
   };
 
-  const next = () => setStep((s) => s + 1);
+  const next = () => setStep((s) => Math.min(7, s + 1));
+  const previous = () => setStep((s) => Math.max(0, s - 1));
+
+  const handleNotifications = async () => {
+    if (isPreview) { next(); return; }
+    setNotificationBusy(true);
+    try {
+      if (isNativePushPlatform()) {
+        await requestPushPermission();
+      } else if ("Notification" in window) {
+        await Notification.requestPermission();
+      }
+    } finally {
+      setNotificationBusy(false);
+      next();
+    }
+  };
 
   const handleDismiss = useCallback(async () => {
     if (isPreview) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("preview-onboarding");
-      window.history.replaceState({}, "", url.toString());
-      window.location.reload();
+      navigate(import.meta.env.DEV && window.location.pathname.startsWith("/__preview/")
+        ? "/__preview/onboarding/home" : "/academy/home", { replace: true });
       return;
     }
-    setDismissing(true);
     await refetchProfile();
-    // Safety net: if layout didn't swap away after 2s, force reload
+    navigate("/academy/home", { replace: true });
+    // Safety net: if the auth context does not swap the layout, reload once.
     setTimeout(() => {
-      window.location.href = "/academy";
+      if (window.location.pathname !== "/academy/home") {
+        window.location.href = "/academy/home";
+      }
     }, 2000);
-  }, [isPreview, refetchProfile]);
+  }, [isPreview, navigate, refetchProfile]);
 
   const handleActivate = useCallback(async () => {
-    if (!user) return;
     if (isPreview) {
       setActivated(true);
       return;
     }
+    if (!user) return;
     setSubmitting(true);
     try {
-      const displayName = [firstName, lastName].filter(Boolean).join(" ") || "Trader";
+      if (!fullName.trim() || !displayName.trim()) {
+        toast.error("Please enter your full name and display name.");
+        setStep(1);
+        return;
+      }
+      const { error: nameError } = await supabase.auth.updateUser({
+        data: { full_name: fullName.trim() },
+      });
+      if (nameError) throw nameError;
       const roleLevel = experience || "beginner";
 
       const { error: updateErr } = await supabase
         .from("profiles")
         .update({
-          display_name: displayName,
+          display_name: displayName.trim(),
           timezone: detectedTz,
           role_level: roleLevel,
           academy_experience: roleLevel,
           trading_goal: goal || null,
           profile_completed: true,
           onboarding_completed: true,
-          avatar_url: avatarUrl || null,
+          avatar_url: avatarUrl || "initials:hsl(217, 91%, 60%)",
         })
         .eq("user_id", user.id);
 
@@ -191,58 +248,45 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
         );
 
       setActivated(true);
-
-      // Auto-advance after 1.5s
-      setTimeout(async () => {
-        await refetchProfile();
-      }, 1500);
     } catch (e) {
       console.error("Onboarding activation failed:", e);
       toast.error("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
-  }, [user, firstName, lastName, experience, goal, avatarUrl, detectedTz, refetchProfile, isPreview]);
+  }, [user, fullName, displayName, experience, goal, avatarUrl, detectedTz, isPreview]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-background overflow-y-auto">
-      {/* Ambient background */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        aria-hidden="true"
-        style={{
-          background: [
-            "radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%)",
-            "radial-gradient(ellipse 50% 50% at 15% 10%, rgba(56,189,248,0.10) 0%, transparent 70%)",
-            "radial-gradient(ellipse 45% 55% at 85% 45%, rgba(59,130,246,0.08) 0%, transparent 70%)",
-            "linear-gradient(170deg, hsl(220,25%,5%) 0%, hsl(216,30%,6%) 40%, hsl(222,35%,4%) 100%)",
-          ].join(", "),
-        }}
-      />
-
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center py-10 min-h-[100dvh]">
+    <main className="app-onboarding">
+      <aside className="onboarding-rail" aria-label="Vault OS setup overview">
+        <div className="onboarding-brand"><span className="onboarding-brand-mark"><Sparkles /></span><span>Vault OS</span></div>
+        <div className="onboarding-rail-copy">
+          <span>Personal setup</span>
+          <h2>A calmer way to get started.</h2>
+          <p>We will personalize your experience, show you where everything lives, and give you a clear first move.</p>
+          <div className="onboarding-rail-list"><div><span>1</span>Build your profile</div><div><span>2</span>Learn the navigation</div><div><span>3</span>Enter with a game plan</div></div>
+        </div>
+        <div className="onboarding-secure"><LockKeyhole /> Saved securely to your account</div>
+      </aside>
+      <div className="onboarding-stage" ref={stageRef}>
+        <div className="onboarding-stage-inner">
+        <div className="ob-brand-header"><span>VAULT <b>OS</b></span></div>
         {step > 0 && step < 7 && <OnboardingProgressBar current={step} />}
+        {step > 0 && !activated && <button type="button" className="onboarding-back" onClick={previous}><ArrowLeft className="h-4 w-4" /> Back</button>}
 
         {/* Step 0 — Welcome */}
         <OnboardingStep active={step === 0}>
-          <div className="flex flex-col items-center gap-8 py-12">
-            <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-primary/30 to-primary/5 border border-primary/20 flex items-center justify-center shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
-              <Sparkles className="h-12 w-12 text-primary" strokeWidth={1.5} />
+          <div className="onboarding-welcome">
+            <div>
+              <h1 className="onboarding-title">A sharper start.<br /><span>A space that's yours.</span></h1>
+              <p className="onboarding-lead">Your education, your community, your process. Together in Vault.</p>
             </div>
-            <div className="text-center space-y-3">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                Welcome to Vault Academy
-              </h1>
-              <p className="text-base text-muted-foreground max-w-xs leading-relaxed">
-                Your premium trading operating system. Let's set up your vault in
-                under 2 minutes.
-              </p>
-            </div>
+            <div className="ob-welcome-visual"><VaultProductPreview/></div>
             <Button
               onClick={next}
-              className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-4"
+              className="onboarding-primary-action"
             >
-              Let's Set Up Your Vault
+              Personalize my Vault
               <ChevronRight className="h-5 w-5 ml-1" />
             </Button>
           </div>
@@ -250,51 +294,51 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
         {/* Step 1 — Identity */}
         <OnboardingStep active={step === 1}>
-          <div className="flex flex-col gap-6 w-full py-4">
-            <div className="text-center space-y-2">
+          <div className="onboarding-form-card flex flex-col gap-6 w-full py-4">
+            <div className="onboarding-form-title">
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                Your Identity
+                What should we call you?
               </h2>
               <p className="text-sm text-muted-foreground">
-                How should we address you?
+                Your display name is how members see you.
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  First Name
+                <label htmlFor="onboarding-full-name" className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                  Full name
                 </label>
                 <Input
-                  placeholder="First name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  id="onboarding-full-name"
+                  autoComplete="name"
+                  maxLength={100}
+                  placeholder="Your full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   className="h-12 rounded-xl bg-white/[0.04] border-white/[0.08] text-base"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  Last Name
+                <label htmlFor="onboarding-display-name" className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
+                  Display name
                 </label>
                 <Input
-                  placeholder="Last name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  id="onboarding-display-name"
+                  autoComplete="nickname"
+                  maxLength={40}
+                  placeholder="What should members call you?"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
                   className="h-12 rounded-xl bg-white/[0.04] border-white/[0.08] text-base"
                 />
-              </div>
-              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">Timezone</span>
-                <span className="text-sm text-foreground font-medium ml-auto">
-                  {detectedTz.replace(/_/g, " ")}
-                </span>
               </div>
             </div>
 
             <Button
               onClick={next}
-              disabled={!firstName.trim()}
-              className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
+              disabled={!fullName.trim() || !displayName.trim()}
+              className="onboarding-primary-action"
             >
               Continue
             </Button>
@@ -303,28 +347,56 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
         {/* Step 2 — Avatar */}
         <OnboardingStep active={step === 2}>
-          <div className="flex flex-col gap-6 w-full py-4">
-            <div className="text-center space-y-2">
+          <div className="onboarding-form-card vault-avatar-step flex flex-col gap-6 w-full py-4">
+            <div className="onboarding-form-title">
+              <span className="onboarding-eyebrow">Your presence</span>
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
                 Choose Your Avatar
               </h2>
               <p className="text-sm text-muted-foreground">
-                Pick an icon or upload a photo. This is how others see you.
+                A character, a signature emblem, or your own photo.
               </p>
             </div>
 
             {/* Preview */}
-            <div className="flex justify-center">
+            <div className="vault-player-preview" aria-live="polite">
               <div className="h-20 w-20">
                 {avatarUrl ? (
-                  <ChatAvatar avatarUrl={avatarUrl} userName={firstName || "T"} size="h-20 w-20 text-2xl" />
+                  <ChatAvatar avatarUrl={avatarUrl} userName={displayName || "T"} size="h-20 w-20 text-2xl" />
                 ) : (
                   <div className="h-20 w-20 rounded-full bg-white/[0.06] border-2 border-dashed border-white/[0.15] flex items-center justify-center">
                     <Camera className="h-8 w-8 text-muted-foreground" />
                   </div>
                 )}
               </div>
+              <div>
+                <span className="onboarding-eyebrow">Your Vault profile</span>
+                <strong>{displayName || "New player"}</strong>
+                <small>{VAULT_AVATARS.find((avatar) => avatar.id === selectedLegend)?.name || "Choose your signature look"}</small>
+              </div>
             </div>
+
+            <div className="vault-avatar-filters" role="group" aria-label="Avatar style">
+              <button type="button" aria-pressed={avatarTab === "characters"} onClick={() => setAvatarTab("characters")}>Characters</button>
+              <button type="button" aria-pressed={avatarTab === "emblems"} onClick={() => setAvatarTab("emblems")}>Emblems</button>
+            </div>
+            {avatarTab === "characters" && <div>
+              <div className="vault-legends-heading">
+                <div><span>Avatar collection</span><small>A little personality goes a long way.</small></div>
+                <strong>Vault Originals</strong>
+              </div>
+              <div className="vault-legends-grid">
+                {VAULT_AVATARS.map((legend) => (
+                  <button key={legend.id} type="button" onClick={() => handleLegendSelect(legend.id)} aria-pressed={selectedLegend === legend.id} className={cn("vault-legend-card", selectedLegend === legend.id && "is-selected")}>
+                    <img src={legend.image} alt="" />
+                    <div><strong>{legend.name}</strong><small>{legend.personality}</small></div>
+                    {selectedLegend === legend.id && <Check className="vault-legend-check" />}
+                  </button>
+                ))}
+              </div>
+            </div>}
+
+            {avatarTab === "emblems" && <div className="vault-emblem-panel">
 
             {/* Color picker */}
             <div>
@@ -335,6 +407,8 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
                 {AVATAR_COLORS.map((color) => (
                   <button
                     key={color}
+                    aria-label={`Emblem color ${AVATAR_COLORS.indexOf(color) + 1}`}
+                    aria-pressed={selectedColor === color}
                     onClick={() => handleColorSelect(color)}
                     className={cn(
                       "h-8 w-8 rounded-full transition-all",
@@ -351,24 +425,28 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
                 Icon
               </label>
-              <div className="grid grid-cols-5 gap-2">
-                {AVATAR_ICONS.map((icon) => (
+              <div className="vault-emblem-grid">
+                {["vault-mark", "crossed-swords", "ronin-mask", "winged-rank", "sword", "crown", "lightning", "controller", "fox-mask", "pixel-ghost", "battle-axe", "winged-blade"].map((id) => AVATAR_ICONS.find((icon) => icon.id === id)!).map((icon) => (
                   <button
                     key={icon.id}
+                    aria-label={icon.id.replace(/-/g, " ")}
+                    aria-pressed={selectedIcon === icon.id}
                     onClick={() => handleIconSelect(icon.id)}
                     className={cn(
-                      "h-14 w-14 rounded-xl flex items-center justify-center p-2.5 transition-all",
+                      "vault-emblem-tile rounded-xl flex items-center justify-center transition-all",
                       selectedIcon === icon.id
                         ? "bg-primary/20 border-2 border-primary/50 scale-105"
                         : "bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]"
                     )}
                     style={{ color: selectedColor }}
                   >
-                    {icon.svg}
+                    <span className="vault-emblem-art">{icon.svg}</span>
+                    <small>{icon.id.replace(/-/g, " ")}</small>
                   </button>
                 ))}
               </div>
             </div>
+            </div>}
 
             {/* Upload option */}
             <label className="w-full flex items-center justify-center gap-2 h-12 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] transition-colors cursor-pointer">
@@ -389,38 +467,41 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
             <Button
               onClick={next}
-              disabled={!avatarUrl}
-              className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
+              className="onboarding-primary-action"
             >
-              Continue
+              {avatarUrl ? "Use this avatar" : "Continue with my initials"}
             </Button>
           </div>
         </OnboardingStep>
 
         {/* Step 3 — Experience */}
         <OnboardingStep active={step === 3}>
-          <div className="flex flex-col gap-6 w-full py-4">
-            <div className="text-center space-y-2">
+          <div className="onboarding-form-card flex flex-col gap-6 w-full py-4">
+            <div className="onboarding-form-title">
+              <span className="onboarding-eyebrow">Set your starting point</span>
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                Your Experience
+                Every trader starts somewhere.
               </h2>
               <p className="text-sm text-muted-foreground">
-                Where are you on your trading journey?
+                No pressure. Pick what sounds like you today.
               </p>
             </div>
 
             <div className="space-y-3">
-              {EXPERIENCE_OPTIONS.map((opt) => (
+              {EXPERIENCE_OPTIONS.map((opt, index) => (
                 <button
                   key={opt.value}
                   onClick={() => setExperience(opt.value)}
+                  aria-pressed={experience === opt.value}
+                  data-tone={index}
                   className={cn(
-                    "w-full text-left rounded-2xl border p-5 transition-all duration-200",
+                    "vault-choice w-full text-left rounded-2xl border p-5 transition-all duration-200",
                     experience === opt.value
                       ? "border-primary/40 bg-primary/[0.08] shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
                       : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
                   )}
                 >
+                  <span className="vault-choice-level" aria-hidden="true">{[0,1,2].map(level=><i key={level} className={level<=index?"is-lit":""} style={{height:14+level*9}}/>)}</span>
                   <p className="text-base font-semibold text-foreground">
                     {opt.label}
                   </p>
@@ -434,7 +515,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
             <Button
               onClick={next}
               disabled={!experience}
-              className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
+              className="onboarding-primary-action"
             >
               Continue
             </Button>
@@ -450,25 +531,28 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
         {/* Step 5 — Trading Goal */}
         <OnboardingStep active={step === 5}>
-          <div className="flex flex-col gap-6 w-full py-4">
-            <div className="text-center space-y-2">
+          <div className="onboarding-form-card flex flex-col gap-6 w-full py-4">
+            <div className="onboarding-form-title">
+              <span className="onboarding-eyebrow">Personalize your path</span>
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                Your #1 Goal
+                What would progress look like?
               </h2>
               <p className="text-sm text-muted-foreground">
-                What matters most to you right now?
+                Choose one focus. You can always change it later.
               </p>
             </div>
 
             <div className="space-y-3">
-              {GOAL_OPTIONS.map((opt) => {
+              {GOAL_OPTIONS.map((opt, index) => {
                 const GoalIcon = opt.icon;
                 return (
                   <button
                     key={opt.value}
                     onClick={() => setGoal(opt.value)}
+                    aria-pressed={goal === opt.value}
+                    data-tone={index}
                     className={cn(
-                      "w-full flex items-center gap-4 rounded-2xl border p-5 transition-all duration-200",
+                      "vault-goal-choice w-full flex items-center gap-4 rounded-2xl border p-5 transition-all duration-200",
                       goal === opt.value
                         ? "border-primary/40 bg-primary/[0.08] shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
                         : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
@@ -477,9 +561,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
                     <div className="h-11 w-11 rounded-xl bg-white/[0.06] flex items-center justify-center shrink-0">
                       <GoalIcon className="h-5 w-5 text-foreground" />
                     </div>
-                    <span className="text-base font-semibold text-foreground">
-                      {opt.label}
-                    </span>
+                    <span className="text-base font-semibold text-foreground">{opt.label}<small>{["Create a routine I can stick to.", "Understand my downside before I enter.", "Learn which setups fit my process.", "Reflect, learn, and keep showing up."][index]}</small></span>
                   </button>
                 );
               })}
@@ -488,7 +570,7 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
             <Button
               onClick={next}
               disabled={!goal}
-              className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
+              className="onboarding-primary-action"
             >
               Continue
             </Button>
@@ -497,34 +579,36 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
         {/* Step 6 — Notifications */}
         <OnboardingStep active={step === 6}>
-          <div className="flex flex-col items-center gap-8 py-12">
-            <div className="h-20 w-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <Bell className="h-10 w-10 text-foreground" strokeWidth={1.5} />
+          <div className="vault-alert-setup">
+            <div className="onboarding-form-title w-full">
+              <h2>Be there.<br/><span>When it matters.</span></h2>
+              <p>Less checking the app.<br/>More being part of the room.</p>
             </div>
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                Stay in the Loop
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-                Get notified about live calls, coach answers, and important
-                updates. You can change this anytime.
-              </p>
+            <div className="vault-alert-scene" aria-label="Example notification preview">
+              <div className="vault-alert-clock" aria-hidden="true"><span>MONDAY MORNING</span><strong>9:14</strong><small>One minute before the room opens.</small></div>
+              <div className="vault-alert-toast">
+                <span className="vault-alert-app-icon"><Radio size={22}/></span>
+                <div className="vault-alert-toast-copy"><div><span>VAULT OS</span><small>now</small></div><strong>Your trading room is opening.</strong><p>Bring your questions. Join RZ live.</p></div>
+              </div>
+              <span className="vault-alert-preview-label">NOTIFICATION PREVIEW</span>
             </div>
-            <div className="w-full space-y-3 mt-2">
+            <div className="vault-alert-benefits">
+              <div><Radio/><strong>Live rooms</strong><span>Be there for the open.</span></div>
+              <div><MessageCircle/><strong>Replies</strong><span>Keep the conversation going.</span></div>
+              <div><Bell/><strong>Key updates</strong><span>Stay connected to Vault.</span></div>
+            </div>
+            <div className="vault-alert-actions">
               <Button
-                onClick={() => {
-                  if ("Notification" in window) {
-                    Notification.requestPermission();
-                  }
-                  next();
-                }}
-                className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl"
+                onClick={handleNotifications}
+                disabled={notificationBusy}
+                className="onboarding-primary-action"
               >
-                Enable Notifications
+                {notificationBusy ? <><Loader2 className="h-5 w-5 animate-spin"/>Enabling alerts...</> : <>Enable notifications<ChevronRight size={18}/></>}
               </Button>
               <button
                 onClick={next}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+                disabled={notificationBusy}
+                className="onboarding-secondary-action"
               >
                 Skip for now
               </button>
@@ -534,70 +618,27 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
 
         {/* Step 7 — Activation */}
         <OnboardingStep active={step === 7}>
-          <div className="flex flex-col items-center gap-8 py-12 relative">
+          <div className="onboarding-form-card flex flex-col items-center gap-7 py-8 relative">
             {activated ? (
-              <>
-                <div className="h-24 w-24 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center shadow-[0_0_60px_hsl(var(--primary)/0.25)] animate-scale-in">
-                  <Check className="h-12 w-12 text-primary" strokeWidth={2.5} />
-                </div>
-                <div className="text-center space-y-3 animate-fade-in">
-                  <h2 className="text-3xl font-bold tracking-tight text-foreground">
-                    Your Vault is Ready
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Welcome aboard, {firstName || "Trader"}. Let's build something great.
-                  </p>
-                </div>
-                <Button
-                  onClick={handleDismiss}
-                  disabled={dismissing}
-                  className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl mt-2"
-                >
-                  {dismissing ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <>
-                      Go to Dashboard
-                      <ChevronRight className="h-5 w-5 ml-1" />
-                    </>
-                  )}
-                </Button>
-              </>
+              <VaultArrival name={displayName.trim() || "Trader"} avatarUrl={avatarUrl} onComplete={handleDismiss}/>
             ) : (
               <>
-                <div className="text-center space-y-3">
-                  <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                    Ready to Activate
-                  </h2>
-                  <p className="text-sm text-muted-foreground max-w-xs">
-                    We'll set up your vault with these preferences. You can change
-                    everything later in Settings.
-                  </p>
-                </div>
+                <VaultProfileReview avatarUrl={avatarUrl} displayName={displayName.trim()} fullName={fullName.trim()}
+                  experience={experience ? experience.charAt(0).toUpperCase() + experience.slice(1) : "Not selected"}
+                  goal={GOAL_OPTIONS.find((g) => g.value === goal)?.label || "Not selected"}
+                  onEditAvatar={() => setStep(2)} />
 
-                {/* Summary */}
-                <div className="w-full rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground uppercase tracking-wider">Avatar</span>
-                    <div className="h-8 w-8">
-                      <ChatAvatar avatarUrl={avatarUrl} userName={firstName || "T"} size="h-8 w-8" />
-                    </div>
-                  </div>
-                  <SummaryRow label="Name" value={[firstName, lastName].filter(Boolean).join(" ") || "—"} />
-                  <SummaryRow label="Experience" value={experience ? experience.charAt(0).toUpperCase() + experience.slice(1) : "—"} />
-                  <SummaryRow label="Goal" value={GOAL_OPTIONS.find((g) => g.value === goal)?.label || "—"} />
-                  <SummaryRow label="Timezone" value={detectedTz.replace(/_/g, " ")} />
-                </div>
+                <VaultSocialInvite />
 
                 <Button
                   onClick={handleActivate}
                   disabled={submitting}
-                  className="w-full h-14 text-base font-bold tracking-wider uppercase rounded-2xl bg-gradient-to-r from-primary to-blue-400 hover:brightness-110 transition-all relative overflow-hidden"
+                  className="onboarding-primary-action relative overflow-hidden"
                 >
                   {submitting ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    "Activate My Vault"
+                    "Finish setup"
                   )}
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                 </Button>
@@ -605,18 +646,8 @@ export function AppOnboarding({ isPreview = false }: { isPreview?: boolean }) {
             )}
           </div>
         </OnboardingStep>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-muted-foreground uppercase tracking-wider">
-        {label}
-      </span>
-      <span className="text-sm font-medium text-foreground">{value}</span>
-    </div>
+    </main>
   );
 }

@@ -43,7 +43,7 @@ export function resolvePlanForPrice(priceId: string | null | undefined): Plan | 
   return LEGACY_PRICE_MAP[priceId] ?? null;
 }
 
-export const ACTIVE_STATUSES = ["active", "trialing", "past_due"];
+export const ACTIVE_STATUSES = ["active"];
 
 export function isActiveStatus(status: string | null | undefined) {
   return !!status && ACTIVE_STATUSES.includes(status);
@@ -71,31 +71,37 @@ export async function grantPaidRole(
   if (!authUserId) return false;
   const now = new Date().toISOString();
 
-  await admin.from("user_roles").delete().eq("user_id", authUserId).in("role", NON_PAID_ROLES);
-
-  const { data: existing } = await admin
+  const { data: existing, error: lookupError } = await admin
     .from("user_roles")
     .select("id")
     .eq("user_id", authUserId)
     .eq("role", PAID_ROLE)
     .maybeSingle();
+  if (lookupError) throw lookupError;
 
   if (existing?.id) {
-    await admin
+    const { error } = await admin
       .from("user_roles")
       .update({ subscription_status: subscriptionStatus, updated_at: now })
       .eq("id", existing.id);
+    if (error) throw error;
   } else {
-    await admin
+    const { error } = await admin
       .from("user_roles")
       .insert({ user_id: authUserId, role: PAID_ROLE, subscription_status: subscriptionStatus });
+    if (error) throw error;
   }
 
-  await admin
+  // Only remove the free role after the paid role has been persisted.
+  const { error: freeRoleError } = await admin.from("user_roles").delete().eq("user_id", authUserId).in("role", NON_PAID_ROLES);
+  if (freeRoleError) throw freeRoleError;
+
+  const { error: profileError } = await admin
     .from("profiles")
     .update({ access_status: "active", updated_at: now })
     .eq("user_id", authUserId)
-    .neq("access_status", "banned");
+    .not("access_status", "in", "(banned,revoked)");
+  if (profileError) throw profileError;
 
   console.log("[vaultAccess] granted_paid_role", JSON.stringify({ authUserId, subscriptionStatus }));
   return true;
@@ -109,40 +115,11 @@ export async function hasOtherValidEntitlement(
   email: string | null,
   excludeProductKey?: string | null,
 ): Promise<boolean> {
-  if (await isStaff(admin, authUserId)) return true;
-
-  if (email) {
-    const { data: wl } = await admin
-      .from("allowed_signups")
-      .select("email")
-      .ilike("email", email)
-      .maybeSingle();
-    if (wl) return true;
-  }
-
-  if (studentId) {
-    const { data: rows } = await admin
-      .from("student_access")
-      .select("product_key, status, is_lifetime")
-      .eq("user_id", studentId);
-    for (const r of rows || []) {
-      if (excludeProductKey && r.product_key === excludeProductKey) continue;
-      if (r.is_lifetime === true) return true;
-      if (isActiveStatus(r.status)) return true;
-    }
-  }
-
-  // Native IAP entitlement (iOS StoreKit / Android billing) must never be
-  // dropped by a Stripe-side cancellation.
-  const { data: ios } = await admin
-    .from("ios_membership_activations")
-    .select("id, status")
-    .eq("user_id", authUserId)
-    .in("status", ["active", "trialing", "grace_period", "billing_retry"])
-    .limit(1);
-  if ((ios || []).length > 0) return true;
-
-  return false;
+  // Called after the billing row is updated. The database checks the actual
+  // whitelist and verified, unexpired native purchases, not cached role labels.
+  const { data, error } = await admin.rpc("vault_access_for_user", { uid: authUserId });
+  if (error) throw error;
+  return data === true;
 }
 
 /**
@@ -203,7 +180,7 @@ export async function revokePaidRole(
     .from("profiles")
     .update({ access_status: "inactive", updated_at: now })
     .eq("user_id", authUserId)
-    .neq("access_status", "banned");
+    .not("access_status", "in", "(banned,revoked)");
 
   console.log("[vaultAccess] revoked_paid_role", JSON.stringify({ authUserId }));
   return true;

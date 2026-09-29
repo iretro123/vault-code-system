@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Welcome from "@/pages/Welcome";
 const platform = vi.hoisted(() => ({ value: "web" }));
@@ -10,8 +10,23 @@ describe("welcome membership entry", () => {
     it(`uses the correct store on ${device}`, () => {
       platform.value = device;
       render(<MemoryRouter><Welcome /></MemoryRouter>);
-      expect(screen.getByRole("button", { name: label })).toBeTruthy();
-      if (device !== "ios") expect(screen.queryByRole("button", { name: "Restore Apple Purchase" })).toBeNull();
+      expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", "/membership");
+      if (device !== "ios") expect(screen.queryByRole("link", { name: "Restore Apple Purchase" })).toBeNull();
     });
   }
+  it("separates welcome from plan selection and preserves signup destinations", () => {
+    render(<MemoryRouter><Welcome /></MemoryRouter>);
+    expect(screen.queryByRole("link", {name:/Get full access/})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", {name:/Get started/}));
+    expect(screen.getByRole("heading", {name:"Choose your access."})).toHaveFocus();
+    expect(screen.getByRole("link", {name:/Join free/})).toHaveAttribute("href", "/create-account");
+    expect(screen.getByRole("link", {name:/Get full access/})).toHaveAttribute("href", "/create-account/full");
+    expect(screen.getAllByRole("link", {name:"Log in"})[0]).toHaveAttribute("href", "/auth");
+    fireEvent.click(screen.getByRole("button", {name:"Back to welcome"}));
+    expect(screen.getByRole("button", {name:/Get started/})).toBeInTheDocument();
+  });
+  it("supports directly opening and refreshing the access step", () => {
+    render(<MemoryRouter initialEntries={["/welcome?step=access"]}><Welcome /></MemoryRouter>);
+    expect(screen.getByRole("heading", {name:"Choose your access."})).toBeInTheDocument();
+  });
 });

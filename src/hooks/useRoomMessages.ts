@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { sanitizeText } from "@/lib/safeText";
 
 export interface Attachment {
-  type: "image" | "file" | "signal-watchlist" | "signal-live";
+  type: "image" | "file" | "signal-watchlist" | "signal-live" | "zone-pulse";
   url?: string;
   filename?: string;
   size?: number;
@@ -46,7 +46,10 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
   activeRef.current = active;
   const canUseRoom = Boolean(roomSlug) && roomSlug !== DEFERRED_ROOM_SLUG;
   const { user, profile, userRole } = useAuth();
-  const cachedRef = useRef(canUseRoom ? roomMessageCache.get(roomSlug) : undefined);
+  const cacheKey = `${user?.id ?? "signed-out"}:${roomSlug}`;
+  const currentCacheKey = useRef(cacheKey);
+  currentCacheKey.current = cacheKey;
+  const cachedRef = useRef(canUseRoom ? roomMessageCache.get(cacheKey) : undefined);
   const cached = cachedRef.current;
   const [messages, setMessages] = useState<Message[]>(cached ?? []);
   // If we have cached messages, skip loading state entirely
@@ -72,12 +75,13 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
 
   // Persist to cache whenever messages change
   const updateMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
+    if (currentCacheKey.current !== cacheKey) return;
     setMessages((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
-      if (canUseRoom) roomMessageCache.set(roomSlug, next);
+      if (canUseRoom) roomMessageCache.set(cacheKey, next);
       return next;
     });
-  }, [canUseRoom, roomSlug]);
+  }, [canUseRoom, cacheKey]);
 
   // Initial fetch (background refresh if cached)
   const fetchMessages = useCallback(async () => {
@@ -115,6 +119,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
         timeout,
       ])) as { data: any[] | null; error: { message: string } | null };
 
+      if (currentCacheKey.current !== cacheKey) return;
       if (err) throw new Error(err.message);
 
       const sorted = castMessages(data ?? []).reverse();
@@ -122,7 +127,7 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       // background-only. The original mount-time ref otherwise stays undefined
       // and replaces the entire feed with a skeleton on every tab activation.
       cachedRef.current = sorted;
-      roomMessageCache.set(roomSlug, sorted);
+      roomMessageCache.set(cacheKey, sorted);
       setError(null);
       // Diff by IDs — skip update if identical to prevent unnecessary re-render
       setMessages((prev) => {
@@ -133,17 +138,18 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       setHasMore((data?.length ?? 0) >= PAGE_SIZE);
       oldestRef.current = sorted.length > 0 ? sorted[0].created_at : null;
     } catch (loadError) {
+      if (currentCacheKey.current !== cacheKey) return;
       // Surface a retryable failure instead of an endless skeleton, and never
       // let a failed load look like an empty room.
       setError(loadError instanceof Error ? loadError.message : "Messages couldn’t load.");
       // Clear stale cache on error so next activation does a clean fetch
-      roomMessageCache.delete(roomSlug);
+      roomMessageCache.delete(cacheKey);
     } finally {
       if (timer) clearTimeout(timer);
-      setLoading(false);
+      if (currentCacheKey.current === cacheKey) setLoading(false);
     }
 
-  }, [canUseRoom, roomSlug, updateMessages]);
+  }, [canUseRoom, roomSlug, cacheKey, updateMessages]);
 
   // Load older messages
   const loadMore = useCallback(async () => {
@@ -372,9 +378,10 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
   // Initial load — run once per roomSlug
   useEffect(() => {
     hasFetchedRef.current = false;
-    cachedRef.current = canUseRoom ? roomMessageCache.get(roomSlug) : undefined;
+    cachedRef.current = canUseRoom ? roomMessageCache.get(cacheKey) : undefined;
+    setMessages(cachedRef.current ?? []);
     oldestRef.current = cachedRef.current?.length ? cachedRef.current[0].created_at : null;
-  }, [roomSlug]);
+  }, [cacheKey, canUseRoom]);
 
   useEffect(() => {
     if (!canUseRoom) {
@@ -456,10 +463,20 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
     let retry = 0;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let live = false;
+    let restarting = false;
+    const canConnect = () => document.visibilityState === "visible" && navigator.onLine;
+
+    const scheduleRetry = () => {
+      if (disposed || !canConnect()) return;
+      if (retryTimer) clearTimeout(retryTimer);
+      const delay = Math.min(1000 * 2 ** retry, 15000);
+      retry += 1;
+      retryTimer = setTimeout(() => void restartConnection(), delay);
+    };
 
     const subscribe = () => {
       if (disposed) return;
-      channel = supabase
+      const nextChannel = supabase
         .channel(`room-${roomSlug}-${Math.random().toString(36).slice(2, 8)}`, {
           config: { broadcast: { ack: false } },
         })
@@ -489,28 +506,53 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
           }
         )
         .subscribe((status) => {
-          if (disposed) return;
+          if (disposed || channel !== nextChannel) return;
           if (status === "SUBSCRIBED") {
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = null;
             setConnection("connected");
             live = true;
+            restarting = false;
             retry = 0;
             // Fill any gap created while the socket was down
             catchUp();
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            setConnection("reconnecting");
+            if (document.visibilityState === "visible") setConnection("reconnecting");
             live = false;
-            if (retryTimer) clearTimeout(retryTimer);
-            const delay = Math.min(1000 * 2 ** retry, 15000);
-            retry += 1;
-            retryTimer = setTimeout(async () => {
-              if (disposed) return;
-              if (channel) supabase.removeChannel(channel);
-              const { data } = await supabase.auth.getSession();
-              if (data.session?.access_token) supabase.realtime.setAuth(data.session.access_token);
-              subscribe();
-            }, delay);
+            scheduleRetry();
           }
         });
+      channel = nextChannel;
+    };
+
+    const restartConnection = async () => {
+      if (disposed || restarting || !canConnect()) return;
+      restarting = true;
+      setConnection("reconnecting");
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+      try {
+        const staleChannel = channel;
+        channel = null;
+        if (staleChannel) await supabase.removeChannel(staleChannel);
+        if (disposed) return;
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (data.session?.access_token) await supabase.realtime.setAuth(data.session.access_token);
+        if (disposed || !canConnect()) return;
+        subscribe();
+      } catch {
+        if (!disposed) {
+          live = false;
+          if (canConnect()) setConnection("reconnecting");
+          scheduleRetry();
+        }
+      } finally {
+        // Lock only the replacement operation, not the asynchronous handshake.
+        restarting = false;
+      }
     };
 
     subscribe();
@@ -519,18 +561,32 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
     // every 6s when realtime is healthy — new messages never get stranded.
     let tick = 0;
     const poll = setInterval(() => {
-      if (!activeRef.current || document.visibilityState !== "visible") return;
+      if (!activeRef.current || !canConnect()) return;
       tick += 1;
       if (live && tick % 3 !== 0) return;
       catchUp();
     }, 2000);
 
     const onWake = () => {
-      if (document.visibilityState === "visible") catchUp();
+      if (!canConnect()) {
+        if (!navigator.onLine) live = false;
+        if (retryTimer) clearTimeout(retryTimer);
+        retryTimer = null;
+        return;
+      }
+      // Show cached content immediately, fill any missed rows, and replace a
+      // WebSocket that iOS may have suspended while the app was backgrounded.
+      catchUp();
+      if (!live) {
+        retry = 0;
+        void restartConnection();
+      }
     };
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("online", onWake);
+    window.addEventListener("offline", onWake);
     window.addEventListener("focus", onWake);
+    window.addEventListener("pageshow", onWake);
 
     return () => {
       disposed = true;
@@ -538,8 +594,10 @@ export function useRoomMessages(roomSlug: string, _activationKey?: number, activ
       clearInterval(poll);
       document.removeEventListener("visibilitychange", onWake);
       window.removeEventListener("online", onWake);
+      window.removeEventListener("offline", onWake);
       window.removeEventListener("focus", onWake);
-      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener("pageshow", onWake);
+      if (channel) void Promise.resolve(supabase.removeChannel(channel)).catch(() => undefined);
     };
   }, [canUseRoom, roomSlug, updateMessages, applyIncoming, catchUp]);
 

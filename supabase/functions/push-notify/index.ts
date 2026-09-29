@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { importPKCS8, SignJWT } from "https://esm.sh/jose@5.9.2";
+import { isChatPush } from "../_shared/chatPushPolicy.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +9,6 @@ const corsHeaders = {
 };
 
 const FCM_URL = "https://fcm.googleapis.com/fcm/send";
-const PUSHABLE_TYPES = new Set(["mention", "rz_message", "live_now", "announcement", "new_module", "motivation"]);
 
 type NotificationRow = {
   id: string;
@@ -17,6 +17,7 @@ type NotificationRow = {
   title: string | null;
   body: string | null;
   link_path?: string | null;
+  source_message_id?: string | null;
 };
 
 type DeviceTokenRow = {
@@ -97,6 +98,8 @@ function defaultBody(type: string) {
 
 function notificationThreadId(type: string) {
   switch (type) {
+    case "chat_message":
+      return "chat-trade-floor";
     case "mention":
       return "community-mentions";
     case "rz_message":
@@ -116,6 +119,8 @@ function notificationThreadId(type: string) {
 
 function notificationCategory(type: string) {
   switch (type) {
+    case "chat_message":
+      return "COMMUNITY_REPLY";
     case "mention":
       return "COMMUNITY_REPLY";
     case "rz_message":
@@ -270,14 +275,31 @@ Deno.serve(async (req) => {
 
     const { data: notif } = await admin
       .from("academy_notifications")
-      .select("id, user_id, type, title, body, link_path")
+      .select("id, user_id, type, title, body, link_path, source_message_id")
       .eq("id", notification_id)
       .maybeSingle();
 
-    if (!notif || !PUSHABLE_TYPES.has(notif.type)) {
+    if (!notif || !notif.user_id || !notif.source_message_id || !isChatPush(notif.type, notif.link_path)) {
       await releaseDispatch();
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Recheck at dispatch time: messages can be deleted and preferences changed
+    // after the notification was queued. Never broadcast to every device.
+    const { data: message } = await admin.from("academy_messages")
+      .select("user_id,room_slug,is_deleted").eq("id", notif.source_message_id).maybeSingle();
+    const { data: profile } = await admin.from("profiles")
+      .select("is_banned,access_status").eq("user_id", notif.user_id).maybeSingle();
+    const { data: preferences, error: preferencesError } = await admin.from("user_preferences")
+      .select("notifications_enabled").eq("user_id", notif.user_id).maybeSingle();
+    if (!message || message.is_deleted || message.room_slug !== "trade-floor" || message.user_id === notif.user_id
+      || !profile || profile.is_banned || ["banned", "revoked"].includes(profile.access_status || "")
+      || preferencesError || preferences?.notifications_enabled === false) {
+      await releaseDispatch();
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "chat_recipient_ineligible" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

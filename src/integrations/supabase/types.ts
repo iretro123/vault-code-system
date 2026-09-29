@@ -3340,7 +3340,7 @@ export type Database = {
       }
       get_micro_feedback: { Args: { _user_id: string }; Returns: string }
       get_my_access_state: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           has_access: boolean
           product_key: string

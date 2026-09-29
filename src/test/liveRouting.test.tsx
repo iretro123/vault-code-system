@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { beforeEach, afterEach, it, expect, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({ admin: true, permission: true, access: true, loading: false }));
@@ -14,7 +14,8 @@ vi.mock('@/components/admin/AdminActionBar', () => ({ AdminActionBar: () => null
 vi.mock('@/components/admin/AdminOnly', () => ({ AdminOnly: () => null }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => ({ select: () => ({ order: () => Promise.resolve({ data: [] }) }) }) } }));
 import { ReleasedLivePage } from '@/pages/academy/AcademyLive';
-const page = () => <MemoryRouter><ReleasedLivePage /></MemoryRouter>;
+const Destination = () => <div>{useLocation().pathname}{useLocation().search}</div>;
+const page = () => <MemoryRouter><Routes><Route path="/" element={<ReleasedLivePage />} /><Route path="/academy/admin/panel" element={<Destination />} /></Routes></MemoryRouter>;
 beforeEach(() => { Object.assign(state, { admin: true, permission: true, access: true, loading: false }); localStorage.clear(); });
 afterEach(cleanup);
 
@@ -35,20 +36,17 @@ it.each(['loading', 'access'] as const)('preserves %s gate', gate => {
   expect(screen.queryByText('New Vault Live')).not.toBeInTheDocument();
   expect(screen.getByText(gate === 'loading' ? 'Loading classroom access…' : 'Membership required')).toBeInTheDocument();
 });
-it('opens management explicitly and returns to the new view', async () => {
+it('opens the live tab in the admin panel explicitly', () => {
   render(page());
   fireEvent.click(screen.getByRole('button', { name: 'Manage sessions' }));
   expect(screen.queryByText('New Vault Live')).not.toBeInTheDocument();
-  await waitFor(() => expect(screen.getByRole('heading', { name: 'Live Sessions' })).toBeInTheDocument());
-  fireEvent.click(screen.getByRole('button', { name: 'Back to Vault Live' }));
-  expect(screen.getByText('New Vault Live')).toBeInTheDocument();
+  expect(screen.getByText('/academy/admin/panel?tab=live')).toBeInTheDocument();
 });
-it.each(['admin', 'permission'] as const)('hides management immediately on loss of %s', async key => {
+it.each(['admin', 'permission'] as const)('hides management immediately on loss of %s', key => {
   const view = render(page());
-  fireEvent.click(screen.getByRole('button', { name: 'Manage sessions' }));
-  await waitFor(() => expect(screen.getByRole('heading', { name: 'Live Sessions' })).toBeInTheDocument());
+  expect(screen.getByRole('button', { name: 'Manage sessions' })).toBeInTheDocument();
   state[key] = false;
   view.rerender(page());
   expect(screen.getByText('New Vault Live')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Back to Vault Live' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Manage sessions' })).not.toBeInTheDocument();
 });

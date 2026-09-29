@@ -157,13 +157,13 @@ export function CommunityWins() {
                       <Flame className="h-4 w-4" />
                       {fireReaction?.count ?? 0}
                     </button>
-                    <button
+                    {win.user_id === user?.id && <button
                       onClick={() => setShareWin(win)}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold border transition-all bg-[hsl(220,10%,95%)] border-[hsl(220,10%,85%)] text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,30%)] hover:bg-[hsl(220,10%,90%)]"
                     >
                       <Share2 className="h-4 w-4" />
                       Share
-                    </button>
+                    </button>}
                   </div>
                 </div>
               </div>
@@ -179,6 +179,7 @@ export function CommunityWins() {
         onOpenChange={(v) => { if (!v) setShareWin(null); }}
         win={{
           userName: shareWin.user_name,
+          avatarUrl: getProfile(shareWin.user_id)?.avatar_url,
           roleName: getProfile(shareWin.user_id)?.academy_role_name || undefined,
           body: shareWin.body,
           imageUrl: (shareWin.attachments ?? []).find((a) => a.type === "image")?.url,

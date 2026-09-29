@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
-import { VAULT_OS_PLAN, resolvePlanForPrice, syncRolesFromStatus } from "../_shared/vaultAccess.ts";
+import { resolvePlanForPrice, syncRolesFromStatus } from "../_shared/vaultAccess.ts";
+import { stripeAccessStatus } from "../_shared/membershipValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -171,21 +172,12 @@ serve(async (req) => {
     }
 
     // Map status — same logic as webhook
-    const statusMap: Record<string, string> = {
-      active: "active",
-      trialing: "trialing",
-      past_due: "past_due",
-      canceled: "canceled",
-      unpaid: "past_due",
-      incomplete: "past_due",
-      incomplete_expired: "canceled",
-      paused: "paused",
-    };
-    const newStatus = statusMap[subscription.status] || "active";
+    const newStatus = stripeAccessStatus(subscription.status);
 
     // Resolve plan from PRICE_MAP — same source as webhook
     const priceId = subscription.items?.data?.[0]?.price?.id || null;
-    const plan = resolvePlanForPrice(priceId) ?? VAULT_OS_PLAN;
+    const plan = resolvePlanForPrice(priceId);
+    if (!plan) throw new Error("Subscription price is not an approved Vault plan");
 
     const now = new Date().toISOString();
     const changed = newStatus !== previousStatus;
@@ -209,9 +201,10 @@ serve(async (req) => {
       accessData.access_ended_at = now;
     }
 
-    await supabase.from("student_access").upsert(accessData, {
+    const { error: accessError } = await supabase.from("student_access").upsert(accessData, {
       onConflict: "user_id,product_key",
     });
+    if (accessError) throw accessError;
 
     // Keep user_roles + profiles in sync with the reconciled billing status.
     await syncRolesFromStatus(supabase, {

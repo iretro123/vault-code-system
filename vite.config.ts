@@ -6,6 +6,8 @@ import { componentTagger } from "lovable-tagger";
 import { atlasDevMentor } from "./scripts/atlasDevMentor";
 import { stocksToWatchDev } from "./scripts/stocksToWatchDev";
 import { vaultCalendarAssets } from "./scripts/vaultCalendarAssets";
+import { bitcoinZonesDev } from "./scripts/bitcoinZonesDev";
+import { spxPulseDev } from "./scripts/spxPulseDev";
 const require = createRequire(import.meta.url);
 const pdfWorker = require.resolve("pdfjs-dist/build/pdf.worker.min.mjs", { paths: [require.resolve("react-pdf")] });
 
@@ -21,7 +23,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: "es2020",
   },
-  plugins: [react(), atlasDevMentor(), stocksToWatchDev(), vaultCalendarAssets(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), atlasDevMentor(), stocksToWatchDev(), vaultCalendarAssets(), bitcoinZonesDev(), spxPulseDev(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

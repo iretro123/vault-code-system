@@ -1,0 +1,13 @@
+.vault-arrival { position:fixed; inset:0; z-index:100; display:grid; place-items:center; overflow:hidden; background:#070c15; color:#edf4ff; }
+.vault-arrival-light { position:absolute; width: min(850px,150vw); aspect-ratio:1; border-radius:50%; background:radial-gradient(ellipse,#2161ce35,transparent 65%); animation:vault-arrival-bloom 2s ease-out both; pointer-events:none; }
+.vault-arrival-content { position:relative; display:flex; align-items:center; flex-direction:column; text-align:center; padding:24px; width:min(100%,600px); animation:vault-arrival-enter .65s cubic-bezier(.2,.8,.2,1) both; }
+.vault-arrival-wordmark { font-size:14px; font-weight:650; letter-spacing:3px; margin-bottom:44px; }.vault-arrival-wordmark b { color:#79aaff; }
+.vault-arrival-avatar { padding:8px; border:1px solid #82b6ff55; border-radius:50%; box-shadow:0 0 0 9px #6da6ff06,0 20px 70px #1454b526; background:#0c1729; }
+.vault-arrival h2 { font-size:clamp(30px,6vw,46px); letter-spacing:-1.4px; line-height:1.15; font-weight:600; margin:28px 0 10px; overflow-wrap:anywhere; max-width:100%; }
+.vault-arrival p { font-size:16px; color:#a9bbd7; }
+.vault-arrival-line { height:2px; width:110px; background:#ffffff0b; margin-top:35px; overflow:hidden; border-radius:4px; }.vault-arrival-line span { display:block; height:100%; background:linear-gradient(90deg,#286ce1,#b6d4ff); transform-origin:left; animation:vault-arrival-progress 2s ease-in-out both; }
+.vault-arrival button { margin-top:24px; padding:12px 20px; border-radius:12px; background:#286ce1; color:white; }
+@keyframes vault-arrival-enter { from { opacity:0; transform:translateY(14px) scale(.97); } to { opacity:1; transform:none; } }
+@keyframes vault-arrival-bloom { from { opacity:0; transform:scale(.75); } to { opacity:1; transform:scale(1.1); } }
+@keyframes vault-arrival-progress { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+@media(prefers-reduced-motion:reduce) { .vault-arrival * { animation:none!important; } }

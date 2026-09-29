@@ -28,7 +28,8 @@ const Signup = () => {
   const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [stripeStatus, setStripeStatus] = useState<"idle" | "checking" | "found" | "not_found">("idle");
+  const [stripeStatus, setStripeStatus] = useState<"idle" | "checking" | "found" | "not_found" | "error">("idle");
+  const [membershipAttempt, setMembershipAttempt] = useState(0);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [username, setUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "taken" | "available">("idle");
@@ -49,22 +50,32 @@ const Signup = () => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed.includes("@") || !trimmed.includes(".")) { setStripeStatus("idle"); return; }
     setStripeStatus("checking");
+    let canceled = false;
+    const deadline = setTimeout(() => {
+      canceled = true;
+      setStripeStatus("error");
+    }, 15_000);
     const timer = setTimeout(async () => {
       try {
         const { data, error } = await supabase.functions.invoke("check-stripe-customer", {
           body: { email: trimmed },
         });
-        if (error) {
-          setStripeStatus("idle");
+        if (canceled) return;
+        clearTimeout(deadline);
+        if (error || typeof data?.found !== "boolean") {
+          setStripeStatus("error");
           return;
         }
         setStripeStatus(data.found ? "found" : "not_found");
       } catch {
-        setStripeStatus("idle");
+        if (!canceled) {
+          clearTimeout(deadline);
+          setStripeStatus("error");
+        }
       }
     }, 600);
-    return () => clearTimeout(timer);
-  }, [email]);
+    return () => { canceled = true; clearTimeout(timer); clearTimeout(deadline); };
+  }, [email, membershipAttempt]);
 
   // Debounced username check
   useEffect(() => {
@@ -312,7 +323,10 @@ const Signup = () => {
                 {stripeStatus === "not_found" && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-destructive" />}
               </div>
               {stripeStatus === "found" && <p className="text-[11px] text-emerald-500 mt-0.5">Membership verified</p>}
-              {stripeStatus === "not_found" && <p className="text-[11px] text-destructive mt-0.5">No membership found. Contact support.</p>}
+              {(stripeStatus === "not_found" || stripeStatus === "error") && <div className="mt-2 space-y-2" role="status">
+                <p className="text-sm text-muted-foreground">{stripeStatus === "error" ? "We couldn't check your membership right now. Please try again." : "We haven't verified a membership for this email yet. If you just paid, allow a moment and use your checkout email."}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => {setStripeStatus("checking");setMembershipAttempt(value => value + 1);}}>Check membership again</Button>
+              </div>}
             </div>
 
             {/* Phone Number */}

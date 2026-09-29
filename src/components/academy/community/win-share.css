@@ -1,0 +1,31 @@
+.win-studio { width:calc(100vw - 24px); max-width:420px; max-height:calc(100dvh - 24px); overflow-y:auto; padding:20px; color:#f3f6ff; font-family:'Manrope Variable',sans-serif; background:linear-gradient(145deg,#111d30,#080d16 65%); border:1px solid #2c3d55; border-radius:24px; box-shadow:0 30px 100px #000a; gap:12px; }
+.win-studio header { padding-right:25px; }
+.win-studio header h2 { font-size:21px; letter-spacing:-.7px; margin:0 0 5px; }
+.win-studio header p { color:#98aac2; font-size:12px; }
+.win-studio-layout { display:grid; gap:14px; }
+.win-studio-stage { display:flex; justify-content:center; align-items:center; min-height:min(49dvh,470px); }
+.win-studio-stage img { display:block; height:min(49dvh,470px); max-width:100%; object-fit:contain; border-radius:14px; border:1px solid #385270; box-shadow:0 12px 35px #0006; }
+.win-studio-stage p { padding:25px; font-size:13px; color:#f4b0b0; }
+.win-studio-controls { display:grid; gap:12px; }
+.win-trade-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.win-trade-fields label { display:grid; gap:6px; color:#bacbe0; font-size:12px; font-weight:600; }
+.win-trade-fields input { width:100%; min-width:0; min-height:46px; padding:10px 12px; border:1px solid #33465f; border-radius:12px; background:#080f1b; color:#f3f6ff; font-size:16px; }
+.win-trade-fields input::placeholder { color:#72849d; }
+.win-studio-segments { display:flex; padding:4px; border:1px solid #293b53; border-radius:30px; background:#070d16; }
+.win-studio-segments button { flex:1; min-height:38px; border-radius:25px; text-transform:capitalize; color:#9badc6; font-size:13px; }
+.win-studio-segments button[aria-pressed=true] { color:white; background:linear-gradient(#41516a,#26354a); box-shadow:inset 0 1px #a2b9d650; }
+.win-studio-segments button { display:flex; align-items:center; justify-content:center; gap:8px; }
+.win-theme-dot { width:13px; height:13px; border-radius:50%; background:#080b10; border:1px solid #738096; }
+.win-studio-segments [data-theme=light] .win-theme-dot { background:white; border-color:#cbd3df; }
+.win-studio-segments [data-theme=light][aria-pressed=true] { background:#f5f7fa; color:#111827; }
+.win-studio-check { display:flex; justify-content:space-between; align-items:center; min-height:32px; font-size:12px; cursor:pointer; }
+.win-studio-check input { appearance:none; width:38px; height:23px; border-radius:20px; background:#354359; cursor:pointer; position:relative; flex-shrink:0; }
+.win-studio-check input:checked { background:#2c80ff; }
+.win-studio-check input:after { content:''; position:absolute; top:3px; left:3px; height:17px; width:17px; border-radius:50%; background:white; transition:transform .15s; }
+.win-studio-check input:checked:after { transform:translateX(15px); }
+.win-studio-share { display:flex; align-items:center; justify-content:center; gap:10px; min-height:50px; border-radius:13px; color:white; font-weight:700; background:linear-gradient(#3b8aff,#1560e9); box-shadow:inset 0 1px #ffffff50,0 6px 20px #0752dd20; }
+.win-studio-share:disabled { opacity:.4; cursor:not-allowed; }
+.win-studio-note { font-size:10px; line-height:1.5; text-align:center; color:#94a6c0; margin:0; }
+.win-studio button:focus-visible,.win-studio input:focus-visible { outline:2px solid #a3caff; outline-offset:3px; }
+.win-share-entry { display:inline-flex; align-items:center; gap:7px; margin:8px 0; padding:9px 13px; border:1px solid #528ce24d; border-radius:10px; color:#81b3ff; background:#2978ec12; font-size:12px; font-weight:650; }
+@media(prefers-reduced-motion:reduce) { .win-studio .animate-spin { animation:none; } .win-studio-check input:after { transition:none; } }

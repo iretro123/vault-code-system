@@ -502,10 +502,9 @@ extension VaultOSLaunchAuditTests {
         app.launch()
 
         let signedIn = app.buttons["Chat"].firstMatch
-        let signInScreen = app.buttons.containing(
-            NSPredicate(format: "label CONTAINS[c] 'Log in' OR label == 'Sign In'")
-        ).firstMatch
-        _ = waitUntil(timeout: 30, { signedIn.exists || signInScreen.exists || app.textFields["Email"].firstMatch.exists })
+        let signInScreen = app.buttons["Sign In"].firstMatch
+        let loginLink = app.links["Log in"].firstMatch
+        _ = waitUntil(timeout: 30, { signedIn.exists || signInScreen.exists || loginLink.exists || app.textFields["Email"].firstMatch.exists })
 
         if !signedIn.exists {
             let env = ProcessInfo.processInfo.environment
@@ -513,8 +512,7 @@ extension VaultOSLaunchAuditTests {
             let secret = env["VAULT_AUDIT_PASSWORD"] ?? ""
             try XCTSkipIf(login.isEmpty || secret.isEmpty, "Set VAULT_AUDIT_EMAIL / VAULT_AUDIT_PASSWORD to run signed-in journeys")
             if !app.textFields["Email"].firstMatch.exists {
-                let open = app.buttons.containing(NSPredicate(format: "label CONTAINS[c] 'Log in to your account'")).firstMatch
-                if open.waitForExistence(timeout: 10) { open.tap() }
+                if loginLink.waitForExistence(timeout: 10) { loginLink.tap() }
             }
             let email = app.textFields["Email"].firstMatch
             XCTAssertTrue(email.waitForExistence(timeout: 20))

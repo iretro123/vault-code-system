@@ -27,3 +27,18 @@ it('preserves hosted behavior', () => {
   vi.stubGlobal('window', { location: { hostname: 'member.vaulttradingacademy.com' } });
   expect(isLocalDesignPreview()).toBe(false);
 });
+
+it('permits only the read-only access request, keeping mutations blocked', async () => {
+  vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false);
+  vi.stubGlobal('window', { location: { hostname: '127.0.0.1' } });
+  const network = vi.fn().mockResolvedValue(new Response(JSON.stringify([{ has_access: false }])));
+  vi.stubGlobal('fetch', network);
+  const url = 'https://example.supabase.co/rest/v1/rpc/get_my_access_state';
+  const response = await localPreviewFetch(url, { method: 'GET' });
+  expect(await response.json()).toEqual([{ has_access: false }]);
+  for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+    expect((await localPreviewFetch(url, { method })).status).toBe(403);
+  }
+  expect((await localPreviewFetch('https://example.supabase.co/rest/v1/rpc/grant_whitelist_access', { method: 'GET' })).status).toBe(403);
+  expect(network).toHaveBeenCalledTimes(1);
+});

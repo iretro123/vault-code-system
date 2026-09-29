@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { resolvePlanForPrice } from "../_shared/vaultAccess.ts";
+import { stripeAccessStatus } from "../_shared/membershipValidation.ts";
 
 /**
  * sync-stripe-members — UPGRADE pass (the mirror of sweep-stripe-access).
@@ -21,26 +23,9 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
  * always safe to re-run.
  */
 
-// Must stay in sync with stripe-webhook/index.ts and reconcile-access/index.ts
-const PRICE_MAP: Record<string, { product_key: string; tier: string }> = {
-  "price_1SB2aaAMsd1FtcvL44ONekRC": { product_key: "vault_academy", tier: "elite_v1" },
-  "price_1SB2YsAMsd1FtcvLHfcvmDCr": { product_key: "vault_academy", tier: "elite_v1" },
-  "price_1SB2VTAMsd1FtcvLjvrGfpm6": { product_key: "vault_academy", tier: "elite_v1" },
-};
-
-const DEFAULT_PRODUCT_KEY = "vault_academy";
-const DEFAULT_TIER = "elite_v1";
 const PAID_ROLE = "vault_access";
 
-const LIVE_STRIPE_STATUSES = ["active", "trialing", "past_due", "unpaid", "incomplete"];
-
-const STATUS_MAP: Record<string, string> = {
-  active: "active",
-  trialing: "trialing",
-  past_due: "past_due",
-  unpaid: "past_due",
-  incomplete: "past_due",
-};
+const LIVE_STRIPE_STATUSES = ["active"];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +72,7 @@ async function grantPaidAccess(admin: Admin, authUserId: string, subscriptionSta
     .from("profiles")
     .update({ access_status: "active", updated_at: new Date().toISOString() })
     .eq("user_id", authUserId)
-    .neq("access_status", "banned");
+    .not("access_status", "in", "(banned,revoked)");
 }
 
 serve(async (req) => {
@@ -210,7 +195,7 @@ serve(async (req) => {
 
         for (const cid of customers) {
           const subs = await stripe.subscriptions.list({ customer: cid, status: "all", limit: 10 });
-          const live = subs.data.find((s) => LIVE_STRIPE_STATUSES.includes(s.status));
+          const live = subs.data.find((s) => LIVE_STRIPE_STATUSES.includes(s.status) && resolvePlanForPrice(s.items.data[0]?.price?.id));
           if (live) {
             sub = live;
             customerId = cid;
@@ -237,10 +222,11 @@ serve(async (req) => {
       }
 
       const priceId = sub.items.data[0]?.price?.id || null;
-      const mapped = (priceId && PRICE_MAP[priceId]) || null;
-      const productKey = mapped?.product_key || DEFAULT_PRODUCT_KEY;
-      const tier = mapped?.tier || DEFAULT_TIER;
-      const accessStatus = STATUS_MAP[sub.status] || "active";
+      const mapped = resolvePlanForPrice(priceId);
+      if (!mapped) continue;
+      const productKey = mapped.product_key;
+      const tier = mapped.tier;
+      const accessStatus = stripeAccessStatus(sub.status);
       const now = new Date().toISOString();
 
       const alreadyHasPaid = roles.has(PAID_ROLE) || roles.has("vault_intelligence");
@@ -255,7 +241,7 @@ serve(async (req) => {
       });
 
       if (dryRun) {
-        alreadyHasPaid ? alreadyPaid++ : upgraded++;
+        if (alreadyHasPaid) alreadyPaid++; else upgraded++;
         continue;
       }
 
@@ -341,7 +327,7 @@ serve(async (req) => {
         },
       });
 
-      alreadyHasPaid ? alreadyPaid++ : upgraded++;
+      if (alreadyHasPaid) alreadyPaid++; else upgraded++;
     }
 
     const summary = {

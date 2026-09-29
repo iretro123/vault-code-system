@@ -1,5 +1,5 @@
 import {afterEach, expect, it, vi} from "vitest";
-import {cleanup, fireEvent, render, screen} from "@testing-library/react";
+import {cleanup, fireEvent, render, screen, waitFor} from "@testing-library/react";
 import {MemoryRouter, useLocation} from "react-router-dom";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 const mocks = vi.hoisted(() => ({unread:vi.fn(), refresh:vi.fn()}));
@@ -42,4 +42,12 @@ it("redirects removed calendar links to Chat without a dead end",()=>{
  expect(screen.getByRole('button',{name:'Chat'})).toHaveAttribute('aria-current','page');
  expect(screen.getByTestId('location')).toHaveTextContent('?tab=trade-floor&source=saved');
  expect(document.querySelector('iframe')).toBeNull();
+});
+
+it("switches away from a deep-linked room with deferred router navigation",async()=>{
+ renderCommunity(<MemoryRouter future={{v7_startTransition:true}} initialEntries={["/academy/community?tab=wins"]}><AcademyCommunity/><Location/></MemoryRouter>);
+ expect(screen.getByRole("button",{name:"Wins"})).toHaveAttribute("aria-current","page");
+ fireEvent.click(screen.getByRole("button",{name:"Signals"}));
+ await waitFor(()=>expect(screen.getByRole("button",{name:"Signals"})).toHaveAttribute("aria-current","page"));
+ expect(screen.getByTestId("location")).toHaveTextContent("tab=daily-setups");
 });

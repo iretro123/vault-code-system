@@ -224,7 +224,8 @@ Deno.serve(async (req) => {
     await admin
       .from("profiles")
       .update({ access_status: "active", updated_at: new Date().toISOString() })
-      .eq("user_id", callerId);
+      .eq("user_id", callerId)
+      .not("access_status", "in", "(banned,revoked)");
 
     return new Response(
       JSON.stringify({

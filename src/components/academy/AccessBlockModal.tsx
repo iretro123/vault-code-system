@@ -12,23 +12,23 @@ import { CreditCard, AlertTriangle, Loader2, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AccessStatus } from "@/hooks/useStudentAccess";
-import { isNativeIOSApp } from "@/lib/platform";
+import { isNativeIOSApp, isNativeAndroidApp } from "@/lib/platform";
 
 interface Props {
   status: AccessStatus;
-  refetch: () => void;
+  refetch: () => Promise<void>;
 }
 
 export function AccessBlockModal({ status, refetch }: Props) {
   const [loading, setLoading] = useState(false);
   const isPastDue = status === "past_due";
-  const isIOSNative = isNativeIOSApp();
+  const isNative = isNativeIOSApp() || isNativeAndroidApp();
 
   // Auto-refresh when user returns from Stripe portal/checkout
   useEffect(() => {
     const handler = () => {
       if (document.visibilityState === "visible") {
-        refetch();
+        void refetch().catch(() => toast.error("Couldn't check access. Please try again."));
       }
     };
     document.addEventListener("visibilitychange", handler);
@@ -36,8 +36,8 @@ export function AccessBlockModal({ status, refetch }: Props) {
   }, [refetch]);
 
   const handleReactivate = async () => {
-    if (isIOSNative) {
-      toast.info("Billing changes are not available in the iOS app. If your access was updated elsewhere, tap Refresh Access.");
+    if (isNative) {
+      toast.info("Billing changes are not available here in the mobile app. If your access was updated elsewhere, tap Refresh Access.");
       return;
     }
 
@@ -45,6 +45,7 @@ export function AccessBlockModal({ status, refetch }: Props) {
     try {
       // Try billing portal first (works for existing Stripe customers)
       const { data, error } = await supabase.functions.invoke("create-billing-portal");
+      if (error) throw error;
 
       if (!error && data?.url) {
         const opened = window.open(data.url, "_blank");
@@ -54,7 +55,7 @@ export function AccessBlockModal({ status, refetch }: Props) {
       }
 
       // Fallback: if no Stripe customer, go to checkout
-      if (error || data?.error === "no_stripe_customer") {
+      if (data?.error === "no_stripe_customer") {
         const { data: checkoutData, error: checkoutErr } = await supabase.functions.invoke("create-checkout");
         if (checkoutErr) throw checkoutErr;
         if (!checkoutData?.url) throw new Error("No checkout URL");
@@ -78,6 +79,8 @@ export function AccessBlockModal({ status, refetch }: Props) {
     setLoading(true);
     try {
       await refetch();
+    } catch {
+      toast.error("Couldn't check access. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -95,19 +98,21 @@ export function AccessBlockModal({ status, refetch }: Props) {
             )}
           </div>
           <AlertDialogTitle className="text-xl">
-            {isIOSNative ? "Access Needs Refresh" : isPastDue ? "Payment Failed" : "Subscription Canceled"}
+            {isNative ? "Check your access" : isPastDue ? "Payment needs attention" : status === "canceled" ? "Subscription canceled" : "Let's check your membership"}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm leading-relaxed">
-            {isIOSNative
-              ? "Billing changes are not available in the iOS app. If your account access changed elsewhere, refresh your access below."
+            {isNative
+              ? "Billing changes are not available here in the mobile app. If your account access changed elsewhere, refresh your access below."
               : isPastDue
               ? "Your most recent payment didn't go through. Update your billing information to restore full access to Vault Academy."
-              : "Your Vault Academy subscription has been canceled. Reactivate your account to regain access to all premium content and features."}
+              : status === "canceled" ? "Your subscription is marked canceled. If you recently renewed, check access again before changing your billing."
+              : "We haven't confirmed full access yet. If you just paid, check again using the same account. You do not need to purchase again."}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-          {isIOSNative ? (
+          {!isNative && <Button onClick={handleRefreshAccess} disabled={loading} className="w-full gap-2" size="lg">{loading && <Loader2 className="h-4 w-4 animate-spin"/>}{loading ? "Checking access..." : "Check access again"}</Button>}
+          {isNative ? (
             <Button
               onClick={handleRefreshAccess}
               disabled={loading}
@@ -115,11 +120,12 @@ export function AccessBlockModal({ status, refetch }: Props) {
               size="lg"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Refresh Access
+              {loading ? "Checking access..." : "Check access again"}
             </Button>
-          ) : (
+          ) : (isPastDue || status === "canceled") ? (
             <Button
               onClick={handleReactivate}
+              variant="outline"
               disabled={loading}
               className="w-full gap-2"
               size="lg"
@@ -127,7 +133,7 @@ export function AccessBlockModal({ status, refetch }: Props) {
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {isPastDue ? "Update Billing" : "Reactivate Account"}
             </Button>
-          )}
+          ) : null}
           <Button
             variant="ghost"
             size="sm"

@@ -1,20 +1,24 @@
+import type {ReactNode} from "react";
+import type {PlaybookChapter} from "@/hooks/usePlaybookProgress";
+type DocumentProps = {children?:ReactNode;onLoadSuccess:()=>void};
+type PageProps = {pageNumber:number;onRenderSuccess:()=>void};
 import {beforeEach,afterEach,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen,act} from '@testing-library/react';
 import {TooltipProvider} from '@/components/ui/tooltip';
 import {PlaybookReader} from '@/components/playbook/PlaybookReader';
-const pdf=vi.hoisted(()=>({document:null as any,page:null as any}));
-vi.mock('react-pdf',()=>({pdfjs:{GlobalWorkerOptions:{}},Document:(props:any)=>{pdf.document=props;return <div>{props.children}</div>;},Page:(props:any)=>{pdf.page=props;return <div>Rendered PDF page {props.pageNumber}</div>;}}));
+const pdf=vi.hoisted(()=>({document:null as DocumentProps | null,page:null as PageProps | null}));
+vi.mock('react-pdf',()=>({pdfjs:{GlobalWorkerOptions:{}},Document:(props:DocumentProps)=>{pdf.document=props;return <div>{props.children}</div>;},Page:(props:PageProps)=>{pdf.page=props;return <div>Rendered PDF page {props.pageNumber}</div>;}}));
 beforeEach(()=>{vi.stubGlobal('ResizeObserver',class{observe(){}disconnect(){}});HTMLElement.prototype.scrollTo=vi.fn();});
 afterEach(()=>{cleanup();vi.useRealTimers();vi.unstubAllGlobals();});
-const chapter={id:'intro',title:'Introduction',pdf_page_start:6,pdf_page_end:7,minutes_estimate:4} as any;
+const chapter:PlaybookChapter={id:'intro',title:'Introduction',pdf_page_start:6,pdf_page_end:7,minutes_estimate:4,order_index:1,checkpoint_json:[],action_type:'none',action_payload:null};
 function mount(){const onPageChange=vi.fn(),onReachedEnd=vi.fn();render(<TooltipProvider><PlaybookReader chapter={chapter} pdfUrl="https://example.com/book.pdf" pdfLoading={false} pdfError={null} isLocked={false} onPageChange={onPageChange} onReachedEnd={onReachedEnd}/></TooltipProvider>);return {onPageChange,onReachedEnd};}
 it('only reports the chapter end after the last page renders',()=>{
  const events=mount();
- act(()=>pdf.document.onLoadSuccess());act(()=>pdf.page.onRenderSuccess());
+ act(()=>pdf.document!.onLoadSuccess());act(()=>pdf.page!.onRenderSuccess());
  fireEvent.click(screen.getByRole('button',{name:'Next'}));
  expect(events.onPageChange).toHaveBeenCalledWith(7);
  expect(events.onReachedEnd).not.toHaveBeenCalled();
- act(()=>pdf.page.onRenderSuccess());
+ act(()=>pdf.page!.onRenderSuccess());
  expect(events.onReachedEnd).toHaveBeenCalledTimes(1);
  fireEvent.change(screen.getByLabelText('Go to page'),{target:{value:'6'}});
  expect(screen.getByText('Rendered PDF page 6')).toBeTruthy();
@@ -29,10 +33,10 @@ it('offers recovery instead of an indefinite unexplained wait',()=>{
 it('continues to the next chapter only when Next chapter is clicked',()=>{
  const next=vi.fn();
  render(<TooltipProvider><PlaybookReader chapter={chapter} pdfUrl="https://example.com/book.pdf" pdfLoading={false} pdfError={null} isLocked={false} onPageChange={vi.fn()} onReachedEnd={vi.fn()} onNextChapter={next} nextChapterTitle="Stock basics"/></TooltipProvider>);
- act(()=>pdf.document.onLoadSuccess());act(()=>pdf.page.onRenderSuccess());
+ act(()=>pdf.document!.onLoadSuccess());act(()=>pdf.page!.onRenderSuccess());
  fireEvent.click(screen.getByRole('button',{name:'Next'}));
  expect(next).not.toHaveBeenCalled();
- act(()=>pdf.page.onRenderSuccess());
+ act(()=>pdf.page!.onRenderSuccess());
  fireEvent.click(screen.getByRole('button',{name:'Next chapter'}));
  expect(next).toHaveBeenCalledTimes(1);
 });

@@ -1,202 +1,82 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Mail, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { VAULT_OS_MONTHLY_FALLBACK_PRICE, VAULT_OS_PRIVACY_POLICY_URL, VAULT_OS_TERMS_URL } from "@/lib/membership";
-import { Capacitor } from "@capacitor/core";
-import { ExternalLink } from "lucide-react";
+import { isNativeAndroidApp, isNativeIOSApp } from "@/lib/platform";
 import { AuthBackButton } from "@/components/auth/AuthBackButton";
-
-const isNativeAndroidApp = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 import { disableGuestMode } from "@/lib/guestMode";
+import "./welcome.css";
+import "./create-account.css";
 
-const CreateAccount = () => {
+export default function CreateAccount() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
   const isFullAccessFlow = location.pathname.endsWith("/full");
-  const subscriptionStore = isNativeAndroidApp() ? "Google Play" : "Apple";
+  const provider = isNativeIOSApp() ? "Apple" : isNativeAndroidApp() ? "Google Play" : "Stripe";
   const destinationPath = isFullAccessFlow ? "/membership" : "/academy/community?tab=trade-floor";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!accepted) {
-      toast({ title: "Please accept the terms to continue.", variant: "destructive" });
-      return;
-    }
-    if (password.length < 8) {
-      toast({ title: "Password must be at least 8 characters.", variant: "destructive" });
-      return;
-    }
+    if (loading || verificationEmail) return;
+    if (!accepted || password.length < 8) return;
     setLoading(true);
+    const accountEmail = email.trim().toLowerCase();
     try {
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}${destinationPath}`,
-          data: { display_name: displayName.trim() || null },
-        },
+        email: accountEmail, password,
+        options: { emailRedirectTo: `${window.location.origin}${destinationPath}` },
       });
       if (error) throw error;
-      const userId = data.user?.id;
-      if (userId) {
-        // Self-assign basic_tier role (allowed by RLS)
-        await supabase.from("user_roles").insert({ user_id: userId, role: "basic_tier" });
+      if (data.user?.id && data.session) {
+        // Preserve the existing basic-role bootstrap; membership is granted separately.
+        const { error: roleError } = await supabase.from("user_roles").insert({user_id:data.user.id, role:"basic_tier"});
+        if (roleError && roleError.code !== "23505") {
+          toast({title:"Account created", description:"Your access is still being prepared. If it does not appear, contact support."});
+        }
       }
       disableGuestMode();
       window.dispatchEvent(new Event("guest-mode-changed"));
-      // If session exists (auto-confirm), go straight in; otherwise prompt verify.
-      if (data.session) {
-        navigate(destinationPath, { replace: true });
-      } else {
-        toast({
-          title: "Check your email",
-          description: isFullAccessFlow
-            ? "Confirm your email to finish creating your account and start your membership."
-            : "Confirm your email to finish creating your account.",
-        });
-      }
-    } catch (err: any) {
-      toast({
-        title: "Could not create account",
-        description: err?.message ?? "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+      setPassword("");
+      setShowPassword(false);
+      if (data.session) navigate(destinationPath, {replace:true});
+      else setVerificationEmail(accountEmail);
+    } catch (error: unknown) {
+      toast({title:"Could not create account", description:error instanceof Error ? error.message : "Please try again.", variant:"destructive"});
+    } finally { setLoading(false); }
   }
 
-  return (
-    <div
-      className="academy-main-safe h-[100dvh] overflow-y-auto overflow-x-hidden px-6 py-10"
-      style={{
-        background: `
-          radial-gradient(ellipse 70% 50% at 50% 40%, rgba(59,130,246,0.10) 0%, transparent 70%),
-          radial-gradient(ellipse 80% 60% at 50% -10%, rgba(59,130,246,0.22) 0%, transparent 55%),
-          radial-gradient(ellipse 60% 50% at 20% 80%, rgba(59,130,246,0.10) 0%, transparent 50%),
-          linear-gradient(180deg, hsl(212,25%,7%) 0%, hsl(212,25%,4%) 100%)
-        `,
-        WebkitOverflowScrolling: "touch",
-        touchAction: "pan-y",
-        overscrollBehaviorY: "contain",
-        paddingTop: "max(env(safe-area-inset-top, 0px), 2rem)",
-        paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 1rem) + 1.5rem)",
-        minHeight: "100dvh",
-        boxSizing: "border-box",
-      }}
-    >
-      <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col justify-center">
-        <AuthBackButton className="absolute left-0 top-4 z-10" />
-        <div className="relative mb-8 min-h-11" />
-
-
-
-        <h1 className="text-5xl font-black tracking-tight text-center animate-fade-in">
-          <span className="text-foreground">VAULT</span>
-          <span className="text-primary">OS</span>
-        </h1>
-        <p className="mt-4 text-center text-base text-muted-foreground">
-          {isFullAccessFlow
-            ? `Create your full access account and continue to the ${VAULT_OS_MONTHLY_FALLBACK_PRICE} Vault OS membership.`
-            : "Create your video library account."}
-        </p>
-
-        <form onSubmit={handleSubmit} className="w-full mt-8 space-y-3">
-          <Input
-            type="text"
-            placeholder="Display name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="h-12 rounded-xl"
-            autoComplete="name"
-          />
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="h-12 rounded-xl"
-            autoComplete="email"
-          />
-          <Input
-            type="password"
-            placeholder="Password (min 8 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            className="h-12 rounded-xl"
-            autoComplete="new-password"
-          />
-
-          <label className="flex items-start gap-2 pt-2 text-xs text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
-            />
-            <span>
-              I agree to the Community Terms &amp; Safety guidelines and understand that this
-              {isFullAccessFlow
-                ? ` account can start a ${VAULT_OS_MONTHLY_FALLBACK_PRICE} ${subscriptionStore} subscription for full Vault OS access.`
-                : " membership provides access to on-demand video content only."}
-            </span>
-          </label>
-
-          {isFullAccessFlow ? (
-            <div className="rounded-xl border border-border/40 bg-card/40 p-3">
-              <p className="text-xs font-semibold text-foreground">Before you subscribe</p>
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                <Button asChild type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl">
-                  <a href={VAULT_OS_TERMS_URL} target="_blank" rel="noopener noreferrer">
-                    Terms of Use
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-                <Button asChild type="button" variant="outline" className="h-10 flex-1 justify-between rounded-xl">
-                  <a href={VAULT_OS_PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer">
-                    Privacy Policy
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full h-14 text-base font-semibold rounded-2xl gap-2 mt-2"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isFullAccessFlow ? "Create full access account" : "Create account"}
-          </Button>
-
-          <p className="text-center text-sm text-muted-foreground pt-2">
-            Already have an account?{" "}
-            <Link to="/auth" className="text-primary hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
-        </form>
-      </div>
-
-      <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60 pt-8">
-        Powered by Vault Trading Academy
-      </p>
+  return <main className="vault-entry academy-main-safe">
+    <div className="vault-entry-shell vault-signup-shell">
+      <header className="vault-entry-header"><AuthBackButton fallback="/welcome?step=access"/><span className="vault-entry-brand">VAULT <b>OS</b></span><Link to="/auth">Log in</Link></header>
+      <section className="vault-signup-content">
+        {verificationEmail ? <div className="vault-signup-verify" role="status">
+          <Mail size={32}/><h1>Check your inbox.</h1><p>Open the confirmation link sent to</p><strong>{verificationEmail}</strong>
+          <p>{isFullAccessFlow ? "Confirm your email, then continue to membership payment. No purchase has been made yet." : "Confirm your email to finish creating your free account."}</p>
+          <p>Keep this email for your next login. Check spam if the message has not arrived.</p>
+          <Link className="vault-entry-button" to="/auth">Go to login<ArrowRight size={18}/></Link>
+        </div> : <>
+          <div className="vault-signup-plan"><ShieldCheck size={16}/>{isFullAccessFlow ? `Full Access · ${VAULT_OS_MONTHLY_FALLBACK_PRICE}` : "Free Community"}</div>
+          <div className="vault-entry-title"><h1>Create your<br/>Vault account.</h1><p>{isFullAccessFlow ? "Your login first. Payment comes next." : "Community chat and a free course. Start here."}</p></div>
+          {isFullAccessFlow && <ol className="vault-signup-steps" aria-label="Membership setup"><li aria-current="step"><b>1</b>Account</li><li><b>2</b>Payment</li><li><b>3</b>Your Vault</li></ol>}
+          <form onSubmit={handleSubmit} className="vault-signup-form">
+            <div><label htmlFor="signup-email">Email</label><input id="signup-email" name="email" type="email" autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={email} onChange={e=>setEmail(e.target.value)} required disabled={loading} placeholder="you@example.com" aria-describedby="signup-email-help"/><p id="signup-email-help">Use this email whenever you log in.</p></div>
+            <div><label htmlFor="signup-password">Password</label><div className="vault-signup-password"><input id="signup-password" name="password" type={showPassword ? "text" : "password"} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} required disabled={loading} placeholder="At least 8 characters" aria-describedby="signup-password-help"/><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={19}/> : <Eye size={19}/>}</button></div><p id="signup-password-help">Save your login in your device's password manager.</p></div>
+            <label className="vault-signup-consent"><input type="checkbox" checked={accepted} onChange={e=>setAccepted(e.target.checked)} required disabled={loading}/><span>I agree to the <a href={VAULT_OS_TERMS_URL} target="_blank" rel="noopener noreferrer">Terms of Use</a> and acknowledge the <a href={VAULT_OS_PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer">Privacy Policy</a>.</span></label>
+            <button type="submit" className="vault-entry-button" disabled={loading || !accepted}>{loading ? <><Loader2 size={18} className="animate-spin"/>Creating account...</> : <>{isFullAccessFlow ? "Create account & continue" : "Create free account"}<ArrowRight size={18}/></>}</button>
+            {isFullAccessFlow && <p className="vault-signup-payment-note">No charge on this step. Review and confirm your subscription through {provider} next.</p>}
+          </form>
+          <p className="vault-entry-login">Already registered? <Link to="/auth">Log in instead</Link></p>
+        </>}
+      </section>
     </div>
-  );
-};
-
-export default CreateAccount;
+  </main>;
+}

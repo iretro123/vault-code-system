@@ -1,0 +1,27 @@
+.vault-login .vault-login-brand { margin-left:0; padding:0; font-size:23px; }
+.vault-login-content { flex:1; display:flex; flex-direction:column; justify-content:center; padding:30px 0; }
+.vault-login-title { margin-bottom:26px; }
+.vault-login-eyebrow { display:block; color:#83afff; font-size:10px; letter-spacing:2px; font-weight:650; margin-bottom:16px; }
+.vault-login-title h1 span { color:#83afff; }
+.vault-login-title p { margin-top:14px; }
+.vault-login-card { padding:26px; border:1px solid #769bd328; border-radius:24px; background:radial-gradient(ellipse at 0 0,#19305270,transparent 65%),linear-gradient(150deg,#101925,#0a101a); box-shadow:inset 0 1px 0 #ffffff08,0 18px 48px #0003; }
+.vault-login-field label { display:block; font-size:13px; font-weight:600; color:#e8effa; margin-bottom:9px; }
+.vault-login-field input { height:54px; font-size:16px; border:1px solid #9bb5d522; background:#080e18b3; border-radius:12px; color:#f1f5fc; box-shadow:inset 0 1px 3px #0002; }
+.vault-login-field input::placeholder { color:#8191a8; }
+.vault-login-field input:focus-visible { outline:2px solid #6ba3ff; outline-offset:2px; box-shadow:none; }
+.vault-login-field button { min-width:44px; min-height:44px; right:4px; display:grid; place-items:center; color:#a8b9d0; }
+.vault-login-options { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; }
+.vault-login-options>button { color:#8db8ff; min-height:44px; }
+.vault-login-options label { min-height:44px; }
+.vault-login-options input { accent-color:#3486ff; }
+.vault-login-new { display:flex; align-items:center; gap:12px; margin-top:24px; padding-top:20px; border-top:1px solid #98b1d51a; }
+.vault-login-notice { display:flex; align-items:flex-start; gap:8px; padding:12px; border-radius:12px; background:#287aff15; color:#a8caff; font-size:13px; }
+.vault-login-notice--error { color:#ffb5bc; background:#ff546412; }
+body.native-capacitor.native-keyboard-open .vault-login-content { justify-content:flex-start; padding:8px 0; }
+body.native-capacitor.native-keyboard-open .vault-login-title { margin-bottom:16px; }
+body.native-capacitor.native-keyboard-open .vault-login-title h1 { font-size:28px; letter-spacing:-1px; }
+body.native-capacitor.native-keyboard-open .vault-login-eyebrow,
+body.native-capacitor.native-keyboard-open .vault-login-title p,
+body.native-capacitor.native-keyboard-open .vault-login .vault-entry-footer { display:none; }
+@media(max-width:380px) { .vault-login-card { padding:20px; } }
+@media(max-height:750px) { .vault-login-content { padding:16px 0; } .vault-login-title { margin-bottom:20px; } .vault-login-eyebrow { margin-bottom:10px; } }

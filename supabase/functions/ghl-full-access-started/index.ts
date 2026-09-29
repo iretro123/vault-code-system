@@ -109,9 +109,9 @@ Deno.serve(async (req) => {
     if (phone) upsertBody.phone = phone;
 
     const { ok: contactOk, data: contactData } = await ghlPost("/contacts/upsert", GHL_API_KEY, upsertBody);
-    const contactId = (contactData as any)?.contact?.id;
+    const contactId = (contactData as { contact?: { id?: unknown } } | null)?.contact?.id;
 
-    if (!contactOk || !contactId) {
+    if (!contactOk || typeof contactId !== "string" || !contactId) {
       return new Response(JSON.stringify({ error: "GHL contact upsert failed" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

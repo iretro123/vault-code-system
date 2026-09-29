@@ -28,7 +28,7 @@ import { VAULT_OS_MONTHLY_PRODUCT_ID } from "@/lib/membership";
 let listenerInstalled = false;
 let androidListenerInstalled = false;
 let visibilityListenerInstalled = false;
-let inFlight = new Set<string>();
+const inFlight = new Set<string>();
 let lastReconcileUserId: string | null = null;
 
 async function getFunctionErrorMessage(error: unknown) {

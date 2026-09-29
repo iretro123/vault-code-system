@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { isNativeAndroidApp, isNativeIOSApp } from "@/lib/platform";
+import { WebMembershipCheckout } from "@/components/academy/WebMembershipCheckout";
 import { openExternalUrl } from "@/lib/externalLinks";
 import {
   FULL_ACCESS_ROLE,
@@ -17,7 +18,7 @@ import {
   clearMembershipUiState,
   isSharedGuestAccount,
 } from "@/lib/membership";
-import { hasFullAccess as hasFullAccessRole } from "@/lib/entitlements";
+import { useStudentAccess } from "@/hooks/useStudentAccess";
 
 import { StoreKitMembership, type MembershipProduct, type MembershipTransaction } from "@/lib/nativeMembership";
 import { GooglePlayMembership, type GooglePlayMembershipTransaction } from "@/lib/googlePlayMembership";
@@ -55,7 +56,7 @@ const MembershipUpgrade = () => {
   const isAndroid = isNativeAndroidApp();
   const purchaseUnavailableOnThisPlatform = !isIOS && !isAndroid;
   const sharedGuest = isSharedGuestAccount(user, profile);
-  const hasFullAccess = hasFullAccessRole(userRole?.role);
+  const { hasAccess: hasFullAccess, loading: accessLoading, error: accessError, refetch: refreshAccess } = useStudentAccess();
   const productUnavailable = (isIOS || isAndroid) && !sharedGuest && !hasFullAccess && !loadingProduct && !product;
 
   const displayPrice = useMemo(() => {
@@ -177,7 +178,7 @@ const MembershipUpgrade = () => {
     }
 
     clearMembershipUiState();
-    await refetchProfile();
+    await refreshAccess();
   }
 
   async function activateAndroidMembership(transaction: GooglePlayMembershipTransaction) {
@@ -216,7 +217,7 @@ const MembershipUpgrade = () => {
     }
 
     clearMembershipUiState();
-    await refetchProfile();
+    await refreshAccess();
   }
 
   async function handlePurchase() {
@@ -330,7 +331,7 @@ const MembershipUpgrade = () => {
     navigate("/create-account/full?source=guest", { replace: true });
   }
 
-  if (loading) {
+  if (loading || (user && accessLoading)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background px-6 text-center">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -372,8 +373,23 @@ const MembershipUpgrade = () => {
     );
   }
 
-  if (hasFullAccess && userRole?.role === FULL_ACCESS_ROLE) {
+  if (accessError) {
+    return <div className="min-h-screen flex items-center justify-center bg-background px-6">
+      <section className="max-w-md rounded-3xl border border-border bg-card p-8 text-center space-y-4">
+        <h1 className="text-2xl font-semibold">Let's check your membership.</h1>
+        <p className="text-muted-foreground">We couldn't verify access right now. If you already paid, you don't need to purchase again.</p>
+        <Button onClick={() => void refreshAccess()} className="w-full">Check access again</Button>
+        <Button variant="ghost" onClick={handleBack}>Back</Button>
+      </section>
+    </div>;
+  }
+
+  if (hasFullAccess) {
     return <Navigate to="/academy/home" replace />;
+  }
+
+  if (!isIOS && !isAndroid && !sharedGuest && user.email) {
+    return <WebMembershipCheckout email={user.email} />;
   }
 
   return (

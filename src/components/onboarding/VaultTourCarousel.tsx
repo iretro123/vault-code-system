@@ -1,114 +1,73 @@
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  GraduationCap,
-  Activity,
-  Users,
-  Radio,
-  BotMessageSquare,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
+import home from "@/assets/onboarding-tour/home.png";
+import learn from "@/assets/onboarding-tour/learn.png";
+import community from "@/assets/onboarding-tour/community.png";
+import live from "@/assets/onboarding-tour/live.png";
+import trade from "@/assets/onboarding-tour/trade.png";
+import coach from "@/assets/onboarding-tour/coach.png";
+import "./vault-screen-tour.css";
 
 const FEATURES = [
-  {
-    icon: LayoutDashboard,
-    title: "Dashboard",
-    description: "Your command center. See what to do next, every day.",
-    color: "from-blue-500/20 to-blue-600/5",
-  },
-  {
-    icon: GraduationCap,
-    title: "Learn",
-    description: "Video lessons that build your trading foundation.",
-    color: "from-emerald-500/20 to-emerald-600/5",
-  },
-  {
-    icon: Activity,
-    title: "Trade OS",
-    description: "Your personal risk cockpit. Tracks every session.",
-    color: "from-amber-500/20 to-amber-600/5",
-  },
-  {
-    icon: Users,
-    title: "Community",
-    description: "Connect with other traders. Share wins, get feedback.",
-    color: "from-violet-500/20 to-violet-600/5",
-  },
-  {
-    icon: Radio,
-    title: "Live",
-    description: "Join live coaching calls with real traders.",
-    color: "from-rose-500/20 to-rose-600/5",
-  },
-  {
-    icon: BotMessageSquare,
-    title: "Ask Coach",
-    description: "Your AI-powered trading mentor, available 24/7.",
-    color: "from-cyan-500/20 to-cyan-600/5",
-  },
-];
+  { title: "Home", headline: "Start every day HERE.", subtext: "Your lessons, live sessions, and community in one place.", image: home },
+  { title: "Learn", headline: "Build skill. One lesson at a time.", subtext: "Learn the basics. Grow at your own pace.", image: learn },
+  { title: "Community", headline: "Find your trading people.", subtext: "Share wins, ask questions, and learn together.", image: community },
+  { title: "Vault Live", headline: "Join the room. Learn live.", subtext: "Watch the process. Ask questions in real time.", image: live },
+  { title: "Trade OS", headline: "Plan your risk before your trade.", subtext: "Set your daily limit before you enter.", image: trade },
+  { title: "Ask Coach", headline: "Turn questions into clarity.", subtext: "Get a simpler explanation when something doesn't click.", image: coach },
+] as const;
 
-interface VaultTourCarouselProps {
-  onComplete: () => void;
-}
-
-export function VaultTourCarousel({ onComplete }: VaultTourCarouselProps) {
+export function VaultTourCarousel({ onComplete }: { onComplete: () => void }) {
   const [index, setIndex] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [visible, setVisible] = useState(!document.hidden);
+  const [failed, setFailed] = useState(false);
   const feature = FEATURES[index];
-  const Icon = feature.icon;
-  const isLast = index === FEATURES.length - 1;
 
-  return (
-    <div className="flex flex-col items-center w-full gap-6">
-      <p className="text-sm font-medium tracking-widest uppercase text-muted-foreground">
-        Your Vault Tour
-      </p>
+  useEffect(() => {
+    const onVisibility = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
 
-      {/* Feature card */}
-      <div
-        key={index}
-        className="animate-fade-in w-full rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.04] to-transparent p-8 flex flex-col items-center gap-5"
-      >
-        <div
-          className={cn(
-            "h-20 w-20 rounded-2xl bg-gradient-to-br flex items-center justify-center",
-            feature.color
-          )}
-        >
-          <Icon className="h-10 w-10 text-foreground" strokeWidth={1.5} />
-        </div>
-        <h3 className="text-2xl font-bold tracking-tight text-foreground">
-          {feature.title}
-        </h3>
-        <p className="text-base text-muted-foreground text-center leading-relaxed max-w-xs">
-          {feature.description}
-        </p>
-      </div>
+  useEffect(() => {
+    if (!playing || !visible) return;
+    const timer = window.setTimeout(() => {
+      setIndex(current => (current + 1) % FEATURES.length);
+      setFailed(false);
+    }, 6000);
+    return () => window.clearTimeout(timer);
+  }, [index, playing, visible]);
 
-      {/* Dots */}
-      <div className="flex items-center gap-2">
-        {FEATURES.map((_, i) => (
-          <div
-            key={i}
-            className={cn(
-              "h-1.5 rounded-full transition-all duration-300",
-              i === index
-                ? "w-6 bg-primary"
-                : i < index
-                ? "w-2 bg-primary/40"
-                : "w-2 bg-white/10"
-            )}
-          />
-        ))}
-      </div>
+  useEffect(() => {
+    const nextImage = new Image();
+    nextImage.src = FEATURES[(index + 1) % FEATURES.length].image;
+  }, [index]);
 
-      <Button
-        onClick={() => (isLast ? onComplete() : setIndex(index + 1))}
-        className="w-full h-14 text-base font-semibold tracking-wide rounded-2xl"
-      >
-        {isLast ? "Continue" : "Next"}
-      </Button>
+  const select = (next: number) => { setIndex(next); setFailed(false); };
+
+  return <div className="vault-screen-tour" data-playing={playing && visible}>
+    <div className="vault-screen-tabs" role="group" aria-label="Explore Vault features">
+      {FEATURES.map((item, i) => <button key={item.title} type="button" aria-pressed={i === index} onClick={() => select(i)}>{item.title}</button>)}
     </div>
-  );
+    <div className="vault-screen-slide" key={feature.title}>
+      <h2>{feature.title === "Vault Live" ? <>Join the room. Learn <span className="vault-tour-live-word">LIVE.</span></> : feature.title === "Trade OS" ? <>Plan your <span className="vault-tour-risk-word">RISK</span> before your trade.</> : feature.headline}</h2>
+      <p className="vault-screen-subtext">{feature.subtext}</p>
+      <div className="vault-mobile-stage">
+      <div className="vault-screen-image">
+        <img src={feature.image} alt={`${feature.title}: mobile screenshot of the Vault OS app`} decoding="async" onError={() => {setFailed(true); setPlaying(false);}} />
+        {failed && <div className="vault-screen-error">Preview unavailable. You can still explore the next section.</div>}
+      </div>
+      </div>
+    </div>
+    <div className="vault-screen-playback">
+      <button type="button" aria-label="Previous tour feature" onClick={() => select((index + FEATURES.length - 1) % FEATURES.length)}><ArrowLeft size={18}/></button>
+      <div className="vault-screen-meter" aria-label={`Feature ${index + 1} of ${FEATURES.length}`}>
+        {FEATURES.map((item, i) => <span key={item.title} data-active={i === index}><i key={`${index}-${playing}`}/></span>)}
+      </div>
+      <button type="button" aria-label={playing ? "Pause tour" : "Play tour"} onClick={() => setPlaying(value => !value)}>{playing ? <Pause size={17}/> : <Play size={17}/>}</button>
+      <button type="button" aria-label="Next tour feature" onClick={() => select((index + 1) % FEATURES.length)}><ArrowRight size={18}/></button>
+    </div>
+    <button type="button" className="vault-tour-continue" onClick={onComplete}>Continue<ArrowRight size={18}/></button>
+  </div>;
 }

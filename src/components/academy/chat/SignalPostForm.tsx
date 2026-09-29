@@ -238,7 +238,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
   }
 
   return (
-    <div className="community-signal-form rounded-xl border border-white/[0.08] bg-card overflow-hidden">
+    <div data-signal-form-expanded className="community-signal-form rounded-xl border border-white/[0.08] bg-card overflow-hidden">
       {/* Mode toggle header */}
       <div className="flex items-center border-b border-white/[0.06]">
         <button type="button" onClick={() => setMode("watchlist")}
@@ -260,7 +260,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
       </div>
 
       {/* Form body */}
-      <div className="p-3 space-y-2.5">
+      <div className="community-signal-body p-3 space-y-2.5">
         {mode === "watchlist" ? (
           <>
             <div className="flex gap-2">
@@ -321,8 +321,8 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
         {chartPreview ? (
           <div className="relative rounded-lg overflow-hidden border border-white/[0.08]">
             <img src={chartPreview} alt="Chart preview" className="w-full max-h-[160px] object-contain bg-black/20" />
-            <button type="button" onClick={removeChart}
-              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
+            <button type="button" onClick={removeChart} aria-label="Remove chart image"
+              className="absolute top-1 right-1 w-11 h-11 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -333,15 +333,17 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
           </button>
         )}
 
-        <Button onClick={handleSubmit} disabled={!canSend || sending || uploading}
-          className={cn("w-full h-9 text-[12px] font-semibold",
-            mode === "watchlist" ? "bg-sky-600 hover:bg-sky-500 text-white"
-              : direction === "calls" ? "bg-emerald-600 hover:bg-emerald-500 text-white" : "bg-red-600 hover:bg-red-500 text-white"
-          )}>
-          {(sending || uploading) ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-            : mode === "watchlist" ? <Radar className="h-3.5 w-3.5 mr-1.5" /> : <Crosshair className="h-3.5 w-3.5 mr-1.5" />}
-          {mode === "watchlist" ? "Post Watchlist" : "Post Signal"}
-        </Button>
+        <div className="community-signal-actions">
+          <Button onClick={handleSubmit} disabled={!canSend || sending || uploading}
+            className={cn("w-full h-11 text-[13px] font-semibold",
+              mode === "watchlist" ? "bg-sky-600 hover:bg-sky-500 text-white"
+                : direction === "calls" ? "bg-emerald-600 hover:bg-emerald-500 text-white" : "bg-red-600 hover:bg-red-500 text-white"
+            )}>
+            {(sending || uploading) ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              : mode === "watchlist" ? <Radar className="h-3.5 w-3.5 mr-1.5" /> : <Crosshair className="h-3.5 w-3.5 mr-1.5" />}
+            {mode === "watchlist" ? "Post Watchlist" : "Post Signal"}
+          </Button>
+        </div>
       </div>
     </div>
   );

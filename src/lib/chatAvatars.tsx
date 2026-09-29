@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { AVATAR_ICONS_MAP } from "@/lib/avatarIcons";
+import { VAULT_AVATARS } from "@/lib/vaultAvatars";
 
 const DEFAULT_COLOR = "hsl(220, 15%, 45%)";
 
@@ -23,7 +24,14 @@ export function parseAvatarUrl(avatarUrl: string | null | undefined): ParsedAvat
   // Branded Vault default when no avatar is set
   if (!avatarUrl) return { mode: "vault", color: VAULT_BRAND_COLOR };
 
-  if (avatarUrl.startsWith("http")) {
+  if (avatarUrl.startsWith("character:")) {
+    const avatar = VAULT_AVATARS.find(({ id }) => id === avatarUrl.slice("character:".length));
+    return avatar
+      ? { mode: "image", imageUrl: avatar.image, color: DEFAULT_COLOR }
+      : { mode: "vault", color: VAULT_BRAND_COLOR };
+  }
+
+  if (/^https?:\/\//.test(avatarUrl) || avatarUrl.startsWith("/assets/") || avatarUrl.startsWith("/src/assets/")) {
     return { mode: "image", imageUrl: avatarUrl, color: DEFAULT_COLOR };
   }
 
@@ -65,12 +73,11 @@ export function ChatAvatar({
   size?: string;
 }) {
   const parsed = parseAvatarUrl(avatarUrl);
-  const [imgLoaded, setImgLoaded] = useState(() =>
-    parsed.mode === "image" && parsed.imageUrl ? loadedImages.has(parsed.imageUrl) : false
-  );
+  const [loadedUrl, setLoadedUrl] = useState<string | undefined>();
 
   if (parsed.mode === "image" && parsed.imageUrl) {
     const url = parsed.imageUrl;
+    const imgLoaded = loadedUrl === url || loadedImages.has(url);
     return (
       <div className={`${size} rounded-full shrink-0 relative overflow-hidden`}>
         {/* Initials fallback — always rendered, hidden when image loads */}
@@ -87,7 +94,7 @@ export function ChatAvatar({
           alt={userName}
           loading="eager"
           className={`absolute inset-0 h-full w-full rounded-full object-cover ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-          onLoad={() => { loadedImages.add(url); setImgLoaded(true); }}
+          onLoad={() => { loadedImages.add(url); setLoadedUrl(url); }}
         />
       </div>
     );

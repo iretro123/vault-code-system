@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/hooks/useAuth";
+import { isChatPush } from "../../supabase/functions/_shared/chatPushPolicy";
 
 /**
  * Browser / OS notification delivery layer.
@@ -94,8 +95,11 @@ export function useOSNotifications() {
   const notify = useCallback(
     (payload: OSNotifyPayload) => {
       if (!user) return;
+      if (!isChatPush(payload.type, payload.linkPath)) return;
       if (!isSupported()) return;
       if (Notification.permission !== "granted") return;
+      // The open conversation already renders incoming messages in realtime.
+      if (document.visibilityState === "visible") return;
 
       // Dedupe
       if (shownIds.has(payload.id)) return;
@@ -105,9 +109,6 @@ export function useOSNotifications() {
         const first = shownIds.values().next().value;
         if (first) shownIds.delete(first);
       }
-
-      // Only show OS notification when app is open/foreground
-      if (document.visibilityState !== "visible") return;
 
       try {
         const n = new Notification(payload.title, {

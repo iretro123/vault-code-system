@@ -80,26 +80,24 @@ function WatchlistCard({ signal, chartImageUrl, userName, userRole, avatarUrl, c
   const BiasIcon = bias.icon;
 
   return (
-    <div className="vault-signal-card vault-signal-watchlist max-w-full sm:max-w-[520px] mt-2">
+    <div className="vault-signal-card vault-signal-watchlist w-full max-w-[440px] mt-2">
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-3">
+      <div className="signal-watchlist-header flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-2.5">
         <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
           <Radar className="h-4 w-4 text-sky-400" />
         </div>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-sky-400">Watching</span>
-          <span className="text-[18px] font-bold text-foreground tracking-tight">{signal.ticker}</span>
-        </div>
+        <span className="flex-1 text-[10px] font-bold uppercase tracking-[0.15em] text-sky-400">Watching</span>
         <span className={cn("inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border", bias.cls)}>
           <BiasIcon className="h-3 w-3" />
           {bias.label}
         </span>
+        <span className="signal-watchlist-ticker w-full min-w-0 text-[18px] leading-snug font-bold text-foreground tracking-tight break-words">{signal.ticker}</span>
       </div>
 
       <div className="h-px bg-white/[0.06]" />
 
       {/* Content */}
-      <div className="px-4 py-3 space-y-3">
+      {(signal.levels || chartImageUrl || signal.tvLink || signal.notes) && <div className="signal-watchlist-body px-3 py-2.5 space-y-2">
         {signal.levels && (
           <div>
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Key Levels</span>
@@ -108,8 +106,8 @@ function WatchlistCard({ signal, chartImageUrl, userName, userRole, avatarUrl, c
         )}
 
         {chartImageUrl && (
-          <button type="button" onClick={() => onImageClick?.(chartImageUrl)} className="block w-full group">
-            <img src={chartImageUrl} alt="Chart" loading="lazy" className="w-full rounded-lg border border-white/[0.08] group-hover:border-white/[0.15] transition-colors object-contain max-h-[280px]" />
+          <button type="button" aria-label={`Enlarge ${signal.ticker} watchlist chart`} onClick={() => onImageClick?.(chartImageUrl)} className="signal-watchlist-chart block w-full group rounded-lg bg-black/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400">
+            <img src={chartImageUrl} alt={`${signal.ticker} watchlist chart`} loading="lazy" className="w-full h-auto rounded-lg border border-white/[0.08] group-hover:border-white/[0.15] transition-colors object-contain max-h-[180px]" />
           </button>
         )}
 
@@ -118,13 +116,13 @@ function WatchlistCard({ signal, chartImageUrl, userName, userRole, avatarUrl, c
         {signal.notes && (
           <p className="text-[13px] text-foreground/80 leading-relaxed italic">"{signal.notes}"</p>
         )}
-      </div>
+      </div>}
 
       {/* Author */}
       <div className="h-px bg-white/[0.06]" />
-      <div className="flex items-center gap-2 px-4 py-2.5">
+      <div className="signal-watchlist-author flex items-center gap-2 px-3 py-2">
         <ChatAvatar avatarUrl={avatarUrl} userName={userName} size="h-7 w-7" />
-        <span className="text-[11px] font-medium text-foreground/70">{userName}</span>
+        <span className="min-w-0 break-words text-[11px] font-medium text-foreground/70">{userName}</span>
         <AcademyRoleBadge roleName={userRole} />
         <span className="text-[10px] text-muted-foreground ml-auto">{formatTime(createdAt)}</span>
       </div>

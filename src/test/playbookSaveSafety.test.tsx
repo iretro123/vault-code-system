@@ -5,7 +5,7 @@ vi.mock('@/hooks/useAuth',()=>({useAuth:()=>({user:state.user})}));
 vi.mock('@/integrations/supabase/localPreviewFetch',()=>({isLocalDesignPreview:()=>state.local}));
 vi.mock('sonner',()=>({toast:{error:state.error}}));
 vi.mock('@/integrations/supabase/client',()=>({supabase:{from:(table:string)=>({
- select:()=>({order:async()=>({data:[]}),eq:()=>({then:(resolve:any)=>resolve({data:[]}),maybeSingle:async()=>({data:null})})}),
+ select:()=>({order:async()=>({data:[]}),eq:()=>({then:(resolve:(value:{data:unknown[]})=>unknown)=>resolve({data:[]}),maybeSingle:async()=>({data:null})})}),
  upsert:state.write,
 })}}));
 import {usePlaybookProgress} from '@/hooks/usePlaybookProgress';
