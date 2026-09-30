@@ -149,3 +149,13 @@
  .pr-posts>li+li{margin-top:18px}
  .pulse-room-clean .pcp-photo{max-width:100%;margin-inline:auto}
 }
+
+/* Balanced desktop workspace: readable chart, restrained card typography. */
+@media(min-width:1024px){
+ .pr-toolbar,.pr-content{max-width:760px}
+ .pr-toolbar{padding-top:10px;padding-bottom:10px}
+ .pr-content{padding-bottom:20px}
+ .pr-source{align-items:flex-start}
+ .pr-source .pr-tradingview{max-width:280px}
+ .pr-history{margin:8px 0 0;padding-left:0}
+}

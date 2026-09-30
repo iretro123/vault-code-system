@@ -287,3 +287,8 @@ body.native-capacitor.native-keyboard-open .community-expression-picker .vault-g
 .vault-community[data-active-tab=pulse] .community-room-tabs button[aria-current=page]:before{display:none}
 .vault-community[data-active-tab=pulse] .community-room-tabs button[aria-current=page]:after{left:0;right:0;bottom:0;background:#9acfff;box-shadow:0 0 10px #75baff30;height:3px}
 @media(max-width:600px){.vault-community[data-active-tab=pulse] .community-room-tabs{gap:12px;padding-top:4px}.vault-community[data-active-tab=pulse] .community-room-tabs button{min-height:50px;padding:12px 10px 14px;font-size:15px}}
+
+@media(min-width:1024px){
+ .vault-community[data-active-tab=pulse] .community-room-tabs{max-width:720px;margin-inline:auto;justify-content:flex-start;gap:12px;padding:0;border-bottom:1px solid #ffffff12}
+ .vault-community[data-active-tab=pulse] .community-room-tabs button{min-height:42px;padding:10px 12px;font-size:14px}
+}
