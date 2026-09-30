@@ -30,3 +30,6 @@
 .pr-snapshot .pulse-chart-post{margin-top:20px}.pr-snapshot .pcp-copy{padding:14px 16px}.pr-snapshot .pcp-copy h3{font-size:19px;margin-top:6px}.pr-snapshot .pcp-capture-time{font-size:12px;padding:10px 14px}
 
 .pr-snapshot .pcp-copy{display:none}.pr-snapshot .pcp-surface{border-radius:12px}.pr-snapshot .pcp-chart{margin:0}.pr-snapshot .pcp-actions:empty{display:none}
+
+/* Keep closing snapshots in the same supply/demand palette as live alerts. */
+.pr-snapshot[data-side=supply]{background:linear-gradient(140deg,#401e29,#2c1820);border-color:#ffafbf38}.pr-snapshot[data-side=demand]{background:linear-gradient(140deg,#193e32,#132d25);border-color:#a7efcf38}.pr-snapshot[data-side=supply] .pr-snapshot-time,.pr-snapshot[data-side=supply] .pr-snapshot-note{color:#dec0c8}.pr-snapshot[data-side=demand] .pr-snapshot-time,.pr-snapshot[data-side=demand] .pr-snapshot-note{color:#b9d8ca}.pr-snapshot li[data-side=supply] .pr-snapshot-side{color:#ffadb8}.pr-snapshot li[data-side=demand] .pr-snapshot-side{color:#a7efcf}

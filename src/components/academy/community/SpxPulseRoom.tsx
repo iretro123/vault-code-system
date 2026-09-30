@@ -25,6 +25,8 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
   const noZone = fresh && quote.zones.length === 0;
   const closingSnapshot = !monitoring && !!quote;
+  const snapshotSides = new Set(quote?.zones.map(zone => zone.side));
+  const snapshotSide = snapshotSides.size === 1 ? quote!.zones[0].side : "neutral";
   const snapshotTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(quote.at) : "";
   const shown = history ? posts : noZone || closingSnapshot ? [] : posts.slice(0, 1);
   const earlierCount = noZone || closingSnapshot ? posts.length : Math.max(0, posts.length - 1);
@@ -62,14 +64,14 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         </div>
         {error && <p className="pr-warning" role="alert">{error}</p>}
         {monitoring && connected && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
-        {closingSnapshot && <section className="pr-snapshot" aria-label={`${tf}-minute last indicator snapshot`}>
+        {closingSnapshot && <section className="pr-snapshot" data-side={snapshotSide} aria-label={`${tf}-minute last indicator snapshot`}>
           <p className="pr-snapshot-time">Last indicator snapshot · {snapshotTime} ET</p>
           <h2>{tf}-minute zones</h2>
-          {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`}>
+          {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`} data-side={zone.side}>
             <span className="pr-snapshot-side">{zone.side}</span><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
           </li>)}</ul> : <p className="pr-snapshot-none">No active {tf}-minute zone at this update.</p>}
           {quote.chartUrl && quote.chartCapturedAt && <PulseChartPost
-            key={`${tf}:${quote.at}`} symbol={symbolLabel} timeframe={tf} side="neutral"
+            key={`${tf}:${quote.at}`} symbol={symbolLabel} timeframe={tf} side={snapshotSide}
             headline="TradingView chart" capturedAt={quote.at} chartCapturedAt={quote.chartCapturedAt}
             captureContext="refresh" chartUrl={quote.chartUrl} showIdentity={false}
             defaultShowChart note="Captured after the session. Zone values above are from the timestamp shown." />}
