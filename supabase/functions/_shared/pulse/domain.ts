@@ -19,6 +19,7 @@ export interface PulsePost {
   levelsSource?: "indicator-labels";
   price?: number;
   confirmed?: boolean;
+  liquidityChart?: { url: string; capturedAt: number; baseCapturedAt: number };
   chartUrl?: string;
   capturedAt?: number;
   captureContext?: "event" | "refresh";
@@ -36,7 +37,7 @@ export interface PulseFeed {
   indicatorAt: Partial<Record<5 | 15, number>>;
   sessionOpen: boolean;
   afterHoursTestUntil?: number | null;
-  quotes?: Partial<Record<5 | 15, { price: number; at: number; chartUrl?: string; chartCapturedAt?: number; zones: { side: "supply" | "demand"; lower: number; upper: number }[] }>>;
+  quotes?: Partial<Record<5 | 15, { price: number; at: number; chartUrl?: string; chartCapturedAt?: number; liquidityChart?: { url: string; capturedAt: number; baseCapturedAt: number }; zones: { side: "supply" | "demand"; lower: number; upper: number }[] }>>;
 }
 
 // The owner's requested monitoring window. This is not an exchange calendar.

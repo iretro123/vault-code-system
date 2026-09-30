@@ -1,0 +1,40 @@
+import { useEffect, useState } from "react";
+import { PulseChartPost, type PulseChartPostProps } from "./PulseChartPost";
+
+export interface PulseLiquidityImage {
+  url: string;
+  capturedAt: number;
+  /** Identifies the matching zone-only view; never reuse on a new capture. */
+  baseCapturedAt: number;
+}
+
+export function PulseLiquidityChart({ liquidityChart, ...props }: PulseChartPostProps & { liquidityChart?: PulseLiquidityImage }) {
+  const [show, setShow] = useState(false);
+  const baseAt = props.chartCapturedAt ?? props.capturedAt;
+  const available = !!props.chartUrl && !!liquidityChart
+    && /^https:\/\//.test(liquidityChart.url)
+    && liquidityChart.url !== props.chartUrl
+    && liquidityChart.baseCapturedAt === baseAt
+    && Number.isFinite(liquidityChart.capturedAt)
+    && Math.abs(liquidityChart.capturedAt - baseAt) <= 90000;
+  const showing = show && available;
+  useEffect(() => { setShow(false); }, [props.symbol, props.timeframe, baseAt]);
+  return <div className="pcp-liquidity-view">
+    {available && <div className="pcp-liquidity-controls">
+      <button type="button" role="switch" aria-checked={showing} onClick={() => setShow(value => !value)}>
+        <span>Show liquidity</span><span className="pcp-liquidity-switch" aria-hidden="true"><i/></span>
+      </button>
+      {showing && <details className="pcp-liquidity-help"><summary>How to read the lines</summary>
+        <p>Each line starts at a candle wick: a previous high or low where price may react.</p>
+        <p><strong>Back inside:</strong> if price crosses the line and closes back inside, a turn is possible.</p>
+        <p><strong>Close beyond:</strong> price may keep going. Watch the next candles and the supply or demand zone.</p>
+        <p>These are possible liquidity areas, not visible orders or guaranteed targets. Lines appear after the swing is confirmed.</p>
+      </details>}
+    </div>}
+    <PulseChartPost {...props}
+      chartUrl={showing ? liquidityChart.url : props.chartUrl}
+      chartCapturedAt={showing ? liquidityChart.capturedAt : props.chartCapturedAt}
+      chartFocus={showing ? undefined : props.chartFocus}
+      entryMarkup={showing ? undefined : props.entryMarkup}/>
+  </div>;
+}

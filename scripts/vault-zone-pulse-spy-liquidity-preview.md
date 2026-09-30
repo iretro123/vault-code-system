@@ -1,35 +1,30 @@
-# Pulse liquidity preview — not live
+# Pulse liquidity: simple optional view
 
-This candidate appends a display/learning layer to the existing SPY source. It is not installed on the hosted chart, compiled in TradingView, or connected to member liquidity notifications. Existing source and running alerts remain unchanged. App updates default OFF in the preview to prevent duplicate zone webhook delivery.
+The private TradingView preview compiles and renders on actual SPY 5m/15m charts. The original live zone indicator and existing alert definitions are unchanged. `Send app updates` remains OFF in this preview.
 
-## Implemented in candidate source
+## Display
 
-- Prior completed regular-session daily high/low via offset daily request.
-- Confirmed swing references; labels begin when pivots become knowable, not backdated to the pivot.
-- Equal high/low pairing of consecutive confirmed pivots using configurable ATR tolerance (not a comprehensive order-pool model).
-- Sweep/reclaim: excursion by a minimum tick distance, close back inside, preceding close on the original side. Confirm only at bar close.
-- A close beyond the level consumes the reference as a close beyond, not a confirmed reversal/sweep.
-- Zone confluence: swept bar overlaps the preceding active supply/demand boundaries and does not close beyond their invalidation edge. This is overlap evidence, not a trade entry or probability.
-- Each reference consumed once, bounded references/labels and age-based expiry. Dual-side sweep is explicitly ambiguous; directional confluence alerts suppressed.
-- Nearest remaining high/low references displayed as possible areas of interest, not guaranteed targets.
-- Timestamped explanation and four optional TradingView alert conditions. These are NOT wired to the production zone webhook.
+- `Show liquidity` defaults OFF. Nearest untouched confirmed swing high above price and swing low below price only: at most two lines.
+- Exact wick prices, with the line starting on the originating wick's bar. Detection remains delayed by the confirmation period (default three candles); anchoring is not an earlier signal.
+- Plain labels: `Liquidity above` / `Liquidity below` and price. No assumed order quantity, institutional intent, target guarantee, or probability.
+- `Show latest sweep` and `Show simple guide` separately optional and OFF. No wall of historic labels. EMAs and BOS default OFF; signal calculation remains unchanged to preserve zone deletion behavior.
+- Levels expire or are consumed; strict bar-close return is distinguished from a close beyond. Dual-side sweeps suppress directional confluence. Levels are bounded to 100 internally but only the nearest two are drawn.
+- PDF visual examples reviewed on pages 4, 7, 8 and 9: wick swings, equal highs/lows, supply/demand context, return versus continuation. The simple map does not add trendlines, Fibonacci, automatic orders or claimed stops. Same-price confirmed highs/lows share one level.
 
-## Still required before release
+## Pulse app
 
-1. Compile in Pine v6 and inspect drawings on 5m/15m; hosted browser control was disconnected during this turn.
-2. Replay: delayed pivots; strict reclaim versus close beyond; gaps; dual-side bars; equal levels; retired zones; day boundary; holiday/short-session data; disabled layer; restart and reference expiry.
-3. Compare all original zone events against unchanged source. New layer must not alter zone generation/deletion semantics.
-4. Version liquidity snapshot schema, validate and persist it server-side, enforce entitlement, and implement per-user alert preferences/deduplication/expiry.
-5. Recreate affected TradingView alerts with correct frozen script versions only after receiver compatibility. Do not replace existing active alerts prematurely.
-6. Observe a real sweep, matching source chart and timestamp, and physical push receipt. No invented backtest success or win rates.
+`PulseLiquidityChart` defaults OFF and offers a per-chart switch only when a matching private TradingView liquidity capture is provided. It checks the exact base-capture timestamp and maximum 90-second pair gap; changes of timeframe/base capture reset OFF. No screenshot markup is guessed by the frontend. Both versions retain their real capture timestamps, original full-size viewer and signed member-only image URLs.
 
-## Product direction
+Migration `20260930033500_pulse_optional_liquidity_view.sql` was applied live. Current closing snapshots for Sep29 4PM have manually captured later chart pairs, clearly labeled as later views. The source images are 960x589 browser chart captures (not the 2350x1438 automatic capture pipeline). Neither old event images nor event timestamps were rewritten.
 
-An evidence card should show level type, level price, timeframe, sweep time, close/reclaim status, zone overlap, higher-timeframe context, nearest opposing references, and explicit invalidation. The AI explanation consumes this validated structured evidence and cites it; it must not invent prices, order-book facts, targets or confidence percentages. Add exchange-calendar support and measured outcomes before ranking setups. OHLC cannot prove stops, institutional intent, or execution liquidity.
+## Remaining integration / release gates
 
-## References
+Automatic future paired liquidity captures are NOT wired into the capture worker or event finish RPC. On new updates with no matching pair, the app hides the switch rather than reusing stale liquidity. No liquidity push notifications are enabled. Before automatic rollout: implement and test both captures in the dedicated hosted session, preserve event-source/freshness validation and serialize capture operations. Restore 2x HD paired captures; the current manual examples are preview quality.
 
-- User-supplied https://howtotrade.com/wp-content/uploads/2024/03/Liquidity-Sweep-in-Trading.pdf (read all 10 pages via text extraction). Educational inspiration only; no reproduced charts or long prose. Marketing claims about manipulation/probability are not implemented as facts.
+Pine replay still needed: pivot delay/anchor, gaps, exact touch, strict return vs close-beyond, double-side sweeps, stale/consumed levels, zone overlap and restart. Existing zone alerts must not be replaced until parity and receiver compatibility are validated. Native Chrome chart can conflict with hosted capture, so leave it off a chart after previewing.
+
+## Sources
+
+- https://howtotrade.com/wp-content/uploads/2024/03/Liquidity-Sweep-in-Trading.pdf
 - https://www.tradingview.com/pine-script-docs/concepts/repainting/
-- https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/
 - https://www.tradingview.com/pine-script-docs/concepts/alerts/
