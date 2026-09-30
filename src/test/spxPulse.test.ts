@@ -10,7 +10,7 @@ describe("SPX500 source and session validation", () => {
     expect(()=>validatePulsePost({...baseline,timeframe:1},now)).toThrow("Wrong chart");
   });
   it("honors 9–4 New York with DST, weekends, and exclusive close", () => {
-    for(const [at,expected] of [["2026-09-24T12:59:59Z",false],["2026-09-24T13:00:00Z",true],["2026-09-24T20:00:00Z",false],["2026-09-26T14:00:00Z",false],["2026-01-15T13:59:00Z",false],["2026-01-15T14:00:00Z",true]] as const) expect(pulseWindowOpen(Date.parse(at))).toBe(expected);
+    for(const [at,expected] of [["2026-09-24T12:59:59Z",false],["2026-09-24T13:00:00Z",false],["2026-09-24T13:29:59Z",false],["2026-09-24T13:30:00Z",true],["2026-09-24T20:00:00Z",false],["2026-09-26T14:00:00Z",false],["2026-01-15T13:59:00Z",false],["2026-01-15T14:00:00Z",false],["2026-01-15T14:29:59Z",false],["2026-01-15T14:30:00Z",true]] as const) expect(pulseWindowOpen(Date.parse(at))).toBe(expected);
   });
   it("rejects stale, future, and outside-window indicator data", () => {
     expect(()=>validatePulsePost(baseline,now+300001)).toThrow("Stale");

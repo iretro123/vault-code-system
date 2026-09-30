@@ -191,7 +191,7 @@ if barstate.islast
 pulseEnabled = input.bool(true, "Send app updates", group="Zone Pulse")
 pulseAfterHours = input.bool(false, "Allow after-hours testing", group="Zone Pulse")
 pulseChartOk = (syminfo.tickerid == "AMEX:SPY" or syminfo.tickerid == "BATS:SPY") and (timeframe.period == "5" or timeframe.period == "15")
-pulseSessionOk = not na(time(timeframe.period, "0900-1600:23456", "America/New_York"))
+pulseSessionOk = not na(time(timeframe.period, "0930-1600:23456", "America/New_York"))
 max_bars_back(time, 60)
 max_bars_back(open, 60)
 max_bars_back(high, 60)

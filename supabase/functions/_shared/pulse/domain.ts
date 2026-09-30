@@ -45,7 +45,7 @@ export function pulseWindowOpen(now: number): boolean {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(now));
   const part = (type: string) => parts.find(p => p.type === type)?.value;
   const minute = Number(part("hour")) * 60 + Number(part("minute"));
-  return !["Sat", "Sun"].includes(part("weekday") || "") && minute >= 540 && minute < 960;
+  return !["Sat", "Sun"].includes(part("weekday") || "") && minute >= 570 && minute < 960;
 }
 
 export function validatePulsePost(input: unknown, now: number, reviewAllowed = false, afterHoursTest = false, verifiedSessionClose = false): PulsePost {
