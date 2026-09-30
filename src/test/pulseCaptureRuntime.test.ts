@@ -1,3 +1,4 @@
+vi.mock('../../workers/pulse-spy/liquidity-capture.js',()=>({liquidityVisibility:vi.fn()}));
 vi.mock('../../workers/pulse-spy/capture-source.js',async importOriginal=>({...await importOriginal(),setDataWindow:vi.fn(),selectChartTimeframe:vi.fn()}));
 vi.mock('../../workers/pulse-spy/capture-framing.js',()=>({frameChart:vi.fn()}));
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

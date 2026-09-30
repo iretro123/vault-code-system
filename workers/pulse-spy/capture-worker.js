@@ -1,3 +1,4 @@
+import { runLiquidityCapture } from './liquidity-capture.js';
 import { checkChartConnection, captureAuthorized } from './capture-check.js';
 import { drainCaptures, runCapture } from './capture.js';
 import { verifyImageSignature } from './capture-policy.js';
@@ -23,6 +24,12 @@ export default {
       const contentType=image.metadata?.contentType==='image/jpeg' ? 'image/jpeg' : 'image/png';
       return image.value ? new Response(image.value,{headers:{'Content-Type':contentType,'Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}) : new Response('Chart unavailable',{status:404,headers:{'Cache-Control':'no-store'}});
     }
+    if (request.method==='POST' && url.pathname==='/liquidity' && await captureAuthorized(request,env.WORKER_TOKEN)) {
+      const tf=Number(url.searchParams.get('timeframe'));
+      if (![5,15].includes(tf)) return Response.json({ok:false,failure:'unsupported-timeframe'},{status:400});
+      const result=await runLiquidityCapture(env,database(env),tf,true);
+      return Response.json(result,{status:result.ok?200:409,headers:{'Cache-Control':'no-store'}});
+    }
     if (request.method==='POST' && url.pathname==='/check' && await captureAuthorized(request,env.WORKER_TOKEN)) {
       const rpc=database(env);
       const claim=await rpc('pulse_spy_capture_probe_claim');
@@ -47,7 +54,7 @@ export default {
     return new Response('Not found',{status:404});
   },
   async scheduled(_event,env,ctx) {
-    ctx.waitUntil(drainCaptures(env,database(env)));
+    ctx.waitUntil((async()=>{const rpc=database(env);if(await drainCaptures(env,rpc)) await runLiquidityCapture(env,rpc);})());
   },
   async queue(batch,env) {
     for (const message of batch.messages) {

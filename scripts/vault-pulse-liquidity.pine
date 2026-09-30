@@ -1,0 +1,125 @@
+//@version=6
+indicator("Vault Pulse - Liquidity", overlay=true, max_lines_count=10, max_labels_count=10, max_bars_back=600)
+
+// Independent liquidity-only companion. Does not publish app zone updates or draw zones.
+// Optional liquidity map. Lines start on the actual confirmed swing wick.
+// A pivot is only discovered lqSwings bars later. Origin is visual anchoring,
+// knownBar is when detection is allowed; alerts never trigger on past bars.
+lqGroup = "Liquidity"
+lqEnabled = input.bool(true, "Show liquidity", group=lqGroup, tooltip="Optional. Shows the nearest untouched high and low. Lines connect to their candle wicks and appear only after the swing is confirmed.")
+lqShowSweep = input.bool(false, "Show latest sweep", group=lqGroup)
+lqShowCoach = input.bool(false, "Show simple guide", group=lqGroup)
+lqSwings = input.int(3, "Candles to confirm a swing", minval=2, maxval=10, group="Liquidity - advanced")
+lqMaxAge = input.int(100, "Keep levels for this many candles", minval=10, maxval=500, group="Liquidity - advanced")
+lqMinTicks = 2
+lqPH = ta.pivothigh(high, lqSwings, lqSwings)
+lqPL = ta.pivotlow(low, lqSwings, lqSwings)
+lqChartOK = timeframe.isminutes and (timeframe.multiplier == 5 or timeframe.multiplier == 15)
+
+type LqLevel
+    float price
+    bool above
+    int originBar
+    int knownBar
+
+var array<LqLevel> lqLevels = array.new<LqLevel>()
+var label lqLastSweep = na
+var line lqAboveLine = na
+var line lqBelowLine = na
+var label lqAboveTag = na
+var label lqBelowTag = na
+
+lqAdd(float price, bool above, int origin) =>
+    bool duplicate = false
+    if array.size(lqLevels) > 0
+        for j = 0 to array.size(lqLevels) - 1
+            LqLevel existing = array.get(lqLevels, j)
+            if existing.above == above and math.abs(existing.price - price) < syminfo.mintick / 2
+                duplicate := true
+    if not na(price) and not duplicate
+        array.push(lqLevels, LqLevel.new(price, above, origin, bar_index))
+        if array.size(lqLevels) > 100
+            array.shift(lqLevels)
+
+bool lqSweepHigh = false
+bool lqSweepLow = false
+bool lqSupplyConfluence = false
+bool lqDemandConfluence = false
+float lqNearestAbove = na
+float lqNearestBelow = na
+int lqAboveOrigin = na
+int lqBelowOrigin = na
+
+if lqEnabled and lqChartOK and barstate.isconfirmed
+    if array.size(lqLevels) > 0
+        for i = array.size(lqLevels) - 1 to 0
+            LqLevel level = array.get(lqLevels, i)
+            bool expired = bar_index - level.knownBar > lqMaxAge
+            bool crossed = level.above ? high >= level.price + lqMinTicks * syminfo.mintick : low <= level.price - lqMinTicks * syminfo.mintick
+            bool returned = level.above ? close < level.price : close > level.price
+            bool closedBeyond = level.above ? close > level.price : close < level.price
+            bool fromInside = level.above ? close[1] <= level.price : close[1] >= level.price
+            bool swept = not expired and bar_index > level.knownBar and crossed and returned and fromInside
+            bool passed = not expired and bar_index > level.knownBar and closedBeyond
+            if swept
+                bool zoneOverlap = false
+                lqSweepHigh := lqSweepHigh or level.above
+                lqSweepLow := lqSweepLow or not level.above
+                lqSupplyConfluence := lqSupplyConfluence or (level.above and zoneOverlap)
+                lqDemandConfluence := lqDemandConfluence or (not level.above and zoneOverlap)
+            // Retire a level on a real excursion, even if the candle closes exactly on it.
+            if expired or passed or crossed
+                array.remove(lqLevels, i)
+    // Exact wick price and actual wick bar; no averaging or floating origins.
+    if not na(lqPH)
+        lqAdd(lqPH, true, bar_index - lqSwings)
+    if not na(lqPL)
+        lqAdd(lqPL, false, bar_index - lqSwings)
+
+if lqSweepHigh and lqSweepLow
+    lqSupplyConfluence := false
+    lqDemandConfluence := false
+if lqShowSweep and (lqSweepHigh or lqSweepLow)
+    label.delete(lqLastSweep)
+    bool upper = lqSweepHigh
+    lqLastSweep := label.new(bar_index, upper ? high : low, lqSweepHigh and lqSweepLow ? "Both sides swept" : "Swept", style=upper ? label.style_label_down : label.style_label_up, color=color.rgb(60, 72, 87), textcolor=color.white, size=size.small)
+
+if lqEnabled and lqChartOK and array.size(lqLevels) > 0
+    for i = 0 to array.size(lqLevels) - 1
+        LqLevel level = array.get(lqLevels, i)
+        if level.above and level.price > close and (na(lqNearestAbove) or level.price < lqNearestAbove)
+            lqNearestAbove := level.price
+            lqAboveOrigin := level.originBar
+        if not level.above and level.price < close and (na(lqNearestBelow) or level.price > lqNearestBelow)
+            lqNearestBelow := level.price
+            lqBelowOrigin := level.originBar
+
+// Draw only two clean, wick-anchored levels. Delete/recreate only on the last bar.
+if barstate.islast
+    line.delete(lqAboveLine)
+    line.delete(lqBelowLine)
+    label.delete(lqAboveTag)
+    label.delete(lqBelowTag)
+    if lqEnabled and lqChartOK
+        if not na(lqNearestAbove)
+            lqAboveLine := line.new(lqAboveOrigin, lqNearestAbove, bar_index + 3, lqNearestAbove, color=color.rgb(246, 193, 85), style=line.style_dashed, width=2)
+            lqAboveTag := label.new(bar_index + 3, lqNearestAbove, "Liquidity above\n" + str.tostring(lqNearestAbove, format.mintick), style=label.style_label_right, color=color.rgb(73, 58, 29), textcolor=color.rgb(255, 213, 128), size=size.normal)
+        if not na(lqNearestBelow)
+            lqBelowLine := line.new(lqBelowOrigin, lqNearestBelow, bar_index + 3, lqNearestBelow, color=color.rgb(103, 192, 255), style=line.style_dashed, width=2)
+            lqBelowTag := label.new(bar_index + 3, lqNearestBelow, "Liquidity below\n" + str.tostring(lqNearestBelow, format.mintick), style=label.style_label_right, color=color.rgb(26, 57, 78), textcolor=color.rgb(159, 217, 255), size=size.normal)
+
+var table lqCoach = table.new(position.bottom_right, 1, 3)
+if barstate.islast
+    table.clear(lqCoach, 0, 0, 0, 2)
+    if lqEnabled and lqShowCoach
+        table.cell(lqCoach, 0, 0, "LIQUIDITY · " + timeframe.period + " MIN", text_color=color.white, bgcolor=color.rgb(27, 39, 54), text_size=size.small)
+        table.cell(lqCoach, 0, 1, "Back inside: possible turn\nClose beyond: possible continuation", text_color=color.white, bgcolor=color.rgb(20, 29, 40), text_size=size.small)
+        table.cell(lqCoach, 0, 2, "Watch price at the line. No guaranteed direction.", text_color=color.silver, bgcolor=color.rgb(20, 29, 40), text_size=size.small)
+
+// Optional TradingView conditions only. Existing zone alerts are unchanged.
+alertcondition(lqSweepHigh, "Pulse high swept", "Price crossed a prior high and closed back below it. A turn is possible, not guaranteed.")
+alertcondition(lqSweepLow, "Pulse low swept", "Price crossed a prior low and closed back above it. A turn is possible, not guaranteed.")
+alertcondition(lqSupplyConfluence, "Pulse sweep at supply", "Price swept a high at the preceding supply zone and closed back below the high.")
+alertcondition(lqDemandConfluence, "Pulse sweep at demand", "Price swept a low at the preceding demand zone and closed back above the low.")
+plot(lqNearestAbove, "Liquidity reference above", display=display.data_window)
+plot(lqNearestBelow, "Liquidity reference below", display=display.data_window)

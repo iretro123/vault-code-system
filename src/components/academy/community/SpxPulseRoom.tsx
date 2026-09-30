@@ -3,12 +3,17 @@ import { Activity, ArrowUpRight, ArrowUp, ArrowDown, ChevronUp } from "lucide-re
 import { PulseLiquidityChart } from "../chat/PulseLiquidityChart";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
+import { usePulseLiquidity } from "@/hooks/usePulseLiquidity";
+import { PulseChartPost } from "../chat/PulseChartPost";
 import { usePulseFeed } from "@/hooks/usePulseFeed";
 import { usePulseReactions } from "@/hooks/usePulseReactions";
 import "./pulse-room.css";
 
 export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cloud" | "local"; active?: boolean }) {
   const { feed, connected, error } = usePulseFeed(source, active);
+  const liquidity = usePulseLiquidity(active && source === "cloud");
+  const [showLiquidity,setShowLiquidity] = useState(()=>{try{return localStorage.getItem("vault:pulse:liquidity")==="on";}catch{return false;}});
+  const toggleLiquidity=()=>setShowLiquidity(value=>{try{localStorage.setItem("vault:pulse:liquidity",!value?"on":"off");}catch{/* Preference remains usable for this visit. */}return !value;});
   const [tf, setTf] = useState<5 | 15>(5);
   const [now, setNow] = useState(Date.now());
   const [history, setHistory] = useState(false);
@@ -25,6 +30,9 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
   const noZone = fresh && monitoring && quote.zones.length === 0;
   const checkedTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", second: "2-digit" }).format(quote.at) : "";
+  const liquiditySnapshot = liquidity[tf];
+  const liquidityFresh = !!liquiditySnapshot?.available && !!liquiditySnapshot.capturedAt && now >= liquiditySnapshot.capturedAt && now-liquiditySnapshot.capturedAt<=180000;
+  const liquidityView = showLiquidity && !!liquiditySnapshot;
   const otherTf = tf === 5 ? 15 : 5;
   const otherQuote = feed.quotes?.[otherTf];
   const otherHasZone = monitoring && connected && !!otherQuote && now >= otherQuote.at
@@ -33,8 +41,8 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const snapshotSides = new Set(quote?.zones.map(zone => zone.side));
   const snapshotSide = snapshotSides.size === 1 ? quote!.zones[0].side : "neutral";
   const snapshotTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(quote.at) : "";
-  const shown = history ? posts : noZone || closingSnapshot ? [] : posts.slice(0, 1);
-  const earlierCount = noZone || closingSnapshot ? posts.length : Math.max(0, posts.length - 1);
+  const shown = history ? posts : noZone || closingSnapshot || liquidityView ? [] : posts.slice(0, 1);
+  const earlierCount = noZone || closingSnapshot || liquidityView ? posts.length : Math.max(0, posts.length - 1);
   const reactions = usePulseReactions(shown.map(post => post.id), active && source === "cloud");
   const inZone = quote?.zones.find(zone => quote.price >= zone.lower && quote.price <= zone.upper);
   const currentState = !fresh ? "" : inZone ? `In ${tf}m ${inZone.side}` : quote?.zones.length ? `${tf}m ${quote.zones.map(zone => zone.side).join(" + ")} on watch` : `No active ${tf}m zone`;
@@ -64,6 +72,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
     <header className="pr-toolbar">
       <span className="pr-symbol"><Activity size={25} aria-hidden="true"/>${symbolLabel}</span>
       <div className="pr-timeframes" aria-label="Chart timeframe">{([5, 15] as const).map(value => <button key={value} type="button" aria-pressed={tf === value} onClick={() => changeTimeframe(value)}>{value} min</button>)}</div>
+    {liquiditySnapshot && <button type="button" role="switch" aria-checked={showLiquidity} className="pr-liquidity-toggle" onClick={toggleLiquidity}>Liquidity<span aria-hidden="true"/></button>}
     </header>
     <div className="pr-scroll" ref={scroller} onScroll={event => { if (event.currentTarget.scrollTop < 80) setUnseen(false); }}>
       <div className="pr-content">
@@ -73,7 +82,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         </div>
         {error && <p className="pr-warning" role="alert">{error}</p>}
         {monitoring && connected && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
-        {closingSnapshot && <section className="pr-snapshot" data-side={snapshotSide} aria-label={`${tf}-minute last indicator snapshot`}>
+        {closingSnapshot && !liquidityView && <section className="pr-snapshot" data-side={snapshotSide} aria-label={`${tf}-minute last indicator snapshot`}>
           <p className="pr-snapshot-time">Zones · {snapshotTime} ET</p>
           <h2 className="sr-only">{tf}-minute zones</h2>
           {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`} data-side={zone.side}>
@@ -93,10 +102,14 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
 
 
         </section>}
-        {noZone && <div className="pr-empty pr-no-zone pr-feed-live" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No active zone</h2><p className="pr-zone-checked"><span>Live</span> · Checked <time dateTime={new Date(quote!.at).toISOString()}>{checkedTime} ET</time></p>{(tf === 5 || otherHasZone) && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf}-minute timeframe <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
-        {(noZone || closingSnapshot) && history && <p className="pr-history-label">Earlier updates</p>}
+        {noZone && !liquidityView && <div className="pr-empty pr-no-zone pr-feed-live" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No active zone</h2><p className="pr-zone-checked"><span>Live</span> · Checked <time dateTime={new Date(quote!.at).toISOString()}>{checkedTime} ET</time></p>{(tf === 5 || otherHasZone) && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf}-minute timeframe <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
+        {liquidityView && !history && <>
+          {liquidityFresh && liquiditySnapshot.chartUrl ? <PulseChartPost symbol={symbolLabel} timeframe={tf} side="neutral" headline={`${tf}-minute liquidity`} capturedAt={liquiditySnapshot.capturedAt!} chartCapturedAt={liquiditySnapshot.capturedAt!} chartUrl={liquiditySnapshot.chartUrl} showIdentity={false} note={noZone ? "No active zone" : currentState || undefined}/> : <div className="pr-empty pr-no-zone"><Activity size={34}/><h2>{monitoring ? "Liquidity updating" : "Market closed"}</h2><p className="pr-zone-checked">{monitoring ? "Waiting for a fresh TradingView chart" : "Liquidity resumes next session"}</p></div>}
+          {tf===5 && noZone && <button type="button" className="pr-other-timeframe" onClick={()=>changeTimeframe(15)}>Check 15-minute timeframe <ArrowUpRight size={18}/></button>}
+        </>}
+        {(noZone || closingSnapshot || liquidityView) && history && <p className="pr-history-label">Earlier updates</p>}
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={posts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
-        {!posts.length && !noZone && !closingSnapshot && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
+        {!posts.length && !noZone && !closingSnapshot && !liquidityView && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
           <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>
             <img src="/brand/tradingview-mark.svg" alt="" width="36" height="36" />

@@ -25,6 +25,14 @@ describe('chart connection watchdog',()=>{
   await vi.advanceTimersByTimeAsync(22000);expect(transport.close).toHaveBeenCalledOnce();
   await connected.disconnect();expect(browser.disconnect).toBeDefined();
  });
+ it('rejects a stalled initialization even when transport callbacks throw',async()=>{
+  vi.useFakeTimers();
+  const transport={close:vi.fn(()=>{throw new Error('closed');}),onclose:vi.fn(()=>{throw new Error('callback');})};
+  mocks.create.mockResolvedValue(transport);mocks.connect.mockImplementationOnce(()=>new Promise(()=>{}));
+  const result=expect(connectChartBrowser({},'dedicated',1000)).rejects.toThrow('hosted-browser-timeout');
+  await vi.advanceTimersByTimeAsync(1000);await result;
+  expect(transport.close).toHaveBeenCalledOnce();expect(vi.getTimerCount()).toBe(0);
+ });
  it('cleans up a failed handshake and exposes no provider secrets',async()=>{
   vi.useFakeTimers();const transport={close:vi.fn()};mocks.create.mockResolvedValue(transport);mocks.connect.mockRejectedValue(new Error('private URL'));
   await expect(connectChartBrowser({},'dedicated')).rejects.toThrow('hosted-browser-timeout');

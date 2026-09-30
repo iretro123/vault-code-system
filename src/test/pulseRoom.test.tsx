@@ -3,6 +3,8 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { SpxPulseRoom } from "@/components/academy/community/SpxPulseRoom";
 import type { PulseFeed, PulsePost } from "@/lib/spxPulse";
 
+const liq=vi.hoisted(()=>({value:{} as Record<string,unknown>}));
+vi.mock("@/hooks/usePulseLiquidity",()=>({usePulseLiquidity:()=>liq.value}));
 const state = vi.hoisted(() => ({ feed: {} as PulseFeed, connected: true }));
 vi.mock("@/hooks/usePulseFeed", () => ({ usePulseFeed: () => ({ ...state, error: null }) }));
 vi.mock("@/hooks/usePulseReactions", () => ({ usePulseReactions: () => ({ forPost: () => [], pending: false, react: vi.fn() }) }));
@@ -13,12 +15,25 @@ const fifteen: PulsePost = { ...original, id: "fifteen", zoneId: "zone15", timef
 function setup() {
   vi.useFakeTimers(); vi.setSystemTime(at + 1000);
   Element.prototype.scrollTo = vi.fn();
-  state.connected = true;
+  state.connected = true; liq.value={}; localStorage.clear();
   state.feed = { symbol: "AMEX:SPY", posts: [fifteen, original, broken], receivedAt: at, indicatorAt: { 5: at, 15: at }, sessionOpen: true, captureConnected: false, quotes: { 5: { at, price: 770.6, zones: [] }, 15: { at, price: 770.6, zones: [{ side: "demand", lower: 767.7, upper: 769.78 }] } } };
   return render(<SpxPulseRoom/>);
 }
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("Live Pulse channel", () => {
+ it("shows independent liquidity on 5m and 15m without changing zone history",()=>{
+  const view=setup();
+  liq.value={5:{available:true,capturedAt:at,chartUrl:"https://example.com/liq5.png"},15:{available:true,capturedAt:at,chartUrl:"https://example.com/liq15.png"}};
+  view.rerender(<SpxPulseRoom/>);
+  fireEvent.click(screen.getByRole("switch",{name:"Liquidity"}));
+  expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src","https://example.com/liq5.png");
+  expect(localStorage.getItem("vault:pulse:liquidity")).toBe("on");
+  fireEvent.click(screen.getByRole("button",{name:"15 min"}));
+  expect(screen.getByAltText(/^Original TradingView SPY 15-minute/)).toHaveAttribute("src","https://example.com/liq15.png");
+  act(()=>vi.advanceTimersByTime(181000));
+  expect(screen.getByRole("heading",{name:"Liquidity updating"})).toBeInTheDocument();
+  expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
+ });
   it("timestamps genuine empty-zone checks and stops the live state when stale", () => {
     const view = setup();
     expect(screen.getByText("Live", { exact: true })).toBeInTheDocument();

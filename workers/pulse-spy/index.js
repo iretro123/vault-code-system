@@ -6,10 +6,10 @@ export default {
     const path = new URL(request.url).pathname;
     if (request.method === 'GET' && path === '/health') return Response.json({ service: 'vault-spy-pulse', screenshotService: env.PULSE_CAPTURE ? 'configured' : 'not-configured' }, { headers: { 'Cache-Control': 'no-store' } });
     if (request.method === 'GET' && path.startsWith('/image/') && env.PULSE_CAPTURE) return env.PULSE_CAPTURE.fetch(request);
-    if (request.method === 'POST' && path === '/capture/check' && env.PULSE_CAPTURE) {
+    if (request.method === 'POST' && ['/capture/check','/capture/liquidity'].includes(path) && env.PULSE_CAPTURE) {
       // The internal service validates the operator token. Never use webhook
       // delivery credentials as authorization for browser/account operations.
-      return env.PULSE_CAPTURE.fetch('https://capture.internal/check' + new URL(request.url).search, {
+      return env.PULSE_CAPTURE.fetch('https://capture.internal/' + path.split('/').at(-1) + new URL(request.url).search, {
         method:'POST', headers:{Authorization:request.headers.get('Authorization') || ''},
       });
     }

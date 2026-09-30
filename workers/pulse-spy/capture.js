@@ -1,3 +1,4 @@
+import { liquidityVisibility } from './liquidity-capture.js';
 import { setDataWindow, readChartSource, selectChartTimeframe } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
 import { CHART_URL, INDICATOR, captureWindowOpen, verifyCaptureSource } from './capture-policy.js';
@@ -26,6 +27,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
     const page = pages.find(p=>p.url().startsWith(CHART_URL));
     if (!page) throw new Error('hosted-chart-login-required');
     page.setDefaultTimeout(6000);
+    if(task.post) await liquidityVisibility(page,false);
     // Render text at 2x in a compact landscape chart, then retain the lossless PNG.
     // This avoids shrinking a tall, low-resolution desktop screenshot into a card.
     if (task.post) {

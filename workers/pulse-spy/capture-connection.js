@@ -5,9 +5,15 @@ import { WorkersWebSocketTransport } from '@cloudflare/puppeteer/internal/cloudf
 // with public ConnectOptions so a dead renderer cannot outlive the database lease.
 export async function connectChartBrowser(binding, sessionId, lifetimeMs=28_000) {
   const controller=new AbortController();
-  let transport;
-  const closeTransport=()=>{if (transport) {transport.close();transport.onclose?.();}};
-  const timer=setTimeout(()=>{controller.abort();closeTransport();},lifetimeMs);
+  let transport, closed=false, rejectDeadline;
+  const closeTransport=()=>{
+    if (!transport || closed) return;
+    closed=true;
+    try { transport.close(); } catch { /* Already closed. */ }
+    try { transport.onclose?.(); } catch { /* Reject pending commands safely. */ }
+  };
+  const deadline=new Promise((_,reject)=>{rejectDeadline=reject;});
+  const timer=setTimeout(()=>{controller.abort();closeTransport();rejectDeadline(new Error('hosted-browser-timeout'));},lifetimeMs);
   // Abort only a pending upgrade, not the established WebSocket six seconds later.
   const bounded={fetch:async(url,init={})=>{
     const handshake=setTimeout(()=>controller.abort(),6000);
@@ -15,9 +21,13 @@ export async function connectChartBrowser(binding, sessionId, lifetimeMs=28_000)
     finally {clearTimeout(handshake);}
   }};
   try {
-    transport=await WorkersWebSocketTransport.create(bounded,sessionId);
+    transport=await Promise.race([WorkersWebSocketTransport.create(bounded,sessionId).then(value=>{
+      transport=value;
+      if (controller.signal.aborted) closeTransport();
+      return value;
+    }),deadline]);
     if (controller.signal.aborted) throw new Error('hosted-browser-timeout');
-    const browser=await puppeteer.connect({transport,protocolTimeout:6000,defaultViewport:null});
+    const browser=await Promise.race([puppeteer.connect({transport,protocolTimeout:6000,defaultViewport:null}),deadline]);
     const disconnect=browser.disconnect.bind(browser);
     browser.disconnect=async()=>{clearTimeout(timer);controller.abort();try { await disconnect(); } finally {closeTransport();}};
     return browser;
