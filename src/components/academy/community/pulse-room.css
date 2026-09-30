@@ -175,8 +175,8 @@
 }
 
 /* A single clear empty state, centered within the Pulse column on every screen. */
-.pr-empty.pr-no-zone{align-items:center;text-align:center;min-height:250px;padding:32px 20px;border:1px solid #a9caff24;border-radius:18px;background:radial-gradient(ellipse at 50% 10%,#9fcaff12,transparent 75%),#ffffff03}
-.pr-empty.pr-no-zone>svg{width:36px;height:36px;margin-bottom:18px;color:#b9d9ff}
-.pr-empty.pr-no-zone h2{text-align:center;font-size:clamp(28px,3vw,36px);font-weight:650;letter-spacing:-1px}
+.vault-community .pr-empty.pr-no-zone{align-items:center;text-align:center;min-height:250px;padding:32px 20px;border:1px solid #a9caff24;border-radius:18px;background:radial-gradient(ellipse at 50% 10%,#9fcaff12,transparent 75%),#ffffff03}
+.vault-community .pr-empty.pr-no-zone>svg{width:36px;height:36px;margin-bottom:18px;color:#b9d9ff}
+.vault-community .pr-empty.pr-no-zone h2{text-align:center;font-size:clamp(28px,3vw,36px);font-weight:650;letter-spacing:-1px}
 .pr-no-zone .pr-other-timeframe{margin:20px 0 0;font-size:14px;background:#9fcaff14;border-color:#bad9ff38}
-@media(max-width:450px){.pr-empty.pr-no-zone{min-height:230px;padding:28px 16px}}
+@media(max-width:450px){.vault-community .pr-empty.pr-no-zone{min-height:230px;padding:28px 16px}}
