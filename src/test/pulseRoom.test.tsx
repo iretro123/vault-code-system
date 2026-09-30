@@ -75,4 +75,16 @@ describe("Live Pulse channel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Earlier updates (1)" }));
     expect(screen.getByAltText(/^Original TradingView SPY 15-minute/)).toBeInTheDocument();
   });
+  it("shows the matching closing chart inline and opens the original image", () => {
+    const view = setup();
+    state.feed.quotes![5] = { ...state.feed.quotes![5]!, chartUrl: "https://example.com/closing-5.png", chartCapturedAt: at + 3600000 };
+    act(() => { vi.setSystemTime(new Date("2026-09-26T01:00:00Z")); vi.advanceTimersByTime(1000); });
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src", "https://example.com/closing-5.png");
+    expect(screen.getByText(/Captured after the session/)).toBeInTheDocument();
+    fireEvent.load(screen.getByAltText(/^Original TradingView SPY 5-minute/));
+    fireEvent.click(screen.getByRole("button", { name: "Expand original SPY 5-minute screenshot" }));
+    expect(screen.getByAltText(/^Full unmodified screenshot/)).toHaveAttribute("src", "https://example.com/closing-5.png");
+  });
+
 });

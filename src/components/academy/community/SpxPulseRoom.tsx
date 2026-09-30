@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, ArrowUpRight, ArrowUp } from "lucide-react";
+import { PulseChartPost } from "../chat/PulseChartPost";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
 import { usePulseFeed } from "@/hooks/usePulseFeed";
@@ -67,7 +68,13 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
           {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`}>
             <span className="pr-snapshot-side">{zone.side}</span><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
           </li>)}</ul> : <p className="pr-snapshot-none">No active {tf}-minute zone at this update.</p>}
+          {quote.chartUrl && quote.chartCapturedAt && <PulseChartPost
+            key={`${tf}:${quote.at}`} symbol={symbolLabel} timeframe={tf} side="neutral"
+            headline="TradingView chart" capturedAt={quote.at} chartCapturedAt={quote.chartCapturedAt}
+            captureContext="refresh" chartUrl={quote.chartUrl} showIdentity={false}
+            defaultShowChart note="Captured after the session. Zone values above are from the timestamp shown." />}
           <p className="pr-snapshot-note">Recorded indicator state. Updates resume next trading session.</p>
+
         </section>}
         {noZone && <div className="pr-empty pr-no-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No zone yet.</h2></div>}
         {(noZone || closingSnapshot) && history && <p className="pr-history-label">Earlier updates</p>}
