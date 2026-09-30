@@ -69,13 +69,13 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         {error && <p className="pr-warning" role="alert">{error}</p>}
         {monitoring && connected && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
         {closingSnapshot && <section className="pr-snapshot" data-side={snapshotSide} aria-label={`${tf}-minute last indicator snapshot`}>
-          <p className="pr-snapshot-time">Last indicator snapshot · {snapshotTime} ET</p>
+          <p className="pr-snapshot-time">Zones · {snapshotTime} ET</p>
           <h2 className="sr-only">{tf}-minute zones</h2>
           {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`} data-side={zone.side}>
             <div className="pr-snapshot-heading">
               <span className="pr-snapshot-side">{tf} min {zone.side}</span>
               <span className="pr-snapshot-direction">
-                <span>{zone.side === "supply" ? "Watch for rejection" : "Watch for a bounce"}</span>
+                <span className="sr-only">{zone.side === "supply" ? "Watch for rejection" : "Watch for a bounce"}</span>
                 {zone.side === "supply" ? <ArrowDown size={30} strokeWidth={3} aria-hidden="true" /> : <ArrowUp size={30} strokeWidth={3} aria-hidden="true" />}
               </span>
             </div><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
@@ -85,7 +85,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
             headline="TradingView chart" capturedAt={quote.at} chartCapturedAt={quote.chartCapturedAt}
             captureContext="refresh" chartUrl={quote.chartUrl} liquidityChart={quote.liquidityChart} showIdentity={false}
             defaultShowChart note="Captured after the session. Zone values above are from the timestamp shown." />}
-          <p className="pr-snapshot-note">Recorded indicator state. Updates resume next trading session.</p>
+
 
         </section>}
         {noZone && <div className="pr-empty pr-no-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No zone yet.</h2></div>}
@@ -95,12 +95,10 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         <div className="pr-source">
           <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>
             <img src="/brand/tradingview-mark.svg" alt="" width="36" height="36" />
-            <span><strong>Open in TradingView</strong><small>${symbolLabel} · {tf}-minute chart</small></span>
+            <span><strong>Open in TradingView</strong></span>
             <ArrowUpRight size={22} aria-hidden="true"/>
           </a>
-          <a className="pr-indicator-link" href="https://www.tradingview.com/script/WKfyNCD7-Vault-Trading-Academy-Supply-And-Demand/" target="_blank" rel="noopener noreferrer">Add Vault indicator <ArrowUpRight size={14} aria-hidden="true" /></a>
-          <p className="pr-indicator-help">First time? Choose “Use on chart” on the indicator page, then save your layout.</p>
-          <p role="status">{!monitoring ? "Live zone alerts resume during the next trading session." : source === "cloud" && feed.captureConnected === false ? "Zone updates are automatic · Chart capture offline" : feed.captureConnected ? "New zones and chart captures appear automatically" : "Checking chart connection…"}</p>
+          {monitoring && source === "cloud" && feed.captureConnected === false && <p role="status">Chart capture offline</p>}
         </div>
         {earlierCount > 0 && !history && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}
       </div>
@@ -108,7 +106,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
     {history && <div className="pr-history-dock">
       <button type="button" onClick={closeHistory} aria-expanded="true">
         <ChevronUp size={19} aria-hidden="true" /> Hide earlier updates
-        <span>Back to latest</span>
+
       </button>
     </div>}
     {unseen && <button type="button" className="pr-new" onClick={openLatest}><ArrowUp size={16}/> New update</button>}

@@ -23,7 +23,7 @@ describe("Live Pulse channel", () => {
     setup();
     expect(screen.getByRole("heading", { name: "No zone yet." })).toBeInTheDocument();
     expect(screen.queryByText("5m demand broke. Closed below 770.83.")).not.toBeInTheDocument();
-    expect(screen.getByText("Zone updates are automatic · Chart capture offline")).toBeInTheDocument();
+    expect(screen.getByText("Chart capture offline")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Earlier updates (2)" }));
     fireEvent.click(screen.getByRole("button", { name: "View chart" }));
@@ -58,7 +58,7 @@ describe("Live Pulse channel", () => {
     setup();
     act(() => { vi.setSystemTime(new Date("2026-09-26T01:00:00Z")); vi.advanceTimersByTime(1000); });
     expect(screen.getByText("Market closed")).toBeInTheDocument();
-    expect(screen.getByText("Live zone alerts resume during the next trading session.")).toBeInTheDocument();
+    expect(screen.queryByText("Live zone alerts resume during the next trading session.")).not.toBeInTheDocument();
     expect(screen.queryByText(/Chart capture offline/)).not.toBeInTheDocument();
     expect(screen.queryByText("Live updates")).not.toBeInTheDocument();
   });
@@ -67,7 +67,7 @@ describe("Live Pulse channel", () => {
     setup();
     act(() => { vi.setSystemTime(new Date("2026-09-26T01:00:00Z")); vi.advanceTimersByTime(1000); });
     expect(screen.getByText("No active 5-minute zone at this update.")).toBeInTheDocument();
-    expect(screen.getByText(/Last indicator snapshot · Sep 25, 1:35 PM ET/)).toBeInTheDocument();
+    expect(screen.getByText(/Zones · Sep 25, 1:35 PM ET/)).toBeInTheDocument();
     expect(screen.queryByText("5m demand broke. Closed below 770.83.")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "15 min" }));
     expect(screen.getByText("$767.70 – $769.78")).toBeInTheDocument();
