@@ -25,6 +25,7 @@ export async function openChartSession(env, lifetimeMs=28_000) {
           if (page) await page.goto(CHART_URL,{waitUntil:'domcontentloaded',timeout:12_000});
         }
         if (!page) throw new Error('hosted-chart-login-required');
+        await page.bringToFront();
         await reconnectChart(env,page);
         if (restoring) await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:6000});
         return existing;
@@ -55,6 +56,7 @@ export async function openChartSession(env, lifetimeMs=28_000) {
   let stage='restore-page';
   try {
     const page=await browser.newPage();
+    await page.bringToFront();
     stage='restore-cookies';
     await page.setCookie(...cookies);
     await env.CHART_IMAGES.put('private:session',acquired.sessionId);

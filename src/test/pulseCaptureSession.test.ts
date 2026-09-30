@@ -11,7 +11,7 @@ async function fixture(){
  const key='ab'.repeat(32);const imported=await webcrypto.subtle.importKey('raw',new Uint8Array(32).fill(171),'AES-GCM',false,['encrypt']);const iv=new Uint8Array(12);const encrypted=await webcrypto.subtle.encrypt({name:'AES-GCM',iv},imported,new TextEncoder().encode(JSON.stringify([{domain:'.tradingview.com',name:'session',value:'test'}])));const sealed=new Uint8Array(12+encrypted.byteLength);sealed.set(new Uint8Array(encrypted),12);
  const values=new Map<string,unknown>([['private:session','old'],['private:login',sealed.buffer]]);
  const env={BROWSER:{},CAPTURE_SAVE_LOGIN:'true',CAPTURE_AUTH_KEY:key,CHART_IMAGES:{get:vi.fn(async k=>values.get(k)||null),put:vi.fn(async(k,v)=>{values.set(k,v);})}};
- const page={url:()=> 'https://www.tradingview.com/chart/Db5ipsDu/',setCookie:vi.fn(),goto:vi.fn(),waitForSelector:vi.fn()};const browser={pages:vi.fn().mockResolvedValue([page]),newPage:vi.fn().mockResolvedValue(page),disconnect:vi.fn(),close:vi.fn()};
+ const page={url:()=> 'https://www.tradingview.com/chart/Db5ipsDu/',bringToFront:vi.fn(),setCookie:vi.fn(),goto:vi.fn(),waitForSelector:vi.fn()};const browser={pages:vi.fn().mockResolvedValue([page]),newPage:vi.fn().mockResolvedValue(page),disconnect:vi.fn(),close:vi.fn()};
  return {env,browser,page,values};
 }
 describe('automatic dedicated chart recovery',()=>{
@@ -28,7 +28,7 @@ describe('automatic dedicated chart recovery',()=>{
  });
  it('reconnects before waiting for a chart hidden by the disconnected screen',async()=>{
   const {env,browser,page,values}=await fixture();values.set('private:restoring-session','old');connection.connectChartBrowser.mockResolvedValue(browser);
-  let reconnected=false;reconnect.mockImplementation(async()=>{reconnected=true;});page.waitForSelector.mockImplementation(async()=>{if(!reconnected) throw new Error('chart blocked by disconnected screen');});
+  let reconnected=false;reconnect.mockImplementation(async()=>{expect(page.bringToFront).toHaveBeenCalledOnce();reconnected=true;});page.waitForSelector.mockImplementation(async()=>{if(!reconnected) throw new Error('chart blocked by disconnected screen');});
   expect(await openChartSession(env)).toBe(browser);expect(page.waitForSelector).toHaveBeenCalledOnce();expect(connection.acquireChartBrowser).not.toHaveBeenCalled();
  });
  it('never replaces a browser to bypass a TradingView session conflict',async()=>{
