@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, ArrowUpRight, Expand, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { Activity, ArrowUp, ArrowDown, ArrowUpRight, Expand, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { validPulseChartFocus, type PulseChartFocus } from "@/lib/pulseChartFocus";
 import "./pulse-chart-post.css";
@@ -18,6 +18,7 @@ export interface PulseChartPostProps {
   timeframe: 5 | 15;
   side: "demand" | "supply" | "neutral";
   headline: string;
+  directionCue?: boolean;
   capturedAt: number;
   chartCapturedAt?: number;
   captureContext?: "event" | "refresh";
@@ -38,7 +39,7 @@ export interface PulseChartPostProps {
 
 export function PulseChartPost({
   symbol, timeframe, side, headline, capturedAt, chartCapturedAt = capturedAt, captureContext = "event", captureStatus = "pending", chartUrl, chartFocus, lower, upper, note,
-  arriving = false, showIdentity = true, defaultShowChart = true,
+  directionCue = false, arriving = false, showIdentity = true, defaultShowChart = true,
   entryMarkup, reactions, onReact, reactionsDisabled = false,
 }: PulseChartPostProps) {
   const [expanded, setExpanded] = useState(false);
@@ -86,7 +87,7 @@ export function PulseChartPost({
     {showIdentity && <header className="pcp-author"><span><Activity size={20} aria-hidden="true"/> Pulse</span><time dateTime={new Date(capturedAt).toISOString()}>{date} · {time} ET</time></header>}
     <div className="pcp-surface">
       <div className="pcp-copy">
-        <div className="pcp-meta"><span>${symbol}</span><span>{timeframe}m</span><span className="pcp-side">{side === "neutral" ? "Chart check" : side}</span></div>
+        <div className="pcp-meta"><span>${symbol}</span><span>{timeframe}m</span><span className="pcp-side">{side === "neutral" ? "Chart check" : side}{directionCue && side !== "neutral" && (side === "demand" ? <ArrowUp size={23} aria-hidden="true"/> : <ArrowDown size={23} aria-hidden="true"/>)}</span></div>
         <h3>{headline}</h3>
         {levels && <p className="pcp-range" aria-label={`Zone from ${price(lower!)} to ${price(upper!)}`}><span>${price(lower!)}</span><span aria-hidden="true">—</span><span>${price(upper!)}</span></p>}
         {note && <p className="pcp-note">{note}</p>}

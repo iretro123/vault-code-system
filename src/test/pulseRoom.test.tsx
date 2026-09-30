@@ -37,6 +37,15 @@ describe("Live Pulse channel", () => {
     expect(screen.getByAltText(/^Original TradingView SPY 15-minute/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open SPY on TradingView" })).toHaveAttribute("href", "https://www.tradingview.com/chart/?symbol=AMEX%3ASPY&interval=15");
   });
+  it("links an empty timeframe to a fresh zone and hides the hint when stale", () => {
+    setup();
+    expect(screen.getByRole("button", { name: "Check 15 min" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Check 15 min" }));
+    expect(screen.getByRole("button", { name: "15 min" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "5 min" }));
+    act(() => vi.advanceTimersByTime(91000));
+    expect(screen.queryByRole("button", { name: "Check 15 min" })).not.toBeInTheDocument();
+  });
   it("receives new posts and later images without a reload", () => {
     const view = setup();
     const next: PulsePost = { ...original, id: "new", at: at + 500, lower: 771, upper: 772, price: 771.2, chartUrl: undefined };

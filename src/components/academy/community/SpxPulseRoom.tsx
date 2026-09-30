@@ -24,6 +24,10 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const monitoring = pulseWindowOpen(now) || now < (feed.afterHoursTestUntil || 0);
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
   const noZone = fresh && quote.zones.length === 0;
+  const otherTf = tf === 5 ? 15 : 5;
+  const otherQuote = feed.quotes?.[otherTf];
+  const otherHasZone = monitoring && connected && !!otherQuote && now >= otherQuote.at
+    && now - otherQuote.at <= 90000 && otherQuote.zones.length > 0;
   const closingSnapshot = !!quote && (!monitoring || (!fresh && !!quote.chartUrl));
   const snapshotSides = new Set(quote?.zones.map(zone => zone.side));
   const snapshotSide = snapshotSides.size === 1 ? quote!.zones[0].side : "neutral";
@@ -88,7 +92,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
 
 
         </section>}
-        {noZone && <div className="pr-empty pr-no-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No zone yet.</h2></div>}
+        {noZone && <div className="pr-empty pr-no-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No zone yet.</h2>{otherHasZone && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf} min <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
         {(noZone || closingSnapshot) && history && <p className="pr-history-label">Earlier updates</p>}
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} featured={!noZone && index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
         {!posts.length && !noZone && !closingSnapshot && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}

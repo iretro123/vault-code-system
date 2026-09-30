@@ -17,6 +17,7 @@ export function ZonePulseCard({ post, featured = true, arriving = false, showIde
     timeframe={post.timeframe}
     side={post.side}
     headline={pulseHeadline(post)}
+    directionCue={["observed", "entered", "holding", "returned"].includes(post.kind)}
     capturedAt={post.at}
     chartCapturedAt={post.capturedAt ?? post.at}
     captureContext={post.captureContext}
