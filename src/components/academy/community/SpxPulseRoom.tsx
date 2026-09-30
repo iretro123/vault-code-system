@@ -53,7 +53,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
 
   return <section className="zone-pulse-room pulse-room-clean" aria-label={`${symbolLabel} Zone Pulse`}>
     <header className="pr-toolbar">
-      <span className="pr-symbol"><Activity size={25} aria-hidden="true"/>{symbolLabel}</span>
+      <span className="pr-symbol"><Activity size={25} aria-hidden="true"/>${symbolLabel}</span>
       <div className="pr-timeframes" aria-label="Chart timeframe">{([5, 15] as const).map(value => <button key={value} type="button" aria-pressed={tf === value} onClick={() => changeTimeframe(value)}>{value} min</button>)}</div>
     </header>
     <div className="pr-scroll" ref={scroller} onScroll={event => { if (event.currentTarget.scrollTop < 80) setUnseen(false); }}>
