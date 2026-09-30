@@ -133,7 +133,7 @@ describe("Pulse screenshot integrity", () => {
     view.rerender(<ZonePulseCard post={post} earlierChart={{...earlier,capturedAt:post.at+1000}}/>);
     expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
   });
-  it("renders real recorded candles with an explicit non-screenshot label", () => {
+  it("never substitutes drawn candles for a missing TradingView screenshot", () => {
     const post: PulsePost = {
       id: "test", zoneId: "zone", symbol: "CAPITALCOM:SPX500", timeframe: 5,
       side: "demand", kind: "entered", source: "indicator", at: props.capturedAt,
@@ -141,9 +141,9 @@ describe("Pulse screenshot integrity", () => {
       bars: [{ t: props.capturedAt, o: 7664, h: 7669, l: 7662, c: 7665 }],
     };
     const { container } = render(<ZonePulseCard post={post}/>);
-    expect(screen.getByText("Recorded indicator data · Not a TradingView screenshot")).toBeInTheDocument();
-    expect(container.querySelector(".pulse-data-chart")).not.toBeNull();
-    expect(screen.getByRole("img")).toHaveAttribute("aria-label", expect.stringContaining("SPX500 5 minute chart from indicator candle data"));
+    expect(screen.getByText("Original chart unavailable for this update.")).toBeInTheDocument();
+    expect(container.querySelector(".pulse-data-chart")).toBeNull();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("$SPX500")).toBeInTheDocument();
   });
 });

@@ -1,4 +1,3 @@
-import { PulseCandleChart } from "./PulseCandleChart";
 import { pulseHeadline, type PulsePost } from "@/lib/spxPulse";
 import { type PulseChartPostProps } from "./PulseChartPost";
 import { PulseLiquidityChart } from "./PulseLiquidityChart";
@@ -29,7 +28,6 @@ export function ZonePulseCard({ post, earlierChart, featured = true, arriving = 
     captureContext={prior ? "earlier" : post.captureContext}
     captureStatus={post.captureStatus ?? (post.source === "indicator" ? "unavailable" : "pending")}
     chartUrl={imageOk ? chart.chartUrl : undefined}
-    fallbackChart={post.source === "indicator" && post.bars?.length ? <PulseCandleChart post={post}/> : undefined}
     chartFocus={prior ? undefined : post.chartFocus}
     liquidityChart={chart.liquidityChart}
     lower={hasLevels ? post.lower : undefined}
