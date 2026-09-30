@@ -1,4 +1,4 @@
-import { setDataWindow, readChartSource, readZoneBounds } from './capture-source.js';
+import { setDataWindow, readChartSource, readZoneBounds, selectChartTimeframe } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
 import { CHART_URL, INDICATOR } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
@@ -9,26 +9,21 @@ export async function checkChartConnection(env, timeframe) {
   if (timeframe !== undefined && ![5,15].includes(timeframe)) return {ok:false,failure:'wrong-chart-timeframe'};
   let browser;
   let stage='session';
+  const timing={};
+  let stageAt=Date.now();
+  const next=name=>{const at=Date.now();timing[stage+'Ms']=at-stageAt;stageAt=at;stage=name;};
   try {
     if (!env.BROWSER || !env.CHART_IMAGES) return { ok:false, failure:'hosted-browser-not-configured' };
     browser = await openChartSession(env);
     const page = (await browser.pages()).find(p => p.url().startsWith(CHART_URL));
     if (!page) return { ok:false, failure:'hosted-chart-login-required' };
-    stage='viewport';
+    next('viewport');
     await page.setViewport({width:1280,height:800,deviceScaleFactor:2});
-    stage='timeframe';
-    if (timeframe) {
-      const buttons = await page.$$(`[role="radio"][aria-label="${timeframe} minutes"]`);
-      let selected=false;
-      for (const button of buttons) {
-        if (await button.boundingBox()) { await button.evaluate(el=>el.click()); selected=true; break; }
-      }
-      if (!selected) return {ok:false,failure:'timeframe-control-unavailable'};
-      await page.waitForFunction(tf=>document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')?.endsWith(`SPY, ${tf} minutes`),{timeout:6000},timeframe);
-    }
-    stage='framing';
-    await frameChart(page);
-    stage='source';
+    next('timeframe');
+    if (timeframe) await selectChartTimeframe(page,timeframe);
+    next('framing');
+    await frameChart(page,{reuse:true});
+    next('source');
     const source = await page.evaluate(() => ({
       label:document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label') || '',
       text:document.querySelector('.chart-widget')?.innerText || '',
@@ -39,23 +34,24 @@ export async function checkChartConnection(env, timeframe) {
       || /disconnected|connection lost|reconnect|cannot connect|can't open this chart|sign in to continue|verify you are human/i.test(source.pageText)) {
       return { ok:false, failure:'hosted-chart-login-required' };
     }
-    stage='zones';
+    next('zones');
     await setDataWindow(page,true);
     const zones=readZoneBounds((await readChartSource(page)).zoneText);
     await setDataWindow(page,false);
-    stage='image';
+    next('image');
     const chart=await page.$('.chart-widget');
     const bounds=await chart?.boundingBox();
     if (!bounds || bounds.width<900 || bounds.height<400 || bounds.width/bounds.height<1.3) return {ok:false,failure:'chart-crop-unavailable'};
-    const bytes=await chart.screenshot({type:'png'});
+    const bytes=await page.screenshot({type:'png',clip:bounds,captureBeyondViewport:false});
     if (bytes.byteLength<10_000 || bytes.byteLength>8_000_000) return {ok:false,failure:'chart-image-invalid'};
     const imageId=crypto.randomUUID();
     const capturedAt=Date.now();
     // Short-lived operator QA image, never attached to a member event.
     await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:3600,metadata:{contentType:'image/png',purpose:'operator-preflight'}});
-    stage='recovery';
+    next('recovery');
     await rememberChartLogin(env,page);
-    return { ok:true, symbol:'AMEX:SPY', timeframe:Number(match[2]), indicator:INDICATOR, zones, imageId, capturedAt };
+    next('done');
+    return { ok:true, timing, symbol:'AMEX:SPY', timeframe:Number(match[2]), indicator:INDICATOR, zones, imageId, capturedAt };
   } catch(error) {
     if (['chart-session-conflict','chart-zone-data-unavailable','chart-zone-mismatch'].includes(error?.message)) return {ok:false,failure:error.message};
     // No provider error text, cookies, URLs or page contents cross this boundary.

@@ -43,10 +43,10 @@ export default {
     for (const message of batch.messages) {
       try {
         if (await drainCaptures(env,database(env))) message.ack();
-        else message.retry({delaySeconds:10});
+        else message.retry({delaySeconds:2});
       } catch {
         console.warn('Pulse capture will retry; database health monitoring remains active.');
-        message.retry({delaySeconds:10});
+        message.retry({delaySeconds:2});
       }
     }
   },

@@ -1,18 +1,41 @@
+// Batch DOM-only actions into one browser round trip per phase. Do not wait for
+// network idle: a live chart intentionally keeps network connections open.
 export async function setDataWindow(page,open) {
-  const toggle=await page.$('button[aria-label="Object tree and data window"]');
-  if (!toggle) throw new Error('chart-zone-data-unavailable');
-  if (((await toggle.evaluate(el=>el.getAttribute('aria-pressed')))==='true') !== open) await toggle.evaluate(el=>el.click());
+  const found=await page.evaluate(open=>{
+    const toggle=document.querySelector('button[aria-label="Object tree and data window"]');
+    if (!toggle) return false;
+    if ((toggle.getAttribute('aria-pressed')==='true')!==open) toggle.click();
+    return true;
+  },open);
+  if (!found) throw new Error('chart-zone-data-unavailable');
   if (open) {
-    await page.waitForFunction(()=>document.querySelector('#data-window'),{timeout:6000});
-    const tab=await page.$('#data-window');
-    if (!tab) throw new Error('chart-zone-data-unavailable');
-    if (await tab.evaluate(el=>el.getAttribute('aria-selected'))!=='true') await tab.evaluate(el=>el.click());
     await page.mouse.move(1270,790);
-    await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="row"]')).some(el=>el.innerText.includes('Vault Zone Pulse - SPY Live') && el.innerText.includes('Demand lower')),{timeout:6000});
+    await page.waitForFunction(()=>{
+      const tab=document.querySelector('#data-window');
+      if (!tab) return false;
+      if (tab.getAttribute('aria-selected')!=='true') { tab.click(); return false; }
+      return Array.from(document.querySelectorAll('[role="row"]')).some(el=>el.innerText.includes('Vault Zone Pulse - SPY Live') && el.innerText.includes('Demand lower'));
+    },{timeout:6000});
   } else {
     await page.waitForFunction(()=>document.querySelector('button[aria-label="Object tree and data window"]')?.getAttribute('aria-pressed')!=='true',{timeout:3000});
   }
 }
+
+export async function selectChartTimeframe(page,timeframe) {
+  const selected=await page.evaluate(tf=>{
+    const button=Array.from(document.querySelectorAll(`[role="radio"][aria-label="${tf} minutes"]`)).find(el=>el.getClientRects().length);
+    if (!button) return false;
+    if (button.getAttribute('aria-checked')!=='true') button.click();
+    return true;
+  },timeframe);
+  if (!selected) throw new Error('timeframe-control-unavailable');
+  await page.mouse.move(1270,790);
+  await page.waitForFunction(tf=>{
+    const widget=document.querySelector('.chart-widget');
+    return widget?.querySelector('canvas[aria-label]')?.getAttribute('aria-label')?.endsWith(`SPY, ${tf} minutes`) && widget.innerText.includes('Vault Zone Pulse - SPY Live');
+  },{timeout:6000},timeframe);
+}
+
 export async function readChartSource(page) {
   return page.evaluate(()=>({
     label:document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'',

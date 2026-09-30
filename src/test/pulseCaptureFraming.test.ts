@@ -10,6 +10,14 @@ describe('repeatable capture framing',()=>{
   expect(page.keyboard.press.mock.calls.filter(([key])=>key==='ArrowUp')).toHaveLength(12);
   expect(page.mouse.move).toHaveBeenLastCalledWith(0,0);
  });
+ it('reuses a recently framed unchanged chart without keyboard round trips',async()=>{
+  const page=setup();page.evaluate.mockResolvedValueOnce(true);await frameChart(page,{reuse:true});
+  expect(page.keyboard.press).not.toHaveBeenCalled();
+ });
+ it('reframes when reuse has expired or its viewport/timeframe changed',async()=>{
+  const page=setup();page.evaluate.mockResolvedValueOnce(false);await frameChart(page,{reuse:true});
+  expect(page.keyboard.press).toHaveBeenCalledWith('r');
+ });
  it('releases keyboard modifiers after a failed zoom',async()=>{
   const page=setup();page.keyboard.press.mockImplementation(async key=>{if(key==='ArrowUp')throw Error('browser lost');});
   await expect(frameChart(page)).rejects.toThrow('browser lost');

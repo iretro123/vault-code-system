@@ -22,7 +22,7 @@ describe('persistent chart queue',()=>{
   it('retries failed work and acknowledges only a completed drain',async()=>{
     const message={ack:vi.fn(),retry:vi.fn()};capture.drainCaptures.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
     await worker.queue({messages:[message]},{});
-    expect(message.retry).toHaveBeenCalledWith({delaySeconds:10});expect(message.ack).not.toHaveBeenCalled();
+    expect(message.retry).toHaveBeenCalledWith({delaySeconds:2});expect(message.ack).not.toHaveBeenCalled();
     await worker.queue({messages:[message]},{});expect(message.ack).toHaveBeenCalledOnce();
   });
 });
