@@ -122,7 +122,18 @@ describe("Pulse screenshot integrity", () => {
     expect(image).toHaveAttribute("src", capture);
     expect(screen.getByRole("dialog").querySelector(".pcp-entry-markup")).toBeNull();
   });
-  it("waits for a screenshot even when the feed includes candle data", () => {
+  it("only reuses an earlier screenshot of the exact same zone", () => {
+    const post: PulsePost = {id:"ended",zoneId:"zone",symbol:"AMEX:SPY",timeframe:15,side:"demand",kind:"retired",source:"indicator",at:props.capturedAt+60000,lower:767,upper:768,confirmed:true};
+    const earlier = {...post,id:"prior",at:props.capturedAt,capturedAt:props.capturedAt,chartUrl:capture};
+    const view=render(<ZonePulseCard post={post} earlierChart={earlier}/>);
+    expect(screen.getByText("Earlier view · same zone")).toBeInTheDocument();
+    expect(screen.getByAltText(/^Original TradingView/)).toHaveAttribute("src",capture);
+    view.rerender(<ZonePulseCard post={post} earlierChart={{...earlier,zoneId:"other"}}/>);
+    expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
+    view.rerender(<ZonePulseCard post={post} earlierChart={{...earlier,capturedAt:post.at+1000}}/>);
+    expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
+  });
+  it("renders real recorded candles with an explicit non-screenshot label", () => {
     const post: PulsePost = {
       id: "test", zoneId: "zone", symbol: "CAPITALCOM:SPX500", timeframe: 5,
       side: "demand", kind: "entered", source: "indicator", at: props.capturedAt,
@@ -130,9 +141,9 @@ describe("Pulse screenshot integrity", () => {
       bars: [{ t: props.capturedAt, o: 7664, h: 7669, l: 7662, c: 7665 }],
     };
     const { container } = render(<ZonePulseCard post={post}/>);
-    expect(screen.getByText("Original chart unavailable for this update.")).toBeInTheDocument();
-    expect(container.querySelector(".pulse-data-chart")).toBeNull();
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("Recorded indicator data · Not a TradingView screenshot")).toBeInTheDocument();
+    expect(container.querySelector(".pulse-data-chart")).not.toBeNull();
+    expect(screen.getByRole("img")).toHaveAttribute("aria-label", expect.stringContaining("SPX500 5 minute chart from indicator candle data"));
     expect(screen.getByText("$SPX500")).toBeInTheDocument();
   });
 });

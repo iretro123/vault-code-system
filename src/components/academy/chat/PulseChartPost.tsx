@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Activity, ArrowUp, ArrowDown, ArrowUpRight, Expand, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { validPulseChartFocus, type PulseChartFocus } from "@/lib/pulseChartFocus";
@@ -21,7 +21,8 @@ export interface PulseChartPostProps {
   directionCue?: boolean;
   capturedAt: number;
   chartCapturedAt?: number;
-  captureContext?: "event" | "refresh";
+  captureContext?: "event" | "refresh" | "earlier";
+  fallbackChart?: ReactNode;
   captureStatus?: "pending" | "unavailable";
   chartUrl?: string;
   chartFocus?: PulseChartFocus;
@@ -39,7 +40,7 @@ export interface PulseChartPostProps {
 
 export function PulseChartPost({
   symbol, timeframe, side, headline, capturedAt, chartCapturedAt = capturedAt, captureContext = "event", captureStatus = "pending", chartUrl, chartFocus, lower, upper, note,
-  directionCue = false, arriving = false, showIdentity = true, defaultShowChart = true,
+  fallbackChart, directionCue = false, arriving = false, showIdentity = true, defaultShowChart = true,
   entryMarkup, reactions, onReact, reactionsDisabled = false,
 }: PulseChartPostProps) {
   const [expanded, setExpanded] = useState(false);
@@ -94,7 +95,7 @@ export function PulseChartPost({
       </div>
       {chartUrl ? <>
         {showChart && <figure className="pcp-chart" aria-label="Original chart screenshot">
-          <figcaption className="pcp-capture-time"><time dateTime={new Date(chartCapturedAt).toISOString()}>{captureContext === "refresh" ? "Chart refreshed" : "Chart captured"} · <span className="pcp-capture-date">{chartTime} ET</span></time>{captureContext === "refresh" && <span>Later chart view</span>}</figcaption>
+          <figcaption className="pcp-capture-time"><time dateTime={new Date(chartCapturedAt).toISOString()}>{captureContext === "refresh" ? "Chart refreshed" : "Chart captured"} · <span className="pcp-capture-date">{chartTime} ET</span></time>{captureContext === "refresh" && <span>Later chart view</span>}{captureContext === "earlier" && <span>Earlier view · same zone</span>}</figcaption>
           {!failed && <div className={`pcp-photo${focus ? " pcp-focused" : ""}${canAnnotate ? " pcp-annotatable" : ""}`} style={focus ? { aspectRatio: `${focus.width} / ${focus.height}`, maxWidth: `min(${focus.width}px, var(--pcp-chart-width, 800px))` } : undefined}>
             <img key={attempt} src={chartUrl} alt={chartAlt} style={focus ? { width: `${focus.sourceWidth / focus.width * 100}%`, height: "auto", left: `${-focus.x / focus.width * 100}%`, top: `${-focus.y / focus.height * 100}%` } : undefined} onLoad={event => {
               setLoaded(true);
@@ -112,7 +113,7 @@ export function PulseChartPost({
           </div>}
           {failed && <div className="pcp-missing" role="status"><p>{attempt < 5 ? "Chart loading… retrying automatically." : "Chart couldn’t load."}</p><button type="button" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}><RotateCcw size={16} aria-hidden="true"/> Try again</button></div>}
         </figure>}
-      </> : <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Waiting for the original chart."}</p>}
+      </> : fallbackChart || <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Waiting for the original chart."}</p>}
       {(onReact || canAnnotate || (chartUrl && !showChart)) && <footer className="pcp-actions">
         {onReact && reactions && <div className="pcp-reactions" aria-label="Reactions">{reactions.map(reaction => <button type="button" key={reaction.emoji} aria-label={`React ${reaction.emoji}`} aria-pressed={reaction.active} disabled={reactionsDisabled} onClick={() => onReact(reaction.emoji)}>{reaction.emoji}{reaction.count > 0 && <span>{reaction.count}</span>}</button>)}</div>}
         {chartUrl && !showChart && <button type="button" className="pcp-entry-button" onClick={() => { setActualSize(false); setExpanded(true); }}>View chart <ArrowUpRight size={17} aria-hidden="true"/></button>}
@@ -122,7 +123,7 @@ export function PulseChartPost({
     <Dialog open={expanded} onOpenChange={setExpanded}>
       <DialogContent className="pcp-dialog max-w-6xl border-white/10 bg-[#19222f] text-slate-100">
         <DialogTitle>{symbol} · {timeframe}m · Original chart</DialogTitle>
-        <DialogDescription className="text-slate-400">Captured {chartTime} ET.{captureContext === "refresh" ? " Later chart view, after the original update." : ""}</DialogDescription>
+        <DialogDescription className="text-slate-400">Captured {chartTime} ET.{captureContext === "refresh" ? " Later chart view, after the original update." : captureContext === "earlier" ? " Earlier saved view of the same zone, before this update." : ""}</DialogDescription>
         <button type="button" className="pcp-size-switch" aria-pressed={actualSize} onClick={() => setActualSize(value => !value)}>{actualSize ? <ZoomOut size={16}/> : <ZoomIn size={16}/>} {actualSize ? "Fit to screen" : "Actual size"}</button>
         <div ref={originalViewer} className={`pcp-original-view${actualSize ? " pcp-actual" : ""}`}><img src={chartUrl} alt={`Full unmodified screenshot: ${chartAlt}`}/></div>
       </DialogContent>

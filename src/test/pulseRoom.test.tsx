@@ -24,7 +24,7 @@ describe("Live Pulse channel", () => {
     expect(screen.getByRole("heading", { name: "Latest zone · No longer active" })).toBeInTheDocument();
     expect(screen.queryByText("5m demand broke. Closed below 770.83.")).toBeInTheDocument();
     expect(screen.getByText("Chart capture offline")).toBeInTheDocument();
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("Earlier view · same zone")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Earlier updates (1)" }));
     fireEvent.click(screen.getByRole("button", { name: "View chart" }));
     expect(screen.getByAltText(/^Full unmodified screenshot/)).toHaveAttribute("src", original.chartUrl);
@@ -66,7 +66,7 @@ describe("Live Pulse channel", () => {
     state.feed.quotes![5] = { ...state.feed.quotes![5]!, at: Date.now() };
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByText("Latest zone · No longer active")).toBeInTheDocument();
-    expect(screen.queryByAltText(/^Original TradingView SPY 5-minute/)).not.toBeInTheDocument();
+    expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src", original.chartUrl);
   });
   it("removes the live label when the heartbeat becomes stale", () => {
     setup();
