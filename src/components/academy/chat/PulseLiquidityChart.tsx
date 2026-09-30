@@ -25,10 +25,10 @@ export function PulseLiquidityChart({ liquidityChart, ...props }: PulseChartPost
         <span>Show liquidity</span><span className="pcp-liquidity-switch" aria-hidden="true"><i/></span>
       </button>
       {showing && <details className="pcp-liquidity-help"><summary>How to read the lines</summary>
-        <p>Each line starts at a candle wick: a previous high or low where price may react.</p>
-        <p><strong>Back inside:</strong> if price crosses the line and closes back inside, a turn is possible.</p>
-        <p><strong>Close beyond:</strong> price may keep going. Watch the next candles and the supply or demand zone.</p>
-        <p>These are possible liquidity areas, not visible orders or guaranteed targets. Lines appear after the swing is confirmed.</p>
+        <p>Lines mark previous candle highs and lows.</p>
+        <p><strong>Crosses, then closes back:</strong> price may turn.</p>
+        <p><strong>Closes past the line:</strong> price may keep going.</p>
+        <p className="pcp-liquidity-caution">Watch for a reaction—not a guaranteed move.</p>
       </details>}
     </div>}
     <PulseChartPost {...props}
