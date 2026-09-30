@@ -131,7 +131,7 @@ describe("Live Pulse channel", () => {
     act(() => { vi.setSystemTime(new Date("2026-09-26T01:00:00Z")); vi.advanceTimersByTime(1000); });
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src", "https://example.com/closing-5.png");
-    expect(screen.getByText("Later chart view")).toBeInTheDocument();
+    expect(screen.queryByText("Later chart view")).not.toBeInTheDocument();
     fireEvent.load(screen.getByAltText(/^Original TradingView SPY 5-minute/));
     fireEvent.click(screen.getByRole("button", { name: "Expand original SPY 5-minute screenshot" }));
     expect(screen.getByAltText(/^Full unmodified screenshot/)).toHaveAttribute("src", "https://example.com/closing-5.png");
@@ -144,7 +144,7 @@ describe("Live Pulse channel", () => {
     act(()=>{vi.setSystemTime(new Date("2026-09-26T01:00:00Z"));vi.advanceTimersByTime(1000);});
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src",original.chartUrl);
-    expect(screen.getByText("Earlier view · same zone")).toBeInTheDocument();
+    expect(screen.queryByText("Earlier view · same zone")).not.toBeInTheDocument();
     state.feed.quotes![5]!.zones[0].zoneId="different-zone";
     view.rerender(<SpxPulseRoom/>);
     expect(screen.queryByAltText(/^Original TradingView SPY 5-minute/)).not.toBeInTheDocument();

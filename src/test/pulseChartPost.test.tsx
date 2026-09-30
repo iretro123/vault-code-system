@@ -47,8 +47,8 @@ describe("Pulse screenshot integrity", () => {
     render(<ZonePulseCard post={post}/>);
     loadImage();
     expect(screen.getByText("Sep 24 · 12:41 PM ET")).toBeInTheDocument();
-    expect(screen.getByText("Sep 24, 1:41:25 PM ET").closest("time")).toHaveTextContent("Chart refreshed · Sep 24, 1:41:25 PM ET");
-    expect(screen.getByText("Later chart view")).toBeInTheDocument();
+    expect(screen.getByText("Chart · 1:41 PM ET")).toHaveAttribute("title", "Sep 24, 1:41:25 PM ET");
+    expect(screen.queryByText("Later chart view")).not.toBeInTheDocument();
     expect(screen.queryByText(/New 5m/)).not.toBeInTheDocument();
   });
   it("keeps the event timestamp distinct from a later screenshot capture", () => {
@@ -126,7 +126,7 @@ describe("Pulse screenshot integrity", () => {
     const post: PulsePost = {id:"ended",zoneId:"zone",symbol:"AMEX:SPY",timeframe:15,side:"demand",kind:"retired",source:"indicator",at:props.capturedAt+60000,lower:767,upper:768,confirmed:true};
     const earlier = {...post,id:"prior",at:props.capturedAt,capturedAt:props.capturedAt,chartUrl:capture};
     const view=render(<ZonePulseCard post={post} earlierChart={earlier}/>);
-    expect(screen.getByText("Earlier view · same zone")).toBeInTheDocument();
+    expect(screen.queryByText("Earlier view · same zone")).not.toBeInTheDocument();
     expect(screen.getByAltText(/^Original TradingView/)).toHaveAttribute("src",capture);
     view.rerender(<ZonePulseCard post={post} earlierChart={{...earlier,zoneId:"other"}}/>);
     expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
