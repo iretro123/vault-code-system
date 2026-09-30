@@ -75,3 +75,14 @@
 .pr-market-state{display:inline-flex;align-items:center;gap:7px}
 .pr-market-state[data-closed=true]{padding:7px 10px;border:1px solid #eeb96670;border-radius:8px;background:#493921;color:#ffe0a3;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;box-shadow:inset 0 1px #ffe4b412}
 .pr-market-state[data-closed=true] i{width:7px;height:7px;background:#ffd080;box-shadow:none}
+
+/* Liquidity belongs to the zone card, without a separate dark panel. */
+.pr-snapshot .pcp-liquidity-controls{margin-top:8px;padding:0;background:transparent;color:#f3e9ed;border-top:1px solid #ffffff18}
+.pr-snapshot .pcp-liquidity-controls>button{min-height:44px;font-size:13px;font-weight:600;gap:12px}
+.pr-snapshot .pcp-liquidity-switch{width:36px;height:22px;padding:3px;background:#ffffff20;border:1px solid #ffffff30}
+.pr-snapshot .pcp-liquidity-switch i{width:14px;height:14px;background:#f7edf1}
+.pr-snapshot .pcp-liquidity-controls [aria-checked=true] i{transform:translateX(14px);background:#fff}
+.pr-snapshot[data-side=supply] .pcp-liquidity-controls [aria-checked=true] .pcp-liquidity-switch{background:#e43b57;border-color:#ff8d9f}
+.pr-snapshot[data-side=demand] .pcp-liquidity-controls [aria-checked=true] .pcp-liquidity-switch{background:#168757;border-color:#88e9b8}
+.pr-snapshot .pcp-liquidity-help{font-size:13px;color:#e6dce2}.pr-snapshot .pcp-liquidity-help summary{color:inherit}
+.pr-snapshot .pcp-liquidity-view .pulse-chart-post{margin-top:2px}
