@@ -28,7 +28,7 @@ describe('bounded chart reconnect',()=>{
  });
  it('keeps the cooldown when reconnect fails',async()=>{
   const {page,env}=setup();page.waitForFunction.mockRejectedValue(new Error('timeout'));
-  await expect(reconnectChart(env,page)).rejects.toThrow('timeout');
+  await expect(reconnectChart(env,page)).rejects.toThrow('chart-session-conflict');
   expect(env.CHART_IMAGES.put).toHaveBeenCalledOnce();
  });
 });

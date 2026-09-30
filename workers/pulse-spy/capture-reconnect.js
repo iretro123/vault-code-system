@@ -12,8 +12,13 @@ export async function reconnectChart(env,page) {
     if ((await button.evaluate(el=>el.textContent?.trim()))!=='Connect') continue;
     // Record before clicking, so a failed attempt cannot produce a retry storm.
     await env.CHART_IMAGES.put(key,String(Date.now()),{expirationTtl:600});
-    await button.click();
-    await page.waitForFunction(()=>!/session disconnected/i.test(document.body.innerText),{timeout:6000});
+    try {
+      await button.click();
+      await page.waitForFunction(()=>!/session disconnected/i.test(document.body.innerText),{timeout:6000});
+    } catch {
+      // A competing account session must not be mistaken for an expired browser.
+      throw new Error('chart-session-conflict');
+    }
     return;
   }
   throw new Error('chart-session-conflict');

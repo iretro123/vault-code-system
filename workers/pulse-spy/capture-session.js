@@ -17,14 +17,23 @@ export async function openChartSession(env, lifetimeMs=28_000) {
     try { existing=await connectChartBrowser(env.BROWSER,sessionId,Math.max(1,deadline-Date.now())); } catch { /* Restore an expired browser using the approved saved login. */ }
     if (existing) {
       try {
-        const page=(await existing.pages()).find(p=>p.url().startsWith(CHART_URL));
+        const pages=await existing.pages();
+        let page=pages.find(p=>p.url().startsWith(CHART_URL));
+        const restoring=await env.CHART_IMAGES.get('private:restoring-session')===sessionId;
+        if (!page && restoring) {
+          page=pages.find(p=>p.url()==='about:blank');
+          if (page) await page.goto(CHART_URL,{waitUntil:'domcontentloaded',timeout:12_000});
+        }
         if (!page) throw new Error('hosted-chart-login-required');
+        if (restoring) await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:6000});
         await reconnectChart(env,page);
         return existing;
       } catch(error) {
         await existing.disconnect();
         // Account conflicts and login challenges must not trigger browser churn.
         if (['chart-session-conflict','hosted-chart-login-required'].includes(error?.message)) throw error;
+        // Keep a newly restored page loading; do not replace it every minute.
+        if (await env.CHART_IMAGES.get('private:restoring-session')===sessionId) throw new Error('hosted-browser-recovering');
       }
     }
   }
@@ -48,6 +57,8 @@ export async function openChartSession(env, lifetimeMs=28_000) {
     const page=await browser.newPage();
     stage='restore-cookies';
     await page.setCookie(...cookies);
+    await env.CHART_IMAGES.put('private:session',acquired.sessionId);
+    await env.CHART_IMAGES.put('private:restoring-session',acquired.sessionId,{expirationTtl:180});
     stage='restore-navigation';
     await page.goto(CHART_URL,{waitUntil:'domcontentloaded',timeout:12_000});
     stage='restore-chart';
@@ -56,7 +67,7 @@ export async function openChartSession(env, lifetimeMs=28_000) {
     await reconnectChart(env,page);
     await env.CHART_IMAGES.put('private:session',acquired.sessionId);
     return browser;
-  } catch(error) { try { await browser.close(); } finally { await browser.disconnect(); } throw new Error(error?.message==='chart-session-conflict' ? error.message : stage+'-failed'); }
+  } catch(error) { await browser.disconnect(); throw new Error(error?.message==='chart-session-conflict' ? error.message : stage+'-failed'); }
 }
 
 export async function rememberChartLogin(env,page) {

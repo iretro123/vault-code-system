@@ -19,6 +19,13 @@ describe('automatic dedicated chart recovery',()=>{
   const {env,browser,page}=await fixture();connection.connectChartBrowser.mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce(browser);connection.acquireChartBrowser.mockResolvedValue({sessionId:'replacement'});
   expect(await openChartSession(env)).toBe(browser);expect(page.setCookie).toHaveBeenCalledOnce();expect(env.CHART_IMAGES.put).toHaveBeenCalledWith('private:session','replacement');
  });
+ it('keeps a slow restored page for the next attempt instead of destroying its progress',async()=>{
+  const {env,browser,page}=await fixture();connection.connectChartBrowser.mockRejectedValueOnce(new Error('expired')).mockResolvedValue(browser);connection.acquireChartBrowser.mockResolvedValue({sessionId:'replacement'});page.goto.mockRejectedValue(new Error('navigation timeout'));
+  await expect(openChartSession(env)).rejects.toThrow('restore-navigation-failed');
+  expect(browser.close).not.toHaveBeenCalled();expect(browser.disconnect).toHaveBeenCalledOnce();
+  page.goto.mockResolvedValue(undefined);
+  expect(await openChartSession(env)).toBe(browser);expect(connection.acquireChartBrowser).toHaveBeenCalledOnce();
+ });
  it('never replaces a browser to bypass a TradingView session conflict',async()=>{
   const {env,browser}=await fixture();connection.connectChartBrowser.mockResolvedValue(browser);reconnect.mockRejectedValue(new Error('chart-session-conflict'));
   await expect(openChartSession(env)).rejects.toThrow('chart-session-conflict');expect(connection.acquireChartBrowser).not.toHaveBeenCalled();expect(browser.disconnect).toHaveBeenCalledOnce();
