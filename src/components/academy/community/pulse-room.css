@@ -39,3 +39,15 @@
 .pr-snapshot li[data-side] .pr-snapshot-side{align-self:flex-start;display:inline-flex;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;border:1px solid #ffffff40}
 .pr-snapshot li[data-side=supply] .pr-snapshot-side{background:#df263d;box-shadow:0 0 14px #df263d44}.pr-snapshot li[data-side=demand] .pr-snapshot-side{background:#137d48;border-color:#40eb82;box-shadow:0 0 14px #40eb8233}
 .pr-snapshot[data-side=supply] .pcp-surface,.pr-snapshot[data-side=demand] .pcp-surface{border-color:rgba(var(--snapshot-rgb),.45)}
+
+/* Compact, chart-first snapshot: large levels without repeated headings. */
+.pr-snapshot{padding:16px;margin:4px 0 14px;border-radius:18px}
+.pr-snapshot-time{font-size:14px;line-height:1.4;margin:0 0 12px;font-weight:500}
+.pr-snapshot li{padding:0;border:0;gap:8px}.pr-snapshot li+li{margin-top:12px}
+.pr-snapshot li[data-side] .pr-snapshot-side{font-size:15px;padding:5px 10px;letter-spacing:.04em}
+.pr-snapshot strong{font-size:clamp(24px,6.6vw,32px);font-weight:750;line-height:1.15;letter-spacing:-.5px}
+.pr-snapshot .pulse-chart-post{margin-top:12px;width:calc(100% + 32px);max-width:none;margin-left:-16px;margin-right:-16px}
+.pr-snapshot .pcp-surface{border-radius:0;border-left:0;border-right:0}
+.pr-snapshot .pcp-capture-time{font-size:14px;line-height:1.35;padding:8px 12px}
+.pr-snapshot-note{font-size:14px;line-height:1.4;margin:12px 0 0}.pr-snapshot-none{font-size:22px;font-weight:600;margin:0 0 10px}
+@media(max-width:450px){.pr-toolbar{padding:10px 14px 6px}.pr-now{font-size:13px;margin-bottom:8px}.pr-snapshot{padding:14px}.pr-snapshot .pulse-chart-post{width:calc(100% + 28px);margin-left:-14px;margin-right:-14px}.pr-snapshot-time{font-size:13px}.pr-snapshot .pcp-capture-time{font-size:13px}}

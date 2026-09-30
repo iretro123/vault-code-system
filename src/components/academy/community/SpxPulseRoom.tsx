@@ -66,7 +66,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         {monitoring && connected && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
         {closingSnapshot && <section className="pr-snapshot" data-side={snapshotSide} aria-label={`${tf}-minute last indicator snapshot`}>
           <p className="pr-snapshot-time">Last indicator snapshot · {snapshotTime} ET</p>
-          <h2>{tf}-minute zones</h2>
+          <h2 className="sr-only">{tf}-minute zones</h2>
           {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`} data-side={zone.side}>
             <span className="pr-snapshot-side">{zone.side}</span><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
           </li>)}</ul> : <p className="pr-snapshot-none">No active {tf}-minute zone at this update.</p>}
