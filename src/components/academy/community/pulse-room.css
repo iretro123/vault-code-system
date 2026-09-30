@@ -173,3 +173,5 @@
  .pr-empty h2{text-align:left;font-size:32px;letter-spacing:-.8px}
  .pr-empty>svg{margin-bottom:16px}
 }
+
+.pr-last-zone{display:flex;align-items:center;gap:10px;padding:12px 0;color:#b9cbe0}.pr-last-zone>svg{width:18px;height:18px}.pr-last-zone h2{font-size:14px;font-weight:600;margin:0}.pr-last-zone .pr-other-timeframe{margin-left:auto;font-size:12px;padding:6px 10px}

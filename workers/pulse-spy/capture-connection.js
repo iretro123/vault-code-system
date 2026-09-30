@@ -8,7 +8,12 @@ export async function connectChartBrowser(binding, sessionId, lifetimeMs=28_000)
   let transport;
   const closeTransport=()=>{if (transport) {transport.close();transport.onclose?.();}};
   const timer=setTimeout(()=>{controller.abort();closeTransport();},lifetimeMs);
-  const bounded={fetch:(url,init={})=>binding.fetch(url,{...init,signal:AbortSignal.any([controller.signal,AbortSignal.timeout(6000)])})};
+  // Abort only a pending upgrade, not the established WebSocket six seconds later.
+  const bounded={fetch:async(url,init={})=>{
+    const handshake=setTimeout(()=>controller.abort(),6000);
+    try {return await binding.fetch(url,{...init,signal:controller.signal});}
+    finally {clearTimeout(handshake);}
+  }};
   try {
     transport=await WorkersWebSocketTransport.create(bounded,sessionId);
     if (controller.signal.aborted) throw new Error('hosted-browser-timeout');

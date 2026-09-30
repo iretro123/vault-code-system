@@ -5,6 +5,18 @@ vi.mock('../../workers/pulse-spy/node_modules/@cloudflare/puppeteer/lib/esm/pupp
 import { connectChartBrowser } from '../../workers/pulse-spy/capture-connection.js';
 afterEach(()=>{vi.useRealTimers();vi.clearAllMocks();});
 describe('chart connection watchdog',()=>{
+ it('does not abort an upgraded socket after the handshake deadline',async()=>{
+  vi.useFakeTimers();let signal: AbortSignal;
+  const binding={fetch:vi.fn(async(_url,init)=>{signal=init.signal;return {};})};
+  const transport={close:vi.fn()};
+  mocks.create.mockImplementationOnce(async endpoint=>{await endpoint.fetch('https://example.test',{headers:{Upgrade:'websocket'}});return transport;});
+  mocks.connect.mockResolvedValue({disconnect:vi.fn()});
+  const browser=await connectChartBrowser(binding,'dedicated');
+  await vi.advanceTimersByTimeAsync(7000);
+  expect(signal!.aborted).toBe(false);expect(transport.close).not.toHaveBeenCalled();
+  await browser.disconnect();
+ });
+
  it('closes the actual transport at the deadline, rejecting stuck commands',async()=>{
   vi.useFakeTimers();const transport={close:vi.fn()};const browser={disconnect:vi.fn()};
   mocks.create.mockResolvedValue(transport);mocks.connect.mockResolvedValue(browser);
