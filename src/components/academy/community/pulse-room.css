@@ -187,5 +187,5 @@
 .vault-community .pr-feed-live>svg{animation:pr-feed-heartbeat 1.8s ease-in-out infinite;transform-origin:center;color:#97dfef}
 @keyframes pr-feed-heartbeat{0%,35%,100%{transform:scale(1);filter:drop-shadow(0 0 3px #72d8ef30)}10%{transform:scale(1.22);filter:drop-shadow(0 0 10px #72d8ef80)}18%{transform:scale(1)}26%{transform:scale(1.14);filter:drop-shadow(0 0 7px #72d8ef60)}}
 /* Keep the explicitly requested beat visible with a smaller movement. */
-@media(prefers-reduced-motion:reduce){.vault-community .pr-feed-live>svg{animation:pr-feed-heartbeat-soft 2.4s ease-in-out infinite}}
+@media(prefers-reduced-motion:reduce){.vault-community .pr-feed-live>svg{animation:pr-feed-heartbeat-soft 2.4s ease-in-out infinite!important}}
 @keyframes pr-feed-heartbeat-soft{0%,35%,100%{transform:scale(1)}10%{transform:scale(1.08)}18%{transform:scale(1)}26%{transform:scale(1.05)}}
