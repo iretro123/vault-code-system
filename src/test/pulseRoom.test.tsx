@@ -54,4 +54,13 @@ describe("Live Pulse channel", () => {
     expect(screen.queryByText("No zone yet.")).not.toBeInTheDocument();
     expect(screen.getByText(/Waiting for fresh 5m data/)).toBeInTheDocument();
   });
+  it("explains the closed market without claiming a live capture outage", () => {
+    setup();
+    act(() => { vi.setSystemTime(new Date("2026-09-26T01:00:00Z")); vi.advanceTimersByTime(1000); });
+    expect(screen.getByText("Market closed")).toBeInTheDocument();
+    expect(screen.getByText("Live zone alerts resume during the next trading session.")).toBeInTheDocument();
+    expect(screen.queryByText(/Chart capture offline/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Live updates")).not.toBeInTheDocument();
+  });
+
 });
