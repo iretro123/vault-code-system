@@ -24,7 +24,12 @@ export default {
       return image.value ? new Response(image.value,{headers:{'Content-Type':contentType,'Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}) : new Response('Chart unavailable',{status:404,headers:{'Cache-Control':'no-store'}});
     }
     if (request.method==='POST' && url.pathname==='/check' && await captureAuthorized(request,env.WORKER_TOKEN)) {
+      const rpc=database(env);
+      const claim=await rpc('pulse_spy_capture_probe_claim');
+      if (!claim?.lease || claim.busy) return Response.json({ok:false,failure:'capture-busy'},{status:409,headers:{'Cache-Control':'no-store'}});
       const result = await checkChartConnection(env,url.searchParams.has('timeframe') ? Number(url.searchParams.get('timeframe')) : undefined);
+      const finished=await rpc('pulse_spy_capture_finish',{p_lease:claim.lease,p_event_id:null,p_result:{ok:result.ok,failure:result.failure}});
+      if (!finished) return Response.json({ok:false,failure:'capture-lease-lost'},{status:409,headers:{'Cache-Control':'no-store'}});
       return Response.json(result,{status:result.ok ? 200 : 409,headers:{'Cache-Control':'no-store'}});
     }
     if (request.method==='POST' && url.pathname==='/drain' && await captureAuthorized(request,env.WORKER_TOKEN)) {
