@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, ArrowUpRight, ArrowUp } from "lucide-react";
+import { Activity, ArrowUpRight, ArrowUp, ArrowDown } from "lucide-react";
 import { PulseLiquidityChart } from "../chat/PulseLiquidityChart";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
@@ -68,7 +68,13 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
           <p className="pr-snapshot-time">Last indicator snapshot · {snapshotTime} ET</p>
           <h2 className="sr-only">{tf}-minute zones</h2>
           {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`} data-side={zone.side}>
-            <span className="pr-snapshot-side">{tf} min {zone.side}</span><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
+            <div className="pr-snapshot-heading">
+              <span className="pr-snapshot-side">{tf} min {zone.side}</span>
+              <span className="pr-snapshot-direction">
+                <span>{zone.side === "supply" ? "Watch for rejection" : "Watch for a bounce"}</span>
+                {zone.side === "supply" ? <ArrowDown size={30} strokeWidth={3} aria-hidden="true" /> : <ArrowUp size={30} strokeWidth={3} aria-hidden="true" />}
+              </span>
+            </div><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
           </li>)}</ul> : <p className="pr-snapshot-none">No active {tf}-minute zone at this update.</p>}
           {quote.chartUrl && quote.chartCapturedAt && <PulseLiquidityChart
             key={`${tf}:${quote.at}`} symbol={symbolLabel} timeframe={tf} side={snapshotSide}

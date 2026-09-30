@@ -51,3 +51,10 @@
 .pr-snapshot .pcp-capture-time{font-size:14px;line-height:1.35;padding:8px 12px}
 .pr-snapshot-note{font-size:14px;line-height:1.4;margin:12px 0 0}.pr-snapshot-none{font-size:22px;font-weight:600;margin:0 0 10px}
 @media(max-width:450px){.pr-toolbar{padding:10px 14px 6px}.pr-now{font-size:13px;margin-bottom:8px}.pr-snapshot{padding:14px}.pr-snapshot .pulse-chart-post{width:calc(100% + 28px);margin-left:-14px;margin-right:-14px}.pr-snapshot-time{font-size:13px}.pr-snapshot .pcp-capture-time{font-size:13px}}
+
+/* Keep the direction cue beside the badge, leaving the price full width. */
+.pr-snapshot-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pr-snapshot-direction{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:13px;font-weight:650;line-height:1.2;text-align:right;max-width:155px}
+.pr-snapshot-direction svg{flex-shrink:0}
+.pr-snapshot li[data-side=supply] .pr-snapshot-direction{color:#ffb4c0}
+.pr-snapshot li[data-side=demand] .pr-snapshot-direction{color:#9dffbd}
