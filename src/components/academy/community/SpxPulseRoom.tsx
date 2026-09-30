@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, ArrowUpRight, ArrowUp, ArrowDown } from "lucide-react";
+import { Activity, ArrowUpRight, ArrowUp, ArrowDown, ChevronUp } from "lucide-react";
 import { PulseLiquidityChart } from "../chat/PulseLiquidityChart";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
@@ -49,6 +49,10 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
     scroller.current?.scrollTo({ top: 0, behavior: "instant" });
   };
   const openLatest = () => { scroller.current?.scrollTo({ top: 0, behavior: "smooth" }); setUnseen(false); };
+  const closeHistory = () => {
+    setHistory(false); setUnseen(false);
+    scroller.current?.scrollTo({ top: 0, behavior: "instant" });
+  };
   const liveChart = `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}&interval=${tf}`;
 
   return <section className="zone-pulse-room pulse-room-clean" aria-label={`${symbolLabel} Zone Pulse`}>
@@ -92,9 +96,15 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
           <a href={liveChart} target="_blank" rel="noreferrer">Open {symbolLabel} on TradingView <ArrowUpRight size={20} aria-hidden="true"/></a>
           <p role="status">{!monitoring ? "Live zone alerts resume during the next trading session." : source === "cloud" && feed.captureConnected === false ? "Zone updates are automatic · Chart capture offline" : feed.captureConnected ? "New zones and chart captures appear automatically" : "Checking chart connection…"}</p>
         </div>
-        {earlierCount > 0 && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}
+        {earlierCount > 0 && !history && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}
       </div>
     </div>
+    {history && <div className="pr-history-dock">
+      <button type="button" onClick={closeHistory} aria-expanded="true">
+        <ChevronUp size={19} aria-hidden="true" /> Hide earlier updates
+        <span>Back to latest</span>
+      </button>
+    </div>}
     {unseen && <button type="button" className="pr-new" onClick={openLatest}><ArrowUp size={16}/> New update</button>}
     <span className="sr-only" aria-live="polite">{arrival && latest ? `$${symbolLabel} ${tf} minute ${latest.side} update received.` : ""}</span>
   </section>;
