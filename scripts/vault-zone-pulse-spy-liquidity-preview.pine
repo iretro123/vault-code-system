@@ -1,0 +1,377 @@
+//@version=6
+indicator("Vault Zone Pulse - SPY Liquidity Preview", overlay=true, max_boxes_count=20, max_labels_count=100, max_lines_count=50)
+
+grp1 = "EMA Settings"
+showEMA13 = input.bool(true, "Show 13 EMA", group=grp1)
+showSMA50 = input.bool(true, "Show 50 SMA", group=grp1)
+showEMA200 = input.bool(true, "Show 200 EMA", group=grp1)
+ema13Color = input.color(color.aqua, "13 EMA Color", group=grp1)
+sma50Color = input.color(color.yellow, "50 SMA Color", group=grp1)
+ema200Color = input.color(color.orange, "200 EMA Color", group=grp1)
+
+grp2 = "Logic"
+pivotLen = input.int(2, "Pivot Length", minval=2, maxval=10, group=grp2)
+scanBack = input.int(20, "Scan Back", minval=2, maxval=50, group=grp2)
+showSignals = input.bool(true, "Show Signals", group=grp2)
+showBOS = input.bool(true, "Show BOS Labels", group=grp2)
+
+grp3 = "Trader Filters"
+useChartEMAFilter = input.bool(true, "Use Chart 200 EMA Filter", group=grp3)
+useHTFBias = input.bool(true, "Use Higher Timeframe Bias", group=grp3)
+htfTf = input.timeframe("15", "Higher Timeframe", group=grp3)
+sessionOnly = input.bool(true, "Signals Only In Session", group=grp3)
+tradeSession = input.session("0930-1200", "Trade Session", group=grp3)
+deleteAfterSignal = input.bool(true, "Delete Zone After Signal", group=grp3)
+clearOppositeOnBOS = input.bool(true, "Clear Opposite Zone On New BOS", group=grp3)
+
+grp4 = "Zone Colors"
+demandBorder = input.color(color.lime, "Demand Border", group=grp4)
+demandFill = input.color(color.new(color.lime, 78), "Demand Fill", group=grp4)
+supplyBorder = input.color(color.red, "Supply Border", group=grp4)
+supplyFill = input.color(color.new(color.red, 78), "Supply Fill", group=grp4)
+
+ema13 = ta.ema(close, 13)
+sma50 = ta.sma(close, 50)
+ema200 = ta.ema(close, 200)
+htfClose = request.security(syminfo.tickerid, htfTf, close)
+htfEMA200 = request.security(syminfo.tickerid, htfTf, ta.ema(close, 200))
+inSession = not sessionOnly or not na(time(timeframe.period, tradeSession))
+
+plot(showEMA13 ? ema13 : na, "13 EMA", color=ema13Color, linewidth=2)
+plot(showSMA50 ? sma50 : na, "50 SMA", color=sma50Color, linewidth=2)
+plot(showEMA200 ? ema200 : na, "200 EMA", color=ema200Color, linewidth=3)
+
+allowLong = (not useChartEMAFilter or close > ema200) and (not useHTFBias or htfClose > htfEMA200)
+allowShort = (not useChartEMAFilter or close < ema200) and (not useHTFBias or htfClose < htfEMA200)
+
+isBull(i) => close[i] > open[i]
+isBear(i) => close[i] < open[i]
+closeInside(top, bot, c) => c < top and c > bot
+
+f_findDemandIndex() =>
+    int found = na
+    for i = 1 to scanBack
+        if isBear(i)
+            found := i
+            break
+    found
+
+f_findSupplyIndex() =>
+    int found = na
+    for i = 1 to scanBack
+        if isBull(i)
+            found := i
+            break
+    found
+
+ph = ta.pivothigh(high, pivotLen, pivotLen)
+pl = ta.pivotlow(low, pivotLen, pivotLen)
+
+var float lastPivotHigh = na
+var float lastPivotLow = na
+var float lastBrokenHigh = na
+var float lastBrokenLow = na
+
+if not na(ph)
+    lastPivotHigh := ph
+if not na(pl)
+    lastPivotLow := pl
+
+bullBos = not na(lastPivotHigh) and high > lastPivotHigh and (na(lastBrokenHigh) or lastBrokenHigh != lastPivotHigh)
+bearBos = not na(lastPivotLow) and low < lastPivotLow and (na(lastBrokenLow) or lastBrokenLow != lastPivotLow)
+
+if bullBos
+    lastBrokenHigh := lastPivotHigh
+if bearBos
+    lastBrokenLow := lastPivotLow
+
+// Read-only origin metadata for the notification adapter.
+var int pulseDemandOrigin = na
+var int pulseSupplyOrigin = na
+var box demandBox = na
+var box supplyBox = na
+var float demandTop = na
+var float demandBot = na
+var float supplyTop = na
+var float supplyBot = na
+
+if bullBos and allowLong
+    int demandIdx = f_findDemandIndex()
+    if not na(demandIdx)
+        float newDemandTop = high[demandIdx]
+        float newDemandBot = low[demandIdx]
+        if clearOppositeOnBOS and not na(supplyBox)
+            box.delete(supplyBox)
+            supplyBox := na
+            supplyTop := na
+            supplyBot := na
+        demandTop := newDemandTop
+        demandBot := newDemandBot
+        if not na(demandBox)
+            box.delete(demandBox)
+        pulseDemandOrigin := time[demandIdx]
+        demandBox := box.new(bar_index - demandIdx, demandTop, bar_index, demandBot, xloc=xloc.bar_index, extend=extend.right, border_color=demandBorder, bgcolor=demandFill)
+
+if bearBos and allowShort
+    int supplyIdx = f_findSupplyIndex()
+    if not na(supplyIdx)
+        float newSupplyTop = high[supplyIdx]
+        float newSupplyBot = low[supplyIdx]
+        if clearOppositeOnBOS and not na(demandBox)
+            box.delete(demandBox)
+            demandBox := na
+            demandTop := na
+            demandBot := na
+        supplyTop := newSupplyTop
+        supplyBot := newSupplyBot
+        if not na(supplyBox)
+            box.delete(supplyBox)
+        pulseSupplyOrigin := time[supplyIdx]
+        supplyBox := box.new(bar_index - supplyIdx, supplyTop, bar_index, supplyBot, xloc=xloc.bar_index, extend=extend.right, border_color=supplyBorder, bgcolor=supplyFill)
+
+if not na(demandBox) and close < demandBot
+    box.delete(demandBox)
+    demandBox := na
+    demandTop := na
+    demandBot := na
+
+if not na(supplyBox) and close > supplyTop
+    box.delete(supplyBox)
+    supplyBox := na
+    supplyTop := na
+    supplyBot := na
+
+plotshape(showBOS and bullBos, title="Bull BOS", style=shape.labelup, location=location.belowbar, color=color.green, text="BOS", textcolor=color.white, size=size.tiny)
+plotshape(showBOS and bearBos, title="Bear BOS", style=shape.labeldown, location=location.abovebar, color=color.red, text="BOS", textcolor=color.white, size=size.tiny)
+
+demandTouchPrev = not na(demandTop) and high[1] >= demandBot and low[1] <= demandTop and not closeInside(demandTop, demandBot, close[1])
+supplyTouchPrev = not na(supplyTop) and high[1] >= supplyBot and low[1] <= supplyTop and not closeInside(supplyTop, supplyBot, close[1])
+
+buySignal = showSignals and inSession and allowLong and demandTouchPrev and high > high[1]
+sellSignal = showSignals and inSession and allowShort and supplyTouchPrev and low < low[1]
+
+if deleteAfterSignal and buySignal and not na(demandBox)
+    box.delete(demandBox)
+    demandBox := na
+    demandTop := na
+    demandBot := na
+
+if deleteAfterSignal and sellSignal and not na(supplyBox)
+    box.delete(supplyBox)
+    supplyBox := na
+    supplyTop := na
+    supplyBot := na
+
+plotshape(buySignal, title="Buy", style=shape.triangleup, location=location.belowbar, size=size.tiny, color=color.lime, text="BUY", textcolor=color.black)
+plotshape(sellSignal, title="Sell", style=shape.triangledown, location=location.abovebar, size=size.tiny, color=color.red, text="SELL", textcolor=color.white)
+
+alertcondition(buySignal, "Vault Buy", "Vault Trading Academy buy signal")
+alertcondition(sellSignal, "Vault Sell", "Vault Trading Academy sell signal")
+
+// Display-only additions. Original zone calculations above are unchanged.
+plot(supplyTop, "Supply upper", display=display.data_window)
+plot(supplyBot, "Supply lower", display=display.data_window)
+plot(demandTop, "Demand upper", display=display.data_window)
+plot(demandBot, "Demand lower", display=display.data_window)
+var label zoneUpperLabel = na
+var label zoneLowerLabel = na
+if barstate.islast
+    label.delete(zoneUpperLabel)
+    label.delete(zoneLowerLabel)
+    float activeTop = not na(supplyBox) ? supplyTop : demandTop
+    float activeBot = not na(supplyBox) ? supplyBot : demandBot
+    string zoneName = not na(supplyBox) ? "SUPPLY" : "DEMAND"
+    color labelColor = not na(supplyBox) ? color.rgb(63, 22, 32) : color.rgb(17, 64, 43)
+    if not na(activeTop)
+        zoneUpperLabel := label.new(bar_index + 3, activeTop, zoneName + " HIGH  " + str.tostring(activeTop, format.mintick), style=label.style_label_left, color=labelColor, textcolor=color.white, size=size.normal)
+        zoneLowerLabel := label.new(bar_index + 3, activeBot, zoneName + " LOW  " + str.tostring(activeBot, format.mintick), style=label.style_label_left, color=labelColor, textcolor=color.white, size=size.normal)
+
+// Notification adapter. Original zone calculations and box rules stay unchanged.
+// Create one "Any alert() function call" alert for 5m and another for 15m.
+pulseEnabled = input.bool(false, "Send app updates", group="Zone Pulse")
+pulseAfterHours = input.bool(false, "Allow after-hours testing", group="Zone Pulse")
+pulseChartOk = (syminfo.tickerid == "AMEX:SPY" or syminfo.tickerid == "BATS:SPY") and (timeframe.period == "5" or timeframe.period == "15")
+pulseSessionOk = not na(time(timeframe.period, "0900-1600:23456", "America/New_York"))
+max_bars_back(time, 60)
+max_bars_back(open, 60)
+max_bars_back(high, 60)
+max_bars_back(low, 60)
+max_bars_back(close, 60)
+pulseZone(box originalBox, string side, int origin) =>
+    string value = ""
+    if not na(originalBox) and not na(origin)
+        float top = box.get_top(originalBox)
+        float bot = box.get_bottom(originalBox)
+        string identity = "SPY:" + timeframe.period + ":" + side + ":" + str.tostring(origin) + ":" + str.tostring(int(math.round(top / syminfo.mintick))) + ":" + str.tostring(int(math.round(bot / syminfo.mintick)))
+        value := '{"zoneId":"' + identity + '","side":"' + side + '","lower":' + str.tostring(bot, format.mintick) + ',"upper":' + str.tostring(top, format.mintick) + '}'
+    value
+pulseLocation(box originalBox) =>
+    na(originalBox) ? "none" : close > box.get_top(originalBox) ? "above" : close < box.get_bottom(originalBox) ? "below" : "inside"
+varip int pulseSentAt = 0
+varip int pulseClosedAt = 0
+varip string pulseSentState = ""
+if pulseEnabled and pulseChartOk and barstate.isrealtime and (pulseSessionOk or pulseAfterHours)
+    string demand = pulseZone(demandBox, "demand", pulseDemandOrigin)
+    string supply = pulseZone(supplyBox, "supply", pulseSupplyOrigin)
+    string zones = "[" + demand + (demand != "" and supply != "" ? "," : "") + supply + "]"
+    string state = zones + pulseLocation(demandBox) + pulseLocation(supplyBox)
+    bool closing = barstate.isconfirmed and pulseClosedAt != time
+    bool changed = state != pulseSentState and timenow - pulseSentAt >= 15000
+    bool heartbeat = timenow - pulseSentAt >= 60000
+    // Combined snapshots keep the 5m/15m alerts below TradingView's frequency limit.
+    if closing or changed or heartbeat
+        string candles = "["
+        int count = math.min(bar_index + 1, 60)
+        for step = 0 to count - 1
+            int i = count - 1 - step
+            candles += (step > 0 ? "," : "") + '{"t":' + str.tostring(time[i]) + ',"o":' + str.tostring(open[i], format.mintick) + ',"h":' + str.tostring(high[i], format.mintick) + ',"l":' + str.tostring(low[i], format.mintick) + ',"c":' + str.tostring(close[i], format.mintick) + '}'
+        candles += "]"
+        string payload = '{"kind":"snapshot","source":"indicator","symbol":"AMEX:SPY","timeframe":' + timeframe.period + ',"at":' + str.tostring(timenow) + ',"barAt":' + str.tostring(time) + ',"confirmed":' + (barstate.isconfirmed ? "true" : "false") + ',"price":' + str.tostring(close, format.mintick) + ',"zones":' + zones + ',"bars":' + candles + '}'
+        alert(payload, alert.freq_all)
+        pulseSentAt := timenow
+        pulseSentState := state
+        if closing
+            pulseClosedAt := time
+
+// Liquidity learning layer v1. OHLC-derived reference levels, not observed orders.
+// Pivots become available only on their confirmation bar; lines are not backdated.
+lqGroup = "Liquidity learning"
+lqEnabled = input.bool(true, "Show liquidity references", group=lqGroup)
+lqSwings = input.int(3, "Swing confirmation bars", minval=2, maxval=10, group=lqGroup)
+lqEqualAtr = input.float(0.05, "Equal-high/low tolerance (ATR)", minval=0, maxval=0.3, step=0.01, group=lqGroup)
+lqMinTicks = input.int(2, "Minimum sweep beyond level (ticks)", minval=1, maxval=20, group=lqGroup)
+lqMaxAge = input.int(100, "Expire swing references after bars", minval=10, maxval=500, group=lqGroup)
+lqShowCoach = input.bool(true, "Show evidence explanation", group=lqGroup)
+lqAtr = ta.atr(14)
+lqPH = ta.pivothigh(high, lqSwings, lqSwings)
+lqPL = ta.pivotlow(low, lqSwings, lqSwings)
+// Use the previous completed regular-session daily candle, never today's final high.
+lqRegular = ticker.new(syminfo.prefix, syminfo.ticker, session.regular)
+[lqPDH, lqPDL] = request.security(lqRegular, "D", [high[1], low[1]], lookahead=barmerge.lookahead_on)
+lqNewDay = timeframe.change("D")
+lqChartOK = timeframe.isminutes and (timeframe.multiplier == 5 or timeframe.multiplier == 15)
+
+type LqLevel
+    float price
+    bool above
+    string title
+    int knownBar
+    bool daily
+    line drawing
+    label tag
+
+var array<LqLevel> lqLevels = array.new<LqLevel>()
+var array<label> lqEvents = array.new<label>()
+var float lqLastHigh = na
+var float lqLastLow = na
+var string lqMessage = "Waiting for confirmed levels."
+var int lqMessageAt = na
+
+lqAdd(float price, bool above, string title, bool daily) =>
+    bool duplicate = false
+    if array.size(lqLevels) > 0
+        for j = 0 to array.size(lqLevels) - 1
+            LqLevel existing = array.get(lqLevels, j)
+            if existing.above == above and math.abs(existing.price - price) < syminfo.mintick
+                duplicate := true
+    if not na(price) and not duplicate
+        color tone = above ? color.rgb(255, 188, 80) : color.rgb(99, 190, 255)
+        line ray = line.new(bar_index, price, bar_index + 1, price, extend=extend.right, color=color.new(tone, 25), style=line.style_dashed)
+        label tag = label.new(bar_index + 2, price, title + " " + str.tostring(price, format.mintick), style=label.style_label_left, color=color.new(tone, 80), textcolor=tone, size=size.small)
+        array.push(lqLevels, LqLevel.new(price, above, title, bar_index, daily, ray, tag))
+        if array.size(lqLevels) > 12
+            LqLevel old = array.shift(lqLevels)
+            line.delete(old.drawing)
+            label.delete(old.tag)
+
+bool lqSweepHigh = false
+bool lqSweepLow = false
+bool lqSupplyConfluence = false
+bool lqDemandConfluence = false
+bool lqAcceptedHigh = false
+bool lqAcceptedLow = false
+float lqNearestAbove = na
+float lqNearestBelow = na
+
+if lqEnabled and lqChartOK and barstate.isconfirmed
+    // Consume each reference once. A close beyond is different from a sweep/reclaim.
+    if array.size(lqLevels) > 0
+        for i = array.size(lqLevels) - 1 to 0
+            LqLevel level = array.get(lqLevels, i)
+            bool expire = level.daily ? lqNewDay : bar_index - level.knownBar > lqMaxAge
+            bool crosses = level.above ? high >= level.price + lqMinTicks * syminfo.mintick : low <= level.price - lqMinTicks * syminfo.mintick
+            bool reclaims = level.above ? close < level.price : close > level.price
+            bool accepts = level.above ? close > level.price : close < level.price
+            // Starting beyond a level is not a new wick sweep of that level.
+            bool fromInside = level.above ? close[1] <= level.price : close[1] >= level.price
+            bool swept = not expire and bar_index > level.knownBar and crosses and reclaims and fromInside
+            bool passed = not expire and bar_index > level.knownBar and accepts
+            if swept
+                bool zoneOverlap = level.above ? not na(supplyTop[1]) and high >= supplyBot[1] and low <= supplyTop[1] and close <= supplyTop[1] : not na(demandTop[1]) and low <= demandTop[1] and high >= demandBot[1] and close >= demandBot[1]
+                lqSweepHigh := lqSweepHigh or level.above
+                lqSweepLow := lqSweepLow or not level.above
+                lqSupplyConfluence := lqSupplyConfluence or (level.above and zoneOverlap)
+                lqDemandConfluence := lqDemandConfluence or (not level.above and zoneOverlap)
+                string eventText = (level.above ? "HIGH SWEPT / RECLAIMED" : "LOW SWEPT / RECLAIMED") + (zoneOverlap ? "\nZone overlap" : "")
+                label eventTag = label.new(bar_index, level.above ? high : low, eventText, style=level.above ? label.style_label_down : label.style_label_up, color=level.above ? color.rgb(183, 40, 65) : color.rgb(20, 119, 73), textcolor=color.white, size=size.small)
+                array.push(lqEvents, eventTag)
+                if array.size(lqEvents) > 12
+                    label.delete(array.shift(lqEvents))
+                lqMessage := level.title + " crossed, then closed back " + (level.above ? "below." : "above.") + (zoneOverlap ? " Zone overlap confirmed." : " No matching zone overlap.")
+                lqMessageAt := time_close
+            if passed
+                lqAcceptedHigh := lqAcceptedHigh or level.above
+                lqAcceptedLow := lqAcceptedLow or not level.above
+                if not swept and not lqSweepHigh and not lqSweepLow
+                    lqMessage := level.title + " closed " + (level.above ? "above." : "below.") + " Not a confirmed sweep/reclaim."
+                    lqMessageAt := time_close
+            if expire or swept or passed
+                line.delete(level.drawing)
+                label.delete(level.tag)
+                array.remove(lqLevels, i)
+    // Add only after checking old levels: a newly discovered pivot cannot trigger retroactively.
+    if lqNewDay or barstate.isfirst
+        lqAdd(lqPDH, true, "Prior day high", true)
+        lqAdd(lqPDL, false, "Prior day low", true)
+    if not na(lqPH)
+        bool equalHigh = not na(lqLastHigh) and math.abs(lqPH - lqLastHigh) <= math.max(syminfo.mintick, lqAtr * lqEqualAtr)
+        lqAdd(equalHigh ? math.max(lqPH, lqLastHigh) : lqPH, true, equalHigh ? "Equal highs" : "Swing high", false)
+        lqLastHigh := lqPH
+    if not na(lqPL)
+        bool equalLow = not na(lqLastLow) and math.abs(lqPL - lqLastLow) <= math.max(syminfo.mintick, lqAtr * lqEqualAtr)
+        lqAdd(equalLow ? math.min(lqPL, lqLastLow) : lqPL, false, equalLow ? "Equal lows" : "Swing low", false)
+        lqLastLow := lqPL
+
+// A candle sweeping both sides has no directional confluence classification.
+if lqSweepHigh and lqSweepLow
+    lqSupplyConfluence := false
+    lqDemandConfluence := false
+    lqMessage := "Both sides swept in one candle. Direction ambiguous; inspect lower-timeframe sequence."
+    lqMessageAt := time_close
+
+if lqEnabled and array.size(lqLevels) > 0
+    for i = 0 to array.size(lqLevels) - 1
+        LqLevel level = array.get(lqLevels, i)
+        label.set_x(level.tag, bar_index + 2)
+        if level.above and level.price > close
+            lqNearestAbove := na(lqNearestAbove) ? level.price : math.min(lqNearestAbove, level.price)
+        if not level.above and level.price < close
+            lqNearestBelow := na(lqNearestBelow) ? level.price : math.max(lqNearestBelow, level.price)
+
+var table lqCoach = table.new(position.bottom_right, 1, 5, border_width=1)
+if barstate.islast
+    table.clear(lqCoach, 0, 0, 0, 4)
+    if lqEnabled and lqShowCoach
+        table.cell(lqCoach, 0, 0, lqChartOK ? "PULSE · LIQUIDITY CONTEXT" : "Use a 5m or 15m chart", text_color=color.white, bgcolor=color.rgb(27, 39, 54), text_size=size.small)
+        table.cell(lqCoach, 0, 1, "Inferred levels — not visible stop orders", text_color=color.silver, bgcolor=color.rgb(20, 29, 40), text_size=size.small)
+        table.cell(lqCoach, 0, 2, (na(lqMessageAt) ? "" : str.format_time(lqMessageAt, "MMM d HH:mm", "America/New_York") + " ET\n") + lqMessage, text_color=color.white, bgcolor=color.rgb(20, 29, 40), text_size=size.small)
+        table.cell(lqCoach, 0, 3, "Next references: ↑ " + (na(lqNearestAbove) ? "none" : str.tostring(lqNearestAbove, format.mintick)) + "  ↓ " + (na(lqNearestBelow) ? "none" : str.tostring(lqNearestBelow, format.mintick)), text_color=color.rgb(178, 215, 255), bgcolor=color.rgb(20, 29, 40), text_size=size.small)
+        table.cell(lqCoach, 0, 4, "Reference levels, not targets guaranteed to fill", text_color=color.silver, bgcolor=color.rgb(20, 29, 40), text_size=size.small)
+
+// Optional dedicated TradingView alert conditions. Never sent to the zone webhook.
+alertcondition(lqSweepHigh, "Pulse high sweep confirmed", "High crossed and reclaimed at candle close. Inspect context; reversal not guaranteed.")
+alertcondition(lqSweepLow, "Pulse low sweep confirmed", "Low crossed and reclaimed at candle close. Inspect context; reversal not guaranteed.")
+alertcondition(lqSupplyConfluence, "Pulse high sweep + supply", "Confirmed high sweep overlaps the preceding supply zone. Inspect the chart.")
+alertcondition(lqDemandConfluence, "Pulse low sweep + demand", "Confirmed low sweep overlaps the preceding demand zone. Inspect the chart.")
+plot(lqNearestAbove, "Liquidity reference above", display=display.data_window)
+plot(lqNearestBelow, "Liquidity reference below", display=display.data_window)
