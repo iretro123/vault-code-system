@@ -25,10 +25,11 @@ export function PulseLiquidityChart({ liquidityChart, ...props }: PulseChartPost
         <span>Show liquidity</span><span className="pcp-liquidity-switch" aria-hidden="true"><i/></span>
       </button>
       {showing && <details className="pcp-liquidity-help"><summary>How to read the lines</summary>
-        <p>Lines mark previous candle highs and lows.</p>
-        <p><strong>Crosses, then closes back:</strong> price may turn.</p>
-        <p><strong>Closes past the line:</strong> price may keep going.</p>
-        <p className="pcp-liquidity-caution">Watch for a reaction—not a guaranteed move.</p>
+        <div className="pcp-liquidity-guide">
+          <p className="pcp-liquidity-intro">Lines = previous highs &amp; lows</p>
+          <p><span aria-hidden="true">↩</span><span><strong>Crosses &amp; closes back</strong><small>May turn around</small></span></p>
+          <p><span aria-hidden="true">→</span><span><strong>Closes past the line</strong><small>May keep going</small></span></p>
+        </div>
       </details>}
     </div>}
     <PulseChartPost {...props}
