@@ -19,6 +19,20 @@ function setup() {
 }
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("Live Pulse channel", () => {
+  it("timestamps genuine empty-zone checks and stops the live state when stale", () => {
+    const view = setup();
+    expect(screen.getByText("Live", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("1:35:00 PM ET")).toHaveAttribute("dateTime", new Date(at).toISOString());
+    expect(document.querySelector(".pr-feed-live")).not.toBeNull();
+    state.feed.quotes![5] = { at: at + 15000, price: 771, zones: [] };
+    act(() => vi.advanceTimersByTime(15000));
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.getByText("1:35:15 PM ET")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(91000));
+    expect(document.querySelector(".pr-feed-live")).toBeNull();
+    expect(screen.queryByText("Live", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText(/Waiting for fresh 5m data/)).toBeInTheDocument();
+  });
   it("hides inactive zones and archived charts from the current view", () => {
     setup();
     expect(screen.getByRole("heading", { name: "No active zone" })).toBeInTheDocument();

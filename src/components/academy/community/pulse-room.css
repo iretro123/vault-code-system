@@ -180,3 +180,9 @@
 .vault-community .pr-empty.pr-no-zone h2{text-align:center;font-size:clamp(28px,3vw,36px);font-weight:650;letter-spacing:-1px}
 .pr-no-zone .pr-other-timeframe{margin:20px 0 0;font-size:14px;background:#9fcaff14;border-color:#bad9ff38}
 @media(max-width:450px){.vault-community .pr-empty.pr-no-zone{min-height:230px;padding:28px 16px}}
+
+.vault-community .pr-no-zone .pr-zone-checked{margin:12px 0 0;color:#bbcee3;font-size:13px;font-variant-numeric:tabular-nums;line-height:1.5}
+.pr-zone-checked>span{color:#85e7c0;font-weight:650}
+.vault-community .pr-feed-live>svg{animation:pr-feed-breathe 2.8s ease-in-out infinite;transform-origin:center;color:#97dfef}
+@keyframes pr-feed-breathe{0%,100%{opacity:.55;transform:scale(.92);filter:drop-shadow(0 0 2px #72d8ef20)}50%{opacity:1;transform:scale(1.08);filter:drop-shadow(0 0 12px #72d8ef70)}}
+@media(prefers-reduced-motion:reduce){.vault-community .pr-feed-live>svg{animation:none;opacity:1;transform:none}}
