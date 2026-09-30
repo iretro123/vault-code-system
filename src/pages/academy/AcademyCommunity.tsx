@@ -102,7 +102,8 @@ const AcademyCommunity = () => {
   const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
   const canPostRestricted = isCEO || isAdmin || isOperator;
   const [spaceOpen, setSpaceOpen] = useState(false);
-  useEffect(() => { if (searchParams.get("space") === "mine") setSpaceOpen(true); }, [searchParams]);
+  const requestedSpace = searchParams.get("space");
+  useEffect(() => { if (requestedSpace === "mine") setSpaceOpen(true); }, [requestedSpace]);
   const { session, user, profile, signOut, refetchProfile } = useAuth();
   const { isBasicTier, loading: tierLoading } = useIsBasicTier();
   const userId = session?.user?.id || null;
