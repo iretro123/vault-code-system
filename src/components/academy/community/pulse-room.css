@@ -105,3 +105,26 @@
 .pr-snapshot .pcp-liquidity-help{margin:0 0 8px;padding:0;background:transparent;border:0;border-radius:0;color:#fff0f3}
 .pr-snapshot .pcp-liquidity-help summary{min-height:36px;font-size:13px;font-weight:500;color:#ead1d8}
 .pr-snapshot .pcp-liquidity-help p{font-size:14px;line-height:1.5;margin:5px 0}
+
+/* Desktop density: compact chrome, full-width image inside a bounded card. */
+@media(min-width:768px){
+ .pulse-room-clean{--pcp-chart-width:100%}
+ .pr-toolbar{max-width:660px;padding:8px 20px 6px;gap:12px}
+ .pr-content{max-width:660px;padding:0 20px 18px}
+ .pr-symbol{font-size:19px;gap:8px}.pr-symbol svg{width:21px;height:21px}
+ .pr-timeframes{gap:4px}.pr-timeframes button{min-width:68px;min-height:38px;padding:8px 12px;border-radius:10px;font-size:14px}
+ .pr-now{min-height:26px;margin-bottom:8px;font-size:12px}
+ .pr-snapshot{padding:12px;margin:0 0 10px;border-radius:14px}
+ .pr-snapshot-time{font-size:12px;margin-bottom:8px}
+ .pr-snapshot li{gap:6px}.pr-snapshot li>strong{font-size:26px;line-height:1.15}
+ .pr-snapshot li[data-side] .pr-snapshot-side{font-size:12px;padding:4px 8px}
+ .pr-snapshot-direction svg{width:24px;height:24px}
+ .pr-snapshot .pcp-liquidity-controls{margin-top:6px}
+ .pr-snapshot .pcp-liquidity-controls>button{min-height:36px}
+ .pr-snapshot .pulse-chart-post{width:calc(100% + 24px);margin-left:-12px;margin-right:-12px}
+ .pr-snapshot .pcp-capture-time{font-size:12px;padding:7px 10px}
+ .pr-source{padding-top:8px;gap:6px}
+ .pr-source .pr-tradingview{max-width:330px;min-height:44px;padding:10px 14px;border-radius:12px;gap:10px}
+ .pr-tradingview>img{width:26px;height:26px}.pr-tradingview strong{font-size:14px}
+ .pr-history{margin-top:8px;min-height:36px;font-size:13px}
+}
