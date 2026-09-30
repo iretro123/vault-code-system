@@ -93,7 +93,13 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} featured={!noZone && index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
         {!posts.length && !noZone && !closingSnapshot && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
-          <a href={liveChart} target="_blank" rel="noreferrer">Open {symbolLabel} on TradingView <ArrowUpRight size={20} aria-hidden="true"/></a>
+          <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>
+            <img src="/brand/tradingview-mark.svg" alt="" width="36" height="36" />
+            <span><strong>Open in TradingView</strong><small>${symbolLabel} · {tf}-minute chart</small></span>
+            <ArrowUpRight size={22} aria-hidden="true"/>
+          </a>
+          <a className="pr-indicator-link" href="https://www.tradingview.com/script/WKfyNCD7-Vault-Trading-Academy-Supply-And-Demand/" target="_blank" rel="noopener noreferrer">Add Vault indicator <ArrowUpRight size={14} aria-hidden="true" /></a>
+          <p className="pr-indicator-help">First time? Choose “Use on chart” on the indicator page, then save your layout.</p>
           <p role="status">{!monitoring ? "Live zone alerts resume during the next trading session." : source === "cloud" && feed.captureConnected === false ? "Zone updates are automatic · Chart capture offline" : feed.captureConnected ? "New zones and chart captures appear automatically" : "Checking chart connection…"}</p>
         </div>
         {earlierCount > 0 && !history && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}
