@@ -2,7 +2,6 @@ import { useState } from "react";
 import { RoomChat } from "@/components/academy/RoomChat";
 import { ThreadDrawer } from "@/components/academy/community/ThreadDrawer";
 import { TradeFloorHero } from "@/components/academy/community/TradeFloorHero";
-import { CommunityGuide } from "@/components/academy/community/CommunityGuide";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -42,13 +41,6 @@ export function CommunityTradeFloor({ onSwitchTab, active = true }: CommunityTra
           />
         </div>
       </div>
-
-      {/* Cockpit Panel — structured right rail */}
-      {!isMobile && !threadMessage && (
-        <div className="community-guide-rail w-[280px] shrink-0 border-l border-white/[0.05] hidden lg:flex flex-col bg-card">
-          <CommunityGuide onSwitchTab={onSwitchTab} />
-        </div>
-      )}
 
       {/* Thread Drawer */}
       {threadMessage && (

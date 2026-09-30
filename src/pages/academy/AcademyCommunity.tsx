@@ -1,3 +1,4 @@
+import { CommunitySpace } from "@/components/academy/community/CommunitySpace";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -100,6 +101,8 @@ const AcademyCommunity = () => {
   const activeTab: TabKey = isTabKey(queryTab) ? queryTab : queryTab === "calendar" ? "trade-floor" : savedTab;
   const { isCEO, isAdmin, isOperator } = useAcademyPermissions();
   const canPostRestricted = isCEO || isAdmin || isOperator;
+  const [spaceOpen, setSpaceOpen] = useState(false);
+  useEffect(() => { if (searchParams.get("space") === "mine") setSpaceOpen(true); }, [searchParams]);
   const { session, user, profile, signOut, refetchProfile } = useAuth();
   const { isBasicTier, loading: tierLoading } = useIsBasicTier();
   const userId = session?.user?.id || null;
@@ -187,7 +190,7 @@ const AcademyCommunity = () => {
             </div>
           </div>
 
-          <div className="relative flex-1 overflow-hidden">
+          <div className="community-space-layout"><div className="community-space-main">
             <div className={cn("absolute inset-0", activeTab === "trade-floor" ? "block" : "hidden")}>
               <CommunityTradeFloor onSwitchTab={handleTabChange} active={activeTab === "trade-floor"} />
             </div>
@@ -204,7 +207,7 @@ const AcademyCommunity = () => {
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />
             </div>
-          </div>
+          </div><button className="community-space-toggle" aria-expanded={spaceOpen} onClick={()=>setSpaceOpen(!spaceOpen)}>{spaceOpen?"Close sidebar":"My community"}</button><div className="community-space-rail" data-open={spaceOpen}><CommunitySpace/></div></div>
         </div>
       </div>
       </>}
