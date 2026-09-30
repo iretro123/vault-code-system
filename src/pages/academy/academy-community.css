@@ -292,3 +292,7 @@ body.native-capacitor.native-keyboard-open .community-expression-picker .vault-g
  .vault-community[data-active-tab=pulse] .community-room-tabs{max-width:720px;margin-inline:auto;justify-content:flex-start;gap:12px;padding:0;border-bottom:1px solid #ffffff12}
  .vault-community[data-active-tab=pulse] .community-room-tabs button{min-height:42px;padding:10px 12px;font-size:14px}
 }
+
+@media(min-width:1024px){
+ .vault-community[data-active-tab=pulse] .community-room-tabs{max-width:none;margin:0;justify-content:flex-start;padding:0 8px;gap:8px}
+}
