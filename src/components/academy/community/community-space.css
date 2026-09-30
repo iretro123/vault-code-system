@@ -40,7 +40,7 @@
 .vs-enable input:checked{background:#6aa9f4}.vs-enable input:checked:before{transform:translateX(12px)}
 @media(max-width:900px){
  .community-space-rail{display:none}
- .community-space-layout{flex-direction:column}
+ .community-space-layout{flex-direction:column;position:static}
  .community-space-toggle{display:block;order:-1;align-self:flex-end;flex-shrink:0;margin:6px 10px;border:1px solid #ffffff25;border-radius:8px;background:#34475f;padding:7px 10px;font-size:12px;z-index:16}
  .community-space-rail[data-open=true]{display:block;position:absolute;inset:56px 10px 10px;width:auto;z-index:15;border:1px solid #adbedb40;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px #0007}
  .community-space-toggle[aria-expanded=true]{position:absolute;right:12px;top:8px;margin:0}
