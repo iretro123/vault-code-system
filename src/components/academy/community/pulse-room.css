@@ -71,3 +71,7 @@
 .pr-source .pr-tradingview:hover{background:linear-gradient(125deg,#405a7b,#30455f);border-color:#c4dfff75}
 .pr-source .pr-indicator-link{min-height:36px;padding:5px 10px;background:transparent;font-size:13px;color:#c9def8;border-radius:8px;gap:6px}
 .pr-source .pr-indicator-link:hover{background:#ffffff0a}.pr-source .pr-indicator-help{max-width:330px;font-size:12px;margin-top:-6px}
+
+.pr-market-state{display:inline-flex;align-items:center;gap:7px}
+.pr-market-state[data-closed=true]{padding:7px 10px;border:1px solid #eeb96670;border-radius:8px;background:#493921;color:#ffe0a3;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;box-shadow:inset 0 1px #ffe4b412}
+.pr-market-state[data-closed=true] i{width:7px;height:7px;background:#ffd080;box-shadow:none}

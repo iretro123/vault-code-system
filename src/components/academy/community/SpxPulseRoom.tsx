@@ -63,7 +63,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
     <div className="pr-scroll" ref={scroller} onScroll={event => { if (event.currentTarget.scrollTop < 80) setUnseen(false); }}>
       <div className="pr-content">
         <div className="pr-now" role="status" data-fresh={fresh && monitoring}>
-          <span><i aria-hidden="true"/>{monitoring ? fresh ? "Live updates" : "Reconnecting" : "Market closed"}{quote && <b>${quote.price.toFixed(2)}</b>}</span>
+          <span><span className="pr-market-state" data-closed={!monitoring}><i aria-hidden="true"/>{monitoring ? fresh ? "Live updates" : "Reconnecting" : "Market closed"}</span>{quote && <b>${quote.price.toFixed(2)}</b>}</span>
           <span>{monitoring && fresh ? noZone ? "" : currentState : `Last update ${pulseAge(quote?.at, now)}`}</span>
         </div>
         {error && <p className="pr-warning" role="alert">{error}</p>}
