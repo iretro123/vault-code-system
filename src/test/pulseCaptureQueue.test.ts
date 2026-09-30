@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const capture=vi.hoisted(()=>({drainCaptures:vi.fn()}));
+const capture=vi.hoisted(()=>({drainCaptures:vi.fn(),runCapture:vi.fn()}));
 vi.mock('../../workers/pulse-spy/capture.js',()=>capture);
 vi.mock('../../workers/pulse-spy/capture-session.js',()=>({openChartSession:vi.fn(),rememberChartLogin:vi.fn()}));
 import worker from '../../workers/pulse-spy/capture-worker.js';
@@ -10,9 +10,13 @@ describe('persistent chart queue',()=>{
     let release:()=>void=()=>{};
     const send=vi.fn(()=>new Promise<void>(resolve=>{release=resolve;}));
     let returned=false;
-    const result=worker.fetch(new Request('https://capture.internal/drain',{method:'POST',headers:{Authorization:'Bearer test'}}),{WORKER_TOKEN:'test',CAPTURE_JOBS:{send}}).then(r=>{returned=true;return r;});
+    capture.runCapture.mockResolvedValue('idle');
+    const ctx={waitUntil:vi.fn()};
+    const result=worker.fetch(new Request('https://capture.internal/drain',{method:'POST',headers:{Authorization:'Bearer test'}}),{WORKER_TOKEN:'test',CAPTURE_JOBS:{send}},ctx).then(r=>{returned=true;return r;});
     await Promise.resolve();expect(returned).toBe(false);expect(send).toHaveBeenCalledWith({kind:'capture-wake'});
     release();expect((await result).status).toBe(202);expect(capture.drainCaptures).not.toHaveBeenCalled();
+    expect(capture.runCapture).toHaveBeenCalledWith(expect.anything(),expect.any(Function),22000);
+    expect(ctx.waitUntil).toHaveBeenCalledOnce();
   });
   it('does not accept an unauthorized wake',async()=>{
     const send=vi.fn();

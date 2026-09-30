@@ -80,6 +80,11 @@ describe('durable screenshot processing',()=>{
     expect(await drainCaptures(env,rpc)).toBe(false);
     expect(session.openChartSession).not.toHaveBeenCalled();
   });
+  it('yields slow immediate captures to durable recovery before starting image work',async()=>{
+    const {env,rpc,page}=fixture();page.setViewport.mockImplementation(async()=>vi.advanceTimersByTime(23000));
+    expect(await runCapture(env,rpc,22000)).toBe('retry');expect(page.screenshot).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenLastCalledWith('pulse_spy_capture_finish',expect.objectContaining({p_result:expect.objectContaining({failure:'capture-budget-exceeded'})}),5000);
+  });
   it('drains two simultaneous timeframe jobs instead of leaving the second one for another alert',async()=>{
     const {env,rpc}=fixture();rpc.mockReset().mockResolvedValueOnce({lease:'one',post}).mockResolvedValueOnce(true).mockResolvedValueOnce({lease:'two',post:{...post,id:'event-two'}}).mockResolvedValueOnce(true).mockResolvedValueOnce(null);
     expect(await drainCaptures(env,rpc)).toBe(true);

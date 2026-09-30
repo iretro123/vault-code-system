@@ -5,14 +5,15 @@ import { openChartSession, rememberChartLogin } from './capture-session.js';
 
 // All chart interaction stays in the dedicated hosted session. Never import
 // cookies from a personal browser or attach to unrelated Cloudflare sessions.
-export async function runCapture(env, rpc) {
+export async function runCapture(env, rpc, budgetMs=Infinity) {
   if (!captureWindowOpen()) return 'idle';
   const task = await rpc('pulse_spy_capture_claim',{},5000);
   if (!task) return 'idle';
   if (task.busy) return 'busy';
+  const deadline=Date.now()+budgetMs;
   const timing = {};
   let stageAt = Date.now();
-  const mark = name => { const at=Date.now(); timing[name]=at-stageAt; stageAt=at; };
+  const mark = name => { const at=Date.now(); timing[name]=at-stageAt; stageAt=at; if (at>deadline && !result.ok) throw new Error('capture-budget-exceeded'); };
   let browser;
   let result = { ok:false, failure:'capture-unavailable' };
   try {
@@ -67,10 +68,10 @@ export async function runCapture(env, rpc) {
     mark('recoveryMs');
   } catch (error) {
     // Never put provider errors, URLs, page content or credentials into logs.
-    const safe = new Set(['chart-session-conflict','hosted-browser-not-configured','hosted-chart-login-required','timeframe-control-unavailable','wrong-instrument','capture-window-expired','wrong-chart-timeframe','pulse-indicator-missing','chart-needs-attention','chart-price-mismatch','chart-zone-data-unavailable','chart-zone-mismatch','chart-crop-unavailable','chart-image-invalid']);
+    const safe = new Set(['capture-budget-exceeded','chart-session-conflict','hosted-browser-not-configured','hosted-chart-login-required','timeframe-control-unavailable','wrong-instrument','capture-window-expired','wrong-chart-timeframe','pulse-indicator-missing','chart-needs-attention','chart-price-mismatch','chart-zone-data-unavailable','chart-zone-mismatch','chart-crop-unavailable','chart-image-invalid']);
     result={ok:false,failure:safe.has(error?.message)?error.message:'hosted-browser-unavailable'};
   } finally { if (browser) { try { await browser.disconnect(); } catch { /* Still record the result if the session disconnected itself. */ } } }
-  mark('cleanupMs');
+  timing.cleanupMs=Date.now()-stageAt;
   result.timing=timing;
   const finished=await rpc('pulse_spy_capture_finish',{p_lease:task.lease,p_event_id:task.post?.id??null,p_result:result},5000);
   if (!finished) throw new Error('capture-lease-lost');

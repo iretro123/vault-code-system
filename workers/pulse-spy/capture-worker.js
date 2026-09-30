@@ -1,5 +1,5 @@
 import { checkChartConnection, captureAuthorized } from './capture-check.js';
-import { drainCaptures } from './capture.js';
+import { drainCaptures, runCapture } from './capture.js';
 import { verifyImageSignature } from './capture-policy.js';
 
 function database(env) {
@@ -14,7 +14,7 @@ function database(env) {
 }
 
 export default {
-  async fetch(request,env) {
+  async fetch(request,env,ctx) {
     const url=new URL(request.url);
     if (request.method==='GET' && url.pathname.startsWith('/image/')) {
       const id=url.pathname.slice(7);
@@ -29,9 +29,14 @@ export default {
     }
     if (request.method==='POST' && url.pathname==='/drain' && await captureAuthorized(request,env.WORKER_TOKEN)) {
       if (!env.CAPTURE_JOBS) return new Response('Capture queue unavailable',{status:503});
-      // Persist the wake before acknowledging it. Browser work runs in a queue
-      // consumer, outside the HTTP waitUntil 30-second lifetime.
+      // Persist recovery first. A single opportunistic capture avoids queue
+      // scheduling latency. Never drain multiple jobs in the HTTP lifetime:
+      // the durable consumer resumes contention, failure or termination.
       await env.CAPTURE_JOBS.send({kind:'capture-wake'});
+      const started=Date.now();
+      ctx.waitUntil(runCapture(env,database(env),22_000)
+        .then(result=>console.info(JSON.stringify({event:'pulse-capture-immediate',result,elapsedMs:Date.now()-started})))
+        .catch(()=>console.warn('Pulse immediate capture deferred to durable queue.')));
       return new Response(null,{status:202});
     }
     return new Response('Not found',{status:404});

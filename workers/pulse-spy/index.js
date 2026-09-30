@@ -34,9 +34,14 @@ export default {
       commit: (revision, snapshot, posts) => rpc('pulse_spy_commit_snapshot', { p_revision: revision, p_snapshot: snapshot, p_posts: posts }),
     }, () => Date.now(), PULSE_SPY_SYMBOL)(request);
     // The accepted alert is already durable. Screenshot work cannot delay its ACK.
-    if (response.status === 202 && env.PULSE_CAPTURE) ctx.waitUntil(env.PULSE_CAPTURE.fetch('https://capture.internal/drain', {
-      method: 'POST', headers: { Authorization: `Bearer ${env.WORKER_TOKEN}` },
-    }).catch(() => console.warn('Pulse capture wake failed; hosted timer will retry.')));
+    if (response.status === 202 && env.PULSE_CAPTURE) ctx.waitUntil((async()=>{
+      const accepted=await response.clone().json();
+      if (accepted.posts===0) return; // Heartbeats have no new screenshot work.
+      const wake=await env.PULSE_CAPTURE.fetch('https://capture.internal/drain', {
+        method:'POST', headers:{Authorization:`Bearer ${env.WORKER_TOKEN}`},
+      });
+      if (!wake.ok) console.warn(JSON.stringify({event:'pulse-capture-wake-rejected',status:wake.status}));
+    })().catch(()=>console.warn('Pulse capture wake failed; hosted timer will retry.')));
     return response;
   },
 };
