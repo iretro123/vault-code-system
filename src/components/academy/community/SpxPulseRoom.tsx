@@ -23,8 +23,10 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const monitoring = pulseWindowOpen(now) || now < (feed.afterHoursTestUntil || 0);
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
   const noZone = fresh && quote.zones.length === 0;
-  const shown = history ? posts : noZone ? [] : posts.slice(0, 1);
-  const earlierCount = noZone ? posts.length : Math.max(0, posts.length - 1);
+  const closingSnapshot = !monitoring && !!quote;
+  const snapshotTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(quote.at) : "";
+  const shown = history ? posts : noZone || closingSnapshot ? [] : posts.slice(0, 1);
+  const earlierCount = noZone || closingSnapshot ? posts.length : Math.max(0, posts.length - 1);
   const reactions = usePulseReactions(shown.map(post => post.id), active && source === "cloud");
   const inZone = quote?.zones.find(zone => quote.price >= zone.lower && quote.price <= zone.upper);
   const currentState = !fresh ? "" : inZone ? `In ${tf}m ${inZone.side}` : quote?.zones.length ? `${tf}m ${quote.zones.map(zone => zone.side).join(" + ")} on watch` : `No active ${tf}m zone`;
@@ -59,10 +61,18 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         </div>
         {error && <p className="pr-warning" role="alert">{error}</p>}
         {monitoring && connected && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
+        {closingSnapshot && <section className="pr-snapshot" aria-label={`${tf}-minute last indicator snapshot`}>
+          <p className="pr-snapshot-time">Last indicator snapshot · {snapshotTime} ET</p>
+          <h2>{tf}-minute zones</h2>
+          {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`}>
+            <span className="pr-snapshot-side">{zone.side}</span><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
+          </li>)}</ul> : <p className="pr-snapshot-none">No active {tf}-minute zone at this update.</p>}
+          <p className="pr-snapshot-note">Recorded indicator state. Updates resume next trading session.</p>
+        </section>}
         {noZone && <div className="pr-empty pr-no-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No zone yet.</h2></div>}
-        {noZone && history && <p className="pr-history-label">Earlier updates</p>}
+        {(noZone || closingSnapshot) && history && <p className="pr-history-label">Earlier updates</p>}
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} featured={!noZone && index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
-        {!posts.length && !noZone && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
+        {!posts.length && !noZone && !closingSnapshot && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
           <a href={liveChart} target="_blank" rel="noreferrer">Open {symbolLabel} on TradingView <ArrowUpRight size={20} aria-hidden="true"/></a>
           <p role="status">{!monitoring ? "Live zone alerts resume during the next trading session." : source === "cloud" && feed.captureConnected === false ? "Zone updates are automatic · Chart capture offline" : feed.captureConnected ? "New zones and chart captures appear automatically" : "Checking chart connection…"}</p>

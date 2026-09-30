@@ -63,4 +63,16 @@ describe("Live Pulse channel", () => {
     expect(screen.queryByText("Live updates")).not.toBeInTheDocument();
   });
 
+  it("shows the dated last snapshot after close instead of an obsolete broken-zone card", () => {
+    setup();
+    act(() => { vi.setSystemTime(new Date("2026-09-26T01:00:00Z")); vi.advanceTimersByTime(1000); });
+    expect(screen.getByText("No active 5-minute zone at this update.")).toBeInTheDocument();
+    expect(screen.getByText(/Last indicator snapshot · Sep 25, 1:35 PM ET/)).toBeInTheDocument();
+    expect(screen.queryByText("5m demand broke. Closed below 770.83.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "15 min" }));
+    expect(screen.getByText("$767.70 – $769.78")).toBeInTheDocument();
+    expect(screen.queryByText("No active 5-minute zone at this update.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Earlier updates (1)" }));
+    expect(screen.getByAltText(/^Original TradingView SPY 15-minute/)).toBeInTheDocument();
+  });
 });
