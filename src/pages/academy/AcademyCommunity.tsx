@@ -8,6 +8,7 @@ import { LiveZonesPreview, liveZonesPreviewEnabled } from "@/components/academy/
 import { SpxPulseRoom } from "@/components/academy/community/SpxPulseRoom";
 import { RoomChat } from "@/components/academy/RoomChat";
 import "./academy-community.css";
+import "./community-finish.css";
 import { useAcademyPermissions } from "@/hooks/useAcademyPermissions";
 import { useUnreadCounts, formatBadge } from "@/hooks/useUnreadCounts";
 import { useAuth } from "@/hooks/useAuth";

@@ -1,0 +1,45 @@
+/* Visual finish only: keep content, market data, and interaction logic intact. */
+.vault-community .community-workspace{background:#293548;border-color:#a6c8ed24;border-radius:14px;box-shadow:0 10px 35px #08121e22,inset 0 1px 0 #ffffff08}
+.vault-community .community-heading{background:linear-gradient(110deg,#35455b,#2c3a4e);border-bottom:1px solid #bad5f322}
+.vault-community .community-heading h1{color:#f4f8ff;font-weight:750;letter-spacing:-.65px}
+.vault-community .community-heading button{background:#adc8f00b;border-color:#b9d7ff26;color:#d7e8fb;border-radius:9px;box-shadow:inset 0 1px #ffffff07;transition:background .15s,border-color .15s}
+.vault-community .community-heading button:hover{background:#adc8f01c;border-color:#b9d7ff55}
+.vault-community .community-room-tabs{border-bottom:1px solid #c4dcff17!important}
+.vault-community .community-room-tabs button{color:#b7c8dd;letter-spacing:0}
+.vault-community .community-room-tabs button[aria-current=page]{color:#e6f5ff!important}
+.vault-community .community-room-tabs button[aria-current=page]:after{height:2px!important;background:#80d4ff!important;box-shadow:0 0 12px #57bcff44!important}
+.vault-community .pulse-room-clean{background:radial-gradient(ellipse at 85% 0,#4d719821,transparent 65%),#263244}
+.vault-community .pr-toolbar{background:#34465b80;border-bottom:1px solid #c3deff1f;padding-block:14px;gap:22px}
+.vault-community .pr-symbol{font-size:23px;font-weight:750;letter-spacing:-.6px;color:#f4f9ff}
+.vault-community .pr-symbol svg{color:#79d4ff;filter:drop-shadow(0 0 7px #61bfff30)}
+.vault-community .pr-timeframes{gap:3px;padding:4px;background:#16283b80;border:1px solid #b2d6ff20;border-radius:11px}
+.vault-community .pr-timeframes button{min-height:34px;min-width:66px;padding:7px 12px;border-radius:7px;font-size:13px;color:#b5c9e1}
+.vault-community .pr-timeframes button[aria-pressed=true]{background:linear-gradient(130deg,#668eba,#48729e);box-shadow:inset 0 1px 0 #e5f4ff33,0 2px 8px #0e1d3133;color:white}
+.vault-community .pr-now{padding:12px 0;margin-bottom:14px;color:#b9cee5;border-bottom:1px solid #adcdf018}
+.vault-community .pr-now b{font-size:20px;font-weight:650;letter-spacing:-.5px;margin-left:12px;color:#f2f8ff;font-variant-numeric:tabular-nums}
+.vault-community .pr-now[data-fresh=true] i{background:#79e0d0;box-shadow:0 0 0 4px #79e0d014,0 0 12px #79e0d040}
+.vault-community .pr-empty{min-height:205px;align-items:flex-start;text-align:left;padding:26px;position:relative;overflow:hidden;border:1px solid #b3d8ff30;border-radius:14px;background:radial-gradient(ellipse at 100% 0,#76bcff20,transparent 65%),linear-gradient(120deg,#364a62,#2c3d52);box-shadow:inset 0 1px 0 #ffffff0c,0 8px 24px #0c172520;margin:4px 0 12px}
+.vault-community .pr-empty:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 49.8%,#bfdcff06 50%,transparent 50.2%);background-size:48px 100%;mask-image:linear-gradient(90deg,transparent,black)}
+.vault-community .pr-empty>svg{width:38px;height:38px;color:#87d6ff;margin-bottom:16px;filter:drop-shadow(0 0 10px #66c4ff20)}
+.vault-community .pr-empty h2{font-size:28px;text-align:left;font-weight:650;letter-spacing:-.8px;color:#f2f8ff}
+.vault-community .pr-other-timeframe{background:#92c9ff12;border-color:#bedfff30;color:#d9edff;border-radius:8px;font-size:13px;min-height:38px;padding:8px 12px}
+.vault-community .pr-source{padding:4px 0 0;align-items:flex-start}
+.vault-community .pr-source .pr-tradingview{min-height:46px;background:#3a506b;border:1px solid #badbff33;border-radius:10px;padding:10px 14px;box-shadow:inset 0 1px #ffffff0e;gap:12px;font-size:13px;width:auto;min-width:245px}
+.vault-community .pr-tradingview img{width:27px;height:27px;border-radius:4px}
+.vault-community .pr-source .pr-tradingview:hover{background:#45617f;border-color:#badbff66}
+.vault-community .pr-history{font-size:12px;color:#b5cee9;margin-top:10px}
+.vault-community .pcp-surface,.vault-community .pr-snapshot{box-shadow:0 8px 24px #0c17252b,inset 0 1px #ffffff0a}
+.vault-community .vault-space{background:linear-gradient(180deg,#334359,#2c3a4f);border-left:1px solid #c2ddff0b}
+.vault-community .vault-space header{background:#3a4b63;border-bottom-color:#c6dcf222}
+.vault-community .vs-brand{letter-spacing:-.45px;color:#f4f8ff}
+.vault-community .vs-tabs{background:#304157}
+.vault-community .vs-tabs button[aria-selected=true]{border-color:#87d4ff;background:#a2d5ff09}
+.vault-community .vs-live{background:linear-gradient(120deg,#49698c,#3b5675);border-color:#afd6ff36;box-shadow:inset 0 1px #ffffff12,0 4px 12px #0c17251c}
+.vault-community .vs-heading h3{font-weight:700;color:#eff6ff}
+.vault-community .vs-video>div{border:1px solid #d1e7ff25;box-shadow:0 3px 8px #09142140}
+.vault-community .vs-video:hover{background:#badbff08}
+.vault-community .vs-member>svg{color:#c1d7ee}
+.vault-community .vs-personal-link{color:#cee5ff}
+@media(min-width:1024px){.vault-community .pr-content{padding-top:4px;max-width:808px}.vault-community .community-room-tabs{padding-top:2px!important}.vault-community .community-room-tabs button{min-height:44px!important}}
+@media(max-width:767px){.vault-community .pr-toolbar{padding:10px 14px;justify-content:space-between;gap:10px}.vault-community .pr-timeframes button{min-height:38px;padding:8px 10px}.vault-community .pr-now b{font-size:17px}.vault-community .pr-empty{padding:22px;min-height:190px}.vault-community .pr-empty h2{font-size:28px}.vault-community .pr-source .pr-tradingview{min-width:0;width:100%;justify-content:space-between}.vault-community .pr-history{margin-inline:auto}}
+@media(prefers-reduced-motion:reduce){.vault-community button{transition:none!important}}
