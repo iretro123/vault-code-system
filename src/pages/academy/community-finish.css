@@ -43,3 +43,12 @@
 @media(min-width:1024px){.vault-community .pr-content{padding-top:4px;max-width:808px}.vault-community .community-room-tabs{padding-top:2px!important}.vault-community .community-room-tabs button{min-height:44px!important}}
 @media(max-width:767px){.vault-community .pr-toolbar{padding:10px 14px;justify-content:space-between;gap:10px}.vault-community .pr-timeframes button{min-height:38px;padding:8px 10px}.vault-community .pr-now b{font-size:17px}.vault-community .pr-empty{padding:22px;min-height:190px}.vault-community .pr-empty h2{font-size:28px}.vault-community .pr-source .pr-tradingview{min-width:0;width:100%;justify-content:space-between}.vault-community .pr-history{margin-inline:auto}}
 @media(prefers-reduced-motion:reduce){.vault-community button{transition:none!important}}
+
+/* Mobile Chat uses one continuous charcoal surface; Pulse keeps its blue theme. */
+@media(max-width:767px){
+ .vault-community[data-active-tab="trade-floor"] .community-workspace{background:#313338}
+ .vault-community[data-active-tab="trade-floor"] .community-heading{background:#313338;border-bottom-color:#ffffff0c}
+ .vault-community[data-active-tab="trade-floor"] .community-room-tabs{background:transparent;border-bottom-color:#ffffff0c!important}
+ .vault-community[data-active-tab="trade-floor"] .community-heading button{background:#ffffff05;border-color:#ffffff0d;box-shadow:none}
+ .vault-community[data-active-tab="trade-floor"] .vs-mobile-toggle{background:#ffffff06;border-color:#ffffff14}
+}
