@@ -155,7 +155,7 @@ const AcademyCommunity = () => {
     <>
       {zonesOpen ? <LiveZonesPreview onBack={() => setSearchParams(previous => { const next = new URLSearchParams(previous); next.delete("preview"); return next; })} /> : <>
       <div className="vault-community flex flex-col h-full overflow-hidden bg-background" data-active-tab={activeTab}>
-        <div className="flex flex-col flex-1 m-2 md:m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
+        <div className="community-workspace flex flex-col flex-1 m-2 md:m-3 rounded-2xl overflow-hidden border border-white/[0.05] bg-card shadow-[0_6px_32px_rgba(0,0,0,0.35)]">
           <div className="community-heading">
             <div className="community-title-row flex items-center justify-between gap-3"><h1>Community</h1><button aria-label="Messages" className="community-inbox-button flex items-center gap-2 rounded-xl border border-blue-300/20 bg-blue-400/10 px-3 py-2 text-sm text-blue-200 hover:bg-blue-400/20" onClick={() => navigate('/academy/community/messages?resume=1')}><MessageCircle size={21}/><span>Messages</span></button></div>
             {isMobile ? <details className="community-tools-menu"><summary aria-label="Community tools"><MoreHorizontal size={23}/></summary><div className="community-header-actions"><MarketWatch/><button onClick={() => navigate("/academy/live")}><Radio size={17} /> Classroom <ArrowRight size={15} /></button></div></details> : <div className="community-header-actions"><MarketWatch/><button onClick={() => navigate("/academy/live")}><Radio size={17} /> Classroom <ArrowRight size={15} /></button></div>}
@@ -208,7 +208,7 @@ const AcademyCommunity = () => {
             <div className={cn("absolute inset-0", activeTab === "wins" ? "block" : "hidden")}>
               <RoomChat key="wins-proof" roomSlug="wins-proof" canPost={true} isAnnouncements={false} active={activeTab === "wins"} compact />
             </div>
-          </div><button className="community-space-toggle" aria-expanded={spaceOpen} onClick={()=>setSpaceOpen(!spaceOpen)}>{spaceOpen?"Close sidebar":"My community"}</button><div className="community-space-rail" data-open={spaceOpen}><CommunitySpace/></div></div>
+          </div><button className="community-space-toggle" aria-expanded={spaceOpen} onClick={()=>setSpaceOpen(!spaceOpen)}>{spaceOpen?"Close sidebar":"My community"}</button></div><div className="community-space-rail" data-open={spaceOpen}><CommunitySpace/></div>
         </div>
       </div>
       </>}
