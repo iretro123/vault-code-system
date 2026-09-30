@@ -20,7 +20,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
     if (!env.BROWSER || !env.CHART_IMAGES) throw new Error('hosted-browser-not-configured');
     // openChartSession can use a persisted session or an authorized encrypted
     // login. An initial CAPTURE_SESSION_ID is not required for recovery.
-    browser = await openChartSession(env);
+    browser = await openChartSession(env,Math.min(28_000,budgetMs));
     mark('connectMs');
     const pages = await browser.pages();
     const page = pages.find(p=>p.url().startsWith(CHART_URL));
@@ -68,11 +68,12 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
     mark('recoveryMs');
   } catch (error) {
     // Never put provider errors, URLs, page content or credentials into logs.
-    const safe = new Set(['capture-budget-exceeded','chart-session-conflict','hosted-browser-not-configured','hosted-chart-login-required','timeframe-control-unavailable','wrong-instrument','capture-window-expired','wrong-chart-timeframe','pulse-indicator-missing','chart-needs-attention','chart-price-mismatch','chart-zone-data-unavailable','chart-zone-mismatch','chart-crop-unavailable','chart-image-invalid']);
+    const safe = new Set(['browser-acquire-unavailable','restore-page-failed','restore-cookies-failed','restore-navigation-failed','restore-chart-failed','restore-reconnect-failed','hosted-browser-timeout','hosted-browser-recovering','capture-budget-exceeded','chart-session-conflict','hosted-browser-not-configured','hosted-chart-login-required','timeframe-control-unavailable','wrong-instrument','capture-window-expired','wrong-chart-timeframe','pulse-indicator-missing','chart-needs-attention','chart-price-mismatch','chart-zone-data-unavailable','chart-zone-mismatch','chart-crop-unavailable','chart-image-invalid']);
     result={ok:false,failure:safe.has(error?.message)?error.message:'hosted-browser-unavailable'};
   } finally { if (browser) { try { await browser.disconnect(); } catch { /* Still record the result if the session disconnected itself. */ } } }
   timing.cleanupMs=Date.now()-stageAt;
   result.timing=timing;
+  console.info(JSON.stringify({event:'pulse-capture-result',ok:result.ok,failure:result.failure||null,timing,hasPost:!!task.post}));
   const finished=await rpc('pulse_spy_capture_finish',{p_lease:task.lease,p_event_id:task.post?.id??null,p_result:result},5000);
   if (!finished) throw new Error('capture-lease-lost');
   return !result.ok ? 'retry' : task.post ? 'more' : 'idle';
