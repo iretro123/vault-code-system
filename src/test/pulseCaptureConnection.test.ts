@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-const mocks=vi.hoisted(()=>({connect:vi.fn(),acquire:vi.fn(),create:vi.fn()}));
+const mocks=vi.hoisted(()=>({connect:vi.fn(),acquire:vi.fn(),create:vi.fn(),sessions:vi.fn()}));
 vi.mock('../../workers/pulse-spy/node_modules/@cloudflare/puppeteer/lib/esm/puppeteer/puppeteer-cloudflare.js',()=>({default:mocks}));
 vi.mock('../../workers/pulse-spy/node_modules/@cloudflare/puppeteer/lib/esm/puppeteer/cloudflare/WorkersWebSocketTransport.js',()=>({WorkersWebSocketTransport:{create:mocks.create}}));
-import { connectChartBrowser } from '../../workers/pulse-spy/capture-connection.js';
+import { connectChartBrowser, prepareChartReplacement } from '../../workers/pulse-spy/capture-connection.js';
 afterEach(()=>{vi.useRealTimers();vi.clearAllMocks();});
 describe('chart connection watchdog',()=>{
  it('does not abort an upgraded socket after the handshake deadline',async()=>{
@@ -42,5 +42,29 @@ describe('chart connection watchdog',()=>{
   vi.useFakeTimers();const transport={close:vi.fn()};const disconnect=vi.fn();mocks.create.mockResolvedValue(transport);mocks.connect.mockResolvedValue({disconnect});
   const browser=await connectChartBrowser({},'dedicated');await browser.disconnect();
   await vi.advanceTimersByTimeAsync(30000);expect(disconnect).toHaveBeenCalledOnce();expect(transport.close).toHaveBeenCalledOnce();
+ });
+});
+
+describe('dedicated stalled session retirement',()=>{
+ it('never closes a connected session',async()=>{
+  mocks.sessions.mockResolvedValue([{sessionId:'owned',connectionId:'busy'}]);
+  const env={BROWSER:{fetch:vi.fn()},CHART_IMAGES:{get:vi.fn(),put:vi.fn()}};
+  await expect(prepareChartReplacement(env,'owned')).rejects.toThrow('hosted-browser-recovering');
+  expect(env.BROWSER.fetch).not.toHaveBeenCalled();
+ });
+ it('retires only the repeatedly failed free session, then verifies it is gone',async()=>{
+  mocks.sessions.mockResolvedValueOnce([{sessionId:'owned'},{sessionId:'unrelated'}]).mockResolvedValueOnce([{sessionId:'unrelated'}]);
+  const env={BROWSER:{fetch:vi.fn().mockResolvedValue({ok:true})},CHART_IMAGES:{get:vi.fn(async k=>k.includes('failed-connect')?'1':null),put:vi.fn()}};
+  await prepareChartReplacement(env,'owned');
+  expect(env.BROWSER.fetch).toHaveBeenCalledWith('https://fake.host/v1/devtools/browser/owned',expect.objectContaining({method:'DELETE'}));
+  expect(mocks.sessions).toHaveBeenCalledTimes(2);
+ });
+ it('leaves a first timeout alone and throttles repeated retirements',async()=>{
+  mocks.sessions.mockResolvedValue([{sessionId:'owned'}]);
+  const env={BROWSER:{fetch:vi.fn()},CHART_IMAGES:{get:vi.fn().mockResolvedValue(null),put:vi.fn()}};
+  await expect(prepareChartReplacement(env,'owned')).rejects.toThrow('hosted-browser-recovering');
+  env.CHART_IMAGES.get.mockImplementation(async k=>k.includes('failed-connect')?'3':String(Date.now()));
+  await expect(prepareChartReplacement(env,'owned')).rejects.toThrow('hosted-browser-recovering');
+  expect(env.BROWSER.fetch).not.toHaveBeenCalled();
  });
 });

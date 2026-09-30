@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { webcrypto } from 'node:crypto';
-const connection=vi.hoisted(()=>({connectChartBrowser:vi.fn(),acquireChartBrowser:vi.fn()}));
+const connection=vi.hoisted(()=>({connectChartBrowser:vi.fn(),acquireChartBrowser:vi.fn(),prepareChartReplacement:vi.fn()}));
 const reconnect=vi.hoisted(()=>vi.fn());
 vi.mock('../../workers/pulse-spy/capture-connection.js',()=>connection);
 vi.mock('../../workers/pulse-spy/capture-reconnect.js',()=>({reconnectChart:reconnect}));
 import { openChartSession } from '../../workers/pulse-spy/capture-session.js';
-beforeEach(()=>{vi.clearAllMocks();vi.stubGlobal('crypto',webcrypto);reconnect.mockResolvedValue(undefined);});
+beforeEach(()=>{vi.clearAllMocks();vi.stubGlobal('crypto',webcrypto);reconnect.mockResolvedValue(undefined);connection.prepareChartReplacement.mockResolvedValue(undefined);});
 afterEach(()=>vi.unstubAllGlobals());
 async function fixture(){
  const key='ab'.repeat(32);const imported=await webcrypto.subtle.importKey('raw',new Uint8Array(32).fill(171),'AES-GCM',false,['encrypt']);const iv=new Uint8Array(12);const encrypted=await webcrypto.subtle.encrypt({name:'AES-GCM',iv},imported,new TextEncoder().encode(JSON.stringify([{domain:'.tradingview.com',name:'session',value:'test'}])));const sealed=new Uint8Array(12+encrypted.byteLength);sealed.set(new Uint8Array(encrypted),12);
@@ -34,6 +34,12 @@ describe('automatic dedicated chart recovery',()=>{
  it('never replaces a browser to bypass a TradingView session conflict',async()=>{
   const {env,browser}=await fixture();connection.connectChartBrowser.mockResolvedValue(browser);reconnect.mockRejectedValue(new Error('chart-session-conflict'));
   await expect(openChartSession(env)).rejects.toThrow('chart-session-conflict');expect(connection.acquireChartBrowser).not.toHaveBeenCalled();expect(browser.disconnect).toHaveBeenCalledOnce();
+ });
+ it('does not launch another chart when the existing session cannot be safely retired',async()=>{
+  const {env}=await fixture();connection.connectChartBrowser.mockRejectedValue(new Error('timeout'));
+  connection.prepareChartReplacement.mockRejectedValue(new Error('hosted-browser-recovering'));
+  await expect(openChartSession(env)).rejects.toThrow('hosted-browser-recovering');
+  expect(connection.acquireChartBrowser).not.toHaveBeenCalled();
  });
  it('throttles replacements when the provider remains unavailable',async()=>{
   const {env,values}=await fixture();values.set('private:restore-at',String(Date.now()));connection.connectChartBrowser.mockRejectedValue(new Error('timeout'));

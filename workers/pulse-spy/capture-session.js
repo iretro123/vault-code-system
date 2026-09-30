@@ -1,4 +1,4 @@
-import { connectChartBrowser, acquireChartBrowser } from './capture-connection.js';
+import { connectChartBrowser, acquireChartBrowser, prepareChartReplacement } from './capture-connection.js';
 import { CHART_URL } from './capture-policy.js';
 import { reconnectChart } from './capture-reconnect.js';
 
@@ -28,6 +28,7 @@ export async function openChartSession(env, lifetimeMs=28_000) {
         await page.bringToFront();
         await reconnectChart(env,page);
         if (restoring) await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:6000});
+        await env.CHART_IMAGES.put(`private:failed-connect:${sessionId}`,'0',{expirationTtl:120});
         return existing;
       } catch(error) {
         await existing.disconnect();
@@ -38,6 +39,7 @@ export async function openChartSession(env, lifetimeMs=28_000) {
       }
     }
   }
+  if (sessionId) await prepareChartReplacement(env,sessionId);
   if (env.CAPTURE_SAVE_LOGIN!=='true') throw new Error('hosted-chart-login-required');
   const sealed=await env.CHART_IMAGES.get('private:login','arrayBuffer');
   if (!sealed) throw new Error('hosted-chart-login-required');
@@ -52,6 +54,9 @@ export async function openChartSession(env, lifetimeMs=28_000) {
   await env.CHART_IMAGES.put('private:restore-at',String(Date.now()),{expirationTtl:60});
   let acquired;
   try { acquired=await acquireChartBrowser(env.BROWSER); } catch { throw new Error('browser-acquire-unavailable'); }
+  // Remember ownership before connecting, even if initialization times out.
+  await env.CHART_IMAGES.put('private:session',acquired.sessionId);
+  await env.CHART_IMAGES.put('private:restoring-session',acquired.sessionId,{expirationTtl:180});
   const browser=await connectChartBrowser(env.BROWSER,acquired.sessionId,Math.max(1,deadline-Date.now()));
   let stage='restore-page';
   try {
