@@ -100,3 +100,8 @@
 .pcp-liquidity-guide>p>span:last-child{display:flex;flex-direction:column;gap:2px}
 .pcp-liquidity-guide small{font-size:13px;color:#bfcedf}
 .pr-snapshot .pcp-liquidity-guide .pcp-liquidity-intro{font-size:12px;color:#bfcedf;margin:0 0 8px}
+
+/* Minimal inline help: no inset card or oversized examples. */
+.pr-snapshot .pcp-liquidity-help{margin:0 0 8px;padding:0;background:transparent;border:0;border-radius:0;color:#fff0f3}
+.pr-snapshot .pcp-liquidity-help summary{min-height:36px;font-size:13px;font-weight:500;color:#ead1d8}
+.pr-snapshot .pcp-liquidity-help p{font-size:14px;line-height:1.5;margin:5px 0}

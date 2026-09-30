@@ -24,7 +24,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const monitoring = pulseWindowOpen(now) || now < (feed.afterHoursTestUntil || 0);
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
   const noZone = fresh && quote.zones.length === 0;
-  const closingSnapshot = !monitoring && !!quote;
+  const closingSnapshot = !!quote && (!monitoring || (!fresh && !!quote.chartUrl));
   const snapshotSides = new Set(quote?.zones.map(zone => zone.side));
   const snapshotSide = snapshotSides.size === 1 ? quote!.zones[0].side : "neutral";
   const snapshotTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(quote.at) : "";

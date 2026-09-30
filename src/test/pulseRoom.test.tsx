@@ -47,6 +47,18 @@ describe("Live Pulse channel", () => {
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByAltText(/^Original TradingView/)).toHaveAttribute("src", "https://example.com/new.png");
   });
+  it("keeps the last snapshot chart while fresh data is pending, then yields to fresh data", () => {
+    const view = setup();
+    state.feed.quotes![5] = { ...state.feed.quotes![5]!, chartUrl: "https://example.com/snapshot.png", chartCapturedAt: at };
+    act(() => vi.advanceTimersByTime(91000));
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src", "https://example.com/snapshot.png");
+    expect(screen.getByText(/Waiting for fresh 5m data/)).toBeInTheDocument();
+    state.feed.quotes![5] = { ...state.feed.quotes![5]!, at: Date.now() };
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.getByText("No zone yet.")).toBeInTheDocument();
+    expect(screen.queryByAltText(/^Original TradingView SPY 5-minute/)).not.toBeInTheDocument();
+  });
   it("removes the live label when the heartbeat becomes stale", () => {
     setup();
     act(() => vi.advanceTimersByTime(91000));
