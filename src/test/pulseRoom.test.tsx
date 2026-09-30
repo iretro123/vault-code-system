@@ -150,4 +150,17 @@ describe("Live Pulse channel", () => {
     expect(screen.queryByAltText(/^Original TradingView SPY 5-minute/)).not.toBeInTheDocument();
   });
 
+  it("resets visible history on the next feed session, not overnight or weekends", () => {
+    const view=setup();
+    act(()=>{vi.setSystemTime(new Date("2026-09-28T13:29:00Z"));vi.advanceTimersByTime(1000);});
+    expect(screen.getByRole("button",{name:"Earlier updates (2)"})).toBeInTheDocument();
+    const next=Date.parse("2026-09-28T13:30:05Z");
+    state.feed.quotes![5]={at:next,price:772,zones:[]};
+    act(()=>{vi.setSystemTime(next+1000);vi.advanceTimersByTime(1000);});
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.queryByRole("button",{name:/Earlier updates/})).not.toBeInTheDocument();
+    expect(screen.getByText("No active zone")).toBeInTheDocument();
+    expect(state.feed.posts).toHaveLength(3);
+  });
+
 });

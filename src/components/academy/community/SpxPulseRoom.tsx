@@ -23,9 +23,14 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const scroller = useRef<HTMLDivElement>(null);
   const symbol = feed.symbol ?? "AMEX:SPY";
   const symbolLabel = symbol.split(":").at(-1)!;
-  const posts = feed.posts.filter(post => post.timeframe === tf).slice().reverse();
-  const latest = posts[0];
+  const allPosts = feed.posts.filter(post => post.timeframe === tf).slice().reverse();
   const quote = feed.quotes?.[tf];
+  // Follow the actual feed session, not midnight or the viewer's timezone.
+  // Overnight/weekend history stays intact until the next session sends data.
+  const sessionDate = (at: number) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(at);
+  const sessionKey = sessionDate(Math.max(quote?.at ?? 0, allPosts[0]?.at ?? 0));
+  const posts = allPosts.filter(post => sessionDate(post.at) === sessionKey);
+  const latest = posts[0];
   const monitoring = pulseWindowOpen(now) || now < (feed.afterHoursTestUntil || 0);
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
   const noZone = fresh && monitoring && quote.zones.length === 0;
@@ -38,7 +43,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const otherHasZone = monitoring && connected && !!otherQuote && now >= otherQuote.at
     && now - otherQuote.at <= 90000 && otherQuote.zones.length > 0;
   const closingSnapshot = !!quote && (!monitoring || (!fresh && !!quote.chartUrl));
-  const closingChart = quote && posts.filter(post => post.symbol === symbol && !!post.chartUrl
+  const closingChart = quote && allPosts.filter(post => post.symbol === symbol && !!post.chartUrl
     && !!post.capturedAt && post.capturedAt <= quote.at
     && quote.zones.some(zone => zone.zoneId === post.zoneId && zone.side === post.side
       && zone.lower === post.lower && zone.upper === post.upper))
@@ -54,6 +59,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const inZone = quote?.zones.find(zone => quote.price >= zone.lower && quote.price <= zone.upper);
   const currentState = !fresh ? "" : inZone ? `In ${tf}m ${inZone.side}` : quote?.zones.length ? `${tf}m ${quote.zones.map(zone => zone.side).join(" + ")} on watch` : `No active ${tf}m zone`;
 
+  useEffect(() => { setHistory(false); setUnseen(false); }, [sessionKey]);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
   useEffect(() => {
     const id = latest?.id ?? null;
@@ -115,7 +121,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
           {tf===5 && noZone && <button type="button" className="pr-other-timeframe" onClick={()=>changeTimeframe(15)}>Check 15-minute timeframe <ArrowUpRight size={18}/></button>}
         </>}
         {(noZone || closingSnapshot || liquidityView) && history && <p className="pr-history-label">Earlier updates</p>}
-        <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={posts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
+        <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={allPosts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
         {!posts.length && !noZone && !closingSnapshot && !liquidityView && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
           <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>
