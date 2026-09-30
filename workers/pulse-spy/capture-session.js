@@ -58,7 +58,11 @@ export async function openChartSession(env, lifetimeMs=28_000) {
     const page=await browser.newPage();
     await page.bringToFront();
     stage='restore-cookies';
-    await page.setCookie(...cookies);
+    // This is a fresh browser: avoid Page.setCookie's serial delete request per
+    // cookie, which can exhaust the lease before the single restore request.
+    const client=await page.createCDPSession();
+    try {await client.send('Network.setCookies',{cookies});}
+    finally {await client.detach();}
     await env.CHART_IMAGES.put('private:session',acquired.sessionId);
     await env.CHART_IMAGES.put('private:restoring-session',acquired.sessionId,{expirationTtl:180});
     stage='restore-navigation';
