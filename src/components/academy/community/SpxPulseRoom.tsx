@@ -20,8 +20,6 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const symbolLabel = symbol.split(":").at(-1)!;
   const posts = feed.posts.filter(post => post.timeframe === tf).slice().reverse();
   const latest = posts[0];
-  const latestHasImage = !!latest && posts.some(post => post.zoneId === latest.zoneId && !!post.chartUrl);
-  const lastSavedChart = !latestHasImage ? posts.find(post => !!post.chartUrl) : undefined;
   const quote = feed.quotes?.[tf];
   const monitoring = pulseWindowOpen(now) || now < (feed.afterHoursTestUntil || 0);
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
@@ -34,8 +32,8 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const snapshotSides = new Set(quote?.zones.map(zone => zone.side));
   const snapshotSide = snapshotSides.size === 1 ? quote!.zones[0].side : "neutral";
   const snapshotTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(quote.at) : "";
-  const shown = history ? posts : closingSnapshot ? [] : posts.slice(0, 1);
-  const earlierCount = closingSnapshot ? posts.length : Math.max(0, posts.length - 1);
+  const shown = history ? posts : noZone || closingSnapshot ? [] : posts.slice(0, 1);
+  const earlierCount = noZone || closingSnapshot ? posts.length : Math.max(0, posts.length - 1);
   const reactions = usePulseReactions(shown.map(post => post.id), active && source === "cloud");
   const inZone = quote?.zones.find(zone => quote.price >= zone.lower && quote.price <= zone.upper);
   const currentState = !fresh ? "" : inZone ? `In ${tf}m ${inZone.side}` : quote?.zones.length ? `${tf}m ${quote.zones.map(zone => zone.side).join(" + ")} on watch` : `No active ${tf}m zone`;
@@ -94,14 +92,9 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
 
 
         </section>}
-        {noZone && <div className={latest ? "pr-last-zone" : "pr-empty pr-no-zone"} role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{latest ? "Last zone · Waiting for a new zone" : "Watching for a zone"}</h2>{(tf === 5 || otherHasZone) && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf} min <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
+        {noZone && <div className="pr-last-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No active zone</h2>{(tf === 5 || otherHasZone) && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf} min <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
         {(noZone || closingSnapshot) && history && <p className="pr-history-label">Earlier updates</p>}
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={posts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
-        {!history && !closingSnapshot && lastSavedChart?.chartUrl && <PulseLiquidityChart
-          symbol={symbolLabel} timeframe={tf} side="neutral" headline="Last saved TradingView chart"
-          capturedAt={lastSavedChart.at} chartCapturedAt={lastSavedChart.capturedAt ?? lastSavedChart.at}
-          chartUrl={lastSavedChart.chartUrl} showIdentity={false} defaultShowChart
-          note="Earlier zone · See capture time" />}
         {!posts.length && !noZone && !closingSnapshot && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
           <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>

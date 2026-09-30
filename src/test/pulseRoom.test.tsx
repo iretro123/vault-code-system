@@ -19,13 +19,13 @@ function setup() {
 }
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("Live Pulse channel", () => {
-  it("keeps the last real zone visible when no zone is active", () => {
+  it("hides inactive zones and archived charts from the current view", () => {
     setup();
-    expect(screen.getByRole("heading", { name: "Last zone · Waiting for a new zone" })).toBeInTheDocument();
-    expect(screen.queryByText("5m demand broke. Closed below 770.83.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "No active zone" })).toBeInTheDocument();
+    expect(screen.queryByText("5m demand broke. Closed below 770.83.")).not.toBeInTheDocument();
     expect(screen.getByText("Chart capture offline")).toBeInTheDocument();
-    expect(screen.getByText("Earlier view · same zone")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Earlier updates (1)" }));
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Earlier updates (2)" }));
     fireEvent.click(screen.getByRole("button", { name: "View chart" }));
     expect(screen.getByAltText(/^Full unmodified screenshot/)).toHaveAttribute("src", original.chartUrl);
   });
@@ -65,14 +65,14 @@ describe("Live Pulse channel", () => {
     expect(screen.getByText(/Waiting for fresh 5m data/)).toBeInTheDocument();
     state.feed.quotes![5] = { ...state.feed.quotes![5]!, at: Date.now() };
     view.rerender(<SpxPulseRoom/>);
-    expect(screen.getByText("Last zone · Waiting for a new zone")).toBeInTheDocument();
-    expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src", original.chartUrl);
+    expect(screen.getByText("No active zone")).toBeInTheDocument();
+    expect(screen.queryByAltText(/^Original TradingView SPY 5-minute/)).not.toBeInTheDocument();
   });
   it("removes the live label when the heartbeat becomes stale", () => {
     setup();
     act(() => vi.advanceTimersByTime(91000));
     expect(screen.queryByText("Live updates")).not.toBeInTheDocument();
-    expect(screen.queryByText("Last zone · Waiting for a new zone")).not.toBeInTheDocument();
+    expect(screen.queryByText("No active zone")).not.toBeInTheDocument();
     expect(screen.getByText(/Waiting for fresh 5m data/)).toBeInTheDocument();
   });
   it("explains the closed market without claiming a live capture outage", () => {
