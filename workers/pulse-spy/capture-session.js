@@ -25,8 +25,8 @@ export async function openChartSession(env, lifetimeMs=28_000) {
           if (page) await page.goto(CHART_URL,{waitUntil:'domcontentloaded',timeout:12_000});
         }
         if (!page) throw new Error('hosted-chart-login-required');
-        if (restoring) await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:6000});
         await reconnectChart(env,page);
+        if (restoring) await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:6000});
         return existing;
       } catch(error) {
         await existing.disconnect();
@@ -61,10 +61,10 @@ export async function openChartSession(env, lifetimeMs=28_000) {
     await env.CHART_IMAGES.put('private:restoring-session',acquired.sessionId,{expirationTtl:180});
     stage='restore-navigation';
     await page.goto(CHART_URL,{waitUntil:'domcontentloaded',timeout:12_000});
-    stage='restore-chart';
-    await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:12_000});
     stage='restore-reconnect';
     await reconnectChart(env,page);
+    stage='restore-chart';
+    await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:12_000});
     await env.CHART_IMAGES.put('private:session',acquired.sessionId);
     return browser;
   } catch(error) { await browser.disconnect(); throw new Error(error?.message==='chart-session-conflict' ? error.message : stage+'-failed'); }

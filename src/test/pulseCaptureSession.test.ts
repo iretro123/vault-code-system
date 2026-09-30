@@ -26,6 +26,11 @@ describe('automatic dedicated chart recovery',()=>{
   page.goto.mockResolvedValue(undefined);
   expect(await openChartSession(env)).toBe(browser);expect(connection.acquireChartBrowser).toHaveBeenCalledOnce();
  });
+ it('reconnects before waiting for a chart hidden by the disconnected screen',async()=>{
+  const {env,browser,page,values}=await fixture();values.set('private:restoring-session','old');connection.connectChartBrowser.mockResolvedValue(browser);
+  let reconnected=false;reconnect.mockImplementation(async()=>{reconnected=true;});page.waitForSelector.mockImplementation(async()=>{if(!reconnected) throw new Error('chart blocked by disconnected screen');});
+  expect(await openChartSession(env)).toBe(browser);expect(page.waitForSelector).toHaveBeenCalledOnce();expect(connection.acquireChartBrowser).not.toHaveBeenCalled();
+ });
  it('never replaces a browser to bypass a TradingView session conflict',async()=>{
   const {env,browser}=await fixture();connection.connectChartBrowser.mockResolvedValue(browser);reconnect.mockRejectedValue(new Error('chart-session-conflict'));
   await expect(openChartSession(env)).rejects.toThrow('chart-session-conflict');expect(connection.acquireChartBrowser).not.toHaveBeenCalled();expect(browser.disconnect).toHaveBeenCalledOnce();
