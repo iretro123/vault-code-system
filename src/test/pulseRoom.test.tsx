@@ -131,10 +131,23 @@ describe("Live Pulse channel", () => {
     act(() => { vi.setSystemTime(new Date("2026-09-26T01:00:00Z")); vi.advanceTimersByTime(1000); });
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src", "https://example.com/closing-5.png");
-    expect(screen.getByText(/Captured after the session/)).toBeInTheDocument();
+    expect(screen.getByText("Later chart view")).toBeInTheDocument();
     fireEvent.load(screen.getByAltText(/^Original TradingView SPY 5-minute/));
     fireEvent.click(screen.getByRole("button", { name: "Expand original SPY 5-minute screenshot" }));
     expect(screen.getByAltText(/^Full unmodified screenshot/)).toHaveAttribute("src", "https://example.com/closing-5.png");
+  });
+
+  it("restores an exact-zone event image after close without calling it a closing capture", () => {
+    const view=setup();
+    state.feed.posts=[{...original,capturedAt:at-200000}];
+    state.feed.quotes![5]={price:771,at,zones:[{zoneId:original.zoneId,side:original.side,lower:original.lower!,upper:original.upper!}]};
+    act(()=>{vi.setSystemTime(new Date("2026-09-26T01:00:00Z"));vi.advanceTimersByTime(1000);});
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src",original.chartUrl);
+    expect(screen.getByText("Earlier view · same zone")).toBeInTheDocument();
+    state.feed.quotes![5]!.zones[0].zoneId="different-zone";
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.queryByAltText(/^Original TradingView SPY 5-minute/)).not.toBeInTheDocument();
   });
 
 });

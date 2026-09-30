@@ -38,6 +38,13 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const otherHasZone = monitoring && connected && !!otherQuote && now >= otherQuote.at
     && now - otherQuote.at <= 90000 && otherQuote.zones.length > 0;
   const closingSnapshot = !!quote && (!monitoring || (!fresh && !!quote.chartUrl));
+  const closingChart = quote && posts.filter(post => post.symbol === symbol && !!post.chartUrl
+    && !!post.capturedAt && post.capturedAt <= quote.at
+    && quote.zones.some(zone => zone.zoneId === post.zoneId && zone.side === post.side
+      && zone.lower === post.lower && zone.upper === post.upper))
+    .sort((a,b)=>(b.capturedAt ?? 0)-(a.capturedAt ?? 0))[0];
+  const snapshotChartUrl = quote?.chartUrl ?? closingChart?.chartUrl;
+  const snapshotChartAt = quote?.chartCapturedAt ?? closingChart?.capturedAt;
   const snapshotSides = new Set(quote?.zones.map(zone => zone.side));
   const snapshotSide = snapshotSides.size === 1 ? quote!.zones[0].side : "neutral";
   const snapshotTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(quote.at) : "";
@@ -94,11 +101,11 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
               </span>
             </div><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
           </li>)}</ul> : <p className="pr-snapshot-none">No active {tf}-minute zone at this update.</p>}
-          {quote.chartUrl && quote.chartCapturedAt && <PulseLiquidityChart
+          {snapshotChartUrl && snapshotChartAt && <PulseLiquidityChart
             key={`${tf}:${quote.at}`} symbol={symbolLabel} timeframe={tf} side={snapshotSide}
-            headline="TradingView chart" capturedAt={quote.at} chartCapturedAt={quote.chartCapturedAt}
-            captureContext="refresh" chartUrl={quote.chartUrl} liquidityChart={quote.liquidityChart} showIdentity={false}
-            defaultShowChart note="Captured after the session. Zone values above are from the timestamp shown." />}
+            headline="TradingView chart" capturedAt={quote.at} chartCapturedAt={snapshotChartAt}
+            captureContext={quote.chartUrl ? "refresh" : "earlier"} chartUrl={snapshotChartUrl} liquidityChart={quote.chartUrl ? quote.liquidityChart : undefined} showIdentity={false}
+            defaultShowChart />}
 
 
         </section>}
