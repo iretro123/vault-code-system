@@ -39,12 +39,12 @@ describe("Live Pulse channel", () => {
   });
   it("links an empty timeframe to a fresh zone and hides the hint when stale", () => {
     setup();
-    expect(screen.getByRole("button", { name: "Check 15 min" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Check 15 min" }));
+    expect(screen.getByRole("button", { name: "Check 15-minute timeframe" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Check 15-minute timeframe" }));
     expect(screen.getByRole("button", { name: "15 min" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "5 min" }));
     act(() => vi.advanceTimersByTime(91000));
-    expect(screen.queryByRole("button", { name: "Check 15 min" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check 15-minute timeframe" })).not.toBeInTheDocument();
   });
   it("receives new posts and later images without a reload", () => {
     const view = setup();

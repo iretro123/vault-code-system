@@ -92,7 +92,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
 
 
         </section>}
-        {noZone && <div className="pr-last-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No active zone</h2>{(tf === 5 || otherHasZone) && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf} min <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
+        {noZone && <div className="pr-empty pr-no-zone" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No active zone</h2>{(tf === 5 || otherHasZone) && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf}-minute timeframe <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
         {(noZone || closingSnapshot) && history && <p className="pr-history-label">Earlier updates</p>}
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={posts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
         {!posts.length && !noZone && !closingSnapshot && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
