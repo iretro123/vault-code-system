@@ -113,7 +113,7 @@ export function PulseChartPost({
           </div>}
           {failed && <div className="pcp-missing" role="status"><p>{attempt < 5 ? "Chart loading… retrying automatically." : "Chart couldn’t load."}</p><button type="button" onClick={() => { setFailed(false); setAttempt(value => value + 1); }}><RotateCcw size={16} aria-hidden="true"/> Try again</button></div>}
         </figure>}
-      </> : fallbackChart || <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Waiting for the original chart."}</p>}
+      </> : fallbackChart || <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Zone updated · Chart arriving…"}</p>}
       {(onReact || canAnnotate || (chartUrl && !showChart)) && <footer className="pcp-actions">
         {onReact && reactions && <div className="pcp-reactions" aria-label="Reactions">{reactions.map(reaction => <button type="button" key={reaction.emoji} aria-label={`React ${reaction.emoji}`} aria-pressed={reaction.active} disabled={reactionsDisabled} onClick={() => onReact(reaction.emoji)}>{reaction.emoji}{reaction.count > 0 && <span>{reaction.count}</span>}</button>)}</div>}
         {chartUrl && !showChart && <button type="button" className="pcp-entry-button" onClick={() => { setActualSize(false); setExpanded(true); }}>View chart <ArrowUpRight size={17} aria-hidden="true"/></button>}

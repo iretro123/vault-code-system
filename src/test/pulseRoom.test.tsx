@@ -88,13 +88,17 @@ describe("Live Pulse channel", () => {
   });
   it("receives new posts and later images without a reload", () => {
     const view = setup();
-    const next: PulsePost = { ...original, id: "new", at: at + 500, lower: 771, upper: 772, price: 771.2, chartUrl: undefined };
+    const next: PulsePost = { ...original, id: "new", captureStatus: "pending", at: at + 500, lower: 771, upper: 772, price: 771.2, chartUrl: undefined };
     state.feed = { ...state.feed, quotes: { ...state.feed.quotes, 5: { at: at + 500, price: 771.2, zones: [{ side: "demand", lower: 771, upper: 772 }] } }, posts: [...state.feed.posts, next] };
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByText("In 5m demand.")).toBeInTheDocument();
+    expect(screen.getByText("Zone updated · Chart arriving…")).toBeInTheDocument();
+    expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", {name: "Earlier updates (2)"})).toHaveClass("pr-history-pending");
     state.feed = { ...state.feed, posts: [...state.feed.posts.slice(0, -1), { ...next, chartUrl: "https://example.com/new.png", capturedAt: at + 900 }] };
     view.rerender(<SpxPulseRoom/>);
     expect(screen.getByAltText(/^Original TradingView/)).toHaveAttribute("src", "https://example.com/new.png");
+    expect(screen.getByRole("button", {name: "Earlier updates (2)"})).not.toHaveClass("pr-history-pending");
   });
   it("keeps the last snapshot chart while fresh data is pending, then yields to fresh data", () => {
     const view = setup();

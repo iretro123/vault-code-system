@@ -66,6 +66,12 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
   const snapshotTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(quote.at) : "";
   const shown = history ? posts : noZone || closingSnapshot || liquidityView ? [] : posts.slice(0, 1);
   const earlierCount = noZone || closingSnapshot || liquidityView ? posts.length : Math.max(0, posts.length - 1);
+  const awaitingChart = !!latest && !history && !noZone && !closingSnapshot && !liquidityView
+    && latest.captureStatus === "pending" && !latest.chartUrl
+    && !allPosts.some(candidate => candidate.zoneId === latest.zoneId && candidate.symbol === latest.symbol
+      && candidate.timeframe === latest.timeframe && candidate.side === latest.side
+      && candidate.lower === latest.lower && candidate.upper === latest.upper
+      && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= latest.at);
   const reactions = usePulseReactions(shown.map(post => post.id), active && source === "cloud");
   const inZone = quote?.zones.find(zone => quote.price >= zone.lower && quote.price <= zone.upper);
   const currentState = !fresh ? "" : inZone ? `In ${tf}m ${inZone.side}` : quote?.zones.length ? `${tf}m ${quote.zones.map(zone => zone.side).join(" + ")} on watch` : `No active ${tf}m zone`;
@@ -135,6 +141,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
         {(noZone || closingSnapshot || liquidityView) && history && <p className="pr-history-label">Earlier updates</p>}
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={allPosts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
         {!(selected==='NASDAQ:QQQ' && !quote && !latest) && !posts.length && !noZone && !closingSnapshot && !liquidityView && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
+        {earlierCount > 0 && !history && <button type="button" className={`pr-history${awaitingChart ? " pr-history-pending" : ""}`} aria-expanded={false} onClick={() => setHistory(true)}>Earlier updates ({earlierCount})<ArrowUpRight size={16} aria-hidden="true"/></button>}
         <div className="pr-source">
           <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>
             <img src="/brand/tradingview-mark.svg" alt="" width="36" height="36" />
@@ -143,7 +150,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
           </a>
           {monitoring && source === "cloud" && (feed.captureConnected === false || feed.captureHealth?.[tf]?.state === "attention") && <p role="status">Chart capture needs attention</p>}
         </div>
-        {earlierCount > 0 && !history && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}
+
       </div>
     </div>
     {history && <div className="pr-history-dock">
