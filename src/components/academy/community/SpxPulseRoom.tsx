@@ -110,7 +110,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
           {snapshotChartUrl && snapshotChartAt && <PulseLiquidityChart
             key={`${tf}:${quote.at}`} symbol={symbolLabel} timeframe={tf} side={snapshotSide}
             headline="TradingView chart" capturedAt={quote.at} chartCapturedAt={snapshotChartAt}
-            captureContext={quote.chartUrl ? "refresh" : "earlier"} chartUrl={snapshotChartUrl} liquidityChart={quote.chartUrl ? quote.liquidityChart : undefined} showIdentity={false}
+            captureContext={quote.chartUrl ? quote.chartContext ?? "refresh" : "earlier"} chartUrl={snapshotChartUrl} liquidityChart={quote.chartUrl ? quote.liquidityChart : undefined} showIdentity={false}
             defaultShowChart />}
 
 

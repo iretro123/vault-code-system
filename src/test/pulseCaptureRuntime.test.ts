@@ -59,6 +59,12 @@ describe('durable screenshot processing',()=>{
     expect(await runCapture(env,rpc)).toBe('more');
     expect(rpc).toHaveBeenLastCalledWith('pulse_spy_capture_finish',expect.objectContaining({p_result:expect.objectContaining({ok:true})}),5000);
   });
+  it('publishes the verified image when encrypted session backup fails',async()=>{
+    const {env,rpc}=fixture();session.rememberChartLogin.mockRejectedValueOnce(new Error('storage unavailable'));
+    expect(await runCapture(env,rpc)).toBe('more');
+    expect(env.CHART_IMAGES.put).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenLastCalledWith('pulse_spy_capture_finish',expect.objectContaining({p_result:expect.objectContaining({ok:true})}),5000);
+  });
   it('never reports success when its database lease was lost',async()=>{
     const {env,rpc}=fixture();rpc.mockReset().mockResolvedValueOnce({lease:'lease',post}).mockResolvedValueOnce(false);
     await expect(runCapture(env,rpc)).rejects.toThrow('capture-lease-lost');

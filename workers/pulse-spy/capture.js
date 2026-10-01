@@ -66,7 +66,10 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
       mark('storeMs');
       result={ok:true,imageId,capturedAt,symbol:'AMEX:SPY',timeframe:task.post.timeframe,indicator:INDICATOR};
     } else result={ok:true};
-    await rememberChartLogin(env,page);
+    // Cookie backup is auxiliary: never discard an already verified/stored image
+    // because the recovery store briefly failed. Future health cycles retry it.
+    try { await rememberChartLogin(env,page); }
+    catch { console.warn('Pulse session backup deferred; capture result preserved.'); }
     mark('recoveryMs');
   } catch (error) {
     // Never put provider errors, URLs, page content or credentials into logs.
