@@ -186,7 +186,7 @@ export function SettingsNotifications() {
         <div><h3 className="text-sm font-semibold">Pulse symbols</h3><p className="text-xs text-muted-foreground">5m & 15m · New zones, entries and confirmed breaks.</p></div>
         {([['notify_pulse_spy', 'SPY'], ['notify_pulse_qqq', 'QQQ']] as const).map(([key, symbol]) => (
           <div key={key} className="flex items-center justify-between gap-4">
-            <div><Label className="text-sm font-semibold">${symbol}</Label>{symbol === 'QQQ' && <p className="text-xs text-muted-foreground">Coming soon · Save your alert preference</p>}</div>
+            <div><Label className="text-sm font-semibold">${symbol}</Label></div>
             <Switch aria-label={`${symbol} Pulse alerts`} checked={prefs?.[key] ?? (symbol === 'SPY')} disabled={saving || masterOff || !values.notify_pulse || !prefs}
               onCheckedChange={checked => void savePreference({[key]: checked})}/>
           </div>

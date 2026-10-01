@@ -13,7 +13,10 @@ export default {
         method:'POST', headers:{Authorization:request.headers.get('Authorization') || ''},
       });
     }
-    if (!/^\/webhook\/(?:qqq\/)?[a-f0-9]{64}$/.test(path)) return new Response('Not found', { status: 404 });
+    // TradingView snapshots a study when an alert is created. Retired QQQ
+    // snapshots must never overwrite the corrected production study's state.
+    if (/^\/webhook\/qqq\/[a-f0-9]{64}$/.test(path)) return new Response('Retired alert route', { status: 410, headers: { 'Cache-Control': 'no-store' } });
+    if (!/^\/webhook\/(?:qqq\/v1\/)?[a-f0-9]{64}$/.test(path)) return new Response('Not found', { status: 404 });
     if (!env.WORKER_TOKEN || !env.DELIVERY_HASH || !env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) return new Response('Service unavailable', { status: 503 });
     async function rpc(name, args) {
       const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${name}`, {

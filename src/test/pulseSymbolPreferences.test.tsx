@@ -14,7 +14,7 @@ it('keeps QQQ opt-in separate from existing SPY alerts',async()=>{
  expect(screen.getByRole('switch',{name:'SPY Pulse alerts'})).toHaveAttribute('aria-checked','true');
  fireEvent.click(screen.getByRole('switch',{name:'QQQ Pulse alerts'}));
  await waitFor(()=>expect(state.save).toHaveBeenCalledWith({notify_pulse_qqq:true}));
- expect(screen.getByText(/Coming soon/)).toBeTruthy();
+ expect(screen.queryByText(/Coming soon/)).not.toBeInTheDocument();
 });
 it('disables symbol controls when Pulse is disabled',()=>{
  state.prefs.notify_pulse=false;render(<SettingsNotifications/>);

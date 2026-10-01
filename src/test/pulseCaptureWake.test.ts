@@ -9,6 +9,18 @@ function setup(fetch=vi.fn().mockResolvedValue(new Response(null,{status:202})))
 }
 afterEach(()=>{state.posts=1;vi.restoreAllMocks();});
 describe('alert delivery stays ahead of chart work',()=>{
+ it('rejects retired QQQ deliveries before persistence or screenshot work',async()=>{
+  const t=setup();const request=new Request('https://example.com/webhook/qqq/'+'a'.repeat(64),{method:'POST'});
+  expect((await receiver.fetch(request,t.env,t.ctx)).status).toBe(410);
+  expect(t.pending).toHaveLength(0);expect(t.fetch).not.toHaveBeenCalled();
+ });
+ it('accepts the corrected QQQ route and rejects unknown versions',async()=>{
+  const t=setup();
+  const request=(version:string)=>new Request('https://example.com/webhook/qqq/'+version+'/'+'a'.repeat(64),{method:'POST'});
+  expect((await receiver.fetch(request('v2'),t.env,t.ctx)).status).toBe(404);
+  expect((await receiver.fetch(request('v1'),t.env,t.ctx)).status).toBe(202);
+  await Promise.all(t.pending);expect(t.fetch).toHaveBeenCalledTimes(1);
+ });
  it('returns the accepted alert while capture wake is still pending',async()=>{
   let release:()=>void=()=>{};const fetch=vi.fn(()=>new Promise<Response>(resolve=>{release=()=>resolve(new Response(null,{status:202}));}));
   const t=setup(fetch);expect((await receiver.fetch(t.request,t.env,t.ctx)).status).toBe(202);
