@@ -41,6 +41,18 @@ describe("Live Pulse channel", () => {
   expect(screen.queryByRole("button",{name:"Hide earlier updates"})).not.toBeInTheDocument();
   expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src","https://example.com/liq.png");
  });
+ it("keeps liquidity selected while its feed temporarily disappears",()=>{
+  const view=setup();
+  liq.value={5:{available:true,capturedAt:at,chartUrl:"https://example.com/liq.png"}};
+  view.rerender(<SpxPulseRoom/>);
+  fireEvent.click(screen.getByRole("switch",{name:"Liquidity"}));
+  liq.value={};
+  view.rerender(<SpxPulseRoom/>);
+  expect(screen.getByRole("switch",{name:"Liquidity"})).toHaveAttribute("aria-checked","true");
+  expect(screen.getByRole("heading",{name:"Liquidity updating"})).toBeInTheDocument();
+  expect(screen.queryByRole("heading",{name:"No active zone"})).not.toBeInTheDocument();
+  expect(localStorage.getItem("vault:pulse:liquidity")).toBe("on");
+ });
  it("shows independent liquidity on 5m and 15m without changing zone history",()=>{
   const view=setup();
   liq.value={5:{available:true,capturedAt:at,chartUrl:"https://example.com/liq5.png"},15:{available:true,capturedAt:at,chartUrl:"https://example.com/liq15.png"}};

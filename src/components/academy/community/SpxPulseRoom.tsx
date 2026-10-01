@@ -44,7 +44,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
   const checkedTime = quote ? new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", second: "2-digit" }).format(quote.at) : "";
   const liquiditySnapshot = liquidity[tf];
   const liquidityFresh = !!liquiditySnapshot?.available && !!liquiditySnapshot.capturedAt && now >= liquiditySnapshot.capturedAt && now-liquiditySnapshot.capturedAt<=180000;
-  const liquidityView = showLiquidity && !!liquiditySnapshot;
+  const liquidityView = showLiquidity && source === "cloud";
   const otherTf = tf === 5 ? 15 : 5;
   const otherQuote = feed.quotes?.[otherTf];
   const otherHasZone = monitoring && connected && !!otherQuote && now >= otherQuote.at
@@ -102,7 +102,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
     <header className="pr-toolbar">
       <span className="pr-symbol"><Activity size={25} aria-hidden="true"/><select className="pr-symbol-select" aria-label="Pulse symbol" value={selected} onChange={event=>onSymbol(event.target.value as MemberSymbol)}><option value="AMEX:SPY">$SPY</option><option value="NASDAQ:QQQ">$QQQ</option></select></span>
       <div className="pr-timeframes" aria-label="Chart timeframe">{([5, 15] as const).map(value => <button key={value} type="button" aria-pressed={tf === value} onClick={() => changeTimeframe(value)}>{value} min</button>)}</div>
-    {liquiditySnapshot && <button type="button" role="switch" aria-checked={showLiquidity} className="pr-liquidity-toggle" onClick={toggleLiquidity}>Liquidity<span aria-hidden="true"/></button>}
+    {source === "cloud" && <button type="button" role="switch" aria-checked={showLiquidity} className="pr-liquidity-toggle" onClick={toggleLiquidity}>Liquidity<span aria-hidden="true"/></button>}
     </header>
     <div className="pr-scroll" ref={scroller} onScroll={event => { if (event.currentTarget.scrollTop < 80) setUnseen(false); }}>
       <div className="pr-content">
@@ -135,7 +135,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
         </section>}
         {noZone && !liquidityView && <div className="pr-empty pr-no-zone pr-feed-live" role="status"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>No active zone</h2><p className="pr-zone-checked"><span>Live</span> · Checked <time dateTime={new Date(quote!.at).toISOString()}>{checkedTime} ET</time></p>{(tf === 5 || otherHasZone) && <button type="button" className="pr-other-timeframe" onClick={() => changeTimeframe(otherTf)}>Check {otherTf}-minute timeframe <ArrowUpRight size={18} aria-hidden="true" /></button>}</div>}
         {liquidityView && !history && <>
-          {liquidityFresh && liquiditySnapshot.chartUrl ? <PulseChartPost symbol={symbolLabel} timeframe={tf} side="neutral" headline={`${tf}-minute liquidity`} capturedAt={liquiditySnapshot.capturedAt!} chartCapturedAt={liquiditySnapshot.capturedAt!} chartUrl={liquiditySnapshot.chartUrl} showIdentity={false} note={noZone ? "No active zone" : currentState || undefined}/> : <div className="pr-empty pr-no-zone"><Activity size={34}/><h2>{monitoring ? "Liquidity updating" : "Market closed"}</h2><p className="pr-zone-checked">{monitoring ? "Waiting for a fresh TradingView chart" : "Liquidity resumes next session"}</p></div>}
+          {liquidityFresh && liquiditySnapshot?.chartUrl ? <PulseChartPost symbol={symbolLabel} timeframe={tf} side="neutral" headline={`${tf}-minute liquidity`} capturedAt={liquiditySnapshot.capturedAt!} chartCapturedAt={liquiditySnapshot.capturedAt!} chartUrl={liquiditySnapshot.chartUrl} showIdentity={false} note={noZone ? "No active zone" : currentState || undefined}/> : <div className="pr-empty pr-no-zone"><Activity size={34}/><h2>{monitoring ? "Liquidity updating" : "Market closed"}</h2><p className="pr-zone-checked">{monitoring ? "Waiting for a fresh TradingView chart" : "Liquidity resumes next session"}</p></div>}
           {tf===5 && noZone && <button type="button" className="pr-other-timeframe" onClick={()=>changeTimeframe(15)}>Check 15-minute timeframe <ArrowUpRight size={18}/></button>}
         </>}
         {(noZone || closingSnapshot || liquidityView) && history && <p className="pr-history-label">Earlier updates</p>}
