@@ -21,6 +21,17 @@ it('accepts genuine QQQ schema and preserves the symbol through events',()=>{
  expect(posts).toHaveLength(1);expect(posts[0].symbol).toBe('NASDAQ:QQQ');expect(posts[0].zoneId).toBe(zone.zoneId);
  expect(()=>validatePulseSnapshot({...snapshot,timeframe:30},now)).toThrow('Wrong chart');
 });
+it('records repeated entries within a candle without duplicating the same delivery',()=>{
+ const make=(offset:number,price:number)=>validatePulseSnapshot({...snapshot,at:now+offset,price,bars:[snapshot.bars[0],{t:bar,o:500,h:504,l:497,c:price}]},now+offset);
+ let posts=postsFromSnapshot([],make(0,503),now);
+ posts=postsFromSnapshot(posts,make(15000,500),now+15000);
+ posts=postsFromSnapshot(posts,make(30000,503),now+30000);
+ const reentry=make(45000,500);
+ posts=postsFromSnapshot(posts,reentry,now+45000);
+ expect(posts.map(p=>p.kind)).toEqual(['observed','entered','exited','entered']);
+ expect(new Set(posts.map(p=>p.id)).size).toBe(4);
+ expect(postsFromSnapshot(posts,reentry,now+45000)).toEqual(posts);
+});
 it('rejects SPY or an incorrect QQQ indicator as a QQQ image',()=>{
  const post=postsFromSnapshot([],validatePulseSnapshot(snapshot,now),now)[0];
  const source={label:'Chart for NASDAQ:QQQ, 5 minutes',text:MULTI_INDICATOR+'\n500 SELL',pageText:'',zoneText:'Demand lower 498\nDemand upper 502'};

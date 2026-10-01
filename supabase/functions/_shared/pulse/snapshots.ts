@@ -39,7 +39,11 @@ export function postsFromSnapshot(posts: PulsePost[], s: PulseSnapshot, now: num
   const latest = new Map<string, PulsePost>();
   for (const p of posts) if (p.source === "indicator" && p.timeframe === s.timeframe && p.symbol === s.symbol) latest.set(p.zoneId, p);
   const emit = (z: PulseZone, kind: PulseKind, price = s.price, confirmed = s.confirmed, barAt = s.barAt) => {
-    const validated = validatePulsePost({ id: `${z.zoneId}:${barAt}:${kind}`, ...z, kind, symbol: s.symbol, timeframe: s.timeframe, source: "indicator", price, confirmed, at: s.at }, now, false, afterHoursTest, sessionClose(s));
+    // Price can enter, exit and re-enter during the same candle. Keep each
+    // transition while identical webhook deliveries remain idempotent. Member
+    // notification cooldowns are enforced independently in the database.
+    const transition = ["entered", "exited", "breached", "returned"].includes(kind) ? `:${s.at}` : "";
+    const validated = validatePulsePost({ id: `${z.zoneId}:${barAt}:${kind}${transition}`, ...z, kind, symbol: s.symbol, timeframe: s.timeframe, source: "indicator", price, confirmed, at: s.at }, now, false, afterHoursTest, sessionClose(s));
     result = appendPulsePost(result, { ...validated, barAt, ...(confirmed ? { closedAt: barAt + s.timeframe * 60000 } : {}), bars: s.bars.filter(b => b.t <= barAt) });
   };
   for (const previous of latest.values()) {
