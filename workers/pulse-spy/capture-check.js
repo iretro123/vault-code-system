@@ -31,10 +31,10 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
       pageText:document.body.innerText,
     }));
     const chartTimeframe = [5,15].find(value=>chartMatches(source.label,symbol,value));
-    if (!chartTimeframe || !sourceIndicator(source.text,symbol)
-      || /disconnected|connection lost|reconnect|cannot connect|can't open this chart|sign in to continue|verify you are human/i.test(source.pageText)) {
-      return { ok:false, failure:'hosted-chart-login-required' };
-    }
+    if (/disconnected|connection lost|reconnect|cannot connect/i.test(source.pageText)) return {ok:false,failure:'chart-session-conflict'};
+    if (/can't open this chart|sign in to continue|verify you are human/i.test(source.pageText)) return {ok:false,failure:'hosted-chart-login-required'};
+    if (!chartTimeframe) return {ok:false,failure:'wrong-chart-timeframe'};
+    if (!sourceIndicator(source.text,symbol)) return {ok:false,failure:'pulse-indicator-missing'};
     next('zones');
     await setDataWindow(page,true);
     const zones=readZoneBounds((await readChartSource(page)).zoneText);
@@ -54,7 +54,7 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
     next('done');
     return { ok:true, timing, symbol, timeframe:chartTimeframe, indicator:sourceIndicator(source.text,symbol), zones, imageId, capturedAt };
   } catch(error) {
-    if (['chart-session-conflict','chart-zone-data-unavailable','chart-zone-mismatch'].includes(error?.message)) return {ok:false,failure:error.message};
+    if (['chart-session-conflict','chart-zone-data-unavailable','chart-zone-mismatch','hosted-browser-timeout','hosted-browser-recovering','browser-acquire-unavailable','wrong-instrument','timeframe-control-unavailable'].includes(error?.message)) return {ok:false,failure:error.message};
     // No provider error text, cookies, URLs or page contents cross this boundary.
     return { ok:false, failure:stage==='session' ? 'hosted-chart-login-required' : `chart-check-${stage}-failed` };
   } finally {

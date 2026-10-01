@@ -27,11 +27,22 @@ describe('operator chart preflight',()=>{
  });
  it('rejects a disconnected account even if the chart remains visible',async()=>{
   setup({label:'Chart for AMEX:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live',pageText:'Session disconnected'});
-  expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}})).toEqual({ok:false,failure:'hosted-chart-login-required'});
+  expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}})).toEqual({ok:false,failure:'chart-session-conflict'});
   expect(session.rememberChartLogin).not.toHaveBeenCalled();
  });
  it('does not return private browser exceptions',async()=>{
   session.openChartSession.mockRejectedValue(new Error('secret cookie and private URL'));
   expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}})).toEqual({ok:false,failure:'hosted-chart-login-required'});
  });
+});
+
+it('identifies a missing QQQ study without blaming login or storing an image',async()=>{
+ setup({label:'Chart for NASDAQ:QQQ, 5 minutes',text:'Vault Zone Pulse - SPY Live',pageText:'QQQ'});
+ const put=vi.fn();
+ expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put}},5,'NASDAQ:QQQ')).toEqual({ok:false,failure:'pulse-indicator-missing'});
+ expect(put).not.toHaveBeenCalled();
+});
+it('preserves safe recovery diagnostics without returning private provider errors',async()=>{
+ session.openChartSession.mockRejectedValue(new Error('hosted-browser-timeout'));
+ expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}})).toEqual({ok:false,failure:'hosted-browser-timeout'});
 });
