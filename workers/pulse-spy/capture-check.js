@@ -57,11 +57,13 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
     const chart=await page.$('.chart-widget');
     const bounds=await chart?.boundingBox();
     if (!bounds || bounds.width<900 || bounds.height<400 || bounds.width/bounds.height<1.3) return {ok:false,failure:'chart-crop-unavailable'};
+    next('screenshot');
     const bytes=await page.screenshot({type:'png',clip:bounds,captureBeyondViewport:false});
     if (bytes.byteLength<10_000 || bytes.byteLength>8_000_000) return {ok:false,failure:'chart-image-invalid'};
     const imageId=crypto.randomUUID();
     const capturedAt=Date.now();
     // Short-lived operator QA image, never attached to a member event.
+    next('store');
     await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:3600,metadata:{contentType:'image/png',purpose:'operator-preflight'}});
     next('recovery');
     try { await rememberChartLogin(env,page); } catch { /* Optional backup cannot invalidate a verified image. */ }
@@ -70,7 +72,7 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
   } catch(error) {
     if (['chart-session-conflict','chart-zone-data-unavailable','chart-zone-mismatch','hosted-browser-timeout','hosted-browser-recovering','browser-acquire-unavailable','wrong-instrument','timeframe-control-unavailable'].includes(error?.message)) return {ok:false,failure:error.message};
     // No provider error text, cookies, URLs or page contents cross this boundary.
-    return { ok:false, failure:stage==='session' ? 'hosted-chart-login-required' : `chart-check-${stage}-failed` };
+    return { ok:false, failure:stage==='session' ? 'hosted-chart-login-required' : `chart-check-${stage}-failed`, timing, errorType:['TimeoutError','ProtocolError','TargetCloseError'].includes(error?.name)?error.name:'Error' };
   } finally {
     if (browser) { try { await browser.disconnect(); } catch { /* read-only preflight complete */ } }
   }

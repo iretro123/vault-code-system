@@ -14,7 +14,7 @@ async function authKey(env, usage) {
   return crypto.subtle.importKey('raw',hexBytes(env.CAPTURE_AUTH_KEY),'AES-GCM',false,[usage]);
 }
 
-export async function openChartSession(env, lifetimeMs=28_000) {
+export async function openChartSession(env, lifetimeMs=34_000) {
   const deadline=Date.now()+lifetimeMs;
   const sessionId=await env.CHART_IMAGES.get('private:session') || env.CAPTURE_SESSION_ID;
   if (sessionId) {

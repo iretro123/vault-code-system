@@ -41,3 +41,11 @@ This changes trading semantics: a new 5m/15m zone becomes official at its candle
 6. Verify real new-zone, entry, exit and removal events, genuine matching images, save/reload agreement, and member delivery for both symbols/timeframes. Do not synthesize market events to claim success. No-zone probes alone cannot prove this.
 
 Do not activate this candidate piecemeal during an unresolved capture incident. Never loosen validation or draw replacement zones to conceal disagreement. Preserve source warnings and genuine prior images with their original timestamps.
+
+## Additional confirmed capture timeout defect
+
+A QQQ operator trace returned TargetCloseError after session 3,668 ms + viewport 271 ms + timeframe 12,848 ms + framing 10,714 ms + source 270 ms = 27,771 ms. The connection watchdog was configured to close the actual transport at 28,000 ms, regardless of whether work was progressing. That explains failures at different later stages; it was not proof of account logout.
+
+Browser work now has 34 seconds inside the unchanged 40-second database lease; six seconds remain for disconnect/result persistence. The immediate HTTP fast path still passes its explicit 22-second limit and durable queue retries remain active. This does not increase the 90-second event freshness limit or remove the six-second individual-command timeout. A fake-timer regression verifies a 32-second capture is not killed and the connection still closes by 34 seconds.
+
+After deployment, the QQQ15 probe completed in approximately 33 seconds, with genuine demand 736.91–739.35 matching the live alert. Member UI independently loaded the original 2350×1438 image for that zone (captured 13:31:50 ET). This earlier member image was produced before the watchdog-budget deployment, so it must not be presented as proof of post-deployment latency. The successful 13:40 operator image is separate and not attached to the older event.

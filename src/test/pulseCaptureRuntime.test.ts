@@ -29,7 +29,7 @@ describe('durable screenshot processing',()=>{
     expect(await runCapture(env,rpc)).toBe('more');
     expect(page.setViewport).toHaveBeenCalledWith({width:1280,height:800,deviceScaleFactor:2});
     expect(chart.screenshot).toHaveBeenCalledWith({type:'png',clip:{width:1100,height:800},captureBeyondViewport:false});
-    expect(session.openChartSession).toHaveBeenCalledWith(env,28000);
+    expect(session.openChartSession).toHaveBeenCalledWith(env,34000);
     expect(rpc).toHaveBeenLastCalledWith('pulse_spy_capture_finish',expect.objectContaining({p_event_id:'event',p_result:expect.objectContaining({ok:true,timeframe:5,symbol:'AMEX:SPY'})}),5000);
   });
   it('records exact rejected bounds without copying page content or credentials',async()=>{

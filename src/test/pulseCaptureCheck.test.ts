@@ -32,7 +32,7 @@ describe('operator chart preflight',()=>{
  });
  it('does not return private browser exceptions',async()=>{
   session.openChartSession.mockRejectedValue(new Error('secret cookie and private URL'));
-  expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}})).toEqual({ok:false,failure:'hosted-chart-login-required'});
+  expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}})).toEqual({ok:false,failure:'hosted-chart-login-required',timing:{},errorType:'Error'});
  });
 });
 
