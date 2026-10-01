@@ -147,8 +147,10 @@ plotshape(showBOS and bearBos, title="Bear BOS", style=shape.labeldown, location
 demandTouchPrev = not na(demandTop) and high[1] >= demandBot and low[1] <= demandTop and not closeInside(demandTop, demandBot, close[1])
 supplyTouchPrev = not na(supplyTop) and high[1] >= supplyBot and low[1] <= supplyTop and not closeInside(supplyTop, supplyBot, close[1])
 
-buySignal = showSignals and inSession and allowLong and demandTouchPrev and high > high[1]
-sellSignal = showSignals and inSession and allowShort and supplyTouchPrev and low < low[1]
+// Keep the original enabled signal logic for zone removal. The display toggle
+// must only hide markers, never keep an already-used zone alive.
+buySignal = inSession and allowLong and demandTouchPrev and high > high[1]
+sellSignal = inSession and allowShort and supplyTouchPrev and low < low[1]
 
 if deleteAfterSignal and buySignal and not na(demandBox)
     box.delete(demandBox)
@@ -162,8 +164,8 @@ if deleteAfterSignal and sellSignal and not na(supplyBox)
     supplyTop := na
     supplyBot := na
 
-plotshape(buySignal, title="Buy", style=shape.triangleup, location=location.belowbar, size=size.tiny, color=color.lime, text="BUY", textcolor=color.black)
-plotshape(sellSignal, title="Sell", style=shape.triangledown, location=location.abovebar, size=size.tiny, color=color.red, text="SELL", textcolor=color.white)
+plotshape(showSignals and buySignal, title="Buy", style=shape.triangleup, location=location.belowbar, size=size.tiny, color=color.lime, text="BUY", textcolor=color.black)
+plotshape(showSignals and sellSignal, title="Sell", style=shape.triangledown, location=location.abovebar, size=size.tiny, color=color.red, text="SELL", textcolor=color.white)
 
 alertcondition(buySignal, "Vault Buy", "Vault Trading Academy buy signal")
 alertcondition(sellSignal, "Vault Sell", "Vault Trading Academy sell signal")

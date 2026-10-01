@@ -1,4 +1,5 @@
 import {expect,it,vi} from 'vitest';
+import {readFileSync} from 'node:fs';
 import {verifyCaptureSource,MULTI_INDICATOR} from '../../workers/pulse-spy/capture-policy.js';
 import {selectChartTimeframe} from '../../workers/pulse-spy/capture-source.js';
 import {validatePulseSnapshot,postsFromSnapshot} from '../../supabase/functions/_shared/pulse/snapshots';
@@ -6,6 +7,15 @@ const now=Date.parse('2026-09-30T15:00:30Z');
 const bar=now-30000;
 const zone={zoneId:'QQQ:5:demand:123',side:'demand' as const,lower:498,upper:502};
 const snapshot={kind:'snapshot',source:'indicator',symbol:'NASDAQ:QQQ',timeframe:5,at:now,barAt:bar,price:500,confirmed:false,zones:[zone],bars:[{t:bar-300000,o:500,h:501,l:498,c:500},{t:bar,o:500,h:501,l:499,c:500}]};
+it('preserves SPY zone-removal calculations independently of marker visibility',()=>{
+ const original=readFileSync('scripts/vault-zone-pulse-live.pine','utf8');
+ const shared=readFileSync('scripts/vault-zone-pulse-multi.pine','utf8');
+ for(const signal of ['buySignal','sellSignal']) {
+  const base=original.match(new RegExp('^'+signal+' = (.*)$','m'))![1].replace('showSignals and ','');
+  expect(shared.match(new RegExp('^'+signal+' = (.*)$','m'))![1]).toBe(base);
+  expect(shared).toContain('plotshape(showSignals and '+signal+',');
+ }
+});
 it('accepts genuine QQQ schema and preserves the symbol through events',()=>{
  const data=validatePulseSnapshot(snapshot,now); const posts=postsFromSnapshot([],data,now);
  expect(posts).toHaveLength(1);expect(posts[0].symbol).toBe('NASDAQ:QQQ');expect(posts[0].zoneId).toBe(zone.zoneId);

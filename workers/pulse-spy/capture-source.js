@@ -50,7 +50,7 @@ export async function readChartSource(page) {
   return page.evaluate(()=>({
     label:document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'',
     text:document.querySelector('.chart-widget')?.innerText||'',pageText:document.body.innerText,
-    zoneText:Array.from(document.querySelectorAll('[role="row"]')).find(el=>el.innerText.match(/Vault Zone Pulse - (?:SPY Live|SPY & QQQ)/))?.innerText||'',
+    zoneText:(Array.from(document.querySelectorAll('[role="row"]')).find(el=>el.innerText.includes('Vault Zone Pulse - SPY & QQQ')) || Array.from(document.querySelectorAll('[role="row"]')).find(el=>el.innerText.includes('Vault Zone Pulse - SPY Live')))?.innerText||'',
   }));
 }
 export function readZoneBounds(text) {

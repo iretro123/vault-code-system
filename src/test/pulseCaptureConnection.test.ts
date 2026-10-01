@@ -2,9 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mocks=vi.hoisted(()=>({connect:vi.fn(),acquire:vi.fn(),create:vi.fn(),sessions:vi.fn()}));
 vi.mock('../../workers/pulse-spy/node_modules/@cloudflare/puppeteer/lib/esm/puppeteer/puppeteer-cloudflare.js',()=>({default:mocks}));
 vi.mock('../../workers/pulse-spy/node_modules/@cloudflare/puppeteer/lib/esm/puppeteer/cloudflare/WorkersWebSocketTransport.js',()=>({WorkersWebSocketTransport:{create:mocks.create}}));
-import { connectChartBrowser, prepareChartReplacement } from '../../workers/pulse-spy/capture-connection.js';
+import { captureTargetFilter, connectChartBrowser, prepareChartReplacement } from '../../workers/pulse-spy/capture-connection.js';
 afterEach(()=>{vi.useRealTimers();vi.clearAllMocks();});
 describe('chart connection watchdog',()=>{
+ it('attaches chart tabs without waiting on editor and analytics workers',()=>{
+  for(const type of ['page','tab','browser']) expect(captureTargetFilter({type:()=>type})).toBe(true);
+  for(const type of ['service_worker','shared_worker','other','background_page']) expect(captureTargetFilter({type:()=>type})).toBe(false);
+ });
  it('does not abort an upgraded socket after the handshake deadline',async()=>{
   vi.useFakeTimers();let signal: AbortSignal;
   const binding={fetch:vi.fn(async(_url,init)=>{signal=init.signal;return {};})};
@@ -21,7 +25,7 @@ describe('chart connection watchdog',()=>{
   vi.useFakeTimers();const transport={close:vi.fn()};const browser={disconnect:vi.fn()};
   mocks.create.mockResolvedValue(transport);mocks.connect.mockResolvedValue(browser);
   const connected=await connectChartBrowser({},'dedicated',22000);
-  expect(mocks.connect).toHaveBeenCalledWith({transport,protocolTimeout:6000,defaultViewport:null});
+  expect(mocks.connect).toHaveBeenCalledWith({transport,protocolTimeout:6000,defaultViewport:null,targetFilter:captureTargetFilter});
   await vi.advanceTimersByTimeAsync(22000);expect(transport.close).toHaveBeenCalledOnce();
   await connected.disconnect();expect(browser.disconnect).toBeDefined();
  });

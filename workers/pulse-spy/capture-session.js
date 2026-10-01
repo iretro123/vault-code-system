@@ -16,6 +16,7 @@ export async function openChartSession(env, lifetimeMs=28_000) {
     let existing;
     try { existing=await connectChartBrowser(env.BROWSER,sessionId,Math.max(1,deadline-Date.now())); } catch { /* Restore an expired browser using the approved saved login. */ }
     if (existing) {
+      let stage='pages';
       try {
         const pages=await existing.pages();
         let page=pages.find(p=>p.url().startsWith(CHART_URL));
@@ -25,12 +26,16 @@ export async function openChartSession(env, lifetimeMs=28_000) {
           if (page) await page.goto(CHART_URL,{waitUntil:'domcontentloaded',timeout:12_000});
         }
         if (!page) throw new Error('hosted-chart-login-required');
+        stage='foreground';
         await page.bringToFront();
+        stage='reconnect';
         await reconnectChart(env,page);
+        stage='ready';
         if (restoring) await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:6000});
         await env.CHART_IMAGES.put(`private:failed-connect:${sessionId}`,'0',{expirationTtl:120});
         return existing;
       } catch(error) {
+        console.warn(JSON.stringify({event:'pulse-browser-session-failed',stage,reason:['chart-session-conflict','hosted-chart-login-required'].includes(error?.message)?error.message:'protocol'}));
         await existing.disconnect();
         // Account conflicts and login challenges must not trigger browser churn.
         if (['chart-session-conflict','hosted-chart-login-required'].includes(error?.message)) throw error;

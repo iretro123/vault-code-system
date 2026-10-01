@@ -1,9 +1,15 @@
 import puppeteer from '@cloudflare/puppeteer';
 import { WorkersWebSocketTransport } from '@cloudflare/puppeteer/internal/cloudflare/WorkersWebSocketTransport.js';
 
+// Capture needs only top-level tabs. Editor/analytics workers can remain in
+// discovery after manual maintenance and must not hold chart initialization.
+export const captureTargetFilter=target=>['browser','page','tab'].includes(target.type());
+
 // The pinned Cloudflare binding overload drops protocolTimeout. Use its transport
 // with public ConnectOptions so a dead renderer cannot outlive the database lease.
 export async function connectChartBrowser(binding, sessionId, lifetimeMs=28_000) {
+  const startedAt=Date.now();
+  let phase='upgrade', upgradeStatus;
   const controller=new AbortController();
   let transport, closed=false, rejectDeadline;
   const closeTransport=()=>{
@@ -18,7 +24,7 @@ export async function connectChartBrowser(binding, sessionId, lifetimeMs=28_000)
   // Abort only a pending upgrade, not the established WebSocket six seconds later.
   const bounded={fetch:async(url,init={})=>{
     const handshake=setTimeout(()=>controller.abort(),6000);
-    try {return await binding.fetch(url,{...init,signal:controller.signal});}
+    try {const response=await binding.fetch(url,{...init,signal:controller.signal});upgradeStatus=response.status;return response;}
     finally {clearTimeout(handshake);}
   }};
   try {
@@ -28,12 +34,16 @@ export async function connectChartBrowser(binding, sessionId, lifetimeMs=28_000)
       return value;
     }),deadline]);
     if (controller.signal.aborted) throw new Error('hosted-browser-timeout');
-    const browser=await Promise.race([puppeteer.connect({transport,protocolTimeout:6000,defaultViewport:null}),deadline]);
+    phase='initialize';
+    const browser=await Promise.race([puppeteer.connect({transport,protocolTimeout:6000,defaultViewport:null,targetFilter:captureTargetFilter}),deadline]);
     clearTimeout(initialization);
     const disconnect=browser.disconnect.bind(browser);
     browser.disconnect=async()=>{clearTimeout(timer);controller.abort();try { await disconnect(); } finally {closeTransport();}};
     return browser;
-  } catch {
+  } catch(error) {
+    // Fixed categories only: provider messages can contain private URLs.
+    const reason=/timed? ?out|timeout/i.test(error?.message||'') ? 'timeout' : /closed/i.test(error?.message||'') ? 'closed' : 'protocol';
+    console.warn(JSON.stringify({event:'pulse-browser-connect-failed',phase,reason,upgradeStatus,elapsedMs:Date.now()-startedAt}));
     clearTimeout(initialization);clearTimeout(timer);controller.abort();closeTransport();
     throw new Error('hosted-browser-timeout');
   }
