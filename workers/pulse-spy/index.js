@@ -23,7 +23,15 @@ export default {
         method: 'POST', headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({ p_token: env.WORKER_TOKEN, ...args }), signal: AbortSignal.timeout(2200),
       });
-      if (!response.ok) throw new Error('Pulse persistence unavailable');
+      if (!response.ok) {
+        const failure = await response.json().catch(() => ({}));
+        // Diagnose persistence failures without logging payloads, URLs, tokens,
+        // database detail/hint fields, or member information.
+        console.warn(JSON.stringify({ event: 'pulse-persistence-rejected', rpc: name,
+          status: response.status, code: /^[A-Z0-9]{5}$/.test(failure.code || '') ? failure.code : 'unknown',
+          ambiguousColumn: failure.code === '42702' ? failure.message?.match(/^column reference "([a-zA-Z_.]+)" is ambiguous$/)?.[1] : undefined }));
+        throw new Error('Pulse persistence unavailable');
+      }
       return response.json();
     }
     const qqq = path.startsWith('/webhook/qqq/');
