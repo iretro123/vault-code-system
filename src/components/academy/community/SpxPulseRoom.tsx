@@ -49,7 +49,11 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
   const otherQuote = feed.quotes?.[otherTf];
   const otherHasZone = monitoring && connected && !!otherQuote && now >= otherQuote.at
     && now - otherQuote.at <= 90000 && otherQuote.zones.length > 0;
-  const closingSnapshot = !!quote && (!monitoring || (!fresh && !!quote.chartUrl));
+  // A new session resets visible history, not zones the fresh indicator still
+  // reports. Render their current bounds and exact-zone saved chart even when
+  // the zone has not produced another event in today's session yet.
+  const closingSnapshot = !!quote && (!monitoring || (!fresh && !!quote.chartUrl)
+    || (fresh && quote.zones.length > 0 && posts.length === 0));
   const closingChart = quote && allPosts.filter(post => post.symbol === symbol && !!post.chartUrl
     && !!post.capturedAt && post.capturedAt <= quote.at
     && quote.zones.some(zone => zone.zoneId === post.zoneId && zone.side === post.side

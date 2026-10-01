@@ -163,6 +163,23 @@ describe("Live Pulse channel", () => {
     expect(state.feed.posts).toHaveLength(3);
   });
 
+  it("keeps a freshly confirmed active zone and its exact chart across the session reset", () => {
+    const view=setup();
+    state.feed.posts=[{...original,capturedAt:at-200000}];
+    const next=Date.parse("2026-09-28T13:30:05Z");
+    state.feed.quotes![5]={at:next,price:772,zones:[{zoneId:original.zoneId,side:original.side,lower:original.lower!,upper:original.upper!}]};
+    act(()=>{vi.setSystemTime(next+1000);vi.advanceTimersByTime(1000);});
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.getByText("$770.83 – $771.30")).toBeInTheDocument();
+    expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src",original.chartUrl);
+    expect(screen.queryByText("Watching for an update.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button",{name:/Earlier updates/})).not.toBeInTheDocument();
+    state.feed.quotes![5]!.zones=[];
+    view.rerender(<SpxPulseRoom/>);
+    expect(screen.getByText("No active zone")).toBeInTheDocument();
+    expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
+  });
+
 });
 
 it('switches symbols without relabeling SPY prices, history or images as QQQ',()=>{
