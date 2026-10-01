@@ -32,7 +32,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
     if (!env.BROWSER || !env.CHART_IMAGES) throw new Error('hosted-browser-not-configured');
     // openChartSession can use a persisted session or an authorized encrypted
     // login. An initial CAPTURE_SESSION_ID is not required for recovery.
-    browser = await openChartSession(env,Math.min(34_000,budgetMs));
+    browser = await openChartSession(env,Math.min(50_000,budgetMs));
     mark('connectMs');
     const pages = await browser.pages();
     const page = pages.find(p=>p.url().startsWith(CHART_URL));

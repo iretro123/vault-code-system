@@ -29,12 +29,12 @@ describe('chart connection watchdog',()=>{
   await vi.advanceTimersByTimeAsync(22000);expect(transport.close).toHaveBeenCalledOnce();
   await connected.disconnect();expect(browser.disconnect).toBeDefined();
  });
- it('keeps a slow symbol-switch capture alive beyond 28s but closes before the 40s lease',async()=>{
+ it('keeps a slow symbol-switch capture alive beyond the old cutoff but closes before the 60s lease',async()=>{
   vi.useFakeTimers();const transport={close:vi.fn()};
   mocks.create.mockResolvedValue(transport);mocks.connect.mockResolvedValue({disconnect:vi.fn()});
   const connected=await connectChartBrowser({},'dedicated');
-  await vi.advanceTimersByTimeAsync(32000);expect(transport.close).not.toHaveBeenCalled();
-  await vi.advanceTimersByTimeAsync(2000);expect(transport.close).toHaveBeenCalledOnce();
+  await vi.advanceTimersByTimeAsync(45000);expect(transport.close).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(5000);expect(transport.close).toHaveBeenCalledOnce();
   await connected.disconnect();expect(vi.getTimerCount()).toBe(0);
  });
  it('rejects a stalled initialization even when transport callbacks throw',async()=>{

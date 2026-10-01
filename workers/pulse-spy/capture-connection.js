@@ -5,11 +5,11 @@ import { WorkersWebSocketTransport } from '@cloudflare/puppeteer/internal/cloudf
 // discovery after manual maintenance and must not hold chart initialization.
 export const captureTargetFilter=target=>['browser','page','tab'].includes(target.type());
 
-// The DB lease is 40 seconds. Allow 34 seconds for browser work and reserve
-// six for disconnect/result persistence; HTTP fast-path callers still pass 22s.
+// The DB lease is 60 seconds. Allow 50 seconds for browser work and reserve
+// ten for disconnect/result persistence; HTTP fast-path callers still pass 22s.
 // The pinned Cloudflare binding overload drops protocolTimeout. Use its transport
 // with public ConnectOptions so a dead renderer cannot outlive the database lease.
-export async function connectChartBrowser(binding, sessionId, lifetimeMs=34_000) {
+export async function connectChartBrowser(binding, sessionId, lifetimeMs=50_000) {
   const startedAt=Date.now();
   let phase='upgrade', upgradeStatus;
   const controller=new AbortController();
