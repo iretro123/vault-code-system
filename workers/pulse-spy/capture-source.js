@@ -47,11 +47,19 @@ export async function selectChartTimeframe(page,timeframe,symbol='AMEX:SPY') {
 }
 
 export async function readChartSource(page) {
-  return page.evaluate(()=>({
-    label:document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'',
+  return page.evaluate(()=>{
+    const label=document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'';
+    const rows=Array.from(document.querySelectorAll('[role="row"]'));
+    const shared=rows.find(el=>el.innerText.includes('Vault Zone Pulse - SPY & QQQ'));
+    const legacy=rows.find(el=>el.innerText.includes('Vault Zone Pulse - SPY Live'));
+    // SPY server alerts still use the established SPY study. QQQ must never
+    // borrow its fields merely because both studies are on the saved layout.
+    const selected=label.includes(':QQQ,') ? shared : legacy || shared;
+    return {
+    label,
     text:document.querySelector('.chart-widget')?.innerText||'',pageText:document.body.innerText,
-    zoneText:(Array.from(document.querySelectorAll('[role="row"]')).find(el=>el.innerText.includes('Vault Zone Pulse - SPY & QQQ')) || Array.from(document.querySelectorAll('[role="row"]')).find(el=>el.innerText.includes('Vault Zone Pulse - SPY Live')))?.innerText||'',
-  }));
+    zoneText:selected?.innerText||'',
+  };});
 }
 export function readZoneBounds(text) {
   const result={};
