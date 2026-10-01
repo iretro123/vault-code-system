@@ -57,3 +57,9 @@ A genuine QQQ5 zone arrived at 13:45:55 while maintenance capture was paused. Th
 Migration `20261001175000_pulse_queue_while_paused.sql` now durably queues fresh events even when execution is paused. The claim function still refuses to run while disabled, and expired original events still require the existing exact-active-zone refresh path. The SQL rollback test verifies queued-during-pause, no execution while paused, and rejection of old replay events. No test fixture was committed. This does not synthesize event-time images or attach operator-probe images to member events.
 
 Final live sample: QQQ5 chart/feed demand743.01–743.76, QQQ15 demand736.91–739.35; SPY5/15 feeds empty, matching the earlier shared-study probes. All four feeds continued receiving. Earlier QQQ intermittent disagreement remains unproven as resolved until the source/alert migration and reload/event tests above are completed.
+
+## October 1 event-order health correction
+
+Current image health now selects the newest market event with a capture result, rather than the most recently attempted job. A late retry of an older event cannot override a newer verified chart from the same symbol/timeframe. A failure on the newest event still reports attention; another symbol/timeframe and idle connection checks cannot clear it. Historical failures and original image timestamps remain unchanged.
+
+Migration `20261001193000_pulse_capture_health_event_order.sql` is deployed. Transaction-only regression tests cover historical retry ordering, newest-event failure visibility, retained diagnostics, and existing symbol/timeframe health isolation. This fixes status ordering, not the underlying intermittent Pine/alert disagreement. No Pine or alert snapshot changed.
