@@ -31,12 +31,11 @@ export async function setStudyVisibility(page,name,show) {
 }
 
 export async function selectCaptureStudy(page,symbol) {
-  let selected=symbol==='NASDAQ:QQQ'?MULTI_INDICATOR:INDICATOR;
-  let wasVisible=await setStudyVisibility(page,selected,true);
-  if (wasVisible===null && symbol==='AMEX:SPY') {
-    selected=MULTI_INDICATOR;
-    wasVisible=await setStudyVisibility(page,selected,true);
-  }
+  if (!['AMEX:SPY','NASDAQ:QQQ'].includes(symbol)) throw new Error('wrong-instrument');
+  // One lifecycle implementation for both symbols. The legacy SPY study
+  // couples marker visibility to zone deletion and can retain retired zones.
+  const selected=MULTI_INDICATOR;
+  const wasVisible=await setStudyVisibility(page,selected,true);
   if (wasVisible===null) throw new Error('pulse-indicator-missing');
   const other=selected===INDICATOR?MULTI_INDICATOR:INDICATOR;
   const otherWasVisible=await setStudyVisibility(page,other,false);

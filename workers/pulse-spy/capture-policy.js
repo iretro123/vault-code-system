@@ -1,8 +1,8 @@
 export const INDICATOR = 'Vault Zone Pulse - SPY Live';
 export const MULTI_INDICATOR = 'Vault Zone Pulse - SPY & QQQ';
 export function sourceIndicator(text,symbol) {
-  if (symbol==='AMEX:SPY' && text.includes(INDICATOR)) return INDICATOR;
   if (text.includes(MULTI_INDICATOR)) return MULTI_INDICATOR;
+  if (symbol==='AMEX:SPY' && text.includes(INDICATOR)) return INDICATOR;
   return null;
 }
 export const CHART_URL = 'https://www.tradingview.com/chart/Db5ipsDu/';

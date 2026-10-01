@@ -23,10 +23,11 @@ it('reads the shared study rather than a legacy study left on the layout',async(
  expect(source.zoneText).toContain('Demand lower 3');
  document.querySelector('canvas')!.setAttribute('aria-label','Chart for AMEX:SPY, 5 minutes');
  const spy=await readChartSource({evaluate:async(fn)=>fn()});
- expect(spy.zoneText).toContain('Demand lower 1');
- expect(sourceIndicator(INDICATOR+'\n'+MULTI_INDICATOR,'AMEX:SPY')).toBe(INDICATOR);
+ expect(spy.zoneText).toContain('Demand lower 3');
+ expect(sourceIndicator(INDICATOR+'\n'+MULTI_INDICATOR,'AMEX:SPY')).toBe(MULTI_INDICATOR);
  expect(sourceIndicator(INDICATOR+'\n'+MULTI_INDICATOR,'NASDAQ:QQQ')).toBe(MULTI_INDICATOR);
  rows[1].remove();
+ expect((await readChartSource({evaluate:async(fn)=>fn()})).zoneText).toBe('');
  document.querySelector('canvas')!.setAttribute('aria-label','Chart for NASDAQ:QQQ, 5 minutes');
  expect((await readChartSource({evaluate:async(fn)=>fn()})).zoneText).toBe('');
  document.body.innerHTML='';

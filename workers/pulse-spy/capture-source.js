@@ -16,7 +16,11 @@ export async function setDataWindow(page,open) {
       const tab=document.querySelector('#data-window');
       if (!tab) return false;
       if (tab.getAttribute('aria-selected')!=='true') { tab.click(); return false; }
-      return Array.from(document.querySelectorAll('[role="row"]')).some(el=>el.innerText.match(/Vault Zone Pulse - (?:SPY Live|SPY & QQQ)/) && el.innerText.includes('Demand lower'));
+      return Array.from(document.querySelectorAll('[role="row"]')).some(el=>{
+        const text=el.innerText;
+        return text.includes('Vault Zone Pulse - SPY & QQQ') && !text.includes('Vault Zone Pulse - SPY Live') &&
+          ['Demand lower','Demand upper','Supply lower','Supply upper'].every(field=>text.includes(field));
+      });
     },{timeout:6000});
   } else {
     await page.waitForFunction(()=>document.querySelector('button[aria-label="Object tree and data window"]')?.getAttribute('aria-pressed')!=='true',{timeout:3000});
@@ -81,9 +85,9 @@ export async function readChartSource(page) {
       .sort((a,b)=>a.innerText.length-b.innerText.length)[0];
     const shared=study(sharedName,legacyName);
     const legacy=study(legacyName,sharedName);
-    // SPY server alerts still use the established SPY study. QQQ must never
-    // borrow its fields merely because both studies are on the saved layout.
-    const selected=label.includes(':QQQ,') ? shared : legacy || shared;
+    // Never silently fall back to the legacy lifecycle. Both instruments use
+    // the shared study selected by selectCaptureStudy before this read.
+    const selected=shared;
     return {
     label,
     text:document.querySelector('.chart-widget')?.innerText||'',pageText:document.body.innerText,

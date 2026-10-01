@@ -14,17 +14,19 @@ function setup(){
 }
 afterEach(()=>{document.body.innerHTML='';});
 describe('capture indicator isolation',()=>{
- it('shows the hidden SPY study and hides the unrelated shared study',async()=>{
-  const page=setup();const state=await selectCaptureStudy(page,'AMEX:SPY');
-  expect(state).toEqual({selected:INDICATOR,wasVisible:false,otherWasVisible:true});
+ it('shows the shared study and hides legacy for either symbol without switching lifecycles',async()=>{
+  const page=setup();
+  const buttons=document.querySelectorAll('button');
+  buttons[0].setAttribute('aria-label','hide');buttons[1].setAttribute('aria-label','show');
+  const state=await selectCaptureStudy(page,'AMEX:SPY');
+  expect(state).toEqual({selected:MULTI_INDICATOR,wasVisible:false,otherWasVisible:true});
   expect(page.keyboard.press).toHaveBeenCalledTimes(2);
-  expect([...document.querySelectorAll('button')].map(b=>b.getAttribute('aria-label'))).toEqual(['hide','show']);
-  await selectCaptureStudy(page,'AMEX:SPY');expect(page.keyboard.press).toHaveBeenCalledTimes(2);
+  expect([...buttons].map(b=>b.getAttribute('aria-label'))).toEqual(['show','hide']);
+  await selectCaptureStudy(page,'NASDAQ:QQQ');expect(page.keyboard.press).toHaveBeenCalledTimes(2);
  });
- it('switches to only the shared study on QQQ',async()=>{
-  const page=setup();await selectCaptureStudy(page,'AMEX:SPY');
-  await selectCaptureStudy(page,'NASDAQ:QQQ');
-  expect([...document.querySelectorAll('button')].map(b=>b.getAttribute('aria-label'))).toEqual(['show','hide']);
+ it('does not fall back to stale legacy SPY when shared is missing',async()=>{
+  const page=setup();document.body.lastElementChild!.remove();
+  await expect(selectCaptureStudy(page,'AMEX:SPY')).rejects.toThrow('pulse-indicator-missing');
  });
  it('fails safely when the required shared study is absent',async()=>{
   const page=setup();document.body.lastElementChild!.remove();

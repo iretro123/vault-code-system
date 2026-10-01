@@ -39,12 +39,18 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
     next('zones');
     await setDataWindow(page,true);
     const chartSource=await readChartSource(page);
-    const zones=readZoneBounds(chartSource.zoneText);
+
     // Bounded diagnostics identify cross-study disagreement without exporting
     // page text, browser credentials, or unrelated account data.
     const studyZones={};
     for (const [name,text] of Object.entries(chartSource.studyTexts||{})) {
       try { studyZones[name]=readZoneBounds(text); } catch { studyZones[name]=null; }
+    }
+    let zones;
+    try { zones=readZoneBounds(chartSource.zoneText); }
+    catch {
+      await setDataWindow(page,false);
+      return {ok:false,failure:'chart-zone-data-unavailable',symbol,timeframe:chartTimeframe,studyZones,indicatorVisibility,enclosingStudyRows:chartSource.enclosingStudyRows||0};
     }
     await setDataWindow(page,false);
     next('image');
