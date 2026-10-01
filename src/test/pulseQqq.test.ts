@@ -51,7 +51,7 @@ it('never accepts a SPY render left behind after a QQQ switch',async()=>{
 });
 
 it('answers only leave-page dialogs during an authorized symbol navigation',async()=>{
- let handler: (dialog:any)=>void;
+ let handler: (dialog:{type:()=>string;accept:()=>Promise<void>;dismiss:()=>Promise<void>})=>void;
  const accept=vi.fn().mockResolvedValue(undefined),dismiss=vi.fn().mockResolvedValue(undefined);
  const page={on:vi.fn((_event,fn)=>{handler=fn;}),off:vi.fn(),goto:vi.fn(async()=>{handler({type:()=> 'beforeunload',accept,dismiss});})};
  await navigateCaptureChart(page,'https://www.tradingview.com/chart/Db5ipsDu/?symbol=NASDAQ%3AQQQ&interval=5');
@@ -61,3 +61,4 @@ it('answers only leave-page dialogs during an authorized symbol navigation',asyn
  await expect(navigateCaptureChart(page,'https://www.tradingview.com/chart/Db5ipsDu/?symbol=NASDAQ%3AQQQ&interval=5')).rejects.toThrow('chart-needs-attention');
  expect(accept).not.toHaveBeenCalled();expect(dismiss).toHaveBeenCalledOnce();
 });
+vi.mock('../../workers/pulse-spy/study-visibility.js',()=>({selectCaptureStudy:vi.fn()}));

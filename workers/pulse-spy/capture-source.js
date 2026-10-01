@@ -1,4 +1,5 @@
 import {CHART_URL, chartMatches} from './capture-policy.js';
+import {selectCaptureStudy} from './study-visibility.js';
 // Batch DOM-only actions into one browser round trip per phase. Do not wait for
 // network idle: a live chart intentionally keeps network connections open.
 export async function setDataWindow(page,open) {
@@ -44,6 +45,7 @@ export async function selectChartTimeframe(page,timeframe,symbol='AMEX:SPY') {
   },{timeout:6000},{tf:timeframe,ticker:symbol.split(':')[1]});
   const verified=await page.evaluate(()=>document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'');
   if (!chartMatches(verified,symbol,timeframe)) throw new Error('wrong-instrument');
+  return selectCaptureStudy(page,symbol);
 }
 
 export async function navigateCaptureChart(page,url) {
@@ -72,8 +74,13 @@ export async function readChartSource(page) {
   return page.evaluate(()=>{
     const label=document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'';
     const rows=Array.from(document.querySelectorAll('[role="row"]'));
-    const shared=rows.find(el=>el.innerText.includes('Vault Zone Pulse - SPY & QQQ'));
-    const legacy=rows.find(el=>el.innerText.includes('Vault Zone Pulse - SPY Live'));
+    const sharedName='Vault Zone Pulse - SPY & QQQ',legacyName='Vault Zone Pulse - SPY Live';
+    // Data Window can expose enclosing rows as well as study rows. Never read
+    // the first bounds from an enclosing row containing both studies.
+    const study=(name,other)=>rows.filter(el=>el.innerText.includes(name) && !el.innerText.includes(other) && el.innerText.includes('Demand lower'))
+      .sort((a,b)=>a.innerText.length-b.innerText.length)[0];
+    const shared=study(sharedName,legacyName);
+    const legacy=study(legacyName,sharedName);
     // SPY server alerts still use the established SPY study. QQQ must never
     // borrow its fields merely because both studies are on the saved layout.
     const selected=label.includes(':QQQ,') ? shared : legacy || shared;
@@ -81,6 +88,8 @@ export async function readChartSource(page) {
     label,
     text:document.querySelector('.chart-widget')?.innerText||'',pageText:document.body.innerText,
     zoneText:selected?.innerText||'',
+    studyTexts:{legacy:legacy?.innerText||'',shared:shared?.innerText||''},
+    enclosingStudyRows:rows.filter(el=>el.innerText.includes(sharedName) && el.innerText.includes(legacyName)).length,
   };});
 }
 export function readZoneBounds(text) {

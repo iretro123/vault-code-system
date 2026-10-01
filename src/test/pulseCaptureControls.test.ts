@@ -1,4 +1,5 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
+vi.mock('../../workers/pulse-spy/study-visibility.js',()=>({selectCaptureStudy:vi.fn()}));
 import {setDataWindow,selectChartTimeframe} from '../../workers/pulse-spy/capture-source.js';
 function browser(){return {evaluate:vi.fn(async(fn,arg)=>fn(arg)),mouse:{move:vi.fn()},waitForFunction:vi.fn(async(fn,_options,arg)=>{if(!fn(arg))throw Error('not ready');})};}
 beforeEach(()=>{document.body.innerHTML='';});

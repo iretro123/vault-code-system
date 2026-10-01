@@ -2,6 +2,7 @@ import { runLiquidityCapture } from './liquidity-capture.js';
 import { checkChartConnection, captureAuthorized } from './capture-check.js';
 import { drainCaptures, runCapture } from './capture.js';
 import { verifyImageSignature } from './capture-policy.js';
+import { archivePendingImages, readCaptureImage } from './image-archive.js';
 
 function database(env) {
   return async (name,args={},timeout=5000) => {
@@ -20,9 +21,10 @@ export default {
     if (request.method==='GET' && url.pathname.startsWith('/image/')) {
       const id=url.pathname.slice(7);
       if (!await verifyImageSignature(id,url.searchParams.get('expires'),url.searchParams.get('signature'),env.IMAGE_SIGNING_KEY)) return new Response('Not authorized',{status:403,headers:{'Cache-Control':'no-store'}});
-      const image=await env.CHART_IMAGES.getWithMetadata(id,'arrayBuffer');
-      const contentType=image.metadata?.contentType==='image/jpeg' ? 'image/jpeg' : 'image/png';
-      return image.value ? new Response(image.value,{headers:{'Content-Type':contentType,'Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}) : new Response('Chart unavailable',{status:404,headers:{'Cache-Control':'no-store'}});
+      try {
+        const image=await readCaptureImage(env,database(env),id);
+        return image ? new Response(image.bytes,{headers:{'Content-Type':image.contentType,'Cache-Control':'private, max-age=60','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','X-Pulse-Image-Source':image.source}}) : new Response('Chart unavailable',{status:404,headers:{'Cache-Control':'no-store'}});
+      } catch { return new Response('Chart temporarily unavailable',{status:503,headers:{'Cache-Control':'no-store'}}); }
     }
     if (request.method==='POST' && url.pathname==='/liquidity' && await captureAuthorized(request,env.WORKER_TOKEN)) {
       const tf=Number(url.searchParams.get('timeframe'));
@@ -55,6 +57,7 @@ export default {
   },
   async scheduled(_event,env,ctx) {
     ctx.waitUntil((async()=>{const rpc=database(env);if(await drainCaptures(env,rpc)) await runLiquidityCapture(env,rpc);})());
+    ctx.waitUntil(archivePendingImages(env,database(env)).catch(()=>console.warn('Pulse image archive deferred; next scheduled run will retry.')));
   },
   async queue(batch,env) {
     for (const message of batch.messages) {

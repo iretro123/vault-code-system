@@ -10,6 +10,7 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
   if (timeframe !== undefined && ![5,15].includes(timeframe)) return {ok:false,failure:'wrong-chart-timeframe'};
   let browser;
   let stage='session';
+  let indicatorVisibility;
   const timing={};
   let stageAt=Date.now();
   const next=name=>{const at=Date.now();timing[stage+'Ms']=at-stageAt;stageAt=at;stage=name;};
@@ -21,7 +22,7 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
     next('viewport');
     await page.setViewport({width:1280,height:800,deviceScaleFactor:2});
     next('timeframe');
-    if (timeframe || symbol !== 'AMEX:SPY') await selectChartTimeframe(page,timeframe || 5,symbol);
+    if (timeframe || symbol !== 'AMEX:SPY') indicatorVisibility=await selectChartTimeframe(page,timeframe || 5,symbol);
     next('framing');
     await frameChart(page,{reuse:true});
     next('source');
@@ -37,7 +38,14 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
     if (!sourceIndicator(source.text,symbol)) return {ok:false,failure:'pulse-indicator-missing'};
     next('zones');
     await setDataWindow(page,true);
-    const zones=readZoneBounds((await readChartSource(page)).zoneText);
+    const chartSource=await readChartSource(page);
+    const zones=readZoneBounds(chartSource.zoneText);
+    // Bounded diagnostics identify cross-study disagreement without exporting
+    // page text, browser credentials, or unrelated account data.
+    const studyZones={};
+    for (const [name,text] of Object.entries(chartSource.studyTexts||{})) {
+      try { studyZones[name]=readZoneBounds(text); } catch { studyZones[name]=null; }
+    }
     await setDataWindow(page,false);
     next('image');
     const chart=await page.$('.chart-widget');
@@ -52,7 +60,7 @@ export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') 
     next('recovery');
     try { await rememberChartLogin(env,page); } catch { /* Optional backup cannot invalidate a verified image. */ }
     next('done');
-    return { ok:true, timing, symbol, timeframe:chartTimeframe, indicator:sourceIndicator(source.text,symbol), zones, imageId, capturedAt };
+    return { ok:true, timing, symbol, timeframe:chartTimeframe, indicator:sourceIndicator(source.text,symbol), zones, studyZones, indicatorVisibility, enclosingStudyRows:chartSource.enclosingStudyRows||0, imageId, capturedAt };
   } catch(error) {
     if (['chart-session-conflict','chart-zone-data-unavailable','chart-zone-mismatch','hosted-browser-timeout','hosted-browser-recovering','browser-acquire-unavailable','wrong-instrument','timeframe-control-unavailable'].includes(error?.message)) return {ok:false,failure:error.message};
     // No provider error text, cookies, URLs or page contents cross this boundary.

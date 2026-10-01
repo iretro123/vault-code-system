@@ -31,3 +31,14 @@ it('reads the shared study rather than a legacy study left on the layout',async(
  expect((await readChartSource({evaluate:async(fn)=>fn()})).zoneText).toBe('');
  document.body.innerHTML='';
 });
+
+it('does not borrow bounds from an enclosing row containing both studies',async()=>{
+ document.body.innerHTML='<div class="chart-widget"><canvas aria-label="Chart for NASDAQ:QQQ, 5 minutes"></canvas></div><div role="row" id="outer"><div role="row" id="legacy"></div><div role="row" id="shared"></div></div>';
+ const legacy='Vault Zone Pulse - SPY Live Demand lower 100 Demand upper 101 Supply lower ∅ Supply upper ∅';
+ const shared='Vault Zone Pulse - SPY & QQQ Demand lower 739 Demand upper 740 Supply lower ∅ Supply upper ∅';
+ for(const [id,text] of Object.entries({outer:legacy+'\n'+shared,legacy,shared})) Object.defineProperty(document.getElementById(id),'innerText',{value:text});
+ const source=await readChartSource({evaluate:async(fn)=>fn()});
+ expect(readZoneBounds(source.zoneText).demand).toEqual({lower:739,upper:740});
+ expect(source.enclosingStudyRows).toBe(1);
+ document.body.innerHTML='';
+});
