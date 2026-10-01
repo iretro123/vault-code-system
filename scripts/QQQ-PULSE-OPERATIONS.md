@@ -23,3 +23,13 @@ Zone delivery and screenshot capture have separate health checks. Exact symbol, 
 Local tests cover route retirement, receiver validation, capture retries, pending-image refresh, no-zone presentation, and symbol preference isolation. Production operator checks passed for all four SPY/QQQ timeframes on October 1 before the open. Operator checks are not market events and do not prove a member device received a push. Record actual session deliveries separately in the continuity checkpoint.
 
 The regular-session adapter runs 09:30–16:00 America/New_York on weekdays and needs market ticks. Heartbeats target sixty seconds; state changes are rate limited to fifteen seconds. Do not describe this as zero latency or guaranteed availability.
+
+## October 1, 11:30 ET follow-up: readiness is degraded
+
+Fresh heartbeats on all four streams do not prove current chart agreement. QQQ 5m server alerts report supply 739.29–740.83 while an authenticated hosted operator check found both zone pairs empty. Its observed event at 11:08 has a genuine saved chart; later 11:18–11:28 entries/exits failed exact-zone validation. The member screen retains the exact-zone 11:08 original with its actual timestamp. QQQ 15m real observed/retired events and recent SPY15 events captured successfully.
+
+The current `capture_connected` field reflects capture success, including content mismatches, not only network connectivity. UI must say capture needs attention rather than asserting a disconnected browser. Preserve the warning and exact-zone checks. Do not mark QQQ screenshots fully healthy from quote freshness or a no-zone operator probe.
+
+Investigate alert-snapshot/chart settings and higher-timeframe repainting before changing trading logic: the shared source uses unconfirmed request.security values, which TradingView documents can differ after a chart reload. This is a candidate explanation for the verified divergence, not a proven diagnosis. Fixing it may alter zone selection and requires explicit validation; do not silently loosen screenshot validation or substitute a generated zone.
+
+Charts are event snapshots. New zone/state events enqueue captures, and a scheduled queue retries missing images for still-active exact zones. Successfully captured event images are not continuously replaced on a timer. Feed heartbeats and liquidity captures are separate.
