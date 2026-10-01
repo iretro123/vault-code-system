@@ -1,7 +1,7 @@
 import {expect,it,vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {verifyCaptureSource,MULTI_INDICATOR} from '../../workers/pulse-spy/capture-policy.js';
-import {selectChartTimeframe} from '../../workers/pulse-spy/capture-source.js';
+import {selectChartTimeframe,navigateCaptureChart} from '../../workers/pulse-spy/capture-source.js';
 import {validatePulseSnapshot,postsFromSnapshot} from '../../supabase/functions/_shared/pulse/snapshots';
 const now=Date.parse('2026-09-30T15:00:30Z');
 const bar=now-30000;
@@ -30,11 +30,23 @@ it('rejects SPY or an incorrect QQQ indicator as a QQQ image',()=>{
  expect(()=>verifyCaptureSource({...source,zoneText:'Demand lower 490\nDemand upper 495'},post,now)).toThrow('chart-zone-mismatch');
 });
 it('switches QQQ in the existing page and verifies its symbol after rendering',async()=>{
- const page={evaluate:vi.fn().mockResolvedValueOnce('Chart for AMEX:SPY, 5 minutes').mockResolvedValueOnce(true).mockResolvedValueOnce('Chart for NASDAQ:QQQ, 15 minutes'),goto:vi.fn(),waitForSelector:vi.fn(),mouse:{move:vi.fn()},waitForFunction:vi.fn()};
+ const page={on:vi.fn(),off:vi.fn(),evaluate:vi.fn().mockResolvedValueOnce('Chart for AMEX:SPY, 5 minutes').mockResolvedValueOnce(true).mockResolvedValueOnce('Chart for NASDAQ:QQQ, 15 minutes'),goto:vi.fn(),waitForSelector:vi.fn(),mouse:{move:vi.fn()},waitForFunction:vi.fn()};
  await selectChartTimeframe(page,15,'NASDAQ:QQQ');
  expect(page.goto).toHaveBeenCalledTimes(1);expect(page.goto).toHaveBeenCalledWith(expect.stringContaining('symbol=NASDAQ%3AQQQ&interval=15'),expect.anything());
 });
 it('never accepts a SPY render left behind after a QQQ switch',async()=>{
- const page={evaluate:vi.fn().mockResolvedValueOnce('Chart for AMEX:SPY, 5 minutes').mockResolvedValueOnce(true).mockResolvedValueOnce('Chart for AMEX:SPY, 15 minutes'),goto:vi.fn(),waitForSelector:vi.fn(),mouse:{move:vi.fn()},waitForFunction:vi.fn()};
+ const page={on:vi.fn(),off:vi.fn(),evaluate:vi.fn().mockResolvedValueOnce('Chart for AMEX:SPY, 5 minutes').mockResolvedValueOnce(true).mockResolvedValueOnce('Chart for AMEX:SPY, 15 minutes'),goto:vi.fn(),waitForSelector:vi.fn(),mouse:{move:vi.fn()},waitForFunction:vi.fn()};
  await expect(selectChartTimeframe(page,15,'NASDAQ:QQQ')).rejects.toThrow('wrong-instrument');
+});
+
+it('answers only leave-page dialogs during an authorized symbol navigation',async()=>{
+ let handler: (dialog:any)=>void;
+ const accept=vi.fn().mockResolvedValue(undefined),dismiss=vi.fn().mockResolvedValue(undefined);
+ const page={on:vi.fn((_event,fn)=>{handler=fn;}),off:vi.fn(),goto:vi.fn(async()=>{handler({type:()=> 'beforeunload',accept,dismiss});})};
+ await navigateCaptureChart(page,'https://www.tradingview.com/chart/Db5ipsDu/?symbol=NASDAQ%3AQQQ&interval=5');
+ expect(accept).toHaveBeenCalledOnce();expect(dismiss).not.toHaveBeenCalled();expect(page.off).toHaveBeenCalledWith('dialog',handler!);
+ page.goto.mockImplementation(async()=>{handler({type:()=> 'confirm',accept,dismiss});});
+ accept.mockClear();
+ await expect(navigateCaptureChart(page,'https://www.tradingview.com/chart/Db5ipsDu/?symbol=NASDAQ%3AQQQ&interval=5')).rejects.toThrow('chart-needs-attention');
+ expect(accept).not.toHaveBeenCalled();expect(dismiss).toHaveBeenCalledOnce();
 });

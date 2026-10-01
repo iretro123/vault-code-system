@@ -27,7 +27,7 @@ export async function selectChartTimeframe(page,timeframe,symbol='AMEX:SPY') {
   const label=await page.evaluate(()=>document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'');
   if (!label.includes(`:${symbol.split(':')[1]},`)) {
     // Navigate the SAME hosted page, under the shared database lease. Never create a chart tab.
-    await page.goto(`${CHART_URL}?symbol=${encodeURIComponent(symbol)}&interval=${timeframe}`,{waitUntil:'domcontentloaded',timeout:12000});
+    await navigateCaptureChart(page,`${CHART_URL}?symbol=${encodeURIComponent(symbol)}&interval=${timeframe}`);
     await page.waitForSelector('.chart-widget canvas[aria-label]',{timeout:6000});
   }
   const selected=await page.evaluate(tf=>{
@@ -44,6 +44,28 @@ export async function selectChartTimeframe(page,timeframe,symbol='AMEX:SPY') {
   },{timeout:6000},{tf:timeframe,ticker:symbol.split(':')[1]});
   const verified=await page.evaluate(()=>document.querySelector('.chart-widget canvas[aria-label]')?.getAttribute('aria-label')||'');
   if (!chartMatches(verified,symbol,timeframe)) throw new Error('wrong-instrument');
+}
+
+export async function navigateCaptureChart(page,url) {
+  // The dedicated capture layout changes timeframe between jobs. TradingView
+  // can ask to leave that view on navigation. Puppeteer does not auto-handle
+  // dialogs: an unanswered beforeunload blocks navigation and future commands.
+  // Only this ordinary leave-page confirmation may be accepted, never a login,
+  // security challenge, prompt, or other confirmation.
+  const pending=[];
+  let unexpected=false;
+  const handle=dialog=>{
+    const leaving=dialog.type()==='beforeunload';
+    console.info(leaving ? 'pulse-chart-leave-confirmation' : 'pulse-chart-unexpected-dialog');
+    unexpected ||= !leaving;
+    pending.push((leaving ? dialog.accept() : dialog.dismiss()).catch(()=>{unexpected=true;}));
+  };
+  page.on('dialog',handle);
+  try {
+    await page.goto(url,{waitUntil:'domcontentloaded',timeout:12000});
+    await Promise.all(pending);
+    if(unexpected) throw new Error('chart-needs-attention');
+  } finally { page.off('dialog',handle); }
 }
 
 export async function readChartSource(page) {
