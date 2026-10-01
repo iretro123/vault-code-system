@@ -3,6 +3,11 @@ import { CHART_URL } from './capture-policy.js';
 import { reconnectChart } from './capture-reconnect.js';
 
 const encoder=new TextEncoder();
+// Explicit authorization is a deadline, never a rolling 30-day renewal.
+export function loginRecoveryExpiry(env,now=Date.now()) {
+  const expiry=Date.parse(env.CAPTURE_LOGIN_APPROVED_UNTIL || '');
+  return Number.isFinite(expiry) && expiry>now && expiry-now<=30*86400_000 ? Math.floor(expiry/1000) : null;
+}
 const hexBytes=value=>Uint8Array.from(value.match(/../g),part=>parseInt(part,16));
 async function authKey(env, usage) {
   if (!/^[a-f0-9]{64}$/.test(env.CAPTURE_AUTH_KEY||'')) throw new Error('hosted-chart-login-required');
@@ -46,6 +51,7 @@ export async function openChartSession(env, lifetimeMs=28_000) {
   }
   if (sessionId) await prepareChartReplacement(env,sessionId);
   if (env.CAPTURE_SAVE_LOGIN!=='true') throw new Error('hosted-chart-login-required');
+  if (!loginRecoveryExpiry(env)) throw new Error('hosted-chart-login-required');
   const sealed=await env.CHART_IMAGES.get('private:login','arrayBuffer');
   if (!sealed) throw new Error('hosted-chart-login-required');
   const bytes=new Uint8Array(sealed);
@@ -90,6 +96,8 @@ export async function rememberChartLogin(env,page) {
   // Off by default. Enable only after the owner explicitly approves keeping this
   // dedicated TradingView login encrypted in their Cloudflare account.
   if (env.CAPTURE_SAVE_LOGIN!=='true') return;
+  const expiration=loginRecoveryExpiry(env);
+  if (!expiration || expiration*1000-Date.now()<60_000) return;
   const updated=Number(await env.CHART_IMAGES.get('private:login-saved-at')||0);
   if (Date.now()-updated<6*3600_000) return;
   const cookies=(await page.cookies('https://www.tradingview.com/')).filter(c=>/^\.?((www\.)?tradingview\.com)$/.test(c.domain));
@@ -97,6 +105,6 @@ export async function rememberChartLogin(env,page) {
   const iv=crypto.getRandomValues(new Uint8Array(12));
   const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv},await authKey(env,'encrypt'),encoder.encode(JSON.stringify(cookies)));
   const sealed=new Uint8Array(12+encrypted.byteLength);sealed.set(iv);sealed.set(new Uint8Array(encrypted),12);
-  await env.CHART_IMAGES.put('private:login',sealed,{expirationTtl:30*24*3600});
-  await env.CHART_IMAGES.put('private:login-saved-at',String(Date.now()),{expirationTtl:30*24*3600});
+  await env.CHART_IMAGES.put('private:login',sealed,{expiration});
+  await env.CHART_IMAGES.put('private:login-saved-at',String(Date.now()),{expiration});
 }

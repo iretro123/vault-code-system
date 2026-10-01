@@ -4,17 +4,31 @@ const connection=vi.hoisted(()=>({connectChartBrowser:vi.fn(),acquireChartBrowse
 const reconnect=vi.hoisted(()=>vi.fn());
 vi.mock('../../workers/pulse-spy/capture-connection.js',()=>connection);
 vi.mock('../../workers/pulse-spy/capture-reconnect.js',()=>({reconnectChart:reconnect}));
-import { openChartSession } from '../../workers/pulse-spy/capture-session.js';
+import { openChartSession, rememberChartLogin, loginRecoveryExpiry } from '../../workers/pulse-spy/capture-session.js';
 beforeEach(()=>{vi.clearAllMocks();vi.stubGlobal('crypto',webcrypto);reconnect.mockResolvedValue(undefined);connection.prepareChartReplacement.mockResolvedValue(undefined);});
 afterEach(()=>vi.unstubAllGlobals());
 async function fixture(){
  const key='ab'.repeat(32);const imported=await webcrypto.subtle.importKey('raw',new Uint8Array(32).fill(171),'AES-GCM',false,['encrypt']);const iv=new Uint8Array(12);const encrypted=await webcrypto.subtle.encrypt({name:'AES-GCM',iv},imported,new TextEncoder().encode(JSON.stringify([{domain:'.tradingview.com',name:'session',value:'test'}])));const sealed=new Uint8Array(12+encrypted.byteLength);sealed.set(new Uint8Array(encrypted),12);
  const values=new Map<string,unknown>([['private:session','old'],['private:login',sealed.buffer]]);
- const env={BROWSER:{},CAPTURE_SAVE_LOGIN:'true',CAPTURE_AUTH_KEY:key,CHART_IMAGES:{get:vi.fn(async k=>values.get(k)||null),put:vi.fn(async(k,v)=>{values.set(k,v);})}};
+ const env={BROWSER:{},CAPTURE_SAVE_LOGIN:'true',CAPTURE_LOGIN_APPROVED_UNTIL:new Date(Date.now()+86400_000).toISOString(),CAPTURE_AUTH_KEY:key,CHART_IMAGES:{get:vi.fn(async k=>values.get(k)||null),put:vi.fn(async(k,v)=>{values.set(k,v);})}};
  const page={url:()=> 'https://www.tradingview.com/chart/Db5ipsDu/',bringToFront:vi.fn(),createCDPSession:vi.fn().mockResolvedValue({send:vi.fn(),detach:vi.fn()}),goto:vi.fn(),waitForSelector:vi.fn()};const browser={pages:vi.fn().mockResolvedValue([page]),newPage:vi.fn().mockResolvedValue(page),disconnect:vi.fn(),close:vi.fn()};
  return {env,browser,page,values};
 }
 describe('automatic dedicated chart recovery',()=>{
+ it('does not restore expired or missing authorization even if encrypted cookies remain',async()=>{
+  const {env}=await fixture();env.CAPTURE_LOGIN_APPROVED_UNTIL=new Date(Date.now()-1).toISOString();
+  connection.connectChartBrowser.mockRejectedValue(new Error('expired'));
+  await expect(openChartSession(env)).rejects.toThrow('hosted-chart-login-required');
+  expect(connection.acquireChartBrowser).not.toHaveBeenCalled();
+  expect(loginRecoveryExpiry({})).toBeNull();
+  expect(loginRecoveryExpiry({CAPTURE_LOGIN_APPROVED_UNTIL:new Date(Date.now()+31*86400_000).toISOString()})).toBeNull();
+ });
+ it('refreshes encrypted cookies without extending their approved expiry',async()=>{
+  const {env}=await fixture();const expiration=Math.floor(Date.parse(env.CAPTURE_LOGIN_APPROVED_UNTIL)/1000);
+  await rememberChartLogin(env,{cookies:vi.fn().mockResolvedValue([{domain:'.tradingview.com',name:'session',value:'test'}])});
+  expect(env.CHART_IMAGES.put).toHaveBeenCalledWith('private:login',expect.any(Uint8Array),{expiration});
+  expect(env.CHART_IMAGES.put).toHaveBeenCalledWith('private:login-saved-at',expect.any(String),{expiration});
+ });
  it('restores an expired session using only encrypted approved cookies',async()=>{
   const {env,browser,page}=await fixture();connection.connectChartBrowser.mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce(browser);connection.acquireChartBrowser.mockResolvedValue({sessionId:'replacement'});
   expect(await openChartSession(env)).toBe(browser);expect(page.createCDPSession).toHaveBeenCalledOnce();const client=await page.createCDPSession.mock.results[0].value;expect(client.send).toHaveBeenCalledWith('Network.setCookies',{cookies:[{domain:'.tradingview.com',name:'session',value:'test'}]});expect(client.detach).toHaveBeenCalledOnce();expect(env.CHART_IMAGES.put).toHaveBeenCalledWith('private:session','replacement');

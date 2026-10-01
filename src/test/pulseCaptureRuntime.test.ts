@@ -9,7 +9,7 @@ import { runCapture, drainCaptures } from '../../workers/pulse-spy/capture.js';
 
 const now=Date.parse('2026-09-25T17:00:30Z');
 const post={id:'event',symbol:'AMEX:SPY',timeframe:5,at:now-1000,price:770,side:'demand',kind:'entered',lower:767.7,upper:768.54};
-const source={label:'Chart for BATS:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live\n770.00 SELL',pageText:'Vault Zone Pulse - SPY Live',zoneText:'Demand upper\n768.54\nDemand lower\n767.70'};
+const source={label:'Chart for BATS:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live\n770.00 SELL',pageText:'Vault Zone Pulse - SPY Live',zoneText:'Demand upper\n768.54\nDemand lower\n767.70\nSupply upper\n∅\nSupply lower\n∅'};
 function fixture(){
   const chart={boundingBox:vi.fn().mockResolvedValue({width:1100,height:800}),screenshot:vi.fn().mockResolvedValue(new Uint8Array(11000))};
   const control={boundingBox:vi.fn().mockResolvedValue({width:30,height:30}),click:vi.fn(),focus:vi.fn(),press:vi.fn(),evaluate:vi.fn().mockResolvedValue('true')};
@@ -31,6 +31,14 @@ describe('durable screenshot processing',()=>{
     expect(chart.screenshot).toHaveBeenCalledWith({type:'png',clip:{width:1100,height:800},captureBeyondViewport:false});
     expect(session.openChartSession).toHaveBeenCalledWith(env,28000);
     expect(rpc).toHaveBeenLastCalledWith('pulse_spy_capture_finish',expect.objectContaining({p_event_id:'event',p_result:expect.objectContaining({ok:true,timeframe:5,symbol:'AMEX:SPY'})}),5000);
+  });
+  it('records exact rejected bounds without copying page content or credentials',async()=>{
+    const {env,rpc,page}=fixture();page.evaluate.mockResolvedValue({...source,zoneText:source.zoneText.replace('768.54','769.78'),pageText:'private unrelated page content'});
+    expect(await runCapture(env,rpc)).toBe('retry');
+    const result=rpc.mock.calls.at(-1)![1].p_result;
+    expect(result.evidence).toEqual({expectedLower:767.7,expectedUpper:768.54,beforeLower:767.7,beforeUpper:769.78});
+    expect(JSON.stringify(result)).not.toContain('private unrelated');
+    expect(env.CHART_IMAGES.put).not.toHaveBeenCalled();
   });
   it('rejects a portrait crop rather than publishing another tall chart',async()=>{
     const {env,rpc,chart}=fixture();chart.boundingBox.mockResolvedValue({width:1000,height:1200});

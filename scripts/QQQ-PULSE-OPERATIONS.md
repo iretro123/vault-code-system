@@ -33,3 +33,13 @@ The current `capture_connected` field reflects capture success, including conten
 Investigate alert-snapshot/chart settings and higher-timeframe repainting before changing trading logic: the shared source uses unconfirmed request.security values, which TradingView documents can differ after a chart reload. This is a candidate explanation for the verified divergence, not a proven diagnosis. Fixing it may alter zone selection and requires explicit validation; do not silently loosen screenshot validation or substitute a generated zone.
 
 Charts are event snapshots. New zone/state events enqueue captures, and a scheduled queue retries missing images for still-active exact zones. Successfully captured event images are not continuously replaced on a timer. Feed heartbeats and liquidity captures are separate.
+
+## October 1 health hardening and recovery backup
+
+Image health is now tracked separately per symbol/timeframe in `pulse_capture_health`. A successful idle browser probe or SPY screenshot cannot clear QQQ image failures. Connection health remains separate. Failure evidence stores only exact expected/observed numeric zone bounds; it never stores raw chart text, cookies, or URLs. Existing CEO incident alerts are deduplicated separately for each symbol/timeframe.
+
+Encrypted cookie recovery expires at the fixed `CAPTURE_LOGIN_APPROVED_UNTIL` deadline (October 29, 00:00 UTC, within the original September 29 thirty-day authorization). Refreshing cookies does not renew authorization. An expired backup cannot launch another browser. Existing session use and normal bounded Connect behavior remain separate.
+
+Operator recovery copies can be exported with `scripts/pulse-backup.py`: provide a reviewed database manifest of genuine image IDs, the existing private bindings file, and an output directory. The script verifies PNG signatures, size and SHA-256, keeps capture/event timestamps, and refuses to overwrite a differing image. It never includes credentials in the backup. The October 1 export contains seven genuine saved images plus database-function rollback definitions; this is a point-in-time local backup, not continuous independent cloud replication. Online images still use private Cloudflare KV with 30-day retention.
+
+Do not erase the 11:18–11:28 QQQ mismatch from the incident history. At 11:35 the zone retired and later empty-zone probes agreed; that does not establish a fix to the intermittent indicator recalculation problem. No Pine rules or server-alert snapshots were changed by this health deployment.

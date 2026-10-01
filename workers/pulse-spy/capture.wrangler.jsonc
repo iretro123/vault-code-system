@@ -11,7 +11,7 @@
     "consumers": [{"queue":"vault-spy-pulse-charts","max_batch_size":1,"max_batch_timeout":1,"max_concurrency":1,"max_retries":45,"retry_delay":2}]
   },
   "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } },
-  "vars": { "CAPTURE_SAVE_LOGIN": "true" },
+  "vars": { "CAPTURE_SAVE_LOGIN": "true", "CAPTURE_LOGIN_APPROVED_UNTIL": "2026-10-29T00:00:00Z" },
   "triggers": { "crons": ["* * * * *"] }
-  // Database capture_enabled remains false until login, plan and real-image QA pass.
+  // Recovery authorization began Sep 29; expiry never rolls forward on refresh.
 }

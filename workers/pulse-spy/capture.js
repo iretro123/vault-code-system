@@ -1,5 +1,5 @@
 import { liquidityVisibility } from './liquidity-capture.js';
-import { setDataWindow, readChartSource, selectChartTimeframe } from './capture-source.js';
+import { setDataWindow, readChartSource, readZoneBounds, selectChartTimeframe } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
 import { CHART_URL, INDICATOR, captureWindowOpen, verifyCaptureSource, chartMatches, sourceIndicator, MULTI_INDICATOR } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
@@ -16,6 +16,17 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
   let stageAt = Date.now();
   const mark = name => { const at=Date.now(); timing[name]=at-stageAt; stageAt=at; if (at>deadline && !result.ok) throw new Error('capture-budget-exceeded'); };
   let browser;
+  const evidence={};
+  const recordZone=(source,phase)=>{
+    if (!task.post) return;
+    evidence.expectedLower=task.post.lower;
+    evidence.expectedUpper=task.post.upper;
+    try {
+      const bounds=readZoneBounds(source.zoneText)[task.post.side];
+      evidence[phase+'Lower']=bounds.lower;
+      evidence[phase+'Upper']=bounds.upper;
+    } catch { /* Incomplete data must still fail source validation below. */ }
+  };
   let result = { ok:false, failure:'capture-unavailable' };
   try {
     if (!env.BROWSER || !env.CHART_IMAGES) throw new Error('hosted-browser-not-configured');
@@ -44,6 +55,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
     if (!['AMEX:SPY','NASDAQ:QQQ'].some(symbol=>[5,15].some(tf=>chartMatches(source.label,symbol,tf))) || !(source.text.includes(INDICATOR)||source.text.includes(MULTI_INDICATOR))
       || /disconnected|connection lost|can't open this chart|verify you are human/i.test(source.pageText)) throw new Error('hosted-chart-login-required');
     if (task.post) {
+      recordZone(source,'before');
       verifyCaptureSource(source,task.post);
       mark('verifyBeforeMs');
       // The Data window is only for verification. It must not squeeze the chart
@@ -58,7 +70,9 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
       mark('screenshotMs');
       await setDataWindow(page,true);
       // A slow render may have crossed the freshness deadline; reject it as well.
-      verifyCaptureSource(await readSource(),task.post);
+      const after=await readSource();
+      recordZone(after,'after');
+      verifyCaptureSource(after,task.post);
       mark('verifyAfterMs');
       if (bytes.byteLength<10_000 || bytes.byteLength>8_000_000) throw new Error('chart-image-invalid');
       const imageId=crypto.randomUUID();
@@ -78,6 +92,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
   } finally { if (browser) { try { await browser.disconnect(); } catch { /* Still record the result if the session disconnected itself. */ } } }
   timing.cleanupMs=Date.now()-stageAt;
   result.timing=timing;
+  result.evidence=evidence;
   console.info(JSON.stringify({event:'pulse-capture-result',ok:result.ok,failure:result.failure||null,timing,hasPost:!!task.post}));
   const finished=await rpc('pulse_spy_capture_finish',{p_lease:task.lease,p_event_id:task.post?.id??null,p_result:result},5000);
   if (!finished) throw new Error('capture-lease-lost');

@@ -34,6 +34,7 @@ export interface PulseFeed {
   enabled?: boolean;
   symbol?: PulseSymbol;
   captureConnected?: boolean;
+  captureHealth?: Partial<Record<5 | 15, { state: "ready" | "attention" | "unverified"; failure: string | null; capturedAt: number | null; checkedAt: number | null }>>;
   posts: PulsePost[];
   receivedAt: number | null;
   indicatorAt: Partial<Record<5 | 15, number>>;

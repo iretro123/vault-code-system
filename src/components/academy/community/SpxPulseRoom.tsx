@@ -141,7 +141,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
             <span><strong>Open in TradingView</strong></span>
             <ArrowUpRight size={22} aria-hidden="true"/>
           </a>
-          {monitoring && source === "cloud" && feed.captureConnected === false && <p role="status">Chart capture needs attention</p>}
+          {monitoring && source === "cloud" && (feed.captureConnected === false || feed.captureHealth?.[tf]?.state === "attention") && <p role="status">Chart capture needs attention</p>}
         </div>
         {earlierCount > 0 && !history && <button type="button" className="pr-history" aria-expanded={history} onClick={() => setHistory(value => !value)}>{history ? "Hide earlier updates" : `Earlier updates (${earlierCount})`}</button>}
       </div>

@@ -21,6 +21,17 @@ function setup() {
 }
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 describe("Live Pulse channel", () => {
+ it("does not let a healthy browser or another timeframe hide an image validation failure",()=>{
+  const view=setup();
+  state.feed.captureConnected=true;
+  state.feed.captureHealth={5:{state:"attention",failure:"chart-zone-mismatch",capturedAt:null,checkedAt:at},15:{state:"ready",failure:null,capturedAt:at,checkedAt:at}};
+  view.rerender(<SpxPulseRoom/>);
+  expect(screen.getByText("Chart capture needs attention")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button",{name:"15 min"}));
+  expect(screen.queryByText("Chart capture needs attention")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button",{name:"5 min"}));
+  expect(screen.getByText("Chart capture needs attention")).toBeInTheDocument();
+ });
  it("shows independent liquidity on 5m and 15m without changing zone history",()=>{
   const view=setup();
   liq.value={5:{available:true,capturedAt:at,chartUrl:"https://example.com/liq5.png"},15:{available:true,capturedAt:at,chartUrl:"https://example.com/liq15.png"}};
