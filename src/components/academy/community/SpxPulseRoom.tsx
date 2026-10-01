@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, ArrowUpRight, ArrowUp, ArrowDown, ChevronUp } from "lucide-react";
+import { Activity, History, ChevronDown, ArrowUpRight, ArrowUp, ArrowDown, ChevronUp } from "lucide-react";
 import { PulseLiquidityChart } from "../chat/PulseLiquidityChart";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
@@ -139,9 +139,9 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
           {tf===5 && noZone && <button type="button" className="pr-other-timeframe" onClick={()=>changeTimeframe(15)}>Check 15-minute timeframe <ArrowUpRight size={18}/></button>}
         </>}
         {(noZone || closingSnapshot || liquidityView) && history && <p className="pr-history-label">Earlier updates</p>}
-        <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={allPosts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
+        <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}>{history && index === 0 && <span className="pr-history-latest">Most recent update</span>}<ZonePulseCard post={post} earlierChart={allPosts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
         {!(selected==='NASDAQ:QQQ' && !quote && !latest) && !posts.length && !noZone && !closingSnapshot && !liquidityView && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
-        {earlierCount > 0 && !history && <button type="button" className={`pr-history${awaitingChart ? " pr-history-pending" : ""}`} aria-expanded={false} onClick={() => setHistory(true)}>Earlier updates ({earlierCount})<ArrowUpRight size={16} aria-hidden="true"/></button>}
+        {earlierCount > 0 && !history && <button type="button" className={`pr-history${awaitingChart ? " pr-history-pending" : ""}`} aria-label={`Earlier updates (${earlierCount})`} aria-expanded={false} onClick={() => setHistory(true)}><History size={20} aria-hidden="true"/><span className="pr-history-title">Earlier updates</span><span className="pr-history-count" aria-hidden="true">{earlierCount}</span><ChevronDown size={18} aria-hidden="true"/></button>}
         <div className="pr-source">
           <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>
             <img src="/brand/tradingview-mark.svg" alt="" width="36" height="36" />
