@@ -1,7 +1,7 @@
 import { openChartSession } from './capture-session.js';
 import { setDataWindow, selectChartTimeframe, readChartSource } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
-import { CHART_URL, INDICATOR } from './capture-policy.js';
+import { CHART_URL, INDICATOR, sourceIndicator } from './capture-policy.js';
 
 export const LIQUIDITY_INDICATOR = 'Vault Pulse - Liquidity';
 export function readLiquidityLevels(text) {
@@ -17,7 +17,7 @@ export function readLiquidityLevels(text) {
 export function verifyLiquiditySource(source,task,now=Date.now()) {
   if (![5,15].includes(task.timeframe) || !new RegExp(`^Chart for (?:AMEX|BATS):SPY, ${task.timeframe} minutes$`).test(source.label)) throw new Error('liquidity-wrong-timeframe');
   if (!Number.isFinite(task.quoteAt) || now<task.quoteAt || now-task.quoteAt>90000) throw new Error('liquidity-stale-quote');
-  if (!source.text.includes(INDICATOR) || !source.text.includes(LIQUIDITY_INDICATOR)) throw new Error('liquidity-indicator-unavailable');
+  if (!sourceIndicator(source.text,'AMEX:SPY') || !source.text.includes(LIQUIDITY_INDICATOR)) throw new Error('liquidity-indicator-unavailable');
   if (/disconnected|connection lost|reconnect|cannot connect|sign in to continue|verify you are human/i.test(source.pageText)) throw new Error('liquidity-session-unavailable');
   const price=Number(source.text.match(/([\d,]+(?:\.\d+)?)\s*SELL/)?.[1]?.replaceAll(',',''));
   if (!price || !Number.isFinite(task.price) || Math.abs(price-task.price)>Math.max(1,task.price*.002)) throw new Error('liquidity-price-mismatch');

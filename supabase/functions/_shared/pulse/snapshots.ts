@@ -1,4 +1,4 @@
-import { PULSE_SYMBOL, PULSE_SPY_SYMBOL, type PulseSymbol, pulseWindowOpen, validatePulsePost, appendPulsePost, type PulseCandle, type PulseKind, type PulsePost } from "./domain.ts";
+import { PULSE_SYMBOL, PULSE_SPY_SYMBOL, PULSE_QQQ_SYMBOL, type PulseSymbol, pulseWindowOpen, validatePulsePost, appendPulsePost, type PulseCandle, type PulseKind, type PulsePost } from "./domain.ts";
 
 export interface PulseZone { zoneId: string; side: "supply" | "demand"; lower: number; upper: number }
 export interface PulseSnapshot {
@@ -14,7 +14,7 @@ const sessionClose = (s: PulseSnapshot) => s.confirmed === true && positive(s.ba
 export function validatePulseSnapshot(input: unknown, now: number, afterHoursTest = false): PulseSnapshot {
   if (!input || typeof input !== "object") throw new Error("Invalid snapshot");
   const s = input as PulseSnapshot;
-  if (s.kind !== "snapshot" || s.source !== "indicator" || ![PULSE_SYMBOL, PULSE_SPY_SYMBOL].includes(s.symbol) || ![5, 15].includes(s.timeframe)) throw new Error("Wrong chart");
+  if (s.kind !== "snapshot" || s.source !== "indicator" || ![PULSE_SYMBOL, PULSE_SPY_SYMBOL, PULSE_QQQ_SYMBOL].includes(s.symbol) || ![5, 15].includes(s.timeframe)) throw new Error("Wrong chart");
   if (!positive(s.at) || s.at > now + 5000 || now - s.at > 60000) throw new Error("Stale snapshot");
   if (!afterHoursTest && !sessionClose(s) && (!pulseWindowOpen(now) || !pulseWindowOpen(s.at))) throw new Error("Outside monitoring hours");
   if (!positive(s.price) || typeof s.confirmed !== "boolean" || !positive(s.barAt) || s.barAt > s.at || s.at - s.barAt > s.timeframe * 60000 + 5000) throw new Error("Invalid candle time");

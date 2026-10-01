@@ -9,9 +9,15 @@ import { usePulseFeed } from "@/hooks/usePulseFeed";
 import { usePulseReactions } from "@/hooks/usePulseReactions";
 import "./pulse-room.css";
 
+type MemberSymbol = 'AMEX:SPY' | 'NASDAQ:QQQ';
 export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cloud" | "local"; active?: boolean }) {
-  const { feed, connected, error } = usePulseFeed(source, active);
-  const liquidity = usePulseLiquidity(active && source === "cloud");
+  const [selected,setSelected]=useState<MemberSymbol>(()=>new URLSearchParams(location.search).get('symbol')==='QQQ'?'NASDAQ:QQQ':'AMEX:SPY');
+  return <PulseMarketRoom key={selected} source={source} active={active} selected={selected} onSymbol={setSelected}/>;
+}
+function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'local';active:boolean;selected:MemberSymbol;onSymbol:(symbol:MemberSymbol)=>void}) {
+  const { feed: receivedFeed, connected, error } = usePulseFeed(source, active, selected);
+  const feed = receivedFeed.symbol && receivedFeed.symbol !== selected ? {...receivedFeed,posts:[],quotes:{},indicatorAt:{},receivedAt:null} : receivedFeed;
+  const liquidity = usePulseLiquidity(active && source === "cloud" && selected === "AMEX:SPY");
   const [showLiquidity,setShowLiquidity] = useState(()=>{try{return localStorage.getItem("vault:pulse:liquidity")==="on";}catch{return false;}});
   const toggleLiquidity=()=>setShowLiquidity(value=>{try{localStorage.setItem("vault:pulse:liquidity",!value?"on":"off");}catch{/* Preference remains usable for this visit. */}return !value;});
   const [tf, setTf] = useState<5 | 15>(5);
@@ -21,7 +27,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const [unseen, setUnseen] = useState(false);
   const known = useRef<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
-  const symbol = feed.symbol ?? "AMEX:SPY";
+  const symbol = selected;
   const symbolLabel = symbol.split(":").at(-1)!;
   const allPosts = feed.posts.filter(post => post.timeframe === tf).slice().reverse();
   const quote = feed.quotes?.[tf];
@@ -31,6 +37,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
   const sessionKey = sessionDate(Math.max(quote?.at ?? 0, allPosts[0]?.at ?? 0));
   const posts = allPosts.filter(post => sessionDate(post.at) === sessionKey);
   const latest = posts[0];
+  const awaitingActivation = selected === 'NASDAQ:QQQ' && feed.enabled === false;
   const monitoring = pulseWindowOpen(now) || now < (feed.afterHoursTestUntil || 0);
   const fresh = connected && !!quote && now >= quote.at && now - quote.at <= 90000;
   const noZone = fresh && monitoring && quote.zones.length === 0;
@@ -83,18 +90,19 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
 
   return <section className="zone-pulse-room pulse-room-clean" aria-label={`${symbolLabel} Zone Pulse`}>
     <header className="pr-toolbar">
-      <span className="pr-symbol"><Activity size={25} aria-hidden="true"/>${symbolLabel}</span>
+      <span className="pr-symbol"><Activity size={25} aria-hidden="true"/><select className="pr-symbol-select" aria-label="Pulse symbol" value={selected} onChange={event=>onSymbol(event.target.value as MemberSymbol)}><option value="AMEX:SPY">$SPY</option><option value="NASDAQ:QQQ">$QQQ</option></select></span>
       <div className="pr-timeframes" aria-label="Chart timeframe">{([5, 15] as const).map(value => <button key={value} type="button" aria-pressed={tf === value} onClick={() => changeTimeframe(value)}>{value} min</button>)}</div>
     {liquiditySnapshot && <button type="button" role="switch" aria-checked={showLiquidity} className="pr-liquidity-toggle" onClick={toggleLiquidity}>Liquidity<span aria-hidden="true"/></button>}
     </header>
     <div className="pr-scroll" ref={scroller} onScroll={event => { if (event.currentTarget.scrollTop < 80) setUnseen(false); }}>
       <div className="pr-content">
         <div className="pr-now" role="status" data-fresh={fresh && monitoring}>
-          <span><span className="pr-market-state" data-closed={!monitoring}><i aria-hidden="true"/>{monitoring ? fresh ? "Live updates" : "Reconnecting" : "Market closed"}</span>{quote && <b>${quote.price.toFixed(2)}</b>}</span>
-          <span>{monitoring && fresh ? noZone ? "" : currentState : `Last update ${pulseAge(quote?.at, now)}`}</span>
+          <span><span className="pr-market-state" data-closed={!monitoring}><i aria-hidden="true"/>{awaitingActivation ? "Setting up QQQ" : monitoring ? fresh ? "Live updates" : "Reconnecting" : "Market closed"}</span>{quote && <b>${quote.price.toFixed(2)}</b>}</span>
+          <span>{monitoring && fresh ? noZone ? "" : currentState : quote ? `Last update ${pulseAge(quote.at, now)}` : ""}</span>
         </div>
+        {!quote && !latest && !error && selected==='NASDAQ:QQQ' && <div className="pr-empty pr-no-zone"><Activity size={34}/><h2>Waiting for QQQ</h2><p>Verified 5m &amp; 15m updates will appear here.</p></div>}
         {error && <p className="pr-warning" role="alert">{error}</p>}
-        {monitoring && connected && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
+        {monitoring && connected && !!quote && !fresh && !error && <p className="pr-warning" role="alert">Waiting for fresh {tf}m data. The price and zones below may be out of date.</p>}
         {closingSnapshot && !liquidityView && <section className="pr-snapshot" data-side={snapshotSide} aria-label={`${tf}-minute last indicator snapshot`}>
           <p className="pr-snapshot-time">Zones · {snapshotTime} ET</p>
           <h2 className="sr-only">{tf}-minute zones</h2>
@@ -122,7 +130,7 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
         </>}
         {(noZone || closingSnapshot || liquidityView) && history && <p className="pr-history-label">Earlier updates</p>}
         <ol className="pr-posts">{shown.map((post, index) => <li key={post.id}><ZonePulseCard post={post} earlierChart={allPosts.find(candidate => candidate.zoneId === post.zoneId && !!candidate.chartUrl && (candidate.capturedAt ?? candidate.at) <= post.at)} featured={index === 0} arriving={post.id === arrival} reactions={reactions.forPost(post.id)} onReact={source === "cloud" ? emoji => reactions.react(post.id, emoji) : undefined} reactionsDisabled={reactions.pending}/></li>)}</ol>
-        {!posts.length && !noZone && !closingSnapshot && !liquidityView && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
+        {!(selected==='NASDAQ:QQQ' && !quote && !latest) && !posts.length && !noZone && !closingSnapshot && !liquidityView && <div className="pr-empty"><Activity size={34} strokeWidth={1.3} aria-hidden="true"/><h2>{!monitoring ? "Next session, new zones." : fresh ? "Watching for an update." : "Checking for zones…"}</h2></div>}
         <div className="pr-source">
           <a className="pr-tradingview" href={liveChart} target="_blank" rel="noopener noreferrer" aria-label={`Open ${symbolLabel} on TradingView`}>
             <img src="/brand/tradingview-mark.svg" alt="" width="36" height="36" />

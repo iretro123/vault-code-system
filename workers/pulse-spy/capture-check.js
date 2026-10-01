@@ -1,11 +1,12 @@
 import { setDataWindow, readChartSource, readZoneBounds, selectChartTimeframe } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
-import { CHART_URL, INDICATOR } from './capture-policy.js';
+import { CHART_URL, chartMatches, sourceIndicator } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
 
 // Explicit operator preflight: never claims an event, changes capture_enabled,
 // creates member notifications, or substitutes a current image for an old alert.
-export async function checkChartConnection(env, timeframe) {
+export async function checkChartConnection(env, timeframe, symbol = 'AMEX:SPY') {
+  if (!['AMEX:SPY','NASDAQ:QQQ'].includes(symbol)) return {ok:false,failure:'wrong-instrument'};
   if (timeframe !== undefined && ![5,15].includes(timeframe)) return {ok:false,failure:'wrong-chart-timeframe'};
   let browser;
   let stage='session';
@@ -20,7 +21,7 @@ export async function checkChartConnection(env, timeframe) {
     next('viewport');
     await page.setViewport({width:1280,height:800,deviceScaleFactor:2});
     next('timeframe');
-    if (timeframe) await selectChartTimeframe(page,timeframe);
+    if (timeframe || symbol !== 'AMEX:SPY') await selectChartTimeframe(page,timeframe || 5,symbol);
     next('framing');
     await frameChart(page,{reuse:true});
     next('source');
@@ -29,8 +30,8 @@ export async function checkChartConnection(env, timeframe) {
       text:document.querySelector('.chart-widget')?.innerText || '',
       pageText:document.body.innerText,
     }));
-    const match = source.label.match(/^Chart for (AMEX|BATS):SPY, (5|15) minutes$/);
-    if (!match || !source.text.includes(INDICATOR)
+    const chartTimeframe = [5,15].find(value=>chartMatches(source.label,symbol,value));
+    if (!chartTimeframe || !sourceIndicator(source.text,symbol)
       || /disconnected|connection lost|reconnect|cannot connect|can't open this chart|sign in to continue|verify you are human/i.test(source.pageText)) {
       return { ok:false, failure:'hosted-chart-login-required' };
     }
@@ -49,9 +50,9 @@ export async function checkChartConnection(env, timeframe) {
     // Short-lived operator QA image, never attached to a member event.
     await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:3600,metadata:{contentType:'image/png',purpose:'operator-preflight'}});
     next('recovery');
-    await rememberChartLogin(env,page);
+    try { await rememberChartLogin(env,page); } catch { /* Optional backup cannot invalidate a verified image. */ }
     next('done');
-    return { ok:true, timing, symbol:'AMEX:SPY', timeframe:Number(match[2]), indicator:INDICATOR, zones, imageId, capturedAt };
+    return { ok:true, timing, symbol, timeframe:chartTimeframe, indicator:sourceIndicator(source.text,symbol), zones, imageId, capturedAt };
   } catch(error) {
     if (['chart-session-conflict','chart-zone-data-unavailable','chart-zone-mismatch'].includes(error?.message)) return {ok:false,failure:error.message};
     // No provider error text, cookies, URLs or page contents cross this boundary.

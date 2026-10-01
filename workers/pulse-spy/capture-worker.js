@@ -34,7 +34,7 @@ export default {
       const rpc=database(env);
       const claim=await rpc('pulse_spy_capture_probe_claim');
       if (!claim?.lease || claim.busy) return Response.json({ok:false,failure:'capture-busy'},{status:409,headers:{'Cache-Control':'no-store'}});
-      const result = await checkChartConnection(env,url.searchParams.has('timeframe') ? Number(url.searchParams.get('timeframe')) : undefined);
+      const result = await checkChartConnection(env,url.searchParams.has('timeframe') ? Number(url.searchParams.get('timeframe')) : undefined,url.searchParams.get('symbol') || 'AMEX:SPY');
       const finished=await rpc('pulse_spy_capture_finish',{p_lease:claim.lease,p_event_id:null,p_result:{ok:result.ok,failure:result.failure}});
       if (!finished) return Response.json({ok:false,failure:'capture-lease-lost'},{status:409,headers:{'Cache-Control':'no-store'}});
       return Response.json(result,{status:result.ok ? 200 : 409,headers:{'Cache-Control':'no-store'}});

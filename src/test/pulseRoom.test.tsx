@@ -164,3 +164,14 @@ describe("Live Pulse channel", () => {
   });
 
 });
+
+it('switches symbols without relabeling SPY prices, history or images as QQQ',()=>{
+ setup();
+ fireEvent.change(screen.getByRole('combobox',{name:'Pulse symbol'}),{target:{value:'NASDAQ:QQQ'}});
+ expect(screen.getByRole('heading',{name:'Waiting for QQQ'})).toBeInTheDocument();
+ expect(screen.queryByText('$770.60')).not.toBeInTheDocument();
+ expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
+ expect(screen.queryByText('No active zone')).not.toBeInTheDocument();
+ fireEvent.change(screen.getByRole('combobox',{name:'Pulse symbol'}),{target:{value:'AMEX:SPY'}});
+ expect(screen.getByRole('heading',{name:'No active zone'})).toBeInTheDocument();
+});

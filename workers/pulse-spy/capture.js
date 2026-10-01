@@ -1,7 +1,7 @@
 import { liquidityVisibility } from './liquidity-capture.js';
 import { setDataWindow, readChartSource, selectChartTimeframe } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
-import { CHART_URL, INDICATOR, captureWindowOpen, verifyCaptureSource } from './capture-policy.js';
+import { CHART_URL, INDICATOR, captureWindowOpen, verifyCaptureSource, chartMatches, sourceIndicator, MULTI_INDICATOR } from './capture-policy.js';
 import { openChartSession, rememberChartLogin } from './capture-session.js';
 
 // All chart interaction stays in the dedicated hosted session. Never import
@@ -32,7 +32,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
     // This avoids shrinking a tall, low-resolution desktop screenshot into a card.
     if (task.post) {
       await page.setViewport({width:1280,height:800,deviceScaleFactor:2});
-      await selectChartTimeframe(page,task.post.timeframe);
+      await selectChartTimeframe(page,task.post.timeframe,task.post.symbol);
       mark('setupMs');
       await frameChart(page,{reuse:true});
       mark('frameMs');
@@ -41,7 +41,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
     if (task.post) await setDataWindow(page,true);
     const readSource=()=>readChartSource(page);
     const source = await readSource();
-    if (!source.label.match(/^Chart for (AMEX|BATS):SPY, (5|15) minutes$/) || !source.text.includes(INDICATOR)
+    if (!['AMEX:SPY','NASDAQ:QQQ'].some(symbol=>[5,15].some(tf=>chartMatches(source.label,symbol,tf))) || !(source.text.includes(INDICATOR)||source.text.includes(MULTI_INDICATOR))
       || /disconnected|connection lost|can't open this chart|verify you are human/i.test(source.pageText)) throw new Error('hosted-chart-login-required');
     if (task.post) {
       verifyCaptureSource(source,task.post);
@@ -64,7 +64,7 @@ export async function runCapture(env, rpc, budgetMs=Infinity) {
       const imageId=crypto.randomUUID();
       await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:30*24*3600});
       mark('storeMs');
-      result={ok:true,imageId,capturedAt,symbol:'AMEX:SPY',timeframe:task.post.timeframe,indicator:INDICATOR};
+      result={ok:true,imageId,capturedAt,symbol:task.post.symbol,timeframe:task.post.timeframe,indicator:sourceIndicator(source.text,task.post.symbol)};
     } else result={ok:true};
     // Cookie backup is auxiliary: never discard an already verified/stored image
     // because the recovery store briefly failed. Future health cycles retry it.

@@ -21,6 +21,10 @@ describe('operator chart preflight',()=>{
    expect(browser.disconnect).toHaveBeenCalledOnce();
   } finally {vi.useRealTimers();}
  });
+ it('validates QQQ using its own chart and universal indicator',async()=>{
+  setup({label:'Chart for NASDAQ:QQQ, 15 minutes',text:'Vault Zone Pulse - SPY & QQQ',pageText:'QQQ'});
+  expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}},15,'NASDAQ:QQQ')).toMatchObject({ok:true,symbol:'NASDAQ:QQQ',timeframe:15});
+ });
  it('rejects a disconnected account even if the chart remains visible',async()=>{
   setup({label:'Chart for AMEX:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live',pageText:'Session disconnected'});
   expect(await checkChartConnection({BROWSER:{},CHART_IMAGES:{put:vi.fn()}})).toEqual({ok:false,failure:'hosted-chart-login-required'});

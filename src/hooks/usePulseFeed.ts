@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { PulseFeed } from "@/lib/spxPulse";
 
 const empty: PulseFeed = { posts: [], receivedAt: null, indicatorAt: {}, sessionOpen: false };
-export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
+export function usePulseFeed(source: "cloud" | "local", enabled: boolean, symbol: "AMEX:SPY" | "NASDAQ:QQQ" = "AMEX:SPY") {
   const [feed, setFeed] = useState<PulseFeed>(empty);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -11,6 +11,7 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
     let stopped = false;
     let cleanup = () => {};
     if (source === "local") {
+      if (symbol !== "AMEX:SPY") { setFeed({...empty,symbol}); return; }
       if (!import.meta.env.DEV || !["localhost", "127.0.0.1"].includes(location.hostname)) return;
       const stream = new EventSource("/api/spx-pulse/stream");
       stream.onopen = () => setConnected(true);
@@ -38,7 +39,7 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
         lastRefreshAt = Date.now();
         const generation = authGeneration;
         try {
-          const { data, error: failure } = await supabase.rpc("pulse_feed_current", {} as never, { get: true });
+          const { data, error: failure } = await supabase.rpc("pulse_feed_symbol" as never, { p_symbol:symbol } as never, { get: true });
           if (stopped || generation !== authGeneration) return;
           if (failure) {
             refreshFailed = true;
@@ -50,7 +51,7 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
             return;
           }
           const next = data as unknown as PulseFeed;
-          if (!Array.isArray(next?.posts)) throw new Error("Invalid feed");
+          if (next?.symbol !== symbol || !Array.isArray(next?.posts) || next.posts.some(post=>post.symbol!==symbol)) throw new Error("Invalid feed");
           refreshFailed = false;
           pendingUntil = Math.max(0,...next.posts.filter(post => post.captureStatus === "pending").map(post => post.at + 90_000));
           // Fetch a bounded full window so later image changes to older posts are included.
@@ -62,6 +63,7 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
       const channel = supabase.channel("vault-spy-pulse-members")
         .on("postgres_changes", { event: "*", schema: "public", table: "pulse_status" }, () => void refresh())
         .on("postgres_changes", { event: "*", schema: "public", table: "pulse_events" }, () => void refresh())
+        .on("postgres_changes", { event: "*", schema: "public", table: "pulse_qqq_status" }, () => void refresh())
         .on("postgres_changes", { event: "*", schema: "public", table: "pulse_spy_status" }, () => void refresh())
         .on("postgres_changes", { event: "*", schema: "public", table: "pulse_spy_events" }, () => void refresh())
         .subscribe(status => { if (stopped) return; realtimeReady = status === "SUBSCRIBED"; if (realtimeReady) void refresh(); else if (["CHANNEL_ERROR","TIMED_OUT","CLOSED"].includes(status)) setConnected(false); });
@@ -84,6 +86,6 @@ export function usePulseFeed(source: "cloud" | "local", enabled: boolean) {
       void refresh();
     }).catch(() => { if (!stopped) { setConnected(false); setError("Pulse is unable to connect. Please try again."); } });
     return () => { stopped=true; cleanup(); };
-  }, [source,enabled]);
+  }, [source,enabled,symbol]);
   return { feed, connected, error };
 }

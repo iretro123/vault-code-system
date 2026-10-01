@@ -197,3 +197,5 @@
 .pr-liquidity-toggle[aria-checked=true]>span:after{transform:translateX(11px)}
 @media(max-width:450px){.vault-community .pr-toolbar{gap:8px}.pr-liquidity-toggle{font-size:11px;gap:5px}}
 @media(max-width:450px){.vault-community .pr-toolbar:has(.pr-liquidity-toggle){flex-wrap:wrap}.vault-community .pr-toolbar:has(.pr-liquidity-toggle) .pr-timeframes button{min-width:56px;font-size:14px;padding-inline:8px}.pr-liquidity-toggle{min-height:44px;flex-shrink:0}}
+
+.pr-symbol-select{font:inherit;color:inherit;background:transparent;border:0;cursor:pointer;padding:4px 18px 4px 0;max-width:110px}.pr-symbol-select option{background:#243449;color:#fff}.pr-symbol-select:focus-visible{outline:2px solid #64d7ff;outline-offset:4px;border-radius:4px}

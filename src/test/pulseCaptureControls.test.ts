@@ -10,7 +10,7 @@ describe('batched TradingView controls',()=>{
   const click=vi.spyOn(button,'click');await selectChartTimeframe(browser(),15);expect(click).not.toHaveBeenCalled();
  });
  it('fails instead of selecting a hidden or missing timeframe',async()=>{
-  document.body.innerHTML='<button role="radio" aria-label="5 minutes"></button>';
+  document.body.innerHTML='<div class="chart-widget"><canvas aria-label="Chart for AMEX:SPY, 5 minutes"></canvas></div><button role="radio" aria-label="5 minutes"></button>';
   await expect(selectChartTimeframe(browser(),5)).rejects.toThrow('timeframe-control-unavailable');
  });
  it('closes the data window once and verifies the state',async()=>{

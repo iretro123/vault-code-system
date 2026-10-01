@@ -1,5 +1,14 @@
 export const INDICATOR = 'Vault Zone Pulse - SPY Live';
+export const MULTI_INDICATOR = 'Vault Zone Pulse - SPY & QQQ';
+export function sourceIndicator(text,symbol) {
+  if (text.includes(MULTI_INDICATOR)) return MULTI_INDICATOR;
+  return symbol==='AMEX:SPY' && text.includes(INDICATOR) ? INDICATOR : null;
+}
 export const CHART_URL = 'https://www.tradingview.com/chart/Db5ipsDu/';
+export function chartMatches(label,symbol,timeframe) {
+  const ticker=symbol==='AMEX:SPY'?'(?:AMEX|BATS):SPY':symbol==='NASDAQ:QQQ'?'(?:NASDAQ|BATS):QQQ':null;
+  return !!ticker && [5,15].includes(timeframe) && new RegExp(`^Chart for ${ticker}, ${timeframe} minutes$`).test(label);
+}
 export const MAX_CAPTURE_AGE = 90_000;
 
 export function captureWindowOpen(at = Date.now()) {
@@ -27,10 +36,10 @@ export function verifyCaptureZone(text, post) {
 }
 
 export function verifyCaptureSource(source, post, now = Date.now()) {
-  if (post.symbol !== 'AMEX:SPY' || ![5,15].includes(post.timeframe)) throw new Error('wrong-instrument');
+  if (!['AMEX:SPY','NASDAQ:QQQ'].includes(post.symbol) || ![5,15].includes(post.timeframe)) throw new Error('wrong-instrument');
   if (!Number.isFinite(post.at) || post.at > now || now - post.at > MAX_CAPTURE_AGE) throw new Error('capture-window-expired');
-  if (!new RegExp(`^Chart for (?:AMEX|BATS):SPY, ${post.timeframe} minutes$`).test(source.label)) throw new Error('wrong-chart-timeframe');
-  if (!source.text.includes(INDICATOR)) throw new Error('pulse-indicator-missing');
+  if (!chartMatches(source.label,post.symbol,post.timeframe)) throw new Error('wrong-chart-timeframe');
+  if (!sourceIndicator(source.text,post.symbol)) throw new Error('pulse-indicator-missing');
   if (/disconnected|connection lost|reconnect|cannot connect|can't open this chart|sign in to continue|verify you are human/i.test(source.pageText)) throw new Error('chart-needs-attention');
   const quote = Number(source.text.match(/([\d,]+(?:\.\d+)?)\s*SELL/)?.[1]?.replaceAll(',',''));
   if (!quote || !Number.isFinite(post.price) || Math.abs(quote-post.price)>Math.max(1,post.price*0.002)) throw new Error('chart-price-mismatch');

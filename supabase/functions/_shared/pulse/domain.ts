@@ -1,6 +1,7 @@
 export const PULSE_SYMBOL = "CAPITALCOM:SPX500" as const;
 export const PULSE_SPY_SYMBOL = "AMEX:SPY" as const;
-export type PulseSymbol = typeof PULSE_SYMBOL | typeof PULSE_SPY_SYMBOL;
+export const PULSE_QQQ_SYMBOL = "NASDAQ:QQQ" as const;
+export type PulseSymbol = typeof PULSE_SYMBOL | typeof PULSE_SPY_SYMBOL | typeof PULSE_QQQ_SYMBOL;
 export const PULSE_INDICATOR = "Vault Zone Pulse - Live Feed";
 export type PulseKind = "observed" | "entered" | "holding" | "exited" | "breached" | "returned" | "broken" | "retired";
 export interface PulseCandle { t: number; o: number; h: number; l: number; c: number }
@@ -30,6 +31,7 @@ export interface PulsePost {
   closedAt?: number;
 }
 export interface PulseFeed {
+  enabled?: boolean;
   symbol?: PulseSymbol;
   captureConnected?: boolean;
   posts: PulsePost[];
@@ -51,7 +53,7 @@ export function pulseWindowOpen(now: number): boolean {
 export function validatePulsePost(input: unknown, now: number, reviewAllowed = false, afterHoursTest = false, verifiedSessionClose = false): PulsePost {
   if (!input || typeof input !== "object") throw new Error("Invalid event");
   const p = input as PulsePost;
-  if (![PULSE_SYMBOL, PULSE_SPY_SYMBOL].includes(p.symbol) || ![5, 15].includes(p.timeframe)) throw new Error("Wrong chart");
+  if (![PULSE_SYMBOL, PULSE_SPY_SYMBOL, PULSE_QQQ_SYMBOL].includes(p.symbol) || ![5, 15].includes(p.timeframe)) throw new Error("Wrong chart");
   if (![p.id, p.zoneId].every(s => typeof s === "string" && /^[a-zA-Z0-9:_-]{1,160}$/.test(s))) throw new Error("Invalid identity");
   if (!["supply", "demand"].includes(p.side) || !["observed", "entered", "holding", "exited", "breached", "returned", "broken", "retired"].includes(p.kind)) throw new Error("Invalid event kind");
   if (!Number.isFinite(p.at) || p.at > now + 5000 || now - p.at > 300000) throw new Error("Stale or future event");
