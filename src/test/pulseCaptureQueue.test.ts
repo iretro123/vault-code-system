@@ -15,8 +15,8 @@ describe('persistent chart queue',()=>{
     const result=worker.fetch(new Request('https://capture.internal/drain',{method:'POST',headers:{Authorization:'Bearer test'}}),{WORKER_TOKEN:'test',CAPTURE_JOBS:{send}},ctx).then(r=>{returned=true;return r;});
     await Promise.resolve();expect(returned).toBe(false);expect(send).toHaveBeenCalledWith({kind:'capture-wake'});
     release();expect((await result).status).toBe(202);expect(capture.drainCaptures).not.toHaveBeenCalled();
-    expect(capture.runCapture).toHaveBeenCalledWith(expect.anything(),expect.any(Function),22000);
-    expect(ctx.waitUntil).toHaveBeenCalledOnce();
+    expect(capture.runCapture).not.toHaveBeenCalled();
+    expect(ctx.waitUntil).not.toHaveBeenCalled();
   });
   it('does not accept an unauthorized wake',async()=>{
     const send=vi.fn();

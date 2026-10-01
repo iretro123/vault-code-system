@@ -1,6 +1,6 @@
 import { runLiquidityCapture } from './liquidity-capture.js';
 import { checkChartConnection, captureAuthorized } from './capture-check.js';
-import { drainCaptures, runCapture } from './capture.js';
+import { drainCaptures } from './capture.js';
 import { verifyImageSignature } from './capture-policy.js';
 import { archivePendingImages, readCaptureImage } from './image-archive.js';
 
@@ -43,14 +43,10 @@ export default {
     }
     if (request.method==='POST' && url.pathname==='/drain' && await captureAuthorized(request,env.WORKER_TOKEN)) {
       if (!env.CAPTURE_JOBS) return new Response('Capture queue unavailable',{status:503});
-      // Persist recovery first. A single opportunistic capture avoids queue
-      // scheduling latency. Never drain multiple jobs in the HTTP lifetime:
-      // the durable consumer resumes contention, failure or termination.
+      // The durable consumer owns the browser work and its full lease budget.
+      // A former 22s HTTP attempt killed cold switches, consumed an attempt and
+      // blocked the queued job behind the same lease. Persist the wake only.
       await env.CAPTURE_JOBS.send({kind:'capture-wake'});
-      const started=Date.now();
-      ctx.waitUntil(runCapture(env,database(env),22_000)
-        .then(result=>console.info(JSON.stringify({event:'pulse-capture-immediate',result,elapsedMs:Date.now()-started})))
-        .catch(()=>console.warn('Pulse immediate capture deferred to durable queue.')));
       return new Response(null,{status:202});
     }
     return new Response('Not found',{status:404});
