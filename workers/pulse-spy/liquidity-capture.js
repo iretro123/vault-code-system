@@ -84,7 +84,7 @@ export async function captureLiquidity(env,task) {
     await setDataWindow(page,false);
     if (bytes.byteLength<10000 || bytes.byteLength>8000000) throw new Error('liquidity-image-invalid');
     const imageId=crypto.randomUUID();
-    await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:3600,metadata:{contentType:'image/png',purpose:'liquidity-snapshot'}});
+    await env.CHART_IMAGES.put(imageId,bytes,{metadata:{contentType:'image/png',purpose:'liquidity-snapshot'}});
     return {ok:true,imageId,capturedAt,symbol:task.symbol,quoteAt:task.quoteAt,timeframe:task.timeframe,...levels};
   } catch(error) {
     return {ok:false,failure:/^liquidity-[a-z-]+$/.test(error?.message||'')?error.message:`liquidity-${stage}-failed`};

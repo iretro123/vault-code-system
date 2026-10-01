@@ -63,8 +63,8 @@ describe("Live Pulse channel", () => {
   fireEvent.click(screen.getByRole("button",{name:"15 min"}));
   expect(screen.getByAltText(/^Original TradingView SPY 15-minute/)).toHaveAttribute("src","https://example.com/liq15.png");
   act(()=>vi.advanceTimersByTime(181000));
-  expect(screen.getByRole("heading",{name:"Liquidity updating"})).toBeInTheDocument();
-  expect(screen.queryByAltText(/^Original TradingView/)).not.toBeInTheDocument();
+  expect(screen.getByText("Last saved liquidity · Not live")).toBeInTheDocument();
+  expect(screen.getByAltText(/^Original TradingView SPY 15-minute/)).toHaveAttribute("src","https://example.com/liq15.png");
  });
   it("timestamps genuine empty-zone checks and stops the live state when stale", () => {
     const view = setup();
