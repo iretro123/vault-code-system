@@ -32,6 +32,15 @@ describe("Live Pulse channel", () => {
   fireEvent.click(screen.getByRole("button",{name:"5 min"}));
   expect(screen.getByText("Chart capture needs attention")).toBeInTheDocument();
  });
+ it("shows liquidity when toggled from expanded history",()=>{
+  const view=setup();
+  liq.value={5:{available:true,capturedAt:at,chartUrl:"https://example.com/liq.png"}};
+  view.rerender(<SpxPulseRoom/>);
+  fireEvent.click(screen.getByRole("button",{name:"Earlier updates (2)"}));
+  fireEvent.click(screen.getByRole("switch",{name:"Liquidity"}));
+  expect(screen.queryByRole("button",{name:"Hide earlier updates"})).not.toBeInTheDocument();
+  expect(screen.getByAltText(/^Original TradingView SPY 5-minute/)).toHaveAttribute("src","https://example.com/liq.png");
+ });
  it("shows independent liquidity on 5m and 15m without changing zone history",()=>{
   const view=setup();
   liq.value={5:{available:true,capturedAt:at,chartUrl:"https://example.com/liq5.png"},15:{available:true,capturedAt:at,chartUrl:"https://example.com/liq15.png"}};

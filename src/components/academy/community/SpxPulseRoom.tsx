@@ -17,9 +17,9 @@ export function SpxPulseRoom({ source = "cloud", active = true }: { source?: "cl
 function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'local';active:boolean;selected:MemberSymbol;onSymbol:(symbol:MemberSymbol)=>void}) {
   const { feed: receivedFeed, connected, error } = usePulseFeed(source, active, selected);
   const feed = receivedFeed.symbol && receivedFeed.symbol !== selected ? {...receivedFeed,posts:[],quotes:{},indicatorAt:{},receivedAt:null} : receivedFeed;
-  const liquidity = usePulseLiquidity(active && source === "cloud" && selected === "AMEX:SPY");
+  const liquidity = usePulseLiquidity(active && source === "cloud",selected);
   const [showLiquidity,setShowLiquidity] = useState(()=>{try{return localStorage.getItem("vault:pulse:liquidity")==="on";}catch{return false;}});
-  const toggleLiquidity=()=>setShowLiquidity(value=>{try{localStorage.setItem("vault:pulse:liquidity",!value?"on":"off");}catch{/* Preference remains usable for this visit. */}return !value;});
+  const toggleLiquidity=()=>{setHistory(false);setShowLiquidity(value=>{try{localStorage.setItem("vault:pulse:liquidity",!value?"on":"off");}catch{/* Preference remains usable for this visit. */}return !value;});};
   const [tf, setTf] = useState<5 | 15>(5);
   const [now, setNow] = useState(Date.now());
   const [history, setHistory] = useState(false);

@@ -1,7 +1,7 @@
 import { openChartSession } from './capture-session.js';
 import { setDataWindow, selectChartTimeframe, readChartSource } from './capture-source.js';
 import { frameChart } from './capture-framing.js';
-import { CHART_URL, INDICATOR, sourceIndicator } from './capture-policy.js';
+import { CHART_URL, chartMatches, sourceIndicator } from './capture-policy.js';
 
 export const LIQUIDITY_INDICATOR = 'Vault Pulse - Liquidity';
 export function readLiquidityLevels(text) {
@@ -15,9 +15,9 @@ export function readLiquidityLevels(text) {
   return levels;
 }
 export function verifyLiquiditySource(source,task,now=Date.now()) {
-  if (![5,15].includes(task.timeframe) || !new RegExp(`^Chart for (?:AMEX|BATS):SPY, ${task.timeframe} minutes$`).test(source.label)) throw new Error('liquidity-wrong-timeframe');
+  if (![5,15].includes(task.timeframe) || !chartMatches(source.label,task.symbol || 'AMEX:SPY',task.timeframe)) throw new Error('liquidity-wrong-timeframe');
   if (!Number.isFinite(task.quoteAt) || now<task.quoteAt || now-task.quoteAt>90000) throw new Error('liquidity-stale-quote');
-  if (!sourceIndicator(source.text,'AMEX:SPY') || !source.text.includes(LIQUIDITY_INDICATOR)) throw new Error('liquidity-indicator-unavailable');
+  if (!sourceIndicator(source.text,task.symbol || 'AMEX:SPY') || !source.text.includes(LIQUIDITY_INDICATOR)) throw new Error('liquidity-indicator-unavailable');
   if (/disconnected|connection lost|reconnect|cannot connect|sign in to continue|verify you are human/i.test(source.pageText)) throw new Error('liquidity-session-unavailable');
   const price=Number(source.text.match(/([\d,]+(?:\.\d+)?)\s*SELL/)?.[1]?.replaceAll(',',''));
   if (!price || !Number.isFinite(task.price) || Math.abs(price-task.price)>Math.max(1,task.price*.002)) throw new Error('liquidity-price-mismatch');
@@ -51,13 +51,13 @@ export async function liquidityVisibility(page,show) {
 export async function captureLiquidity(env,task) {
   let browser,page,wasVisible,stage='session';
   try {
-    browser=await openChartSession(env,28000);
+    browser=await openChartSession(env,50000);
     page=(await browser.pages()).find(p=>p.url().startsWith(CHART_URL));
     if (!page) throw new Error('liquidity-session-unavailable');
     stage='viewport';
     await page.setViewport({width:1280,height:800,deviceScaleFactor:2});
     stage='timeframe';
-    await selectChartTimeframe(page,task.timeframe);
+    await selectChartTimeframe(page,task.timeframe,task.symbol);
     stage='visibility';
     wasVisible=await liquidityVisibility(page,true);
     if (wasVisible===null) throw new Error('liquidity-indicator-unavailable');
@@ -85,7 +85,7 @@ export async function captureLiquidity(env,task) {
     if (bytes.byteLength<10000 || bytes.byteLength>8000000) throw new Error('liquidity-image-invalid');
     const imageId=crypto.randomUUID();
     await env.CHART_IMAGES.put(imageId,bytes,{expirationTtl:3600,metadata:{contentType:'image/png',purpose:'liquidity-snapshot'}});
-    return {ok:true,imageId,capturedAt,quoteAt:task.quoteAt,timeframe:task.timeframe,...levels};
+    return {ok:true,imageId,capturedAt,symbol:task.symbol,quoteAt:task.quoteAt,timeframe:task.timeframe,...levels};
   } catch(error) {
     return {ok:false,failure:/^liquidity-[a-z-]+$/.test(error?.message||'')?error.message:`liquidity-${stage}-failed`};
   } finally {
@@ -93,10 +93,10 @@ export async function captureLiquidity(env,task) {
     if (browser) { try { await browser.disconnect(); } catch { /* Lease still bounds recovery. */ } }
   }
 }
-export async function runLiquidityCapture(env,rpc,timeframe=null,force=false) {
-  const task=await rpc('pulse_liquidity_claim',{p_timeframe:timeframe,p_force:force});
+export async function runLiquidityCapture(env,rpc,timeframe=null,force=false,symbol=null) {
+  const task=await rpc('pulse_market_liquidity_claim',{p_timeframe:timeframe,p_force:force,p_symbol:symbol});
   if (!task || task.busy) return {ok:false,failure:task?.busy?'capture-busy':'liquidity-not-due'};
   const result=await captureLiquidity(env,task);
-  const saved=await rpc('pulse_liquidity_finish',{p_lease:task.lease,p_timeframe:task.timeframe,p_result:result});
+  const saved=await rpc('pulse_market_liquidity_finish',{p_symbol:task.symbol,p_lease:task.lease,p_timeframe:task.timeframe,p_result:result});
   return saved?result:{ok:false,failure:'liquidity-lease-lost'};
 }

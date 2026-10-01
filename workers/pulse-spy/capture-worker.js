@@ -29,7 +29,9 @@ export default {
     if (request.method==='POST' && url.pathname==='/liquidity' && await captureAuthorized(request,env.WORKER_TOKEN)) {
       const tf=Number(url.searchParams.get('timeframe'));
       if (![5,15].includes(tf)) return Response.json({ok:false,failure:'unsupported-timeframe'},{status:400});
-      const result=await runLiquidityCapture(env,database(env),tf,true);
+      const symbol=url.searchParams.get('symbol') || 'AMEX:SPY';
+      if (!['AMEX:SPY','NASDAQ:QQQ'].includes(symbol)) return Response.json({ok:false,failure:'unsupported-symbol'},{status:400});
+      const result=await runLiquidityCapture(env,database(env),tf,true,symbol);
       return Response.json(result,{status:result.ok?200:409,headers:{'Cache-Control':'no-store'}});
     }
     if (request.method==='POST' && url.pathname==='/check' && await captureAuthorized(request,env.WORKER_TOKEN)) {
@@ -52,7 +54,16 @@ export default {
     return new Response('Not found',{status:404});
   },
   async scheduled(_event,env,ctx) {
-    ctx.waitUntil((async()=>{const rpc=database(env);if(await drainCaptures(env,rpc)) await runLiquidityCapture(env,rpc);})());
+    ctx.waitUntil((async()=>{
+      const rpc=database(env);
+      if (!await drainCaptures(env,rpc)) return;
+      // Four streams need two serial slots per tick. Every claim rechecks the
+      // shared lease and pending zone events, so alerts retain priority.
+      for (let i=0;i<2;i++) {
+        const result=await runLiquidityCapture(env,rpc);
+        if (['capture-busy','liquidity-not-due'].includes(result.failure)) break;
+      }
+    })());
     ctx.waitUntil(archivePendingImages(env,database(env)).catch(()=>console.warn('Pulse image archive deferred; next scheduled run will retry.')));
   },
   async queue(batch,env) {

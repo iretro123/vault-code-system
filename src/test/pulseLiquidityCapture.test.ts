@@ -4,6 +4,15 @@ const now=Date.now();
 const task={timeframe:5,quoteAt:now-1000,price:768};
 const source={label:'Chart for AMEX:SPY, 5 minutes',text:'Vault Zone Pulse - SPY Live Vault Pulse - Liquidity 768.00 SELL',pageText:''};
 describe('independent liquidity provenance',()=>{
+ it('keeps QQQ and SPY liquidity sources isolated on both timeframes',()=>{
+  for(const timeframe of [5,15]) {
+   const qqq={...task,symbol:'NASDAQ:QQQ',timeframe};
+   const chart={...source,label:`Chart for NASDAQ:QQQ, ${timeframe} minutes`,text:'Vault Zone Pulse - SPY & QQQ Vault Pulse - Liquidity 768.00 SELL'};
+   expect(()=>verifyLiquiditySource(chart,qqq,now)).not.toThrow();
+   expect(()=>verifyLiquiditySource(chart,{...qqq,symbol:'AMEX:SPY'},now)).toThrow();
+   expect(()=>verifyLiquiditySource(source,qqq,now)).toThrow();
+  }
+ });
  it('reads actual levels and empty sides without inventing data',()=>{
  expect(readLiquidityLevels('Liquidity reference above 769.12 Liquidity reference below ∅')).toEqual({above:769.12,below:null});
  expect(()=>readLiquidityLevels('unavailable')).toThrow();
