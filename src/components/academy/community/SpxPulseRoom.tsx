@@ -1,5 +1,6 @@
+import { PulseDirection } from "../chat/PulseDirection";
 import { useEffect, useRef, useState } from "react";
-import { Activity, History, ChevronDown, ArrowUpRight, ArrowUp, ArrowDown, ChevronUp } from "lucide-react";
+import { Activity, History, ChevronDown, ArrowUpRight, ArrowUp, ChevronUp } from "lucide-react";
 import { PulseLiquidityChart } from "../chat/PulseLiquidityChart";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
@@ -119,10 +120,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
           {quote.zones.length ? <ul>{quote.zones.map(zone => <li key={`${zone.side}:${zone.lower}:${zone.upper}`} data-side={zone.side}>
             <div className="pr-snapshot-heading">
               <span className="pr-snapshot-side">{tf} min {zone.side}</span>
-              <span className="pr-snapshot-direction">
-                <span className="sr-only">{zone.side === "supply" ? "Watch for rejection" : "Watch for a bounce"}</span>
-                {zone.side === "supply" ? <ArrowDown size={30} strokeWidth={3} aria-hidden="true" /> : <ArrowUp size={30} strokeWidth={3} aria-hidden="true" />}
-              </span>
+              <PulseDirection side={zone.side}/>
             </div><strong>${zone.lower.toFixed(2)} – ${zone.upper.toFixed(2)}</strong>
           </li>)}</ul> : <p className="pr-snapshot-none">No active {tf}-minute zone at this update.</p>}
           {snapshotChartUrl && snapshotChartAt && <PulseLiquidityChart

@@ -1,0 +1,4 @@
+.pulse-direction{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:5px 8px;border-radius:12px;border:1px solid #fb71853d;background:#fb718512;color:#ff9cab;box-shadow:inset 0 1px #ffffff0a;vertical-align:middle}
+.pulse-direction[data-side=demand]{border-color:#62dfac40;background:#62dfac12;color:#7ef0bd}
+.pulse-direction-animal{font-size:25px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif}
+.pulse-direction svg{width:24px;height:24px;flex-shrink:0}
