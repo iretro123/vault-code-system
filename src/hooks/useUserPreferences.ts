@@ -16,6 +16,8 @@ export interface UserPreferences {
   notify_coach_reply: boolean;
   notify_chat: boolean;
   notify_pulse: boolean;
+  notify_pulse_spy: boolean;
+  notify_pulse_qqq: boolean;
   notify_live_events: boolean;
   sounds_enabled: boolean;
   preferred_alert_channel: AlertChannel;
@@ -32,6 +34,8 @@ const DEFAULTS: Omit<UserPreferences, "user_id"> = {
   notify_coach_reply: true,
   notify_chat: true,
   notify_pulse: true,
+  notify_pulse_spy: true,
+  notify_pulse_qqq: false,
   notify_live_events: true,
   sounds_enabled: true,
   preferred_alert_channel: "in_app",

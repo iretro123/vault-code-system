@@ -16,7 +16,7 @@ import {isLocalDesignPreview} from '@/integrations/supabase/localPreviewFetch';
 const TOGGLES = [
   { key: "notifications_enabled", label: "Enable Notifications", desc: "Master toggle for all alerts." },
   { key: "notify_chat", label: "Chat Messages", desc: "New messages in rooms you can access." },
-  { key: "notify_pulse", label: "Pulse Zone Alerts", desc: "New zones, entries and breaks with Full Access." },
+  { key: "notify_pulse", label: "Pulse Zone Alerts", desc: "Choose your symbols below." },
   { key: "sounds_enabled", label: "Message Sounds", desc: "Play a chime for new community messages." },
   { key: "notify_announcements", label: "Announcements", desc: "Important updates from the team." },
   { key: "notify_new_modules", label: "New Module Drops", desc: "When new courses or lessons are added." },
@@ -182,6 +182,16 @@ export function SettingsNotifications() {
         </div>
       </Card>
 
+      <Card className="vault-card p-5 space-y-4">
+        <div><h3 className="text-sm font-semibold">Pulse symbols</h3><p className="text-xs text-muted-foreground">5m & 15m · New zones, entries and confirmed breaks.</p></div>
+        {([['notify_pulse_spy', 'SPY'], ['notify_pulse_qqq', 'QQQ']] as const).map(([key, symbol]) => (
+          <div key={key} className="flex items-center justify-between gap-4">
+            <div><Label className="text-sm font-semibold">${symbol}</Label>{symbol === 'QQQ' && <p className="text-xs text-muted-foreground">Coming soon · Save your alert preference</p>}</div>
+            <Switch aria-label={`${symbol} Pulse alerts`} checked={prefs?.[key] ?? (symbol === 'SPY')} disabled={saving || masterOff || !values.notify_pulse || !prefs}
+              onCheckedChange={checked => void savePreference({[key]: checked})}/>
+          </div>
+        ))}
+      </Card>
       <p className="px-1 text-xs text-muted-foreground">Alerts appear in your notification inbox. Enable device notifications for chat, Pulse and live-session alerts outside the app.</p>
     </div>
   );

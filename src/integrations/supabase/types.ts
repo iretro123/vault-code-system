@@ -3250,6 +3250,8 @@ export type Database = {
           notify_coach_reply: boolean
           notify_live_events: boolean
           notify_new_modules: boolean
+          notify_pulse_spy: boolean
+          notify_pulse_qqq: boolean
           notify_pulse: boolean
           preferred_alert_channel: string
           risk_percent_override: number | null
@@ -3267,6 +3269,8 @@ export type Database = {
           notify_coach_reply?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
+          notify_pulse_spy?: boolean
+          notify_pulse_qqq?: boolean
           notify_pulse?: boolean
           preferred_alert_channel?: string
           risk_percent_override?: number | null
@@ -3284,6 +3288,8 @@ export type Database = {
           notify_coach_reply?: boolean
           notify_live_events?: boolean
           notify_new_modules?: boolean
+          notify_pulse_spy?: boolean
+          notify_pulse_qqq?: boolean
           notify_pulse?: boolean
           preferred_alert_channel?: string
           risk_percent_override?: number | null
