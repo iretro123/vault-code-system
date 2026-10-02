@@ -13,6 +13,7 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import ActivateReturn from "./pages/ActivateReturn";
 import { VaultOSGate } from "./components/VaultOSGate";
 import { BasicTierGate } from "./components/BasicTierGate";
 import { AcademyLayout } from "./components/layout/AcademyLayout";
@@ -174,6 +175,7 @@ const App = () => (
             {import.meta.env.DEV && <Route path="/__preview/share-win" element={<ShareWinPreview />} />}
             <Route path="/intro" element={<Suspense fallback={<RouteFallback />}><IntroCarousel /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/activate-return" element={<ActivateReturn />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/guest" element={<Suspense fallback={<RouteFallback />}><GuestPreview /></Suspense>} />

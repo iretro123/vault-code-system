@@ -80,3 +80,9 @@ verify_jwt = false
 
 [functions.web-push-config]
 verify_jwt = false
+
+[functions.activate-stripe-return]
+verify_jwt = false
+
+[functions.sync-vault-onboarding]
+verify_jwt = false
