@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Adversarial SQL tests for the paid-return claim. Runs the exact applied
 // migrations in an in-memory Postgres with a minimal auth schema stand-in.
 import { readFileSync } from "node:fs";
