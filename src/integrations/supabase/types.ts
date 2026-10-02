@@ -3890,11 +3890,34 @@ export type Database = {
           },
         ]
       }
+      vault_return_claim_proofs: {
+        Row: {
+          email: string
+          prepared_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          email: string
+          prepared_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          email?: string
+          prepared_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vault_return_memberships: {
         Row: {
           access_until: string
           auth_user_id: string | null
           checkout_session_id: string
+          claim_session_id: string | null
+          claimed_at: string | null
           email: string
           paid_at: string
           status: string
@@ -3906,6 +3929,8 @@ export type Database = {
           access_until: string
           auth_user_id?: string | null
           checkout_session_id: string
+          claim_session_id?: string | null
+          claimed_at?: string | null
           email: string
           paid_at?: string
           status: string
@@ -3917,6 +3942,8 @@ export type Database = {
           access_until?: string
           auth_user_id?: string | null
           checkout_session_id?: string
+          claim_session_id?: string | null
+          claimed_at?: string | null
           email?: string
           paid_at?: string
           status?: string
@@ -4921,6 +4948,10 @@ export type Database = {
       }
       vault_paid_notification: {
         Args: { kind: string; path: string; title: string }
+        Returns: boolean
+      }
+      vault_return_caller_session_ok: {
+        Args: { p_claim_session: string; p_claimed_at: string; p_uid: string }
         Returns: boolean
       }
       wake_vault_push: { Args: never; Returns: undefined }

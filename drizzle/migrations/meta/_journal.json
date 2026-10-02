@@ -15,6 +15,13 @@
       "when": 1790974972254,
       "tag": "0001_vault_return_onboarding_revoke_default_execute",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790976139448,
+      "tag": "0002_vault_return_claim_inbox_proof",
+      "breakpoints": true
     }
   ]
 }

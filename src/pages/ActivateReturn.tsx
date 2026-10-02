@@ -14,10 +14,17 @@ export default function ActivateReturn() {
     setBusy(true); setMessage('Checking your membership…');
     if (user) await ensureProfile(user.id, user.email);
     const { data, error } = await supabase.functions.invoke('activate-stripe-return');
-    if (error || !data?.success) {
+    let code: string | undefined;
+    if (error) { try { code = (await (error as { context?: Response }).context?.json())?.code; } catch { /* ignore */ } }
+    if (code === 'fresh_email_link_required') {
+      // Only a session opened from a fresh email link can connect a payment.
+      await supabase.auth.signOut({ scope: 'local' });
+      setMessage('For your security, enter your checkout email and open the new secure link we send you.');
+    } else if (error || !data?.success) {
       setMessage('We couldn’t confirm access yet. Use the same email you entered at Stripe checkout. If you just paid, wait a moment and retry. Your payment is saved.');
     } else {
-      await refetchProfile(); setActivated(true); setMessage('Your Vault OS access is ready.');
+      await refetchProfile(); setActivated(true);
+      setMessage(data.secured ? 'Your Vault OS access is ready. For your security, other devices on this email were signed out and any earlier password was cleared.' : 'Your Vault OS access is ready.');
     }
     setBusy(false);
   }
