@@ -1,8 +1,4 @@
--- Supabase default privileges grant EXECUTE directly to anon/authenticated,
--- so REVOKE ... FROM PUBLIC alone left these service-only routines callable.
-REVOKE EXECUTE ON FUNCTION public.record_vault_return_payment(text,text,text,text,text,timestamptz) FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.claim_vault_onboarding_jobs() FROM anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.claim_vault_return_membership() FROM anon;
-GRANT EXECUTE ON FUNCTION public.record_vault_return_payment(text,text,text,text,text,timestamptz) TO service_role;
-GRANT EXECUTE ON FUNCTION public.claim_vault_onboarding_jobs() TO service_role;
-GRANT EXECUTE ON FUNCTION public.claim_vault_return_membership() TO authenticated, service_role;
+-- No-op marker. Already applied to the live database on 2026-10-02.
+-- Canonical SQL: supabase/migrations/20261002000200_vault_return_onboarding_execute_grants.sql
+-- Kept only so migration tracking stays aligned; must never re-run the DDL.
+SELECT 1;
