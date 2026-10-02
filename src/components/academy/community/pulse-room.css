@@ -248,3 +248,7 @@
  .pr-actions .pr-history-title,.pr-actions .pr-tradingview strong,.pr-actions .pr-history-count{font-size:14px}
  .pr-actions .pr-history>svg,.pr-actions .pr-tradingview>svg{width:19px;height:19px}
 }
+/* Override the community shell's older action spacing. */
+.vault-community .pr-actions .pr-history{margin:0}
+.vault-community .pr-actions .pr-source{padding:0;align-items:stretch}
+.pr-now .pr-market-state[data-closed=true] i,.pr-now[data-fresh=true] .pr-market-state i{background-clip:padding-box}
