@@ -45,3 +45,11 @@
  .community-space-rail[data-open=true]{display:block;position:absolute;inset:56px 10px 10px;width:auto;z-index:15;border:1px solid #adbedb40;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px #0007}
  .community-space-toggle[aria-expanded=true]{position:absolute;right:22px;top:66px;margin:0}
 }
+
+/* iOS time controls can paint their native interior wider than their grid track.
+   Bound the painted field and remove native outer chrome while retaining the picker. */
+.vault-space .vs-time-field{display:block;position:relative;min-width:0;width:100%;max-width:100%;overflow:hidden;margin-top:5px;border:1px solid #aec3dd30;border-radius:7px;background:#202d3f}
+.vault-space .vs-time-field:focus-within{outline:2px solid #8fc2ff;outline-offset:2px}
+.vault-space .vs-time-field input[type=time]{appearance:none;-webkit-appearance:none;display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-inline-size:0;max-inline-size:100%;height:40px;margin:0;padding:7px 6px;border:0;border-radius:0;background:transparent;outline:none}
+.vault-space .vs-time-field input[type=time]::-webkit-date-and-time-value{min-width:0;text-align:left;margin:0}
+.vault-space .vs-time-field input[type=time]::-webkit-datetime-edit{min-width:0;padding:0}
