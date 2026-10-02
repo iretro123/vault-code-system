@@ -232,3 +232,19 @@
 .pr-actions .pr-source p{padding:10px 16px;margin:0}
 .pr-actions .pr-history-pending{background:#55caff0d;box-shadow:inset 3px 0 #71d6ff}
 .pr-actions :is(button,a):focus-visible{outline:2px solid #87ddff;outline-offset:-3px}
+
+/* Mobile uses compact toolbar actions, not full-width call-to-action cards. */
+@media(max-width:767px){
+ .pr-market-state[data-closed=true]{padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:#c2cbd7;font-size:11px;font-weight:600;letter-spacing:.01em;text-transform:none;gap:6px}
+ .pr-market-state[data-closed=true] i{width:6px;height:6px;background:#a5aebb;opacity:.8}
+ .pr-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;width:fit-content;max-width:100%;margin:14px 0 4px;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
+ .pr-actions .pr-desktop-label{display:none}
+ .pr-actions .pr-history{width:auto;min-height:44px;margin:0;padding:10px 12px;gap:8px;border:1px solid #a8c5e333;border-radius:9px;background:#35485e;box-shadow:none}
+ .pr-actions .pr-history-title{font-size:13px;font-weight:600;flex:initial}
+ .pr-actions .pr-history>svg:first-child{width:17px;height:17px}
+ .pr-actions .pr-history>svg:last-child{width:14px;height:14px}
+ .pr-actions .pr-history-count{font-size:11px;min-width:20px;padding:1px 4px;border:0;background:#172d4350;border-radius:4px}
+ .pr-actions .pr-source{width:auto;border:0!important}
+ .pr-actions .pr-source>a.pr-tradingview{min-height:44px;width:auto;padding:10px 12px;gap:8px;border:1px solid #a8c5e325;border-radius:9px;background:transparent}
+ .pr-actions .pr-tradingview>img{width:19px;height:19px}.pr-actions .pr-tradingview strong{font-size:12px;font-weight:550}.pr-actions .pr-tradingview>svg{width:14px;height:14px}
+}
