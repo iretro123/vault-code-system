@@ -1,3 +1,4 @@
+import { fcmTokenIsUnregistered, apnsFailureReason } from "../_shared/pushProviderResponse.ts";
 import { cachedProviderToken } from "../_shared/providerTokenCache.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { importPKCS8, SignJWT } from "https://esm.sh/jose@5.9.2";
@@ -207,7 +208,7 @@ async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotif
       continue;
     }
     const raw = await response.text();
-    if (response.status === 404 || raw.includes("UNREGISTERED")) invalidTokens.push(token);
+    if (fcmTokenIsUnregistered(raw)) invalidTokens.push(token);
     console.warn("push_provider_failure", { provider: "fcm", status: response.status });
     failureCode = `fcm:${response.status}`;
     errors.push(`FCM request failed with status ${response.status}`);
@@ -260,7 +261,7 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     if (!res.ok) {
       try {
         const txt = await res.clone().text();
-        reason = txt ? (JSON.parse(txt)?.reason || "") : "";
+        reason = apnsFailureReason(txt);
       } catch {
         reason = "";
       }
@@ -269,9 +270,10 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
         if (!res.ok) {
           try {
             const txt = await res.clone().text();
-            reason = txt ? (JSON.parse(txt)?.reason || reason) : reason;
+            reason = apnsFailureReason(txt);
           } catch {
-            // Keep the first APNs reason if the retry body is not JSON.
+            // The alternate response alone decides retirement; a transient failure is retryable.
+            reason = "";
           }
         }
       }
