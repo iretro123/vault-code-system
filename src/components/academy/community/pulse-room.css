@@ -215,36 +215,36 @@
 .pr-history>svg:first-child{color:#85daff;flex-shrink:0}.pr-history-title{font-size:14px;font-weight:650;text-align:left;flex:1}.pr-history-count{min-width:28px;padding:3px 8px;border-radius:7px;background:#132c4680;color:#c3eaff;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
 .pr-history-latest{display:block;margin:0 0 12px;padding-left:10px;border-left:2px solid #71d3ff;color:#a4e1ff;font-size:12px;font-weight:650;letter-spacing:.02em}
 
-/* Unified chart actions: one surface, clear hierarchy, aligned edges. */
-.pr-actions{margin:18px 0 0;border:1px solid #a9c7e32b;border-radius:16px;overflow:hidden;background:linear-gradient(120deg,#304256,#29394c);box-shadow:inset 0 1px #ffffff0b,0 6px 18px #0b15221a}
-.pr-actions .pr-history{margin:0;border:0;border-radius:0;min-height:60px;padding:16px 18px;background:transparent;box-shadow:none;color:#eff7ff;gap:14px}
-.pr-actions .pr-history:hover{background:#8bccff0c}
-.pr-actions .pr-history-title{font-size:15px;letter-spacing:-.15px;font-weight:650}
-.pr-actions .pr-history>svg:first-child{width:22px;height:22px;color:#82dcff}
-.pr-actions .pr-history-count{background:#80d9ff18;border:1px solid #80d9ff25;color:#a9e5ff;border-radius:6px;min-width:30px;text-align:center}
-.pr-actions .pr-source{padding:0;gap:0;align-items:stretch}
-.pr-actions .pr-history+.pr-source{border-top:1px solid #c5def01a}
-.pr-actions .pr-source>a.pr-tradingview{width:100%;min-height:54px;margin:0;max-width:none;border:0;border-radius:0;padding:13px 18px;gap:14px;box-shadow:none;background:#101e2d26;color:#c3d1e0}
-.pr-actions .pr-source>a.pr-tradingview:hover{background:#b8d9ff0a;color:#f4f8ff}
-.pr-actions .pr-tradingview>img{width:22px;height:22px;border-radius:4px;opacity:.9}
-.pr-actions .pr-tradingview strong{font-size:13px;font-weight:550;letter-spacing:0}
-.pr-actions .pr-tradingview>svg{width:17px;height:17px;color:#97adc5}
-.pr-actions .pr-source p{padding:10px 16px;margin:0}
-.pr-actions .pr-history-pending{background:#55caff0d;box-shadow:inset 3px 0 #71d6ff}
-.pr-actions :is(button,a):focus-visible{outline:2px solid #87ddff;outline-offset:-3px}
-
-/* Mobile uses compact toolbar actions, not full-width call-to-action cards. */
+/* Selected soft-square treatment: two balanced actions beneath the real chart. */
+.pr-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px;max-width:540px;margin:20px 0 4px}
+.pr-actions .pr-history,.pr-actions .pr-source>a.pr-tradingview{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;margin:0;padding:14px 12px;border-radius:15px;color:#f5f8fc;box-shadow:none;transition:background .18s,border-color .18s,transform .18s}
+.pr-actions .pr-history{border:1px solid #ffffff0c;background:#465e79}
+.pr-actions .pr-history:hover{background:#526d89}
+.pr-actions .pr-history-title{flex:initial;font-size:16px;font-weight:650;letter-spacing:-.2px}
+.pr-actions .pr-history>svg{width:22px;height:22px;color:inherit;flex-shrink:0}
+.pr-actions .pr-history-count{min-width:0;padding:0 0 0 3px;background:none;border:0;color:inherit;font-size:16px;font-weight:600}
+.pr-actions .pr-source{padding:0;gap:0;min-width:0;align-items:stretch}
+.pr-actions .pr-source>a.pr-tradingview{max-width:none;border:1.5px solid #c4d0dd;background:transparent}
+.pr-actions .pr-source>a.pr-tradingview:hover{background:#ffffff08;border-color:#f0f6ff}
+.pr-actions .pr-tradingview strong{font-size:16px;font-weight:650;letter-spacing:-.3px;white-space:nowrap}
+.pr-actions .pr-tradingview>svg{width:22px;height:22px;color:inherit;flex-shrink:0}
+.pr-actions .pr-source p{margin:8px 0;font-size:12px}
+.pr-actions :is(button,a):active{transform:scale(.98)}
+.pr-actions :is(button,a):focus-visible{outline:2px solid #87ddff;outline-offset:4px}
+.pr-now .pr-market-state{gap:12px;font-size:17px;font-weight:650;letter-spacing:-.25px;line-height:1.3;color:#f1f5fa}
+.pr-now .pr-market-state[data-closed=true]{padding:0;border:0;border-radius:0;background:none;box-shadow:none;text-transform:none}
+.pr-now .pr-market-state i{display:block;flex:0 0 30px;width:30px;height:30px;background:#adb7c4;border:10px solid #38495c;background-clip:padding-box;box-shadow:none}
+.pr-now .pr-market-state[data-closed=true] i{background:#ff8588;border-color:#ff858829}
+.pr-now[data-fresh=true] .pr-market-state i{background:#68e697;border-color:#68e69729;box-shadow:none}
+.pr-now b{font-size:18px;font-weight:650;margin-left:12px}
 @media(max-width:767px){
- .pr-market-state[data-closed=true]{padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:#c2cbd7;font-size:11px;font-weight:600;letter-spacing:.01em;text-transform:none;gap:6px}
- .pr-market-state[data-closed=true] i{width:6px;height:6px;background:#a5aebb;opacity:.8}
- .pr-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;width:fit-content;max-width:100%;margin:14px 0 4px;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
- .pr-actions .pr-desktop-label{display:none}
- .pr-actions .pr-history{width:auto;min-height:44px;margin:0;padding:10px 12px;gap:8px;border:1px solid #a8c5e333;border-radius:9px;background:#35485e;box-shadow:none}
- .pr-actions .pr-history-title{font-size:13px;font-weight:600;flex:initial}
- .pr-actions .pr-history>svg:first-child{width:17px;height:17px}
- .pr-actions .pr-history>svg:last-child{width:14px;height:14px}
- .pr-actions .pr-history-count{font-size:11px;min-width:20px;padding:1px 4px;border:0;background:#172d4350;border-radius:4px}
- .pr-actions .pr-source{width:auto;border:0!important}
- .pr-actions .pr-source>a.pr-tradingview{min-height:44px;width:auto;padding:10px 12px;gap:8px;border:1px solid #a8c5e325;border-radius:9px;background:transparent}
- .pr-actions .pr-tradingview>img{width:19px;height:19px}.pr-actions .pr-tradingview strong{font-size:12px;font-weight:550}.pr-actions .pr-tradingview>svg{width:14px;height:14px}
+ .pr-now>span:first-child{width:100%;justify-content:space-between}
+ .pr-now{row-gap:7px;margin-bottom:18px}
+ .pr-now>span:last-child:empty{display:none}
+ .pr-actions{gap:10px;margin-top:18px}
+ .pr-actions .pr-history,.pr-actions .pr-source>a.pr-tradingview{min-height:56px;padding:13px 9px;border-radius:14px;gap:8px}
+}
+@media(max-width:360px){
+ .pr-actions .pr-history-title,.pr-actions .pr-tradingview strong,.pr-actions .pr-history-count{font-size:14px}
+ .pr-actions .pr-history>svg,.pr-actions .pr-tradingview>svg{width:19px;height:19px}
 }
