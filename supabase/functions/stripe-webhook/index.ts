@@ -55,6 +55,13 @@ serve(async (req) => {
 
     log(traceId, "EVENT_RECEIVED", { type: event.type, id: event.id });
 
+    // Production fail-closed guard: test-mode/sandbox events must never reach
+    // entitlement, event-log, or onboarding-outbox writes on the live backend.
+    if (event.livemode !== true) {
+      log(traceId, "IGNORED_NON_LIVE_EVENT", { type: event.type, id: event.id });
+      return new Response(JSON.stringify({ received: true, ignored: "non_live_event" }), { status: 200, headers: corsHeaders });
+    }
+
     // ─── 2. Idempotency check ───
     const { data: existing } = await supabase
       .from("stripe_webhook_events")
