@@ -12,6 +12,7 @@ const MIGRATIONS = [
   "supabase/migrations/20261002000100_vault_return_onboarding.sql",
   "supabase/migrations/20261002000200_vault_return_onboarding_execute_grants.sql",
   "drizzle/migrations/0002_vault_return_claim_inbox_proof.sql",
+  "drizzle/migrations/0003_vault_return_claim_session_strict.sql",
 ].map(read);
 
 const BUYER = "buyer@example.com";
@@ -94,11 +95,34 @@ describe("paid return claim requires fresh inbox proof", () => {
     expect(await h.claim(db, u, BUYER, buyerSession)).toBe(true);
     expect(await h.hasAccess(db, u, BUYER, attackerSession)).toBe(false);
     expect(await h.hasAccess(db, u, BUYER, buyerSession)).toBe(true);
-    // the retained session also cannot re-claim to refresh the bind
-    expect(await h.claim(db, u, BUYER, attackerSession)).toBe(true); // idempotent report only
+    // the retained session gets no success report (so the edge grants no role) and cannot move the bind
+    expect(await h.claim(db, u, BUYER, attackerSession)).toBe(false);
     const row = (await db.query<{ claim_session_id: string }>("SELECT claim_session_id FROM public.vault_return_memberships")).rows[0];
     expect(row.claim_session_id).toBe(buyerSession);
     expect(await h.hasAccess(db, u, BUYER, attackerSession)).toBe(false);
+    // the legitimate claiming session still reports success idempotently
+    expect(await h.claim(db, u, BUYER, buyerSession)).toBe(true);
+  });
+
+  it("a normal login after the bind (new session) has access", async () => {
+    const u = await h.addUser(db, BUYER);
+    const s = await h.addSession(db, u, "otp", 1);
+    await h.prepare(db, s, u, BUYER);
+    expect(await h.claim(db, u, BUYER, s)).toBe(true);
+    const later = await h.addSession(db, u, "password");
+    expect(await h.hasAccess(db, u, BUYER, later)).toBe(true);
+    expect(await h.claim(db, u, BUYER, later)).toBe(true);
+  });
+
+  it("a revoked claim session loses access and gets no success report", async () => {
+    const u = await h.addUser(db, BUYER);
+    const s = await h.addSession(db, u, "otp", 1);
+    await h.prepare(db, s, u, BUYER);
+    expect(await h.claim(db, u, BUYER, s)).toBe(true);
+    await db.query("DELETE FROM auth.mfa_amr_claims WHERE session_id=$1", [s]);
+    await db.query("DELETE FROM auth.sessions WHERE id=$1", [s]);
+    expect(await h.hasAccess(db, u, BUYER, s)).toBe(false);
+    expect(await h.claim(db, u, BUYER, s)).toBe(false);
   });
 
   it("server-side checks (service role, no user JWT) still see the claimed membership", async () => {
