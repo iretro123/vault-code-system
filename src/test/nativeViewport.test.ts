@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const keyboard = vi.hoisted(() => ({ addListener: vi.fn().mockResolvedValue({remove:vi.fn()}), setAccessoryBarVisible:vi.fn().mockResolvedValue(undefined), setResizeMode:vi.fn().mockResolvedValue(undefined) }));
-vi.mock('@capacitor/core', () => ({Capacitor:{isNativePlatform:()=>true}}));
+const nativePlatform = vi.hoisted(() => ({value:'ios'}));
+vi.mock('@capacitor/core', () => ({Capacitor:{isNativePlatform:()=>true,getPlatform:()=>nativePlatform.value}}));
 vi.mock('@capacitor/keyboard', () => ({Keyboard:keyboard,KeyboardResize:{Body:'body'}}));
 vi.mock('@/lib/nativeAuthPersistence', () => ({hydrateNativeAuthPersistence:()=>new Promise(()=>{})}));
 vi.mock('@/lib/membershipReconciler', () => ({installMembershipReconciler:vi.fn()}));
 
 let viewport: EventTarget & {height:number;width:number};
 beforeEach(async()=>{
+  nativePlatform.value = 'ios';
   vi.resetModules();vi.clearAllMocks();
   viewport=Object.assign(new EventTarget(),{height:844,width:390});
   vi.stubGlobal('visualViewport',viewport);
@@ -98,4 +100,14 @@ it('ignores the native keyboard height while the user pinch zooms',async()=>{
   show({keyboardHeight:340});
   expect(document.documentElement.style.getPropertyValue('--academy-visible-height')).toBe('844px');
   expect(document.body.classList.contains('native-keyboard-open')).toBe(false);
+});
+
+
+it('keeps Android keyboard listeners without invoking iOS-only APIs', async () => {
+  nativePlatform.value = 'android';
+  vi.resetModules();vi.clearAllMocks();
+  await import('../main');
+  await vi.waitFor(() => expect(keyboard.addListener).toHaveBeenCalledWith('keyboardDidShow', expect.any(Function)));
+  expect(keyboard.setAccessoryBarVisible).not.toHaveBeenCalled();
+  expect(keyboard.setResizeMode).not.toHaveBeenCalled();
 });

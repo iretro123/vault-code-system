@@ -112,8 +112,11 @@ if (isNativeCapacitor) {
 
   import("@capacitor/keyboard")
     .then(({ Keyboard, KeyboardResize }) => {
-      Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
-      Keyboard.setResizeMode({ mode: KeyboardResize.Body }).catch(() => {});
+      // These APIs are iOS-only; Android reports UNIMPLEMENTED.
+      if (Capacitor.getPlatform() === "ios") {
+        Keyboard.setAccessoryBarVisible({ isVisible: false }).catch(() => {});
+        Keyboard.setResizeMode({ mode: KeyboardResize.Body }).catch(() => {});
+      }
 
       const onShow = ({ keyboardHeight }: { keyboardHeight: number }) => {
         nativeKeyboardHeight = toCssPixels(keyboardHeight);

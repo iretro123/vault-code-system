@@ -1,6 +1,6 @@
 import { PulseDirection } from "../chat/PulseDirection";
 import { useEffect, useRef, useState } from "react";
-import { Activity, FileText, ExternalLink, ArrowUpRight, ArrowUp, ChevronUp } from "lucide-react";
+import { Activity, FileText, ExternalLink, ArrowUpRight, ArrowUp, ChevronUp, ChevronDown } from "lucide-react";
 import { PulseLiquidityChart } from "../chat/PulseLiquidityChart";
 import { ZonePulseCard } from "../chat/ZonePulseCard";
 import { pulseAge, pulseWindowOpen } from "@/lib/spxPulse";
@@ -101,7 +101,7 @@ function PulseMarketRoom({source,active,selected,onSymbol}:{source:'cloud'|'loca
 
   return <section className="zone-pulse-room pulse-room-clean" aria-label={`${symbolLabel} Zone Pulse`}>
     <header className="pr-toolbar">
-      <span className="pr-symbol"><Activity size={25} aria-hidden="true"/><select className="pr-symbol-select" aria-label="Pulse symbol" value={selected} onChange={event=>onSymbol(event.target.value as MemberSymbol)}><option value="AMEX:SPY">$SPY</option><option value="NASDAQ:QQQ">$QQQ</option></select></span>
+      <span className="pr-symbol"><Activity size={25} aria-hidden="true"/><span className="pr-symbol-picker"><select className="pr-symbol-select" aria-label="Pulse symbol" value={selected} onChange={event=>onSymbol(event.target.value as MemberSymbol)}><option value="AMEX:SPY">$SPY</option><option value="NASDAQ:QQQ">$QQQ</option></select><ChevronDown aria-hidden="true" size={18}/></span></span>
       <div className="pr-timeframes" aria-label="Chart timeframe">{([5, 15] as const).map(value => <button key={value} type="button" aria-pressed={tf === value} onClick={() => changeTimeframe(value)}>{value} min</button>)}</div>
     {source === "cloud" && <button type="button" role="switch" aria-checked={showLiquidity} className="pr-liquidity-toggle" onClick={toggleLiquidity}>Liquidity<span aria-hidden="true"/></button>}
     </header>

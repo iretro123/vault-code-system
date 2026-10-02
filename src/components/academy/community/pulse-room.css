@@ -198,7 +198,7 @@
 @media(max-width:450px){.vault-community .pr-toolbar{gap:8px}.pr-liquidity-toggle{font-size:11px;gap:5px}}
 @media(max-width:450px){.vault-community .pr-toolbar:has(.pr-liquidity-toggle){flex-wrap:wrap}.vault-community .pr-toolbar:has(.pr-liquidity-toggle) .pr-timeframes button{min-width:56px;font-size:14px;padding-inline:8px}.pr-liquidity-toggle{min-height:44px;flex-shrink:0}}
 
-.pr-symbol-select{font:inherit;color:inherit;background:transparent;border:0;cursor:pointer;padding:4px 18px 4px 0;max-width:110px}.pr-symbol-select option{background:#243449;color:#fff}.pr-symbol-select:focus-visible{outline:2px solid #64d7ff;outline-offset:4px;border-radius:4px}
+.pr-symbol-picker{position:relative;display:inline-flex;align-items:center;min-width:0}.pr-symbol-picker>svg{position:absolute;right:0;width:18px;height:18px;pointer-events:none;color:inherit}.pr-symbol-select{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;background:transparent;border:0;cursor:pointer;padding:4px 26px 4px 0;max-width:110px}.pr-symbol-select option{background:#243449;color:#fff}.pr-symbol-select:focus-visible{outline:2px solid #64d7ff;outline-offset:4px;border-radius:4px}
 
 /* Keep saved snapshots and live events in the same restrained palette. */
 .pr-snapshot[data-side=demand]{--snapshot-rgb:162,241,203;--snapshot-accent:#a2f1cb;--snapshot-base:#142c26;--snapshot-badge:#285543;background:linear-gradient(112deg,#1c3930,#142c26);border-color:#b7ffe71c;box-shadow:inset 0 1px 0 #b7ffe71c}
