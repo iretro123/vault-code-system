@@ -44,8 +44,10 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  // Verify user has active access before issuing signed URL
-  const { data: allowed, error: accessError } = await serviceClient.rpc("vault_access_for_user", { uid: userId });
+  // Verify access under the CALLER's JWT so session-bound entitlements (paid
+  // return claims) reject retained pre-bind or revoked sessions.
+  void userId;
+  const { data: allowed, error: accessError } = await anonClient.rpc("has_current_full_access");
   if (accessError || allowed !== true) {
     return new Response(JSON.stringify({ error: "Access required" }), {
       status: 403,

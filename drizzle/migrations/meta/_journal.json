@@ -22,6 +22,13 @@
       "when": 1790976139448,
       "tag": "0002_vault_return_claim_inbox_proof",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790982196676,
+      "tag": "0003_vault_return_claim_session_strict",
+      "breakpoints": true
     }
   ]
 }
