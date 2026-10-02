@@ -1,3 +1,4 @@
+import { clearTradeLogCache } from "@/lib/tradeLogCache";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,9 @@ export function SettingsPrivacy() {
         supabase.from("journal_entries").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       ]);
 
+      const failed = [profileRes, prefsRes, ticketsRes, messagesRes, tradesRes, journalRes].find(result => result.error);
+      if (failed) throw failed.error;
+
       const data = {
         exported_at: new Date().toISOString(),
         profile: profileRes.data,
@@ -80,19 +84,20 @@ export function SettingsPrivacy() {
         supabase.from("profiles").update({ account_balance: 0, onboarding_completed: false }).eq("user_id", user.id),
       ]);
 
+      if (!tradeRes.error) clearTradeLogCache(user.id);
       if (tradeRes.error) throw tradeRes.error;
       if (journalRes.error) throw journalRes.error;
       if (profileRes.error) throw profileRes.error;
 
       // Clean up vault state, events, and trader_dna
-      await Promise.all([
+      const cleanupResults = await Promise.all([
         supabase.from("vault_state").delete().eq("user_id", user.id),
         supabase.from("vault_events").delete().eq("user_id", user.id),
         supabase.from("trader_dna").delete().eq("user_id", user.id),
       ]);
 
-      // Clear local cache
-      try { localStorage.removeItem("va_cache_trade_entries"); } catch { void 0; }
+      const failedCleanup = cleanupResults.find(result => result.error);
+      if (failedCleanup) throw failedCleanup.error;
 
       // Refresh in-memory profile so onboarding gate sees onboarding_completed=false
       await refetchProfile();
@@ -103,7 +108,7 @@ export function SettingsPrivacy() {
       navigate("/academy/trade");
     } catch (error: unknown) {
       console.error("Error deleting journal/progress:", error);
-      toast.error("Failed to delete data. Try again.");
+      toast.error("Deletion was not completed. Some data may already be removed. Please try again.");
     } finally {
       setDeleting(false);
     }

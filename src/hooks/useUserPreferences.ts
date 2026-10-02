@@ -54,23 +54,33 @@ export function useUserPreferences() {
     setLoading(true);
 
     (async () => {
-      const { data, error } = await supabase
-        .from("user_preferences")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (cancelled) return;
-      if (error) { setLoading(false); return; }
-      if (data) {
-        setPrefs({ ...DEFAULTS, ...data } as UserPreferences);
-      } else {
-        // Create default row
+      try {
+        const read = () => supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle();
+        const { data, error } = await read();
+        if (cancelled || error) return;
+        if (data) {
+          setPrefs({ ...DEFAULTS, ...data } as UserPreferences);
+          return;
+        }
         const newRow = { user_id: user.id, ...DEFAULTS };
-        if(!isLocalDesignPreview()) await supabase.from("user_preferences").insert(newRow);
-        setPrefs(newRow as UserPreferences);
+        if (isLocalDesignPreview()) {
+          setPrefs(newRow);
+          return;
+        }
+        const created = await supabase.from("user_preferences").insert(newRow).select("*").single();
+        if (cancelled) return;
+        if (!created.error && created.data) {
+          setPrefs({ ...DEFAULTS, ...created.data } as UserPreferences);
+        } else if (created.error?.code === "23505") {
+          // Another mounted consumer may have created it. Read its values; never overwrite them.
+          const existing = await read();
+          if (!cancelled && !existing.error && existing.data) setPrefs({ ...DEFAULTS, ...existing.data } as UserPreferences);
+        }
+      } catch {
+        // A failed load must not look like persisted default preferences.
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [user]);
@@ -81,13 +91,19 @@ export function useUserPreferences() {
       setPrefs(p=>p?{...p,...updates}:p);
       return true;
     }
-    const { error } = await supabase
-      .from("user_preferences")
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq("user_id", user.id);
-    if (error) return false;
-    setPrefs((p) => p?.user_id === user.id ? { ...p, ...updates } : p);
-    return true;
+    try {
+      const { data, error } = await supabase
+        .from("user_preferences")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .select("*")
+        .single();
+      if (error || !data || data.user_id !== user.id) return false;
+      setPrefs((p) => p?.user_id === user.id ? { ...DEFAULTS, ...data } as UserPreferences : p);
+      return true;
+    } catch {
+      return false;
+    }
   }, [user, prefs]);
 
   return { prefs, loading, updatePrefs };

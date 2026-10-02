@@ -143,7 +143,11 @@ describe("Pulse screenshot integrity", () => {
     const { container } = render(<ZonePulseCard post={post}/>);
     expect(screen.getByText("Original chart unavailable for this update.")).toBeInTheDocument();
     expect(container.querySelector(".pulse-data-chart")).toBeNull();
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(container.querySelector("img, canvas, .pcp-chart")).toBeNull();
+    // The direction badge is an accessible image, but must never stand in for a chart.
+    expect(screen.getAllByRole("img")).toEqual([
+      screen.getByRole("img", { name: "Bullish demand · Watch for a bounce" }),
+    ]);
     expect(screen.getByText("$SPX500")).toBeInTheDocument();
   });
 });

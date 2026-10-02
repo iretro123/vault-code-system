@@ -1,3 +1,4 @@
+import { clearTradeLogCache } from "@/lib/tradeLogCache";
 import { disableWebPush } from "@/lib/webPush";
 import { useState, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setUserRole(null);
     fetchedForRef.current = null;
+    clearTradeLogCache();
     try {
       CACHE_KEYS.forEach((k) => localStorage.removeItem(k));
     } catch {
@@ -222,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             void reconcileMembershipNow(uid);
           }, 0);
         } else {
+          clearTradeLogCache();
           setProfile(null);
           setUserRole(null);
           fetchedForRef.current = null;

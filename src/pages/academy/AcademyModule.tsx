@@ -143,7 +143,8 @@ const AcademyModule = () => {
 
   const handleDeleteLesson = async (id: string) => {
     if (!confirm("Delete this lesson?")) return;
-    await supabase.from("academy_lessons").delete().eq("id", id);
+    const { error } = await supabase.from("academy_lessons").delete().eq("id", id);
+    if (error) { toast.error("Lesson could not be deleted. Please try again."); return; }
     toast.success("Lesson deleted");
     if (activeLessonId === id) setActiveLessonId(null);
     refetchLessons();
@@ -233,9 +234,8 @@ const AcademyModule = () => {
                   const isHidden = lesson.visible === false;
 
                   return (
-                    <button
+                    <div
                       key={lesson.id}
-                      onClick={() => { setActiveLessonId(lesson.id); setSidebarOpen(false); }}
                       className={cn(
                         "w-full max-w-full min-w-0 flex items-center gap-3 overflow-hidden px-4 py-3 text-left transition-colors group",
                         isActive
@@ -244,6 +244,9 @@ const AcademyModule = () => {
                         isHidden && canManageContent && "opacity-50"
                       )}
                     >
+                      <button type="button" aria-current={isActive ? "true" : undefined}
+                        onClick={() => { setActiveLessonId(lesson.id); setSidebarOpen(false); }}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left min-h-11">
                       <div className={cn(
                         "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-mono",
                         isCompleted
@@ -265,10 +268,12 @@ const AcademyModule = () => {
                           <EyeOff className="h-3 w-3 text-yellow-500 shrink-0" />
                         )}
                       </div>
+                      </button>
                       {canManageContent && (
-                        <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0">
+                        <div className="flex gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 shrink-0">
                           <button
-                            className="p-1 hover:text-foreground text-muted-foreground"
+                            aria-label={`Edit ${lesson.lesson_title}`}
+                            className="p-2 min-h-11 min-w-11 hover:text-foreground text-muted-foreground"
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingId(lesson.id);
@@ -281,14 +286,15 @@ const AcademyModule = () => {
                             <Pencil className="h-3 w-3" />
                           </button>
                           <button
-                            className="p-1 hover:text-destructive text-muted-foreground"
+                            aria-label={`Delete ${lesson.lesson_title}`}
+                            className="p-2 min-h-11 min-w-11 hover:text-destructive text-muted-foreground"
                             onClick={(e) => { e.stopPropagation(); handleDeleteLesson(lesson.id); }}
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
                         </div>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>

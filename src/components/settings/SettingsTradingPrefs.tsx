@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -12,13 +13,6 @@ const TRADING_STYLES = [
   { value: "0dte", label: "0DTE" },
 ];
 
-const AUTOPAUSE_OPTIONS = [
-  { value: "30", label: "30 minutes" },
-  { value: "60", label: "60 minutes" },
-  { value: "90", label: "90 minutes" },
-  { value: "0", label: "Never" },
-];
-
 export function SettingsTradingPrefs() {
   const { prefs, loading, updatePrefs } = useUserPreferences();
   const [saving, setSaving] = useState(false);
@@ -26,26 +20,29 @@ export function SettingsTradingPrefs() {
 
   const [market, setMarket] = useState(prefs?.default_market || "options");
   const [style, setStyle] = useState(prefs?.trading_style || "");
-  const [autopause, setAutopause] = useState(String(prefs?.session_autopause_minutes ?? 60));
 
   useEffect(() => {
     if (prefs) {
       setMarket(prefs.default_market);
       setStyle(prefs.trading_style || "");
-      setAutopause(String(prefs.session_autopause_minutes));
     }
   }, [prefs]);
 
   const handleSave = async () => {
     setSaving(true);
     setSaved(false);
+    try {
     const ok = await updatePrefs({
       default_market: market,
       trading_style: style || null,
-      session_autopause_minutes: parseInt(autopause) || 0,
     });
-    setSaving(false);
     if (ok) { setSaved(true); setTimeout(() => setSaved(false), 2500); }
+    else toast.error("Preferences could not be saved. Please try again.");
+    } catch {
+      toast.error("Preferences could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -78,17 +75,6 @@ export function SettingsTradingPrefs() {
             {TRADING_STYLES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label className="text-xs text-muted-foreground">Session Auto-Pause</Label>
-        <Select value={autopause} onValueChange={setAutopause}>
-          <SelectTrigger aria-label="Session auto-pause" className="vault-input"><SelectValue /></SelectTrigger>
-          <SelectContent className="bg-popover border-border z-50">
-            {AUTOPAUSE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <p className="text-[10px] text-muted-foreground/60">If you're inactive, Vault auto-pauses to prevent overtrading.</p>
       </div>
 
       {/* Locked time format */}

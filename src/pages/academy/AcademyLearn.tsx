@@ -160,8 +160,10 @@ const AcademyLearn = () => {
 
   const handleDeleteModule = async (id: string, slug: string) => {
     if (!confirm("Delete this module and all its lessons?")) return;
-    await supabase.from("academy_lessons").delete().eq("module_slug", slug);
-    await supabase.from("academy_modules").delete().eq("id", id);
+    const lessonsResult = await supabase.from("academy_lessons").delete().eq("module_slug", slug);
+    if (lessonsResult.error) { toast.error("Could not delete lessons. Please try again."); return; }
+    const moduleResult = await supabase.from("academy_modules").delete().eq("id", id);
+    if (moduleResult.error) { toast.error("Lessons removed, but the module could not be deleted. Please try again."); refetchModules(); return; }
     toast.success("Module deleted");
     refetchModules();
   };
@@ -409,7 +411,8 @@ const AcademyLearn = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity"
+                              aria-label={`Edit ${mod.title}`}
+                              className="h-11 w-11 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setEditingId(mod.id);
@@ -423,7 +426,8 @@ const AcademyLearn = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                              aria-label={`Delete ${mod.title}`}
+                              className="h-11 w-11 opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteModule(mod.id, mod.slug);

@@ -930,6 +930,7 @@ function LegacyCoachDrawer() {
                   />
 
                   <button
+                    aria-label="Send question"
                     onClick={() => handleChatSend()}
                     disabled={!chatInput.trim() || chatLoading}
                     className="shrink-0 h-11 w-11 rounded-xl flex items-center justify-center bg-gradient-to-b from-primary to-primary/80 text-primary-foreground hover:shadow-[0_0_16px_2px_hsl(217_91%_60%/0.2)] disabled:opacity-40 disabled:pointer-events-none transition-all duration-150 active:scale-95"
@@ -1107,7 +1108,7 @@ function LegacyCoachDrawer() {
                   <div className="flex gap-2">
                     <Input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder="Add a reply…" className="flex-1 h-10 text-sm bg-white/[0.03] border-white/[0.08]" maxLength={500}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleReply(); } }} />
-                    <Button size="icon" className="h-10 w-10" onClick={handleReply} disabled={!replyText.trim() || replySending}>
+                    <Button aria-label="Send reply" size="icon" className="h-11 w-11" onClick={handleReply} disabled={!replyText.trim() || replySending}>
                       {replySending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>

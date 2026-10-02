@@ -45,33 +45,37 @@ export function SettingsSecurity() {
     setResetting(true);
     try {
       // Reset onboarding flag
-      await supabase
+      const profileResult = await supabase
         .from("profiles")
         .update({ onboarding_completed: false })
         .eq("user_id", user.id);
+      if (profileResult.error) throw profileResult.error;
 
       // Delete trader_dna
-      await supabase.from("trader_dna")
+      const dnaResult = await supabase.from("trader_dna")
         .delete()
         .eq("user_id", user.id);
+      if (dnaResult.error) throw dnaResult.error;
 
       // Delete vault_state so it gets re-created on next load
-      await supabase
+      const stateResult = await supabase
         .from("vault_state")
         .delete()
         .eq("user_id", user.id);
+      if (stateResult.error) throw stateResult.error;
 
       // Delete vault_events for clean slate
-      await supabase
+      const eventsResult = await supabase
         .from("vault_events")
         .delete()
         .eq("user_id", user.id);
+      if (eventsResult.error) throw eventsResult.error;
 
       await refetchProfile();
       toast.success("Trade OS reset. Redirecting to onboarding…");
       navigate("/academy/trade");
     } catch {
-      toast.error("Reset failed. Try again.");
+      toast.error("Reset was not completed. Some changes may have saved. Please try again.");
     } finally {
       setResetting(false);
     }

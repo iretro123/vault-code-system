@@ -1,4 +1,4 @@
- import { useState, useEffect } from "react";
+ import { useState, useEffect, useCallback, useRef } from "react";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "./useAuth";
  import { useToast } from "./use-toast";
@@ -18,32 +18,43 @@
    const [rules, setRules] = useState<TradingRules | null>(null);
    const [loading, setLoading] = useState(true);
  
-   useEffect(() => {
-     if (user) {
-       fetchRules();
-     } else {
+   const userId = user?.id;
+   const currentUserId = useRef(userId);
+   currentUserId.current = userId;
+   const request = useRef(0);
+
+   const fetchRules = useCallback(async () => {
+     const generation = ++request.current;
+     if (!userId) {
        setRules(null);
        setLoading(false);
+       return;
      }
-   }, [user]);
- 
-   async function fetchRules() {
+     setLoading(true);
      try {
        const { data, error } = await supabase
          .from("trading_rules")
          .select("*")
-         .eq("user_id", user!.id)
+         .eq("user_id", userId)
          .maybeSingle();
- 
+       if (generation !== request.current || currentUserId.current !== userId) return;
        if (error) throw error;
        setRules(data);
      } catch (error) {
-       console.error("Error fetching rules:", error);
+       if (generation === request.current && currentUserId.current === userId) {
+         console.error("Error fetching rules:", error);
+       }
      } finally {
-       setLoading(false);
+       if (generation === request.current && currentUserId.current === userId) setLoading(false);
      }
-   }
- 
+   }, [userId]);
+
+   useEffect(() => {
+     setRules(null);
+     void fetchRules();
+     return () => { request.current += 1; };
+   }, [fetchRules]);
+
    async function updateRules(updates: Partial<Omit<TradingRules, "id">>) {
      if (!user) return { error: new Error("Not authenticated") };
  
@@ -55,6 +66,7 @@
  
        if (error) throw error;
  
+       if (currentUserId.current !== user.id) return { error: null };
        setRules((prev) => (prev ? { ...prev, ...updates } : null));
        toast({
          title: "Rules saved",

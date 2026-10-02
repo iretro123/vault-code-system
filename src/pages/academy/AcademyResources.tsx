@@ -323,10 +323,14 @@ function AdminToolkitManager({ items, refetch }: { items: ToolkitItem[]; refetch
   };
 
   const handleToggleVisibility = async (id: string, visible: boolean) => {
-    await supabase.from("toolkit_items").update({ visible } as any).eq("id", id); refetch();
+    const { error } = await supabase.from("toolkit_items").update({ visible } as any).eq("id", id);
+    if (error) { toast.error("Could not change resource visibility. Please try again."); return; }
+    refetch();
   };
   const handleDelete = async (id: string) => {
-    await supabase.from("toolkit_items").delete().eq("id", id); toast.success("Resource removed"); refetch();
+    const { error } = await supabase.from("toolkit_items").delete().eq("id", id);
+    if (error) { toast.error("Resource could not be removed. Please try again."); return; }
+    toast.success("Resource removed"); refetch();
   };
   const handleReorder = async (id: string, direction: "up" | "down") => {
     const sorted = [...items].sort((a, b) => a.sort_order - b.sort_order);

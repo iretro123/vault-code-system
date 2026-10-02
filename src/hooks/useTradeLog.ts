@@ -1,39 +1,18 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 
 const CACHE_KEY = "va_cache_trade_entries";
-const CACHE_TS_KEY = "va_cache_trade_entries_ts";
-const STALE_MS = 30_000; // 30 seconds
-
-function readCache(): TradeEntry[] | null {
+function readCache(userId: string | undefined): TradeEntry[] | null {
+  if (!userId) return null;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+    const data = JSON.parse(localStorage.getItem(`${CACHE_KEY}:${userId}`) || "null");
+    return Array.isArray(data) && data.every(entry => entry?.user_id === userId) ? data : null;
+  } catch { return null; }
 }
-
-function writeCache(data: TradeEntry[]) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
-  } catch {
-    void 0;
-  }
-}
-
-function isCacheStale(): boolean {
-  try {
-    const ts = localStorage.getItem(CACHE_TS_KEY);
-    if (!ts) return true;
-    return Date.now() - Number(ts) > STALE_MS;
-  } catch {
-    return true;
-  }
+function writeCache(userId: string, data: TradeEntry[]) {
+  try { localStorage.setItem(`${CACHE_KEY}:${userId}`, JSON.stringify(data)); } catch { /* Optional cache. */ }
 }
 
 export interface TradeEntry {
@@ -105,43 +84,47 @@ export const computePnl = (e: TradeEntry) =>
 export function useTradeLog() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const cached = readCache();
-  const [entries, setEntries] = useState<TradeEntry[]>(cached ?? []);
-  const [loading, setLoading] = useState(!cached);
+  const userId = user?.id;
+  const identity = useRef({ userId, generation: 0 });
+  if (identity.current.userId !== userId) identity.current = { userId, generation: identity.current.generation + 1 };
+  const [state, setState] = useState(() => ({ userId, entries: readCache(userId) ?? [], loading: !!userId }));
+  const current = useRef(state);
+  current.current = state;
+  const request = useRef(0);
+  const entries = useMemo(() => state.userId === userId ? state.entries : [], [state, userId]);
+  const loading = !!userId && (state.userId !== userId || state.loading);
+  const isCurrent = (owner: typeof identity.current) => identity.current === owner;
+  const storeEntries = (owner: typeof identity.current, next: TradeEntry[]) => {
+    if (!owner.userId || !isCurrent(owner)) return;
+    writeCache(owner.userId, next);
+    current.current = { userId: owner.userId, entries: next, loading: false };
+    setState(current.current);
+  };
 
   useEffect(() => {
-    if (user) {
-      // Always fetch on user change; if cache exists, do background refresh if stale
-      if (cached && !isCacheStale()) {
-        setLoading(false);
-        // Still do a background refresh to stay fresh
-        fetchEntries();
-      } else {
-        fetchEntries();
-      }
-    } else {
-      setEntries([]);
-      setLoading(false);
-    }
-  }, [user]);
+    // The old shared cache has no trustworthy owner and must never be imported.
+    try { localStorage.removeItem(CACHE_KEY); localStorage.removeItem(`${CACHE_KEY}_ts`); } catch { /* Optional cache. */ }
+    const cached = readCache(userId);
+    current.current = { userId, entries: cached ?? [], loading: !!userId && !cached };
+    setState(current.current);
+    if (userId) void fetchEntries();
+    return () => { request.current++; identity.current = {...identity.current, generation: identity.current.generation + 1}; };
+  }, [userId]);
 
   async function fetchEntries() {
+    const owner = identity.current;
+    if (!owner.userId) return;
+    const revision = ++request.current;
     try {
-      const { data, error } = await supabase
-        .from("trade_entries")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(2000);
-
+      const { data, error } = await supabase.from("trade_entries").select("*")
+        .eq("user_id", owner.userId).order("created_at", { ascending: false }).limit(2000);
+      if (!isCurrent(owner) || request.current !== revision) return;
       if (error) throw error;
-      const result = data || [];
-      writeCache(result);
-      setEntries(result);
+      storeEntries(owner, (data || []).filter(entry => entry.user_id === owner.userId));
     } catch (error: unknown) {
-      console.error("Error fetching trade entries:", error);
+      if (isCurrent(owner)) console.error("Error fetching trade entries:", error);
     } finally {
-      setLoading(false);
+      if (isCurrent(owner) && request.current === revision) setState(prev => ({...prev, loading: false}));
     }
   }
 
@@ -262,8 +245,9 @@ export function useTradeLog() {
   }, [equityCurve]);
 
   async function addEntry(entry: NewTradeEntry) {
-    if (!user) return { error: new Error("Not authenticated") };
+    if (!user || identity.current.userId !== user.id) return { error: new Error("Not authenticated") };
 
+    const owner = identity.current;
     try {
       const { data, error } = await supabase
         .from("trade_entries")
@@ -276,8 +260,10 @@ export function useTradeLog() {
 
       if (error) throw error;
 
-      setEntries((prev) => [data, ...prev]);
-      writeCache([data, ...entries]);
+      if (!isCurrent(owner)) return { error: null, data };
+      request.current++;
+      const nextEntries = [data, ...current.current.entries.filter(e => e.id !== data.id)];
+      storeEntries(owner, nextEntries);
       const sym = entry.symbol || "Trade";
       const pnlVal = computePnl(data);
       toast({
@@ -285,12 +271,13 @@ export function useTradeLog() {
         description: `${sym} · ${pnlVal >= 0 ? "+" : "-"}$${Math.abs(pnlVal).toFixed(0)}`,
       });
       // Fire-and-forget: trigger AI DNA update after every 5th trade
-      const newCount = entries.length + 1;
+      const newCount = nextEntries.length;
       if (newCount % 5 === 0) {
         supabase.functions.invoke("update-trader-dna").catch(() => {});
       }
       return { error: null, data };
     } catch (error: unknown) {
+      if (!isCurrent(owner)) return { error };
       console.error("Error adding trade entry:", error);
       const err = error as { message?: string; details?: string };
       const msg = err?.message || err?.details || "Please try again.";
@@ -333,8 +320,9 @@ export function useTradeLog() {
   }
 
   async function deleteEntry(id: string) {
-    if (!user) return { error: new Error("Not authenticated") };
+    if (!user || identity.current.userId !== user.id) return { error: new Error("Not authenticated") };
 
+    const owner = identity.current;
     try {
       const { error } = await supabase
         .from("trade_entries")
@@ -344,9 +332,9 @@ export function useTradeLog() {
 
       if (error) throw error;
 
-      const updated = entries.filter((e) => e.id !== id);
-      setEntries(updated);
-      writeCache(updated);
+      if (!isCurrent(owner)) return { error: null };
+      request.current++;
+      storeEntries(owner, current.current.entries.filter((e) => e.id !== id));
       toast({
         title: "Trade deleted",
         description: "The trade entry has been removed.",
@@ -355,6 +343,7 @@ export function useTradeLog() {
       await fetchEntries();
       return { error: null };
     } catch (error: unknown) {
+      if (!isCurrent(owner)) return { error };
       console.error("Error deleting trade entry:", error);
       toast({
         title: "Error deleting trade",

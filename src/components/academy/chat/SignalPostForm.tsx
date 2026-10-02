@@ -75,12 +75,14 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
 
   // Persist draft
   useEffect(() => {
-    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
       open, mode, ticker, bias, levels, notes, tvLink, direction, strike, exp, fill,
-    }));
+    })); } catch { /* Drafts remain usable when browser storage is unavailable. */ }
   }, [open, mode, ticker, bias, levels, notes, tvLink, direction, strike, exp, fill, DRAFT_KEY]);
 
-  const clearDraft = () => sessionStorage.removeItem(DRAFT_KEY);
+  const clearDraft = () => { try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* Optional draft storage. */ } };
+
+  useEffect(() => () => { if (chartPreview) URL.revokeObjectURL(chartPreview); }, [chartPreview]);
 
   const reset = () => {
     setTicker(""); setNotes(""); setTvLink("");
@@ -102,11 +104,11 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
 
   const removeChart = () => {
     setChartFile(null);
-    if (chartPreview) URL.revokeObjectURL(chartPreview);
     setChartPreview(null);
   };
 
-  const canSend = ticker.trim().length > 0 && (mode === "live" ? strike.trim().length > 0 : true);
+  const positivePrice = (value: string) => /^\d+(\.\d+)?$/.test(value.trim()) && Number.isFinite(Number(value)) && Number(value) > 0;
+  const canSend = ticker.trim().length > 0 && (mode !== "live" || (positivePrice(strike) && (!fill.trim() || positivePrice(fill))));
 
   const uploadChart = async (file: File): Promise<{ url: string; att: Attachment } | null> => {
     if (!user) return null;
@@ -253,7 +255,7 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
           )}>
           <Crosshair className="h-3.5 w-3.5" /> Live Signal
         </button>
-        <button type="button" onClick={() => { setOpen(false); }}
+        <button type="button" aria-label="Collapse signal form" onClick={() => { setOpen(false); }}
           className="px-3 py-2.5 text-muted-foreground hover:text-foreground transition-colors">
           <ChevronDown className="h-4 w-4" />
         </button>
@@ -297,11 +299,11 @@ export function SignalPostForm({ onSubmit, sending, roomSlug }: SignalPostFormPr
             </div>
             <div className="flex gap-2">
               <Input value={strike} onChange={(e) => setStrike(e.target.value)}
-                placeholder="Strike" className="flex-1 h-9 bg-white/[0.04] border-white/[0.08] text-sm" />
+                aria-label="Strike price" inputMode="decimal" placeholder="Strike" className="flex-1 h-9 bg-white/[0.04] border-white/[0.08] text-sm" />
               <Input value={exp} onChange={(e) => setExp(e.target.value)}
                 placeholder="Exp (e.g. 4/4)" className="flex-1 h-9 bg-white/[0.04] border-white/[0.08] text-sm" />
               <Input value={fill} onChange={(e) => setFill(e.target.value)}
-                placeholder="Fill $" className="w-20 h-9 bg-white/[0.04] border-white/[0.08] text-sm" />
+                aria-label="Fill price" inputMode="decimal" placeholder="Fill $" className="w-20 h-9 bg-white/[0.04] border-white/[0.08] text-sm" />
             </div>
           </>
         )}

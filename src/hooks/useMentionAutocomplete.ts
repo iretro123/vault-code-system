@@ -93,7 +93,7 @@ export function useMentionAutocomplete({ enabled, canPingEveryone = true }: { en
       setSuggestions(results);
       setSelectedIndex(0);
     },
-    [enabled]
+    [enabled, canPingEveryone]
   );
 
   const clearSuggestions = useCallback(() => {
