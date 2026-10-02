@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.94.1";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { grantPaidRole } from "../_shared/vaultAccess.ts";
 import { stripeAccessStatus } from "../_shared/membershipValidation.ts";
 

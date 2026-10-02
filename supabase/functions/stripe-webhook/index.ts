@@ -1,6 +1,7 @@
+import { fulfillReturnCheckout, syncReturnSubscription } from "../_shared/returnFulfillment.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.94.1";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membershipValidation.ts";
 import {
   LEGACY_PRICE_MAP,
@@ -54,6 +55,13 @@ serve(async (req) => {
 
     log(traceId, "EVENT_RECEIVED", { type: event.type, id: event.id });
 
+    // Production fail-closed guard: test-mode/sandbox events must never reach
+    // entitlement, event-log, or onboarding-outbox writes on the live backend.
+    if (event.livemode !== true) {
+      log(traceId, "IGNORED_NON_LIVE_EVENT", { type: event.type, id: event.id });
+      return new Response(JSON.stringify({ received: true, ignored: "non_live_event" }), { status: 200, headers: corsHeaders });
+    }
+
     // ─── 2. Idempotency check ───
     const { data: existing } = await supabase
       .from("stripe_webhook_events")
@@ -95,6 +103,7 @@ serve(async (req) => {
       "checkout.session.completed",
       "checkout.session.async_payment_succeeded",
       "invoice.paid",
+      "invoice.created",
       "invoice.payment_failed",
       "customer.subscription.updated",
       "customer.subscription.deleted",
@@ -138,6 +147,17 @@ async function processEvent(
     case "checkout.session.async_payment_succeeded":
       await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session, traceId, stripe, supabase);
       break;
+    case "invoice.created": {
+      const invoice = event.data.object as Stripe.Invoice;
+      const id = invoiceSubscriptionId(invoice);
+      if (id) {
+        const sub = await stripe.subscriptions.retrieve(id);
+        if (sub.metadata?.vault_campaign === "vault_return_199_30d" && sub.items.data[0]?.price.id === Deno.env.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID")) {
+          await stripe.invoices.update(invoice.id!, { footer: "Access Vault OS: https://member.vaulttradingacademy.com/activate-return — use the email entered at checkout. Verify your email to connect your membership, then download Vault OS for iPhone or Android. Help: vault@vaulttradingacademy.com. No second payment is needed." });
+        }
+      }
+      break;
+    }
     case "invoice.paid":
       await handleInvoicePaid(event.data.object as Stripe.Invoice, traceId, stripe, supabase);
       break;
@@ -311,6 +331,11 @@ async function handleCheckoutCompleted(
   stripe: Stripe,
   supabase: SupabaseClient
 ) {
+  if (await fulfillReturnCheckout(session, stripe, supabase, {
+    paymentLinkId: Deno.env.get('STRIPE_VAULT_RETURN_PAYMENT_LINK_ID') || '',
+    monthlyPriceId: Deno.env.get('STRIPE_VAULT_OS_MONTHLY_PRICE_ID') || '',
+    introPriceId: Deno.env.get('STRIPE_VAULT_RETURN_INTRO_PRICE_ID') || '',
+  })) return;
   log(traceId, "CHECKOUT_COMPLETED", { sessionId: session.id, mode: session.mode });
   if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
     log(traceId, "AWAITING_PAYMENT", { sessionId: session.id });
@@ -367,6 +392,7 @@ async function handleSubscriptionUpdated(
   stripe: Stripe,
   supabase: SupabaseClient
 ) {
+  await syncReturnSubscription(subscription, supabase);
   log(traceId, "SUBSCRIPTION_UPDATED", { subId: subscription.id, status: subscription.status });
 
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
