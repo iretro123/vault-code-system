@@ -23,6 +23,7 @@ async function deleteRows(
     const warning = `${table}.${column}: ${error.message}`;
     warnings.push(warning);
     console.warn("[delete-account] cleanup warning:", warning);
+    throw new Error("Account cleanup was interrupted; please retry.");
   }
 }
 
@@ -46,6 +47,7 @@ async function updateDeletedMessages(sb: ServiceClient, callerId: string, warnin
     const warning = `academy_messages.update: ${error.message}`;
     warnings.push(warning);
     console.warn("[delete-account] cleanup warning:", warning);
+    throw new Error("Account cleanup was interrupted; please retry.");
   }
 }
 
@@ -105,47 +107,54 @@ Deno.serve(async (req) => {
 
     console.log("[delete-account] deleting self account:", callerId);
 
-    const { data: profile } = await sb
+    const { data: profile, error: profileError } = await sb
       .from("profiles")
       .select("email")
       .eq("user_id", callerId)
       .maybeSingle();
+    if (profileError) throw new Error("Unable to inventory account data; please retry.");
     const email = profile?.email?.trim().toLowerCase() ?? null;
 
-    const { data: student } = await sb
+    const { data: student, error: studentError } = await sb
       .from("students")
       .select("id")
       .eq("auth_user_id", callerId)
       .maybeSingle();
+    if (studentError) throw new Error("Unable to inventory account data; please retry.");
 
-    const { data: messageRows } = await sb
+    const { data: messageRows, error: messageRowsError } = await sb
       .from("academy_messages")
       .select("id")
       .eq("user_id", callerId);
+    if (messageRowsError) throw new Error("Unable to inventory account data; please retry.");
     const messageIds = (messageRows ?? []).map((row) => row.id);
 
-    const { data: replyRows } = await sb
+    const { data: replyRows, error: replyRowsError } = await sb
       .from("coach_ticket_replies")
       .select("id")
       .eq("user_id", callerId);
+    if (replyRowsError) throw new Error("Unable to inventory account data; please retry.");
     const replyIds = (replyRows ?? []).map((row) => row.id);
 
-    const { data: ticketRows } = await sb
+    const { data: ticketRows, error: ticketRowsError } = await sb
       .from("coach_tickets")
       .select("id")
       .eq("user_id", callerId);
+    if (ticketRowsError) throw new Error("Unable to inventory account data; please retry.");
     const ticketIds = (ticketRows ?? []).map((row) => row.id);
 
-    const { data: threadRows } = await sb
+    const { data: threadRows, error: threadRowsError } = await sb
       .from("dm_threads")
       .select("id")
       .eq("user_id", callerId);
+    if (threadRowsError) throw new Error("Unable to inventory account data; please retry.");
     const threadIds = (threadRows ?? []).map((row) => row.id);
 
-    const { data: notificationRows } = await sb
+    const { data: notificationRows, error: notificationRowsError } = await sb
       .from("academy_notifications")
       .select("id")
       .eq("user_id", callerId);
+    if (notificationRowsError) throw new Error("Unable to inventory account data; please retry.");
     const notificationIds = (notificationRows ?? []).map((row) => row.id);
 
     if (replyIds.length) {
@@ -153,10 +162,11 @@ Deno.serve(async (req) => {
     }
 
     if (ticketIds.length) {
-      const { data: ticketReplyRows } = await sb
+      const { data: ticketReplyRows, error: ticketReplyRowsError } = await sb
         .from("coach_ticket_replies")
         .select("id")
         .in("ticket_id", ticketIds);
+      if (ticketReplyRowsError) throw new Error("Unable to inventory account data; please retry.");
       const ticketReplyIds = (ticketReplyRows ?? []).map((row) => row.id);
       if (ticketReplyIds.length) {
         await deleteRows(sb, "coach_answer_reads", "reply_id", ticketReplyIds, warnings);

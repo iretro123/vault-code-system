@@ -15,6 +15,42 @@ extension VaultOSLaunchAuditTests {
 
     // MARK: - Journeys
 
+    /// Gesture diagnostic for an already signed-in app positioned on expanded Pulse history.
+    /// Preserves saved sign-in; never resets, signs in, writes settings, sends messages, or opens TradingView.
+    func testCurrentSessionPulseHistoryScroll() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
+        if app.state == .notRunning { app.launch() } else { app.activate() }
+        XCTAssertTrue(app.buttons["Chat"].firstMatch.waitForExistence(timeout: 30), "Signed-in navigation must be ready")
+        openCommunity(app)
+        let closeSidebar = app.buttons["Close sidebar"].firstMatch
+        if closeSidebar.exists { closeSidebar.tap() }
+        let pulse = app.buttons["Pulse"].firstMatch
+        XCTAssertTrue(pulse.waitForExistence(timeout: 15))
+        pulse.tap()
+        let updates = app.buttons.containing(NSPredicate(format: "label BEGINSWITH 'Earlier updates'")).firstMatch
+        if updates.waitForExistence(timeout: 10) {
+            try tapWhenReady(app, updates, name: "Earlier updates")
+        }
+        let hideHistory = app.buttons.containing(NSPredicate(format: "label BEGINSWITH 'Hide earlier updates'")).firstMatch
+        XCTAssertTrue(hideHistory.waitForExistence(timeout: 10), "Position the existing app on expanded Pulse history before running")
+        journeyCapture(app, "pulse-history-native-before-swipe")
+        let marker = app.staticTexts["Most recent update"].firstMatch
+        let beforeY = marker.exists ? marker.frame.minY : nil
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.76))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.36))
+        start.press(forDuration: 0.05, thenDragTo: end)
+        journeyCapture(app, "pulse-history-native-after-first-swipe")
+        start.press(forDuration: 0.05, thenDragTo: end)
+        journeyCapture(app, "pulse-history-native-after-second-swipe")
+        if let beforeY {
+            let moved = !marker.exists || abs(marker.frame.minY - beforeY) > 20
+            XCTAssertTrue(moved, "Native touch swipes must move Pulse history; inspect attached screenshots if not")
+        }
+        XCTAssertTrue(hideHistory.exists, "History collapse control must remain available")
+    }
+
+
     /// Read-only chart attachment regression: bounded preview, full-size viewing, exit.
     func testCommunityChartPreview() throws {
         let app = try signedInApp()
@@ -499,7 +535,7 @@ extension VaultOSLaunchAuditTests {
         continueAfterFailure = false
         let app = XCUIApplication(bundleIdentifier: "com.vaulttradingacademy.vaultos")
         XCUIDevice.shared.orientation = .portrait
-        app.launch()
+        if app.state == .notRunning { app.launch() } else { app.activate() }
 
         let signedIn = app.buttons["Chat"].firstMatch
         let signInScreen = app.buttons["Sign In"].firstMatch

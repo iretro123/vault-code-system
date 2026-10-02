@@ -24,6 +24,11 @@ const isNativeCapacitor =
   window.navigator.userAgent.includes("Capacitor");
 
 if (isNativeCapacitor) {
+  if (Capacitor.getPlatform() === 'android') {
+    void import('./lib/nativeBack').then(({ installNativeBack }) => installNativeBack()).catch(error => {
+      console.warn('Native back handler unavailable', error);
+    });
+  }
   document.documentElement.classList.add("native-capacitor");
   document.body.classList.add("native-capacitor");
 

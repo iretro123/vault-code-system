@@ -71,21 +71,17 @@ export function SettingsNotifications() {
   }, [prefs]);
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) {
-      if (supportsWebPush()) void hasWebPushSubscription().then(active => setNativePermission(active ? 'granted' : Notification.permission));
-      return;
-    }
     let cancelled = false;
-    getPushPermissionState()
-      .then((status) => {
-        if (!cancelled) setNativePermission(status);
-      })
-      .catch(() => {
-        if (!cancelled) setNativePermission("unknown");
-      });
-    return () => {
-      cancelled = true;
-    };
+    if (!Capacitor.isNativePlatform()) {
+      if (supportsWebPush()) void hasWebPushSubscription()
+        .then(active => { if (!cancelled) setNativePermission(active ? 'granted' : Notification.permission); })
+        .catch(() => { if (!cancelled) setNativePermission('unknown'); });
+    } else {
+      getPushPermissionState()
+        .then(status => { if (!cancelled) setNativePermission(status); })
+        .catch(() => { if (!cancelled) setNativePermission('unknown'); });
+    }
+    return () => { cancelled = true; };
   }, []);
 
   const requestNativePush = async () => {

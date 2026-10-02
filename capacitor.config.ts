@@ -7,6 +7,10 @@ const config: CapacitorConfig = {
   appName: 'Vault OS',
   webDir: 'dist',
   plugins: {
+    SystemBars: {
+      // Keep light system icons on Vault's dark surfaces, regardless of OS theme.
+      style: 'DARK',
+    },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },

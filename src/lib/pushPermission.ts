@@ -88,7 +88,7 @@ export async function registerTokenForCurrentUser(params: {
 
   console.warn("register_device_token RPC failed, falling back to direct token upsert", rpcError);
 
-  await supabase
+  const { error: saveError } = await supabase
     .from("device_tokens")
     .upsert(
       {
@@ -100,19 +100,24 @@ export async function registerTokenForCurrentUser(params: {
       { onConflict: "token" },
     );
 
-  await supabase
+  if (saveError) throw new Error("Push token could not be saved. Please try again.");
+
+  const { error: cleanupError } = await supabase
     .from("device_tokens")
     .delete()
     .eq("user_id", userId)
     .eq("platform", platformKey)
     .neq("token", token);
 
+  if (cleanupError) throw new Error("Push token cleanup could not be completed. Please try again.");
+
   if (platformKey !== basePlatform) {
-    await supabase
+    const { error: legacyCleanupError } = await supabase
       .from("device_tokens")
       .delete()
       .eq("user_id", userId)
       .eq("platform", basePlatform)
       .neq("token", token);
+    if (legacyCleanupError) throw new Error("Legacy push token cleanup could not be completed. Please try again.");
   }
 }

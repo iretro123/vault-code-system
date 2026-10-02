@@ -1,9 +1,22 @@
 import { PulseDirection } from "./PulseDirection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Activity, ArrowUpRight, Expand, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { Activity, ArrowUpRight, Expand, Flame, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { validPulseChartFocus, type PulseChartFocus } from "@/lib/pulseChartFocus";
 import "./pulse-chart-post.css";
+
+function PulseReactionGlyph({ emoji }: { emoji: string }) {
+  // Keep the stored emoji and reaction identity; render these two controls without
+  // requiring a native color-emoji font (some iOS simulator/runtime builds lack it).
+  if (emoji === "🔥") return <Flame className="pcp-reaction-glyph pcp-reaction-fire" aria-hidden="true" fill="currentColor" strokeWidth={1.6}/>;
+  if (emoji === "👀") return <svg className="pcp-reaction-glyph pcp-reaction-eyes" viewBox="0 0 28 24" aria-hidden="true" focusable="false">
+    <ellipse cx="7.5" cy="12" rx="6" ry="9" fill="#f7f9fc"/>
+    <ellipse cx="20.5" cy="12" rx="6" ry="9" fill="#f7f9fc"/>
+    <ellipse cx="6" cy="13" rx="2.6" ry="4.4" fill="#253449"/>
+    <ellipse cx="19" cy="13" rx="2.6" ry="4.4" fill="#253449"/>
+  </svg>;
+  return <span aria-hidden="true">{emoji}</span>;
+}
 
 export interface PulseEntryMarkup {
   /** Markup belongs to one exact capture. Never reuse it on a newer chart. */
@@ -116,7 +129,7 @@ export function PulseChartPost({
         </figure>}
       </> : fallbackChart || <p className="pcp-pending" role="status">{captureStatus === "unavailable" ? "Original chart unavailable for this update." : "Zone updated · Chart arriving…"}</p>}
       {(onReact || canAnnotate || (chartUrl && !showChart)) && <footer className="pcp-actions">
-        {onReact && reactions && <div className="pcp-reactions" aria-label="Reactions">{reactions.map(reaction => <button type="button" key={reaction.emoji} aria-label={`React ${reaction.emoji}`} aria-pressed={reaction.active} disabled={reactionsDisabled} onClick={() => onReact(reaction.emoji)}>{reaction.emoji}{reaction.count > 0 && <span>{reaction.count}</span>}</button>)}</div>}
+        {onReact && reactions && <div className="pcp-reactions" aria-label="Reactions">{reactions.map(reaction => <button type="button" key={reaction.emoji} aria-label={`React ${reaction.emoji}`} aria-pressed={reaction.active} disabled={reactionsDisabled} onClick={() => onReact(reaction.emoji)}><PulseReactionGlyph emoji={reaction.emoji}/>{reaction.count > 0 && <span>{reaction.count}</span>}</button>)}</div>}
         {chartUrl && !showChart && <button type="button" className="pcp-entry-button" onClick={() => { setActualSize(false); setExpanded(true); }}>View chart <ArrowUpRight size={17} aria-hidden="true"/></button>}
         {canAnnotate && <button type="button" className="pcp-entry-button" aria-pressed={showExample} onClick={() => setShowExample(value => !value)}>{showExample ? "Hide example" : "See entry example"}<ArrowUpRight size={17} aria-hidden="true"/></button>}
       </footer>}

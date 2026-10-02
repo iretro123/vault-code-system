@@ -151,3 +151,15 @@ describe("Pulse screenshot integrity", () => {
     expect(screen.getByText("$SPX500")).toBeInTheDocument();
   });
 });
+
+it('renders native-safe reaction glyphs without changing emoji identities or counts',()=>{
+ const react=vi.fn();
+ render(<PulseChartPost {...props} onReact={react} reactions={[{emoji:'🔥',count:3,active:true},{emoji:'👀',count:2,active:false}]}/>);
+ const fire=screen.getByRole('button',{name:'React 🔥'});
+ const eyes=screen.getByRole('button',{name:'React 👀'});
+ expect(fire).toHaveAttribute('aria-pressed','true');
+ expect(fire).toHaveTextContent('3');expect(eyes).toHaveTextContent('2');
+ expect(fire.querySelector('svg')).toBeTruthy();expect(eyes.querySelector('svg')).toBeTruthy();
+ fireEvent.click(fire);fireEvent.click(eyes);
+ expect(react.mock.calls).toEqual([['🔥'],['👀']]);
+});
