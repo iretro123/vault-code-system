@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790974949516,
+      "tag": "0000_vault_return_onboarding",
+      "breakpoints": true
+    }
+  ]
+}

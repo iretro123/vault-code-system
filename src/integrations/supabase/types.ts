@@ -3849,6 +3849,83 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_onboarding_outbox: {
+        Row: {
+          attempts: number
+          email: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          sent_at: string | null
+          state: string
+          stripe_subscription_id: string
+        }
+        Insert: {
+          attempts?: number
+          email: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          state?: string
+          stripe_subscription_id: string
+        }
+        Update: {
+          attempts?: number
+          email?: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          state?: string
+          stripe_subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_onboarding_outbox_stripe_subscription_id_fkey"
+            columns: ["stripe_subscription_id"]
+            isOneToOne: true
+            referencedRelation: "vault_return_memberships"
+            referencedColumns: ["stripe_subscription_id"]
+          },
+        ]
+      }
+      vault_return_memberships: {
+        Row: {
+          access_until: string
+          auth_user_id: string | null
+          checkout_session_id: string
+          email: string
+          paid_at: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_until: string
+          auth_user_id?: string | null
+          checkout_session_id: string
+          email: string
+          paid_at?: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_until?: string
+          auth_user_id?: string | null
+          checkout_session_id?: string
+          email?: string
+          paid_at?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vault_state: {
         Row: {
           account_balance: number
@@ -4121,6 +4198,25 @@ export type Database = {
           trades_remaining: number
         }[]
       }
+      claim_vault_onboarding_jobs: {
+        Args: never
+        Returns: {
+          attempts: number
+          email: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          sent_at: string | null
+          state: string
+          stripe_subscription_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vault_onboarding_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_vault_push_jobs: {
         Args: { batch_size?: number }
         Returns: {
@@ -4144,6 +4240,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_vault_return_membership: { Args: never; Returns: boolean }
       cleanup_deleted_messages: { Args: never; Returns: undefined }
       close_trade_intent: {
         Args: { _trade_result: number; _user_id: string }
@@ -4653,6 +4750,17 @@ export type Database = {
       pulse_watchdog: { Args: never; Returns: undefined }
       read_member_conversation: {
         Args: { conversation: string; through_time: string }
+        Returns: undefined
+      }
+      record_vault_return_payment: {
+        Args: {
+          p_checkout: string
+          p_customer: string
+          p_email: string
+          p_end: string
+          p_status: string
+          p_subscription: string
+        }
         Returns: undefined
       }
       register_device_token: {
