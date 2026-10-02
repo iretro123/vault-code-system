@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.57.2';
+import { createClient } from 'npm:@supabase/supabase-js@2.94.1';
 import { grantPaidRole } from '../_shared/vaultAccess.ts';
 const headers = { 'Access-Control-Allow-Origin': 'https://member.vaulttradingacademy.com', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Content-Type': 'application/json' };
 Deno.serve(async req => {

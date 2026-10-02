@@ -1,5 +1,5 @@
 import { returnAccessValid } from '../_shared/returnOffer.ts';
-import { createClient } from 'npm:@supabase/supabase-js@2.57.2';
+import { createClient } from 'npm:@supabase/supabase-js@2.94.1';
 Deno.serve(async req => {
   const secret = Deno.env.get('VAULT_ONBOARDING_JOB_SECRET');
   if (!secret || req.headers.get('Authorization') !== `Bearer ${secret}`) return new Response('Unauthorized', {status:401});
