@@ -29,6 +29,13 @@
       "when": 1790982196676,
       "tag": "0003_vault_return_claim_session_strict",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791027103680,
+      "tag": "0004_vault_onboarding_scheduler",
+      "breakpoints": true
     }
   ]
 }

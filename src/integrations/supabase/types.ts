@@ -3890,6 +3890,21 @@ export type Database = {
           },
         ]
       }
+      vault_onboarding_wake_tokens: {
+        Row: {
+          created_at: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          token?: string
+        }
+        Relationships: []
+      }
       vault_return_claim_proofs: {
         Row: {
           email: string
@@ -4300,6 +4315,10 @@ export type Database = {
           _market_type: string
           _user_id: string
         }
+        Returns: boolean
+      }
+      consume_vault_onboarding_wake: {
+        Args: { p_token: string }
         Returns: boolean
       }
       create_mention_notifications: {
@@ -4946,6 +4965,7 @@ export type Database = {
         Args: { nid: string; uid: string }
         Returns: boolean
       }
+      vault_onboarding_wake: { Args: never; Returns: undefined }
       vault_paid_notification: {
         Args: { kind: string; path: string; title: string }
         Returns: boolean
