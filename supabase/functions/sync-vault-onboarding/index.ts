@@ -3,12 +3,21 @@ import { deliverLeasedJob, onboardingEnv, onboardingReady, supabaseOutboxStore }
 // Authenticated retry backstop. The webhook makes one immediate attempt; this
 // worker retries anything still pending once its backoff has passed.
 Deno.serve(async req => {
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  // Two accepted callers: the private job secret (manual/ops), or a single-use
+  // 2-minute wake token minted by the database scheduler (no shared secret).
   const secret = Deno.env.get('VAULT_ONBOARDING_JOB_SECRET');
-  if (!secret || req.headers.get('Authorization') !== `Bearer ${secret}`) return new Response('Unauthorized', {status:401});
+  const bearerOk = !!secret && req.headers.get('Authorization') === `Bearer ${secret}`;
+  const wake = req.headers.get('x-vault-wake') || '';
+  let wakeOk = false;
+  if (!bearerOk && /^[0-9a-f]{64}$/.test(wake)) {
+    const { data } = await db.rpc('consume_vault_onboarding_wake', { p_token: wake });
+    wakeOk = data === true;
+  }
+  if (!bearerOk && !wakeOk) return new Response('Unauthorized', {status:401});
   const env = onboardingEnv(k => Deno.env.get(k));
   // Explicit launch switch prevents accidentally triggering an existing live workflow.
   if (!onboardingReady(env)) return new Response('Onboarding not enabled/configured', {status:503});
-  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: jobs, error } = await db.rpc('claim_vault_onboarding_jobs');
   if (error) return new Response('Unable to claim jobs', {status:500});
   const store = supabaseOutboxStore(db);
