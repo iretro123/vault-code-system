@@ -3,9 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ensureProfile } from '@/lib/ensureProfile';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function ActivateReturn() {
   const { user, loading, refetchProfile } = useAuth();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -24,7 +26,12 @@ export default function ActivateReturn() {
       } else if (error || !data?.success) {
         setMessage('We couldn’t confirm access yet. Use the same email you entered at Stripe checkout. If you just paid, wait a moment and retry. Your payment is saved.');
       } else {
-        await refetchProfile(); setActivated(true);
+        await refetchProfile();
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['student-access', user?.id] }),
+          queryClient.invalidateQueries({ queryKey: ['academy-permissions', user?.id] }),
+        ]);
+        setActivated(true);
         setMessage(data.secured ? 'Your Vault OS access is ready. For your security, other devices on this email were signed out and any earlier password was cleared.' : 'Your Vault OS access is ready.');
       }
     } catch {
