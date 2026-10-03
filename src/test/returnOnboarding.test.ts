@@ -32,7 +32,7 @@ describe('immediate paid-return welcome attempt', () => {
     const { s, store } = memStore(); const crm = okCrm();
     expect(await attemptImmediateOnboarding(store, SUB, ENV, crm as any)).toBe('sent');
     expect(crm).toHaveBeenCalledTimes(2);
-    expect(String(crm.mock.calls[1][1].body)).toContain('vault-reactivation-paid');
+    expect(String((crm.mock.calls as unknown as [string, RequestInit][])[1][1].body)).toContain('vault-reactivation-paid');
     expect(s.job.state).toBe('sent');
   });
 
