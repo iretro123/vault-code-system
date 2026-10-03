@@ -1,4 +1,5 @@
 import { fulfillReturnCheckout, syncReturnSubscription } from "../_shared/returnFulfillment.ts";
+import { attemptImmediateOnboarding, onboardingEnv, supabaseOutboxStore } from "../_shared/returnOnboarding.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -335,6 +336,9 @@ async function handleCheckoutCompleted(
     paymentLinkId: Deno.env.get('STRIPE_VAULT_RETURN_PAYMENT_LINK_ID') || '',
     monthlyPriceId: Deno.env.get('STRIPE_VAULT_OS_MONTHLY_PRICE_ID') || '',
     introPriceId: Deno.env.get('STRIPE_VAULT_RETURN_INTRO_PRICE_ID') || '',
+  }, async (subId) => {
+    const outcome = await attemptImmediateOnboarding(supabaseOutboxStore(supabase), subId, onboardingEnv((k) => Deno.env.get(k)));
+    log(traceId, "RETURN_ONBOARDING_IMMEDIATE", { outcome });
   })) return;
   log(traceId, "CHECKOUT_COMPLETED", { sessionId: session.id, mode: session.mode });
   if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
