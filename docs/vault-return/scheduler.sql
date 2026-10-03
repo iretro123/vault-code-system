@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.vault_onboarding_wake_tokens (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 GRANT ALL ON public.vault_onboarding_wake_tokens TO service_role;
-REVOKE ALL ON public.vault_onboarding_wake_tokens FROM anon, authenticated;
+REVOKE ALL ON public.vault_onboarding_wake_tokens FROM PUBLIC, anon, authenticated;
 ALTER TABLE public.vault_onboarding_wake_tokens ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION public.vault_onboarding_wake()
@@ -37,7 +37,7 @@ GRANT EXECUTE ON FUNCTION public.vault_onboarding_wake() TO service_role;
 CREATE OR REPLACE FUNCTION public.consume_vault_onboarding_wake(p_token text)
 RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path=public AS $$
   WITH d AS (DELETE FROM public.vault_onboarding_wake_tokens
-    WHERE token = p_token AND created_at > now() - interval '2 minutes' RETURNING 1)
+    WHERE token = p_token AND created_at <= now() AND created_at > now() - interval '2 minutes' RETURNING 1)
   SELECT EXISTS (SELECT 1 FROM d);
 $$;
 REVOKE ALL ON FUNCTION public.consume_vault_onboarding_wake(text) FROM PUBLIC, anon, authenticated;

@@ -3,6 +3,8 @@ import { deliverLeasedJob, onboardingEnv, onboardingReady, supabaseOutboxStore }
 // Authenticated retry backstop. The webhook makes one immediate attempt; this
 // worker retries anything still pending once its backoff has passed.
 Deno.serve(async req => {
+  // POST only; reject before any credential or DB work.
+  if (req.method !== 'POST') return new Response('Method Not Allowed', {status:405, headers:{Allow:'POST'}});
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   // Two accepted callers: the private job secret (manual/ops), or a single-use
   // 2-minute wake token minted by the database scheduler (no shared secret).
