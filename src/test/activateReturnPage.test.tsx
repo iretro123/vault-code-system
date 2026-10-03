@@ -36,3 +36,17 @@ describe('ActivateReturn successful claim', () => {
     expect(client.getQueryState(['academy-permissions', 'u1'])?.isInvalidated).toBe(true);
   });
 });
+
+describe('ActivateReturn adopts the fresh session returned by the bind', () => {
+  it('calls setSession with the minted tokens before showing success', async () => {
+    cleanup();
+    const { supabase } = await import('@/integrations/supabase/client');
+    const setSession = vi.fn().mockResolvedValue({ error: null });
+    (supabase.auth as unknown as { setSession: typeof setSession }).setSession = setSession;
+    vi.mocked(ensureProfile).mockResolvedValue(undefined);
+    invoke.mockResolvedValue({ data: { success: true, secured: true, session: { access_token: 'a.b.c', refresh_token: 'r' } }, error: null });
+    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><ActivateReturn /></MemoryRouter></QueryClientProvider>);
+    await waitFor(() => expect(screen.getByRole('link', { name: /Open Vault on the web/ })).toBeTruthy());
+    expect(setSession).toHaveBeenCalledWith({ access_token: 'a.b.c', refresh_token: 'r' });
+  });
+});
