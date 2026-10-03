@@ -39,7 +39,7 @@ export default function ActivateReturn() {
     <section style={{maxWidth:540,margin:'0 auto'}}>
       <p style={{letterSpacing:3,fontWeight:700}}>VAULT OS</p>
       <h1 style={{fontSize:42,lineHeight:1.08,letterSpacing:-1}}>Your next step.<br/>Get inside Vault.</h1>
-      {!activated && <p style={{color:'#b9c9dd',fontSize:18,lineHeight:1.6}}>Already paid? Use the email you entered at Stripe checkout. We’ll verify your email and connect your membership—no second payment.</p>}
+      {!activated && <p style={{color:'#b9c9dd',fontSize:18,lineHeight:1.6}}>Already paid? Use the email you entered at Stripe checkout. We’ll email you a secure sign-in link (not a code) to verify your email and connect your membership. New to Vault or coming from Whop? Your login is created when you open that link. No second payment.</p>}
       {!user && !loading && <form onSubmit={sendLink}>
         <label htmlFor="billing-email">Your checkout email</label>
         <input id="billing-email" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} style={{display:'block',width:'100%',boxSizing:'border-box',padding:16,margin:'12px 0',borderRadius:10,color:'#111'}}/>
@@ -51,7 +51,7 @@ export default function ActivateReturn() {
         <a style={{color:'#72b8ff'}} href="https://apps.apple.com/us/app/vault-os-trading-academy/id6770046448">Download for iPhone →</a>
         <a style={{color:'#72b8ff'}} href="https://play.google.com/store/apps/details?id=com.vaulttradingacademy.vaultos">Download for Android →</a>
         <Link style={{color:'#72b8ff'}} to="/academy">Open Vault on the web →</Link>
-        <p style={{lineHeight:1.6}}>In the app, sign in with <strong>{user?.email}</strong>. If you haven’t set a password, use “Forgot password” on the sign-in screen to create one. Start in Learn for your courses and playbooks, then check the live session schedule.</p>
+        <p style={{lineHeight:1.6}}>In the app, sign in with <strong>{user?.email}</strong>. To set your password, tap “Forgot password” on the sign-in screen and use the link we email to this address. Start in Learn for your courses and playbooks, then check the live session schedule.</p>
       </div>}
       <p style={{fontSize:14,color:'#b9c9dd',marginTop:32}}>Need help? <a style={{color:'#72b8ff'}} href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a><br/>Keep your Stripe receipt. You don’t need to pay again to finish activation.</p>
     </section>
