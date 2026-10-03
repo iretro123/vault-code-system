@@ -26,6 +26,12 @@ export default function ActivateReturn() {
       } else if (error || !data?.success) {
         setMessage('We couldn’t confirm access yet. Use the same email you entered at Stripe checkout. If you just paid, wait a moment and retry. Your payment is saved.');
       } else {
+        // The bind revokes every earlier session (including this one) and hands
+        // back a fresh email-link session; adopt it before reloading access.
+        if (data.session?.access_token && data.session?.refresh_token) {
+          const { error: setErr } = await supabase.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
+          if (setErr) throw setErr;
+        }
         await refetchProfile();
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['student-access', user?.id] }),
