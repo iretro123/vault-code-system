@@ -1,10 +1,3 @@
--- PREPARED, NOT APPLIED. Hourly retry backstop for sync-vault-onboarding that
--- needs no pre-shared secret in cron, Git, or the DB vault.
--- The database mints a single-use, 2-minute wake token in a server-only table
--- and sends it to the worker. The worker (service role) atomically consumes it.
--- Only the database can create tokens; members/anon cannot read or write them.
--- Apply only after the reviewed worker (which accepts x-vault-wake) is deployed.
-
 CREATE TABLE IF NOT EXISTS public.vault_onboarding_wake_tokens (
   token text PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -43,5 +36,11 @@ $$;
 REVOKE ALL ON FUNCTION public.consume_vault_onboarding_wake(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.consume_vault_onboarding_wake(text) TO service_role;
 
--- Schedule (run separately, then pause it in Cloud -> Jobs until root verifies):
--- SELECT cron.schedule('vault-onboarding-retry-hourly', '17 * * * *', $$SELECT public.vault_onboarding_wake()$$);
+-- Create the hourly job DISABLED in the same transaction (never briefly active).
+DO $$
+DECLARE jid bigint;
+BEGIN
+  PERFORM cron.unschedule(jobid) FROM cron.job WHERE jobname = 'vault-onboarding-retry-hourly';
+  jid := cron.schedule('vault-onboarding-retry-hourly', '17 * * * *', 'SELECT public.vault_onboarding_wake()');
+  PERFORM cron.alter_job(job_id := jid, active := false);
+END $$;

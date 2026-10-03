@@ -104,6 +104,13 @@ describe("prepared scheduler wake tokens", () => {
     expect(await consume(t)).toBe(false); // single use
     await db.query("INSERT INTO public.vault_onboarding_wake_tokens VALUES ('old', now() - interval '3 minutes')");
     expect(await consume("old")).toBe(false); // stale
+    await db.query("INSERT INTO public.vault_onboarding_wake_tokens VALUES ('future', now() + interval '1 minute')");
+    expect(await consume("future")).toBe(false); // future-dated rejected
+  });
+
+  it("PUBLIC has no table privilege", async () => {
+    const r = await db.query<{ v: boolean }>("SELECT has_table_privilege('public','public.vault_onboarding_wake_tokens','SELECT') AS v");
+    expect(r.rows[0].v).toBe(false);
   });
 
   it("members and signed-out callers cannot mint, read, or consume tokens", async () => {
