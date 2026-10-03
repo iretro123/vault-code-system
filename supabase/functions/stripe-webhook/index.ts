@@ -7,6 +7,7 @@ import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membership
 import {
   LEGACY_PRICE_MAP,
   resolvePlanForPrice,
+  revokePaidRole,
   syncRolesFromStatus,
 } from "../_shared/vaultAccess.ts";
 
@@ -153,8 +154,11 @@ async function processEvent(
       const id = invoiceSubscriptionId(invoice);
       if (id) {
         const sub = await stripe.subscriptions.retrieve(id);
-        if (sub.metadata?.vault_campaign === "vault_return_199_30d" && sub.items.data[0]?.price.id === Deno.env.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID")) {
-          await stripe.invoices.update(invoice.id!, { footer: "Access Vault OS: https://member.vaulttradingacademy.com/activate-return — use the email entered at checkout. Verify your email to connect your membership, then download Vault OS for iPhone or Android. Help: vault@vaulttradingacademy.com. No second payment is needed." });
+        if (invoice.status === "draft" && sub.metadata?.vault_campaign === "vault_return_199_30d" && sub.items.data[0]?.price.id === Deno.env.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID")) {
+          // Renewal invoices only: the first invoice is already finalized at checkout,
+          // so its instructions come from the subscription description instead.
+          // A footer failure must never fail the payment event.
+          await stripe.invoices.update(invoice.id!, { footer: "Access Vault OS: https://member.vaulttradingacademy.com/activate-return — use the email entered at checkout. Verify your email to connect your membership, then download Vault OS for iPhone or Android. Help: vault@vaulttradingacademy.com. No second payment is needed." }).catch((e: unknown) => log(traceId, "RETURN_FOOTER_SKIPPED", { invoiceId: invoice.id, error: String((e as Error)?.message ?? e).slice(0, 120) }));
         }
       }
       break;
@@ -396,7 +400,7 @@ async function handleSubscriptionUpdated(
   stripe: Stripe,
   supabase: SupabaseClient
 ) {
-  await syncReturnSubscription(subscription, supabase);
+  await syncReturnSubscription(subscription, supabase, (authUserId, email) => revokePaidRole(supabase, { authUserId, email }));
   log(traceId, "SUBSCRIPTION_UPDATED", { subId: subscription.id, status: subscription.status });
 
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
