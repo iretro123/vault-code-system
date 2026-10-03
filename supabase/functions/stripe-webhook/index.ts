@@ -7,6 +7,7 @@ import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membership
 import {
   LEGACY_PRICE_MAP,
   resolvePlanForPrice,
+  revokePaidRole,
   syncRolesFromStatus,
 } from "../_shared/vaultAccess.ts";
 

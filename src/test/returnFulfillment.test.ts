@@ -63,14 +63,41 @@ describe('verified checkout fulfillment', () => {
 });
 
 describe('subscription status synchronization', () => {
-  it('updates only the previously verified subscription and preserves expiry if absent', async () => {
-    const eq = vi.fn().mockResolvedValue({ error: null });
+  const mk = (data: any[]) => {
+    const select = vi.fn().mockResolvedValue({ data, error: null });
+    const eq = vi.fn().mockReturnValue({ select });
     const update = vi.fn().mockReturnValue({ eq });
-    const from = vi.fn().mockReturnValue({ update });
-    await syncReturnSubscription({ id: 'sub_paid', status: 'canceled' }, { from });
-    expect(from).toHaveBeenCalledWith('vault_return_memberships');
-    expect(update.mock.calls[0][0]).toMatchObject({ status: 'canceled' });
-    expect(update.mock.calls[0][0]).not.toHaveProperty('access_until');
-    expect(eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_paid');
+    return { from: vi.fn().mockReturnValue({ update }), update, eq };
+  };
+  const future = new Date(Date.now() + 86400_000).toISOString();
+  const past = new Date(Date.now() - 1000).toISOString();
+
+  it('updates only the previously verified subscription and preserves expiry if absent', async () => {
+    const db = mk([]);
+    await syncReturnSubscription({ id: 'sub_paid', status: 'canceled' }, db);
+    expect(db.from).toHaveBeenCalledWith('vault_return_memberships');
+    expect(db.update.mock.calls[0][0]).toMatchObject({ status: 'canceled' });
+    expect(db.update.mock.calls[0][0]).not.toHaveProperty('access_until');
+    expect(db.eq).toHaveBeenCalledWith('stripe_subscription_id', 'sub_paid');
+  });
+
+  it.each(['canceled', 'unpaid', 'incomplete_expired', 'past_due'])('%s removes the cached paid role of the bound account', async status => {
+    const db = mk([{ auth_user_id: 'u1', email: 'b@x.com', access_until: future }]); const onEnded = vi.fn();
+    await syncReturnSubscription({ id: 's', status }, db, onEnded);
+    expect(onEnded).toHaveBeenCalledWith('u1', 'b@x.com');
+  });
+
+  it('expired access_until removes the role even if status still reads active', async () => {
+    const db = mk([{ auth_user_id: 'u1', email: null, access_until: past }]); const onEnded = vi.fn();
+    await syncReturnSubscription({ id: 's', status: 'active' }, db, onEnded);
+    expect(onEnded).toHaveBeenCalledOnce();
+  });
+
+  it('active/trialing renewals and unclaimed memberships never revoke', async () => {
+    const onEnded = vi.fn();
+    await syncReturnSubscription({ id: 's', status: 'active' }, mk([{ auth_user_id: 'u1', access_until: future }]), onEnded);
+    await syncReturnSubscription({ id: 's', status: 'trialing' }, mk([{ auth_user_id: 'u1', access_until: future }]), onEnded);
+    await syncReturnSubscription({ id: 's', status: 'canceled' }, mk([{ auth_user_id: null, access_until: future }]), onEnded);
+    expect(onEnded).not.toHaveBeenCalled();
   });
 });
