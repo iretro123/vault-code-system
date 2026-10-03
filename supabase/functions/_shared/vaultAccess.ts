@@ -53,13 +53,15 @@ export function isActiveStatus(status: string | null | undefined) {
 }
 
 async function isStaff(admin: any, authUserId: string) {
-  const { data } = await admin
+  // limit(1): staff can hold several staff roles; a read error must never look like "not staff".
+  const { data, error } = await admin
     .from("user_roles")
     .select("id")
     .eq("user_id", authUserId)
     .in("role", STAFF_ROLES)
-    .maybeSingle();
-  return !!data?.id;
+    .limit(1);
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
 }
 
 /**
@@ -160,30 +162,33 @@ export async function revokePaidRole(
   }
 
   const now = new Date().toISOString();
-  await admin.from("user_roles").delete().eq("user_id", authUserId).eq("role", PAID_ROLE);
+  // Every write is checked: a failed write must throw (Stripe retries) rather
+  // than report the paid role as removed.
+  const must = (r: { error?: unknown }) => { if (r?.error) throw r.error; return r; };
+  must(await admin.from("user_roles").delete().eq("user_id", authUserId).eq("role", PAID_ROLE));
 
-  const { data: basic } = await admin
+  const { data: basic } = must(await admin
     .from("user_roles")
     .select("id")
     .eq("user_id", authUserId)
     .eq("role", "basic_tier")
-    .maybeSingle();
+    .maybeSingle()) as { data: { id?: string } | null };
   if (basic?.id) {
-    await admin
+    must(await admin
       .from("user_roles")
       .update({ subscription_status: "none", updated_at: now })
-      .eq("id", basic.id);
+      .eq("id", basic.id));
   } else {
-    await admin
+    must(await admin
       .from("user_roles")
-      .insert({ user_id: authUserId, role: "basic_tier", subscription_status: "none" });
+      .insert({ user_id: authUserId, role: "basic_tier", subscription_status: "none" }));
   }
 
-  await admin
+  must(await admin
     .from("profiles")
     .update({ access_status: "inactive", updated_at: now })
     .eq("user_id", authUserId)
-    .not("access_status", "in", "(banned,revoked)");
+    .not("access_status", "in", "(banned,revoked)"));
 
   console.log("[vaultAccess] revoked_paid_role", JSON.stringify({ authUserId }));
   return true;
