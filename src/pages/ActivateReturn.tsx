@@ -55,7 +55,13 @@ export default function ActivateReturn() {
         <input id="billing-email" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} style={{display:'block',width:'100%',boxSizing:'border-box',padding:16,margin:'12px 0',borderRadius:10,color:'#111'}}/>
         <button disabled={busy} style={{padding:'16px 24px',borderRadius:10,background:'#087aff',color:'#fff',border:0,fontSize:17}}>{busy?'Sending…':'Email my secure access link'}</button>
       </form>}
-      {user && !activated && <><p>Signed in as {user.email}</p><button disabled={busy} onClick={activate}>Check my paid membership</button><button disabled={busy} onClick={()=>supabase.auth.signOut()}>Use another email</button></>}
+      {user && !activated && <div>
+        <p style={{color:'#b9c9dd',fontSize:16,lineHeight:1.6}}>Signed in as <strong style={{color:'#fff'}}>{user.email}</strong></p>
+        <div style={{display:'flex',flexWrap:'wrap',gap:12,marginTop:16}}>
+          <button disabled={busy} onClick={activate} style={{padding:'16px 24px',borderRadius:10,background:'#087aff',color:'#fff',border:0,fontSize:17,cursor:'pointer'}}>Check my paid membership</button>
+          <button disabled={busy} onClick={()=>supabase.auth.signOut()} style={{padding:'16px 24px',borderRadius:10,background:'transparent',color:'#72b8ff',border:'1px solid #33507a',fontSize:17,cursor:'pointer'}}>Use another email</button>
+        </div>
+      </div>}
       <p role="status" style={{lineHeight:1.6}}>{loading?'Loading your account…':message}</p>
       {activated && <div style={{display:'grid',gap:16,marginTop:28}}>
         <a style={{color:'#72b8ff'}} href="https://apps.apple.com/us/app/vault-os-trading-academy/id6770046448">Download for iPhone →</a>
