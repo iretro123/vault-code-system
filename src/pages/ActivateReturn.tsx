@@ -12,28 +12,38 @@ export default function ActivateReturn() {
   const [activated, setActivated] = useState(false);
   async function activate() {
     setBusy(true); setMessage('Checking your membership…');
-    if (user) await ensureProfile(user.id, user.email);
-    const { data, error } = await supabase.functions.invoke('activate-stripe-return');
-    let code: string | undefined;
-    if (error) { try { code = (await (error as { context?: Response }).context?.json())?.code; } catch { /* ignore */ } }
-    if (code === 'fresh_email_link_required') {
-      // Only a session opened from a fresh email link can connect a payment.
-      await supabase.auth.signOut({ scope: 'local' });
-      setMessage('For your security, enter your checkout email and open the new secure link we send you.');
-    } else if (error || !data?.success) {
-      setMessage('We couldn’t confirm access yet. Use the same email you entered at Stripe checkout. If you just paid, wait a moment and retry. Your payment is saved.');
-    } else {
-      await refetchProfile(); setActivated(true);
-      setMessage(data.secured ? 'Your Vault OS access is ready. For your security, other devices on this email were signed out and any earlier password was cleared.' : 'Your Vault OS access is ready.');
+    try {
+      if (user) await ensureProfile(user.id, user.email);
+      const { data, error } = await supabase.functions.invoke('activate-stripe-return');
+      let code: string | undefined;
+      if (error) { try { code = (await (error as { context?: Response }).context?.json())?.code; } catch { /* ignore */ } }
+      if (code === 'fresh_email_link_required') {
+        // Only a session opened from a fresh email link can connect a payment.
+        await supabase.auth.signOut({ scope: 'local' });
+        setMessage('For your security, enter your checkout email and open the new secure link we send you.');
+      } else if (error || !data?.success) {
+        setMessage('We couldn’t confirm access yet. Use the same email you entered at Stripe checkout. If you just paid, wait a moment and retry. Your payment is saved.');
+      } else {
+        await refetchProfile(); setActivated(true);
+        setMessage(data.secured ? 'Your Vault OS access is ready. For your security, other devices on this email were signed out and any earlier password was cleared.' : 'Your Vault OS access is ready.');
+      }
+    } catch {
+      setMessage('Something went wrong while checking your membership. Your payment is saved. Tap “Check my paid membership” to retry, or contact support.');
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
   useEffect(() => { if (user && !loading) void activate(); }, [user?.id, loading]);
   async function sendLink(e: React.FormEvent) {
     e.preventDefault(); setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({email:email.trim().toLowerCase(), options:{emailRedirectTo:'https://member.vaulttradingacademy.com/activate-return',shouldCreateUser:true}});
-    setMessage(error ? 'Unable to send your secure link right now. Try again shortly or contact support.' : 'Check your email for your secure sign-in link. Open it to connect your payment to Vault OS.');
-    setBusy(false);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({email:email.trim().toLowerCase(), options:{emailRedirectTo:'https://member.vaulttradingacademy.com/activate-return',shouldCreateUser:true}});
+      setMessage(error ? 'Unable to send your secure link right now. Try again shortly or contact support.' : 'Check your email for your secure sign-in link. Open it to connect your payment to Vault OS.');
+    } catch {
+      setMessage('Unable to send your secure link right now. Try again shortly or contact support.');
+    } finally {
+      setBusy(false);
+    }
   }
   return <main style={{minHeight:'100dvh',background:'#07152a',color:'#fff',padding:'64px 24px',fontFamily:'Arial,sans-serif'}}>
     <section style={{maxWidth:540,margin:'0 auto'}}>
