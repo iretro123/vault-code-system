@@ -1,6 +1,11 @@
 import { validReturnCheckout, subscriptionEnd, type ReturnConfig } from './returnOffer.ts';
 
-export async function fulfillReturnCheckout(session: any, stripe: any, db: any, config: ReturnConfig): Promise<boolean> {
+/**
+ * `afterCommit` runs only after record_vault_return_payment committed the
+ * membership + outbox row. Its failures are swallowed: the payment stays
+ * acknowledged and the outbox row stays pending for the worker.
+ */
+export async function fulfillReturnCheckout(session: any, stripe: any, db: any, config: ReturnConfig, afterCommit?: (subscriptionId: string) => Promise<unknown>): Promise<boolean> {
   const link = typeof session.payment_link === 'string' ? session.payment_link : session.payment_link?.id;
   const configuredLink = config.paymentLinkId;
   if (!configuredLink || link !== configuredLink) return false;
@@ -26,6 +31,7 @@ export async function fulfillReturnCheckout(session: any, stripe: any, db: any, 
     p_status: sub.status, p_end: new Date(end * 1000).toISOString(),
   });
   if (error) throw error;
+  if (afterCommit) { try { await afterCommit(sub.id); } catch { /* worker retries */ } }
   return true;
 }
 
