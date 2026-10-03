@@ -28,7 +28,9 @@ export const LEGACY_PRICE_MAP: Record<string, Plan> = {
 
 /** The current $99/mo Vault OS Full Access price, from Supabase secrets. */
 export function vaultOsMonthlyPriceId(): string | null {
-  const id = (Deno.env.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID") || "").trim();
+  // globalThis lookup keeps this module importable by Node unit tests.
+  const env = (globalThis as { Deno?: { env: { get(k: string): string | undefined } } }).Deno?.env;
+  const id = (env?.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID") || "").trim();
   return id || null;
 }
 
