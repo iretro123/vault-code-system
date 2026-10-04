@@ -3,6 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
+import { usePaymentLock } from "@/hooks/usePaymentLock";
+import { PaymentRecoveryScreen } from "@/components/academy/PaymentRecoveryScreen";
 
 /**
  * Wrap routes that should only be reachable by basic_tier members.
@@ -13,8 +15,9 @@ export function BasicTierGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const { isBasicTier } = useIsBasicTier();
   const location = useLocation();
+  const { locked, loading: lockLoading, refetch } = usePaymentLock();
 
-  if (loading) {
+  if (loading || lockLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -25,6 +28,9 @@ export function BasicTierGate({ children }: { children: ReactNode }) {
   if (!user) {
     return <Navigate to="/create-account" replace state={{ from: location }} />;
   }
+
+  // Past-due members see only payment recovery, even on free basic pages.
+  if (locked) return <PaymentRecoveryScreen onCheckStatus={() => refetch()} />;
 
   if (!isBasicTier) {
     return <Navigate to="/academy/home" replace />;
