@@ -136,3 +136,17 @@ describe("unknown legacy price reconciliation", () => {
     expect(unknownPriceReconcileTarget([row, { ...row, user_id: "st2" }], { id: "sub_1", customer: "cus_1" })).toBeNull();
   });
 });
+
+import { recoveryWorkflowStatus } from "../../supabase/functions/_shared/paymentRecovery";
+describe("recovery workflow status reasons", () => {
+  const env = { enabled: true, ghlKey: "k", locationId: "loc", workflowId: "wf1" };
+  const list = (w: unknown[]) => (async () => new Response(JSON.stringify({ workflows: w }), { status: 200 })) as unknown as typeof fetch;
+  it("reports actionable, secret-free reasons", async () => {
+    expect((await recoveryWorkflowStatus(env, list([{ id: "wf1", status: "published" }]))).ok).toBe(true);
+    expect((await recoveryWorkflowStatus(env, list([{ id: "wf1", status: "draft" }]))).reason).toContain("draft");
+    expect((await recoveryWorkflowStatus(env, list([]))).reason).toContain("not found");
+    const r = await recoveryWorkflowStatus(env, (async () => new Response("", { status: 403 })) as unknown as typeof fetch);
+    expect(r.reason).toContain("403");
+    expect(r.reason).not.toContain("k ");
+  });
+});

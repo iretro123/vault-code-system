@@ -37,14 +37,23 @@ export const recoveryReady = (e: RecoveryEnv) => e.enabled && !!e.ghlKey && !!e.
 export const recoveryBackoffMs = (attempts: number) => Math.min(3_600_000, 60_000 * 2 ** Math.min(Math.max(attempts, 0), 6));
 const ghlHeaders = (env: RecoveryEnv) => ({ Authorization: `Bearer ${env.ghlKey}`, Version: '2021-07-28', 'Content-Type': 'application/json' });
 
-/** The configured workflow must already exist and be published in the CRM. */
-export async function recoveryWorkflowPublished(env: RecoveryEnv, fetchFn: typeof fetch, timeoutMs = 10_000): Promise<boolean> {
+/** Actionable workflow check: never includes credentials, only HTTP status / match result. */
+export async function recoveryWorkflowStatus(env: RecoveryEnv, fetchFn: typeof fetch, timeoutMs = 10_000): Promise<{ ok: boolean; reason: string }> {
   try {
     const res = await fetchFn(`${GHL}/workflows/?locationId=${encodeURIComponent(env.locationId)}`, { headers: ghlHeaders(env), signal: AbortSignal.timeout(timeoutMs) });
-    if (!res.ok) return false;
+    if (res.status === 401 || res.status === 403) return { ok: false, reason: `CRM refused workflow lookup (HTTP ${res.status}): key lacks workflows.readonly scope or location access` };
+    if (!res.ok) return { ok: false, reason: `CRM workflow lookup HTTP ${res.status}` };
     const body = await res.json().catch(() => ({}));
-    return (body?.workflows ?? []).some((w: any) => w?.id === env.workflowId && w?.status === 'published');
-  } catch { return false; }
+    const w = (body?.workflows ?? []).find((x: any) => x?.id === env.workflowId);
+    if (!w) return { ok: false, reason: 'Configured workflow id not found in this CRM location' };
+    if (w.status !== 'published') return { ok: false, reason: `Workflow status is '${String(w.status)}', not published` };
+    return { ok: true, reason: 'published' };
+  } catch (e) { return { ok: false, reason: (e as Error)?.name === 'TimeoutError' ? 'CRM workflow lookup timeout' : 'CRM workflow lookup failed' }; }
+}
+
+/** The configured workflow must already exist and be published in the CRM. */
+export async function recoveryWorkflowPublished(env: RecoveryEnv, fetchFn: typeof fetch, timeoutMs = 10_000): Promise<boolean> {
+  return (await recoveryWorkflowStatus(env, fetchFn, timeoutMs)).ok;
 }
 
 /** Notify only while the re-read subscription is still past due (replay/out-of-order safe). */

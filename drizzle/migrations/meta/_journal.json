@@ -43,6 +43,13 @@
       "when": 1791143057495,
       "tag": "0005_payment_past_due_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791143339714,
+      "tag": "0006_payment_recovery_wake",
+      "breakpoints": true
     }
   ]
 }
