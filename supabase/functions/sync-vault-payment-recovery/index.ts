@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.94.1';
-import { deliverRecoveryJob, recoveryEnv, recoveryReady, supabaseRecoveryStore } from '../_shared/paymentRecovery.ts';
+import { deliverRecoveryJob, recoveryEnv, recoveryReady, recoveryWorkflowPublished, supabaseRecoveryStore } from '../_shared/paymentRecovery.ts';
 // Authenticated worker for past-due recovery notices. Separate from the
 // welcome worker so the welcome queue and its scheduler are unchanged.
 Deno.serve(async req => {
@@ -8,6 +8,8 @@ Deno.serve(async req => {
   if (!secret || req.headers.get('Authorization') !== `Bearer ${secret}`) return new Response('Unauthorized', { status: 401 });
   const env = recoveryEnv(k => Deno.env.get(k));
   if (!recoveryReady(env)) return new Response('Payment recovery notices not enabled/configured', { status: 503 });
+  // Never claim jobs unless the configured recovery workflow already exists and is published.
+  if (!(await recoveryWorkflowPublished(env, fetch))) return new Response('Recovery workflow missing or not published', { status: 503 });
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: jobs, error } = await db.rpc('claim_vault_payment_recovery_jobs');
   if (error) return new Response('Unable to claim jobs', { status: 500 });
