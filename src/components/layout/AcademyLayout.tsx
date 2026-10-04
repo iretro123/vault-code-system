@@ -66,7 +66,7 @@ function AcademyLayoutInner() {
   const { setOpenMobile } = useSidebar();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
-  const { locked: paymentLocked, loading: paymentLoading, refetch: refetchPaymentLock } = usePaymentLock();
+  const { locked: paymentLocked, unverified: paymentUnverified, loading: paymentLoading, refetch: refetchPaymentLock } = usePaymentLock();
   const { toast } = useToast();
   const isOnline = useOnlineStatus();
   const lastPageRef = useRef("");
