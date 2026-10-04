@@ -112,7 +112,7 @@ serve(async (req) => {
       return_url: `${origin}/academy/home?billing=returned`,
     });
 
-    log("Portal session created", { url: portalSession.url });
+    log("Portal session created");
 
     return new Response(JSON.stringify({ url: portalSession.url }), {
       status: 200,
