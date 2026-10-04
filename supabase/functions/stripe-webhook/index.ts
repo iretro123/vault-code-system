@@ -4,7 +4,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membershipValidation.ts";
-import { enqueueRecovery, shouldEnqueueRecovery } from "../_shared/paymentRecovery.ts";
+import { enqueueRecovery, shouldEnqueueClear, shouldEnqueueRecovery } from "../_shared/paymentRecovery.ts";
+import { type AccessRow, unknownPriceReconcileTarget } from "../_shared/legacyReconcile.ts";
 import {
   LEGACY_PRICE_MAP,
   resolvePlanForPrice,
@@ -164,10 +165,16 @@ async function processEvent(
       }
       break;
     }
-    case "invoice.paid":
+    case "invoice.paid": {
       // Access returns only if the CURRENT subscription is active again.
-      await handleInvoicePaid(event.data.object as Stripe.Invoice, traceId, stripe, supabase);
+      const invoice = event.data.object as Stripe.Invoice;
+      const current = await handleInvoicePaid(invoice, traceId, stripe, supabase);
+      if (current && invoice.id && invoice.status === "paid" && shouldEnqueueClear(event.type, current.status)) {
+        const target = await recoveryRecipient(supabase, current);
+        if (target) await enqueueRecovery(supabase, { invoiceId: invoice.id, subscriptionId: current.id, kind: "clear", ...target });
+      }
       break;
+    }
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
       const current = await handleInvoicePaid(invoice, traceId, stripe, supabase);
@@ -438,6 +445,26 @@ async function handleSubscriptionUpdated(
 
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
   if (!customerId) throw new Error("No customer on subscription");
+
+  // Unknown price: status-only reconcile of an EXISTING bound row, never a new paid mapping.
+  if (!resolvePlanForPrice(subscription.items?.data?.[0]?.price?.id)) {
+    const { data: rows, error } = await supabase.from("student_access")
+      .select("user_id, product_key, tier, status, stripe_subscription_id, stripe_customer_id")
+      .eq("stripe_subscription_id", subscription.id);
+    if (error) throw error;
+    const target = unknownPriceReconcileTarget((rows ?? []) as AccessRow[], subscription as never);
+    if (!target) return void resolvePlan(subscription.items?.data?.[0]?.price?.id, traceId); // throws: unknown + unbound
+    log(traceId, "UNKNOWN_PRICE_STATUS_RECONCILE", { subId: subscription.id, status: subscription.status });
+    await upsertAccess({
+      studentId: target.user_id,
+      productKey: target.product_key,
+      tier: target.tier,
+      status: stripeAccessStatus(subscription.status),
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscription.id,
+    }, traceId, supabase);
+    return;
+  }
 
   if (subscription.status !== "active") {
     const originalPlan = resolvePlan(subscription.items?.data?.[0]?.price?.id, traceId);

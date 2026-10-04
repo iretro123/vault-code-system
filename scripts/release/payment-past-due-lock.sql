@@ -7,16 +7,60 @@
 -- always wins: vault_access_for_user() is checked first.
 -- Additive only: no drops, no status rewrites, no user data changes.
 
-CREATE OR REPLACE FUNCTION public.vault_payment_locked(uid uuid)
+-- Canonical access: a Stripe-linked allowlist row (stripe_customer_id set) is
+-- ADMISSION only and no longer grants independent access; that member's access
+-- comes from their Stripe membership. Non-Stripe allowlist rows (complimentary)
+-- are unchanged. Otherwise identical to the deployed definition.
+CREATE OR REPLACE FUNCTION public.vault_access_for_user(uid uuid)
 RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $$
-  SELECT uid IS NOT NULL
-    AND NOT public.vault_access_for_user(uid)
-    AND (
+  SELECT EXISTS (
+    SELECT 1 FROM auth.users u JOIN public.profiles p ON p.user_id=u.id
+    WHERE u.id=uid AND coalesce(p.is_banned,false)=false
+      AND coalesce(p.access_status,'') NOT IN ('banned','revoked')
+      AND (
+        EXISTS (SELECT 1 FROM public.allowed_signups a
+          WHERE lower(btrim(a.email))=lower(btrim(u.email))
+            AND nullif(btrim(coalesce(a.stripe_customer_id,'')),'') IS NULL)
+        OR EXISTS (SELECT 1 FROM public.user_roles r WHERE r.user_id=uid
+          AND r.role::text IN ('operator','vault_os_owner'))
+        OR EXISTS (SELECT 1 FROM public.academy_user_roles ar
+          JOIN public.academy_roles r ON r.id=ar.role_id
+          WHERE ar.user_id=uid AND r.name IN ('CEO','Admin','Coach'))
+        OR EXISTS (SELECT 1 FROM public.students s
+          JOIN public.student_access sa ON sa.user_id=s.id
+          WHERE s.auth_user_id=uid AND sa.status='active'
+            AND sa.product_key IN ('vault_os','vault_academy')
+            AND sa.stripe_subscription_id IS NOT NULL
+            AND sa.stripe_customer_id IS NOT NULL)
+        OR EXISTS (SELECT 1 FROM public.vault_return_memberships m
+          WHERE m.auth_user_id=uid AND m.paid_at IS NOT NULL AND m.claimed_at IS NOT NULL
+            AND m.status IN ('active','trialing') AND m.access_until>now()
+            AND public.vault_return_caller_session_ok(uid, m.claim_session_id, m.claimed_at))
+        OR EXISTS (SELECT 1 FROM public.ios_membership_activations a
+          WHERE a.user_id=uid AND a.expires_date>now()
+            AND a.metadata->>'apple_verified'='true'
+            AND a.metadata->>'revocation_date' IS NULL)
+        OR EXISTS (SELECT 1 FROM public.android_membership_activations a
+          WHERE a.user_id=uid AND a.expires_date>now()
+            AND a.subscription_state IN ('SUBSCRIPTION_STATE_ACTIVE','SUBSCRIPTION_STATE_CANCELED'))
+      )
+  );
+$$;
+
+-- Raw billing fact only (no call back into access helpers: no cycles).
+CREATE OR REPLACE FUNCTION public.vault_billing_past_due(uid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT uid IS NOT NULL AND (
       EXISTS (SELECT 1 FROM public.students s
         JOIN public.student_access sa ON sa.user_id = s.id
         WHERE s.auth_user_id = uid
@@ -28,8 +72,24 @@ AS $$
         WHERE m.auth_user_id = uid
           AND m.paid_at IS NOT NULL
           AND m.claimed_at IS NOT NULL
-          AND m.status = 'past_due')
-    );
+          AND m.status = 'past_due'));
+$$;
+
+REVOKE ALL ON FUNCTION public.vault_billing_past_due(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.vault_billing_past_due(uuid) TO service_role;
+
+-- Locked = past due AND no independent access. Dependency order:
+-- vault_billing_past_due (facts) <- vault_payment_locked -> vault_access_for_user.
+CREATE OR REPLACE FUNCTION public.vault_payment_locked(uid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT uid IS NOT NULL
+    AND public.vault_billing_past_due(uid)
+    AND NOT public.vault_access_for_user(uid);
 $$;
 
 REVOKE ALL ON FUNCTION public.vault_payment_locked(uuid) FROM PUBLIC, anon, authenticated;
@@ -68,7 +128,8 @@ GRANT EXECUTE ON FUNCTION public.get_my_payment_lock() TO authenticated, service
 -- Durable, deduplicated payment-recovery notice queue: one row per failed
 -- invoice, separate from the welcome outbox.
 CREATE TABLE IF NOT EXISTS public.vault_payment_recovery_outbox (
-  stripe_invoice_id text PRIMARY KEY,
+  stripe_invoice_id text PRIMARY KEY, -- job key: invoice id, or 'clear:<invoice id>'
+  kind text NOT NULL DEFAULT 'notify' CHECK (kind IN ('notify','clear')),
   stripe_subscription_id text NOT NULL,
   auth_user_id uuid,
   email text NOT NULL,

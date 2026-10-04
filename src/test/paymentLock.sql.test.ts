@@ -14,6 +14,7 @@ const BASE = [
   "drizzle/migrations/0003_vault_return_claim_session_strict.sql",
 ].map(read);
 const PREP = `ALTER TABLE public.student_access ADD COLUMN IF NOT EXISTS is_lifetime boolean DEFAULT false;
+ALTER TABLE public.allowed_signups ADD COLUMN IF NOT EXISTS stripe_customer_id text;
 CREATE TABLE public.free_room(id int, room text);
 INSERT INTO public.free_room VALUES (1,'trade-floor');
 GRANT SELECT ON public.free_room TO authenticated;
@@ -113,5 +114,31 @@ describe("past-due payment lock", () => {
     await db.query("INSERT INTO public.vault_payment_recovery_outbox(stripe_invoice_id,stripe_subscription_id,email) VALUES ('in_1','sub_1','m@example.com') ON CONFLICT DO NOTHING");
     expect((await db.query("SELECT * FROM public.claim_vault_payment_recovery_jobs()")).rows.length).toBe(1);
     expect((await db.query("SELECT * FROM public.claim_vault_payment_recovery_jobs()")).rows.length).toBe(0);
+  });
+
+  it("Stripe-linked allowlist is admission only: past-due member is locked (Meghan case)", async () => {
+    const { u, s, sid } = await stripeMember("active", "vault_academy");
+    await db.query("INSERT INTO public.allowed_signups(email,stripe_customer_id) VALUES ('m@example.com','cus_1')");
+    expect(await h.hasAccess(db, u, "m@example.com", s)).toBe(true); // via the Stripe row
+    await setStatus(sid, "past_due");
+    expect(await h.hasAccess(db, u, "m@example.com", s)).toBe(false);
+    expect(await locked(u, s)).toBe(true);
+    expect(await freeRows(u, s)).toBe(0);
+  });
+
+  it("explicit non-Stripe complimentary allowlist keeps access even with a past-due row", async () => {
+    const { u, s } = await stripeMember("past_due");
+    await db.query("INSERT INTO public.allowed_signups(email,stripe_customer_id) VALUES ('m@example.com',null)");
+    expect(await h.hasAccess(db, u, "m@example.com", s)).toBe(true);
+    expect(await locked(u, s)).toBe(false);
+  });
+
+  it("Stripe-linked allowlist without any paid row grants no paid access", async () => {
+    const u = await h.addUser(db, "m@example.com");
+    const s = await h.addSession(db, u, "password");
+    await db.query("INSERT INTO public.allowed_signups(email,stripe_customer_id) VALUES ('m@example.com','cus_1')");
+    expect(await h.hasAccess(db, u, "m@example.com", s)).toBe(false);
+    expect(await locked(u, s)).toBe(false);
+    expect(await freeRows(u, s)).toBe(1);
   });
 });

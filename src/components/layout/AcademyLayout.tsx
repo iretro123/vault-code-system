@@ -10,6 +10,7 @@ import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
 import { PastDueBanner } from "@/components/academy/PastDueBanner";
 import { PaymentRecoveryScreen } from "@/components/academy/PaymentRecoveryScreen";
+import { AccessCheckRetry } from "@/components/academy/AccessCheckRetry";
 import { shouldShowPaymentLock, usePaymentLock } from "@/hooks/usePaymentLock";
 import { NotificationOptInBanner } from "@/components/academy/NotificationOptInBanner";
 import { isBillingVisible } from "@/lib/featureFlags";
@@ -66,7 +67,7 @@ function AcademyLayoutInner() {
   const { setOpenMobile } = useSidebar();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
-  const { locked: paymentLocked, loading: paymentLoading, refetch: refetchPaymentLock } = usePaymentLock();
+  const { locked: paymentLocked, unverified: paymentUnverified, loading: paymentLoading, refetch: refetchPaymentLock } = usePaymentLock();
   const { toast } = useToast();
   const isOnline = useOnlineStatus();
   const lastPageRef = useRef("");
@@ -131,9 +132,13 @@ function AcademyLayoutInner() {
   }
 
   // 2a. Past-due payment lock: before sidebar, Outlet, onboarding and basic-tier.
-  if (paymentLoading) return <LoadingShell />;
-  if (shouldShowPaymentLock({ locked: paymentLocked, loading: paymentLoading || accessLoading, isAdminBypass })) {
+  //     Wait for BOTH the lock and the access decision before any branch renders.
+  if (paymentLoading || accessLoading) return <LoadingShell />;
+  if (shouldShowPaymentLock({ locked: paymentLocked, loading: false, isAdminBypass })) {
     return <PaymentRecoveryScreen onCheckStatus={async () => { await refetchPaymentLock(); await refetchAccess(); }} />;
+  }
+  if (paymentUnverified && !isAdminBypass) {
+    return <AccessCheckRetry onRetry={() => refetchPaymentLock()} />;
   }
 
   // 2b. Basic-tier members are locked to the Learn experience inside Academy.
