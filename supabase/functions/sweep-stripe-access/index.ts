@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { grantPaidRole } from "../_shared/vaultAccess.ts";
 import { stripeAccessStatus } from "../_shared/membershipValidation.ts";
+import { complimentaryAllowlistEmails, sweepSubscriptionBound } from "../_shared/legacyReconcile.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -173,10 +174,10 @@ serve(async (req) => {
 
     // Whitelisted members (manual/owner grants) keep full access regardless of
     // what Stripe says — they were never meant to have a Stripe subscription.
-    const { data: mainWhitelist } = await admin.from("allowed_signups").select("email");
-    const whitelistedEmails = new Set(
-      (mainWhitelist || []).map((w) => (w.email || "").trim().toLowerCase()).filter(Boolean),
-    );
+    // Stripe-linked allowlist rows are admission only and are swept like any member.
+    const { data: mainWhitelist, error: wlErr } = await admin.from("allowed_signups").select("email, stripe_customer_id");
+    if (wlErr) throw wlErr;
+    const whitelistedEmails = complimentaryAllowlistEmails(mainWhitelist || []);
 
     let skippedProtected = 0;
     let skippedLookupFailed = 0;
@@ -245,6 +246,12 @@ serve(async (req) => {
         } catch (e) {
           log("sub_list_failed", { customerId, error: (e as Error).message });
         }
+      }
+
+      if (subQueryOk && !sweepSubscriptionBound(row, customerId, sub)) {
+        skippedLookupFailed++;
+        changes.push({ user_id: row.user_id, email, stripe_customer_id: customerId, result: "subscription_not_bound", from: row.status, to: row.status });
+        continue;
       }
 
       if (!subQueryOk) {
@@ -359,14 +366,12 @@ serve(async (req) => {
         studentRowIds.length
           ? admin.from("student_access").select("user_id, status, is_lifetime").in("user_id", studentRowIds)
           : Promise.resolve({ data: [] as { user_id: string }[] }),
-        admin.from("allowed_signups").select("email"),
+        admin.from("allowed_signups").select("email, stripe_customer_id"),
         admin.from("user_roles").select("user_id, role").in("user_id", ids),
       ]);
 
       const accessStudentIds = new Set((accessAll || []).map((r) => r.user_id));
-      const whitelisted = new Set(
-        (whitelist || []).map((w) => (w.email || "").trim().toLowerCase()).filter(Boolean),
-      );
+      const whitelisted = complimentaryAllowlistEmails(whitelist || []);
       const staff = new Set(
         (staffRoles || [])
           .filter((r) => ["operator", "vault_os_owner", "admin"].includes(String(r.role)))
