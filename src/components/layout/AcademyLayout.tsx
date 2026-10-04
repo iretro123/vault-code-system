@@ -131,9 +131,13 @@ function AcademyLayoutInner() {
   }
 
   // 2a. Past-due payment lock: before sidebar, Outlet, onboarding and basic-tier.
-  if (paymentLoading) return <LoadingShell />;
-  if (shouldShowPaymentLock({ locked: paymentLocked, loading: paymentLoading || accessLoading, isAdminBypass })) {
+  //     Wait for BOTH the lock and the access decision before any branch renders.
+  if (paymentLoading || accessLoading) return <LoadingShell />;
+  if (shouldShowPaymentLock({ locked: paymentLocked, loading: false, isAdminBypass })) {
     return <PaymentRecoveryScreen onCheckStatus={async () => { await refetchPaymentLock(); await refetchAccess(); }} />;
+  }
+  if (paymentUnverified && !isAdminBypass) {
+    return <AccessCheckRetry onRetry={() => refetchPaymentLock()} />;
   }
 
   // 2b. Basic-tier members are locked to the Learn experience inside Academy.

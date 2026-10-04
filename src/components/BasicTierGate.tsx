@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsBasicTier } from "@/hooks/useIsBasicTier";
 import { usePaymentLock } from "@/hooks/usePaymentLock";
 import { PaymentRecoveryScreen } from "@/components/academy/PaymentRecoveryScreen";
+import { AccessCheckRetry } from "@/components/academy/AccessCheckRetry";
 
 /**
  * Wrap routes that should only be reachable by basic_tier members.
@@ -13,11 +14,11 @@ import { PaymentRecoveryScreen } from "@/components/academy/PaymentRecoveryScree
  */
 export function BasicTierGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const { isBasicTier } = useIsBasicTier();
+  const { isBasicTier, loading: basicLoading } = useIsBasicTier();
   const location = useLocation();
-  const { locked, loading: lockLoading, refetch } = usePaymentLock();
+  const { locked, unverified, loading: lockLoading, refetch } = usePaymentLock();
 
-  if (loading || lockLoading) {
+  if (loading || lockLoading || basicLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -31,6 +32,8 @@ export function BasicTierGate({ children }: { children: ReactNode }) {
 
   // Past-due members see only payment recovery, even on free basic pages.
   if (locked) return <PaymentRecoveryScreen onCheckStatus={() => refetch()} />;
+
+  if (unverified) return <AccessCheckRetry onRetry={() => refetch()} />;
 
   if (!isBasicTier) {
     return <Navigate to="/academy/home" replace />;
