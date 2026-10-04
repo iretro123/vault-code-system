@@ -9,6 +9,8 @@ import { NotificationsPanel } from "@/components/academy/NotificationsPanel";
 import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
 import { PastDueBanner } from "@/components/academy/PastDueBanner";
+import { PaymentRecoveryScreen } from "@/components/academy/PaymentRecoveryScreen";
+import { shouldShowPaymentLock, usePaymentLock } from "@/hooks/usePaymentLock";
 import { NotificationOptInBanner } from "@/components/academy/NotificationOptInBanner";
 import { isBillingVisible } from "@/lib/featureFlags";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,6 +66,7 @@ function AcademyLayoutInner() {
   const { setOpenMobile } = useSidebar();
   const { logActivity } = useActivityLog();
   const { status: accessStatus2, loading: accessLoading, refetch: refetchAccess, isAdminBypass } = useStudentAccess();
+  const { locked: paymentLocked, loading: paymentLoading, refetch: refetchPaymentLock } = usePaymentLock();
   const { toast } = useToast();
   const isOnline = useOnlineStatus();
   const lastPageRef = useRef("");
@@ -125,6 +128,12 @@ function AcademyLayoutInner() {
         <Button variant="outline" onClick={() => void signOut()}>Sign out</Button>
       </section>
     </div>;
+  }
+
+  // 2a. Past-due payment lock: before sidebar, Outlet, onboarding and basic-tier.
+  if (paymentLoading) return <LoadingShell />;
+  if (shouldShowPaymentLock({ locked: paymentLocked, loading: paymentLoading || accessLoading, isAdminBypass })) {
+    return <PaymentRecoveryScreen onCheckStatus={async () => { await refetchPaymentLock(); await refetchAccess(); }} />;
   }
 
   // 2b. Basic-tier members are locked to the Learn experience inside Academy.

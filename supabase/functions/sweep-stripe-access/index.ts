@@ -134,9 +134,6 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const dryRun = body?.dry_run === true;
     const limit = Math.min(Math.max(Number(body?.limit) || 500, 1), 2000);
-    // How many days a member can stay in past_due before being auto-locked.
-    const graceDays = Math.min(Math.max(Number(body?.grace_days) || 3, 1), 30);
-    const graceCutoff = new Date(Date.now() - graceDays * 24 * 60 * 60 * 1000).toISOString();
 
     // Sweep active/trialing/past_due, skip lifetime.
     const { data: rows, error: fetchErr } = await admin
@@ -263,14 +260,10 @@ serve(async (req) => {
       const stripeStatus = sub?.status || "canceled";
       let newStatus = sub ? stripeAccessStatus(stripeStatus) : "canceled";
 
-      // 3-day grace: if row has been past_due for longer than graceDays and Stripe is still
-      // not active, escalate to canceled (auto-boot).
-      const pastDueTooLong =
-        row.status === "past_due" &&
-        row.updated_at < graceCutoff &&
-        newStatus !== "active" &&
-        newStatus !== "trialing";
-      if (pastDueTooLong) newStatus = "canceled";
+      // Payment-lock policy: Stripe's current status is authoritative. A past_due
+      // row stays past_due (locked) until Stripe reports active or ends it; it is
+      // never escalated to canceled here, which would reopen Free Basic areas.
+      const pastDueTooLong = false;
 
       if (newStatus === row.status) continue;
 
