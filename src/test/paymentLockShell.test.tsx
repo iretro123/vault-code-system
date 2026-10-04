@@ -3,12 +3,12 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
+  stub: (name: string) => () => null as unknown as JSX.Element & { n?: string } ,
   auth: { user: { id: "u1", email: "m@example.com" } as unknown, profile: { profile_completed: true, onboarding_completed: true } as unknown, loading: false, signOut: vi.fn(), refetchProfile: vi.fn() },
   basic: { isBasicTier: false, loading: false },
   access: { status: "active", loading: false, refetch: vi.fn(), isAdminBypass: false, hasAccess: true },
   lock: { state: "unlocked", locked: false, unverified: false, loading: false, refetch: vi.fn() },
 }));
-const stub = (name: string) => () => <div data-testid={name} />;
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => m.auth }));
 vi.mock("@/hooks/useIsBasicTier", () => ({ useIsBasicTier: () => m.basic }));
 vi.mock("@/hooks/useStudentAccess", () => ({ useStudentAccess: () => m.access }));
