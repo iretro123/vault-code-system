@@ -3,7 +3,6 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
-  stub: (name: string) => () => null as unknown as JSX.Element & { n?: string } ,
   auth: { user: { id: "u1", email: "m@example.com" } as unknown, profile: { profile_completed: true, onboarding_completed: true } as unknown, loading: false, signOut: vi.fn(), refetchProfile: vi.fn() },
   basic: { isBasicTier: false, loading: false },
   access: { status: "active", loading: false, refetch: vi.fn(), isAdminBypass: false, hasAccess: true },
@@ -20,17 +19,17 @@ vi.mock("@/hooks/usePresenceHeartbeat", () => ({ usePresenceHeartbeat: () => und
 vi.mock("@/hooks/useSmartRefresh", () => ({ useSmartRefresh: () => undefined }));
 vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
-vi.mock("@/components/layout/PlayerIdentity", () => ({ PlayerIdentity: stub("identity") }));
-vi.mock("@/components/layout/AcademySidebar", () => ({ AcademySidebar: stub("sidebar") }));
-vi.mock("@/components/layout/MobileNav", () => ({ MobileNav: stub("mobile-nav") }));
-vi.mock("@/components/academy/CoachDrawer", () => ({ CoachDrawer: stub("coach") }));
-vi.mock("@/components/academy/NotificationsPanel", () => ({ NotificationsPanel: stub("notif") }));
-vi.mock("@/components/academy/ReferralModal", () => ({ ReferralModal: stub("referral") }));
-vi.mock("@/components/academy/NotificationOptInBanner", () => ({ NotificationOptInBanner: stub("optin") }));
-vi.mock("@/components/academy/PastDueBanner", () => ({ PastDueBanner: stub("pastdue-banner") }));
-vi.mock("@/components/academy/AccessBlockModal", () => ({ AccessBlockModal: stub("block-modal") }));
-vi.mock("@/components/onboarding/AppOnboarding", () => ({ AppOnboarding: stub("onboarding") }));
-vi.mock("@/components/AppLoading", () => ({ AppLoading: stub("loading") }));
+vi.mock("@/components/layout/PlayerIdentity", () => ({ PlayerIdentity: () => <div data-testid="identity" /> }));
+vi.mock("@/components/layout/AcademySidebar", () => ({ AcademySidebar: () => <div data-testid="sidebar" /> }));
+vi.mock("@/components/layout/MobileNav", () => ({ MobileNav: () => <div data-testid="mobile-nav" /> }));
+vi.mock("@/components/academy/CoachDrawer", () => ({ CoachDrawer: () => <div data-testid="coach" /> }));
+vi.mock("@/components/academy/NotificationsPanel", () => ({ NotificationsPanel: () => <div data-testid="notif" /> }));
+vi.mock("@/components/academy/ReferralModal", () => ({ ReferralModal: () => <div data-testid="referral" /> }));
+vi.mock("@/components/academy/NotificationOptInBanner", () => ({ NotificationOptInBanner: () => <div data-testid="optin" /> }));
+vi.mock("@/components/academy/PastDueBanner", () => ({ PastDueBanner: () => <div data-testid="pastdue-banner" /> }));
+vi.mock("@/components/academy/AccessBlockModal", () => ({ AccessBlockModal: () => <div data-testid="block-modal" /> }));
+vi.mock("@/components/onboarding/AppOnboarding", () => ({ AppOnboarding: () => <div data-testid="onboarding" /> }));
+vi.mock("@/components/AppLoading", () => ({ AppLoading: () => <div data-testid="loading" /> }));
 vi.mock("@/lib/platform", () => ({ isNativeIOSApp: () => false, isNativeAndroidApp: () => false }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: vi.fn() }, auth: { signOut: vi.fn() } } }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn(), info: vi.fn() } }));
