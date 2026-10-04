@@ -18,8 +18,8 @@ CREATE TABLE public.free_room(id int, room text);
 INSERT INTO public.free_room VALUES (1,'trade-floor');
 GRANT SELECT ON public.free_room TO authenticated;
 ALTER TABLE public.free_room ENABLE ROW LEVEL SECURITY;
-CREATE POLICY f ON public.free_room FOR SELECT TO authenticated USING (true);
-CREATE POLICY boundary ON public.free_room AS RESTRICTIVE FOR SELECT TO authenticated USING (public.vault_access_for_user(auth.uid()) OR public.can_use_free_community());`;
+CREATE POLICY f ON public.free_room FOR SELECT TO authenticated USING (true);`;
+const POLICY = `CREATE POLICY boundary ON public.free_room AS RESTRICTIVE FOR SELECT TO authenticated USING (public.vault_access_for_user(auth.uid()) OR public.can_use_free_community());`;
 const LOCK = read("scripts/release/payment-past-due-lock.sql");
 
 let db: Awaited<ReturnType<typeof h.makeDb>>;
@@ -37,7 +37,7 @@ async function stripeMember(status: string, product = "vault_os") {
 const setStatus = (sid: string, st: string, sub = "sub_1") => db.query("UPDATE public.student_access SET status=$2 WHERE user_id=$1 AND stripe_subscription_id=$3", [sid, st, sub]);
 
 describe("past-due payment lock", () => {
-  beforeEach(async () => { db = await h.makeDb([...BASE, PREP, LOCK]); });
+  beforeEach(async () => { db = await h.makeDb([...BASE, PREP, LOCK, POLICY]); });
 
   it("active -> past_due locks everything (including free rooms) -> active restores", async () => {
     const { u, s, sid } = await stripeMember("active");
