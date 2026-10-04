@@ -18,7 +18,7 @@ export function BasicTierGate({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { locked, unverified, loading: lockLoading, refetch } = usePaymentLock();
 
-  if (loading || lockLoading || basicLoading) {
+  if (loading || (user && (lockLoading || basicLoading))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
