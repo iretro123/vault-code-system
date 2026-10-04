@@ -19,7 +19,9 @@ INSERT INTO public.free_room VALUES (1,'trade-floor');
 GRANT SELECT ON public.free_room TO authenticated;
 ALTER TABLE public.free_room ENABLE ROW LEVEL SECURITY;
 CREATE POLICY f ON public.free_room FOR SELECT TO authenticated USING (true);`;
-const POLICY = `CREATE POLICY boundary ON public.free_room AS RESTRICTIVE FOR SELECT TO authenticated USING (public.vault_access_for_user(auth.uid()) OR public.can_use_free_community());`;
+const POLICY = `CREATE FUNCTION public.has_current_full_access() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public' AS $$ SELECT public.vault_access_for_user(auth.uid()) $$;
+GRANT EXECUTE ON FUNCTION public.has_current_full_access() TO authenticated;
+CREATE POLICY boundary ON public.free_room AS RESTRICTIVE FOR SELECT TO authenticated USING (public.has_current_full_access() OR public.can_use_free_community());`;
 const LOCK = read("scripts/release/payment-past-due-lock.sql");
 
 let db: Awaited<ReturnType<typeof h.makeDb>>;
