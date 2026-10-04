@@ -10,6 +10,7 @@ import { ReferralModal } from "@/components/academy/ReferralModal";
 import { AccessBlockModal } from "@/components/academy/AccessBlockModal";
 import { PastDueBanner } from "@/components/academy/PastDueBanner";
 import { PaymentRecoveryScreen } from "@/components/academy/PaymentRecoveryScreen";
+import { AccessCheckRetry } from "@/components/academy/AccessCheckRetry";
 import { shouldShowPaymentLock, usePaymentLock } from "@/hooks/usePaymentLock";
 import { NotificationOptInBanner } from "@/components/academy/NotificationOptInBanner";
 import { isBillingVisible } from "@/lib/featureFlags";
