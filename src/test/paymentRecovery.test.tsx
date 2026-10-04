@@ -2,7 +2,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PaymentRecoveryScreen } from "@/components/academy/PaymentRecoveryScreen";
 import { shouldShowPaymentLock } from "@/hooks/usePaymentLock";
-import { deliverRecoveryJob, shouldEnqueueRecovery, RECOVERY_TAG, RECOVERY_URL, type RecoveryStore } from "../../supabase/functions/_shared/paymentRecovery";
+import { deliverRecoveryJob, recoveryReady, recoveryWorkflowPublished, shouldEnqueueClear, shouldEnqueueRecovery, RECOVERY_TAG, RECOVERY_URL, type RecoveryStore } from "../../supabase/functions/_shared/paymentRecovery";
+import { unknownPriceReconcileTarget } from "../../supabase/functions/_shared/legacyReconcile";
 
 const mocks = vi.hoisted(() => ({ invoke: vi.fn(), error: vi.fn(), ios: false, android: false }));
 vi.mock("@/lib/platform", () => ({ isNativeIOSApp: () => mocks.ios, isNativeAndroidApp: () => mocks.android }));
@@ -53,7 +54,7 @@ describe("payment recovery screen", () => {
 
 describe("payment recovery notice", () => {
   const job = { stripe_invoice_id: "in_1", stripe_subscription_id: "sub_1", auth_user_id: "u1", email: "m@example.com", attempts: 1 };
-  const env = { enabled: true, ghlKey: "k", locationId: "loc" };
+  const env = { enabled: true, ghlKey: "k", locationId: "loc", workflowId: "wf1" };
   const store = (locked: boolean): RecoveryStore & { calls: string[] } => {
     const calls: string[] = [];
     return { calls, isStillLocked: async () => locked, markSent: async () => { calls.push("sent"); }, markRetry: async () => { calls.push("retry"); }, markWithheld: async () => { calls.push("withheld"); } };
@@ -82,5 +83,56 @@ describe("payment recovery notice", () => {
   it("uses a stable member URL, not a portal session URL", () => {
     expect(RECOVERY_URL).toMatch(/^https:\/\/member\.vaulttradingacademy\.com\//);
     expect(RECOVERY_URL).not.toMatch(/billing\.stripe/);
+  });
+
+  const crm = (tagStatus = 200) => vi.fn(async (_u: string, init?: RequestInit) =>
+    String(_u).endsWith("/tags") ? new Response("{}", { status: tagStatus }) : new Response(JSON.stringify({ contact: { id: "c1" } }), { status: 200 }));
+  it("notify only ADDS the tag (idempotent); never deletes first", async () => {
+    const f = crm();
+    await deliverRecoveryJob(store(true), job, env, f as unknown as typeof fetch);
+    const methods = f.mock.calls.map(([, i]) => (i as RequestInit).method);
+    expect(methods).toEqual(["POST", "POST"]);
+  });
+  it("CRM success + DB ack failure is NOT rescheduled (no resend loop)", async () => {
+    const s = store(true); s.markSent = async () => { throw new Error("db down"); };
+    expect(await deliverRecoveryJob(s, job, env, crm() as unknown as typeof fetch)).toBe("unacknowledged");
+    expect(s.calls).toEqual([]);
+  });
+  it("clear job removes the tag only after payment is restored; removal errors retry", async () => {
+    const clear = { ...job, stripe_invoice_id: "clear:in_2", kind: "clear" as const };
+    const s1 = store(true);
+    expect(await deliverRecoveryJob(s1, clear, env, crm() as unknown as typeof fetch)).toBe("withheld");
+    const f = crm(500); const s2 = store(false);
+    expect(await deliverRecoveryJob(s2, clear, env, f as unknown as typeof fetch)).toBe("retry");
+    expect((f.mock.calls[1][1] as RequestInit).method).toBe("DELETE");
+    expect(s2.calls).toEqual(["retry"]);
+    expect(await deliverRecoveryJob(store(false), clear, env, crm() as unknown as typeof fetch)).toBe("sent");
+  });
+  it("clear is enqueued only for paid invoices with an active re-read subscription", () => {
+    expect(shouldEnqueueClear("invoice.paid", "active")).toBe(true);
+    expect(shouldEnqueueClear("invoice.paid", "past_due")).toBe(false);
+    expect(shouldEnqueueClear("invoice.payment_failed", "active")).toBe(false);
+  });
+  it("requires a configured, existing, published workflow before enabling", async () => {
+    expect(recoveryReady({ ...env, workflowId: "" })).toBe(false);
+    const list = (wf: unknown[]) => vi.fn(async () => new Response(JSON.stringify({ workflows: wf }), { status: 200 })) as unknown as typeof fetch;
+    expect(await recoveryWorkflowPublished(env, list([{ id: "wf1", status: "published" }]))).toBe(true);
+    expect(await recoveryWorkflowPublished(env, list([{ id: "wf1", status: "draft" }]))).toBe(false);
+    expect(await recoveryWorkflowPublished(env, list([{ id: "other", status: "published" }]))).toBe(false);
+    expect(await recoveryWorkflowPublished(env, vi.fn(async () => new Response("", { status: 401 })) as unknown as typeof fetch)).toBe(false);
+  });
+});
+
+describe("unknown legacy price reconciliation", () => {
+  const row = { user_id: "st1", product_key: "vault_academy", tier: "elite_v1", status: "active", stripe_subscription_id: "sub_1", stripe_customer_id: "cus_1" };
+  it("reconciles only an existing row bound to the same subscription, customer and Vault product", () => {
+    expect(unknownPriceReconcileTarget([row], { id: "sub_1", customer: "cus_1" })).toEqual(row);
+    expect(unknownPriceReconcileTarget([row], { id: "sub_1", customer: "cus_other" })).toBeNull();
+    expect(unknownPriceReconcileTarget([row], { id: "sub_2", customer: "cus_1" })).toBeNull();
+    expect(unknownPriceReconcileTarget([{ ...row, product_key: "other" }], { id: "sub_1", customer: "cus_1" })).toBeNull();
+  });
+  it("never maps an unknown price for a new/unbound user and fails closed on ambiguity", () => {
+    expect(unknownPriceReconcileTarget([], { id: "sub_1", customer: "cus_1" })).toBeNull();
+    expect(unknownPriceReconcileTarget([row, { ...row, user_id: "st2" }], { id: "sub_1", customer: "cus_1" })).toBeNull();
   });
 });
