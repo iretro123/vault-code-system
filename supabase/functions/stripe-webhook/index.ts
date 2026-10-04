@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membershipValidation.ts";
+import { enqueueRecovery, shouldEnqueueRecovery } from "../_shared/paymentRecovery.ts";
 import {
   LEGACY_PRICE_MAP,
   resolvePlanForPrice,
@@ -164,11 +165,22 @@ async function processEvent(
       break;
     }
     case "invoice.paid":
+      // Access returns only if the CURRENT subscription is active again.
       await handleInvoicePaid(event.data.object as Stripe.Invoice, traceId, stripe, supabase);
       break;
-    case "invoice.payment_failed":
-      await handleInvoicePaid(event.data.object as Stripe.Invoice, traceId, stripe, supabase);
+    case "invoice.payment_failed": {
+      const invoice = event.data.object as Stripe.Invoice;
+      const current = await handleInvoicePaid(invoice, traceId, stripe, supabase);
+      // Replay/out-of-order safe: decided from the re-read subscription, deduped by invoice id.
+      if (current && invoice.id && shouldEnqueueRecovery(event.type, current.status)) {
+        const target = await recoveryRecipient(supabase, current);
+        if (target) {
+          await enqueueRecovery(supabase, { invoiceId: invoice.id, subscriptionId: current.id, ...target });
+          log(traceId, "PAYMENT_RECOVERY_ENQUEUED", { invoiceId: invoice.id });
+        } else log(traceId, "PAYMENT_RECOVERY_NO_ACCOUNT", { subId: current.id });
+      }
       break;
+    }
     case "customer.subscription.updated":
       await handleSubscriptionUpdated(await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id), traceId, stripe, supabase);
       break;
@@ -385,12 +397,33 @@ async function handleInvoicePaid(
   traceId: string,
   stripe: Stripe,
   supabase: SupabaseClient
-) {
+): Promise<Stripe.Subscription | null> {
   log(traceId, "INVOICE_RECONCILE", { invoiceId: invoice.id });
   const subscriptionId = invoiceSubscriptionId(invoice);
-  if (!subscriptionId) return;
+  if (!subscriptionId) return null;
   // A delayed invoice event must not reactivate an already-canceled subscription.
-  await handleSubscriptionUpdated(await stripe.subscriptions.retrieve(subscriptionId), traceId, stripe, supabase);
+  const current = await stripe.subscriptions.retrieve(subscriptionId);
+  await handleSubscriptionUpdated(current, traceId, stripe, supabase);
+  return current;
+}
+
+/** The bound app account (and its own sign-in email) for a past-due subscription. */
+async function recoveryRecipient(supabase: SupabaseClient, sub: Stripe.Subscription): Promise<{ authUserId: string; email: string } | null> {
+  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
+  let authUserId: string | null = null;
+  const ret = await supabase.from("vault_return_memberships").select("auth_user_id").eq("stripe_subscription_id", sub.id).maybeSingle();
+  if (ret.error) throw ret.error;
+  authUserId = (ret.data?.auth_user_id as string) ?? null;
+  if (!authUserId && customerId) {
+    const st = await supabase.from("students").select("auth_user_id").eq("stripe_customer_id", customerId).not("auth_user_id", "is", null).limit(1);
+    if (st.error) throw st.error;
+    authUserId = (st.data?.[0]?.auth_user_id as string) ?? null;
+  }
+  if (!authUserId) return null;
+  const { data, error } = await supabase.auth.admin.getUserById(authUserId);
+  if (error) throw error;
+  const email = data.user?.email;
+  return email ? { authUserId, email } : null;
 }
 
 
