@@ -55,11 +55,13 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    const { data: student, error: studentErr } = await serviceClient
+    // Bound to the caller's own account only: newest student row for this auth user.
+    const { data: students, error: studentErr } = await serviceClient
       .from("students")
       .select("id, stripe_customer_id")
       .eq("auth_user_id", userId)
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(5);
 
     if (studentErr) {
       log("Student lookup error", { error: studentErr.message });
@@ -69,7 +71,23 @@ serve(async (req) => {
       });
     }
 
-    if (!student || !student.stripe_customer_id) {
+    // Prefer the customer on the caller's own past-due membership, then any of the caller's own customers.
+    const ids = (students ?? []).map((s) => s.id);
+    let customerId: string | null = null;
+    if (ids.length) {
+      const { data: due } = await serviceClient.from("student_access").select("stripe_customer_id")
+        .in("user_id", ids).eq("status", "past_due").not("stripe_customer_id", "is", null).limit(1);
+      customerId = (due?.[0]?.stripe_customer_id as string) ?? null;
+    }
+    customerId ??= (students ?? []).find((s) => s.stripe_customer_id)?.stripe_customer_id ?? null;
+    if (!customerId) {
+      const { data: ret } = await serviceClient.from("vault_return_memberships").select("stripe_customer_id")
+        .eq("auth_user_id", userId).not("stripe_customer_id", "is", null).limit(1);
+      customerId = (ret?.[0]?.stripe_customer_id as string) ?? null;
+    }
+    const student = { id: ids[0], stripe_customer_id: customerId };
+
+    if (!student.stripe_customer_id) {
       log("No Stripe customer found", { studentId: student?.id });
       return new Response(JSON.stringify({ error: "no_stripe_customer" }), {
         status: 404,
@@ -84,11 +102,14 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const origin = req.headers.get("origin") || "https://vault.academy";
+    // Never trust an arbitrary Origin for the return destination.
+    const ALLOWED = ["https://member.vaulttradingacademy.com", "https://vault-code-system.lovable.app"];
+    const reqOrigin = req.headers.get("origin") || "";
+    const origin = ALLOWED.includes(reqOrigin) ? reqOrigin : ALLOWED[0];
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: student.stripe_customer_id,
-      return_url: `${origin}/academy/settings?billing=returned`,
+      return_url: `${origin}/academy/home?billing=returned`,
     });
 
     log("Portal session created", { url: portalSession.url });
