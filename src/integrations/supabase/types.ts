@@ -3905,6 +3905,51 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_payment_recovery_outbox: {
+        Row: {
+          attempts: number
+          auth_user_id: string | null
+          created_at: string
+          email: string
+          kind: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          sent_at: string | null
+          state: string
+          stripe_invoice_id: string
+          stripe_subscription_id: string
+        }
+        Insert: {
+          attempts?: number
+          auth_user_id?: string | null
+          created_at?: string
+          email: string
+          kind?: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          state?: string
+          stripe_invoice_id: string
+          stripe_subscription_id: string
+        }
+        Update: {
+          attempts?: number
+          auth_user_id?: string | null
+          created_at?: string
+          email?: string
+          kind?: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          state?: string
+          stripe_invoice_id?: string
+          stripe_subscription_id?: string
+        }
+        Relationships: []
+      }
       vault_return_claim_proofs: {
         Row: {
           email: string
@@ -4259,6 +4304,29 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_vault_payment_recovery_jobs: {
+        Args: never
+        Returns: {
+          attempts: number
+          auth_user_id: string | null
+          created_at: string
+          email: string
+          kind: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          sent_at: string | null
+          state: string
+          stripe_invoice_id: string
+          stripe_subscription_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vault_payment_recovery_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_vault_push_jobs: {
         Args: { batch_size?: number }
         Returns: {
@@ -4443,6 +4511,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_my_payment_lock: { Args: never; Returns: boolean }
       get_or_create_vault_state: {
         Args: { _user_id: string }
         Returns: {
@@ -4956,6 +5025,7 @@ export type Database = {
         }
       }
       vault_access_for_user: { Args: { uid: string }; Returns: boolean }
+      vault_billing_past_due: { Args: { uid: string }; Returns: boolean }
       vault_can_broadcast: { Args: { uid: string }; Returns: boolean }
       vault_can_read_chat_file: {
         Args: { object_name: string }
@@ -4970,6 +5040,7 @@ export type Database = {
         Args: { kind: string; path: string; title: string }
         Returns: boolean
       }
+      vault_payment_locked: { Args: { uid: string }; Returns: boolean }
       vault_return_caller_session_ok: {
         Args: { p_claim_session: string; p_claimed_at: string; p_uid: string }
         Returns: boolean
