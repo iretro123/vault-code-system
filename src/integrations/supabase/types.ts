@@ -5041,6 +5041,7 @@ export type Database = {
         Returns: boolean
       }
       vault_payment_locked: { Args: { uid: string }; Returns: boolean }
+      vault_payment_recovery_wake: { Args: never; Returns: undefined }
       vault_return_caller_session_ok: {
         Args: { p_claim_session: string; p_claimed_at: string; p_uid: string }
         Returns: boolean
