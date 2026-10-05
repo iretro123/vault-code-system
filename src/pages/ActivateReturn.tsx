@@ -1,3 +1,4 @@
+import { isNativeAndroidApp, isNativeIOSApp } from '@/lib/platform';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -121,7 +122,7 @@ export default function ActivateReturn() {
     <section style={{maxWidth:540,margin:'0 auto'}}>
       <p style={{letterSpacing:3,fontWeight:700}}>VAULT OS</p>
       <h1 style={{fontSize:42,lineHeight:1.08,letterSpacing:-1}}>{activated ? <>You’re in.<br/>Welcome to Vault.</> : <>Your next step.<br/>Get inside Vault.</>}</h1>
-      {!activated && <p style={{color:'#b9c9dd',fontSize:18,lineHeight:1.6}}>Already paid? Use the email you entered at Stripe checkout. We’ll email you a sign-in link (not a code) to confirm it’s you and connect your membership. New to Vault or coming from Whop? Your login is created when you open that link. No second payment.</p>}
+      {!activated && <p style={{color:'#b9c9dd',fontSize:18,lineHeight:1.6}}>Joined on our website? Use the email you entered at Stripe checkout. We’ll email you a sign-in link (not a code) to confirm it’s you and connect your membership. New to Vault or coming from Whop? Your login is created when you open that link. No second payment.</p>}
       {!user && !loading && !sentTo && <form onSubmit={sendLink} aria-busy={busy}>
         <label htmlFor="billing-email">Your checkout email</label>
         <input id="billing-email" type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required value={email} onChange={e=>setEmail(e.target.value)} disabled={busy} style={{display:'block',width:'100%',boxSizing:'border-box',padding:16,margin:'12px 0',borderRadius:10,color:'#111'}}/>
@@ -129,6 +130,7 @@ export default function ActivateReturn() {
       </form>}
       {!user && !loading && sentTo && <div>
         <p style={{color:'#d4e2f5',fontSize:17,lineHeight:1.6}}>Check your inbox. We sent a sign-in link to <strong style={{color:'#fff'}}>{sentTo}</strong>. Open it on this device or any other device. Check spam if it hasn’t arrived.</p>
+        {(isNativeIOSApp() || isNativeAndroidApp()) && <p style={{color:'#b9c9dd',fontSize:15,lineHeight:1.6}}>The link may open in your web browser. Finish there, then come back to the app and log in with the same email.</p>}
         <div style={{display:'flex',flexWrap:'wrap',gap:12,marginTop:16}}>
           <button type="button" disabled={busy || cooldown > 0} onClick={() => void sendLink()} style={btn}>{busy ? 'Sending…' : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend link'}</button>
           <button type="button" disabled={busy} onClick={() => { setEmail(sentTo); setSentTo(''); setCooldown(0); setNotice(null); }} style={ghost}>Wrong email? Change it</button>

@@ -47,10 +47,15 @@ describe("login error recovery", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/didn't match/);
     expect(screen.getByRole("button", { name: "Reset password" })).toBeInTheDocument();
   });
-  it("hides the Stripe recovery link inside native apps", () => {
-    m.platform = "ios";
+  it.each(["ios","android"])("shows neutral membership recovery with no sales wording on %s", (platform) => {
+    m.platform = platform;
     render(<MemoryRouter><Auth /></MemoryRouter>);
+    expect(screen.getByRole("link", { name: "Connect your existing membership" })).toHaveAttribute("href", "/activate-return");
     expect(screen.queryByText(/Already paid through Stripe/)).toBeNull();
+    const text = document.body.textContent || "";
+    expect(text).not.toMatch(/\$\d|\/month|Get full access|Buy|Subscribe|checkout|Restore (Apple|Google)/i);
+    expect(Array.from(document.querySelectorAll("a")).every(a => !/^https?:/.test(a.getAttribute("href") || "") || /mailto/.test(a.href))).toBe(true);
+    m.platform = "web";
   });
 });
 
@@ -66,7 +71,8 @@ describe("signup confirmation recovery", () => {
     expect(m.signUp.mock.calls[0][0].email).toBe("typo@example.com");
     // Obfuscated response for an existing account: user with no identities, no session.
     await act(async () => resolve({ data: { user: { id: "x", identities: [] }, session: null }, error: null }));
-    expect(await screen.findByText("Check your inbox.")).toBeInTheDocument();
+    expect(await screen.findByText("Check your email.")).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/link sent to|we sent/i);
     expect(screen.getByText(/already has a Vault account, log in or reset/)).toBeInTheDocument();
   });
   it("resend has a cooldown and change-email returns to the form with the email kept", async () => {

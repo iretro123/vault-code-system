@@ -36,7 +36,7 @@ describe("signup and web billing handoff",()=>{
     fireEvent.change(screen.getByLabelText("Password",{exact:true}),{target:{value:"example-test-only"}});
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button",{name:/Create account & continue/}));
-    expect(await screen.findByText("Check your inbox.")).toBeInTheDocument();
+    expect(await screen.findByText("Check your email.")).toBeInTheDocument();
     expect(screen.getByText(/No purchase has been made yet/)).toBeInTheDocument();
     expect(mocks.signUp.mock.calls[0][0].options.emailRedirectTo).toContain("/membership");
     expect(mocks.invoke).not.toHaveBeenCalled();

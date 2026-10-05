@@ -1,10 +1,19 @@
 import { Link } from "react-router-dom";
 import { isNativeAndroidApp, isNativeIOSApp } from "@/lib/platform";
 
-/** Small contextual recovery link for members who already paid on the web through Stripe. */
+/**
+ * Contextual recovery for members who already paid on the website.
+ * Native apps get neutral account-recovery wording: no pricing, purchase or
+ * sales links. Store "Restore" only covers store purchases, so web members
+ * connect through the same verified email-link activation page.
+ */
 export function PaidRecoveryLink() {
-  // App-store purchases restore through the store, not Stripe.
-  if (isNativeIOSApp() || isNativeAndroidApp()) return null;
+  if (isNativeIOSApp() || isNativeAndroidApp()) {
+    return <p>
+      <Link to="/activate-return">Connect your existing membership</Link>
+      <small>Joined on our website? Verify the email on your membership.</small>
+    </p>;
+  }
   return <p>
     <Link to="/activate-return">Already paid through Stripe?</Link>
     <small>Use your checkout email. No second payment.</small>
