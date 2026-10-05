@@ -107,7 +107,7 @@ export default function CreateAccount() {
       <section className="vault-signup-content">
         {verificationEmail ? <div className="vault-signup-verify" role="status">
           <Mail size={32}/><h1>Check your email.</h1><p>If this email can be used for a new account, a confirmation link will arrive at</p><strong>{verificationEmail}</strong>
-          <p>{isFullAccessFlow ? "Confirm your email, then continue to membership. No purchase has been made yet. If you already paid, you won't be asked to pay again." : "Confirm your email to finish creating your free account."}</p>
+          <p>{isFullAccessFlow ? "Confirm your email to continue. This step doesn’t charge you. Already paid? Connect your membership below." : "Confirm your email to finish creating your free account."}</p>
           <p>Check spam if the message has not arrived. If this email already has a Vault account, log in or reset your password instead.</p>
           <button type="button" className="vault-entry-button vault-entry-button--secondary" onClick={resend} disabled={resending || cooldown > 0} aria-busy={resending}>
             {resending ? <><Loader2 size={18} className="animate-spin"/>Sending…</> : cooldown > 0 ? `Resend email in ${cooldown}s` : "Resend confirmation email"}
