@@ -166,3 +166,43 @@ describe("reset=1 deep link", () => {
     expect(await screen.findByText("Let's get you back in.")).toBeInTheDocument();
   });
 });
+
+describe("native email redirects reach the canonical member site", () => {
+  const CANON = "https://member.vaulttradingacademy.com";
+  afterEach(() => { m.platform = "web"; vi.useRealTimers(); });
+  it.each(["ios", "android"])("Auth forgot-password sends the canonical reset page on %s", async (platform) => {
+    m.platform = platform;
+    m.reset.mockResolvedValue({ error: null });
+    window.history.replaceState({}, "", "/auth?reset=1");
+    render(<MemoryRouter initialEntries={["/auth?reset=1"]}><Auth /></MemoryRouter>);
+    fireEvent.change(await screen.findByLabelText("Email"), { target: { value: "A@B.com" } });
+    fireEvent.submit(screen.getByLabelText("Email").closest("form")!);
+    await waitFor(() => expect(m.reset).toHaveBeenCalledWith("a@b.com", { redirectTo: `${CANON}/reset-password` }));
+  });
+  it.each(["ios", "android"])("Auth unconfirmed-email resend uses the canonical site on %s", async (platform) => {
+    m.platform = platform;
+    m.signIn.mockResolvedValue({ error: { code: "email_not_confirmed", message: "Email not confirmed" } });
+    m.resend.mockResolvedValue({ error: null });
+    render(<MemoryRouter><Auth /></MemoryRouter>);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "x@y.com" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "whatever1" } });
+    fireEvent.click(screen.getByRole("button", { name: /Sign In/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Resend confirmation email/ }));
+    await waitFor(() => expect(m.resend).toHaveBeenCalledWith({ type: "signup", email: "x@y.com", options: { emailRedirectTo: `${CANON}/academy` } }));
+  });
+  it.each(["ios", "android"])("signup confirmation resend uses the canonical membership page on %s", async (platform) => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    m.platform = platform;
+    m.signUp.mockResolvedValue({ data: { user: { id: "x" }, session: null }, error: null });
+    m.resend.mockResolvedValue({ error: null });
+    render(<MemoryRouter initialEntries={["/create-account/full"]}><CreateAccount /></MemoryRouter>);
+    fillSignup();
+    fireEvent.click(screen.getByRole("button", { name: /Create account & continue/ }));
+    await screen.findByText("Check your email.");
+    expect(m.signUp.mock.calls.at(-1)![0].options.emailRedirectTo).toBe(`${CANON}/membership`);
+    for (let i = 0; i < 61; i++) await act(async () => { vi.advanceTimersByTime(1000); });
+    fireEvent.click(await screen.findByRole("button", { name: "Resend confirmation email" }));
+    await waitFor(() => expect(m.resend).toHaveBeenCalledWith({ type: "signup", email: "typo@example.com", options: { emailRedirectTo: `${CANON}/membership` } }));
+  });
+});
+

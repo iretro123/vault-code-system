@@ -38,7 +38,8 @@ describe("signup and web billing handoff",()=>{
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button",{name:/Create account & continue/}));
     expect(await screen.findByText("Check your email.")).toBeInTheDocument();
-    expect(screen.getByText(/No purchase has been made yet/)).toBeInTheDocument();
+    expect(screen.getByText(/This step doesn’t charge you\. Already paid\? Connect your membership below\./)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/No purchase has been made/);
     expect(screen.getByRole("link",{name:/Already paid through Stripe/})).toHaveAttribute("href","/activate-return");
     expect(mocks.signUp.mock.calls[0][0].options.emailRedirectTo).toContain("/membership");
     expect(mocks.invoke).not.toHaveBeenCalled();
