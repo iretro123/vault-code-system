@@ -14,6 +14,7 @@ import { isNativeCapacitorApp } from "@/lib/platform";
 import "./welcome.css";
 import "./auth.css";
 import { loginErrorKind, loginErrorText } from "@/lib/authErrorMessage";
+import { authEmailRedirect } from "@/lib/authRedirect";
 import { PaidRecoveryLink } from "@/components/auth/PaidRecoveryLink";
 
 const Auth = () => {
@@ -99,7 +100,7 @@ const Auth = () => {
     if (!target || confirmBusy) return;
     setConfirmBusy(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: target, options: { emailRedirectTo: `${window.location.origin}/academy` } });
+      const { error } = await supabase.auth.resend({ type: "signup", email: target, options: { emailRedirectTo: authEmailRedirect("/academy") } });
       setConfirmNote(error ? "Please wait a minute, then try again." : "If this email needs confirming, a new link is on its way.");
     } catch {
       setConfirmNote("Connection problem. Check your internet and try again.");
@@ -117,7 +118,7 @@ const Auth = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: authEmailRedirect("/reset-password"),
       });
 
       if (error) {

@@ -9,6 +9,7 @@ import { isNativeAndroidApp, isNativeIOSApp } from "@/lib/platform";
 import { AuthBackButton } from "@/components/auth/AuthBackButton";
 import { disableGuestMode } from "@/lib/guestMode";
 import { authErrorMessage } from "@/lib/authErrorMessage";
+import { authEmailRedirect } from "@/lib/authRedirect";
 import { PaidRecoveryLink } from "@/components/auth/PaidRecoveryLink";
 import "./welcome.css";
 import "./create-account.css";
@@ -57,7 +58,7 @@ export default function CreateAccount() {
     try {
       const { data, error } = await supabase.auth.signUp({
         email: accountEmail, password,
-        options: { emailRedirectTo: `${window.location.origin}${destinationPath}` },
+        options: { emailRedirectTo: authEmailRedirect(destinationPath) },
       });
       if (error) throw error;
       if (data.user?.id && data.session) {
@@ -82,7 +83,7 @@ export default function CreateAccount() {
     if (resending || cooldown > 0 || !verificationEmail) return;
     setResending(true); setResendNote(null);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: verificationEmail, options: { emailRedirectTo: `${window.location.origin}${destinationPath}` } });
+      const { error } = await supabase.auth.resend({ type: "signup", email: verificationEmail, options: { emailRedirectTo: authEmailRedirect(destinationPath) } });
       if (error) throw error;
       setResendNote({ ok: true, text: "If this email needs confirming, a new link is on its way." });
       setCooldown(RESEND_COOLDOWN_SECONDS);
