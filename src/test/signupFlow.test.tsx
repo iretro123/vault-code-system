@@ -6,6 +6,7 @@ import { WebMembershipCheckout } from "@/components/academy/WebMembershipCheckou
 const mocks = vi.hoisted(()=>({platform:"web", signUp:vi.fn(), getUser:vi.fn(), invoke:vi.fn(), toast:vi.fn()}));
 vi.mock("@/lib/platform",()=>({isNativeIOSApp:()=>mocks.platform === "ios",isNativeAndroidApp:()=>mocks.platform === "android"}));
 vi.mock("@/hooks/use-toast",()=>({useToast:()=>({toast:mocks.toast})}));
+vi.mock("@/hooks/useAuth",()=>({useAuth:()=>({user:null,loading:false})}));
 vi.mock("@/lib/guestMode",()=>({disableGuestMode:vi.fn()}));
 vi.mock("@/integrations/supabase/client",()=>({supabase:{auth:{signUp:mocks.signUp,getUser:mocks.getUser},functions:{invoke:mocks.invoke}}}));
 afterEach(()=>{cleanup();vi.clearAllMocks();});

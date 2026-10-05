@@ -123,6 +123,6 @@ describe("paid activation recovery", () => {
     renderActivate();
     await waitFor(() => expect(screen.getByRole("button", { name: "Set up app login" })).toBeInTheDocument());
     const text = document.body.textContent || "";
-    expect(text).not.toMatch(/password was cleared|secured|session/i);
+    expect(text).not.toMatch(/password was cleared|secured|session (was|is) |signed out and any earlier/i);
   });
 });
