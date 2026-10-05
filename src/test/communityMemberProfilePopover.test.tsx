@@ -52,7 +52,8 @@ it('uses collision-aware viewport constraints and safe-area bounds',async()=>{
  const css=readFileSync('src/components/academy/community/member-profile-card.css','utf8');
  expect(css).toContain('var(--radix-popover-content-available-height');
  expect(css).toContain('env(safe-area-inset-bottom)');
+ expect(css).toContain('[data-radix-popper-content-wrapper]:has(.member-profile-popover)');
  expect(css).toContain('position:fixed!important');
- expect(css).toContain('left:50%!important');
+ expect(css).toContain('transform:none!important');
  expect(css).toContain('overflow-y:auto');
 });
