@@ -39,6 +39,10 @@ const Auth = () => {
       );
       // Clean the URL so the error doesn't persist on refresh
       window.history.replaceState({}, "", "/auth");
+    } else if (search.get("reset") === "1") {
+      // Expired-link recovery from /reset-password: open forgot-password mode.
+      setMode("forgot");
+      window.history.replaceState({}, "", "/auth");
     }
   }, []);
 

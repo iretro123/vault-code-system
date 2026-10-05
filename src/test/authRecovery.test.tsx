@@ -126,3 +126,14 @@ describe("paid activation recovery", () => {
     expect(text).not.toMatch(/password was cleared|secured|session (was|is) |signed out and any earlier/i);
   });
 });
+
+describe("reset=1 deep link", () => {
+  it("opens forgot-password mode", async () => {
+    const { render, screen } = await import("@testing-library/react");
+    const { MemoryRouter } = await import("react-router-dom");
+    const Auth = (await import("@/pages/Auth")).default;
+    window.history.replaceState({}, "", "/auth?reset=1");
+    render(<MemoryRouter initialEntries={["/auth?reset=1"]}><Auth/></MemoryRouter>);
+    expect(await screen.findByText("Let's get you back in.")).toBeInTheDocument();
+  });
+});
