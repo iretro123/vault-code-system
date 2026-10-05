@@ -115,4 +115,17 @@ describe("full shell payment gating", () => {
     shell("/basic");
     expect(screen.getByTestId("basic-content")).toBeInTheDocument();
   });
+  it("newly activated paid member with an unfinished profile gets first-time onboarding, not the academy", () => {
+    // Activation-created profiles default profile_completed/onboarding_completed to false.
+    m.auth.profile = { profile_completed: false, onboarding_completed: false };
+    shell();
+    expect(screen.getByTestId("onboarding")).toBeInTheDocument();
+    for (const id of ["sidebar", "outlet"]) expect(screen.queryByTestId(id)).not.toBeInTheDocument();
+  });
+  it("returning member who completed onboarding goes straight in", () => {
+    m.auth.profile = { profile_completed: false, onboarding_completed: true };
+    shell();
+    expect(screen.getByTestId("outlet")).toBeInTheDocument();
+    expect(screen.queryByTestId("onboarding")).not.toBeInTheDocument();
+  });
 });
