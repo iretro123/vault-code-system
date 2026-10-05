@@ -9,7 +9,7 @@
 
 # Online member profile dismissal
 
-- [ ] Anchor the selected member profile in a collision-aware overlay
-- [ ] Add accessible close controls to loaded, loading, and error states
-- [ ] Verify Close, Escape, outside press, member switching, route changes, focus return, and viewport bounds
-- [ ] Run focused tests, typecheck, build, and desktop/mobile visual checks without publishing
+- [x] Anchor the selected member profile in a collision-aware overlay
+- [x] Add accessible close controls to loaded, loading, and error states
+- [x] Verify Close, Escape, outside press, member switching, route changes, focus return, and viewport bounds
+- [x] Run focused tests, preview compilation, and desktop/mobile visual checks without publishing
