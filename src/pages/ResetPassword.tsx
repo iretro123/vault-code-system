@@ -123,7 +123,7 @@ const ResetPassword = () => {
             <Shield className="w-7 h-7 text-primary" />
           </div>
           <h1 className="text-2xl font-semibold">Reset Password</h1>
-          <p className="text-muted-foreground text-sm mt-1">Enter your new password below.</p>
+          <p className="text-muted-foreground text-sm mt-1">New passwords need at least 10 characters with uppercase, lowercase, a number and a symbol.</p>
         </div>
 
         {success ? (
