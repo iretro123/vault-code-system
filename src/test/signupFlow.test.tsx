@@ -30,6 +30,7 @@ describe("signup and web billing handoff",()=>{
     expect(screen.getByLabelText("Password",{exact:true})).toHaveAttribute("type","text");
   });
   it("shows email verification instead of implying payment is complete",async()=>{
+    mocks.platform="web";
     mocks.signUp.mockResolvedValue({data:{user:{id:"test"},session:null},error:null});
     render(<MemoryRouter initialEntries={["/create-account/full"]}><CreateAccount/></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Email"),{target:{value:"tester@example.com"}});
