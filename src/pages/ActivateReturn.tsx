@@ -151,7 +151,7 @@ export default function ActivateReturn() {
         </div>
         <a style={{color:'#72b8ff'}} href="https://apps.apple.com/us/app/vault-os-trading-academy/id6770046448">Download for iPhone →</a>
         <a style={{color:'#72b8ff'}} href="https://play.google.com/store/apps/details?id=com.vaulttradingacademy.vaultos">Download for Android →</a>
-        <p style={{lineHeight:1.6,color:'#b9c9dd'}}>When you open Vault, you’ll set up your profile first. Then start in Learn and check the live session schedule.</p>
+        <p style={{lineHeight:1.6,color:'#b9c9dd'}}>If it’s your first visit, Vault walks you through your profile first. Then start in Learn and check the live session schedule.</p>
       </div>}
       <p style={{fontSize:14,color:'#b9c9dd',marginTop:32}}>Need help? <a style={{color:'#72b8ff'}} href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a><br/>Keep your Stripe receipt. You don’t need to pay again to finish activation.</p>
     </section>
