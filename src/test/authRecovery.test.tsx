@@ -142,7 +142,7 @@ describe("paid activation recovery", () => {
     await waitFor(() => expect(m.reset).toHaveBeenCalledWith("a@b.com", { redirectTo: "https://member.vaulttradingacademy.com/reset-password" }));
     expect(await screen.findByRole("button", { name: /Resend in \d+s/ })).toBeDisabled();
     expect(screen.getByText(/Password link sent to a@b.com/)).toBeInTheDocument();
-    await act(async () => { for (let i = 0; i < 61; i++) vi.advanceTimersByTime(1000); });
+    for (let i = 0; i < 61; i++) await act(async () => { vi.advanceTimersByTime(1000); });
     const again = await screen.findByRole("button", { name: "Resend password link" });
     expect(again).toBeEnabled();
     fireEvent.click(again);
