@@ -8,6 +8,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export const ACTIVATION_RESEND_SECONDS = 60;
 const ACTIVATION_REDIRECT = 'https://member.vaulttradingacademy.com/activate-return';
+// Canonical web page so the link works from native apps (no capacitor:// origin).
+export const RESET_REDIRECT = 'https://member.vaulttradingacademy.com/reset-password';
 
 /** True when the email link that brought the user here was expired or already used. */
 export function activationLinkFailed(search: string, hash: string): boolean {
@@ -29,6 +31,12 @@ export default function ActivateReturn() {
   const [activated, setActivated] = useState(false);
   const [sentTo, setSentTo] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  const [loginCooldown, setLoginCooldown] = useState(0);
+  useEffect(() => {
+    if (loginCooldown <= 0) return;
+    const t = window.setTimeout(() => setLoginCooldown(c => c - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [loginCooldown]);
   const [loginSetup, setLoginSetup] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const inFlight = useRef(false);
 
@@ -105,12 +113,13 @@ export default function ActivateReturn() {
   }
 
   async function setUpLogin() {
-    if (!user?.email || loginSetup === 'sending') return;
+    if (!user?.email || loginSetup === 'sending' || loginCooldown > 0) return;
     setLoginSetup('sending');
     try {
       // Existing reset-password flow: the member sets a password from a link sent to this same email.
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}/reset-password` });
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: RESET_REDIRECT });
       setLoginSetup(error ? 'error' : 'sent');
+      if (!error) setLoginCooldown(ACTIVATION_RESEND_SECONDS);
     } catch { setLoginSetup('error'); }
   }
 
@@ -136,6 +145,7 @@ export default function ActivateReturn() {
           <button type="button" disabled={busy} onClick={() => { setEmail(sentTo); setSentTo(''); setCooldown(0); setNotice(null); }} style={ghost}>Wrong email? Change it</button>
         </div>
       </div>}
+      {!user && !loading && <p style={{marginTop:20}}><Link style={{color:'#72b8ff'}} to="/auth">Back to log in</Link></p>}
       {user && !activated && <div>
         <p style={{color:'#b9c9dd',fontSize:16,lineHeight:1.6}}>Signed in as <strong style={{color:'#fff'}}>{user.email}</strong></p>
         <div style={{display:'flex',flexWrap:'wrap',gap:12,marginTop:16}}>
@@ -148,7 +158,8 @@ export default function ActivateReturn() {
         <Link style={{...btn,textAlign:'center',textDecoration:'none'}} to="/academy">Open Vault on the web →</Link>
         <div>
           <p style={{lineHeight:1.6,margin:'0 0 12px'}}>To use the mobile app, set a password for <strong>{user?.email}</strong>. We’ll email you a link to choose one.</p>
-          <button type="button" onClick={setUpLogin} disabled={loginSetup === 'sending' || loginSetup === 'sent'} style={ghost}>{loginSetup === 'sending' ? 'Sending…' : loginSetup === 'sent' ? 'Link sent — check your inbox' : 'Set up app login'}</button>
+          <button type="button" onClick={setUpLogin} disabled={loginSetup === 'sending' || loginCooldown > 0} style={ghost}>{loginSetup === 'sending' ? 'Sending…' : loginCooldown > 0 ? `Resend in ${loginCooldown}s` : loginSetup === 'sent' ? 'Resend password link' : 'Set up app login'}</button>
+          {loginSetup === 'sent' && <p role="status" style={{color:'#9ff0c4'}}>Password link sent to {user?.email}. Check your inbox and spam.</p>}
           {loginSetup === 'error' && <p role="alert" style={{color:'#ffb5bc'}}>We couldn’t send that link. Try again in a minute.</p>}
         </div>
         <a style={{color:'#72b8ff'}} href="https://apps.apple.com/us/app/vault-os-trading-academy/id6770046448">Download for iPhone →</a>
