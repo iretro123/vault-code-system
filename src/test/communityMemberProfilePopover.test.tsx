@@ -55,5 +55,7 @@ it('uses collision-aware viewport constraints and safe-area bounds',async()=>{
  expect(css).toContain('[data-radix-popper-content-wrapper]:has(.member-profile-popover)');
  expect(css).toContain('position:fixed!important');
  expect(css).toContain('transform:none!important');
+ expect(css).toContain('pointer-events:none');
+ expect(css).toContain('pointer-events:auto');
  expect(css).toContain('overflow-y:auto');
 });
