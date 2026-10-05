@@ -13,7 +13,8 @@ import { enableGuestMode } from "@/lib/guestMode";
 import { isNativeCapacitorApp } from "@/lib/platform";
 import "./welcome.css";
 import "./auth.css";
-import { authErrorMessage } from "@/lib/authErrorMessage";
+import { loginErrorKind, loginErrorText } from "@/lib/authErrorMessage";
+import { PaidRecoveryLink } from "@/components/auth/PaidRecoveryLink";
 
 const Auth = () => {
   const { toast } = useToast();
@@ -54,17 +55,24 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [resetError, setResetError] = useState("");
+  const [loginError, setLoginError] = useState<{ text: string; unconfirmed: boolean } | null>(null);
+  const [confirmNote, setConfirmNote] = useState("");
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
+    setLoginError(null);
+    setConfirmNote("");
 
     const normalizedEmail = email.trim().toLowerCase();
     const result = await signIn(normalizedEmail, password);
 
     if (result.error) {
-      toast({ title: "Sign in failed", description: authErrorMessage(result.error), variant: "destructive" });
+      setLoginError({ text: loginErrorText(result.error), unconfirmed: loginErrorKind(result.error) === "unconfirmed" });
+      setPassword("");
       setLoading(false);
       return;
     }
@@ -80,6 +88,20 @@ const Auth = () => {
     navigate(new URLSearchParams(window.location.search).get("resume") === "membership"
       ? "/academy?checkout=success" : "/academy");
     setLoading(false);
+  };
+
+  const resendConfirmation = async () => {
+    const target = email.trim().toLowerCase();
+    if (!target || confirmBusy) return;
+    setConfirmBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email: target, options: { emailRedirectTo: `${window.location.origin}/academy` } });
+      setConfirmNote(error ? "Please wait a minute, then try again." : "If this email needs confirming, a new link is on its way.");
+    } catch {
+      setConfirmNote("Connection problem. Check your internet and try again.");
+    } finally {
+      setConfirmBusy(false);
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -275,6 +297,23 @@ const Auth = () => {
                   </button>
                 </div>
 
+                {loginError && (
+                  <div role="alert" className="vault-login-notice vault-login-notice--error">
+                    <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <span>
+                      {loginError.text}{" "}
+                      {loginError.unconfirmed ? (
+                        <button type="button" onClick={resendConfirmation} disabled={confirmBusy} className="underline font-medium">
+                          {confirmBusy ? "Sending…" : "Resend confirmation email"}
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => { setMode("forgot"); setLoginError(null); }} className="underline font-medium">Reset password</button>
+                      )}
+                    </span>
+                  </div>
+                )}
+                {confirmNote && <div role="status" className="vault-login-notice">{confirmNote}</div>}
+
                 {/* Submit */}
                 <Button type="submit" className="vault-entry-button" disabled={loading}>
                   {loading ? (
@@ -284,8 +323,10 @@ const Auth = () => {
                   )}
                 </Button>
               </form>
-
-
+            </div>
+            <div className="vault-entry-crosslinks">
+              <p>First time here? <Link to="/welcome?step=access">Create account</Link></p>
+              <PaidRecoveryLink />
             </div>
           </>
         )}
