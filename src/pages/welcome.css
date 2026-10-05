@@ -50,3 +50,4 @@ body.native-capacitor .vault-entry.academy-main-safe { padding-left:max(24px,env
 .vault-entry-crosslinks { display:grid; gap:8px; margin-top:18px; text-align:center; font-size:14px; color:#a8b9d0; }
 .vault-entry-crosslinks a, .vault-entry-crosslinks button { color:#8db8ff; font-weight:600; }
 .vault-entry-crosslinks small { display:block; font-size:12px; color:#8191a8; margin-top:2px; }
+.vault-entry-crosslinks--access { margin:0 0 14px; }
