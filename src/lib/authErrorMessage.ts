@@ -30,3 +30,24 @@ export function authErrorMessage(error: unknown): string {
 
   return msg;
 }
+
+export type LoginErrorKind = "credentials" | "unconfirmed" | "rate" | "other";
+
+/** Classify a sign-in failure without ever revealing whether an email has an account. */
+export function loginErrorKind(error: unknown): LoginErrorKind {
+  const msg = String((error as { message?: unknown } | null)?.message ?? "");
+  const code = String((error as { code?: unknown } | null)?.code ?? "");
+  if (code === "email_not_confirmed" || /email not confirmed/i.test(msg)) return "unconfirmed";
+  if (code === "invalid_credentials" || /invalid login credentials/i.test(msg)) return "credentials";
+  if (code === "over_request_rate_limit" || /rate limit|too many/i.test(msg)) return "rate";
+  return "other";
+}
+
+export function loginErrorText(error: unknown): string {
+  switch (loginErrorKind(error)) {
+    case "credentials": return "That email and password didn't match. Check the email for typos, try again, or reset your password.";
+    case "unconfirmed": return "Confirm your email first. Open the link we sent, or send a new one below.";
+    case "rate": return "Too many attempts. Please wait a minute and try again.";
+    default: return authErrorMessage(error);
+  }
+}

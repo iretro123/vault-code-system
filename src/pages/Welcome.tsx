@@ -23,7 +23,7 @@ export default function Welcome() {
       <header className="vault-entry-header">
         {choosing ? <button className="vault-entry-back" aria-label="Back to welcome" onClick={() => setParams({}, {replace:true})}><ArrowLeft size={20}/></button> : null}
         <span className="vault-entry-brand">VAULT <b>OS</b></span>
-        <Link to="/auth">Log in</Link>
+        {choosing ? <Link to="/auth">Log in</Link> : <span aria-hidden="true"/>}
       </header>
       {choosing ? <section key="access" className="vault-entry-access">
         <div className="vault-entry-title"><h1 tabIndex={-1}>Choose your access.</h1><p>Start free or unlock the full experience.</p></div>
@@ -50,7 +50,10 @@ export default function Welcome() {
           <span className="vault-entry-preview-caption">Community preview</span>
         </div>
         <div className="vault-entry-title"><h1 tabIndex={-1}>Your trading<br/>community<br/><span>starts here.</span></h1><p>Learn, connect, and build your process.</p></div>
-        <div className="vault-entry-start"><button className="vault-entry-button" onClick={() => setParams({step:"access"})}>Get started<ArrowRight size={20}/></button><p className="vault-entry-login">Already have an account? <Link to="/auth">Log in</Link></p></div>
+        <div className="vault-entry-start vault-entry-choices">
+          <Link className="vault-entry-button vault-entry-choice" to="/auth"><span><b>Log in</b><small>Already have a Vault account.</small></span><ArrowRight size={20}/></Link>
+          <button className="vault-entry-button vault-entry-button--secondary vault-entry-choice" onClick={() => setParams({step:"access"})}><span><b>Create account</b><small>Your first time here.</small></span><ArrowRight size={20}/></button>
+        </div>
       </section>}
       <footer className="vault-entry-footer">
         <Link to="/membership">{isNativeIOSApp() ? "Restore Apple Purchase" : isNativeAndroidApp() ? "Restore Google Play Purchase" : "Manage membership"}</Link>
