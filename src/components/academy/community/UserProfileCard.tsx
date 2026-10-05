@@ -14,6 +14,7 @@ import { isLocalDesignPreview } from '@/integrations/supabase/localPreviewFetch'
 import './member-profile-card.css';
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 /* ── Social icons (inline SVG for brand accuracy) ── */
 
@@ -59,6 +60,10 @@ const SOCIAL_LINKS = [
 interface UserProfileCardProps {
   userId: string;
   onClose: () => void;
+}
+
+function CloseProfileButton({ onClose }: { onClose: () => void }) {
+  return <Button type="button" variant="ghost" size="icon" aria-label="Close profile" onClick={onClose} className="member-profile-close"><X aria-hidden="true" /></Button>;
 }
 
 export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
@@ -159,13 +164,14 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
 
   if (loading) {
     return (
-      <div className="vault-profile-card w-[300px] p-6 flex items-center justify-center">
+      <div className="vault-profile-card member-profile-shell w-[300px] p-6 flex items-center justify-center">
+        <CloseProfileButton onClose={onClose}/>
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if(!profile)return <div className="vault-profile-card w-[300px] p-6 space-y-3"><p role="status">This profile couldn’t load.</p><button className="min-h-11 text-blue-200 underline" onClick={refetch}>Try again</button></div>;
+  if(!profile)return <div className="vault-profile-card member-profile-shell w-[300px] p-6 space-y-3"><CloseProfileButton onClose={onClose}/><p role="status">This profile couldn’t load.</p><button className="min-h-11 text-blue-200 underline" onClick={refetch}>Try again</button></div>;
 
   const hasSocials = SOCIAL_LINKS.some((s) => profile[s.key]);
   const memberSince = profile.created_at ? format(new Date(profile.created_at), "MMM yyyy") : null;
@@ -183,7 +189,8 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
   /* ── EDIT MODE ── */
   if (editMode) {
     return (
-      <div className="vault-profile-card w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="vault-profile-card member-profile-shell w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <CloseProfileButton onClose={onClose}/>
         {/* Banner with edit overlay */}
         <div className="h-20 relative group" style={currentBannerStyle}>
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -209,7 +216,7 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
           <button
             onClick={cancelEdit}
             aria-label="Cancel profile editing"
-            className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors z-10"
+            className="absolute top-2 right-12 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors z-10"
           >
             <X className="h-3.5 w-3.5 text-white" />
           </button>
@@ -276,13 +283,14 @@ export function UserProfileCard({ userId, onClose }: UserProfileCardProps) {
 
   /* ── VIEW MODE ── */
   return (
-    <div className="vault-profile-card member-profile-upgraded w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+    <div className="vault-profile-card member-profile-upgraded member-profile-shell w-[300px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <CloseProfileButton onClose={onClose}/>
       {/* Banner */}
       <div className="h-20 relative" style={currentBannerStyle}>
         {isOwnProfile && (
           <button
             onClick={() => {onClose();navigate('/academy/settings?section=profile');}}
-            className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+            className="absolute top-2 right-12 h-7 w-7 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
             title="Edit Profile"
           >
             <Pencil className="h-3.5 w-3.5 text-white" />
