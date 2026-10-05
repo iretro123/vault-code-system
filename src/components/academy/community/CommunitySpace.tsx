@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Users, UserRound, ArrowUpRight, Plus, Trash2, Bell, Play, LockKeyhole } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,6 +7,7 @@ import { dailyVideos, defaultSpace, validateSpace, type SpaceSettings } from '@/
 import { enableWebPush } from '@/lib/webPush';
 import { isNativePushPlatform, requestPushPermission } from '@/lib/pushPermission';
 import { UserProfileCard } from './UserProfileCard';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import './community-space.css';
 
 type Member = { user_id: string; display_name: string; avatar_url: string | null };
@@ -15,6 +16,7 @@ type Community = {total: number; online: Member[]};
 const rpc = (name: string, args?: Record<string, unknown>) => supabase.rpc(name as never, args as never);
 export function CommunitySpace() {
  const {user} = useAuth();
+ const location=useLocation();
  const userId=user?.id;
  const [params,setParams] = useSearchParams();
  const tab = params.get('space') === 'mine' ? 'mine' : 'community';
@@ -26,6 +28,7 @@ export function CommunitySpace() {
  const [status,setStatus]=useState('');
  const [draft,setDraft]=useState('');
  const [member,setMember]=useState<string|null>(null);
+ const memberTriggers=useRef(new Map<string,HTMLButtonElement>());
  const [videos,setVideos]=useState(()=>dailyVideos());
  useEffect(()=>{
   let alive=true;
@@ -36,6 +39,7 @@ export function CommunitySpace() {
   refresh();const timer=setInterval(refresh,60000);
   return()=>{alive=false;clearInterval(timer);};
  },[userId]);
+  useEffect(()=>{setMember(null);},[location.pathname,location.search]);
  const update=(patch:Partial<SpaceSettings>)=>{setSettings(s=>({...s,...patch}));setStatus('');};
  const save=async()=>{
   const invalid=validateSpace(settings);if(invalid){setError(invalid);return;}
@@ -51,7 +55,7 @@ export function CommunitySpace() {
   {tab==='community'?<>
    <Link className="vs-live" to="/academy/live"><span><strong>Vault Live</strong><small>Sessions & replays</small></span><ArrowUpRight size={18}/></Link>
    <section><div className="vs-heading"><h3>Watch with RZ</h3><span>Daily picks</span></div>{videos.map(v=><a className="vs-video" key={v.id} href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer"><div><img src={`https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`} alt=""/><Play size={18}/></div><span>{v.title}<small>RZ · YouTube <ArrowUpRight size={11}/></small></span></a>)}<a className="vs-channel" href="https://www.youtube.com/@rubenzamora__" target="_blank" rel="noopener noreferrer">More from RZ <ArrowUpRight size={13}/></a></section>
-   <section><div className="vs-heading"><h3>Online now</h3><i className="vs-dot"/></div>{community?.online.slice(0,3).map(m=><button className="vs-member" key={m.user_id} onClick={()=>setMember(m.user_id)}><span className="vs-avatar">{m.avatar_url?<img src={m.avatar_url} alt="" onError={e=>{e.currentTarget.style.display="none";}}/>:m.display_name.slice(0,1)}<i className="vs-dot"/></span><span>{m.display_name}</span><ArrowUpRight size={14}/></button>)}{community && !community.online.length && <p className="vs-muted">No members active right now.</p>}{!community&&<p className="vs-muted">Connecting…</p>}</section>
+    <Popover open={member!==null} onOpenChange={open=>{if(!open)setMember(null);}}><section><div className="vs-heading"><h3>Online now</h3><i className="vs-dot"/></div>{community?.online.slice(0,3).map(m=>{const trigger=<button ref={node=>{if(node)memberTriggers.current.set(m.user_id,node);else memberTriggers.current.delete(m.user_id);}} className="vs-member" aria-label={`View ${m.display_name}'s profile`} aria-expanded={member===m.user_id} onClick={()=>setMember(m.user_id)}><span className="vs-avatar">{m.avatar_url?<img src={m.avatar_url} alt="" onError={e=>{e.currentTarget.style.display="none";}}/>:m.display_name.slice(0,1)}<i className="vs-dot"/></span><span>{m.display_name}</span><ArrowUpRight size={14}/></button>;return member===m.user_id?<PopoverAnchor asChild key={m.user_id}>{trigger}</PopoverAnchor>:<span key={m.user_id} className="contents">{trigger}</span>;})}{community && !community.online.length && <p className="vs-muted">No members active right now.</p>}{!community&&<p className="vs-muted">Connecting…</p>}{member&&<PopoverContent className="member-profile-popover w-auto border-0 bg-transparent p-0 shadow-none" side="left" align="end" sideOffset={10} collisionPadding={12} onCloseAutoFocus={event=>{event.preventDefault();memberTriggers.current.get(member)?.focus();}}><UserProfileCard key={member} userId={member} onClose={()=>setMember(null)}/></PopoverContent>}</section></Popover>
    <button className="vs-personal-link" onClick={()=>setParams(p=>{const n=new URLSearchParams(p);n.set('space','mine');return n;},{replace:true})}>Your rules. Your reminders. <ArrowUpRight size={15}/></button>
   </>:<>
    <div className="vs-private"><LockKeyhole size={12}/> Only you can see this</div>
@@ -68,6 +72,6 @@ export function CommunitySpace() {
    </fieldset><button className="vs-device" onClick={enableDevice}><Bell size={14}/> Enable device notifications</button>
   </>}
   {error&&<p role="alert" className="vs-error">{error}</p>}{status&&<p role="status" className="vs-muted">{status}</p>}
-  </div>{member&&<UserProfileCard userId={member} onClose={()=>setMember(null)}/>}
+  </div>
  </aside>;
 }
