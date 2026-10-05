@@ -1,6 +1,7 @@
 import {afterEach,it,expect,vi} from 'vitest';
 import {render,screen,fireEvent,cleanup} from '@testing-library/react';
 import {MemoryRouter,useLocation} from 'react-router-dom';
+import {readFileSync} from 'node:fs';
 const mock=vi.hoisted(()=>({uid:'other',loading:false,profile:{user_id:'member',display_name:'Taylor',username:'taylor',avatar_url:null,banner_url:null,bio:'Learning together',created_at:'2026-01-01',social_instagram:'@taylor',social_youtube:'https://www.youtube.com/@taylor',lessons_completed:3,role_level:'Beginner'} as Record<string,unknown>|null}));
 vi.mock('@/hooks/usePublicProfile',()=>({usePublicProfile:()=>({profile:mock.profile,loading:mock.loading,refetch:vi.fn()})}));
 vi.mock('@/hooks/useUserPresence',()=>({useUserPresence:()=>({online:false})}));
@@ -25,6 +26,18 @@ it('always provides an accessible close action while loaded, loading, or unavail
  fireEvent.click(screen.getByRole('button',{name:'Close profile'}));expect(close).toHaveBeenCalledTimes(2);
  mock.loading=false;mock.profile=null;view.rerender(<MemoryRouter><UserProfileCard userId="member" onClose={close}/></MemoryRouter>);
  fireEvent.click(screen.getByRole('button',{name:'Close profile'}));expect(close).toHaveBeenCalledTimes(3);
+});
+it('keeps the close action pinned when a long profile body scrolls',()=>{
+ const close=vi.fn();mock.profile={...mock.profile,bio:'Long profile '.repeat(80)};
+ render(<MemoryRouter><UserProfileCard userId="member" onClose={close}/></MemoryRouter>);
+ const button=screen.getByRole('button',{name:'Close profile'});
+ const shell=button.closest('.member-profile-shell');
+ expect(shell).not.toBeNull();
+ const css=readFileSync('src/components/academy/community/member-profile-card.css','utf8');
+ expect(css).toMatch(/\.member-profile-close\{position:sticky/);
+ expect(css).toContain('top:max(8px,env(safe-area-inset-top))');
+ fireEvent.scroll(shell as Element,{target:{scrollTop:400}});
+ fireEvent.click(button);expect(close).toHaveBeenCalledOnce();
 });
 it('previews own saved links and directs editing to the one settings page',()=>{
  mock.uid='member';sessionStorage.setItem('vault-profile-draft:member',JSON.stringify({instagram:'@localhandle',bio:'Local biography'}));
