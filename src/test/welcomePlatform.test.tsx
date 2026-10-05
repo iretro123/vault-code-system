@@ -36,4 +36,13 @@ describe("welcome membership entry", () => {
     render(<MemoryRouter initialEntries={["/welcome?step=access"]}><Welcome /></MemoryRouter>);
     expect(screen.getByRole("heading", {name:"Choose your access."})).toBeInTheDocument();
   });
+  it.each([["web", /Already paid through Stripe/], ["ios", /Connect your existing membership/], ["android", /Connect your existing membership/]])("access step shows membership recovery on %s, intro does not", (device, name) => {
+    platform.value = device;
+    render(<MemoryRouter><Welcome /></MemoryRouter>);
+    expect(screen.queryByRole("link", { name })).toBeNull();
+    fireEvent.click(screen.getByRole("button", {name:/Create account/}));
+    expect(screen.getByRole("link", { name })).toHaveAttribute("href", "/activate-return");
+    if (device !== "web") expect(screen.queryByText(/Stripe/)).toBeNull();
+    platform.value = "web";
+  });
 });

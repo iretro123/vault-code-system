@@ -5,14 +5,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { loginErrorKind, loginErrorText } from "@/lib/authErrorMessage";
 import { activationLinkFailed } from "@/pages/ActivateReturn";
 
-const m = vi.hoisted(() => ({ user: null as null | { id: string; email: string }, loading: false, signUp: vi.fn(), resend: vi.fn(), signIn: vi.fn(), otp: vi.fn(), invoke: vi.fn(), toast: vi.fn(), platform: "web" }));
+const m = vi.hoisted(() => ({ user: null as null | { id: string; email: string }, loading: false, signUp: vi.fn(), resend: vi.fn(), signIn: vi.fn(), otp: vi.fn(), reset: vi.fn(), invoke: vi.fn(), toast: vi.fn(), platform: "web" }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: m.user, loading: m.loading, signIn: m.signIn, refetchProfile: vi.fn() }) }));
 vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: m.toast }) }));
 vi.mock("@/lib/guestMode", () => ({ disableGuestMode: vi.fn(), enableGuestMode: vi.fn() }));
 vi.mock("@/lib/platform", () => ({ isNativeIOSApp: () => m.platform === "ios", isNativeAndroidApp: () => m.platform === "android", isNativeCapacitorApp: () => m.platform !== "web" }));
 vi.mock("@/lib/ensureProfile", () => ({ ensureProfile: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {
-  auth: { signUp: m.signUp, resend: m.resend, signInWithOtp: m.otp, signOut: vi.fn(), resetPasswordForEmail: vi.fn(), setSession: vi.fn() },
+  auth: { signUp: m.signUp, resend: m.resend, signInWithOtp: m.otp, signOut: vi.fn(), resetPasswordForEmail: m.reset, setSession: vi.fn() },
   functions: { invoke: m.invoke }, from: () => ({ insert: vi.fn().mockResolvedValue({ error: null }) }),
 } }));
 
@@ -130,6 +130,29 @@ describe("paid activation recovery", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Set up app login" })).toBeInTheDocument());
     const text = document.body.textContent || "";
     expect(text).not.toMatch(/password was cleared|secured|session (was|is) |signed out and any earlier/i);
+  });
+  it("app login setup uses the canonical reset page for the signed-in email and allows resend after cooldown", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    m.user = { id: "u", email: "a@b.com" };
+    m.invoke.mockResolvedValue({ data: { success: true }, error: null });
+    m.reset.mockResolvedValue({ error: null });
+    renderActivate();
+    const btn = await screen.findByRole("button", { name: "Set up app login" });
+    fireEvent.click(btn);
+    await waitFor(() => expect(m.reset).toHaveBeenCalledWith("a@b.com", { redirectTo: "https://member.vaulttradingacademy.com/reset-password" }));
+    expect(await screen.findByRole("button", { name: /Resend in \d+s/ })).toBeDisabled();
+    expect(screen.getByText(/Password link sent to a@b.com/)).toBeInTheDocument();
+    for (let i = 0; i < 61; i++) await act(async () => { vi.advanceTimersByTime(1000); });
+    const again = await screen.findByRole("button", { name: "Resend password link" });
+    expect(again).toBeEnabled();
+    fireEvent.click(again);
+    await waitFor(() => expect(m.reset).toHaveBeenCalledTimes(2));
+    vi.useRealTimers();
+  });
+  it("signed-out visitors get a Back to log in exit", () => {
+    m.user = null;
+    renderActivate();
+    expect(screen.getByRole("link", { name: "Back to log in" })).toHaveAttribute("href", "/auth");
   });
 });
 

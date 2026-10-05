@@ -7,6 +7,7 @@ import finn from "@/assets/vault-avatars/pixel-finn.png";
 import owl from "@/assets/vault-avatars/market-owl.png";
 import panda from "@/assets/vault-avatars/breakout-panda.png";
 import orbit from "@/assets/vault-avatars/orbit-cat.png";
+import { PaidRecoveryLink } from "@/components/auth/PaidRecoveryLink";
 import "./welcome.css";
 
 export default function Welcome() {
@@ -27,6 +28,7 @@ export default function Welcome() {
       </header>
       {choosing ? <section key="access" className="vault-entry-access">
         <div className="vault-entry-title"><h1 tabIndex={-1}>Choose your access.</h1><p>Start free or unlock the full experience.</p></div>
+        <div className="vault-entry-crosslinks vault-entry-crosslinks--access"><PaidRecoveryLink /></div>
         <article className="vault-plan">
           <div className="vault-plan-heading"><span className="vault-plan-icon"><Users/></span><div><h2>Free Community</h2><p>Free</p></div></div>
           <ul><li><MessageCircle/>Community chat</li><li><BookOpen/>One free course</li></ul>
