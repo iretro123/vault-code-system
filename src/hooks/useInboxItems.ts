@@ -15,6 +15,8 @@ export interface InboxItem {
   dm_thread_id: string | null;
 }
 
+const LIMIT = 30;
+
 export function useInboxItems() {
   const { user } = useAuth();
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -24,15 +26,28 @@ export function useInboxItems() {
     if (!user) return;
     setLoading(true);
 
-    const { data } = await supabase
-      .from("inbox_items" as any)
-      .select("*")
-      .or(`user_id.eq.${user.id},user_id.is.null`)
-      .order("pinned", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(30);
+    // Two indexed lookups (own + broadcast) run in parallel and merge here.
+    // A single OR query forces the server to read every matching row before sorting.
+    const base = () =>
+      supabase
+        .from("inbox_items" as any)
+        .select("*")
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(LIMIT);
+    const [own, broadcast] = await Promise.all([
+      base().eq("user_id", user.id),
+      base().is("user_id", null),
+    ]);
 
-    setItems((data as any[] || []).map((d: any) => ({
+    const merged = [...((own.data as any[]) || []), ...((broadcast.data as any[]) || [])]
+      .sort((a, b) =>
+        Number(!!b.pinned) - Number(!!a.pinned) ||
+        String(b.created_at).localeCompare(String(a.created_at))
+      )
+      .slice(0, LIMIT);
+
+    setItems(merged.map((d: any) => ({
       id: d.id,
       user_id: d.user_id,
       type: d.type,
