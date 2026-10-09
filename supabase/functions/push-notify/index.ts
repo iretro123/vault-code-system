@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
       await Promise.all(jobs.slice(offset, offset + 10).map(async (job: { id: string; notification_id: string; device_id: string; user_id: string; claim_token: string }) => {
         const [{ data: notification, error: notificationError }, { data: device, error: deviceError }] = await Promise.all([
           admin.from("academy_notifications").select("id,user_id,type,title,body,link_path").eq("id", job.notification_id).maybeSingle(),
-          admin.from("device_tokens").select("id,user_id,platform,token").eq("id", job.device_id).maybeSingle(),
+          admin.from("device_tokens").select("id,user_id,platform,token,updated_at,last_seen_at").eq("id", job.device_id).maybeSingle(),
         ]);
         const outcome = await deliverPushJob({
           eligible: async () => {
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
             if (!device || !notification) throw new Error("Missing delivery source");
             const payload = normalizeNotification(notification as NotificationRow);
             const platform = device.platform?.split(":")[0];
-            if (platform === "ios") return sendApns([device.token], payload);
+            if (platform === "ios") { const seen = Date.parse(String(device.last_seen_at || device.updated_at || "")); return sendApns([device.token], payload, Number.isFinite(seen) ? seen : null); }
             if (platform === "android") return sendFcm([device.token], payload);
             if (platform === "web") return sendWeb(device.token, payload);
             return { sent: 0, invalidTokens: [device.token] };
