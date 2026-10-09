@@ -1,4 +1,4 @@
-import { fcmTokenIsUnregistered, apnsFailureReason } from "../_shared/pushProviderResponse.ts";
+import { fcmTokenIsUnregistered, apnsFailureReason, apnsInactiveSince, apnsShouldRetire } from "../_shared/pushProviderResponse.ts";
 import { cachedProviderToken } from "../_shared/providerTokenCache.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { importPKCS8, SignJWT } from "https://esm.sh/jose@5.9.2";
@@ -216,7 +216,7 @@ async function sendFcm(tokens: string[], notif: ReturnType<typeof normalizeNotif
   return { sent, invalidTokens, errors, failureCode };
 }
 
-async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNotification>) {
+async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNotification>, registeredAt?: number | null) {
   if (tokens.length === 0) return { sent: 0, invalidTokens: [] as string[], errors: [] as string[] };
   const bundleId = Deno.env.get("APNS_BUNDLE_ID");
   if (!bundleId) return { sent: 0, invalidTokens: [] as string[], errors: ["APNS_BUNDLE_ID not set"], failureCode: "apns:configuration" };
@@ -251,44 +251,39 @@ async function sendApns(tokens: string[], notif: ReturnType<typeof normalizeNoti
     fetch(`${host}/3/device/${token}`, { method: "POST",
     signal: AbortSignal.timeout(8000), headers, body });
 
+  const readReason = async (res: Response) => {
+    try { const txt = await res.clone().text(); return { reason: apnsFailureReason(txt), inactiveSince: apnsInactiveSince(txt) }; }
+    catch { return { reason: "", inactiveSince: null }; }
+  };
+  const safe = (r: string) => /^[A-Za-z]{1,64}$/.test(r) ? r : "Unknown";
+
   let sent = 0;
   const invalidTokens: string[] = [];
   const errors: string[] = [];
   let failureCode: string | undefined;
   for (const token of tokens) {
-    let res = await postTo(primaryHost, token);
-    let reason = "";
-    if (!res.ok) {
-      try {
-        const txt = await res.clone().text();
-        reason = apnsFailureReason(txt);
-      } catch {
-        reason = "";
+    const res = await postTo(primaryHost, token);
+    if (res.ok) { sent += 1; continue; }
+    const primary = await readReason(res);
+    let alternate: string | null = null;
+    let finalStatus = res.status;
+    // A token rejected by one Apple environment may belong to the other (debug vs App Store build).
+    if (["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"].includes(primary.reason)) {
+      const alt = await postTo(alternateHost, token);
+      if (alt.ok) {
+        console.log("push_provider_alternate_ok", { provider: "apns", primary: safe(primary.reason) });
+        sent += 1;
+        continue;
       }
-      if (reason === "BadDeviceToken") {
-        res = await postTo(alternateHost, token);
-        if (!res.ok) {
-          try {
-            const txt = await res.clone().text();
-            reason = apnsFailureReason(txt);
-          } catch {
-            // The alternate response alone decides retirement; a transient failure is retryable.
-            reason = "";
-          }
-        }
-      }
+      alternate = (await readReason(alt)).reason;
+      finalStatus = alt.status;
     }
-    if (res.ok) {
-      sent += 1;
-      continue;
-    }
-    if (reason === "BadDeviceToken" || reason === "Unregistered" || reason === "DeviceTokenNotForTopic") {
-      invalidTokens.push(token);
-    }
+    const retire = apnsShouldRetire({ primary: primary.reason, alternate, inactiveSince: primary.inactiveSince, registeredAt: registeredAt ?? null });
+    if (retire) invalidTokens.push(token);
     // Apple reason identifiers only: never log token, payload, or credentials.
-    console.warn("push_provider_failure", { provider: "apns", status: res.status, reason: /^[A-Za-z]{1,64}$/.test(reason) ? reason : "Unknown" });
-    failureCode = `apns:${res.status}:${/^[A-Za-z]{1,64}$/.test(reason) ? reason : 'Unknown'}`;
-    errors.push(reason || `APNs request failed with status ${res.status}`);
+    console.warn("push_provider_failure", { provider: "apns", status: res.status, reason: safe(primary.reason), alternateStatus: alternate === null ? null : finalStatus, alternateReason: alternate === null ? null : safe(alternate), retired: retire });
+    failureCode = `apns:${res.status}:${safe(primary.reason)}`;
+    errors.push(primary.reason || `APNs request failed with status ${res.status}`);
   }
   return { sent, invalidTokens, errors, failureCode };
 }
@@ -326,7 +321,7 @@ Deno.serve(async (req) => {
       await Promise.all(jobs.slice(offset, offset + 10).map(async (job: { id: string; notification_id: string; device_id: string; user_id: string; claim_token: string }) => {
         const [{ data: notification, error: notificationError }, { data: device, error: deviceError }] = await Promise.all([
           admin.from("academy_notifications").select("id,user_id,type,title,body,link_path").eq("id", job.notification_id).maybeSingle(),
-          admin.from("device_tokens").select("id,user_id,platform,token").eq("id", job.device_id).maybeSingle(),
+          admin.from("device_tokens").select("id,user_id,platform,token,updated_at,last_seen_at").eq("id", job.device_id).maybeSingle(),
         ]);
         const outcome = await deliverPushJob({
           eligible: async () => {
@@ -340,7 +335,7 @@ Deno.serve(async (req) => {
             if (!device || !notification) throw new Error("Missing delivery source");
             const payload = normalizeNotification(notification as NotificationRow);
             const platform = device.platform?.split(":")[0];
-            if (platform === "ios") return sendApns([device.token], payload);
+            if (platform === "ios") { const seen = Date.parse(String(device.last_seen_at || device.updated_at || "")); return sendApns([device.token], payload, Number.isFinite(seen) ? seen : null); }
             if (platform === "android") return sendFcm([device.token], payload);
             if (platform === "web") return sendWeb(device.token, payload);
             return { sent: 0, invalidTokens: [device.token] };
