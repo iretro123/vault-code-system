@@ -4,7 +4,14 @@
 
 **Calendly: blocked, nothing verified**
 - `GET /users/me` returned HTTP 401 "The access token is invalid". So `event_types` could not be listed. Event URI, active/secret status, duration, locations and availability are all still unverified.
-- Recheck (14:30 UTC): the secret exists, its format is not a valid Calendly personal access token, and `GET /users/me` returned 401 again. It most likely needs to be re-entered.
+- Recheck (14:30 UTC): the secret exists, its format is not a valid Calendly personal access token, and `GET /users/me` returned 401 again.
+- Recheck after the owner replaced it (14:40 UTC): `GET /users/me` still returned 401, so I stopped there. My build workspace may still hold the value it loaded at session start, so it may not have picked up the replacement. Only a check run inside the live backend reads the secret as currently saved.
+
+**Proposed first step (needs approval): a temporary read-only Calendly check**
+- Add a small backend function, `calendly-readonly-check`, that only staff can call.
+- It makes only documented Calendly read requests (`GET /users/me`, `GET /event_types`, `GET /event_type_available_times`) and sends no custom User-Agent.
+- It returns only HTTP statuses plus the exact event's link, name, active, secret, duration, location type and number of open slots in the next 7 days. It never returns or logs the key.
+- Deploy it, call it once, report the result, then delete it. No other change is made.
 - Fix: in Calendly go to Integrations → API & Webhooks → Personal Access Tokens and generate one token. Replace the secret value in Project Settings → Secrets. The value was never printed.
 - Note: the sandbox's default Python client gets an HTML 403 from Calendly. The check must send a normal User-Agent, and the real check should run inside a backend function anyway.
 
