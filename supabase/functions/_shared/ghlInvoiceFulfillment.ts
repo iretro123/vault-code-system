@@ -69,7 +69,7 @@ function checkGhlMetadata(md: any, cfg: GhlConfig, label: string, required: bool
 export function validateGhlInitialPayment(p: { invoice: any; lines: any[]; payments: any[]; pi: any; sub: any; cfg: GhlConfig; nowMs?: number }) {
   const { invoice: inv, lines, payments, pi, sub, cfg } = p;
   const nowS = Math.floor((p.nowMs ?? Date.now()) / 1000);
-  if (inv.livemode !== cfg.expectedLivemode || pi.livemode !== cfg.expectedLivemode || sub.livemode === !cfg.expectedLivemode) reject('livemode mismatch');
+  if (inv.livemode !== cfg.expectedLivemode || pi.livemode !== cfg.expectedLivemode || sub.livemode !== cfg.expectedLivemode) reject('livemode mismatch');
   if (inv.billing_reason !== 'subscription_create') reject('not the initial subscription invoice');
   if (inv.status !== 'paid') reject('invoice not paid');
   if (inv.paid_out_of_band === true) reject('paid out of band');
