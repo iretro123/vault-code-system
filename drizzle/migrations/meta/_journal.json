@@ -57,6 +57,13 @@
       "when": 1791384075857,
       "tag": "0007_chat_speed_indexes_and_policy_caching",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791628046732,
+      "tag": "0008_vault_ghl_invoice_membership",
+      "breakpoints": true
     }
   ]
 }

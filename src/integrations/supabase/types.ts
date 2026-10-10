@@ -3975,39 +3975,60 @@ export type Database = {
         Row: {
           access_until: string
           auth_user_id: string | null
-          checkout_session_id: string
+          checkout_session_id: string | null
           claim_session_id: string | null
           claimed_at: string | null
           email: string
+          ghl_location_id: string | null
+          ghl_order_id: string | null
+          intro_amount_cents: number | null
           paid_at: string
+          source: string
           status: string
           stripe_customer_id: string
+          stripe_invoice_id: string | null
+          stripe_payment_intent_id: string | null
+          stripe_price_id: string | null
           stripe_subscription_id: string
           updated_at: string
         }
         Insert: {
           access_until: string
           auth_user_id?: string | null
-          checkout_session_id: string
+          checkout_session_id?: string | null
           claim_session_id?: string | null
           claimed_at?: string | null
           email: string
+          ghl_location_id?: string | null
+          ghl_order_id?: string | null
+          intro_amount_cents?: number | null
           paid_at?: string
+          source?: string
           status: string
           stripe_customer_id: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id: string
           updated_at?: string
         }
         Update: {
           access_until?: string
           auth_user_id?: string | null
-          checkout_session_id?: string
+          checkout_session_id?: string | null
           claim_session_id?: string | null
           claimed_at?: string | null
           email?: string
+          ghl_location_id?: string | null
+          ghl_order_id?: string | null
+          intro_amount_cents?: number | null
           paid_at?: string
+          source?: string
           status?: string
           stripe_customer_id?: string
+          stripe_invoice_id?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string
           updated_at?: string
         }
@@ -4866,6 +4887,21 @@ export type Database = {
       read_member_conversation: {
         Args: { conversation: string; through_time: string }
         Returns: undefined
+      }
+      record_vault_ghl_invoice_payment: {
+        Args: {
+          p_customer: string
+          p_email: string
+          p_end: string
+          p_invoice: string
+          p_location: string
+          p_order: string
+          p_payment_intent: string
+          p_price: string
+          p_status: string
+          p_subscription: string
+        }
+        Returns: boolean
       }
       record_vault_return_payment: {
         Args: {

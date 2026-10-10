@@ -43,15 +43,17 @@ export const RETURN_VALID_STATUSES = ['trialing', 'active'];
  * removes the cached paid role label for the bound account; the database
  * entitlement (vault_access_for_user) already denies access on its own.
  */
-export async function syncReturnSubscription(sub: any, db: any, onEnded?: (authUserId: string, email: string | null) => Promise<unknown>, now = Date.now()): Promise<void> {
+export async function syncReturnSubscription(sub: any, db: any, onEnded?: (authUserId: string, email: string | null) => Promise<unknown>, now = Date.now()): Promise<{ source: string | null } | null> {
   // Only subscriptions with an independently verified $1.99 checkout can use this path.
   const end = subscriptionEnd(sub);
   const row: any = { status: sub.status, updated_at: new Date().toISOString() };
   if (end) row.access_until = new Date(end * 1000).toISOString();
-  const res = await db.from('vault_return_memberships').update(row).eq('stripe_subscription_id', sub.id).select('auth_user_id,email,access_until');
+  const res = await db.from('vault_return_memberships').update(row).eq('stripe_subscription_id', sub.id).select('auth_user_id,email,access_until,source');
   if (res.error) throw res.error;
   const m = res.data?.[0];
-  if (!onEnded || !m?.auth_user_id) return;
+  const bound = m ? { source: (m.source as string) ?? null } : null;
+  if (!onEnded || !m?.auth_user_id) return bound;
   const ended = !RETURN_VALID_STATUSES.includes(sub.status) || Date.parse(m.access_until) <= now;
   if (ended) await onEnded(m.auth_user_id, m.email ?? null);
+  return bound;
 }

@@ -1,4 +1,5 @@
 import { fulfillReturnCheckout, syncReturnSubscription } from "../_shared/returnFulfillment.ts";
+import { fulfillGhlInvoice, ghlConfig, GHL_SOURCE } from "../_shared/ghlInvoiceFulfillment.ts";
 import { attemptImmediateOnboarding, onboardingEnv, supabaseOutboxStore } from "../_shared/returnOnboarding.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -168,6 +169,13 @@ async function processEvent(
     case "invoice.paid": {
       // Access returns only if the CURRENT subscription is active again.
       const invoice = event.data.object as Stripe.Invoice;
+      // Native GHL $1.99 initial invoice (flag-gated, off by default). Rejections never grant.
+      const ghl = await fulfillGhlInvoice(invoice, stripe, supabase, ghlConfig((k) => Deno.env.get(k)), async (subId) => {
+        const outcome = await attemptImmediateOnboarding(supabaseOutboxStore(supabase), subId, onboardingEnv((k) => Deno.env.get(k)));
+        log(traceId, "GHL_ONBOARDING_IMMEDIATE", { outcome });
+      }, (reason) => log(traceId, "GHL_INVOICE_REJECTED", { invoiceId: invoice.id, reason }));
+      if (ghl !== "not_applicable") log(traceId, "GHL_INVOICE", { invoiceId: invoice.id, outcome: ghl });
+      if (ghl === "rejected") break;
       const current = await handleInvoicePaid(invoice, traceId, stripe, supabase);
       if (current && invoice.id && invoice.status === "paid" && shouldEnqueueClear(event.type, current.status)) {
         const target = await recoveryRecipient(supabase, current);
@@ -440,8 +448,11 @@ async function handleSubscriptionUpdated(
   stripe: Stripe,
   supabase: SupabaseClient
 ) {
-  await syncReturnSubscription(subscription, supabase, (authUserId, email) => revokePaidRole(supabase, { authUserId, email }));
+  const bound = await syncReturnSubscription(subscription, supabase, (authUserId, email) => revokePaidRole(supabase, { authUserId, email }));
   log(traceId, "SUBSCRIPTION_UPDATED", { subId: subscription.id, status: subscription.status });
+  // GHL native memberships are governed only by their verified paid-intro row;
+  // never route them through the generic price-based grant.
+  if (bound?.source === GHL_SOURCE) return;
 
   const customerId = typeof subscription.customer === "string" ? subscription.customer : null;
   if (!customerId) throw new Error("No customer on subscription");
