@@ -64,6 +64,13 @@
       "when": 1791628046732,
       "tag": "0008_vault_ghl_invoice_membership",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791628422361,
+      "tag": "0009_vault_ghl_invoice_proof_hardening",
+      "breakpoints": true
     }
   ]
 }
