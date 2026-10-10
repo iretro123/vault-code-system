@@ -147,7 +147,10 @@ export async function fulfillGhlInvoice(eventInvoice: any, stripe: any, db: any,
       listAll(stripe.invoices.listLineItems(invoice.id, { limit: 100 }), 'invoice line'),
       listAll(stripe.invoicePayments.list({ invoice: invoice.id, limit: 100 }), 'invoice payment'),
     ]);
-    const piId = id(payments.find((x: any) => x?.status === 'paid')?.payment?.payment_intent) ?? pending('payment intent not yet linked');
+    const settled = payments.filter((x: any) => x?.status === 'paid');
+    if (settled.length === 0) pending('invoice payment linkage not yet visible');
+    if (settled.length !== 1 || settled[0].payment?.type !== 'payment_intent') reject('invoice payment linkage mismatch');
+    const piId = id(settled[0].payment.payment_intent) ?? reject('payment intent missing');
     const pi = await stripe.paymentIntents.retrieve(piId);
     const v = validateGhlInitialPayment({ invoice, lines, payments, pi, sub, cfg });
     const customer = await stripe.customers.retrieve(v.customer);
