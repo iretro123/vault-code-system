@@ -13,9 +13,10 @@ const MIGRATIONS = [
   "supabase/migrations/20261002000300_vault_return_claim_inbox_proof.sql",
   "supabase/migrations/20261002000400_vault_return_claim_session_strict.sql",
   "drizzle/migrations/0008_vault_ghl_invoice_membership.sql",
+  "drizzle/migrations/0009_vault_ghl_invoice_proof_hardening.sql",
 ].map(read);
-const rec = (db: any, sub: string, inv: string, pi: string, status = "trialing", email = "Buyer@Example.com") =>
-  db.query("SELECT public.record_vault_ghl_invoice_payment($1,$2,$3,'cus_1',$4,$5,now()+interval '30 days','price_x','loc','ord') AS r", [sub, inv, pi, email, status]);
+const rec = (db: any, sub: string, inv: string, pi: string, status = "trialing", email = "Buyer@Example.com", cus = "cus_1") =>
+  db.query("SELECT public.record_vault_ghl_invoice_payment($1,$2,$3,$6,$4,$5,now()+interval '30 days','price_x','loc','ord') AS r", [sub, inv, pi, email, status, cus]);
 
 let db: Awaited<ReturnType<typeof h.makeDb>>;
 describe("GHL invoice membership RPC", () => {
@@ -46,6 +47,26 @@ describe("GHL invoice membership RPC", () => {
     await rec(db, "sub_1", "in_1", "pi_1");
     await expect(rec(db, "sub_2", "in_1", "pi_2")).rejects.toThrow();
     await expect(rec(db, "sub_3", "in_3", "pi_1")).rejects.toThrow();
+  });
+
+  it.each([
+    ["different invoice", ["sub_1", "in_9", "pi_1"]],
+    ["different PaymentIntent", ["sub_1", "in_1", "pi_9"]],
+    ["different customer", ["sub_1", "in_1", "pi_1", "trialing", "Buyer@Example.com", "cus_9"]],
+    ["different email", ["sub_1", "in_1", "pi_1", "trialing", "other@example.com"]],
+  ])("same subscription with %s proof errors and leaves one consistent outbox row", async (_n, args: any) => {
+    await rec(db, "sub_1", "in_1", "pi_1");
+    await expect((rec as any)(db, ...args)).rejects.toThrow(/conflicts/);
+    expect((await db.query<any>("SELECT email FROM public.vault_onboarding_outbox")).rows).toEqual([{ email: "buyer@example.com" }]);
+  });
+
+  it("same subscription already owned by the payment-link path cannot be overwritten", async () => {
+    const sub = await h.addPaid(db, "buyer@example.com");
+    await expect(rec(db, sub, "in_1", "pi_1")).rejects.toThrow(/conflicts/);
+  });
+
+  it("CHECK rejects a GHL row with NULL intro amount", async () => {
+    await expect(db.query("INSERT INTO public.vault_return_memberships(stripe_subscription_id,stripe_customer_id,email,status,access_until,source,stripe_invoice_id,stripe_payment_intent_id,stripe_price_id,ghl_location_id,intro_amount_cents) VALUES('s','c','e','trialing',now()+interval '1 day','ghl_native_invoice','i','p','pr','l',NULL)")).rejects.toThrow();
   });
 
   it("refuses non-usable status or missing proof", async () => {
