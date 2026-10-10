@@ -4,7 +4,7 @@
 
 **Calendly: blocked, nothing verified**
 - `GET /users/me` returned HTTP 401 "The access token is invalid". So `event_types` could not be listed. Event URI, active/secret status, duration, locations and availability are all still unverified.
-- The saved `CALENDLY_PERSONAL_ACCESS_TOKEN` does not look like a single Calendly token: it is about 5,400 characters long with 37 dot-separated parts, and has no leading or trailing whitespace. It was most likely pasted wrong, for example several values or extra text.
+- Recheck (14:30 UTC): the secret exists, its format is not a valid Calendly personal access token, and `GET /users/me` returned 401 again. It most likely needs to be re-entered.
 - Fix: in Calendly go to Integrations → API & Webhooks → Personal Access Tokens and generate one token. Replace the secret value in Project Settings → Secrets. The value was never printed.
 - Note: the sandbox's default Python client gets an HTML 403 from Calendly. The check must send a normal User-Agent, and the real check should run inside a backend function anyway.
 
@@ -17,14 +17,9 @@
 
 ## What is needed before building
 
-1. A valid Calendly token, then rerun the read-only check. It must confirm the scheduling URL, name, 120 minutes, active and not secret, location type, and open slots in the next 7 days.
-2. One GHL Test Mode $49 purchase of the mentoring item, with these copied from the Stripe Dashboard:
-   - the PaymentIntent and its metadata keys (`altId`, `altType`, `orderId`, product or price fields)
-   - whether an invoice exists
-   - the line's product and price IDs
-   
-   This decides whether we allowlist by price or by product plus amount.
-3. A confirmed live price ID if GHL creates one at sale time. Otherwise we allowlist the product with exactly 4900 USD.
+1. A valid Calendly token, then rerun the read-only check. It must confirm the scheduling URL, name, 120 minutes, active, Secret (intended), location type, and open slots in the next 7 days.
+2. Test proof received: PaymentIntent `pi_3UOr5vAMsd1FtcvL0jZQkjrC`, $49 USD, no invoice, GHL location/contact/order details present. The PaymentIntent alone does not prove the product, so the GHL order is the proof source. GHL catalog price `6ac9a7c915dafb910f718058` corresponds to test product `prod_VPfh4JjoYgfXW1` and live product `prod_VPfh2LqYPkPMap`.
+3. The GHL Orders API refused the existing GHL key (401, "The token is not authorized for this scope"). Add `payments/orders.readonly` (and `payments/transactions.readonly` for payment linkage) to the existing GHL private integration, then rerun the read-only order lookup.
 
 ## Recommended design (nothing is built yet; everything stays off)
 
