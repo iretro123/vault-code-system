@@ -21,7 +21,7 @@ function fx() {
   }) as any;
   return { pi, order, tx, charge, stripe, db, fetchFn };
 }
-const run = (f: ReturnType<typeof fx>, c = cfg) => fulfillMentoringPayment({ id: 'pi_1', object: 'payment_intent', amount: 4900, currency: 'usd', metadata: f.pi.metadata }, f.stripe, f.db, c, 'k', { fetchFn: f.fetchFn });
+const run = (f: ReturnType<typeof fx>, c = cfg) => fulfillMentoringPayment({ id: 'pi_1', object: 'payment_intent', amount: 4900, currency: 'usd', metadata: { altId: A.locationId } }, f.stripe, f.db, c, 'k', { fetchFn: f.fetchFn });
 
 describe('$49 mentoring payment verification', () => {
   it('flag off unless exactly "true"; off makes no calls', async () => {

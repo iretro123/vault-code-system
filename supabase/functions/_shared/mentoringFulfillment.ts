@@ -83,13 +83,13 @@ export function validateMentoringPayment(p: { pi: any; order: any; transactions:
   if (!blank(md.contactId) && !blank(order.contactId) && md.contactId !== order.contactId) reject('GHL contact mismatch');
 
   // GHL transaction links this exact PaymentIntent to this order
+  if (transactions.some(o => o?.chargeId === pi.id && o?.entityId !== orderId)) reject('payment linked to another order');
   const tx = transactions.filter(t => t?.entityId === orderId && t?.chargeId === pi.id);
   if (tx.length === 0) pending('GHL transaction not yet visible');
   if (tx.length !== 1) reject('GHL transaction ambiguous');
   const t = tx[0];
   if (t.status !== 'succeeded' || t.amount !== 49 || String(t.currency).toLowerCase() !== 'usd' || t.liveMode !== cfg.expectedLivemode
     || t.altId !== cfg.locationId) reject('GHL transaction mismatch');
-  if (transactions.some(o => o?.chargeId === pi.id && o?.entityId !== orderId)) reject('payment linked to another order');
 
   return { customer: customer as string, orderId, chargeId: charge.id as string, transactionId: String(t._id), contactId: (order.contactId ?? md.contactId ?? null) as string | null };
 }
