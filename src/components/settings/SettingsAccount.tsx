@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { DeleteAccountCard } from "@/components/settings/DeleteAccountCard";
 import { useSearchParams } from "react-router-dom";
+import { MentoringBookingCard } from "@/components/settings/MentoringBookingCard";
 
 export function SettingsAccount() {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,8 @@ export function SettingsAccount() {
           Manage your account access and permanently delete your account inside the app.
         </p>
       </div>
+
+      <MentoringBookingCard />
 
       <div className="rounded-xl border border-border/40 bg-card/40 p-4 space-y-3">
         <p className="text-sm font-medium text-foreground">Delete Account</p>

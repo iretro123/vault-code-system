@@ -91,7 +91,7 @@ export async function handleCalendlyWebhook(webhook: any, deps: CalendlyDeps, no
     let state = { ...e }, merged: Record<string, unknown> = {};
     const steps: Canonical[] = [c];
     // Out of order: "created" arriving after the booking was already canceled applies both, in order.
-    if (c.kind === 'created' && (c.cancelerType || webhook?.payload?.status === 'canceled')) steps.push({ ...c, kind: 'canceled' });
+    if (c.kind === 'created' && (c.cancelerType || c.canceledAt)) steps.push({ ...c, kind: 'canceled' });
     for (const s of steps) {
       const p = decideCalendlyUpdate(s, state as Ent, nowMs);
       if (p) { merged = { ...merged, ...p }; state = { ...state, ...p } as Ent; }
