@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fulfillMentoringPayment, mentoringConfig, mentoringQaConfig, MentoringPending, MENTORING_APPROVED, isMentoringCandidate } from '../../supabase/functions/_shared/mentoringFulfillment';
-import { deliverMentoringJob, type MentoringStore, type Entitlement, MENTORING_TAG } from '../../supabase/functions/_shared/mentoringDelivery';
-import { decideCalendlyUpdate, matchFor, verifyCalendlySignature } from '../../supabase/functions/_shared/mentoringCalendly';
+import { deliverMentoringJob, deliverableSessions, type MentoringStore, type Entitlement, MENTORING_TAG } from '../../supabase/functions/_shared/mentoringDelivery';
+import { handleCalendlyWebhook, verifyCalendlySignature, type CalendlyDeps, type Ent } from '../../supabase/functions/_shared/mentoringCalendly';
 
 const cfg = { ...mentoringConfig(() => 'true') };
 const A = MENTORING_APPROVED;
@@ -105,28 +105,33 @@ describe('$49 mentoring payment verification', () => {
   });
 });
 
-function memStore(e: Partial<Entitlement> = {}, outstanding = 0) {
+function memStore(e: Partial<Entitlement> = {}, outstanding = 0, booked: string[] = []) {
   const ent: Entitlement = { id: '11111111-1111-4111-8111-111111111111', email: 'b@x.com', status: 'paid', calendly_event_type_uri: A.calendlyEventTypeUri, calendly_link_url: null, link_attempt_started_at: null, ...e };
   const log: string[] = [];
+  const hooks: { beforeSave?: () => void; afterGet?: (n: number) => void } = {};
+  let gets = 0;
   const store: MentoringStore = {
-    get: async () => ent,
+    get: async () => { gets++; hooks.afterGet?.(gets); return { ...ent }; },
     outstandingExcluding: async () => outstanding,
-    beginLink: async () => { if (ent.link_attempt_started_at) return false; ent.link_attempt_started_at = 'now'; return true; },
+    bookedStarts: async () => booked,
+    beginLink: async () => { if (ent.link_attempt_started_at || ent.status !== 'paid') return false; ent.link_attempt_started_at = 'now'; return true; },
     clearLinkAttempt: async () => { ent.link_attempt_started_at = null; log.push('clear'); },
-    saveLink: async (_id, url) => { ent.calendly_link_url = url; ent.status = 'link_ready'; },
-    markSent: async () => { ent.status = 'sent'; log.push('sent'); },
+    saveLink: async (_id, url) => { hooks.beforeSave?.(); if (ent.status !== 'paid' || ent.calendly_link_url) return false; ent.calendly_link_url = url; ent.status = 'link_ready'; return true; },
+    markDispatched: async () => { if (ent.status !== 'link_ready') return false; ent.status = 'dispatched'; log.push('dispatched'); return true; },
     retry: async (_i, _a, r) => { log.push(`retry:${r}`); },
     withhold: async (_i, r, staff) => { log.push(`withhold:${staff}:${r}`); },
   };
-  return { ent, store, log };
+  return { ent, store, log, hooks };
 }
-const env = { enabled: true, calendlyToken: 't', ghlKey: 'g', locationId: 'loc', linkFieldId: 'fld' };
-function calFetch(opts: { slots?: number; link?: () => Response; active?: boolean } = {}) {
-  const calls: { url: string; body?: any }[] = [];
+const env = { enabled: true, calendlyToken: 't', ghlKey: 'g', locationId: 'loc', linkFieldId: 'fld', idFieldId: 'idf' };
+const slotsEvery30 = (n: number, from = Date.parse('2026-11-02T14:00:00Z')) => Array.from({ length: n }, (_, i) => new Date(from + i * 30 * 60_000).toISOString());
+function calFetch(opts: { starts?: string[]; link?: () => Response; active?: boolean } = {}) {
+  const calls: { url: string; method: string; body?: any }[] = [];
+  let availCalls = 0;
   const fn = vi.fn(async (url: string, init?: any) => {
-    calls.push({ url, body: init?.body ? JSON.parse(init.body) : undefined });
+    calls.push({ url, method: init?.method ?? 'GET', body: init?.body ? JSON.parse(init.body) : undefined });
     if (url === A.calendlyEventTypeUri) return new Response(JSON.stringify({ resource: { active: opts.active ?? true, duration: 120, scheduling_url: A.calendlySchedulingUrl } }));
-    if (url.includes('event_type_available_times')) return new Response(JSON.stringify({ collection: Array.from({ length: opts.slots ?? 5 }, () => ({ status: 'available' })) }));
+    if (url.includes('event_type_available_times')) { const c = availCalls++ === 0 ? (opts.starts ?? slotsEvery30(1)) : []; return new Response(JSON.stringify({ collection: c.map(start_time => ({ status: 'available', start_time })) })); }
     if (url.endsWith('/scheduling_links')) return opts.link ? opts.link() : new Response(JSON.stringify({ resource: { booking_url: 'https://calendly.com/d/abc-123' } }), { status: 201 });
     if (url.endsWith('/contacts/upsert')) return new Response(JSON.stringify({ contact: { id: 'c1' } }));
     if (url.includes('/tags')) return new Response('{}');
@@ -134,93 +139,192 @@ function calFetch(opts: { slots?: number; link?: () => Response; active?: boolea
   }) as any;
   return { fn, calls };
 }
+const job = (s: ReturnType<typeof memStore>, attempts = 1) => ({ entitlement_id: s.ent.id, attempts });
+
+describe('deliverable capacity', () => {
+  it('overlapping 30-minute start choices are not separate sessions', () => {
+    // 45 starts every 30 min across one day = 22.5h of starts; with 120 min + 2x30 buffer only one per 3h,
+    // and at most 2 per week.
+    expect(deliverableSessions(slotsEvery30(45), [])).toBe(2);
+    expect(deliverableSessions(slotsEvery30(45), [], 120, 30, 99)).toBe(8);
+  });
+  it('weekly cap counts sessions already booked that week', () => {
+    expect(deliverableSessions(slotsEvery30(45), ['2026-11-03T15:00:00Z'])).toBe(1);
+    expect(deliverableSessions(slotsEvery30(45), ['2026-11-03T15:00:00Z', '2026-11-04T15:00:00Z'])).toBe(0);
+  });
+});
 
 describe('$49 mentoring booking delivery', () => {
-  it('creates one single-use link for the exact event, stores it, then tags GHL', async () => {
-    const s = memStore(); const f = calFetch();
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 1 }, env, f.fn)).toBe('sent');
-    const link = f.calls.find(c => c.url.endsWith('/scheduling_links'))!;
-    expect(link.body).toEqual({ max_event_count: 1, owner: A.calendlyEventTypeUri, owner_type: 'EventType' });
+  it('creates one single-use link, stores it, then dispatches with per-purchase identity and tag re-entry', async () => {
+    const s = memStore(); const f = calFetch({ starts: slotsEvery30(12) });
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('dispatched');
+    expect(f.calls.find(c => c.url.endsWith('/scheduling_links'))!.body).toEqual({ max_event_count: 1, owner: A.calendlyEventTypeUri, owner_type: 'EventType' });
     expect(s.ent.calendly_link_url).toBe(`https://calendly.com/d/abc-123?utm_content=${s.ent.id}`);
-    expect(f.calls.find(c => c.url.endsWith('/contacts/upsert'))!.body.customFields).toEqual([{ id: 'fld', field_value: s.ent.calendly_link_url }]);
-    expect(f.calls.find(c => c.url.includes('/tags'))!.body).toEqual({ tags: [MENTORING_TAG] });
+    expect(f.calls.find(c => c.url.endsWith('/contacts/upsert'))!.body.customFields).toEqual([{ id: 'fld', field_value: s.ent.calendly_link_url }, { id: 'idf', field_value: s.ent.id }]);
+    const tags = f.calls.filter(c => c.url.includes('/tags'));
+    expect(tags.map(t => t.method)).toEqual(['DELETE', 'POST']);
+    expect(tags[1].body).toEqual({ tags: [MENTORING_TAG] });
+    expect(s.ent.status).toBe('dispatched');
   });
 
   it('retry after a CRM failure reuses the stored link (no second Calendly link)', async () => {
     const s = memStore({ calendly_link_url: 'https://calendly.com/d/x?utm_content=1', status: 'link_ready', link_attempt_started_at: 'then' });
     const f = calFetch();
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 2 }, env, f.fn)).toBe('sent');
+    expect(await deliverMentoringJob(s.store, job(s, 2), env, f.fn)).toBe('dispatched');
     expect(f.calls.some(c => c.url.endsWith('/scheduling_links'))).toBe(false);
   });
 
-  it('holds when open slots do not exceed outstanding paid sessions', async () => {
-    const s = memStore({}, 3); const f = calFetch({ slots: 3 });
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 1 }, env, f.fn)).toBe('held_no_capacity');
+  it('holds when deliverable sessions do not exceed outstanding paid sessions', async () => {
+    const s = memStore({}, 2); const f = calFetch({ starts: slotsEvery30(45) });
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('held_no_capacity');
     expect(f.calls.some(c => c.url.endsWith('/scheduling_links'))).toBe(false);
   });
 
   it('holds when the event is inactive', async () => {
     const s = memStore(); const f = calFetch({ active: false });
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 1 }, env, f.fn)).toBe('held_no_capacity');
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('held_no_capacity');
   });
 
-  it('ambiguous link response (timeout/5xx) goes to staff review and is never retried automatically', async () => {
+  it('ambiguous link response goes to staff review and is never retried automatically', async () => {
     const s = memStore(); const f = calFetch({ link: () => new Response('', { status: 502 }) });
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 1 }, env, f.fn)).toBe('staff_review');
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('staff_review');
     const again = calFetch();
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 2 }, env, again.fn)).toBe('staff_review');
+    expect(await deliverMentoringJob(s.store, job(s, 2), env, again.fn)).toBe('staff_review');
     expect(again.calls.some(c => c.url.endsWith('/scheduling_links'))).toBe(false);
   });
 
   it('definite 4xx means nothing was created: attempt cleared and retried later', async () => {
     const s = memStore(); const f = calFetch({ link: () => new Response('{}', { status: 403 }) });
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 1 }, env, f.fn)).toBe('retry');
-    expect(s.log).toContain('clear');
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('retry');
     expect(s.ent.link_attempt_started_at).toBeNull();
   });
 
-  it.each(['refunded', 'withheld', 'booked', 'canceled_by_member'])('never delivers when %s', async (status) => {
-    const s = memStore({ status }); const f = calFetch();
-    expect(await deliverMentoringJob(s.store, { entitlement_id: s.ent.id, attempts: 1 }, env, f.fn)).toBe('withheld');
-    expect(f.fn).not.toHaveBeenCalled();
+  it('refund during link creation: conditional save fails and nothing is dispatched', async () => {
+    const s = memStore(); s.hooks.beforeSave = () => { s.ent.status = 'refunded'; };
+    const f = calFetch();
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('staff_review');
+    expect(f.calls.some(c => c.url.includes('/contacts'))).toBe(false);
+  });
+
+  it('refund after link saved but before dispatch: re-check stops the tag', async () => {
+    const s = memStore(); s.hooks.afterGet = (n) => { if (n === 2) s.ent.status = 'refunded'; };
+    const f = calFetch();
+    // first get() returns paid; second (pre-dispatch) sees refunded
+    s.hooks.afterGet = (n) => { if (n === 1) return; s.ent.status = 'refunded'; };
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('withheld');
+    expect(f.calls.some(c => c.url.includes('/contacts'))).toBe(false);
+  });
+
+  it('dispute (withheld) or refund before start: never touches Calendly or GHL', async () => {
+    for (const status of ['refunded', 'withheld', 'booked', 'dispatched', 'canceled_by_member']) {
+      const s = memStore({ status }); const f = calFetch();
+      expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('withheld');
+      expect(f.fn).not.toHaveBeenCalled();
+    }
+  });
+
+  it('entitlement changed between tag and mark: flagged for staff, not reported dispatched', async () => {
+    const s = memStore({ status: 'link_ready', calendly_link_url: 'https://calendly.com/d/x', link_attempt_started_at: 'x' });
+    const f = calFetch();
+    const orig = f.fn.getMockImplementation();
+    f.fn.mockImplementation(async (u: string, i: any) => { const r = await orig(u, i); if (u.includes('/tags') && i?.method === 'POST') s.ent.status = 'refunded'; return r; });
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('staff_review');
   });
 });
 
-describe('Calendly booking policy', () => {
+describe('Calendly booking webhook (canonical re-read)', () => {
   const ET = A.calendlyEventTypeUri;
-  const ev = 'https://api.calendly.com/scheduled_events/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-  const inv = `${ev}/invitees/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb`;
-  const base = { status: 'booked', booked_event_uri: ev, reschedule_count: 0, calendly_event_type_uri: ET };
-  const start = Date.parse('2026-11-01T15:00:00Z');
-  const cancel = (o: any) => ({ event: 'invitee.canceled', payload: { uri: inv, scheduled_event: { event_type: ET, start_time: new Date(start).toISOString() }, ...o } });
+  const EV = 'https://api.calendly.com/scheduled_events/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const INV = `${EV}/invitees/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb`;
+  const EV2 = 'https://api.calendly.com/scheduled_events/cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  const INV2 = `${EV2}/invitees/dddddddd-dddd-4ddd-8ddd-dddddddddddd`;
+  const ID = '11111111-1111-4111-8111-111111111111';
+  const start = Date.parse('2026-11-10T15:00:00Z');
+  function world(ent: Partial<Ent> = {}) {
+    const e: Ent = { id: ID, email: 'buyer@example.com', status: 'dispatched', booked_event_uri: null, reschedule_count: 0, calendly_event_type_uri: ET, updated_at: 'v0', ...ent };
+    const res: Record<string, any> = {
+      [INV]: { resource: { uri: INV, event: EV, email: 'Buyer@Example.com', tracking: { utm_content: ID } } },
+      [EV]: { resource: { uri: EV, event_type: ET, start_time: new Date(start).toISOString(), status: 'active' } },
+    };
+    let v = 0; let conflicts = 0;
+    const deps: CalendlyDeps = {
+      getJson: async (u) => { if (!res[u]) throw new Error('404'); return res[u]; },
+      findById: async (id) => (id === e.id ? { ...e } : null),
+      findByBookedEvent: async (u) => (u === e.booked_event_uri ? { ...e } : null),
+      cas: async (_id, ver, patch) => { if (conflicts > 0) { conflicts--; e.updated_at = `v${++v}`; return false; } if (ver !== e.updated_at) return false; Object.assign(e, patch, { updated_at: `v${++v}` }); return true; },
+    };
+    return { e, res, deps, conflict: (n: number) => { conflicts = n; } };
+  }
+  const created = (uri = INV) => ({ event: 'invitee.created', payload: { uri, tracking: { utm_content: ID }, email: 'attacker@x.com' } });
+  const canceled = (uri = INV) => ({ event: 'invitee.canceled', payload: { uri } });
 
-  it('matches by our utm_content, else by the prior booking', () => {
-    expect(matchFor({ event: 'invitee.created', payload: { tracking: { utm_content: '11111111-1111-4111-8111-111111111111' } } })).toEqual({ by: 'entitlement_id', value: '11111111-1111-4111-8111-111111111111' });
-    expect(matchFor({ event: 'invitee.created', payload: { old_invitee: inv } })).toEqual({ by: 'booked_event_uri', value: ev });
-    expect(matchFor({ event: 'invitee.created', payload: {} })).toBeNull();
+  it('books only after canonical event type and purchaser email match', async () => {
+    const w = world();
+    expect(await handleCalendlyWebhook(created(), w.deps)).toBe('updated');
+    expect(w.e).toMatchObject({ status: 'booked', booked_event_uri: EV });
   });
 
-  it('first booking marks booked; a second fresh booking goes to staff review', () => {
-    const created = { event: 'invitee.created', payload: { uri: inv, scheduled_event: { event_type: ET, start_time: 'x' } } };
-    expect(decideCalendlyUpdate(created, { ...base, status: 'sent', booked_event_uri: null })).toMatchObject({ status: 'booked', booked_event_uri: ev });
-    expect(decideCalendlyUpdate(created, base)).toEqual({ staff_review_reason: 'second booking on single-use entitlement' });
+  it('payload fields are ignored: a different canonical email is not booked', async () => {
+    const w = world(); w.res[INV].resource.email = 'someone@else.com';
+    await handleCalendlyWebhook(created(), w.deps);
+    expect(w.e.status).toBe('dispatched');
+    expect((w.e as any).staff_review_reason).toMatch(/email/);
   });
 
-  it('one reschedule with >= 24h notice is allowed; late or second goes to staff review', () => {
-    expect(decideCalendlyUpdate(cancel({ rescheduled: true, cancellation: { canceler_type: 'invitee', created_at: new Date(start - 25 * 3600e3).toISOString() } }), base)).toEqual({ reschedule_count: 1 });
-    expect(decideCalendlyUpdate(cancel({ rescheduled: true, cancellation: { canceler_type: 'invitee', created_at: new Date(start - 2 * 3600e3).toISOString() } }), base)).toMatchObject({ staff_review_reason: expect.stringMatching(/24h/) });
-    expect(decideCalendlyUpdate(cancel({ rescheduled: true, cancellation: { canceler_type: 'invitee', created_at: new Date(start - 48 * 3600e3).toISOString() } }), { ...base, reschedule_count: 1 })).toMatchObject({ staff_review_reason: expect.stringMatching(/second/) });
+  it('wrong canonical event type is never booked', async () => {
+    const w = world(); w.res[EV].resource.event_type = 'https://api.calendly.com/event_types/other';
+    await handleCalendlyWebhook(created(), w.deps);
+    expect(w.e.status).toBe('dispatched');
   });
 
-  it('member cancel is nonrefundable; coach cancel goes to reschedule/refund review', () => {
-    expect(decideCalendlyUpdate(cancel({ cancellation: { canceler_type: 'invitee' } }), base)).toMatchObject({ status: 'canceled_by_member' });
-    expect(decideCalendlyUpdate(cancel({ cancellation: { canceler_type: 'host' } }), base)).toMatchObject({ status: 'canceled_by_coach' });
+  it('duplicate created delivery is a no-op', async () => {
+    const w = world();
+    await handleCalendlyWebhook(created(), w.deps);
+    expect(await handleCalendlyWebhook(created(), w.deps)).toBe('unchanged');
   });
 
-  it('ignores other event types and refunded entitlements', () => {
-    const created = { event: 'invitee.created', payload: { uri: inv, scheduled_event: { event_type: 'https://api.calendly.com/event_types/other' } } };
-    expect(decideCalendlyUpdate(created, { ...base, status: 'sent' })).toEqual({ staff_review_reason: 'booking on unexpected event type' });
-    expect(decideCalendlyUpdate(cancel({}), { ...base, status: 'refunded' })).toMatchObject({ staff_review_reason: expect.any(String) });
+  it('out-of-order: created arriving after the member canceled ends as canceled_by_member', async () => {
+    const w = world(); w.res[INV].resource.cancellation = { canceler_type: 'invitee', created_at: new Date(start - 3 * 86400e3).toISOString() };
+    expect(await handleCalendlyWebhook(canceled(), w.deps)).toBe('unchanged'); // not booked yet; nothing to cancel
+    expect(await handleCalendlyWebhook(created(), w.deps)).toBe('updated');
+    expect(w.e.status).toBe('canceled_by_member');
+  });
+
+  it('one reschedule with >= 24h notice; the new booking chains from the old one', async () => {
+    const w = world({ status: 'booked', booked_event_uri: EV });
+    w.res[INV].resource.rescheduled = true;
+    w.res[INV].resource.cancellation = { canceler_type: 'invitee', created_at: new Date(start - 48 * 3600e3).toISOString() };
+    expect(await handleCalendlyWebhook(canceled(), w.deps)).toBe('updated');
+    expect(w.e.reschedule_count).toBe(1);
+    w.res[INV2] = { resource: { uri: INV2, event: EV2, email: 'buyer@example.com', old_invitee: INV } };
+    w.res[EV2] = { resource: { uri: EV2, event_type: ET, start_time: '2026-11-12T15:00:00Z' } };
+    expect(await handleCalendlyWebhook(created(INV2), w.deps)).toBe('updated');
+    expect(w.e).toMatchObject({ status: 'booked', booked_event_uri: EV2 });
+  });
+
+  it('late reschedule goes to staff review; coach cancel goes to reschedule/refund review', async () => {
+    const w = world({ status: 'booked', booked_event_uri: EV });
+    w.res[INV].resource.rescheduled = true;
+    w.res[INV].resource.cancellation = { canceler_type: 'invitee', created_at: new Date(start - 2 * 3600e3).toISOString() };
+    await handleCalendlyWebhook(canceled(), w.deps);
+    expect((w.e as any).staff_review_reason).toMatch(/24h/);
+    const h = world({ status: 'booked', booked_event_uri: EV });
+    h.res[INV].resource.cancellation = { canceler_type: 'host' };
+    await handleCalendlyWebhook(canceled(), h.deps);
+    expect(h.e.status).toBe('canceled_by_coach');
+  });
+
+  it('CAS conflict is retried by re-reading; persistent conflict throws so Calendly redelivers', async () => {
+    const w = world(); w.conflict(1);
+    expect(await handleCalendlyWebhook(created(), w.deps)).toBe('updated');
+    const p = world(); p.conflict(5);
+    await expect(handleCalendlyWebhook(created(), p.deps)).rejects.toThrow(/retry/);
+  });
+
+  it('refunded entitlement is never booked', async () => {
+    const w = world({ status: 'refunded' });
+    await handleCalendlyWebhook(created(), w.deps);
+    expect(w.e.status).toBe('refunded');
   });
 
   it('webhook signature: valid accepted; tampered, stale, or missing key rejected', async () => {

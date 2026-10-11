@@ -3861,6 +3861,7 @@ export type Database = {
           claimed_at: string | null
           created_at: string
           currency: string
+          dispatched_at: string | null
           email: string
           ghl_contact_id: string | null
           ghl_location_id: string
@@ -3869,6 +3870,7 @@ export type Database = {
           ghl_product_id: string
           ghl_transaction_id: string
           id: string
+          last_calendly_event_at: string | null
           link_attempt_started_at: string | null
           livemode: boolean
           reschedule_count: number
@@ -3890,6 +3892,7 @@ export type Database = {
           claimed_at?: string | null
           created_at?: string
           currency: string
+          dispatched_at?: string | null
           email: string
           ghl_contact_id?: string | null
           ghl_location_id: string
@@ -3898,6 +3901,7 @@ export type Database = {
           ghl_product_id: string
           ghl_transaction_id: string
           id?: string
+          last_calendly_event_at?: string | null
           link_attempt_started_at?: string | null
           livemode: boolean
           reschedule_count?: number
@@ -3919,6 +3923,7 @@ export type Database = {
           claimed_at?: string | null
           created_at?: string
           currency?: string
+          dispatched_at?: string | null
           email?: string
           ghl_contact_id?: string | null
           ghl_location_id?: string
@@ -3927,6 +3932,7 @@ export type Database = {
           ghl_product_id?: string
           ghl_transaction_id?: string
           id?: string
+          last_calendly_event_at?: string | null
           link_attempt_started_at?: string | null
           livemode?: boolean
           reschedule_count?: number
@@ -3943,6 +3949,7 @@ export type Database = {
         Row: {
           attempts: number
           created_at: string
+          dispatched_at: string | null
           entitlement_id: string
           last_error: string | null
           locked_until: string | null
@@ -3953,6 +3960,7 @@ export type Database = {
         Insert: {
           attempts?: number
           created_at?: string
+          dispatched_at?: string | null
           entitlement_id: string
           last_error?: string | null
           locked_until?: string | null
@@ -3963,6 +3971,7 @@ export type Database = {
         Update: {
           attempts?: number
           created_at?: string
+          dispatched_at?: string | null
           entitlement_id?: string
           last_error?: string | null
           locked_until?: string | null
@@ -4443,6 +4452,7 @@ export type Database = {
         Returns: {
           attempts: number
           created_at: string
+          dispatched_at: string | null
           entitlement_id: string
           last_error: string | null
           locked_until: string | null
@@ -5251,6 +5261,10 @@ export type Database = {
       vault_can_read_chat_file: {
         Args: { object_name: string }
         Returns: boolean
+      }
+      vault_mentoring_booked_starts: {
+        Args: { p_from: string; p_to: string }
+        Returns: string[]
       }
       vault_mentoring_outstanding_count: {
         Args: { p_exclude: string }
