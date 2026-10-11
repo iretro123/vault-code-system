@@ -86,3 +86,9 @@ verify_jwt = false
 
 [functions.sync-vault-onboarding]
 verify_jwt = false
+
+[functions.sync-vault-mentoring]
+verify_jwt = false
+
+[functions.calendly-webhook]
+verify_jwt = false
