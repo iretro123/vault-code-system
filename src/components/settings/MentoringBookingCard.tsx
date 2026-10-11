@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { formatInUserTime } from "@/lib/mentoringTime";
+
+const formatInUserTime = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZoneName: "short" });
 
 type Row = { id: string; status: string; booking_url: string | null; booked_start_at: string | null };
 
