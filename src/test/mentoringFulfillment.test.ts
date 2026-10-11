@@ -285,7 +285,7 @@ describe('Calendly booking webhook (canonical re-read)', () => {
 
   it('out-of-order: created arriving after the member canceled ends as canceled_by_member', async () => {
     const w = world(); w.res[INV].resource.cancellation = { canceler_type: 'invitee', created_at: new Date(start - 3 * 86400e3).toISOString() };
-    expect(await handleCalendlyWebhook(canceled(), w.deps)).toBe('unmatched'); // not booked yet; nothing to cancel
+    expect(await handleCalendlyWebhook(canceled(), w.deps)).toBe('unchanged'); // not booked yet; nothing to cancel
     expect(await handleCalendlyWebhook(created(), w.deps)).toBe('updated');
     expect(w.e.status).toBe('canceled_by_member');
   });
