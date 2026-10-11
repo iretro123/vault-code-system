@@ -1,5 +1,6 @@
 import { fulfillReturnCheckout, syncReturnSubscription } from "../_shared/returnFulfillment.ts";
 import { fulfillGhlInvoice, ghlConfig, GHL_SOURCE } from "../_shared/ghlInvoiceFulfillment.ts";
+import { fulfillMentoringPayment, mentoringConfig, reverseMentoringPayment } from "../_shared/mentoringFulfillment.ts";
 import { attemptImmediateOnboarding, onboardingEnv, supabaseOutboxStore } from "../_shared/returnOnboarding.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -113,6 +114,8 @@ serve(async (req) => {
       "customer.subscription.updated",
       "customer.subscription.deleted",
     ];
+    // $49 mentoring events are handled only when its flag is on; otherwise they stay "ignored" exactly as before.
+    if (mentoringConfig((k) => Deno.env.get(k)).enabled) supportedEvents.push("payment_intent.succeeded", "charge.refunded", "charge.dispute.created");
 
     if (!supportedEvents.includes(event.type)) {
       log(traceId, "IGNORED_EVENT_TYPE", { type: event.type });
@@ -194,6 +197,24 @@ async function processEvent(
           log(traceId, "PAYMENT_RECOVERY_ENQUEUED", { invoiceId: invoice.id });
         } else log(traceId, "PAYMENT_RECOVERY_NO_ACCOUNT", { subId: current.id });
       }
+      break;
+    }
+    case "payment_intent.succeeded": {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      const outcome = await fulfillMentoringPayment(pi, stripe, supabase, mentoringConfig((k) => Deno.env.get(k)), Deno.env.get("GHL_API_KEY") || "", {
+        afterCommit: () => wakeMentoringWorker(),
+        onReject: (reason) => log(traceId, "MENTORING_REJECTED", { paymentIntentId: pi.id, reason }),
+      });
+      if (outcome !== "not_applicable") log(traceId, "MENTORING_PAYMENT", { paymentIntentId: pi.id, outcome });
+      break;
+    }
+    case "charge.refunded":
+    case "charge.dispute.created": {
+      const o = event.data.object as { payment_intent?: string | { id: string } | null; amount_refunded?: number };
+      const piId = typeof o.payment_intent === "string" ? o.payment_intent : o.payment_intent?.id ?? null;
+      if (event.type === "charge.refunded" && !(o.amount_refunded && o.amount_refunded > 0)) break;
+      const changed = await reverseMentoringPayment(piId, event.type === "charge.refunded" ? "refund" : "dispute", supabase);
+      if (changed) log(traceId, "MENTORING_REVERSED", { paymentIntentId: piId, type: event.type });
       break;
     }
     case "customer.subscription.updated":
@@ -515,4 +536,13 @@ async function handleSubscriptionUpdated(
     stripeSubscriptionId: subscription.id,
     stripePriceId: priceId,
   }, traceId, supabase);
+}
+
+// Nudge the private mentoring worker after a commit. Failures are harmless: the worker is the retry backstop.
+async function wakeMentoringWorker() {
+  const secret = Deno.env.get("VAULT_ONBOARDING_JOB_SECRET");
+  if (!secret) return;
+  await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-vault-mentoring`, {
+    method: "POST", headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(3_000),
+  }).catch(() => undefined);
 }

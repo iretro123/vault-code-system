@@ -3849,6 +3849,137 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_mentoring_entitlements: {
+        Row: {
+          amount_cents: number
+          auth_user_id: string | null
+          booked_event_uri: string | null
+          booked_start_at: string | null
+          calendly_event_type_uri: string
+          calendly_link_created_at: string | null
+          calendly_link_url: string | null
+          claimed_at: string | null
+          created_at: string
+          currency: string
+          email: string
+          ghl_contact_id: string | null
+          ghl_location_id: string
+          ghl_order_id: string
+          ghl_price_id: string
+          ghl_product_id: string
+          ghl_transaction_id: string
+          id: string
+          link_attempt_started_at: string | null
+          livemode: boolean
+          reschedule_count: number
+          staff_review_reason: string | null
+          status: string
+          stripe_charge_id: string
+          stripe_customer_id: string
+          stripe_payment_intent_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          auth_user_id?: string | null
+          booked_event_uri?: string | null
+          booked_start_at?: string | null
+          calendly_event_type_uri: string
+          calendly_link_created_at?: string | null
+          calendly_link_url?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          currency: string
+          email: string
+          ghl_contact_id?: string | null
+          ghl_location_id: string
+          ghl_order_id: string
+          ghl_price_id: string
+          ghl_product_id: string
+          ghl_transaction_id: string
+          id?: string
+          link_attempt_started_at?: string | null
+          livemode: boolean
+          reschedule_count?: number
+          staff_review_reason?: string | null
+          status?: string
+          stripe_charge_id: string
+          stripe_customer_id: string
+          stripe_payment_intent_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          auth_user_id?: string | null
+          booked_event_uri?: string | null
+          booked_start_at?: string | null
+          calendly_event_type_uri?: string
+          calendly_link_created_at?: string | null
+          calendly_link_url?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          currency?: string
+          email?: string
+          ghl_contact_id?: string | null
+          ghl_location_id?: string
+          ghl_order_id?: string
+          ghl_price_id?: string
+          ghl_product_id?: string
+          ghl_transaction_id?: string
+          id?: string
+          link_attempt_started_at?: string | null
+          livemode?: boolean
+          reschedule_count?: number
+          staff_review_reason?: string | null
+          status?: string
+          stripe_charge_id?: string
+          stripe_customer_id?: string
+          stripe_payment_intent_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vault_mentoring_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          entitlement_id: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          sent_at: string | null
+          state: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          entitlement_id: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          state?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          entitlement_id?: string
+          last_error?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          sent_at?: string | null
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vault_mentoring_outbox_entitlement_id_fkey"
+            columns: ["entitlement_id"]
+            isOneToOne: true
+            referencedRelation: "vault_mentoring_entitlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vault_onboarding_outbox: {
         Row: {
           attempts: number
@@ -4232,6 +4363,7 @@ export type Database = {
         Args: { new_status: string; reason: string; target_student_id: string }
         Returns: Json
       }
+      begin_vault_mentoring_link: { Args: { p_id: string }; Returns: boolean }
       calculate_discipline_metrics: {
         Args: { _user_id: string }
         Returns: {
@@ -4305,6 +4437,25 @@ export type Database = {
           reason: string
           trades_remaining: number
         }[]
+      }
+      claim_vault_mentoring_jobs: {
+        Args: never
+        Returns: {
+          attempts: number
+          created_at: string
+          entitlement_id: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          sent_at: string | null
+          state: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vault_mentoring_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_vault_onboarding_jobs: {
         Args: never
@@ -4533,6 +4684,17 @@ export type Database = {
         }[]
       }
       get_my_payment_lock: { Args: never; Returns: boolean }
+      get_my_vault_mentoring: {
+        Args: never
+        Returns: {
+          booked_start_at: string
+          booking_url: string
+          id: string
+          purchased_at: string
+          reschedule_count: number
+          status: string
+        }[]
+      }
       get_or_create_vault_state: {
         Args: { _user_id: string }
         Returns: {
@@ -4745,6 +4907,10 @@ export type Database = {
         Args: { _event_context?: Json; _event_type: string; _user_id: string }
         Returns: string
       }
+      mark_vault_mentoring_refunded: {
+        Args: { p_payment_intent: string; p_reason: string }
+        Returns: boolean
+      }
       member_file_access: {
         Args: { object_name: string; writing: boolean }
         Returns: boolean
@@ -4900,6 +5066,25 @@ export type Database = {
           p_price: string
           p_status: string
           p_subscription: string
+        }
+        Returns: boolean
+      }
+      record_vault_mentoring_payment: {
+        Args: {
+          p_amount: number
+          p_charge: string
+          p_contact: string
+          p_currency: string
+          p_customer: string
+          p_email: string
+          p_event_type: string
+          p_livemode: boolean
+          p_location: string
+          p_order: string
+          p_payment_intent: string
+          p_price: string
+          p_product: string
+          p_transaction: string
         }
         Returns: boolean
       }
@@ -5066,6 +5251,10 @@ export type Database = {
       vault_can_read_chat_file: {
         Args: { object_name: string }
         Returns: boolean
+      }
+      vault_mentoring_outstanding_count: {
+        Args: { p_exclude: string }
+        Returns: number
       }
       vault_notification_deliverable: {
         Args: { nid: string; uid: string }
