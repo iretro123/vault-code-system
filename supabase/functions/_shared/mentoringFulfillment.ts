@@ -42,6 +42,7 @@ export class MentoringPending extends Error {}
 const reject = (r: string): never => { throw new MentoringRejection(r); };
 const pending = (r: string): never => { throw new MentoringPending(`mentoring pending: ${r}`); };
 const id = (v: any): string | null => (typeof v === 'string' ? v : v?.id ?? null);
+const gid = (v: any): string | null => (typeof v === 'string' ? v : v?._id ?? null);
 const blank = (v: unknown) => v === undefined || v === null || v === '';
 
 /** Routing only (unverified payload). The $1.99 intro and other charges never match 4900. */
@@ -77,7 +78,7 @@ export function validateMentoringPayment(p: { pi: any; order: any; transactions:
   const items = order.items ?? [];
   if (items.length !== 1) reject('GHL order line count mismatch');
   const it = items[0];
-  if (id(it.product) !== cfg.ghlProductId || id(it.price) !== cfg.ghlPriceId) reject('GHL order product mismatch');
+  if (gid(it.product) !== cfg.ghlProductId || gid(it.price) !== cfg.ghlPriceId) reject('GHL order product mismatch');
   if ((it.qty ?? 1) !== 1 || it.price?.amount !== 49 || it.price?.type !== 'one_time' || String(it.price?.currency).toUpperCase() !== 'USD') reject('GHL order line mismatch');
   if (!blank(md.contactId) && !blank(order.contactId) && md.contactId !== order.contactId) reject('GHL contact mismatch');
 
