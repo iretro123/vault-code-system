@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import * as h from "./helpers/returnClaimDb";
 
 const root = path.resolve(__dirname, "../..");
-const file = readdirSync(path.join(root, "drizzle/migrations")).find(f => f.includes("vault_mentoring_entitlements"))!;
-const SQL = readFileSync(path.join(root, "drizzle/migrations", file), "utf8");
+const files = readdirSync(path.join(root, "drizzle/migrations")).filter(f => /vault_mentoring_(entitlements|dispatch_hardening)/.test(f)).sort();
+const SQL = files.map(f => readFileSync(path.join(root, "drizzle/migrations", f), "utf8")).join("\n");
 const P = ["pi_1", "ch_1", "cus_1", "ord_1", "tx_1", "ct_1", "loc", "prod", "price", "Buyer@Example.com", 4900, "usd", true, "et_uri"];
 const rec = (db: any, over: Record<number, unknown> = {}) => {
   const a = P.map((v, i) => (i in over ? over[i] : v));
@@ -73,7 +73,7 @@ describe("mentoring entitlement RPCs", () => {
 
   it("members get no table access; booking access binds only with a fresh email-link session", async () => {
     await rec(db);
-    await db.query("UPDATE public.vault_mentoring_entitlements SET status='sent', calendly_link_url='https://calendly.com/d/x'");
+    await db.query("UPDATE public.vault_mentoring_entitlements SET status='dispatched', calendly_link_url='https://calendly.com/d/x'");
     const uid = await h.addUser(db, "buyer@example.com");
     const pw = await h.addSession(db, uid, "password");
     await expect(as(db, { sub: uid, role: "authenticated" }, "SELECT * FROM public.vault_mentoring_entitlements")).rejects.toThrow();
