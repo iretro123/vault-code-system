@@ -233,6 +233,64 @@ export default function TermsOfUse() {
         <br />
         <a href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a>
       </p>
+
+      <hr />
+
+      <h2 id="web-purchases">15. Web Academy Purchases</h2>
+      <p>
+        This section applies only to purchases made on the web (outside the Apple App Store),
+        processed by Stripe and our checkout provider (GoHighLevel). Sections 1–14 continue to
+        apply. Purchases made through Apple are governed by Section 4 and Apple's terms, and are
+        not affected by this section.
+      </p>
+      <h3>15.1 Web Membership</h3>
+      <ul>
+        <li>
+          <strong>Price:</strong> $1.99 for the first 30 days, then $99 per month, billed
+          automatically each month until canceled.
+        </li>
+        <li>
+          <strong>Cancellation:</strong> cancel any time before your next renewal date using the
+          billing management option in your Vault account settings, or by emailing{" "}
+          <a href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a> before
+          the renewal date. Cancellation stops future charges; access continues until the end of
+          the period already paid.
+        </li>
+        <li>
+          <strong>$1.99 introductory refund:</strong> you may request a full refund of the $1.99
+          introductory charge within the first 30 days by emailing{" "}
+          <a href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a>. A
+          refunded introductory charge cancels future renewals and ends membership access.
+        </li>
+      </ul>
+      <h3>15.2 Optional Private Mentoring Session ($49)</h3>
+      <ul>
+        <li>
+          An optional, additional one-time purchase of $49 for one private 120-minute educational
+          mentoring session held over Zoom. It is separate from the membership and is not a
+          subscription.
+        </li>
+        <li>Nonrefundable if you cancel or do not attend.</li>
+        <li>
+          You may reschedule once, with at least 24 hours' notice before the session start.
+        </li>
+        <li>
+          If the coach cancels or we are unable to deliver the session, you may choose to
+          reschedule or receive a refund.
+        </li>
+        <li>A membership refund or cancellation does not cancel a separately paid session.</li>
+      </ul>
+      <h3>15.3 Educational Only</h3>
+      <p>
+        Memberships and mentoring are educational. We do not promise or guarantee any profit,
+        income, or trading result. See Section 7.
+      </p>
+      <h3>15.4 Your Rights</h3>
+      <p>
+        Nothing in these Terms limits any rights you have under applicable consumer protection
+        law that cannot be waived.
+      </p>
+      <p>Vault Trading Academy LLC · Tampa, Florida</p>
     </LegalDocumentLayout>
   );
 }
