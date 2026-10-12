@@ -125,7 +125,8 @@ function memStore(e: Partial<Entitlement> = {}, outstanding = 0, booked: string[
 }
 const env = { enabled: true, calendlyToken: 't', ghlKey: 'g', locationId: 'loc', linkFieldId: 'fld', idFieldId: 'idf' };
 const slotsEvery30 = (n: number, from = Date.parse('2026-11-02T14:00:00Z')) => Array.from({ length: n }, (_, i) => new Date(from + i * 30 * 60_000).toISOString());
-function calFetch(opts: { starts?: string[]; link?: () => Response; active?: boolean } = {}) {
+function calFetch(opts: { starts?: string[]; link?: () => Response; active?: boolean; dropFields?: boolean } = {}) {
+  let stored: any[] = [];
   const calls: { url: string; method: string; body?: any }[] = [];
   let availCalls = 0;
   const fn = vi.fn(async (url: string, init?: any) => {
@@ -133,8 +134,9 @@ function calFetch(opts: { starts?: string[]; link?: () => Response; active?: boo
     if (url === A.calendlyEventTypeUri) return new Response(JSON.stringify({ resource: { active: opts.active ?? true, duration: 120, scheduling_url: A.calendlySchedulingUrl } }));
     if (url.includes('event_type_available_times')) { const c = availCalls++ === 0 ? (opts.starts ?? slotsEvery30(1)) : []; return new Response(JSON.stringify({ collection: c.map(start_time => ({ status: 'available', start_time })) })); }
     if (url.endsWith('/scheduling_links')) return opts.link ? opts.link() : new Response(JSON.stringify({ resource: { booking_url: 'https://calendly.com/d/abc-123' } }), { status: 201 });
-    if (url.endsWith('/contacts/upsert')) return new Response(JSON.stringify({ contact: { id: 'c1' } }));
+    if (url.endsWith('/contacts/upsert')) { stored = init?.body ? JSON.parse(init.body).customFields : []; return new Response(JSON.stringify({ contact: { id: 'c1' } })); }
     if (url.includes('/tags')) return new Response('{}');
+    if (url.endsWith('/contacts/c1')) return new Response(JSON.stringify({ contact: { customFields: opts.dropFields ? [] : stored.map((f: any) => ({ id: f.id, value: f.field_value })) } }));
     return new Response('{}', { status: 500 });
   }) as any;
   return { fn, calls };
@@ -165,6 +167,13 @@ describe('$49 mentoring booking delivery', () => {
     expect(tags.map(t => t.method)).toEqual(['DELETE', 'POST']);
     expect(tags[1].body).toEqual({ tags: [MENTORING_TAG] });
     expect(s.ent.status).toBe('dispatched');
+  });
+
+  it('never tags when GHL did not store the booking fields (wrong field id)', async () => {
+    const s = memStore({ status: 'link_ready', calendly_link_url: 'https://calendly.com/d/x', link_attempt_started_at: 'x' });
+    const f = calFetch({ dropFields: true });
+    expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('retry');
+    expect(f.calls.some(c => c.url.includes('/tags'))).toBe(false);
   });
 
   it('retry after a CRM failure reuses the stored link (no second Calendly link)', async () => {
