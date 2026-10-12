@@ -1,6 +1,7 @@
 import { fulfillReturnCheckout, syncReturnSubscription } from "../_shared/returnFulfillment.ts";
 import { fulfillGhlInvoice, ghlConfig, GHL_SOURCE } from "../_shared/ghlInvoiceFulfillment.ts";
 import { fulfillMentoringPayment, mentoringConfig, reverseMentoringPayment } from "../_shared/mentoringFulfillment.ts";
+import { refundGhlIntro } from "../_shared/ghlIntroRefund.ts";
 import { attemptImmediateOnboarding, onboardingEnv, supabaseOutboxStore } from "../_shared/returnOnboarding.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -114,8 +115,10 @@ serve(async (req) => {
       "customer.subscription.updated",
       "customer.subscription.deleted",
     ];
-    // $49 mentoring events are handled only when its flag is on; otherwise they stay "ignored" exactly as before.
-    if (mentoringConfig((k) => Deno.env.get(k)).enabled) supportedEvents.push("payment_intent.succeeded", "charge.refunded", "charge.dispute.created");
+    // $49 mentoring / GHL intro-refund events are handled only when a flag is on; otherwise they stay "ignored" exactly as before.
+    const mentoringOn = mentoringConfig((k) => Deno.env.get(k)).enabled;
+    if (mentoringOn) supportedEvents.push("payment_intent.succeeded", "charge.dispute.created");
+    if (mentoringOn || ghlConfig((k) => Deno.env.get(k)).enabled) supportedEvents.push("charge.refunded");
 
     if (!supportedEvents.includes(event.type)) {
       log(traceId, "IGNORED_EVENT_TYPE", { type: event.type });
@@ -176,6 +179,8 @@ async function processEvent(
       const ghl = await fulfillGhlInvoice(invoice, stripe, supabase, ghlConfig((k) => Deno.env.get(k)), async (subId) => {
         const outcome = await attemptImmediateOnboarding(supabaseOutboxStore(supabase), subId, onboardingEnv((k) => Deno.env.get(k)));
         log(traceId, "GHL_ONBOARDING_IMMEDIATE", { outcome });
+        // Not delivered inline: wake the authenticated worker now instead of waiting for the hourly retry.
+        if (outcome !== "sent") await wakeWorker("sync-vault-onboarding");
       }, (reason) => log(traceId, "GHL_INVOICE_REJECTED", { invoiceId: invoice.id, reason }));
       if (ghl !== "not_applicable") log(traceId, "GHL_INVOICE", { invoiceId: invoice.id, outcome: ghl });
       if (ghl === "rejected") break;
@@ -213,6 +218,11 @@ async function processEvent(
       const o = event.data.object as { payment_intent?: string | { id: string } | null; amount_refunded?: number };
       const piId = typeof o.payment_intent === "string" ? o.payment_intent : o.payment_intent?.id ?? null;
       if (event.type === "charge.refunded" && !(o.amount_refunded && o.amount_refunded > 0)) break;
+      if (event.type === "charge.refunded") {
+        const intro = await refundGhlIntro(piId, stripe, supabase, ghlConfig((k) => Deno.env.get(k)));
+        if (intro !== "not_applicable") log(traceId, "GHL_INTRO_REFUND", { paymentIntentId: piId, outcome: intro });
+      }
+      if (!mentoringConfig((k) => Deno.env.get(k)).enabled) break;
       const changed = await reverseMentoringPayment(piId, event.type === "charge.refunded" ? "refund" : "dispute", supabase);
       if (changed) log(traceId, "MENTORING_REVERSED", { paymentIntentId: piId, type: event.type });
       break;
@@ -539,10 +549,11 @@ async function handleSubscriptionUpdated(
 }
 
 // Nudge the private mentoring worker after a commit. Failures are harmless: the worker is the retry backstop.
-async function wakeMentoringWorker() {
+async function wakeMentoringWorker() { await wakeWorker("sync-vault-mentoring"); }
+async function wakeWorker(fn: string) {
   const secret = Deno.env.get("VAULT_ONBOARDING_JOB_SECRET");
   if (!secret) return;
-  await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-vault-mentoring`, {
+  await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/${fn}`, {
     method: "POST", headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(3_000),
   }).catch(() => undefined);
 }
