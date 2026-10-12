@@ -8,7 +8,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.2";
 import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membershipValidation.ts";
 import { enqueueRecovery, shouldEnqueueClear, shouldEnqueueRecovery } from "../_shared/paymentRecovery.ts";
-import { type AccessRow, unknownPriceReconcileTarget } from "../_shared/legacyReconcile.ts";
+import { type AccessRow, reconcileUnknownPrice, UnmanagedSubscription } from "../_shared/legacyReconcile.ts";
 import {
   LEGACY_PRICE_MAP,
   resolvePlanForPrice,
@@ -16,9 +16,6 @@ import {
   syncRolesFromStatus,
 } from "../_shared/vaultAccess.ts";
 
-
-/** Thrown (only) when a subscription has an unknown price and no row bound to it. */
-class UnmanagedSubscription extends Error { constructor(public priceId: string | null) { super("unmanaged subscription"); } }
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -498,22 +495,21 @@ async function handleSubscriptionUpdated(
 
   // Unknown price: status-only reconcile of an EXISTING bound row, never a new paid mapping.
   if (!resolvePlanForPrice(subscription.items?.data?.[0]?.price?.id)) {
-    const { data: rows, error } = await supabase.from("student_access")
-      .select("user_id, product_key, tier, status, stripe_subscription_id, stripe_customer_id")
-      .eq("stripe_subscription_id", subscription.id);
-    if (error) throw error;
-    const target = unknownPriceReconcileTarget((rows ?? []) as AccessRow[], subscription as never);
-    // Unknown price AND no bound row: not a subscription this app manages (e.g. legacy Whop). Acknowledge, never grant/revoke.
-    if (!target) throw new UnmanagedSubscription(subscription.items?.data?.[0]?.price?.id ?? null);
-    log(traceId, "UNKNOWN_PRICE_STATUS_RECONCILE", { subId: subscription.id, status: subscription.status });
-    await upsertAccess({
-      studentId: target.user_id,
-      productKey: target.product_key,
-      tier: target.tier,
-      status: stripeAccessStatus(subscription.status),
-      stripeCustomerId: customerId,
-      stripeSubscriptionId: subscription.id,
-    }, traceId, supabase);
+    await reconcileUnknownPrice(subscription as never,
+      async (subId) => await supabase.from("student_access")
+        .select("user_id, product_key, tier, status, stripe_subscription_id, stripe_customer_id")
+        .eq("stripe_subscription_id", subId) as never,
+      async (target: AccessRow) => {
+        log(traceId, "UNKNOWN_PRICE_STATUS_RECONCILE", { subId: subscription.id, status: subscription.status });
+        await upsertAccess({
+          studentId: target.user_id,
+          productKey: target.product_key,
+          tier: target.tier,
+          status: stripeAccessStatus(subscription.status),
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: subscription.id,
+        }, traceId, supabase);
+      });
     return;
   }
 
