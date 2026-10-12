@@ -134,6 +134,11 @@ export async function deliverMentoringJob(store: MentoringStore, job: Job, env: 
         customFields: [{ id: env.linkFieldId, field_value: url }, { id: env.idFieldId, field_value: eid }] }) });
     const body = await up.json().catch(() => ({}));
     if (!up.ok || !body?.contact?.id) throw new Error(`GHL contact upsert HTTP ${up.status}`);
+    // Read back: GHL ignores unknown field ids silently, so never tag until both fields hold this purchase.
+    const rb = await fetchFn(`${GHL}/contacts/${encodeURIComponent(body.contact.id)}`, { headers: h, signal: AbortSignal.timeout(10_000) });
+    const cf: any[] = (await rb.json().catch(() => ({})))?.contact?.customFields ?? [];
+    const val = (fid: string) => cf.find((f: any) => f?.id === fid)?.value;
+    if (!rb.ok || val(env.linkFieldId) !== url || val(env.idFieldId) !== eid) throw new Error(`GHL booking fields not confirmed (HTTP ${rb.status})`);
     const tagUrl = `${GHL}/contacts/${encodeURIComponent(body.contact.id)}/tags`;
     // Re-entry per purchase: a returning buyer already carries the tag, so remove then re-add it.
     const rm = await fetchFn(tagUrl, { method: 'DELETE', headers: h, signal: AbortSignal.timeout(10_000), body: JSON.stringify({ tags: [MENTORING_TAG] }) });
