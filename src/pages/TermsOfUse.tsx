@@ -2,7 +2,7 @@ import { LegalDocumentLayout } from "@/components/legal/LegalDocumentLayout";
 
 export default function TermsOfUse() {
   return (
-    <LegalDocumentLayout title="Terms of Use (EULA)" updatedOn="June 18, 2026">
+    <LegalDocumentLayout title="Terms of Use (EULA)" updatedOn="October 12, 2026">
       <p>
         These Terms of Use ("Terms") form a binding agreement between you and Vault Trading Academy
         LLC ("Vault Trading Academy", "we", "us", or "our") and govern your access to and use of
