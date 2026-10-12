@@ -36,3 +36,26 @@ export function sweepSubscriptionBound(
   if (customer !== customerId) return false;
   return !row.stripe_subscription_id || row.stripe_subscription_id === sub.id;
 }
+
+/** Thrown only when a subscription has an unknown price AND no row bound to it: not managed by this app. */
+export class UnmanagedSubscription extends Error {
+  constructor(public priceId: string | null) { super('unmanaged subscription'); }
+}
+
+/**
+ * Unknown-price branch of the subscription sync. A single bound row (same subscription,
+ * customer, Vault product) gets a status-only reconcile from the CURRENT re-read subscription;
+ * anything else is unmanaged (acknowledged, no grant/revoke). Database errors propagate (-> 500, Stripe retries).
+ */
+export async function reconcileUnknownPrice(
+  sub: { id: string; customer: string | { id: string } | null; status: string; items?: any },
+  loadRows: (subId: string) => Promise<{ data: AccessRow[] | null; error: unknown }>,
+  apply: (target: AccessRow) => Promise<void>,
+): Promise<AccessRow> {
+  const { data, error } = await loadRows(sub.id);
+  if (error) throw error;
+  const target = unknownPriceReconcileTarget(data ?? [], sub);
+  if (!target) throw new UnmanagedSubscription(sub.items?.data?.[0]?.price?.id ?? null);
+  await apply(target);
+  return target;
+}
