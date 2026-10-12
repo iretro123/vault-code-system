@@ -17,6 +17,9 @@ import {
 } from "../_shared/vaultAccess.ts";
 
 
+/** Thrown (only) when a subscription has an unknown price and no row bound to it. */
+class UnmanagedSubscription extends Error { constructor(public priceId: string | null) { super("unmanaged subscription"); } }
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
@@ -131,6 +134,11 @@ serve(async (req) => {
       await supabase.from("stripe_webhook_events").update({ status: "processed", processed_at: new Date().toISOString() }).eq("id", logId);
       log(traceId, "PROCESSED_OK");
     } catch (err) {
+      if (err instanceof UnmanagedSubscription) {
+        log(traceId, "UNMANAGED_SUBSCRIPTION_IGNORED", { type: event.type, priceId: err.priceId });
+        await supabase.from("stripe_webhook_events").update({ status: "ignored", error_message: "unmanaged subscription price", processed_at: new Date().toISOString() }).eq("id", logId);
+        return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+      }
       const msg = (err as Error).message;
       log(traceId, "PROCESSING_ERROR", { error: msg });
       await supabase.from("stripe_webhook_events").update({ status: "failed", error_message: msg, processed_at: new Date().toISOString() }).eq("id", logId);
@@ -495,7 +503,8 @@ async function handleSubscriptionUpdated(
       .eq("stripe_subscription_id", subscription.id);
     if (error) throw error;
     const target = unknownPriceReconcileTarget((rows ?? []) as AccessRow[], subscription as never);
-    if (!target) return void resolvePlan(subscription.items?.data?.[0]?.price?.id, traceId); // throws: unknown + unbound
+    // Unknown price AND no bound row: not a subscription this app manages (e.g. legacy Whop). Acknowledge, never grant/revoke.
+    if (!target) throw new UnmanagedSubscription(subscription.items?.data?.[0]?.price?.id ?? null);
     log(traceId, "UNKNOWN_PRICE_STATUS_RECONCILE", { subId: subscription.id, status: subscription.status });
     await upsertAccess({
       studentId: target.user_id,
