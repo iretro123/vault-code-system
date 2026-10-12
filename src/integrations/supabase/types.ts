@@ -3989,6 +3989,21 @@ export type Database = {
           },
         ]
       }
+      vault_mentoring_wake_tokens: {
+        Row: {
+          created_at: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          token?: string
+        }
+        Relationships: []
+      }
       vault_onboarding_outbox: {
         Row: {
           attempts: number
@@ -4565,6 +4580,10 @@ export type Database = {
           _market_type: string
           _user_id: string
         }
+        Returns: boolean
+      }
+      consume_vault_mentoring_wake: {
+        Args: { p_token: string }
         Returns: boolean
       }
       consume_vault_onboarding_wake: {
@@ -5270,6 +5289,7 @@ export type Database = {
         Args: { p_exclude: string }
         Returns: number
       }
+      vault_mentoring_wake: { Args: never; Returns: undefined }
       vault_notification_deliverable: {
         Args: { nid: string; uid: string }
         Returns: boolean

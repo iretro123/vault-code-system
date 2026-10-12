@@ -85,6 +85,13 @@
       "when": 1791736141231,
       "tag": "0011_vault_mentoring_dispatch_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791808863673,
+      "tag": "0012_vault_mentoring_scheduler",
+      "breakpoints": true
     }
   ]
 }
