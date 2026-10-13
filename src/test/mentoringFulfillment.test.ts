@@ -184,7 +184,7 @@ describe('$49 mentoring booking delivery', () => {
   });
 
   it('holds when deliverable sessions do not exceed outstanding paid sessions', async () => {
-    const s = memStore({}, 2); const f = calFetch({ starts: slotsEvery30(45) });
+    const s = memStore({}, 2); const f = calFetch({ starts: slotsEvery30(6) });
     expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('held_no_capacity');
     expect(f.calls.some(c => c.url.endsWith('/scheduling_links'))).toBe(false);
   });
