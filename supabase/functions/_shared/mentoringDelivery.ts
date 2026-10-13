@@ -60,12 +60,13 @@ const weekKey = (ms: number) => {
 export function deliverableSessions(starts: string[], booked: string[], durationMin = MENTORING_APPROVED.durationMinutes,
   bufferMin = SESSION_BUFFER_MINUTES, weeklyCap = Infinity): number {
   const gap = (durationMin + 2 * bufferMin) * 60_000;
+  const taken = booked.map(b => Date.parse(b)).filter(Number.isFinite);
   const picked: number[] = [];
   for (const t of starts.map(s => Date.parse(s)).filter(Number.isFinite).sort((a, b) => a - b)) {
+    if (taken.some(b => Math.abs(t - b) < gap)) continue; // overlaps a session already booked
     if (!picked.length || t - picked[picked.length - 1] >= gap) picked.push(t);
   }
   const used = new Map<string, number>();
-  for (const b of booked) { const t = Date.parse(b); if (Number.isFinite(t)) used.set(weekKey(t), (used.get(weekKey(t)) ?? 0) + 1); }
   let n = 0;
   for (const t of picked) { const k = weekKey(t); const u = used.get(k) ?? 0; if (u < weeklyCap) { used.set(k, u + 1); n++; } }
   return n;
