@@ -8,7 +8,8 @@ import { MENTORING_APPROVED } from './mentoringFulfillment.ts';
 export const MENTORING_TAG = 'vault-mentoring-paid';
 /** Must match the Calendly event's before/after buffers and weekly limit (Calendly's API does not expose them). */
 export const SESSION_BUFFER_MINUTES = 30;
-export const WEEKLY_SESSION_CAP = 2;
+// No artificial weekly cap: deliverable capacity is limited only by real non-overlapping
+// sessions (duration + buffers) within Calendly availability and sessions already booked.
 export const CAPACITY_WINDOW_DAYS = 14;
 const GHL = 'https://services.leadconnectorhq.com';
 const CAL = 'https://api.calendly.com';
@@ -53,18 +54,19 @@ const weekKey = (ms: number) => {
 
 /**
  * Calendly available_times are overlapping START choices, not sessions. Count sessions that can all
- * be delivered: greedy non-overlapping starts (120 min + buffers), then at most WEEKLY_SESSION_CAP per
- * week including sessions already booked.
+ * be delivered: greedy non-overlapping starts (120 min + buffers). Sessions already booked are
+ * counted against the same non-overlap capacity; there is no artificial weekly cap.
  */
 export function deliverableSessions(starts: string[], booked: string[], durationMin = MENTORING_APPROVED.durationMinutes,
-  bufferMin = SESSION_BUFFER_MINUTES, weeklyCap = WEEKLY_SESSION_CAP): number {
+  bufferMin = SESSION_BUFFER_MINUTES, weeklyCap = Infinity): number {
   const gap = (durationMin + 2 * bufferMin) * 60_000;
+  const taken = booked.map(b => Date.parse(b)).filter(Number.isFinite);
   const picked: number[] = [];
   for (const t of starts.map(s => Date.parse(s)).filter(Number.isFinite).sort((a, b) => a - b)) {
+    if (taken.some(b => Math.abs(t - b) < gap)) continue; // overlaps a session already booked
     if (!picked.length || t - picked[picked.length - 1] >= gap) picked.push(t);
   }
   const used = new Map<string, number>();
-  for (const b of booked) { const t = Date.parse(b); if (Number.isFinite(t)) used.set(weekKey(t), (used.get(weekKey(t)) ?? 0) + 1); }
   let n = 0;
   for (const t of picked) { const k = weekKey(t); const u = used.get(k) ?? 0; if (u < weeklyCap) { used.set(k, u + 1); n++; } }
   return n;

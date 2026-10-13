@@ -145,14 +145,14 @@ const job = (s: ReturnType<typeof memStore>, attempts = 1) => ({ entitlement_id:
 
 describe('deliverable capacity', () => {
   it('overlapping 30-minute start choices are not separate sessions', () => {
-    // 45 starts every 30 min across one day = 22.5h of starts; with 120 min + 2x30 buffer only one per 3h,
-    // and at most 2 per week.
-    expect(deliverableSessions(slotsEvery30(45), [])).toBe(2);
-    expect(deliverableSessions(slotsEvery30(45), [], 120, 30, 99)).toBe(8);
+    // 45 starts every 30 min across one day = 22.5h of starts; with 120 min + 2x30 buffer only one per 3h.
+    // No artificial weekly cap: all 8 non-overlapping sessions are deliverable.
+    expect(deliverableSessions(slotsEvery30(45), [])).toBe(8);
+    expect(deliverableSessions(slotsEvery30(45), [], 120, 30, 2)).toBe(2);
   });
-  it('weekly cap counts sessions already booked that week', () => {
-    expect(deliverableSessions(slotsEvery30(45), ['2026-11-03T15:00:00Z'])).toBe(1);
-    expect(deliverableSessions(slotsEvery30(45), ['2026-11-03T15:00:00Z', '2026-11-04T15:00:00Z'])).toBe(0);
+  it('more than 2 sessions per week are allowed; booked sessions still reduce capacity', () => {
+    expect(deliverableSessions(slotsEvery30(45), ['2026-11-02T14:00:00Z'])).toBe(7);
+    expect(deliverableSessions(slotsEvery30(45), ['2026-11-02T14:00:00Z', '2026-11-02T20:00:00Z'])).toBe(6);
   });
 });
 
@@ -184,7 +184,7 @@ describe('$49 mentoring booking delivery', () => {
   });
 
   it('holds when deliverable sessions do not exceed outstanding paid sessions', async () => {
-    const s = memStore({}, 2); const f = calFetch({ starts: slotsEvery30(45) });
+    const s = memStore({}, 2); const f = calFetch({ starts: slotsEvery30(6) });
     expect(await deliverMentoringJob(s.store, job(s), env, f.fn)).toBe('held_no_capacity');
     expect(f.calls.some(c => c.url.endsWith('/scheduling_links'))).toBe(false);
   });
