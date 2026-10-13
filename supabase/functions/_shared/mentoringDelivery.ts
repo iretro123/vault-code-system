@@ -8,7 +8,8 @@ import { MENTORING_APPROVED } from './mentoringFulfillment.ts';
 export const MENTORING_TAG = 'vault-mentoring-paid';
 /** Must match the Calendly event's before/after buffers and weekly limit (Calendly's API does not expose them). */
 export const SESSION_BUFFER_MINUTES = 30;
-export const WEEKLY_SESSION_CAP = 2;
+// No artificial weekly cap: deliverable capacity is limited only by real non-overlapping
+// sessions (duration + buffers) within Calendly availability and sessions already booked.
 export const CAPACITY_WINDOW_DAYS = 14;
 const GHL = 'https://services.leadconnectorhq.com';
 const CAL = 'https://api.calendly.com';
@@ -53,11 +54,11 @@ const weekKey = (ms: number) => {
 
 /**
  * Calendly available_times are overlapping START choices, not sessions. Count sessions that can all
- * be delivered: greedy non-overlapping starts (120 min + buffers), then at most WEEKLY_SESSION_CAP per
- * week including sessions already booked.
+ * be delivered: greedy non-overlapping starts (120 min + buffers). Sessions already booked are
+ * counted against the same non-overlap capacity; there is no artificial weekly cap.
  */
 export function deliverableSessions(starts: string[], booked: string[], durationMin = MENTORING_APPROVED.durationMinutes,
-  bufferMin = SESSION_BUFFER_MINUTES, weeklyCap = WEEKLY_SESSION_CAP): number {
+  bufferMin = SESSION_BUFFER_MINUTES, weeklyCap = Infinity): number {
   const gap = (durationMin + 2 * bufferMin) * 60_000;
   const picked: number[] = [];
   for (const t of starts.map(s => Date.parse(s)).filter(Number.isFinite).sort((a, b) => a - b)) {
