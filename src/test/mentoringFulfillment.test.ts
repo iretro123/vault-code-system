@@ -151,8 +151,8 @@ describe('deliverable capacity', () => {
     expect(deliverableSessions(slotsEvery30(45), [], 120, 30, 2)).toBe(2);
   });
   it('more than 2 sessions per week are allowed; booked sessions still reduce capacity', () => {
-    expect(deliverableSessions(slotsEvery30(45), ['2026-11-03T15:00:00Z'])).toBe(7);
-    expect(deliverableSessions(slotsEvery30(45), ['2026-11-03T15:00:00Z', '2026-11-04T15:00:00Z'])).toBe(6);
+    expect(deliverableSessions(slotsEvery30(45), ['2026-11-02T14:00:00Z'])).toBe(7);
+    expect(deliverableSessions(slotsEvery30(45), ['2026-11-02T14:00:00Z', '2026-11-02T20:00:00Z'])).toBe(6);
   });
 });
 
