@@ -3849,6 +3849,69 @@ export type Database = {
         }
         Relationships: []
       }
+      vault_fulfillment_incidents: {
+        Row: {
+          active: boolean
+          first_seen_at: string
+          incident_key: string
+          kind: string
+          last_notified_at: string | null
+          last_seen_at: string
+          notification_id: string | null
+          reference_id: string
+          resolved_at: string | null
+          summary: string
+        }
+        Insert: {
+          active?: boolean
+          first_seen_at?: string
+          incident_key: string
+          kind: string
+          last_notified_at?: string | null
+          last_seen_at?: string
+          notification_id?: string | null
+          reference_id: string
+          resolved_at?: string | null
+          summary: string
+        }
+        Update: {
+          active?: boolean
+          first_seen_at?: string
+          incident_key?: string
+          kind?: string
+          last_notified_at?: string | null
+          last_seen_at?: string
+          notification_id?: string | null
+          reference_id?: string
+          resolved_at?: string | null
+          summary?: string
+        }
+        Relationships: []
+      }
+      vault_fulfillment_monitor_config: {
+        Row: {
+          business_user_id: string | null
+          enabled_at: string
+          last_checked_at: string | null
+          owner_user_id: string
+          singleton: boolean
+        }
+        Insert: {
+          business_user_id?: string | null
+          enabled_at?: string
+          last_checked_at?: string | null
+          owner_user_id: string
+          singleton?: boolean
+        }
+        Update: {
+          business_user_id?: string | null
+          enabled_at?: string
+          last_checked_at?: string | null
+          owner_user_id?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       vault_mentoring_entitlements: {
         Row: {
           amount_cents: number
@@ -5281,6 +5344,16 @@ export type Database = {
         Args: { object_name: string }
         Returns: boolean
       }
+      vault_fulfillment_issues: {
+        Args: never
+        Returns: {
+          incident_key: string
+          kind: string
+          reference_id: string
+          summary: string
+        }[]
+      }
+      vault_fulfillment_watchdog: { Args: never; Returns: Json }
       vault_mentoring_booked_starts: {
         Args: { p_from: string; p_to: string }
         Returns: string[]
@@ -5293,6 +5366,10 @@ export type Database = {
       vault_notification_deliverable: {
         Args: { nid: string; uid: string }
         Returns: boolean
+      }
+      vault_notify_fulfillment_owner: {
+        Args: { p_body: string; p_title: string }
+        Returns: string
       }
       vault_onboarding_wake: { Args: never; Returns: undefined }
       vault_paid_notification: {
