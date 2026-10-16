@@ -2,17 +2,17 @@ import { LegalDocumentLayout } from "@/components/legal/LegalDocumentLayout";
 
 export default function PrivacyPolicy() {
   return (
-    <LegalDocumentLayout title="Privacy Policy" updatedOn="June 18, 2026">
+    <LegalDocumentLayout title="Privacy Policy" updatedOn="October 16, 2026">
       <p>
         This Privacy Policy describes how Vault Trading Academy LLC ("Vault Trading Academy", "we",
-        "us", or "our") collects, uses, and shares information when you use the Vault OS mobile
-        application and related services (collectively, the "App"). Vault OS is distributed through
-        the Apple App Store and is intended for users aged 17 and older.
+        "us", or "our") collects, uses, and shares information when you use our websites,
+        vaulttradingacademy.com and member.vaulttradingacademy.com (the "Websites"), and the Vault OS
+        mobile application and related app services (the "App"). Vault OS is distributed through
+        the Apple App Store and is intended for users aged 17 and older. Website-specific practices
+        are described in Section 14 below.
       </p>
       <p>
-        By creating an account or using the App, you agree to the practices described in this
-        Privacy Policy and to our <a href="/terms-of-use">Terms of Use</a> and the Apple Standard
-        End User License Agreement (EULA).
+        This Privacy Policy applies to the Websites and the App. Our{
       </p>
 
       <h2>1. Information We Collect</h2>
