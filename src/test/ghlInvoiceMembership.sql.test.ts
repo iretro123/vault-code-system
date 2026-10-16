@@ -14,6 +14,7 @@ const MIGRATIONS = [
   "supabase/migrations/20261002000400_vault_return_claim_session_strict.sql",
   "drizzle/migrations/0008_vault_ghl_invoice_membership.sql",
   "drizzle/migrations/0009_vault_ghl_invoice_proof_hardening.sql",
+  "drizzle/migrations/0014_vault_ghl_direct_invoice_membership.sql",
 ].map(read);
 const rec = (db: any, sub: string, inv: string, pi: string, status = "trialing", email = "Buyer@Example.com", cus = "cus_1") =>
   db.query("SELECT public.record_vault_ghl_invoice_payment($1,$2,$3,$6,$4,$5,now()+interval '30 days','price_x','loc','ord') AS r", [sub, inv, pi, email, status, cus]);
@@ -84,5 +85,33 @@ describe("GHL invoice membership RPC", () => {
   it("only service_role may execute the RPC", async () => {
     const r = (await db.query<any>("SELECT has_function_privilege('authenticated', 'public.record_vault_ghl_invoice_payment(text,text,text,text,text,text,timestamptz,text,text,text)', 'EXECUTE') a, has_function_privilege('anon', 'public.record_vault_ghl_invoice_payment(text,text,text,text,text,text,timestamptz,text,text,text)', 'EXECUTE') b, has_function_privilege('service_role', 'public.record_vault_ghl_invoice_payment(text,text,text,text,text,text,timestamptz,text,text,text)', 'EXECUTE') c")).rows[0];
     expect(r).toEqual({ a: false, b: false, c: true });
+  });
+
+  describe("$99 direct RPC", () => {
+    const dir = (sub: string, inv: string, pi: string, status = "active", email = "D@Example.com") =>
+      db.query("SELECT public.record_vault_ghl_direct_invoice_payment($1,$2,$3,'cus_9',$4,$5,now()+interval '30 days','price_d','loc','ord') AS r", [sub, inv, pi, email, status]);
+    it("records 9900 proof and one welcome; replay is idempotent", async () => {
+      expect((await dir("sub_d", "in_d", "pi_d")).rows[0].r).toBe(true);
+      expect((await dir("sub_d", "in_d", "pi_d")).rows[0].r).toBe(false);
+      expect((await db.query<any>("SELECT intro_amount_cents, status FROM public.vault_return_memberships")).rows).toEqual([{ intro_amount_cents: 9900, status: "active" }]);
+      expect((await db.query("SELECT 1 FROM public.vault_onboarding_outbox")).rows).toHaveLength(1);
+    });
+    it("rejects trialing status and cross-path proof conflicts", async () => {
+      await expect(dir("sub_d", "in_d", "pi_d", "trialing")).rejects.toThrow();
+      await rec(db, "sub_1", "in_1", "pi_1");
+      await expect(dir("sub_1", "in_1", "pi_1")).rejects.toThrow(/conflicts/);
+      await dir("sub_d", "in_d", "pi_d");
+      await expect(rec(db, "sub_d", "in_d", "pi_d")).rejects.toThrow();
+    });
+    it("$1.99 RPC still records 199; CHECK rejects other amounts", async () => {
+      await rec(db, "sub_1", "in_1", "pi_1");
+      expect((await db.query<any>("SELECT intro_amount_cents FROM public.vault_return_memberships")).rows[0].intro_amount_cents).toBe(199);
+      await expect(db.query("INSERT INTO public.vault_return_memberships(stripe_subscription_id,stripe_customer_id,email,status,access_until,source,stripe_invoice_id,stripe_payment_intent_id,stripe_price_id,ghl_location_id,intro_amount_cents) VALUES('s','c','e','active',now()+interval '1 day','ghl_native_invoice','i','p','pr','l',100)")).rejects.toThrow();
+    });
+    it("only service_role may execute", async () => {
+      const f = "'public.record_vault_ghl_direct_invoice_payment(text,text,text,text,text,text,timestamptz,text,text,text)'";
+      const r = (await db.query<any>(`SELECT has_function_privilege('authenticated',${f},'EXECUTE') a, has_function_privilege('anon',${f},'EXECUTE') b, has_function_privilege('service_role',${f},'EXECUTE') c`)).rows[0];
+      expect(r).toEqual({ a: false, b: false, c: true });
+    });
   });
 });

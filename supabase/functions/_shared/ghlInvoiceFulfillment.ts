@@ -14,6 +14,8 @@ export const GHL_APPROVED = {
   monthlyPriceId: 'price_1UOqHXAMsd1FtcvLBM7QdEOz',
   productId: 'prod_V4WTjozZfH9H82',
   locationId: 'G56txqjwbZBWWHuZmfo7',
+  /** $99/month from day one: no trial, no setup fee, same product + location. */
+  directPriceId: 'price_1UR1DwAMsd1FtcvL2q3fUjQE',
 } as const;
 export const GHL_SOURCE = 'ghl_native_invoice';
 export const TRIAL_SECONDS = 30 * 86400;
@@ -24,6 +26,8 @@ const MONTHLY_CENTS = 9900;
 
 export type GhlConfig = {
   enabled: boolean; monthlyPriceId: string; productId: string; locationId: string;
+  /** Optional $99-from-day-one price; absent = only the $1.99 intro path is routed. */
+  directPriceId?: string;
   /** Production is always true. Only an isolated QA handler may pass false explicitly. */
   expectedLivemode: boolean;
 };
@@ -34,8 +38,9 @@ export function ghlConfig(get: (k: string) => string | undefined): GhlConfig {
   return { enabled: get('VAULT_GHL_CHECKOUT_ENABLED') === 'true', ...GHL_APPROVED, expectedLivemode: true };
 }
 /** Isolated QA only (separate test-mode handler + key). Never used by the production webhook. */
-export function ghlQaConfig(p: { monthlyPriceId: string; productId: string; locationId: string }): GhlConfig {
+export function ghlQaConfig(p: { monthlyPriceId: string; productId: string; locationId: string; directPriceId?: string }): GhlConfig {
   if (!p.monthlyPriceId || !p.productId || !p.locationId) throw new Error('QA config incomplete');
+  if (p.directPriceId !== undefined && (!p.directPriceId || p.directPriceId === p.monthlyPriceId)) throw new Error('QA config incomplete');
   return { enabled: true, ...p, expectedLivemode: false };
 }
 
@@ -53,7 +58,21 @@ const blank = (v: unknown) => v === undefined || v === null || v === '';
 
 /** Routing only (unverified payload): does this invoice reference the allowlisted price? */
 export function referencesGhlPrice(invoice: any, cfg: GhlConfig): boolean {
-  return (invoice?.lines?.data ?? []).some((l: any) => linePrice(l) === cfg.monthlyPriceId);
+  return (invoice?.lines?.data ?? []).some((l: any) => linePrice(l) === cfg.monthlyPriceId || (!!cfg.directPriceId && linePrice(l) === cfg.directPriceId));
+}
+const referencesDirect = (invoice: any, cfg: GhlConfig) =>
+  !!cfg.directPriceId && (invoice?.lines?.data ?? []).some((l: any) => linePrice(l) === cfg.directPriceId);
+
+/** Shared invoice-level checks for an exact settled amount with no balance/credit/discount. */
+function checkInvoiceTotals(inv: any, cents: number) {
+  if (inv.billing_reason !== 'subscription_create') reject('not the initial subscription invoice');
+  if (inv.status !== 'paid') reject('invoice not paid');
+  if (inv.paid_out_of_band === true) reject('paid out of band');
+  if (inv.currency !== 'usd' || inv.subtotal !== cents || inv.total !== cents || inv.amount_due !== cents
+    || inv.amount_paid !== cents || inv.amount_remaining !== 0) reject('invoice amount mismatch');
+  if ((inv.starting_balance ?? 0) !== 0 || (inv.ending_balance ?? 0) !== 0) reject('customer balance applied');
+  if ((inv.pre_payment_credit_notes_amount ?? 0) !== 0 || (inv.post_payment_credit_notes_amount ?? 0) !== 0) reject('credit note applied');
+  if ((inv.total_discount_amounts ?? []).some((d: any) => (d?.amount ?? 0) !== 0)) reject('discount applied');
 }
 
 /** GHL metadata on one object: empty = pending (written after paid); present-but-wrong = reject. */
@@ -123,6 +142,57 @@ export function validateGhlInitialPayment(p: { invoice: any; lines: any[]; payme
   return { customer: customer as string, end: end as number, orderId: order as string };
 }
 
+/**
+ * $99-from-day-one: exactly one $99 line for the direct price, a settled genuine card
+ * PaymentIntent of 9900, an active no-trial subscription with a future paid period.
+ * `charge` is the PaymentIntent's canonical latest charge (re-read, expanded).
+ */
+export function validateGhlDirectPayment(p: { invoice: any; lines: any[]; payments: any[]; pi: any; charge: any; sub: any; cfg: GhlConfig; nowMs?: number }) {
+  const { invoice: inv, lines, payments, pi, charge, sub, cfg } = p;
+  const price = cfg.directPriceId ?? reject('direct price not configured');
+  const nowS = Math.floor((p.nowMs ?? Date.now()) / 1000);
+  if (inv.livemode !== cfg.expectedLivemode || pi.livemode !== cfg.expectedLivemode || sub.livemode !== cfg.expectedLivemode
+    || charge?.livemode !== cfg.expectedLivemode) reject('livemode mismatch');
+  checkInvoiceTotals(inv, MONTHLY_CENTS);
+  const customer = id(inv.customer) ?? reject('invoice customer missing');
+  if (invoiceSubscriptionId(inv) !== sub.id) reject('invoice not tied to subscription');
+
+  if (lines.length !== 1) reject('unexpected invoice line count');
+  const r = lines[0];
+  if (linePrice(r) !== price || lineProduct(r) !== cfg.productId || lineSubscription(r) !== sub.id
+    || r.parent?.type !== 'subscription_item_details' || r.quantity !== 1 || r.amount !== MONTHLY_CENTS || r.currency !== 'usd') reject('membership line mismatch');
+
+  const paid = payments.filter(x => x?.status === 'paid');
+  if (paid.length === 0) pending('invoice payment linkage not yet visible');
+  if (paid.length !== 1 || paid[0].payment?.type !== 'payment_intent' || paid[0].amount_paid !== MONTHLY_CENTS || paid[0].currency !== 'usd') reject('invoice payment linkage mismatch');
+  if (id(paid[0].payment.payment_intent) !== pi.id) reject('payment intent mismatch');
+  if (pi.status !== 'succeeded' || pi.amount !== MONTHLY_CENTS || pi.amount_received !== MONTHLY_CENTS || pi.currency !== 'usd' || id(pi.customer) !== customer) reject('payment intent not a settled $99 charge');
+  if (!charge || typeof charge !== 'object' || id(charge.payment_intent) !== pi.id || charge.paid !== true || charge.status !== 'succeeded'
+    || charge.captured !== true || charge.amount_captured !== MONTHLY_CENTS || (charge.amount_refunded ?? 0) !== 0 || charge.refunded === true
+    || charge.disputed === true || charge.payment_method_details?.type !== 'card') reject('charge not a genuine settled card payment');
+
+  if (id(sub.customer) !== customer) reject('subscription customer mismatch');
+  const items = sub.items?.data ?? [];
+  const item = items[0];
+  if (sub.items?.has_more || items.length !== 1 || item.quantity !== 1 || item.price?.id !== price || id(item.price?.product) !== cfg.productId
+    || item.price?.unit_amount !== MONTHLY_CENTS || item.price?.currency !== 'usd' || item.price?.type !== 'recurring'
+    || item.price?.recurring?.interval !== 'month' || item.price?.recurring?.interval_count !== 1 || item.price?.recurring?.usage_type !== 'licensed'
+    || !blank(item.price?.recurring?.trial_period_days)) reject('subscription item mismatch');
+  if (!blank(sub.trial_start) || !blank(sub.trial_end)) reject('trial not allowed on direct price');
+  if (sub.status !== 'active') reject(`subscription ${sub.status}`);
+  const start = item.current_period_start ?? sub.current_period_start;
+  const end = item.current_period_end ?? sub.current_period_end;
+  if (r.period?.start !== start || r.period?.end !== end) reject('membership line period mismatch');
+  if (!Number.isInteger(end) || end <= nowS) reject('no future access period');
+
+  const order = checkGhlMetadata(pi.metadata, cfg, 'payment', true);
+  for (const [md, label] of [[inv.metadata, 'invoice'], [sub.metadata, 'subscription']] as const) {
+    const o = checkGhlMetadata(md, cfg, label, false);
+    if (o && o !== order) reject(`GHL order mismatch on ${label}`);
+  }
+  return { customer: customer as string, end: end as number, orderId: order as string, price };
+}
+
 async function listAll(page: Promise<any>, label: string): Promise<any[]> {
   const r = await page;
   // Never validate a partial list: the approved shape has 2 lines / 1 payment.
@@ -151,15 +221,19 @@ export async function fulfillGhlInvoice(eventInvoice: any, stripe: any, db: any,
     if (settled.length === 0) pending('invoice payment linkage not yet visible');
     if (settled.length !== 1 || settled[0].payment?.type !== 'payment_intent') reject('invoice payment linkage mismatch');
     const piId = id(settled[0].payment.payment_intent) ?? reject('payment intent missing');
-    const pi = await stripe.paymentIntents.retrieve(piId);
-    const v = validateGhlInitialPayment({ invoice, lines, payments, pi, sub, cfg });
+    const direct = referencesDirect(invoice, cfg);
+    if (direct && lines.some((l: any) => linePrice(l) === cfg.monthlyPriceId)) reject('mixed GHL prices');
+    const pi = direct ? await stripe.paymentIntents.retrieve(piId, { expand: ['latest_charge'] }) : await stripe.paymentIntents.retrieve(piId);
+    const v = direct
+      ? validateGhlDirectPayment({ invoice, lines, payments, pi, charge: pi?.latest_charge, sub, cfg })
+      : { ...validateGhlInitialPayment({ invoice, lines, payments, pi, sub, cfg }), price: cfg.monthlyPriceId };
     const customer = await stripe.customers.retrieve(v.customer);
     if (customer?.deleted) reject('customer deleted');
     const email = String(customer?.email || '').trim().toLowerCase();
     if (!email) pending('customer email not yet set');
-    const { data, error } = await db.rpc('record_vault_ghl_invoice_payment', {
+    const { data, error } = await db.rpc(direct ? 'record_vault_ghl_direct_invoice_payment' : 'record_vault_ghl_invoice_payment', {
       p_subscription: sub.id, p_invoice: invoice.id, p_payment_intent: pi.id, p_customer: v.customer, p_email: email,
-      p_status: sub.status, p_end: new Date(v.end * 1000).toISOString(), p_price: cfg.monthlyPriceId, p_location: cfg.locationId, p_order: v.orderId,
+      p_status: sub.status, p_end: new Date(v.end * 1000).toISOString(), p_price: v.price, p_location: cfg.locationId, p_order: v.orderId,
     });
     if (error) throw new Error(`GHL membership record failed: ${String(error.message ?? 'database error').slice(0, 120)}`);
     if (afterCommit) { try { await afterCommit(sub.id); } catch { /* outbox worker retries */ } }
