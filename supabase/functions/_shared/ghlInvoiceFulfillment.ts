@@ -222,7 +222,7 @@ export async function fulfillGhlInvoice(eventInvoice: any, stripe: any, db: any,
     if (settled.length !== 1 || settled[0].payment?.type !== 'payment_intent') reject('invoice payment linkage mismatch');
     const piId = id(settled[0].payment.payment_intent) ?? reject('payment intent missing');
     const direct = referencesDirect(invoice, cfg);
-    if (direct && referencesGhlPrice({ lines: { data: lines.filter((l: any) => linePrice(l) === cfg.monthlyPriceId) } }, { ...cfg, directPriceId: undefined })) reject('mixed GHL prices');
+    if (direct && lines.some((l: any) => linePrice(l) === cfg.monthlyPriceId)) reject('mixed GHL prices');
     const pi = direct ? await stripe.paymentIntents.retrieve(piId, { expand: ['latest_charge'] }) : await stripe.paymentIntents.retrieve(piId);
     const v = direct
       ? validateGhlDirectPayment({ invoice, lines, payments, pi, charge: pi?.latest_charge, sub, cfg })
