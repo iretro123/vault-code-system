@@ -14,6 +14,7 @@ import { LEGACY_PRICE_MAP, resolvePlanForPrice, revokePaidRole, syncRolesFromSta
 const corsHeaders = {
   // Public price identifier proves the deployed bundle uses the current allowlist.
   "X-Vault-GHL-Price": GHL_APPROVED.directPriceId,
+  "X-Vault-GHL-Enabled": String(ghlConfig((k) => Deno.env.get(k)).enabled),
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
