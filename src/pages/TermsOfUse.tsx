@@ -2,7 +2,7 @@ import { LegalDocumentLayout } from "@/components/legal/LegalDocumentLayout";
 
 export default function TermsOfUse() {
   return (
-    <LegalDocumentLayout title="Terms of Use (EULA)" updatedOn="October 12, 2026">
+    <LegalDocumentLayout title="Terms of Use (EULA)" updatedOn="October 16, 2026">
       <p>
         These Terms of Use ("Terms") form a binding agreement between you and Vault Trading Academy
         LLC ("Vault Trading Academy", "we", "us", or "our") and govern your access to and use of
@@ -246,8 +246,13 @@ export default function TermsOfUse() {
       <h3>15.1 Web Membership</h3>
       <ul>
         <li>
-          <strong>Price:</strong> $1.99 for the first 30 days, then $99 per month, billed
-          automatically each month until canceled.
+          <strong>Price:</strong> the web checkout shows your chosen offer before payment.
+          Option A — introductory offer: $1.99 for the first 30 days, then $99 per month, billed
+          automatically each month until canceled. Option B — pay in full at purchase: $99 due at
+          the time of purchase, then $99 per month beginning one month after purchase, billed
+          automatically each month until canceled, with no introductory period. The $1.99
+          introductory refund described below applies only to the introductory $1.99 charge; it is
+          not a refund guarantee for the $99 payment in Option B.
         </li>
         <li>
           <strong>Cancellation:</strong> cancel any time before your next renewal date using the
