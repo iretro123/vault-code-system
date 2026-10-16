@@ -2,20 +2,22 @@ import { LegalDocumentLayout } from "@/components/legal/LegalDocumentLayout";
 
 export default function PrivacyPolicy() {
   return (
-    <LegalDocumentLayout title="Privacy Policy" updatedOn="June 18, 2026">
+    <LegalDocumentLayout title="Privacy Policy" updatedOn="October 16, 2026">
       <p>
         This Privacy Policy describes how Vault Trading Academy LLC ("Vault Trading Academy", "we",
-        "us", or "our") collects, uses, and shares information when you use the Vault OS mobile
-        application and related services (collectively, the "App"). Vault OS is distributed through
-        the Apple App Store and is intended for users aged 17 and older.
+        "us", or "our") collects, uses, and shares information when you use our websites,
+        vaulttradingacademy.com and member.vaulttradingacademy.com (the "Websites"), and the Vault OS
+        mobile application and related app services (the "App"). Vault OS is distributed through
+        the Apple App Store and is intended for users aged 17 and older. Website-specific practices
+        are described in Section 14 below.
       </p>
       <p>
-        By creating an account or using the App, you agree to the practices described in this
-        Privacy Policy and to our <a href="/terms-of-use">Terms of Use</a> and the Apple Standard
-        End User License Agreement (EULA).
+        This Privacy Policy applies to the Websites and the App. Our{" "}
+        <a href="/terms-of-use">Terms of Use</a> govern use of our services; the Apple Standard
+        End User License Agreement (EULA) also applies to the Apple App.
       </p>
 
-      <h2>1. Information We Collect</h2>
+      <h2>1. Information We Collect in the App</h2>
       <p>
         We collect only the information needed to operate the App and to comply with Apple App Store
         requirements. The categories of data we collect are also disclosed in the App's Privacy
@@ -42,7 +44,8 @@ export default function PrivacyPolicy() {
           <strong>Purchase status:</strong> the status of your Apple in-app subscription (active,
           expired, in grace period) returned to the App by Apple. We do <strong>not</strong> receive
           or store your credit card number, Apple ID password, or full payment details — all
-          purchases are processed by Apple.
+          native Apple in-app purchases are processed by Apple. Separate website membership
+          purchases use Stripe through GoHighLevel, as described in Section 14.
         </li>
         <li>
           <strong>Device data:</strong> device model, operating system version, language, time zone,
@@ -51,7 +54,7 @@ export default function PrivacyPolicy() {
         </li>
       </ul>
 
-      <h2>2. How We Use Information</h2>
+      <h2>2. How We Use App Information</h2>
       <ul>
         <li>To create, secure, and authenticate your account.</li>
         <li>To deliver educational content, community features, and coaching tools.</li>
@@ -63,18 +66,21 @@ export default function PrivacyPolicy() {
         <li>To comply with legal obligations and respond to lawful requests.</li>
       </ul>
 
-      <h2>3. Tracking</h2>
+      <h2>3. Native Apple App Tracking</h2>
       <p>
-        Vault OS does <strong>not</strong> track you across apps and websites owned by other
-        companies and does not use the Apple App Tracking Transparency (ATT) framework. We do not
-        share data with data brokers, do not use third-party advertising SDKs, and do not build
-        cross-app advertising profiles.
+        The native Apple App does <strong>not</strong> track you across apps and websites owned by
+        other companies and does not use the Apple App Tracking Transparency (ATT) framework. In
+        the native Apple App, we do not share data with data brokers, use third-party advertising
+        SDKs, or build cross-app advertising profiles. These statements do not describe the Websites,
+        which use Meta Pixel for advertising measurement as explained in Section 14.
       </p>
 
       <h2>4. How Information Is Shared</h2>
       <p>
-        We do not sell your personal information. We share data only with service providers that
-        help us operate the App, and only to the extent needed to provide the service:
+        We do not sell personal information for money. We disclose information to providers that
+        help operate the App and Websites and, for the Websites, to support advertising measurement.
+        Website advertising disclosures may constitute "sharing" or a "sale" under applicable
+        privacy laws. App service providers include:
       </p>
       <ul>
         <li>
@@ -114,6 +120,11 @@ export default function PrivacyPolicy() {
         sign in. To cancel any active Apple subscription, follow Section 8 below — deleting your
         Vault OS account does not automatically cancel an Apple in-app subscription.
       </p>
+      <p>
+        Deleting your App account does not itself unsubscribe you from website learning emails or
+        cancel a separate web membership subscription. Use the unsubscribe link in those emails and
+        the cancellation instructions for your web subscription separately.
+      </p>
 
       <h2>7. Children's Privacy</h2>
       <p>
@@ -125,7 +136,7 @@ export default function PrivacyPolicy() {
 
       <h2>8. Managing Your Apple Subscription</h2>
       <p>
-        Subscriptions are billed to your Apple ID and managed by Apple. You can view, change, or
+        Apple in-app subscriptions are billed to your Apple ID and managed by Apple. You can view, change, or
         cancel an active subscription at any time from{" "}
         <strong>Settings → [your name] → Subscriptions</strong> on your Apple device, or at{" "}
         <a
@@ -163,7 +174,7 @@ export default function PrivacyPolicy() {
       <h2>12. Changes to This Policy</h2>
       <p>
         We may update this Privacy Policy from time to time. Material changes will be communicated
-        through the App or by email. Continued use of the App after an update constitutes acceptance
+        through the App or by email. Continued use of the Websites or App after an update constitutes acceptance
         of the revised Policy.
       </p>
 
@@ -173,6 +184,58 @@ export default function PrivacyPolicy() {
         <br />
         Privacy questions:{" "}
         <a href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a>
+      </p>
+
+      <h2>14. Website Forms, Purchases, Scheduling, and Advertising</h2>
+      <h3>Information collected and its use</h3>
+      <p>
+        Our free-training website uses an email-only GoHighLevel/LeadConnector form to collect your
+        email address, send the free vocabulary sheet, and send related Vault learning emails.
+        GoHighLevel/LeadConnector manages these contacts and sends the emails.
+      </p>
+      <p>
+        When you use website checkout or optional mentoring scheduling, we and the relevant
+        providers process the contact, order, subscription, and booking information you submit to
+        deliver your purchase, confirm access, schedule sessions, and communicate with you. Website
+        membership checkout uses Stripe through GoHighLevel and is separate from Apple in-app
+        subscriptions. Optional mentoring uses Calendly scheduling.
+      </p>
+      <p>
+        The Websites and their embedded services may collect technical and browser information,
+        cookie identifiers, ad-click information, pages visited, and event data such as form
+        submissions or conversions. This information supports website operation, visit and
+        conversion measurement, and advertising.
+      </p>
+      <h3>Website providers and embedded services</h3>
+      <ul>
+        <li>
+          <strong>GoHighLevel/LeadConnector:</strong> forms, contact management, learning emails,
+          and website checkout coordination.
+        </li>
+        <li><strong>Stripe:</strong> website payment processing and subscription billing.</li>
+        <li><strong>Calendly:</strong> optional mentoring scheduling and booking information.</li>
+        <li>
+          <strong>YouTube:</strong> the free-training page embeds a YouTube privacy-enhanced video.
+          YouTube may process technical and viewing information when you use the embedded video;
+          privacy-enhanced mode does not mean no information is processed.
+        </li>
+        <li>
+          <strong>Meta:</strong> Meta Pixel (ID 882529050326800) is used on website pages and forms
+          to measure visits and conversions and support advertising. Meta may associate event and
+          cookie data with your Meta accounts under its own privacy policy.
+        </li>
+      </ul>
+      <h3>Your website choices</h3>
+      <p>
+        You can unsubscribe from learning marketing emails using the unsubscribe link in those
+        emails. Browser cookie controls affect website cookies, though restricting cookies may
+        affect website functionality. For Meta's privacy choices and information about its use of
+        data, see the{" "}
+        <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer">
+          Meta Privacy Policy
+        </a>
+        . For privacy requests about the Websites or App, contact{" "}
+        <a href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a>.
       </p>
     </LegalDocumentLayout>
   );
