@@ -89,7 +89,7 @@ describe("GHL invoice membership RPC", () => {
 
   describe("$99 direct RPC", () => {
     const dir = (sub: string, inv: string, pi: string, status = "active", email = "D@Example.com") =>
-      db.query("SELECT public.record_vault_ghl_direct_invoice_payment($1,$2,$3,'cus_9',$4,$5,now()+interval '30 days','price_d','loc','ord') AS r", [sub, inv, pi, email, status]);
+      db.query<{ r: boolean }>("SELECT public.record_vault_ghl_direct_invoice_payment($1,$2,$3,'cus_9',$4,$5,now()+interval '30 days','price_d','loc','ord') AS r", [sub, inv, pi, email, status]);
     it("records 9900 proof and one welcome; replay is idempotent", async () => {
       expect((await dir("sub_d", "in_d", "pi_d")).rows[0].r).toBe(true);
       expect((await dir("sub_d", "in_d", "pi_d")).rows[0].r).toBe(false);
