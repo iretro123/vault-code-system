@@ -41,11 +41,11 @@ export default function PrivacyPolicy() {
           and performance data used to maintain and improve the App.
         </li>
         <li>
-          <strong>Purchase status:</strong> the status of your Apple in-app subscription (active,
-          expired, in grace period) returned to the App by Apple. We do <strong>not</strong> receive
-          or store your credit card number, Apple ID password, or full payment details — all
-          native Apple in-app purchases are processed by Apple. Separate website membership
-          purchases use Stripe through GoHighLevel, as described in Section 14.
+          <strong>Purchase and access data:</strong> contact, order, payment confirmation, and
+          subscription status used to verify your membership and App access. All current purchases
+          are processed by Stripe through GoHighLevel on the web, not by Apple. Stripe handles card
+          payment details; we use purchase identifiers and billing status rather than storing your
+          full card number. See Section 14 for website purchase and provider information.
         </li>
         <li>
           <strong>Device data:</strong> device model, operating system version, language, time zone,
@@ -59,7 +59,7 @@ export default function PrivacyPolicy() {
         <li>To create, secure, and authenticate your account.</li>
         <li>To deliver educational content, community features, and coaching tools.</li>
         <li>To save your in-app progress, journal, and preferences across devices.</li>
-        <li>To process and verify your Apple in-app subscription status.</li>
+        <li>To verify Stripe purchase and subscription status and keep your App access current.</li>
         <li>To send transactional and optional push notifications.</li>
         <li>To review reports, enforce Acceptable Use rules, and protect users.</li>
         <li>To diagnose crashes, prevent abuse, and improve App performance.</li>
@@ -84,7 +84,7 @@ export default function PrivacyPolicy() {
       </p>
       <ul>
         <li>
-          <strong>Apple Inc.</strong> — App Store distribution, in-app purchase processing, and push
+          <strong>Apple Inc.</strong> — App Store distribution and push
           notification delivery (APNs).
         </li>
         <li>
@@ -117,8 +117,8 @@ export default function PrivacyPolicy() {
       </p>
       <p>
         After confirming deletion, your account is closed immediately and can no longer be used to
-        sign in. To cancel any active Apple subscription, follow Section 8 below — deleting your
-        Vault OS account does not automatically cancel an Apple in-app subscription.
+        sign in. Deleting your Vault OS account does not automatically cancel your Stripe-billed
+        membership; follow Section 8 below to cancel it separately.
       </p>
       <p>
         Deleting your App account does not itself unsubscribe you from website learning emails or
@@ -134,19 +134,15 @@ export default function PrivacyPolicy() {
         information, contact us and we will delete it.
       </p>
 
-      <h2>8. Managing Your Apple Subscription</h2>
+      <h2>8. Managing Your Membership Subscription</h2>
       <p>
-        Apple in-app subscriptions are billed to your Apple ID and managed by Apple. You can view, change, or
-        cancel an active subscription at any time from{" "}
-        <strong>Settings → [your name] → Subscriptions</strong> on your Apple device, or at{" "}
-        <a
-          href="https://apps.apple.com/account/subscriptions"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          apps.apple.com/account/subscriptions
-        </a>
-        .
+        All current membership subscriptions are purchased on the web and billed through Stripe,
+        not through your Apple ID. Use the billing management option in your Vault account settings
+        on the website, or email{" "}
+        <a href="mailto:vault@vaulttradingacademy.com">vault@vaulttradingacademy.com</a> before your
+        next renewal date to request cancellation. See our <a href="/terms-of-use#web-purchases">web
+        purchase terms</a> for cancellation, access, and refund details. Apple device subscription
+        settings do not manage these Stripe subscriptions.
       </p>
 
       <h2>9. Your Privacy Rights</h2>
@@ -197,8 +193,8 @@ export default function PrivacyPolicy() {
         When you use website checkout or optional mentoring scheduling, we and the relevant
         providers process the contact, order, subscription, and booking information you submit to
         deliver your purchase, confirm access, schedule sessions, and communicate with you. Website
-        membership checkout uses Stripe through GoHighLevel and is separate from Apple in-app
-        subscriptions. Optional mentoring uses Calendly scheduling.
+        membership and optional mentoring purchases use Stripe through GoHighLevel; Apple does not
+        process current purchases. Optional mentoring uses Calendly scheduling.
       </p>
       <p>
         The Websites and their embedded services may collect technical and browser information,
