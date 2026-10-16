@@ -1,5 +1,5 @@
 import { fulfillReturnCheckout, syncReturnSubscription } from "../_shared/returnFulfillment.ts";
-import { fulfillGhlInvoice, ghlConfig, GHL_SOURCE } from "../_shared/ghlInvoiceFulfillment.ts";
+import { fulfillGhlInvoice, ghlConfig, GHL_SOURCE, GHL_APPROVED } from "../_shared/ghlInvoiceFulfillment.ts";
 import { fulfillMentoringPayment, mentoringConfig, reverseMentoringPayment } from "../_shared/mentoringFulfillment.ts";
 import { refundGhlIntro } from "../_shared/ghlIntroRefund.ts";
 import { attemptImmediateOnboarding, onboardingEnv, supabaseOutboxStore } from "../_shared/returnOnboarding.ts";
@@ -9,15 +9,11 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.5
 import { invoiceSubscriptionId, stripeAccessStatus } from "../_shared/membershipValidation.ts";
 import { enqueueRecovery, shouldEnqueueClear, shouldEnqueueRecovery } from "../_shared/paymentRecovery.ts";
 import { type AccessRow, reconcileUnknownPrice, UnmanagedSubscription } from "../_shared/legacyReconcile.ts";
-import {
-  LEGACY_PRICE_MAP,
-  resolvePlanForPrice,
-  revokePaidRole,
-  syncRolesFromStatus,
-} from "../_shared/vaultAccess.ts";
-
+import { LEGACY_PRICE_MAP, resolvePlanForPrice, revokePaidRole, syncRolesFromStatus } from "../_shared/vaultAccess.ts";
 
 const corsHeaders = {
+  // Public price identifier proves the deployed bundle uses the current allowlist.
+  "X-Vault-GHL-Price": GHL_APPROVED.directPriceId,
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
@@ -33,11 +29,9 @@ serve(async (req) => {
 
   const traceId = crypto.randomUUID().slice(0, 8);
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false } }
-  );
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false },
+  });
 
   try {
     // ─── 1. Verify Stripe signature ───
@@ -66,7 +60,10 @@ serve(async (req) => {
     // entitlement, event-log, or onboarding-outbox writes on the live backend.
     if (event.livemode !== true) {
       log(traceId, "IGNORED_NON_LIVE_EVENT", { type: event.type, id: event.id });
-      return new Response(JSON.stringify({ received: true, ignored: "non_live_event" }), { status: 200, headers: corsHeaders });
+      return new Response(JSON.stringify({ received: true, ignored: "non_live_event" }), {
+        status: 200,
+        headers: corsHeaders,
+      });
     }
 
     // ─── 2. Idempotency check ───
@@ -96,11 +93,19 @@ serve(async (req) => {
     if (obj.customer) eventRow.stripe_customer_id = obj.customer as string;
     if (obj.subscription) eventRow.stripe_subscription_id = obj.subscription as string;
     if (obj.id && event.type.startsWith("checkout")) eventRow.checkout_session_id = obj.id as string;
-    if (obj.amount_total) { eventRow.amount = obj.amount_total as number; eventRow.currency = obj.currency as string; }
+    if (obj.amount_total) {
+      eventRow.amount = obj.amount_total as number;
+      eventRow.currency = obj.currency as string;
+    }
 
     // Failed deliveries must be retried, not permanently marked as duplicates.
     const { data: logRow, error: logError } = existing
-      ? await supabase.from("stripe_webhook_events").update({status:"received", error_message:null}).eq("id", existing.id).select("id").single()
+      ? await supabase
+          .from("stripe_webhook_events")
+          .update({ status: "received", error_message: null })
+          .eq("id", existing.id)
+          .select("id")
+          .single()
       : await supabase.from("stripe_webhook_events").insert(eventRow).select("id").single();
     if (logError || !logRow) throw new Error("Unable to record webhook delivery");
     const logId = logRow?.id;
@@ -122,24 +127,43 @@ serve(async (req) => {
 
     if (!supportedEvents.includes(event.type)) {
       log(traceId, "IGNORED_EVENT_TYPE", { type: event.type });
-      await supabase.from("stripe_webhook_events").update({ status: "ignored", processed_at: new Date().toISOString() }).eq("id", logId);
+      await supabase
+        .from("stripe_webhook_events")
+        .update({ status: "ignored", processed_at: new Date().toISOString() })
+        .eq("id", logId);
       return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
     }
 
     try {
       await processEvent(event, traceId, stripe, supabase);
-      await supabase.from("stripe_webhook_events").update({ status: "processed", processed_at: new Date().toISOString() }).eq("id", logId);
+      await supabase
+        .from("stripe_webhook_events")
+        .update({ status: "processed", processed_at: new Date().toISOString() })
+        .eq("id", logId);
       log(traceId, "PROCESSED_OK");
     } catch (err) {
       if (err instanceof UnmanagedSubscription) {
         log(traceId, "UNMANAGED_SUBSCRIPTION_IGNORED", { type: event.type, priceId: err.priceId });
-        await supabase.from("stripe_webhook_events").update({ status: "ignored", error_message: "unmanaged subscription price", processed_at: new Date().toISOString() }).eq("id", logId);
+        await supabase
+          .from("stripe_webhook_events")
+          .update({
+            status: "ignored",
+            error_message: "unmanaged subscription price",
+            processed_at: new Date().toISOString(),
+          })
+          .eq("id", logId);
         return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
       }
       const msg = (err as Error).message;
       log(traceId, "PROCESSING_ERROR", { error: msg });
-      await supabase.from("stripe_webhook_events").update({ status: "failed", error_message: msg, processed_at: new Date().toISOString() }).eq("id", logId);
-      return new Response(JSON.stringify({ error: "Membership update failed; retry required" }), { status: 500, headers: corsHeaders });
+      await supabase
+        .from("stripe_webhook_events")
+        .update({ status: "failed", error_message: msg, processed_at: new Date().toISOString() })
+        .eq("id", logId);
+      return new Response(JSON.stringify({ error: "Membership update failed; retry required" }), {
+        status: 500,
+        headers: corsHeaders,
+      });
     }
 
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
@@ -152,12 +176,7 @@ serve(async (req) => {
 // ═══════════════════════════════════════════
 // CENTRALIZED EVENT PROCESSOR
 // ═══════════════════════════════════════════
-async function processEvent(
-  event: Stripe.Event,
-  traceId: string,
-  stripe: Stripe,
-  supabase: SupabaseClient
-) {
+async function processEvent(event: Stripe.Event, traceId: string, stripe: Stripe, supabase: SupabaseClient) {
   switch (event.type) {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded":
@@ -168,11 +187,25 @@ async function processEvent(
       const id = invoiceSubscriptionId(invoice);
       if (id) {
         const sub = await stripe.subscriptions.retrieve(id);
-        if (invoice.status === "draft" && sub.metadata?.vault_campaign === "vault_return_199_30d" && sub.items.data[0]?.price.id === Deno.env.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID")) {
+        if (
+          invoice.status === "draft" &&
+          sub.metadata?.vault_campaign === "vault_return_199_30d" &&
+          sub.items.data[0]?.price.id === Deno.env.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID")
+        ) {
           // Renewal invoices only: the first invoice is already finalized at checkout,
           // so its instructions come from the subscription description instead.
           // A footer failure must never fail the payment event.
-          await stripe.invoices.update(invoice.id!, { footer: "Access Vault OS: https://member.vaulttradingacademy.com/activate-return — use the email entered at checkout. Verify your email to connect your membership, then download Vault OS for iPhone or Android. Help: vault@vaulttradingacademy.com. No second payment is needed." }).catch((e: unknown) => log(traceId, "RETURN_FOOTER_SKIPPED", { invoiceId: invoice.id, error: String((e as Error)?.message ?? e).slice(0, 120) }));
+          await stripe.invoices
+            .update(invoice.id!, {
+              footer:
+                "Access Vault OS: https://member.vaulttradingacademy.com/activate-return — use the email entered at checkout. Verify your email to connect your membership, then download Vault OS for iPhone or Android. Help: vault@vaulttradingacademy.com. No second payment is needed.",
+            })
+            .catch((e: unknown) =>
+              log(traceId, "RETURN_FOOTER_SKIPPED", {
+                invoiceId: invoice.id,
+                error: String((e as Error)?.message ?? e).slice(0, 120),
+              }),
+            );
         }
       }
       break;
@@ -181,18 +214,35 @@ async function processEvent(
       // Access returns only if the CURRENT subscription is active again.
       const invoice = event.data.object as Stripe.Invoice;
       // Native GHL $1.99 initial invoice (flag-gated, off by default). Rejections never grant.
-      const ghl = await fulfillGhlInvoice(invoice, stripe, supabase, ghlConfig((k) => Deno.env.get(k)), async (subId) => {
-        const outcome = await attemptImmediateOnboarding(supabaseOutboxStore(supabase), subId, onboardingEnv((k) => Deno.env.get(k)));
-        log(traceId, "GHL_ONBOARDING_IMMEDIATE", { outcome });
-        // Not delivered inline: wake the authenticated worker now instead of waiting for the hourly retry.
-        if (outcome !== "sent") await wakeWorker("sync-vault-onboarding");
-      }, (reason) => log(traceId, "GHL_INVOICE_REJECTED", { invoiceId: invoice.id, reason }));
+      const ghl = await fulfillGhlInvoice(
+        invoice,
+        stripe,
+        supabase,
+        ghlConfig((k) => Deno.env.get(k)),
+        async (subId) => {
+          const outcome = await attemptImmediateOnboarding(
+            supabaseOutboxStore(supabase),
+            subId,
+            onboardingEnv((k) => Deno.env.get(k)),
+          );
+          log(traceId, "GHL_ONBOARDING_IMMEDIATE", { outcome });
+          // Not delivered inline: wake the authenticated worker now instead of waiting for the hourly retry.
+          if (outcome !== "sent") await wakeWorker("sync-vault-onboarding");
+        },
+        (reason) => log(traceId, "GHL_INVOICE_REJECTED", { invoiceId: invoice.id, reason }),
+      );
       if (ghl !== "not_applicable") log(traceId, "GHL_INVOICE", { invoiceId: invoice.id, outcome: ghl });
       if (ghl === "rejected") break;
       const current = await handleInvoicePaid(invoice, traceId, stripe, supabase);
       if (current && invoice.id && invoice.status === "paid" && shouldEnqueueClear(event.type, current.status)) {
         const target = await recoveryRecipient(supabase, current);
-        if (target) await enqueueRecovery(supabase, { invoiceId: invoice.id, subscriptionId: current.id, kind: "clear", ...target });
+        if (target)
+          await enqueueRecovery(supabase, {
+            invoiceId: invoice.id,
+            subscriptionId: current.id,
+            kind: "clear",
+            ...target,
+          });
       }
       break;
     }
@@ -211,32 +261,58 @@ async function processEvent(
     }
     case "payment_intent.succeeded": {
       const pi = event.data.object as Stripe.PaymentIntent;
-      const outcome = await fulfillMentoringPayment(pi, stripe, supabase, mentoringConfig((k) => Deno.env.get(k)), Deno.env.get("GHL_API_KEY") || "", {
-        afterCommit: () => wakeMentoringWorker(),
-        onReject: (reason) => log(traceId, "MENTORING_REJECTED", { paymentIntentId: pi.id, reason }),
-      });
+      const outcome = await fulfillMentoringPayment(
+        pi,
+        stripe,
+        supabase,
+        mentoringConfig((k) => Deno.env.get(k)),
+        Deno.env.get("GHL_API_KEY") || "",
+        {
+          afterCommit: () => wakeMentoringWorker(),
+          onReject: (reason) => log(traceId, "MENTORING_REJECTED", { paymentIntentId: pi.id, reason }),
+        },
+      );
       if (outcome !== "not_applicable") log(traceId, "MENTORING_PAYMENT", { paymentIntentId: pi.id, outcome });
       break;
     }
     case "charge.refunded":
     case "charge.dispute.created": {
       const o = event.data.object as { payment_intent?: string | { id: string } | null; amount_refunded?: number };
-      const piId = typeof o.payment_intent === "string" ? o.payment_intent : o.payment_intent?.id ?? null;
+      const piId = typeof o.payment_intent === "string" ? o.payment_intent : (o.payment_intent?.id ?? null);
       if (event.type === "charge.refunded" && !(o.amount_refunded && o.amount_refunded > 0)) break;
       if (event.type === "charge.refunded") {
-        const intro = await refundGhlIntro(piId, stripe, supabase, ghlConfig((k) => Deno.env.get(k)));
+        const intro = await refundGhlIntro(
+          piId,
+          stripe,
+          supabase,
+          ghlConfig((k) => Deno.env.get(k)),
+        );
         if (intro !== "not_applicable") log(traceId, "GHL_INTRO_REFUND", { paymentIntentId: piId, outcome: intro });
       }
       if (!mentoringConfig((k) => Deno.env.get(k)).enabled) break;
-      const changed = await reverseMentoringPayment(piId, event.type === "charge.refunded" ? "refund" : "dispute", supabase);
+      const changed = await reverseMentoringPayment(
+        piId,
+        event.type === "charge.refunded" ? "refund" : "dispute",
+        supabase,
+      );
       if (changed) log(traceId, "MENTORING_REVERSED", { paymentIntentId: piId, type: event.type });
       break;
     }
     case "customer.subscription.updated":
-      await handleSubscriptionUpdated(await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id), traceId, stripe, supabase);
+      await handleSubscriptionUpdated(
+        await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id),
+        traceId,
+        stripe,
+        supabase,
+      );
       break;
     case "customer.subscription.deleted":
-      await handleSubscriptionUpdated(await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id), traceId, stripe, supabase);
+      await handleSubscriptionUpdated(
+        await stripe.subscriptions.retrieve((event.data.object as Stripe.Subscription).id),
+        traceId,
+        stripe,
+        supabase,
+      );
       break;
   }
 }
@@ -254,27 +330,46 @@ async function matchOrCreateStudent(
     fullName?: string | null;
   },
   traceId: string,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ): Promise<{ id: string; auth_user_id: string | null; email: string }> {
   const normalizedEmail = opts.email.toLowerCase().trim();
-  log(traceId, "MATCH_USER", { email: normalizedEmail, stripeCustomerId: opts.stripeCustomerId, internalUserId: opts.internalUserId });
+  log(traceId, "MATCH_USER", {
+    email: normalizedEmail,
+    stripeCustomerId: opts.stripeCustomerId,
+    internalUserId: opts.internalUserId,
+  });
 
   // 1. Try by internal user ID (auth user ID)
   if (opts.internalUserId) {
-    const { data } = await supabase.from("students").select("id, auth_user_id").eq("auth_user_id", opts.internalUserId).maybeSingle();
+    const { data } = await supabase
+      .from("students")
+      .select("id, auth_user_id")
+      .eq("auth_user_id", opts.internalUserId)
+      .maybeSingle();
     if (data) {
       log(traceId, "MATCHED_BY_AUTH_USER_ID", { studentId: data.id });
       // Backfill stripe_customer_id if needed
       if (opts.stripeCustomerId) {
-        await supabase.from("students").update({ stripe_customer_id: opts.stripeCustomerId, updated_at: new Date().toISOString() }).eq("id", data.id);
+        await supabase
+          .from("students")
+          .update({ stripe_customer_id: opts.stripeCustomerId, updated_at: new Date().toISOString() })
+          .eq("id", data.id);
       }
-      return { id: data.id, auth_user_id: (data.auth_user_id as string) ?? opts.internalUserId, email: normalizedEmail };
+      return {
+        id: data.id,
+        auth_user_id: (data.auth_user_id as string) ?? opts.internalUserId,
+        email: normalizedEmail,
+      };
     }
   }
 
   // 2. Try by stripe_customer_id
   if (opts.stripeCustomerId) {
-    const { data } = await supabase.from("students").select("id, auth_user_id").eq("stripe_customer_id", opts.stripeCustomerId).maybeSingle();
+    const { data } = await supabase
+      .from("students")
+      .select("id, auth_user_id")
+      .eq("stripe_customer_id", opts.stripeCustomerId)
+      .maybeSingle();
     if (data) {
       log(traceId, "MATCHED_BY_STRIPE_CUSTOMER", { studentId: data.id });
       return { id: data.id, auth_user_id: (data.auth_user_id as string) ?? null, email: normalizedEmail };
@@ -282,28 +377,43 @@ async function matchOrCreateStudent(
   }
 
   // 3. Try by email
-  const { data: emailMatch } = await supabase.from("students").select("id, auth_user_id").eq("email", normalizedEmail).maybeSingle();
+  const { data: emailMatch } = await supabase
+    .from("students")
+    .select("id, auth_user_id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
   if (emailMatch) {
     log(traceId, "MATCHED_BY_EMAIL", { studentId: emailMatch.id });
     // Backfill stripe_customer_id
     if (opts.stripeCustomerId) {
-      await supabase.from("students").update({ stripe_customer_id: opts.stripeCustomerId, updated_at: new Date().toISOString() }).eq("id", emailMatch.id);
+      await supabase
+        .from("students")
+        .update({ stripe_customer_id: opts.stripeCustomerId, updated_at: new Date().toISOString() })
+        .eq("id", emailMatch.id);
     }
     return { id: emailMatch.id, auth_user_id: (emailMatch.auth_user_id as string) ?? null, email: normalizedEmail };
   }
 
   // 4. Create new student
   log(traceId, "CREATING_NEW_STUDENT", { email: normalizedEmail });
-  const { data: newStudent, error } = await supabase.from("students").insert({
-    email: normalizedEmail,
-    full_name: opts.fullName || null,
-    stripe_customer_id: opts.stripeCustomerId,
-    auth_user_id: opts.internalUserId || null,
-  }).select("id, auth_user_id").single();
+  const { data: newStudent, error } = await supabase
+    .from("students")
+    .insert({
+      email: normalizedEmail,
+      full_name: opts.fullName || null,
+      stripe_customer_id: opts.stripeCustomerId,
+      auth_user_id: opts.internalUserId || null,
+    })
+    .select("id, auth_user_id")
+    .single();
 
   if (error) throw new Error(`Failed to create student: ${error.message}`);
   log(traceId, "STUDENT_CREATED", { studentId: newStudent.id });
-  return { id: newStudent.id, auth_user_id: (newStudent.auth_user_id as string) ?? opts.internalUserId ?? null, email: normalizedEmail };
+  return {
+    id: newStudent.id,
+    auth_user_id: (newStudent.auth_user_id as string) ?? opts.internalUserId ?? null,
+    email: normalizedEmail,
+  };
 }
 
 // Upsert access record
@@ -321,7 +431,7 @@ async function upsertAccess(
     email?: string | null;
   },
   traceId: string,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ) {
   const now = new Date().toISOString();
   log(traceId, "UPSERT_ACCESS", { studentId: opts.studentId, productKey: opts.productKey, status: opts.status });
@@ -364,7 +474,7 @@ async function upsertAccess(
       .eq("id", opts.studentId)
       .maybeSingle();
     authUserId = (student?.auth_user_id as string) ?? null;
-    email = email ?? ((student?.email as string) ?? null);
+    email = email ?? (student?.email as string) ?? null;
   }
   await syncRolesFromStatus(supabase, {
     authUserId,
@@ -384,7 +494,9 @@ function resolvePlan(priceId: string | null | undefined, traceId: string): { pro
   const plan = resolvePlanForPrice(priceId);
   if (!plan) {
     log(traceId, "UNKNOWN_PRICE_ID", { priceId, knownLegacy: Object.keys(LEGACY_PRICE_MAP) });
-    throw new Error(`Unknown Stripe price ID: ${priceId}. Set STRIPE_VAULT_OS_MONTHLY_PRICE_ID or add it as a legacy price.`);
+    throw new Error(
+      `Unknown Stripe price ID: ${priceId}. Set STRIPE_VAULT_OS_MONTHLY_PRICE_ID or add it as a legacy price.`,
+    );
   }
   return { product_key: plan.product_key, tier: plan.tier };
 }
@@ -397,16 +509,29 @@ async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
   traceId: string,
   stripe: Stripe,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ) {
-  if (await fulfillReturnCheckout(session, stripe, supabase, {
-    paymentLinkId: Deno.env.get('STRIPE_VAULT_RETURN_PAYMENT_LINK_ID') || '',
-    monthlyPriceId: Deno.env.get('STRIPE_VAULT_OS_MONTHLY_PRICE_ID') || '',
-    introPriceId: Deno.env.get('STRIPE_VAULT_RETURN_INTRO_PRICE_ID') || '',
-  }, async (subId) => {
-    const outcome = await attemptImmediateOnboarding(supabaseOutboxStore(supabase), subId, onboardingEnv((k) => Deno.env.get(k)));
-    log(traceId, "RETURN_ONBOARDING_IMMEDIATE", { outcome });
-  })) return;
+  if (
+    await fulfillReturnCheckout(
+      session,
+      stripe,
+      supabase,
+      {
+        paymentLinkId: Deno.env.get("STRIPE_VAULT_RETURN_PAYMENT_LINK_ID") || "",
+        monthlyPriceId: Deno.env.get("STRIPE_VAULT_OS_MONTHLY_PRICE_ID") || "",
+        introPriceId: Deno.env.get("STRIPE_VAULT_RETURN_INTRO_PRICE_ID") || "",
+      },
+      async (subId) => {
+        const outcome = await attemptImmediateOnboarding(
+          supabaseOutboxStore(supabase),
+          subId,
+          onboardingEnv((k) => Deno.env.get(k)),
+        );
+        log(traceId, "RETURN_ONBOARDING_IMMEDIATE", { outcome });
+      },
+    )
+  )
+    return;
   log(traceId, "CHECKOUT_COMPLETED", { sessionId: session.id, mode: session.mode });
   if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
     log(traceId, "AWAITING_PAYMENT", { sessionId: session.id });
@@ -430,15 +555,20 @@ async function handleCheckoutCompleted(
   }
 
   resolvePlan(priceId || metadata.app_price_id, traceId);
-  const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id || null;
+  const subscriptionId =
+    typeof session.subscription === "string" ? session.subscription : session.subscription?.id || null;
   if (!subscriptionId) throw new Error("A subscription is required for Full Access");
 
-  await matchOrCreateStudent({
-    email,
-    stripeCustomerId: customerId,
-    internalUserId: metadata.internal_user_id,
-    fullName: session.customer_details?.name,
-  }, traceId, supabase);
+  await matchOrCreateStudent(
+    {
+      email,
+      stripeCustomerId: customerId,
+      internalUserId: metadata.internal_user_id,
+      fullName: session.customer_details?.name,
+    },
+    traceId,
+    supabase,
+  );
 
   await handleSubscriptionUpdated(await stripe.subscriptions.retrieve(subscriptionId), traceId, stripe, supabase);
 }
@@ -447,7 +577,7 @@ async function handleInvoicePaid(
   invoice: Stripe.Invoice,
   traceId: string,
   stripe: Stripe,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ): Promise<Stripe.Subscription | null> {
   log(traceId, "INVOICE_RECONCILE", { invoiceId: invoice.id });
   const subscriptionId = invoiceSubscriptionId(invoice);
@@ -459,14 +589,26 @@ async function handleInvoicePaid(
 }
 
 /** The bound app account (and its own sign-in email) for a past-due subscription. */
-async function recoveryRecipient(supabase: SupabaseClient, sub: Stripe.Subscription): Promise<{ authUserId: string; email: string } | null> {
+async function recoveryRecipient(
+  supabase: SupabaseClient,
+  sub: Stripe.Subscription,
+): Promise<{ authUserId: string; email: string } | null> {
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
   let authUserId: string | null = null;
-  const ret = await supabase.from("vault_return_memberships").select("auth_user_id").eq("stripe_subscription_id", sub.id).maybeSingle();
+  const ret = await supabase
+    .from("vault_return_memberships")
+    .select("auth_user_id")
+    .eq("stripe_subscription_id", sub.id)
+    .maybeSingle();
   if (ret.error) throw ret.error;
   authUserId = (ret.data?.auth_user_id as string) ?? null;
   if (!authUserId && customerId) {
-    const st = await supabase.from("students").select("auth_user_id").eq("stripe_customer_id", customerId).not("auth_user_id", "is", null).limit(1);
+    const st = await supabase
+      .from("students")
+      .select("auth_user_id")
+      .eq("stripe_customer_id", customerId)
+      .not("auth_user_id", "is", null)
+      .limit(1);
     if (st.error) throw st.error;
     authUserId = (st.data?.[0]?.auth_user_id as string) ?? null;
   }
@@ -477,14 +619,15 @@ async function recoveryRecipient(supabase: SupabaseClient, sub: Stripe.Subscript
   return email ? { authUserId, email } : null;
 }
 
-
 async function handleSubscriptionUpdated(
   subscription: Stripe.Subscription,
   traceId: string,
   stripe: Stripe,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ) {
-  const bound = await syncReturnSubscription(subscription, supabase, (authUserId, email) => revokePaidRole(supabase, { authUserId, email }));
+  const bound = await syncReturnSubscription(subscription, supabase, (authUserId, email) =>
+    revokePaidRole(supabase, { authUserId, email }),
+  );
   log(traceId, "SUBSCRIPTION_UPDATED", { subId: subscription.id, status: subscription.status });
   // GHL native memberships are governed only by their verified paid-intro row;
   // never route them through the generic price-based grant.
@@ -495,21 +638,29 @@ async function handleSubscriptionUpdated(
 
   // Unknown price: status-only reconcile of an EXISTING bound row, never a new paid mapping.
   if (!resolvePlanForPrice(subscription.items?.data?.[0]?.price?.id)) {
-    await reconcileUnknownPrice(subscription as never,
-      async (subId) => await supabase.from("student_access")
-        .select("user_id, product_key, tier, status, stripe_subscription_id, stripe_customer_id")
-        .eq("stripe_subscription_id", subId) as never,
+    await reconcileUnknownPrice(
+      subscription as never,
+      async (subId) =>
+        (await supabase
+          .from("student_access")
+          .select("user_id, product_key, tier, status, stripe_subscription_id, stripe_customer_id")
+          .eq("stripe_subscription_id", subId)) as never,
       async (target: AccessRow) => {
         log(traceId, "UNKNOWN_PRICE_STATUS_RECONCILE", { subId: subscription.id, status: subscription.status });
-        await upsertAccess({
-          studentId: target.user_id,
-          productKey: target.product_key,
-          tier: target.tier,
-          status: stripeAccessStatus(subscription.status),
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: subscription.id,
-        }, traceId, supabase);
-      });
+        await upsertAccess(
+          {
+            studentId: target.user_id,
+            productKey: target.product_key,
+            tier: target.tier,
+            status: stripeAccessStatus(subscription.status),
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscription.id,
+          },
+          traceId,
+          supabase,
+        );
+      },
+    );
     return;
   }
 
@@ -535,30 +686,42 @@ async function handleSubscriptionUpdated(
   // Map Stripe sub status to internal status
   const internalStatus = stripeAccessStatus(subscription.status);
 
-  const student = await matchOrCreateStudent({
-    email,
-    stripeCustomerId: customerId,
-  }, traceId, supabase);
+  const student = await matchOrCreateStudent(
+    {
+      email,
+      stripeCustomerId: customerId,
+    },
+    traceId,
+    supabase,
+  );
 
-  await upsertAccess({
-    studentId: student.id,
-    authUserId: student.auth_user_id,
-    email: student.email,
-    productKey: plan.product_key,
-    tier: plan.tier,
-    status: internalStatus,
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: priceId,
-  }, traceId, supabase);
+  await upsertAccess(
+    {
+      studentId: student.id,
+      authUserId: student.auth_user_id,
+      email: student.email,
+      productKey: plan.product_key,
+      tier: plan.tier,
+      status: internalStatus,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscription.id,
+      stripePriceId: priceId,
+    },
+    traceId,
+    supabase,
+  );
 }
 
 // Nudge the private mentoring worker after a commit. Failures are harmless: the worker is the retry backstop.
-async function wakeMentoringWorker() { await wakeWorker("sync-vault-mentoring"); }
+async function wakeMentoringWorker() {
+  await wakeWorker("sync-vault-mentoring");
+}
 async function wakeWorker(fn: string) {
   const secret = Deno.env.get("VAULT_ONBOARDING_JOB_SECRET");
   if (!secret) return;
   await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/${fn}`, {
-    method: "POST", headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(3_000),
+    method: "POST",
+    headers: { Authorization: `Bearer ${secret}` },
+    signal: AbortSignal.timeout(3_000),
   }).catch(() => undefined);
 }
