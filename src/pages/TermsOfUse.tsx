@@ -46,61 +46,15 @@ export default function TermsOfUse() {
         suspect unauthorized access.
       </p>
 
-      <h2>4. Auto-Renewing Subscription (Apple Guideline 3.1.2)</h2>
+      <h2>4. Current Membership Purchases and Billing</h2>
       <p>
-        Vault OS offers an auto-renewing monthly in-app subscription that provides full access to
-        the App's educational content and community features. The following disclosures apply:
+        All current membership and optional mentoring purchases are made on the web and processed
+        by Stripe through GoHighLevel, not through Apple in-app purchases. Membership provides
+        access to the App's educational content and community features. The chosen offer, renewal
+        timing, cancellation, access, and refund terms are set out in{" "}
+        <a href="#web-purchases">Section 15</a>. Apple ID subscription settings and Apple's refund
+        process do not manage these Stripe purchases.
       </p>
-      <ul>
-        <li>
-          <strong>Title:</strong> Vault OS Full Access — Monthly Subscription.
-        </li>
-        <li>
-          <strong>Length of subscription:</strong> 1 month, beginning on the date of purchase.
-        </li>
-        <li>
-          <strong>Price:</strong> $99.00 USD per month, or the equivalent local price shown on the
-          App Store at the time of purchase.
-        </li>
-        <li>
-          <strong>Payment:</strong> Payment is charged to your Apple ID at confirmation of purchase.
-        </li>
-        <li>
-          <strong>Auto-renewal:</strong> The subscription automatically renews for the same term at
-          the same price unless auto-renewal is turned off at least 24 hours before the end of the
-          current period. Your account will be charged for renewal within 24 hours before the end of
-          the current period.
-        </li>
-        <li>
-          <strong>Managing and canceling:</strong> You can manage your subscription and turn off
-          auto-renewal in <strong>Settings → [your name] → Subscriptions</strong> on your Apple
-          device, or at{" "}
-          <a
-            href="https://apps.apple.com/account/subscriptions"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            apps.apple.com/account/subscriptions
-          </a>
-          .
-        </li>
-        <li>
-          <strong>Refunds:</strong> Apple processes all refunds. Requests can be submitted at{" "}
-          <a
-            href="https://reportaproblem.apple.com"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            reportaproblem.apple.com
-          </a>
-          . Except where required by law, the unused portion of a free trial (if any) is forfeited
-          when a paid subscription is purchased.
-        </li>
-        <li>
-          <strong>Free trials:</strong> If a free trial is offered, any unused portion is forfeited
-          when you purchase a subscription.
-        </li>
-      </ul>
 
       <h2>5. User-Generated Content and Acceptable Use (Apple Guideline 1.2)</h2>
       <p>
@@ -174,8 +128,9 @@ export default function TermsOfUse() {
         You may delete your account and associated personal data at any time inside the App at{" "}
         <strong>Settings → Account → Delete Account</strong>. We may suspend or terminate access if
         you violate these Terms or if required for security, legal, or App Store compliance reasons.
-        Deleting your account does not automatically cancel an active Apple subscription; cancel
-        through Apple as described in Section 4.
+        Deleting your account does not automatically cancel a Stripe-billed membership; cancel
+        separately as described in Section 15.1. It also does not itself unsubscribe you from
+        website learning emails.
       </p>
 
       <h2>11. Apple-Specific Terms</h2>
@@ -238,10 +193,10 @@ export default function TermsOfUse() {
 
       <h2 id="web-purchases">15. Web Academy Purchases</h2>
       <p>
-        This section applies only to purchases made on the web (outside the Apple App Store),
-        processed by Stripe and our checkout provider (GoHighLevel). Sections 1–14 continue to
-        apply. Purchases made through Apple are governed by Section 4 and Apple's terms, and are
-        not affected by this section.
+        This section applies to all current purchases, made on the web and processed by Stripe
+        through our checkout provider (GoHighLevel), outside the Apple App Store. Sections 1–14
+        continue to apply. Apple-specific App distribution and license terms do not change these
+        web billing terms.
       </p>
       <h3>15.1 Web Membership</h3>
       <ul>

@@ -13,3 +13,10 @@
 - [x] Add accessible close controls to loaded, loading, and error states
 - [x] Verify Close, Escape, outside press, member switching, route changes, focus return, and viewport bounds
 - [x] Run focused tests, preview compilation, and desktop/mobile visual checks without publishing
+
+# Stripe purchase disclosures and GHL readiness
+
+- [ ] Correct current-payment statements in Privacy and Terms; inspect Billing without changing behavior
+- [ ] Audit both native GHL offers and run focused fulfillment regression tests
+- [ ] Check sanitized deployed-function and retry/outbox evidence without dispatching jobs
+- [ ] Report actual alert services, deployment limitations, revision IDs, and remaining blockers
