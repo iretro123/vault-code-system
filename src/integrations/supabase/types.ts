@@ -5146,6 +5146,21 @@ export type Database = {
         Args: { conversation: string; through_time: string }
         Returns: undefined
       }
+      record_vault_ghl_direct_invoice_payment: {
+        Args: {
+          p_customer: string
+          p_email: string
+          p_end: string
+          p_invoice: string
+          p_location: string
+          p_order: string
+          p_payment_intent: string
+          p_price: string
+          p_status: string
+          p_subscription: string
+        }
+        Returns: boolean
+      }
       record_vault_ghl_invoice_payment: {
         Args: {
           p_customer: string
