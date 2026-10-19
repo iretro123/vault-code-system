@@ -130,7 +130,6 @@ export default function CreateAccount() {
           </form>
           <div className="vault-entry-crosslinks">
             <p>Already registered? <Link to="/auth">Log in instead</Link></p>
-            <PaidRecoveryLink />
           </div>
         </>}
       </section>
