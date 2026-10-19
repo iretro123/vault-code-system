@@ -120,6 +120,7 @@ export default function CreateAccount() {
           <div className="vault-signup-plan"><ShieldCheck size={16}/>{isFullAccessFlow ? `Full Access · ${VAULT_OS_MONTHLY_FALLBACK_PRICE}` : "Free Community"}</div>
           <div className="vault-entry-title"><h1>Create your<br/>Vault account.</h1><p>{isFullAccessFlow ? "Your login first. Payment comes next." : "Community chat and a free course. Start here."}</p></div>
           {isFullAccessFlow && <ol className="vault-signup-steps" aria-label="Membership setup"><li aria-current="step"><b>1</b>Account</li><li><b>2</b>Payment</li><li><b>3</b>Your Vault</li></ol>}
+          {isFullAccessFlow && <PaidRecoveryLink />}
           <form onSubmit={handleSubmit} className="vault-signup-form" aria-busy={loading}>
             <div><label htmlFor="signup-email">Email</label><input id="signup-email" name="email" type="email" autoComplete="username" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={email} onChange={e=>setEmail(e.target.value)} required disabled={loading} placeholder="you@example.com" aria-describedby="signup-email-help"/><p id="signup-email-help">Use this email whenever you log in.</p></div>
             <div><label htmlFor="signup-password">Password</label><div className="vault-signup-password"><input id="signup-password" name="password" type={showPassword ? "text" : "password"} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} required disabled={loading} placeholder="At least 8 characters" aria-describedby="signup-password-help"/><button type="button" aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} onClick={()=>setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={19}/> : <Eye size={19}/>}</button></div><p id="signup-password-help">At least 8 characters. Save your login in your device's password manager.</p></div>
@@ -129,7 +130,6 @@ export default function CreateAccount() {
           </form>
           <div className="vault-entry-crosslinks">
             <p>Already registered? <Link to="/auth">Log in instead</Link></p>
-            <PaidRecoveryLink />
           </div>
         </>}
       </section>

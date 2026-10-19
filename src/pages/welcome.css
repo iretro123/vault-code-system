@@ -51,3 +51,10 @@ body.native-capacitor .vault-entry.academy-main-safe { padding-left:max(24px,env
 .vault-entry-crosslinks a, .vault-entry-crosslinks button { color:#8db8ff; font-weight:600; }
 .vault-entry-crosslinks small { display:block; font-size:12px; color:#8191a8; margin-top:2px; }
 .vault-entry-crosslinks--access { margin:0 0 14px; }
+.vault-paid-recovery { display:flex; align-items:center; gap:12px; margin-top:18px; padding:14px 16px; border:1px solid #3b82f655; background:#3b82f614; border-radius:14px; text-align:left; transition:border-color 120ms ease; }
+.vault-paid-recovery:hover { border-color:#3b82f6aa; }
+.vault-paid-recovery-icon { flex:none; display:grid; place-items:center; width:34px; height:34px; border-radius:10px; background:#3b82f61f; color:#8db8ff; }
+.vault-paid-recovery-text { display:grid; gap:2px; min-width:0; }
+.vault-paid-recovery-text b { font-size:15px; font-weight:650; color:#ffffff; }
+.vault-paid-recovery-text small { font-size:13px; color:#a8b9d0; }
+.vault-paid-recovery-arrow { flex:none; margin-left:auto; color:#8db8ff; }
