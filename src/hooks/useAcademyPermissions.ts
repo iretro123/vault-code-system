@@ -26,8 +26,8 @@ async function fetchPermissions(userId: string): Promise<PermissionsData> {
       .eq("user_id", userId)
       .order("assigned_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
-      .abortSignal(AbortSignal.timeout(8000)),
+      .abortSignal(AbortSignal.timeout(8000))
+      .maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", userId).abortSignal(AbortSignal.timeout(8000)),
   ]);
 
