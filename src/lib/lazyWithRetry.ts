@@ -5,6 +5,19 @@ const RELOAD_KEY = "__lazy_chunk_reloaded__";
 
 const isChunkLoadError = isStaleAssetError;
 
+/** Safari can leave a page-code download pending forever; treat that like a failed chunk. */
+export const IMPORT_TIMEOUT_MS = 10000;
+export function withImportTimeout<T>(load: Promise<T>, ms = IMPORT_TIMEOUT_MS): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      const err = new Error("Loading chunk timed out");
+      err.name = "ChunkLoadError";
+      reject(err);
+    }, ms);
+    load.then((v) => { clearTimeout(timer); resolve(v); }, (e) => { clearTimeout(timer); reject(e); });
+  });
+}
+
 /**
  * Wrap React.lazy so that a stale-deploy chunk-hash mismatch
  * triggers ONE automatic page reload (guarded by sessionStorage)
@@ -15,7 +28,7 @@ export function lazyWithRetry<T extends ComponentType<unknown>>(
 ) {
   return lazy(async () => {
     try {
-      return await factory();
+      return await withImportTimeout(factory());
     } catch (err) {
       if (isChunkLoadError(err)) {
         if (claimChunkReload()) {
