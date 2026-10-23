@@ -52,7 +52,7 @@ it('fails closed after an entitlement refresh error',()=>{
 });
 
 it('reads access with GET while retaining the server decision',async()=>{
-  vi.mocked(supabase.rpc).mockResolvedValue({data:[{status:'active',tier:'full',product_key:'vault',has_access:true}],error:null} as never);
+  vi.mocked(supabase.rpc).mockReturnValue({abortSignal:()=>Promise.resolve({data:[{status:'active',tier:'full',product_key:'vault',has_access:true}],error:null})} as never);
   renderHook(useStudentAccess);
   expect(await state.options.queryFn!()).toMatchObject({hasAccess:true,status:'active'});
   expect(supabase.rpc).toHaveBeenCalledWith('get_my_access_state',{}, {get:true});

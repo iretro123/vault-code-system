@@ -1,9 +1,13 @@
 import {afterEach,expect,it,vi} from 'vitest';
 import {claimChunkReload,isStaleAssetError} from '../lib/chunkReloadGuard';
 afterEach(()=>{vi.restoreAllMocks();sessionStorage.clear();});
-it('permits one reload only across repeated failures',()=>{
-  sessionStorage.clear();expect(claimChunkReload()).toBe(true);
-  for(let i=0;i<10;i++)expect(claimChunkReload()).toBe(false);
+it('permits one reload only across repeated failures within 2 minutes',()=>{
+  sessionStorage.clear();expect(claimChunkReload(1_000_000)).toBe(true);
+  for(let i=0;i<10;i++)expect(claimChunkReload(1_000_000+119_000)).toBe(false);
+});
+it('allows recovery again once 2 minutes have passed',()=>{
+  sessionStorage.clear();expect(claimChunkReload(1_000_000)).toBe(true);
+  expect(claimChunkReload(1_000_000+120_000)).toBe(true);
 });
 it('does not reload when storage cannot be read',()=>{
   vi.spyOn(Storage.prototype,'getItem').mockImplementation(()=>{throw Error('Unavailable');});

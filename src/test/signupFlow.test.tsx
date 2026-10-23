@@ -70,7 +70,7 @@ describe("signup and web billing handoff",()=>{
     fireEvent.click(screen.getByRole("button",{name:/Create account & continue/}));
     await screen.findByText("Check your email.");
     expect(mocks.signUp.mock.calls[0][0].options.emailRedirectTo).toBe("https://member.vaulttradingacademy.com/membership");
-    expect(screen.getByRole("link",{name:"Connect your existing membership"})).toHaveAttribute("href","/activate-return");
+    expect(screen.getByRole("link",{name:/Already paid on our website/})).toHaveAttribute("href","/activate-return");
     mocks.platform="web";
   });
 });

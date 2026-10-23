@@ -1,9 +1,11 @@
-/** Claim one automatic recovery per tab. Fail closed when storage is unavailable. */
-export function claimChunkReload():boolean {
+/** Allow one automatic recovery per 2 minutes per tab: no reload loops, yet a long-open tab can recover again later. Fail closed when storage is unavailable. */
+export const CHUNK_RELOAD_COOLDOWN_MS = 120_000;
+export function claimChunkReload(now: number = Date.now()):boolean {
   try {
     const key='__lazy_chunk_reloaded__';
-    if(sessionStorage.getItem(key)==='1')return false;
-    sessionStorage.setItem(key,'1');
+    const last=Number(sessionStorage.getItem(key));
+    if(last>0 && now-last<CHUNK_RELOAD_COOLDOWN_MS)return false;
+    sessionStorage.setItem(key,String(now));
     return true;
   }catch{return false;}
 }
