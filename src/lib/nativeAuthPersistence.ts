@@ -89,4 +89,21 @@ export async function hydrateNativeAuthPersistence(): Promise<void> {
       Preferences.remove({ key }).catch(() => {});
     }
   };
+
+  // A full localStorage.clear() (e.g. account deletion) bypasses removeItem,
+  // so wipe the mirrored keys explicitly or a dead session would be
+  // re-hydrated on the next launch.
+  const originalClear = Storage.prototype.clear;
+  Storage.prototype.clear = function patchedClear() {
+    originalClear.call(this);
+    if (this === window.localStorage) {
+      Preferences.keys()
+        .then(({ keys }) => {
+          for (const key of keys) {
+            if (isMirroredKey(key)) Preferences.remove({ key }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+  };
 }
