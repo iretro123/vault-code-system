@@ -50,7 +50,7 @@ describe("login error recovery", () => {
   it.each(["ios","android"])("shows neutral membership recovery with no sales wording on %s", (platform) => {
     m.platform = platform;
     render(<MemoryRouter><Auth /></MemoryRouter>);
-    expect(screen.getByRole("link", { name: "Connect your existing membership" })).toHaveAttribute("href", "/activate-return");
+    expect(screen.getByRole("link", { name: /Already paid on our website/ })).toHaveAttribute("href", "/activate-return");
     expect(screen.queryByText(/Already paid through Stripe/)).toBeNull();
     const text = document.body.textContent || "";
     expect(text).not.toMatch(/\$\d|\/month|Get full access|Buy|Subscribe|checkout|Restore (Apple|Google)/i);
