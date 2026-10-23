@@ -26,8 +26,9 @@ async function fetchPermissions(userId: string): Promise<PermissionsData> {
       .eq("user_id", userId)
       .order("assigned_at", { ascending: false })
       .limit(1)
+      .abortSignal(AbortSignal.timeout(8000))
       .maybeSingle(),
-    supabase.from("user_roles").select("role").eq("user_id", userId),
+    supabase.from("user_roles").select("role").eq("user_id", userId).abortSignal(AbortSignal.timeout(8000)),
   ]);
 
   const userRoleData = userRoleRes.data as AcademyUserRoleRow | null;
@@ -39,7 +40,8 @@ async function fetchPermissions(userId: string): Promise<PermissionsData> {
     const { data: permsData } = await supabase
       .from("academy_role_permissions")
       .select("permission_key")
-      .eq("role_id", roleId);
+      .eq("role_id", roleId)
+      .abortSignal(AbortSignal.timeout(8000));
     permissions = (permsData ?? []).map((p) => p.permission_key);
   }
 
@@ -58,6 +60,8 @@ export function useAcademyPermissions() {
     staleTime: 2 * 60_000,
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
+    retry: 3,
+    retryDelay: (n) => Math.min(500 * 2 ** n, 2000),
   });
 
   const state = data ?? { roleName: "Member" as AcademyRoleName, permissions: new Set<string>(), appRoles: new Set<string>() };
