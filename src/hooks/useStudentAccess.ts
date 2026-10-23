@@ -21,7 +21,7 @@ const provisioningAttempts = new Set<string>();
 
 async function fetchAccessState(userId: string): Promise<AccessState> {
   // This STABLE, SELECT-only RPC reads the signed-in caller's access decision.
-  const { data, error } = await supabase.rpc("get_my_access_state", {} as never, { get: true });
+  const { data, error } = await supabase.rpc("get_my_access_state", {} as never, { get: true }).abortSignal(AbortSignal.timeout(8000));
 
   if (error) {
     throw error;
@@ -57,6 +57,9 @@ export function useStudentAccess() {
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: true,
     refetchInterval: 30_000,
+    // A stalled request is aborted and retried quickly instead of freezing startup.
+    retry: 3,
+    retryDelay: (n) => Math.min(500 * 2 ** n, 2000),
   });
 
   const state = data ?? { status: "none" as AccessStatus, tier: null, productKey: null, hasAccess: false, lastUpdated: null };

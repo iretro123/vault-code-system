@@ -262,8 +262,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Both authoritative checks are required, but neither depends on the other.
       const [profileResult, roleResult] = await Promise.all([
-        supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
-        supabase.from("user_roles").select("role, subscription_status").eq("user_id", userId),
+        supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle().abortSignal(AbortSignal.timeout(8000)),
+        supabase.from("user_roles").select("role, subscription_status").eq("user_id", userId).abortSignal(AbortSignal.timeout(8000)),
       ]);
       const { data: profileData, error: profileError } = profileResult;
 
