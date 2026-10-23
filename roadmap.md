@@ -1,5 +1,11 @@
 # Mobile density and readability
 
+## Live Stripe access restoration
+
+- [ ] Verify Meghan Germino's current Stripe subscription and live access
+- [ ] Restore verified existing membership through the supported reconciliation path
+- [ ] Verify live active/trial rules and reconciliation for other Stripe members
+
 - [x] Audit Home, Learn, curriculum/player, Live, Community/DM, Settings, Support/Coach
 - [x] Apply focused mobile-only spacing, typography, wrapping, and touch-target fixes
   - [x] Reduce measured Home feature/welcome/setup heights at 320px and 375px
