@@ -2,9 +2,10 @@
 
 ## Live Stripe access restoration
 
-- [ ] Verify Meghan Germino's current Stripe subscription and live access
-- [ ] Restore verified existing membership through the supported reconciliation path
-- [ ] Verify live active/trial rules and reconciliation for other Stripe members
+- [x] Verify Meghan Germino's live Stripe trial and restored access on the published Learn screen
+- [x] Restore canonical trial eligibility live without falsifying Stripe status; confirm payment lock is off
+- [x] Verify active/trial rules, 27 regression assertions, and live scheduled sync/sweep runs
+- [ ] Verify/repair 22 older active records outside the canonical Stripe branch — missing valid subscription/customer/product evidence; no blanket access grant
 
 - [x] Audit Home, Learn, curriculum/player, Live, Community/DM, Settings, Support/Coach
 - [x] Apply focused mobile-only spacing, typography, wrapping, and touch-target fixes
