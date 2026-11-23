@@ -1,5 +1,15 @@
 # Mobile density and readability
 
+## Cloud availability
+
+- [x] Resume the paused Lovable Cloud backend on owner request
+- [ ] Confirm members can sign in on the published site after the pause (refresh tokens issued before the pause were rejected)
+
+## $99 checkout price allowlist
+
+- [x] Accept both live $99 prices so a $99 buyer is never charged without access
+- [ ] Deploy the widened payment handler to production (owner approval)
+
 ## Live Stripe access restoration
 
 - [x] Verify Meghan Germino's live Stripe trial and restored access on the published Learn screen

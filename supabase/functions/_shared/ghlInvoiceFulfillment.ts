@@ -14,8 +14,10 @@ export const GHL_APPROVED = {
   monthlyPriceId: "price_1UOqHXAMsd1FtcvLBM7QdEOz",
   productId: "prod_V4WTjozZfH9H82",
   locationId: "G56txqjwbZBWWHuZmfo7",
-  /** $99/month from day one: no trial, no setup fee, same product + location. */
-  directPriceId: "price_1UR1FcAMsd1FtcvLgvyx0GFO",
+  /** $99/month from day one: no trial, no setup fee, same product + location.
+   *  Both live $99 prices on this product are accepted, so a buyer is never
+   *  charged without access whichever one the GHL checkout is wired to. */
+  directPriceIds: ["price_1UR1DwAMsd1FtcvL2q3fUjQE", "price_1UR1FcAMsd1FtcvLgvyx0GFO"] as const,
 } as const;
 export const GHL_SOURCE = "ghl_native_invoice";
 export const TRIAL_SECONDS = 30 * 86400;
@@ -29,8 +31,8 @@ export type GhlConfig = {
   monthlyPriceId: string;
   productId: string;
   locationId: string;
-  /** Optional $99-from-day-one price; absent = only the $1.99 intro path is routed. */
-  directPriceId?: string;
+  /** $99-from-day-one prices; empty = only the $1.99 intro path is routed. */
+  directPriceIds: readonly string[];
   /** Production is always true. Only an isolated QA handler may pass false explicitly. */
   expectedLivemode: boolean;
 };
@@ -50,7 +52,13 @@ export function ghlQaConfig(p: {
   if (!p.monthlyPriceId || !p.productId || !p.locationId) throw new Error("QA config incomplete");
   if (p.directPriceId !== undefined && (!p.directPriceId || p.directPriceId === p.monthlyPriceId))
     throw new Error("QA config incomplete");
-  return { enabled: true, ...p, expectedLivemode: false };
+  const { directPriceId, ...rest } = p;
+  return {
+    enabled: true,
+    ...rest,
+    directPriceIds: directPriceId ? [directPriceId] : [],
+    expectedLivemode: false,
+  };
 }
 
 export class GhlRejection extends Error {}
@@ -73,11 +81,11 @@ const blank = (v: unknown) => v === undefined || v === null || v === "";
 /** Routing only (unverified payload): does this invoice reference the allowlisted price? */
 export function referencesGhlPrice(invoice: any, cfg: GhlConfig): boolean {
   return (invoice?.lines?.data ?? []).some(
-    (l: any) => linePrice(l) === cfg.monthlyPriceId || (!!cfg.directPriceId && linePrice(l) === cfg.directPriceId),
+    (l: any) => linePrice(l) === cfg.monthlyPriceId || cfg.directPriceIds.includes(linePrice(l) ?? ""),
   );
 }
 const referencesDirect = (invoice: any, cfg: GhlConfig) =>
-  !!cfg.directPriceId && (invoice?.lines?.data ?? []).some((l: any) => linePrice(l) === cfg.directPriceId);
+  (invoice?.lines?.data ?? []).some((l: any) => cfg.directPriceIds.includes(linePrice(l) ?? ""));
 
 /** Shared invoice-level checks for an exact settled amount with no balance/credit/discount. */
 function checkInvoiceTotals(inv: any, cents: number) {
@@ -252,7 +260,7 @@ export function validateGhlDirectPayment(p: {
   nowMs?: number;
 }) {
   const { invoice: inv, lines, payments, pi, charge, sub, cfg } = p;
-  const price = cfg.directPriceId ?? reject("direct price not configured");
+  if (cfg.directPriceIds.length === 0) reject("direct price not configured");
   const nowS = Math.floor((p.nowMs ?? Date.now()) / 1000);
   if (
     inv.livemode !== cfg.expectedLivemode ||
@@ -267,8 +275,9 @@ export function validateGhlDirectPayment(p: {
 
   if (lines.length !== 1) reject("unexpected invoice line count");
   const r = lines[0];
+  const price = linePrice(r) ?? "";
   if (
-    linePrice(r) !== price ||
+    !cfg.directPriceIds.includes(price) ||
     lineProduct(r) !== cfg.productId ||
     lineSubscription(r) !== sub.id ||
     r.parent?.type !== "subscription_item_details" ||
@@ -318,7 +327,7 @@ export function validateGhlDirectPayment(p: {
     sub.items?.has_more ||
     items.length !== 1 ||
     item.quantity !== 1 ||
-    item.price?.id !== price ||
+    !cfg.directPriceIds.includes(String(item.price?.id ?? "")) ||
     id(item.price?.product) !== cfg.productId ||
     item.price?.unit_amount !== MONTHLY_CENTS ||
     item.price?.currency !== "usd" ||

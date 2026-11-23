@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fulfillGhlInvoice, ghlConfig, ghlQaConfig, GhlPending, GHL_APPROVED } from '../../supabase/functions/_shared/ghlInvoiceFulfillment';
 
 const cfg = { ...GHL_APPROVED, enabled: true, expectedLivemode: true };
-const D = GHL_APPROVED.directPriceId;
+const D = GHL_APPROVED.directPriceIds[0];
 const now = Math.floor(Date.now() / 1000);
 
 function fx() {
@@ -27,7 +27,9 @@ function fx() {
 
 describe('GHL native $99-from-day-one invoice', () => {
   it('production config carries the exact live direct price', () => {
-    expect(ghlConfig(() => 'true').directPriceId).toBe('price_1UR1DwAMsd1FtcvL2q3fUjQE');
+    expect([...ghlConfig(() => 'true').directPriceIds].sort()).toEqual(
+      ['price_1UR1DwAMsd1FtcvL2q3fUjQE', 'price_1UR1FcAMsd1FtcvLgvyx0GFO'].sort(),
+    );
     expect(ghlConfig(() => 'true').monthlyPriceId).toBe('price_1UOqHXAMsd1FtcvLBM7QdEOz');
   });
 
@@ -40,6 +42,18 @@ describe('GHL native $99-from-day-one invoice', () => {
       p_status: 'active', p_end: new Date(f.end * 1000).toISOString(), p_price: D, p_location: GHL_APPROVED.locationId, p_order: 'ord_9',
     });
     expect(after).toHaveBeenCalledWith('sub_9');
+  });
+
+  it('the second live $99 price also provisions and records its own price', async () => {
+    const alt = GHL_APPROVED.directPriceIds[1];
+    const f = fx();
+    f.line.pricing.price_details = { price: alt, product: GHL_APPROVED.productId };
+    Object.assign(f.sub.items.data[0].price, { id: alt, product: GHL_APPROVED.productId });
+    expect(await fulfillGhlInvoice(f.invoice, f.stripe, f.db, cfg, vi.fn())).toBe('provisioned');
+    expect(f.db.rpc).toHaveBeenCalledWith(
+      'record_vault_ghl_direct_invoice_payment',
+      expect.objectContaining({ p_price: alt, p_location: GHL_APPROVED.locationId }),
+    );
   });
 
   it('flag off: untouched', async () => {
@@ -107,8 +121,8 @@ describe('GHL native $99-from-day-one invoice', () => {
     const qa = ghlQaConfig({ monthlyPriceId: 'price_1UOqHXAMsd1FtcvLmsqrfFoB', productId: 'prod_VPfbMOTfCWfgOw', locationId: GHL_APPROVED.locationId, directPriceId: 'price_1UR1DxAMsd1FtcvLL6wrcyeg' });
     const f = fx();
     for (const o of [f.invoice, f.pi, f.sub, f.charge]) o.livemode = false;
-    f.line.pricing.price_details = { price: qa.directPriceId, product: qa.productId };
-    Object.assign(f.sub.items.data[0].price, { id: qa.directPriceId, product: qa.productId });
+    f.line.pricing.price_details = { price: qa.directPriceIds[0], product: qa.productId };
+    Object.assign(f.sub.items.data[0].price, { id: qa.directPriceIds[0], product: qa.productId });
     expect(await fulfillGhlInvoice(f.invoice, f.stripe, f.db, qa)).toBe('provisioned');
     // Production (live-only) never accepts the same test objects.
     expect(await fulfillGhlInvoice(f.invoice, f.stripe, { rpc: vi.fn() }, cfg)).toBe('not_applicable');
